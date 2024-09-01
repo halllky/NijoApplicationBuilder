@@ -33,7 +33,7 @@ namespace Nijo.Parts.WebClient.DataTable {
         IGridColumnSetting? IDataTableColumn2.GetEditSetting() {
             return _vm.Options.MemberType.GetGridColumnEditSetting();
         }
-        string IDataTableColumn2.RenderDisplayContents(CodeRenderingContext ctx) {
+        string IDataTableColumn2.RenderDisplayContents(CodeRenderingContext ctx, string arg, string argRowObject) {
             string? formatted = null;
             var editSetting = _vm.Options.MemberType.GetGridColumnEditSetting();
             if (editSetting is ComboboxColumnSetting ccs) {
@@ -41,8 +41,8 @@ namespace Nijo.Parts.WebClient.DataTable {
             }
 
             return $$"""
-                cellProps => {
-                  const value = cellProps.row.original.{{_pathFromRowObject.Join("?.")}}
+                {{arg}} => {
+                  const value = {{argRowObject}}.{{_pathFromRowObject.Join("?.")}}
                   {{If(formatted != null, () => WithIndent(formatted!, "  "))}}
                   return (
                     <span className="block w-full px-1 overflow-hidden whitespace-nowrap">

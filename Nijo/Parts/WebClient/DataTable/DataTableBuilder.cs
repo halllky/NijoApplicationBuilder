@@ -168,7 +168,7 @@ namespace Nijo.Parts.WebClient.DataTable {
                     {
                       id: 'col-{{index}}',
                       header: '{{column.Header}}',
-                      cell: {{WithIndent(column.RenderDisplayContents(context), "  ")}},
+                      cell: {{WithIndent(column.RenderDisplayContents(context, "cellProps", "cellProps.row.original"), "  ")}},
                     {{If(column.DefaultWidth != null, () => $$"""
                       size: {{column.DefaultWidth}},
                     """)}}

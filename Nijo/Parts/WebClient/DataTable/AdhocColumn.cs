@@ -16,10 +16,10 @@ namespace Nijo.Parts.WebClient.DataTable {
         public bool Hidden { get; init; }
         public int? DefaultWidth { get; init; }
         public bool EnableResizing { get; init; }
-        public required Func<CodeRenderingContext, string> CellContents { get; init; }
+        public required Func<CodeRenderingContext, string, string, string> CellContents { get; init; }
 
-        string IDataTableColumn2.RenderDisplayContents(CodeRenderingContext ctx) {
-            return CellContents(ctx);
+        string IDataTableColumn2.RenderDisplayContents(CodeRenderingContext ctx, string arg, string argRowObject) {
+            return CellContents(ctx, arg, argRowObject);
         }
 
         IGridColumnSetting? IDataTableColumn2.GetEditSetting() {

@@ -32,14 +32,14 @@ namespace Nijo.Parts.WebClient.DataTable {
         public bool EnableResizing => true;
 
 
-        string IDataTableColumn2.RenderDisplayContents(CodeRenderingContext ctx) {
+        string IDataTableColumn2.RenderDisplayContents(CodeRenderingContext ctx, string arg, string argRowObject) {
             var names = _ref.RefTo
                 .AsEntry()
                 .GetNames()
                 .OfType<AggregateMember.ValueMember>();
             return $$"""
-                cellProps => {
-                  const value = cellProps.row.original.{{_pathFromRowObject.Join("?.")}}
+                {{arg}} => {
+                  const value = {{argRowObject}}.{{_pathFromRowObject.Join("?.")}}
                   const formatted = `{{names.Select(n => $"${{value?.{n.Declared.GetFullPathAsDataClassForRefTarget().Join("?.")} ?? ''}}").Join("")}}`
 
                   return (

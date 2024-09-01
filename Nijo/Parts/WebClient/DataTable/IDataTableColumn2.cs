@@ -28,7 +28,9 @@ namespace Nijo.Parts.WebClient.DataTable {
         /// <summary>
         /// 非編集時のセルの表示内容をレンダリングします。
         /// </summary>
-        string RenderDisplayContents(CodeRenderingContext ctx);
+        /// <param name="arg">関数の引数（括弧までを含む）</param>
+        /// <param name="argRowObject">関数の引数の中の行オブジェクトまでのパス</param>
+        string RenderDisplayContents(CodeRenderingContext ctx, string arg, string argRowObject);
 
         /// <summary>編集設定。nullの場合は常に編集不可の列であることを意味する</summary>
         IGridColumnSetting? GetEditSetting();

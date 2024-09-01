@@ -54,9 +54,9 @@ namespace Nijo.Models.ReadModel2Features {
                         Header = string.Empty,
                         DefaultWidth = 64,
                         EnableResizing = false,
-                        CellContents = ctx => $$"""
-                        cellProps => {
-                          const row = cellProps.row.original
+                        CellContents = (ctx, arg, argRowObject) => $$"""
+                        {{arg}} => {
+                          const row = {{argRowObject}}
                           const state = Util.getUpdateType(row)
 
                           return (
