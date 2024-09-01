@@ -288,24 +288,6 @@ namespace Nijo.Models.ReadModel2Features {
         public SourceFile GetSourceFile() => new SourceFile {
             FileName = "single-view.tsx",
             RenderContent = ctx => {
-                var dataClass = new DataClassForDisplay(_aggregate);
-                var searchCondition = new SearchCondition(_aggregate);
-                var loadFeature = new LoadMethod(_aggregate);
-                var keyArray = KeyArray.Create(_aggregate);
-                var keys = _aggregate
-                    .GetKeys()
-                    .OfType<AggregateMember.ValueMember>()
-                    .ToArray();
-                var urlKeysWithMember = keys
-                    .Select((vm, i) => new { ValueMember = vm, Index = i })
-                    .ToDictionary(x => x.ValueMember.Declared, x => $"key{x.Index}");
-                var names = _aggregate
-                    .GetNames()
-                    .OfType<AggregateMember.ValueMember>()
-                    .Where(vm => vm.DeclaringAggregate == _aggregate)
-                    .Select(vm => vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript).ToArray())
-                    .ToArray();
-
                 var rootAggregateComponent = new SingleViewAggregateComponent(_aggregate);
 
                 return $$"""
