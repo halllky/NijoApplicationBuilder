@@ -192,25 +192,29 @@ namespace Nijo.Models.ReadModel2Features {
         /// 常に読み取り専用なら "readOnly" , サーバーから返ってきた読み取り専用設定に依存する場合は "readOnly={getValues(`aaa.bbb.ccc`)}" のような文字列になります。
         /// </summary>
         private string GetReadOnlyStatement(AggregateMember.AggregateMemberBase member) {
-            if (member.Owner.IsOutOfEntryTree()) {
-                if (member is AggregateMember.ValueMember vm && vm.IsKey
-                    || member is AggregateMember.Ref @ref && @ref.Relation.IsPrimary()) {
-
-                    // 参照先のキーが読み取り専用か否かはその参照に読み取り専用が設定されているか否かに従う
-                    var fullpath = member.Owner
-                        .GetRefEntryEdge()
-                        .AsRefMember()
-                        .GetFullPathAsReactHookFormRegisterName(E_PathType.ReadOnly, GetArgumentsAndLoopVar());
-                    return $"{FormUIRenderingContext.READONLY}={{Util.isReadOnlyField(`{fullpath.Join(".")}`, getValues)}}";
-
-                } else {
-                    // 参照先かつキーでない項目は読み取り専用
-                    return FormUIRenderingContext.READONLY;
-                }
-            } else {
+            // エントリーのツリー内の項目の読み取り専用は実行時の画面表示用データに付随しているreadonlyオブジェクトの値に従う
+            if (member.Owner.IsInEntryTree()) {
                 var fullpath = member.GetFullPathAsReactHookFormRegisterName(E_PathType.ReadOnly, GetArgumentsAndLoopVar());
                 return $"{FormUIRenderingContext.READONLY}={{Util.isReadOnlyField(`{fullpath.Join(".")}`, getValues)}}";
             }
+
+            // 参照先の参照先の項目は常に読み取り専用
+            var refEntry = member.Owner.GetRefEntryEdge();
+            if (refEntry.Terminal != member.Owner) {
+                return FormUIRenderingContext.READONLY;
+            }
+
+            // 参照先の項目であってもキーでないものは常に読み取り専用
+            if (member is AggregateMember.ValueMember vm && !vm.IsKey
+                || member is AggregateMember.Ref @ref && !@ref.Relation.IsPrimary()) {
+                return FormUIRenderingContext.READONLY;
+            }
+
+            var fullpath2 = member.Owner
+                .GetRefEntryEdge()
+                .AsRefMember()
+                .GetFullPathAsReactHookFormRegisterName(E_PathType.ReadOnly, GetArgumentsAndLoopVar());
+            return $"{FormUIRenderingContext.READONLY}={{Util.isReadOnlyField(`{fullpath2.Join(".")}`, getValues)}}";
         }
 
         /// <summary>
@@ -411,14 +415,19 @@ namespace Nijo.Models.ReadModel2Features {
             }
 
             protected override VerticalFormBuilder GetComponentRoot() {
+                // 参照先の参照先は変更不可
+                var showMagnifyingGlass = _ref.Owner.IsInEntryTree();
+
                 var fullpath = _ref.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, GetArgumentsAndLoopVar());
                 var label = $$"""
                     <>
                       <div className="inline-flex items-center py-1 gap-2">
                         <VForm2.LabelText>{{_ref.MemberName}}</VForm2.LabelText>
+                    {{If(showMagnifyingGlass, () => $$"""
                         {mode !== 'detail' && (
                           <Input.IconButton underline mini icon={Icon.MagnifyingGlassIcon} onClick={handleClickSearch}>検索</Input.IconButton>
                         )}
+                    """)}}
                       </div>
                       <Input.ErrorMessage name={`{{fullpath.Join(".")}}`} errors={errors} />
                     </>
