@@ -29,8 +29,8 @@ namespace Nijo.Util.CodeGenerating {
 
                 return new KeyArray {
                     Member = key,
-                    CsType = key.CSharpTypeName + (nullable ? "?" : string.Empty),
-                    TsType = key.TypeScriptTypename,
+                    CsType = key.Options.MemberType.GetCSharpTypeName() + (nullable ? "?" : string.Empty),
+                    TsType = key.Options.MemberType.GetTypeScriptTypeName(),
                     VarName = key.MemberName + (indexInSameNameGroup >= 1 ? (indexInSameNameGroup + 1).ToString() : string.Empty),
                     Index = index,
                 };

@@ -174,36 +174,7 @@ namespace Nijo.Core {
         /// </summary>
         internal static bool IsStored(this GraphNode<Aggregate> aggregate) {
             var handler = aggregate.GetRoot().Item.Options.Handler;
-            return handler == NijoCodeGenerator.Models.WriteModel.Key
-                || handler == NijoCodeGenerator.Models.ReadModel.Key
-                || handler == NijoCodeGenerator.Models.WriteModel2.Key;
-        }
-
-        /// <summary>
-        /// このReadModelが依存するWriteModel（スキーマ定義で依存があると指定されているもの）を列挙する
-        /// </summary>
-        internal static IEnumerable<GraphNode<Aggregate>> GetDependsOnMarkedWriteModels(this GraphNode<Aggregate> readModel) {
-            if (readModel.Item.Options.Handler != NijoCodeGenerator.Models.ReadModel.Key)
-                throw new InvalidOperationException($"{readModel.Item} is not a read model.");
-
-            foreach (var edge in readModel.Out) {
-                if (!edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)) continue;
-                if ((string)type! != REL_ATTRVALUE_DEPENDSON) continue;
-                yield return edge.Terminal.As<Aggregate>();
-            }
-        }
-        /// <summary>
-        /// このWriteModelに依存するReadModel（スキーマ定義で依存があると指定されているもの）を列挙する
-        /// </summary>
-        internal static IEnumerable<GraphNode<Aggregate>> GetDependsOnMarkedReadModels(this GraphNode<Aggregate> writeModel) {
-            if (writeModel.Item.Options.Handler != NijoCodeGenerator.Models.WriteModel.Key)
-                throw new InvalidOperationException($"{writeModel.Item} is not a write model.");
-
-            foreach (var edge in writeModel.In) {
-                if (!edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)) continue;
-                if ((string)type! != REL_ATTRVALUE_DEPENDSON) continue;
-                yield return edge.Initial.As<Aggregate>();
-            }
+            return handler == NijoCodeGenerator.Models.WriteModel2.Key;
         }
 
         /// <summary>
@@ -238,64 +209,6 @@ namespace Nijo.Core {
                             && edge.Initial.Item is Aggregate)
                 .Select(edge => edge.As<Aggregate>());
         }
-
-        #region 他の集約への参照を唯一のキーとする集約の仕組みを使っている箇所を網羅するにはここのメソッドを呼んでいる箇所を辿れば可能
-        /// <summary>
-        /// targetがsourceの唯一のキーであるか否か
-        /// </summary>
-        /// <param name="refTo">参照先</param>
-        /// <param name="refFrom">参照元</param>
-        internal static bool IsSingleRefKeyOf(this GraphNode<Aggregate> refTo, GraphNode<Aggregate> refFrom) {
-            var keys = refFrom
-                .GetKeys()
-                .Where(key => key.DeclaringAggregate == refFrom)
-                .ToArray();
-
-            if (refFrom.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key
-                && keys.Length == 1
-                && keys[0] is AggregateMember.Ref rm
-                && rm.RefTo == refTo) {
-                return true;
-            }
-            return false;
-        }
-        /// <summary>
-        /// この集約が他集約を唯一のキーとする集約の場合は当該参照先を、それ以外の場合はnullを返す
-        /// </summary>
-        internal static AggregateMember.Ref? GetSingleRefKeyAggregate(this GraphNode<Aggregate> refFrom) {
-            var refTo = refFrom
-                .GetKeys()
-                .OfType<AggregateMember.Ref>()
-                .FirstOrDefault();
-            if (refTo == null) return null;
-            if (!refTo.RefTo.IsSingleRefKeyOf(refFrom)) return null;
-            return refTo;
-        }
-
-        /// <summary>
-        /// この集約を参照し、かつそれが参照元集約の唯一のキーであるものを列挙する。
-        /// </summary>
-        internal static IEnumerable<GraphEdge<Aggregate>> GetReferedEdgesAsSingleKey(this GraphNode<Aggregate> target) {
-            return target
-                .GetReferedEdges()
-                .Where(edge => edge.IsPrimary() // ある集約から別の集約へ複数の参照経路があり、
-                                                // そのうち片方がkeyの場合、両方ともとれてしまうので、この条件も加えている
-                            && target.IsSingleRefKeyOf(edge.Initial));
-        }
-        /// <summary>
-        /// この集約を参照し、かつそれが参照元集約の唯一のキーであるものを列挙する。
-        /// 参照が2連鎖以上続く場合のために再帰処理。
-        /// </summary>
-        internal static IEnumerable<GraphEdge<Aggregate>> GetReferedEdgesAsSingleKeyRecursively(this GraphNode<Aggregate> target) {
-            foreach (var ref1 in target.GetReferedEdgesAsSingleKey()) {
-                yield return ref1;
-
-                foreach (var ref2 in ref1.Initial.GetReferedEdgesAsSingleKeyRecursively()) {
-                    yield return ref2;
-                }
-            }
-        }
-        #endregion 他の集約への参照を唯一のキーとする集約の仕組みを使っている箇所を網羅するにはここのメソッドを呼んでいる箇所を辿れば可能
 
         /// <summary>
         /// この集約のすべてのメンバーが2次元の表で表現できるかどうかを返します。

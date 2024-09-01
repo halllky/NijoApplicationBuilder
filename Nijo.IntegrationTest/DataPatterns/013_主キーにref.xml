@@ -45,7 +45,8 @@
     <ステータス is="word" />
   </状況>-->
 
-  <状況2 is="read-model-2" dependsOn="受注 納品 請求 入金">
+  <!--状況2は、受注、納品、請求、入金から算出される-->
+  <状況2 is="read-model-2">
     <受注 is="ref-to:受注 key" />
     <受注数 is="int" />
     <納品数 is="int" />

@@ -191,13 +191,6 @@ namespace Nijo.Core {
             // ------------------------------------------------
             // ルート集約用の属性 ここから
 
-            parser.IfExists(NijoCodeGenerator.Models.WriteModel.Key)
-                .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
-                .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Models.WriteModel.Key, E_Priority.Force);
-            parser.IfExists(NijoCodeGenerator.Models.ReadModel.Key)
-                .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
-                .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Models.ReadModel.Key, E_Priority.Force);
-
             parser.IfExists(NijoCodeGenerator.Models.WriteModel2.Key)
                 .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
                 .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Models.WriteModel2.Key, E_Priority.Force);
@@ -323,18 +316,6 @@ namespace Nijo.Core {
                 && memberOption.MemberType == null) {
 
                 memberOption.MemberType = parser.NotHandledKeys.Single();
-            }
-
-            // ------------------------------------------------
-
-            // ReadModelのトリガー
-            var dependsOn = element.Attribute("dependsOn")?.Value;
-            if (dependsOn != null) {
-                var dependencies = dependsOn
-                    .Split(' ')
-                    .Where(name => !string.IsNullOrWhiteSpace(name))
-                    .Select(name => name.Trim());
-                aggregateOption.DependsOn.AddRange(dependencies);
             }
 
             // ------------------------------------------------

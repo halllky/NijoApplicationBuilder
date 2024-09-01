@@ -6,7 +6,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Nijo.Core;
-using Nijo.Features.Storing;
 using Nijo.Util.CodeGenerating;
 
 namespace Nijo.Parts.Utility {
@@ -34,12 +33,6 @@ namespace Nijo.Parts.Utility {
         private SourceFile RenderJsonConversionMethods() => new SourceFile {
             FileName = "JsonConversion.cs",
             RenderContent = context => {
-                var refTargetJsonConverters = context.Schema
-                    .RootAggregates()
-                    .Where(root => root.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key)
-                    .SelectMany(root => root.EnumerateThisAndDescendants())
-                    .Select(agg => new DataClassForSaveRefTarget(agg))
-                    .ToArray();
 
                 return $$"""
                     namespace {{context.Config.RootNamespace}} {
@@ -63,9 +56,6 @@ namespace Nijo.Parts.Utility {
                                 option.Converters.Add(new {{CUSTOM_CONVERTER_NAMESPACE}}.{{INT_CONVERTER}}());
                                 option.Converters.Add(new {{CUSTOM_CONVERTER_NAMESPACE}}.{{DATETIME_CONVERTER}}());
 
-                    {{refTargetJsonConverters.SelectTextTemplate(converter => $$"""
-                                option.Converters.Add(new {{CUSTOM_CONVERTER_NAMESPACE}}.{{converter.CsJsonConverterName}}());
-                    """)}}
                     {{_jsonConverters.SelectTextTemplate(converter => $$"""
                                 option.Converters.Add(new {{CUSTOM_CONVERTER_NAMESPACE}}.{{converter.ConverterClassName}}());
                     """)}}
@@ -140,10 +130,6 @@ namespace Nijo.Parts.Utility {
 
                         {{WithIndent(RenderIntConverter(context), "    ")}}
                         {{WithIndent(RenderDateTimeConverter(context), "    ")}}
-                    {{refTargetJsonConverters.SelectTextTemplate(converter => $$"""
-
-                        {{WithIndent(converter.RenderServerSideJsonConverter(), "    ")}}
-                    """)}}
                     {{_jsonConverters.SelectTextTemplate(converter => $$"""
 
                         {{WithIndent(converter.ConverterClassDeclaring, "    ")}}

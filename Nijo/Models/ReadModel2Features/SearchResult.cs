@@ -153,11 +153,6 @@ namespace Nijo.Models.ReadModel2Features {
                     && edge.Source == edge.Initial
                     && edge.Terminal.As<Aggregate>().IsChildrenMember()) {
                     isMany = true;
-
-                } else if (edge.IsRef()
-                    && edge.Source == edge.Terminal
-                    && edge.Terminal.As<Aggregate>().IsSingleRefKeyOf(edge.Initial.As<Aggregate>())) {
-                    isMany = true;
                 }
 
                 if (isMany) {

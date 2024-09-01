@@ -35,8 +35,6 @@ namespace Nijo.Parts.WebClient {
                       const [, dispatchToast] = Util.useToastContext()
                       const { post } = Util.useHttpRequest()
                       const [withDummyData, setWithDummyData] = useState<boolean | undefined>(true)
-                      const [genDummyVer1, setGenDummyVer1] = useState<boolean | undefined>(false)
-                      const genereateDummyData1 = Util.useDummyDataGenerator()
                       const genereateDummyData2 = Util.useDummyDataGenerator2()
                       const { reset: resetLocalRepository } = Util.useLocalRepositoryChangeList()
 
@@ -51,9 +49,7 @@ namespace Nijo.Parts.WebClient {
                           const response = await post('/WebDebugger/recreate-database')
                           if (!response.ok) { return }
                           if (withDummyData) {
-                            const success = genDummyVer1
-                              ? await genereateDummyData1()
-                              : await genereateDummyData2()
+                            const success = await genereateDummyData2()
                             if (!success) {
                               dispatchMsg(msg => msg.error('DBを再作成しましたがダミーデータ作成に失敗しました。'))
                               return
@@ -77,7 +73,6 @@ namespace Nijo.Parts.WebClient {
                               <VForm.Item label="データベース">
                                 <Input.Button outlined onClick={recreateDatabase}>DBを再作成する</Input.Button>
                                 <Input.CheckBox value={withDummyData} onChange={setWithDummyData}>ダミーデータも併せて作成する</Input.CheckBox>
-                                <Input.CheckBox value={genDummyVer1} onChange={setGenDummyVer1}>旧版のダミー生成処理を使用する</Input.CheckBox>
                               </VForm.Item>
                             </VForm.Container>
                           )}

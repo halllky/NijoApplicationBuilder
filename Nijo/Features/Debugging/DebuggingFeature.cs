@@ -17,10 +17,6 @@ namespace Nijo.Features.Debugging {
             context.WebApiProject.ControllerDir(controllerDir => {
                 controllerDir.Generate(DebuggerController.Render(context));
             });
-
-            context.ReactProject.UtilDir(reactUtilDir => {
-                reactUtilDir.Generate(DummyDataGenerator.Render(context));
-            });
         }
 
     }

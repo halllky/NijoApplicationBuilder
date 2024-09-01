@@ -74,12 +74,6 @@ namespace Nijo.Core {
                     nameof(AggregateMember.AggregateMemberBase.Order),
                     member => member.Order.ToString()
                 ), (
-                    nameof(AggregateMember.AggregateMemberBase.CSharpTypeName),
-                    member => member.CSharpTypeName
-                ), (
-                    nameof(AggregateMember.AggregateMemberBase.TypeScriptTypename),
-                    member => member.TypeScriptTypename
-                ), (
                     nameof(AggregateMember.ValueMember.Options.MemberName),
                     member => member is AggregateMember.ValueMember vm
                         ? vm.Options.MemberName

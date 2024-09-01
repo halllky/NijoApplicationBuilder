@@ -106,23 +106,8 @@ namespace Nijo.Core {
                         { DirectedEdgeExtensions.REL_ATTR_MEMBER_ORDER, x.member.Order },
                     },
                 });
-            var readModelDependency = aggregateDefs
-                .Where(aggregate => aggregate.Options.Handler == NijoCodeGenerator.Models.ReadModel.Key)
-                .SelectMany(
-                    aggregate => aggregate.Options.DependsOn,
-                    (aggregate, dependent) => new { aggregate, dependent })
-                .Select(x => new {
-                    Initial = x.aggregate.TreePath,
-                    Terminal = TreePath.FromString(x.dependent),
-                    RelationName = "Depends On",
-                    Attributes = new Dictionary<string, object?> {
-                        { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_DEPENDSON },
-                    },
-                });
 
-            var relationDefs = parentAndChild
-                .Concat(refs)
-                .Concat(readModelDependency);
+            var relationDefs = parentAndChild.Concat(refs);
 
             // ---------------------------------------------------------
             // バリデーションおよびドメインクラスへの変換
@@ -315,7 +300,6 @@ namespace Nijo.Core {
         public GroupOption? IsVariationGroupMember { get; set; }
         public bool? InvisibleInGui { get; set; }
         public string? Handler { get; set; }
-        public List<string> DependsOn { get; } = new();
         /// <summary>
         /// <see cref="Models.ReadModel2"/> において、この集約の登録・更新・削除のタイミングが親集約と別々かどうかを表す。
         /// 別々な場合、この集約のオブジェクトを画面上で追加したり削除したりすることができたり、
@@ -405,7 +389,6 @@ namespace Nijo.Core {
         internal const string REL_ATTRVALUE_HAVING = "having";
         internal const string REL_ATTRVALUE_PARENT_CHILD = "child";
         internal const string REL_ATTRVALUE_REFERENCE = "reference";
-        internal const string REL_ATTRVALUE_DEPENDSON = "depends-on";
 
         internal const string REL_ATTR_MULTIPLE = "multiple";
         internal const string REL_ATTR_VARIATIONGROUPNAME = "variation-group-name";

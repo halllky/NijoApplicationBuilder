@@ -56,7 +56,6 @@ namespace Nijo.Parts.WebClient.DataTable {
                         yield return column;
 
                     } else if (member is AggregateMember.Ref @ref) {
-                        if (@ref.RefTo.IsSingleRefKeyOf(@ref.Owner)) continue;
                         var column = new RefMemberColumn(
                             @ref,
                             @ref.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, since: TableOwner),
@@ -95,7 +94,6 @@ namespace Nijo.Parts.WebClient.DataTable {
                         yield return column;
 
                     } else if (member is AggregateMember.Ref @ref) {
-                        if (@ref.RefTo.IsSingleRefKeyOf(@ref.Owner)) continue;
                         var column = new RefMemberColumn(
                             @ref,
                             @ref.GetFullPathAsDataClassForRefTarget(since: TableOwner),
@@ -138,7 +136,6 @@ namespace Nijo.Parts.WebClient.DataTable {
                         yield return column;
 
                     } else if (member is AggregateMember.Ref @ref) {
-                        if (@ref.RefTo.IsSingleRefKeyOf(@ref.Owner)) continue;
                         var column = new RefMemberColumn(
                             @ref,
                             @ref.GetFullPathAsDataClassForRefTarget(since: TableOwner),
