@@ -91,7 +91,9 @@ namespace Nijo.Models.WriteModel2Features {
 
                     // 自動的に設定される項目
                     afterDbEntity.{{EFCoreEntity.VERSION}}++;
+                    afterDbEntity.{{EFCoreEntity.CREATED_AT}} = beforeDbEntity.{{EFCoreEntity.CREATED_AT}};
                     afterDbEntity.{{EFCoreEntity.UPDATED_AT}} = {{ApplicationService.CURRENT_TIME}};
+                    afterDbEntity.{{EFCoreEntity.CREATE_USER}} = beforeDbEntity.{{EFCoreEntity.CREATE_USER}};
                     afterDbEntity.{{EFCoreEntity.UPDATE_USER}} = {{ApplicationService.CURRENT_USER}};
 
                     // 更新前処理。入力検証や自動補完項目の設定を行う。
