@@ -39,6 +39,7 @@ namespace Nijo.Models.WriteModel2Features {
                     TempVarName = $"searchKey{i + 1}",
                     vm.MemberName,
                     DbEntityFullPath = vm.Declared.GetFullPathAsDbEntity(),
+                    SaveCommandFullPath = vm.Declared.GetFullPathAsForSave(),
                     ErrorFullPath = vm.Declared.Owner.IsOutOfEntryTree()
                         ? vm.Declared.Owner.GetRefEntryEdge().Terminal.GetFullPathAsForSave()
                         : vm.Declared.GetFullPathAsForSave(),
@@ -50,18 +51,12 @@ namespace Nijo.Models.WriteModel2Features {
                 /// 既存の{{_rootAggregate.Item.DisplayName}}を更新します。
                 /// </summary>
                 public virtual void {{MethodName}}({{argType}} after, {{SaveContext.BEFORE_SAVE}}<{{dataClass.ErrorDataCsClassName}}> saveContext) {
-                    var afterDbEntity = after.{{DataClassForSaveBase.VALUES_CS}}.{{DataClassForSave.TO_DBENTITY}}();
-                    afterDbEntity.{{EFCoreEntity.VERSION}} = after.{{DataClassForSaveBase.VERSION_CS}};
-
                     // 更新に必要な項目が空の場合は処理中断
                 {{keys.SelectTextTemplate(k => $$"""
-                    if (afterDbEntity.{{k.DbEntityFullPath.Join("?.")}} == null) {
+                    if (after.{{DataClassForSaveBase.VALUES_CS}}.{{k.SaveCommandFullPath.Join("?.")}} == null) {
                         saveContext.Errors.{{k.ErrorFullPath.Join(".")}}.Add("{{k.MemberName}}が空です。");
                     }
                 """)}}
-                    if (afterDbEntity.{{EFCoreEntity.VERSION}} == null) {
-                        saveContext.Errors.Add("更新時は更新前データのバージョンを指定する必要があります。");
-                    }
                     if (saveContext.Errors.HasError()) {
                         return;
                     }
@@ -69,7 +64,7 @@ namespace Nijo.Models.WriteModel2Features {
                     #pragma warning disable CS8602 // null 参照の可能性があるものの逆参照です。
                     // 更新前データ取得
                 {{keys.SelectTextTemplate(k => $$"""
-                    var {{k.TempVarName}} = afterDbEntity.{{k.DbEntityFullPath.Join("!.")}};
+                    var {{k.TempVarName}} = after.{{DataClassForSaveBase.VALUES_CS}}.{{k.SaveCommandFullPath.Join(".")}};
                 """)}}
 
                     var beforeDbEntity = {{appSrv.DbContext}}.{{efCoreEntity.DbSetName}}
@@ -84,6 +79,11 @@ namespace Nijo.Models.WriteModel2Features {
                         saveContext.Errors.Add("更新対象のデータが見つかりません。");
                         return;
                     }
+
+                    var afterDbEntity = after.{{DataClassForSaveBase.VALUES_CS}}.{{DataClassForSave.TO_DBENTITY}}();
+                    afterDbEntity.{{EFCoreEntity.VERSION}} = after.{{DataClassForSaveBase.VERSION_CS}};
+
+                    // 楽観排他制御（なおこことは別に、SQL発行時にEntityFramework側でも重ねて楽観排他の確認がなされる）
                     if (beforeDbEntity.{{EFCoreEntity.VERSION}} != afterDbEntity.{{EFCoreEntity.VERSION}}) {
                         saveContext.Errors.Add("ほかのユーザーが更新しました。");
                         return;

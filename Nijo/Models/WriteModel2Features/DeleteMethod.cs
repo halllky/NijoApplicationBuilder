@@ -39,6 +39,7 @@ namespace Nijo.Models.WriteModel2Features {
                     TempVarName = $"searchKey{i + 1}",
                     vm.MemberName,
                     DbEntityFullPath = vm.Declared.GetFullPathAsDbEntity().ToArray(),
+                    SaveCommandFullPath = vm.Declared.GetFullPathAsForSave(),
                     ErrorFullPath = vm.Declared.Owner.IsOutOfEntryTree()
                         ? vm.Declared.Owner.GetRefEntryEdge().Terminal.GetFullPathAsForSave()
                         : vm.Declared.GetFullPathAsForSave(),
@@ -50,26 +51,20 @@ namespace Nijo.Models.WriteModel2Features {
                 /// 既存の{{_rootAggregate.Item.DisplayName}}を削除します。
                 /// </summary>
                 public virtual void {{MethodName}}({{argType}} after, {{SaveContext.BEFORE_SAVE}}<{{dataClass.ErrorDataCsClassName}}> saveContext) {
-                    var afterDbEntity = after.{{DataClassForSaveBase.VALUES_CS}}.{{DataClassForSave.TO_DBENTITY}}();
-                    afterDbEntity.{{EFCoreEntity.VERSION}} = after.{{DataClassForSaveBase.VERSION_CS}};
-
-                    // 更新に必要な項目が空の場合は処理中断
+                    // 削除に必要な項目が空の場合は処理中断
                 {{keys.SelectTextTemplate(k => $$"""
-                    if (afterDbEntity.{{k.DbEntityFullPath.Join("?.")}} == null) {
+                    if (after.{{DataClassForSaveBase.VALUES_CS}}.{{k.SaveCommandFullPath.Join("?.")}} == null) {
                         saveContext.Errors.{{k.ErrorFullPath.Join(".")}}.Add("{{k.MemberName}}が空です。");
                     }
                 """)}}
-                    if (afterDbEntity.{{EFCoreEntity.VERSION}} == null) {
-                        saveContext.Errors.Add("更新時は更新前データのバージョンを指定する必要があります。");
-                    }
                     if (saveContext.Errors.HasError()) {
                         return;
                     }
 
                     #pragma warning disable CS8602 // null 参照の可能性があるものの逆参照です。
-                    // 更新前データ取得
+                    // 削除前データ取得
                 {{keys.SelectTextTemplate(k => $$"""
-                    var {{k.TempVarName}} = afterDbEntity.{{k.DbEntityFullPath.Join(".")}};
+                    var {{k.TempVarName}} = after.{{DataClassForSaveBase.VALUES_CS}}.{{k.SaveCommandFullPath.Join(".")}};
                 """)}}
 
                     var beforeDbEntity = {{appSrv.DbContext}}.{{efCoreEntity.DbSetName}}
@@ -83,19 +78,24 @@ namespace Nijo.Models.WriteModel2Features {
                         saveContext.Errors.Add("削除対象のデータが見つかりません。");
                         return;
                     }
+
+                    var afterDbEntity = after.{{DataClassForSaveBase.VALUES_CS}}.{{DataClassForSave.TO_DBENTITY}}();
+                    afterDbEntity.{{EFCoreEntity.VERSION}} = after.{{DataClassForSaveBase.VERSION_CS}};
+
+                    // 楽観排他制御（なおこことは別に、SQL発行時にEntityFramework側でも重ねて楽観排他の確認がなされる）
                     if (beforeDbEntity.{{EFCoreEntity.VERSION}} != afterDbEntity.{{EFCoreEntity.VERSION}}) {
                         saveContext.Errors.Add("ほかのユーザーが更新しました。");
                         return;
                     }
 
-                    // 更新前処理。入力検証や自動補完項目の設定を行う。
+                    // 削除前処理。入力検証や自動補完項目の設定を行う。
                     {{BeforeMethodName}}(beforeDbEntity, afterDbEntity, saveContext);
 
                     // エラーやコンファームがある場合は処理中断
                     if (saveContext.Errors.HasError()) return;
                     if (!saveContext.Options.IgnoreConfirm && saveContext.HasConfirm()) return;
 
-                    // 更新実行
+                    // 削除実行
                     try {
                         {{appSrv.DbContext}}.Remove(beforeDbEntity);
                         {{appSrv.DbContext}}.SaveChanges();
@@ -104,23 +104,23 @@ namespace Nijo.Models.WriteModel2Features {
                         return;
                     }
 
-                    // 更新後処理
+                    // 削除後処理
                     var afterSaveContext = new {{dataClass.AfterSaveContextCsClassName}}();
                     {{AfterMethodName}}(beforeDbEntity, afterDbEntity, afterSaveContext);
                 }
 
                 /// <summary>
-                /// {{_rootAggregate.Item.DisplayName}}の更新前に実行されます。
+                /// {{_rootAggregate.Item.DisplayName}}の削除前に実行されます。
                 /// エラーチェック、ワーニング、自動算出項目の設定などを行います。
                 /// </summary>
                 protected virtual void {{BeforeMethodName}}({{efCoreEntity.ClassName}} beforeDbEntity, {{efCoreEntity.ClassName}} afterDbEntity, {{SaveContext.BEFORE_SAVE}}<{{dataClass.ErrorDataCsClassName}}> context) {
                     // このメソッドをオーバーライドしてエラーチェック等を記述してください。
                 }
                 /// <summary>
-                /// {{_rootAggregate.Item.DisplayName}}の更新SQL発行後、コミット前に実行されます。
+                /// {{_rootAggregate.Item.DisplayName}}の削除SQL発行後、コミット前に実行されます。
                 /// </summary>
                 protected virtual void {{AfterMethodName}}({{efCoreEntity.ClassName}} beforeDbEntity, {{efCoreEntity.ClassName}} afterDbEntity, {{dataClass.AfterSaveContextCsClassName}} context) {
-                    // このメソッドをオーバーライドして必要な更新後処理を記述してください。
+                    // このメソッドをオーバーライドして必要な削除後処理を記述してください。
                 }
                 """;
         }
