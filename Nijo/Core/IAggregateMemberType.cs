@@ -305,7 +305,7 @@ namespace Nijo.Core {
             foreach (var p in Props) {
                 if (p.Value == string.Empty)
                     yield return $" {p.Key}";
-                else if (p.Value.StartsWith("\"") && p.Value.EndsWith("\""))
+                else if (p.Value.StartsWith('\"') && p.Value.EndsWith('\"'))
                     yield return $" {p.Key}={p.Value}";
                 else
                     yield return $" {p.Key}={{{p.Value}}}";

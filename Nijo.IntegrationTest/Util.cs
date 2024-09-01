@@ -47,7 +47,7 @@ namespace Nijo.IntegrationTest {
 
             public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) {
                 var scope = string.Concat(_scope.Reverse().Select(x => $"{x} => "));
-                TestContext.WriteLine($"{DateTime.Now:g}\t[{logLevel}]\t{scope}{formatter(state, exception)}");
+                TestContext.Out.WriteLine($"{DateTime.Now:g}\t[{logLevel}]\t{scope}{formatter(state, exception)}");
             }
 
             #region スコープ
@@ -156,10 +156,10 @@ namespace Nijo.IntegrationTest {
 
                 process.StartInfo.RedirectStandardError = true;
                 process.ErrorDataReceived += (s, e) => {
-                    TestContext.WriteLine($"ERROR!!: {e.Data}");
+                    TestContext.Out.WriteLine($"ERROR!!: {e.Data}");
                 };
 
-                _logger.LogInformation("npm ci のかわりに右記ディレクトリからのコピーを行います: {0}", reactTemplateDirNodeModules);
+                _logger.LogInformation("npm ci のかわりに右記ディレクトリからのコピーを行います: {dirName}", reactTemplateDirNodeModules);
                 process.Start();
                 process.BeginErrorReadLine();
 
@@ -182,11 +182,13 @@ namespace Nijo.IntegrationTest {
 
         #region NUnit
         internal static string ToJson(this object obj) {
-            return JsonSerializer.Serialize(obj, new JsonSerializerOptions {
+            var options = _cachedOptions ??= new JsonSerializerOptions {
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All),
                 WriteIndented = true,
-            });
+            };
+            return JsonSerializer.Serialize(obj, options);
         }
+        private static JsonSerializerOptions? _cachedOptions;
 
         internal static async Task<string> ReadAsJsonAsync(this HttpContent httpContent) {
             var str = await httpContent.ReadAsStringAsync();
