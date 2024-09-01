@@ -103,14 +103,6 @@ namespace Nijo.Parts {
                     return item;
                 }
             }
-            public void UseAggregateFile(GraphNode<Aggregate> aggregate, Action<AggregateFile> fn) {
-                if (!_itemsByAggregate.TryGetValue(aggregate, out var item)) {
-                    item = new AggregateFile(aggregate);
-                    _itemsByAggregate.Add(aggregate, item);
-                    _context.UseSummarizedFile(item);
-                }
-                fn(item);
-            }
             internal readonly Dictionary<GraphNode<Aggregate>, AggregateFile> _itemsByAggregate = new();
 
             internal EnumDefs Enums => _context.UseSummarizedFile<EnumDefs>();
@@ -118,9 +110,6 @@ namespace Nijo.Parts {
             public ApplicationService AppSrvMethods => _context.UseSummarizedFile<ApplicationService>();
 
             public List<Func<string, string>> ConfigureServices { get; } = new List<Func<string, string>>();
-
-            public List<Func<string, string>> DbContextOnModelCreating { get; } = new List<Func<string, string>>();
-            public Dictionary<string, string> DbSetPropNameAndClassName { get; } = new();
         }
     }
 }

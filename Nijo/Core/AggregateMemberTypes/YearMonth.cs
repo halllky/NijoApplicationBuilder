@@ -9,11 +9,18 @@ namespace Nijo.Core.AggregateMemberTypes {
     internal class YearMonth : SchalarMemberType {
 
         public override void GenerateCode(CodeRenderingContext context) {
+            // クラス定義
             context.CoreLibrary.UtilDir(dir => {
                 dir.Generate(Parts.Utility.RuntimeYearMonthClass.RenderDeclaring());
             });
+
+            // JavaScriptとC#の間の変換
             var util = context.UseSummarizedFile<Parts.Utility.UtilityClass>();
             util.AddJsonConverter(Parts.Utility.RuntimeYearMonthClass.GetCustomJsonConverter());
+
+            // C#とDBの間の変換
+            var dbContext = context.UseSummarizedFile<Parts.WebServer.DbContextClass>();
+            dbContext.AddOnModelCreatingPropConverter(Parts.Utility.RuntimeYearMonthClass.CLASS_NAME, Parts.Utility.RuntimeYearMonthClass.EFCoreConverterClassFullName);
         }
 
         public override string GetCSharpTypeName() => Parts.Utility.RuntimeYearMonthClass.CLASS_NAME;

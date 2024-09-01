@@ -27,8 +27,10 @@ namespace Nijo.Models {
                 // データ型: EFCore Entity
                 var efCoreEntity = new EFCoreEntity(agg);
                 aggregateFile.DataClassDeclaring.Add(efCoreEntity.Render(context));
-                context.CoreLibrary.DbSetPropNameAndClassName.Add(efCoreEntity.DbSetName, efCoreEntity.ClassName);
-                context.CoreLibrary.DbContextOnModelCreating.Add(efCoreEntity.RenderCallingOnModelCreating(context));
+
+                var dbContext = context.UseSummarizedFile<Parts.WebServer.DbContextClass>();
+                dbContext.AddDbSet(efCoreEntity.ClassName, efCoreEntity.DbSetName);
+                dbContext.AddOnModelCreating(efCoreEntity.RenderCallingOnModelCreating(context));
 
                 // データ型: DataClassForNewItem
                 var dataClassForNewItem = new DataClassForSave(agg, DataClassForSave.E_Type.Create);

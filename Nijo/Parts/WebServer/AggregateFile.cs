@@ -14,10 +14,6 @@ namespace Nijo.Parts.WebServer {
         }
         private readonly GraphNode<Aggregate> _aggregate;
 
-        // DbContext
-        public bool HasDbSet { get; set; }
-        public List<Func<string, string>> OnModelCreating { get; } = new();
-
         // AggregateRenderer
         public List<string> ControllerActions { get; } = new();
         public List<string> AppServiceMethods { get; } = new();
@@ -103,23 +99,6 @@ namespace Nijo.Parts.WebServer {
 
                     """)}}
                     #endregion データ構造クラス
-                    }
-
-                    namespace {{context.Config.DbContextNamespace}} {
-                        using {{context.Config.RootNamespace}};
-                        using Microsoft.EntityFrameworkCore;
-
-                        partial class {{context.Config.DbContextName}} {
-                    {{If(HasDbSet, () => _aggregate.EnumerateThisAndDescendants().SelectTextTemplate(agg => $$"""
-                            public virtual DbSet<{{agg.Item.EFCoreEntityClassName}}> {{agg.Item.DbSetName}} { get; set; }
-                    """))}}
-
-                    {{If(OnModelCreating.Any(), () => $$"""
-                            private void OnModelCreating_{{_aggregate.Item.PhysicalName}}(ModelBuilder modelBuilder) {
-                                {{WithIndent(OnModelCreating.SelectTextTemplate(fn => fn.Invoke("modelBuilder")), "            ")}}
-                            }
-                    """)}}
-                        }
                     }
                     """,
             };

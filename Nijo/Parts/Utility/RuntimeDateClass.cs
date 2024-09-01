@@ -11,6 +11,8 @@ namespace Nijo.Parts.Utility {
     /// </summary>
     internal class RuntimeDateClass {
         internal const string CLASS_NAME = "Date";
+
+        internal static string EFCoreConverterClassFullName => $"{CLASS_NAME}.{EFCORE_CONVERTER}";
         private const string EFCORE_CONVERTER = "EFCoreDateConverter";
 
         internal static SourceFile RenderDeclaring() => new() {
@@ -125,8 +127,8 @@ namespace Nijo.Parts.Utility {
                 """,
         };
 
-        internal static string RenderEFCoreConversion(string modelBuilder) {
-            return $$"""
+        internal static Func<string, string> RenderEFCoreConversion() {
+            return modelBuilder => $$"""
                 foreach (var entityType in {{modelBuilder}}.Model.GetEntityTypes()) {
                     foreach (var property in entityType.GetProperties()) {
                         if (property.ClrType == typeof({{CLASS_NAME}})) {
