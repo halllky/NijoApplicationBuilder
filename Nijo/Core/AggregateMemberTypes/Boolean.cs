@@ -14,12 +14,6 @@ namespace Nijo.Core.AggregateMemberTypes {
         public string GetCSharpTypeName() => "bool";
         public string GetTypeScriptTypeName() => "boolean";
 
-        public ReactInputComponent GetReactComponent() {
-            return new ReactInputComponent {
-                Name = "Input.CheckBox",
-            };
-        }
-
         public IGridColumnSetting GetGridColumnEditSetting() {
             return new ComboboxColumnSetting {
                 OptionItemTypeName = $"{{ key: 'T' | 'F', text: string }}",
@@ -98,19 +92,17 @@ namespace Nijo.Core.AggregateMemberTypes {
         }
 
         string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
-            var component = GetReactComponent();
             var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
             return $$"""
-                <Input.Selection {...{{ctx.Register}}(`{{fullpath}}`)}{{component.GetPropsStatement().Join("")}} options={['Trueのみ', 'Falseのみ', '指定なし']} textSelector={item => item} />
+                <Input.Selection {...{{ctx.Register}}(`{{fullpath}}`)} options={['Trueのみ', 'Falseのみ', '指定なし']} textSelector={item => item} />
                 """;
         }
 
         string IAggregateMemberType.RenderSingleViewVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
-            var component = GetReactComponent();
             var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
             var readOnly = ctx.RenderReadOnlyStatement(vm.Declared);
             return $$"""
-                <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}`)}{{component.GetPropsStatement().Join("")}} {{readOnly}}/>
+                <Input.CheckBox {...{{ctx.Register}}(`{{fullpath}}`)} {{readOnly}}/>
                 {{ctx.RenderErrorMessage(vm)}}
                 """;
         }

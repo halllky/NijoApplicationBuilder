@@ -9,7 +9,6 @@ namespace Nijo.Core {
     public sealed class MemberTypeResolver {
         public static MemberTypeResolver Default() {
             var resolver = new MemberTypeResolver()
-                .Register(TYPE_ID, new Id())
                 .Register(TYPE_UUID, new Uuid())
                 .Register(TYPE_WORD, new Word())
                 .Register(TYPE_SENTENCE, new Sentence())
@@ -23,7 +22,6 @@ namespace Nijo.Core {
                 .Register(TYPE_DATETIME, new YearMonthDayTime());
             return resolver;
         }
-        internal const string TYPE_ID = "id";
         internal const string TYPE_UUID = "uuid";
         internal const string TYPE_WORD = "word";
         internal const string TYPE_SENTENCE = "sentence";

@@ -8,5 +8,6 @@ using System.Threading.Tasks;
 namespace Nijo.Core.AggregateMemberTypes {
     public class Uuid : StringMemberType {
         protected override E_SearchBehavior SearchBehavior => E_SearchBehavior.Strict;
+        protected override string ReactComponentName => "Input.Word";
     }
 }

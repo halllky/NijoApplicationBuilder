@@ -16,10 +16,6 @@ namespace Nijo.Core {
         string GetTypeScriptTypeName();
 
         /// <summary>
-        /// 詳細画面用のReactの入力コンポーネントを設定するコードの詳細を行います。
-        /// </summary>
-        ReactInputComponent GetReactComponent();
-        /// <summary>
         /// グリッド用のReactの入力コンポーネントを設定するコードの詳細を行います。
         /// </summary>
         IGridColumnSetting GetGridColumnEditSetting();
@@ -95,16 +91,16 @@ namespace Nijo.Core {
         /// 既定値は <see cref="E_SearchBehavior.PartialMatch"/>
         /// </summary>
         protected virtual E_SearchBehavior SearchBehavior { get; } = E_SearchBehavior.PartialMatch;
+        /// <summary>
+        /// 入力に使われる React コンポーネントの名前
+        /// </summary>
+        protected abstract string ReactComponentName { get; }
 
         public virtual string GetCSharpTypeName() => "string";
         public virtual string GetTypeScriptTypeName() => "string";
 
         public virtual string GetSearchConditionCSharpType() => "string";
         public virtual string GetSearchConditionTypeScriptType() => "string";
-
-        public virtual ReactInputComponent GetReactComponent() {
-            return new ReactInputComponent { Name = "Input.Word" };
-        }
 
         public virtual IGridColumnSetting GetGridColumnEditSetting() {
             return new TextColumnSetting {
@@ -149,8 +145,6 @@ namespace Nijo.Core {
         }
 
         string IAggregateMemberType.RenderSingleViewVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
-            var component = GetReactComponent();
-
             var attrs = new List<string>();
             var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
             attrs.Add($"{{...{ctx.Register}(`{fullpath}`)}}");
@@ -160,7 +154,7 @@ namespace Nijo.Core {
             if (vm.Options.UiWidth != null) attrs.Add($"className=\"min-w-[{vm.Options.UiWidth.GetCssValue()}]\"");
 
             return $$"""
-                <{{component.Name}} {{attrs.Join(" ")}}/>
+                <{{ReactComponentName}} {{attrs.Join(" ")}}/>
                 {{ctx.RenderErrorMessage(vm)}}
                 """;
         }
@@ -210,7 +204,6 @@ namespace Nijo.Core {
         }
 
         public abstract IGridColumnSetting GetGridColumnEditSetting();
-        public abstract ReactInputComponent GetReactComponent();
 
         string IAggregateMemberType.RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition, E_SearchConditionObject searchConditionObject, E_SearchQueryObject searchQueryObject) {
             var pathFromSearchCondition = searchConditionObject == E_SearchConditionObject.SearchCondition
@@ -291,27 +284,6 @@ namespace Nijo.Core {
         }
     }
 
-    /// <summary>
-    /// 詳細画面用のReactの入力コンポーネント
-    /// </summary>
-    public sealed class ReactInputComponent {
-        public required string Name { get; init; }
-        public Dictionary<string, string> Props { get; init; } = [];
-
-        /// <summary>
-        /// <see cref="Props"/> をReactのコンポーネントのレンダリングの呼び出し時用の記述にして返す
-        /// </summary>
-        internal IEnumerable<string> GetPropsStatement() {
-            foreach (var p in Props) {
-                if (p.Value == string.Empty)
-                    yield return $" {p.Key}";
-                else if (p.Value.StartsWith('\"') && p.Value.EndsWith('\"'))
-                    yield return $" {p.Key}={p.Value}";
-                else
-                    yield return $" {p.Key}={{{p.Value}}}";
-            }
-        }
-    }
     /// <summary>
     /// グリッド用のReactの入力コンポーネントの設定
     /// </summary>

@@ -156,7 +156,6 @@ namespace Nijo.Models.WriteModel2Features {
                     var dummyValue = schalar.Options.MemberType switch {
                         Core.AggregateMemberTypes.Boolean => "true",
                         EnumList enumList => RandomEnum(enumList, random),
-                        Id => $"'{random.Next(99999999):00000000}'",
                         Integer => random.Next(999999).ToString(),
                         Numeric => $"{random.Next(999999)}.{random.Next(0, 99)}",
                         Sentence => "'XXXXXXXXXXXXXX\\nXXXXXXXXXXXXXX'",

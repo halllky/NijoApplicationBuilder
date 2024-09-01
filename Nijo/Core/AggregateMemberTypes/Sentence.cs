@@ -7,8 +7,6 @@ using System.Threading.Tasks;
 
 namespace Nijo.Core.AggregateMemberTypes {
     public class Sentence : StringMemberType {
-        public override ReactInputComponent GetReactComponent() {
-            return new ReactInputComponent { Name = "Input.Description" };
-        }
+        protected override string ReactComponentName => "Input.Description";
     }
 }

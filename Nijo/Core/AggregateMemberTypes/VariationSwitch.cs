@@ -26,18 +26,6 @@ namespace Nijo.Core.AggregateMemberTypes {
                 .Join(" | ");
         }
 
-        public ReactInputComponent GetReactComponent() {
-            var props = new Dictionary<string, string> {
-                { "options", $"[{_variationGroup.VariationAggregates.Select(kv => $"'{kv.Value.RelationName}' as const").Join(", ")}]" },
-                { "textSelector", "item => item" },
-            };
-
-            return new ReactInputComponent {
-                Name = "Input.Selection",
-                Props = props,
-            };
-        }
-
         public IGridColumnSetting GetGridColumnEditSetting() {
             return new ComboboxColumnSetting {
                 OptionItemTypeName = _variationGroup.VariationAggregates.Select(kv => $"'{kv.Value.RelationName}'").Join(" | "),
@@ -130,7 +118,6 @@ namespace Nijo.Core.AggregateMemberTypes {
         }
 
         string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
-            var component = GetReactComponent();
             var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
             return $$"""
                 <div className="flex flex-wrap gap-x-2 gap-y-1">
@@ -142,11 +129,16 @@ namespace Nijo.Core.AggregateMemberTypes {
         }
 
         string IAggregateMemberType.RenderSingleViewVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
-            var component = GetReactComponent();
             var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
-            var readOnly = ctx.RenderReadOnlyStatement(vm.Declared);
+
+            var attrs = new List<string> {
+                $"options={{[{_variationGroup.VariationAggregates.Select(kv => $"'{kv.Value.RelationName}' as const").Join(", ")}]}} ",
+                $"textSelector={{item => item}} ",
+                $"{ctx.RenderReadOnlyStatement(vm.Declared)} ", // readonly
+            };
+
             return $$"""
-                <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}`)}{{component.GetPropsStatement().Join("")}} {{readOnly}}/>
+                <Input.Selection {...{{ctx.Register}}(`{{fullpath}}`)} {{attrs.Join("")}}/>
                 {{ctx.RenderErrorMessage(vm)}}
                 """;
         }

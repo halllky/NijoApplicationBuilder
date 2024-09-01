@@ -9,13 +9,6 @@ namespace Nijo.Core.AggregateMemberTypes {
         public override string GetCSharpTypeName() => "int";
         public override string GetTypeScriptTypeName() => "number";
 
-        public override ReactInputComponent GetReactComponent() {
-            return new ReactInputComponent {
-                Name = "Input.YearMonth",
-                Props = { ["className"] = "\"w-20\"" },
-            };
-        }
-
         protected override string ComponentName => "Input.YearMonth";
         protected override IEnumerable<string> RenderAttributes() {
             yield return $"className=\"w-20\"";

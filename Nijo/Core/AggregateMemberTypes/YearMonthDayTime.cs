@@ -9,12 +9,6 @@ namespace Nijo.Core.AggregateMemberTypes {
         public override string GetCSharpTypeName() => "DateTime";
         public override string GetTypeScriptTypeName() => "string";
 
-        public override ReactInputComponent GetReactComponent() {
-            return new ReactInputComponent {
-                Name = "Input.DateTime",
-            };
-        }
-
         protected override string ComponentName => "Input.DateTime";
         protected override IEnumerable<string> RenderAttributes() {
             yield return $"className=\"w-48\"";
