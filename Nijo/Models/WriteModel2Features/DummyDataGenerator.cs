@@ -158,14 +158,18 @@ namespace Nijo.Models.WriteModel2Features {
                         EnumList enumList => RandomEnum(enumList, random),
                         Integer => random.Next(999999).ToString(),
                         Numeric => $"{random.Next(999999)}.{random.Next(0, 99)}",
-                        Sentence => "'XXXXXXXXXXXXXX\\nXXXXXXXXXXXXXX'",
+                        Sentence => schalar.IsKey
+                            ? $"'SENTENCE-{random.Next(999999999)}'"
+                            : $"'XXXXXXXXXXXXXX\\nXXXXXXXXXXXXXX'",
                         Year => random.Next(1990, 2040).ToString(),
                         YearMonth => $"{random.Next(1990, 2040):0000}{random.Next(1, 12):00}",
                         YearMonthDay => $"'{new DateTime(2000, 1, 1).AddDays(random.Next(3000)):yyyy-MM-dd}'",
                         YearMonthDayTime => $"'{new DateTime(2000, 1, 1).AddDays(random.Next(3000)):yyyy-MM-dd}'",
                         Uuid => null, // 自動生成されるので
                         VariationSwitch => null, // Variationの分岐で処理済み
-                        Word => $"'{RandomAlphabet(random, 10)}'",
+                        Word => schalar.IsKey
+                            ? $"'W-{random.Next(99999999)}'"
+                            : $"'{RandomAlphabet(random, 10)}'",
                         _ => null, // 未定義
                     };
                     return dummyValue == null
