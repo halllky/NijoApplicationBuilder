@@ -1,3 +1,4 @@
+using Nijo.Models.WriteModel2Features;
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
@@ -143,19 +144,6 @@ namespace Nijo.Core {
                         // 親は最初のループで返しているので無視
                     }
                 }
-            }
-        }
-
-        // TODO: レイヤが混在している。NavigationPropertyクラスがAggregateMemberに依存するようにすべき
-        internal static IEnumerable<NavigationProperty> GetNavigationProperties(this GraphNode<Aggregate> aggregate) {
-            foreach (var member in aggregate.GetMembers()) {
-                if (member is not RelationMember relationMember) continue;
-                yield return relationMember.GetNavigationProperty();
-            }
-
-            foreach (var refered in aggregate.GetReferedEdges()) {
-                if (!refered.Initial.IsStored()) continue;
-                yield return new NavigationProperty(refered);
             }
         }
 

@@ -84,7 +84,9 @@ namespace Nijo.Parts.WebServer {
         }
 
         private IEnumerable<string> RenderNavigationPropertyOnModelCreating(GraphNode<Aggregate> aggregate) {
-            foreach (var nav in aggregate.GetNavigationProperties()) {
+            var efCoreEntity = new Models.WriteModel2Features.EFCoreEntity(aggregate);
+
+            foreach (var nav in efCoreEntity.GetNavigationProperties()) {
 
                 if (nav.Principal.Owner != aggregate) continue;
 

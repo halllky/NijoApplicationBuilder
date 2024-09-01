@@ -51,12 +51,28 @@ namespace Nijo.Models.WriteModel2Features {
         }
 
         /// <summary>
-        /// このエンティティがもつナビゲーションプロパティを列挙します。
+        /// このエンティティがもつナビゲーションプロパティを、
+        /// このエンティティがPrincipal側かRelevant側かを考慮しつつ列挙します。
         /// </summary>
-        internal IEnumerable<NavigationProperty.PrincipalOrRelevant> GetNavigationProperties() {
-            foreach (var nav in _aggregate.GetNavigationProperties()) {
+        internal IEnumerable<NavigationProperty.PrincipalOrRelevant> GetNavigationPropertiesThisSide() {
+            foreach (var nav in GetNavigationProperties()) {
                 if (nav.Principal.Owner == _aggregate) yield return nav.Principal;
                 if (nav.Relevant.Owner == _aggregate) yield return nav.Relevant;
+            }
+        }
+        /// <summary>
+        /// このエンティティがもつナビゲーションプロパティを列挙します。
+        /// このエンティティがPrincipal側かRelevant側かは考慮しません。
+        /// </summary>
+        internal IEnumerable<NavigationProperty> GetNavigationProperties() {
+            foreach (var member in _aggregate.GetMembers()) {
+                if (member is not AggregateMember.RelationMember relationMember) continue;
+                yield return relationMember.GetNavigationProperty();
+            }
+
+            foreach (var refered in _aggregate.GetReferedEdges()) {
+                if (!refered.Initial.IsStored()) continue;
+                yield return new NavigationProperty(refered);
             }
         }
 
@@ -85,7 +101,7 @@ namespace Nijo.Models.WriteModel2Features {
                     public string? {{UPDATE_USER}} { get; set; }
                 """)}}
 
-                {{GetNavigationProperties().SelectTextTemplate(nav => $$"""
+                {{GetNavigationPropertiesThisSide().SelectTextTemplate(nav => $$"""
                     public virtual {{nav.CSharpTypeName}} {{nav.PropertyName}} { get; set; }{{nav.Initializer}}
                 """)}}
 
@@ -131,7 +147,7 @@ namespace Nijo.Models.WriteModel2Features {
         /// ナビゲーションプロパティの Fluent API 定義
         /// </summary>
         private IEnumerable<string> RenderNavigationPropertyOnModelCreating() {
-            foreach (var nav in _aggregate.GetNavigationProperties()) {
+            foreach (var nav in GetNavigationProperties()) {
 
                 if (nav.Principal.Owner != _aggregate) continue;
 
