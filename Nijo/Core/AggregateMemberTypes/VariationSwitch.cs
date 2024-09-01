@@ -16,8 +16,6 @@ namespace Nijo.Core.AggregateMemberTypes {
         }
         private readonly VariationGroup<Aggregate> _variationGroup;
 
-        public SearchBehavior SearchBehavior => SearchBehavior.Strict;
-
         private string CsEnumTypeName => _variationGroup.CsEnumType;
         public string GetCSharpTypeName() => CsEnumTypeName;
 

@@ -12,11 +12,6 @@ using System.Threading.Tasks;
 
 namespace Nijo.Core {
     internal interface IAggregateMemberType {
-        /// <summary>
-        /// TODO: 廃止予定
-        /// </summary>
-        SearchBehavior SearchBehavior { get; }
-
         string GetCSharpTypeName();
         string GetTypeScriptTypeName();
 
@@ -100,12 +95,6 @@ namespace Nijo.Core {
         /// 既定値は <see cref="E_SearchBehavior.PartialMatch"/>
         /// </summary>
         protected virtual E_SearchBehavior SearchBehavior { get; } = E_SearchBehavior.PartialMatch;
-        SearchBehavior IAggregateMemberType.SearchBehavior => SearchBehavior switch {
-            E_SearchBehavior.PartialMatch => Core.SearchBehavior.PartialMatch,
-            E_SearchBehavior.ForwardMatch => Core.SearchBehavior.ForwardMatch,
-            E_SearchBehavior.BackwardMatch => Core.SearchBehavior.BackwardMatch,
-            _ => Core.SearchBehavior.Strict,
-        };
 
         public virtual string GetCSharpTypeName() => "string";
         public virtual string GetTypeScriptTypeName() => "string";
@@ -207,7 +196,6 @@ namespace Nijo.Core {
     /// 数値や日付など連続した量をもつ値
     /// </summary>
     public abstract class SchalarMemberType : IAggregateMemberType {
-        public SearchBehavior SearchBehavior => SearchBehavior.Range;
 
         public abstract string GetCSharpTypeName();
         public abstract string GetTypeScriptTypeName();
@@ -303,42 +291,6 @@ namespace Nijo.Core {
         }
     }
 
-    /// <summary>
-    /// 検索処理の挙動
-    /// </summary>
-    public enum SearchBehavior {
-        /// <summary>
-        /// 完全一致。
-        /// 発行されるSQL文: WHERE DBの値 = 検索条件
-        /// </summary>
-        Strict,
-        /// <summary>
-        /// 部分一致。
-        /// 発行されるSQL文: WHERE DBの値 LIKE '%検索条件%'
-        /// </summary>
-        PartialMatch,
-        /// <summary>
-        /// 前方一致。
-        /// 発行されるSQL文: WHERE DBの値 LIKE '検索条件%'
-        /// </summary>
-        ForwardMatch,
-        /// <summary>
-        /// 後方一致。
-        /// 発行されるSQL文: WHERE DBの値 LIKE '%検索条件'
-        /// </summary>
-        BackwardMatch,
-        /// <summary>
-        /// 範囲検索。
-        /// 発行されるSQL文: WHERE DBの値 >= 検索条件.FROM
-        ///                AND   DBの値 <= 検索条件.TO
-        /// </summary>
-        Range,
-        /// <summary>
-        /// 列挙体など。
-        /// 発行されるSQL文: WHERE DBの値 IN (画面で選択された値1, 画面で選択された値2, ...)
-        /// </summary>
-        Contains,
-    }
     /// <summary>
     /// 詳細画面用のReactの入力コンポーネント
     /// </summary>

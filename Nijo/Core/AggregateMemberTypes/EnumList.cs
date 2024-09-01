@@ -17,7 +17,6 @@ namespace Nijo.Core.AggregateMemberTypes {
         }
         public EnumDefinition Definition { get; }
 
-        public SearchBehavior SearchBehavior => SearchBehavior.Strict;
         public string GetCSharpTypeName() => Definition.Name;
         public string GetTypeScriptTypeName() {
             return Definition.Items.Select(x => $"'{x.PhysicalName}'").Join(" | ");

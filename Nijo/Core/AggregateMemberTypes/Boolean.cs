@@ -13,7 +13,6 @@ namespace Nijo.Core.AggregateMemberTypes {
     internal class Boolean : IAggregateMemberType {
         public string GetCSharpTypeName() => "bool";
         public string GetTypeScriptTypeName() => "boolean";
-        public SearchBehavior SearchBehavior => SearchBehavior.Strict;
 
         public ReactInputComponent GetReactComponent() {
             return new ReactInputComponent {
