@@ -43,6 +43,8 @@ namespace Nijo.Parts.WebServer {
                     {{ctx.CoreLibrary.DbContextOnModelCreating.SelectTextTemplate(fn => $$"""
                                 {{WithIndent(fn("modelBuilder"), "            ")}}
                     """)}}
+                                {{WithIndent(Parts.Utility.RuntimeDateClass.RenderEFCoreConversion("modelBuilder"), "            ")}}
+                                {{WithIndent(Parts.Utility.RuntimeYearMonthClass.RenderEFCoreConversion("modelBuilder"), "            ")}}
                             }
 
                             /// <inheritdoc />

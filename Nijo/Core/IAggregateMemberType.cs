@@ -191,6 +191,8 @@ namespace Nijo.Core {
     /// </summary>
     public abstract class SchalarMemberType : IAggregateMemberType {
 
+        public virtual void GenerateCode(CodeRenderingContext context) { }
+
         public abstract string GetCSharpTypeName();
         public abstract string GetTypeScriptTypeName();
 

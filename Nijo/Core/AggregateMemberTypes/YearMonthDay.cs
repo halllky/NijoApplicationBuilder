@@ -1,3 +1,4 @@
+using Nijo.Util.CodeGenerating;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +7,16 @@ using System.Threading.Tasks;
 
 namespace Nijo.Core.AggregateMemberTypes {
     internal class YearMonthDay : SchalarMemberType {
-        public override string GetCSharpTypeName() => "DateTime";
+
+        public override void GenerateCode(CodeRenderingContext context) {
+            context.CoreLibrary.UtilDir(dir => {
+                dir.Generate(Parts.Utility.RuntimeDateClass.RenderDeclaring());
+            });
+            var util = context.UseSummarizedFile<Parts.Utility.UtilityClass>();
+            util.AddJsonConverter(Parts.Utility.RuntimeDateClass.GetCustomJsonConverter());
+        }
+
+        public override string GetCSharpTypeName() => Parts.Utility.RuntimeDateClass.CLASS_NAME;
         public override string GetTypeScriptTypeName() => "string";
 
         protected override string ComponentName => "Input.Date";
