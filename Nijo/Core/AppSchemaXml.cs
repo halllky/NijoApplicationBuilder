@@ -265,13 +265,6 @@ namespace Nijo.Core {
             parser.IfExists("name-like")
                 .SetMemberOption(opt => opt.IsNameLike, true, E_Priority.Force);
 
-            // uuidと役割がかぶっているので非推奨
-            parser.IfExists("id")
-                .ElementTypeIs(E_XElementType.Schalar, E_Priority.Force)
-                .SetMemberOption(opt => opt.IsPrimary, true, E_Priority.IfNotSpecified)
-                .SetMemberOption(opt => opt.IsRequired, true, E_Priority.IfNotSpecified)
-                .SetMemberOption(opt => opt.MemberType, MemberTypeResolver.TYPE_ID, E_Priority.Force);
-
             parser.IfExists("uuid")
                 .ElementTypeIs(E_XElementType.Schalar, E_Priority.Force)
                 .SetMemberOption(opt => opt.IsPrimary, true, E_Priority.IfNotSpecified)
