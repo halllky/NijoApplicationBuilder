@@ -44,8 +44,10 @@ namespace Nijo.Models.CommandModelFeatures {
                 export const {{HookName}} = (setError?: ReactHookForm.UseFormSetError<Types.{{param.TsTypeName}}>) => {
                   const { executeCommandApi, resultDetail } = {{USE_COMMAND_RESULT_PARSER}}(setError)
                 {{If(steps.Length != 0, () => $$"""
-                  const [currentStep, setCurrentStep] = useState({{steps.First()}})
-                  const allSteps = useMemo(() => [{{steps.Select(s => s.ToString()).Join(", ")}}], [])
+                  const [currentStep, setCurrentStep] = React.useState({{steps.First()}})
+                  const allSteps = React.useMemo(() => {
+                    return [{{steps.Select(s => s.ToString()).Join(", ")}}]
+                  }, [])
                   const toPreviousStep = useEvent(() => {
                 {{steps.Skip(1).SelectTextTemplate((step, i) => $$"""
                     {{(i == 0 ? "if" : "} else if")}} (currentStep === {{step}}) {

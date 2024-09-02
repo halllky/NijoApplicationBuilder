@@ -160,7 +160,7 @@ const parseUnknownErrors = (err: unknown): string[] => {
     || type === 'symbol') {
     return [String(err)]
 
-  } else if (type === 'undefined') {
+  } else if (type === 'undefined' || err === undefined) {
     return []
 
   } else if (err === null) {
@@ -170,6 +170,9 @@ const parseUnknownErrors = (err: unknown): string[] => {
     return err.flatMap(e => parseUnknownErrors(e))
 
   } else {
-    return [JSON.stringify(err)]
+    const objectErrorStr = err.toString()
+    return objectErrorStr === '[object Object]'
+      ? [JSON.stringify(err)]
+      : [objectErrorStr]
   }
 }
