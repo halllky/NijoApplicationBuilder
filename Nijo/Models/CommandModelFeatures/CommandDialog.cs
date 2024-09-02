@@ -42,25 +42,8 @@ namespace Nijo.Models.CommandModelFeatures {
                     dispatchDialog(state => state.pushDialog('{{_rootAggregate.Item.DisplayName}}', ({ closeDialog }) => {
                       const rhfMethods = Util.useFormEx<Types.{{param.TsTypeName}}>({ defaultValues: initialParam ?? Types.{{param.TsNewObjectFunction}}() })
                       const { getValues, setError, clearErrors } = rhfMethods
-                      const { launch, resultDetail } = Hooks.{{executor.HookName}}(setError)
-                {{If(steps.Length != 0, () => $$"""
-                      const [currentStep, setCurrentStep] = useState({{steps.First()}})
-                      const allSteps = useMemo(() => [{{steps.Select(s => s.ToString()).Join(", ")}}], [])
-                      const handlePreviousStep = useEvent(() => {
-                {{steps.Skip(1).SelectTextTemplate((step, i) => $$"""
-                        {{(i == 0 ? "if" : "} else if")}} (currentStep === {{step}}) {
-                          setCurrentStep({{steps.ElementAt(i)}})
-                """)}}
-                        }
-                      })
-                      const handleNextStep = useEvent(() => {
-                {{steps.SkipLast(1).SelectTextTemplate((step, i) => $$"""
-                        {{(i == 0 ? "if" : "} else if")}} (currentStep === {{step}}) {
-                          setCurrentStep({{steps.ElementAt(i + 1)}})
-                """)}}
-                        }
-                      })
-                """)}}
+                      const {{{(steps.Length != 0 ? " currentStep, allSteps, toPreviousStep, toNextStep," : "")}} launch, resultDetail } = Hooks.{{executor.HookName}}(setError)
+
                       const handleClickExec = useEvent(async () => {
                         clearErrors()
                         const finish = await launch(getValues())
@@ -82,14 +65,14 @@ namespace Nijo.Models.CommandModelFeatures {
                 {{If(steps.Length == 0, () => $$"""
                                 <Input.IconButton fill onClick={handleClickExec}>実行</Input.IconButton>
                 """).Else(() => $$"""
-                                <Input.IconButton outline onClick={handlePreviousStep} className={(currentStep === {{steps.First()}} ? 'invisible' : '')}>戻る</Input.IconButton>
+                                <Input.IconButton outline onClick={toPreviousStep} className={(currentStep === {{steps.First()}} ? 'invisible' : '')}>戻る</Input.IconButton>
                                 <div className="flex-1 flex justify-center items-center">
                                   <Input.WizardStepIndicator currentStep={currentStep} allSteps={allSteps} />
                                 </div>
                                 {currentStep === {{steps.Last()}} ? (
                                   <Input.IconButton fill onClick={handleClickExec}>実行</Input.IconButton>
                                 ) : (
-                                  <Input.IconButton outline onClick={handleNextStep}>次へ</Input.IconButton>
+                                  <Input.IconButton outline onClick={toNextStep}>次へ</Input.IconButton>
                                 )}
                 """)}}
                               </div>

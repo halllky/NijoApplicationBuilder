@@ -31,20 +31,55 @@ namespace Nijo.Models.CommandModelFeatures {
 
         internal string RenderHook(CodeRenderingContext context) {
             var param = new CommandParameter(_rootAggregate);
+            var steps = _rootAggregate
+                .GetMembers()
+                .OfType<AggregateMember.RelationMember>()
+                .Where(m => m.MemberAggregate.Item.Options.Step != null)
+                .Select(m => m.MemberAggregate.Item.Options.Step!.Value)
+                .OrderBy(step => step)
+                .ToArray();
 
             return $$"""
                 /** {{_rootAggregate.Item.DisplayName}}処理を呼び出す関数を返します。 */
                 export const {{HookName}} = (setError?: ReactHookForm.UseFormSetError<Types.{{param.TsTypeName}}>) => {
                   const { executeCommandApi, resultDetail } = {{USE_COMMAND_RESULT_PARSER}}(setError)
-                  const launch = React.useCallback(async (param: Types.{{param.TsTypeName}}) => {
+                {{If(steps.Length != 0, () => $$"""
+                  const [currentStep, setCurrentStep] = useState({{steps.First()}})
+                  const allSteps = useMemo(() => [{{steps.Select(s => s.ToString()).Join(", ")}}], [])
+                  const toPreviousStep = useEvent(() => {
+                {{steps.Skip(1).SelectTextTemplate((step, i) => $$"""
+                    {{(i == 0 ? "if" : "} else if")}} (currentStep === {{step}}) {
+                      setCurrentStep({{steps.ElementAt(i)}})
+                """)}}
+                    }
+                  })
+                  const toNextStep = useEvent(() => {
+                {{steps.SkipLast(1).SelectTextTemplate((step, i) => $$"""
+                    {{(i == 0 ? "if" : "} else if")}} (currentStep === {{step}}) {
+                      setCurrentStep({{steps.ElementAt(i + 1)}})
+                """)}}
+                    }
+                  })
+                """)}}
+                  const launch = useEvent(async (param: Types.{{param.TsTypeName}}) => {
                     return await executeCommandApi({
                       url: `{{Url}}`,
                       param,
                       defaultSuccessMessage: '{{_rootAggregate.Item.DisplayName}}処理が成功しました。',
                     })
-                  }, [executeCommandApi])
+                  })
 
                   return {
+                {{If(steps.Length != 0, () => $$"""
+                    /** 現在のステップの番号 */
+                    currentStep,
+                    /** このコマンドにあるステップ番号の一覧 */
+                    allSteps,
+                    /** 前のステップに遷移します。現在が先頭のステップである場合は何も起きません。 */
+                    toPreviousStep,
+                    /** 次のステップに遷移します。現在が最後尾のステップである場合は何も起きません。 */
+                    toNextStep,
+                """)}}
                     /** コマンドを実行します。 */
                     launch,
                     /** 画面上に表示させるべき処理結果の詳細データが帰ってきた場合はこのオブジェクトに格納されます。 */
