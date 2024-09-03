@@ -71,7 +71,7 @@ namespace Nijo.Parts.WebClient.DataTable {
                 QueryKey = combo.RenderReactQueryKeyString(),
                 Query = $$"""
                     async keyword => {
-                      const response = await get<AggregateType.{{refInfo.TsTypeName}}[]>(`{{refSearch.Url}}`, { keyword })
+                      const response = await post<AggregateType.{{refInfo.TsTypeName}}[]>(`{{refSearch.Url}}`, { keyword })
                       if (!response.ok) return []
                       return response.data
                     }

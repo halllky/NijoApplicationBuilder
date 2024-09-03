@@ -90,7 +90,7 @@ namespace Nijo.Models.ReadModel2Features {
                     export default function () {
                       const [, dispatchMsg] = Util.useMsgContext()
                       const [, dispatchToast] = Util.useToastContext()
-                      const { get } = Util.useHttpRequest()
+                      const { get, post } = Util.useHttpRequest()
 
                       // 検索条件
                       const [currentPage, dispatchPaging] = useReducer(Util.pagingReducer, { pageIndex: 0 })
@@ -152,7 +152,7 @@ namespace Nijo.Models.ReadModel2Features {
                       // 列定義
                       const columnDefs: Layout.ColumnDefEx<AggregateType.{{searchResult.TsTypeName}}>[] = useMemo(() => [
                         {{WithIndent(tableBuilder.RenderColumnDef(context), "    ")}}
-                      ], [get, {{TO_DETAIL_VIEW}}])
+                      ], [get, post, {{TO_DETAIL_VIEW}}])
 
                       return (
                         <Layout.PageFrame
