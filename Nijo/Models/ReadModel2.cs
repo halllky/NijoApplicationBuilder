@@ -104,7 +104,7 @@ namespace Nijo.Models {
                         var refTarget = new RefSearchCondition.RefDescendantSearchCondition(@ref, @ref.RefTo);
                         customizer.AddCustomUi(
                             @ref.SearchConditionCustomUiComponentName,
-                            $"AggregateType.{refTarget.TsFilterTypeName} | undefined",
+                            $"AggregateType.{refTarget.TsFilterTypeName}", // 検索条件のfiterはundefinedになることはないので " | undeifned" 不要
                             []);
                     }
                 }

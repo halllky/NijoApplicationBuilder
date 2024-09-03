@@ -94,7 +94,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                       // 検索条件
                       const [currentPage, dispatchPaging] = useReducer(Util.pagingReducer, { pageIndex: 0 })
-                      const rhfSearchMethods = Util.useFormEx<AggregateType.{{searchCondition.TsTypeName}}>({})
+                      const rhfSearchMethods = Util.useFormEx<AggregateType.{{searchCondition.TsTypeName}}>({ defaultValues: AggregateType.{{searchCondition.CreateNewObjectFnName}}() })
                       const {
                         getValues: getConditionValues,
                         registerEx: registerExCondition,
