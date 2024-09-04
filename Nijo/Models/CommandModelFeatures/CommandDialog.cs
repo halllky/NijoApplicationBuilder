@@ -32,6 +32,10 @@ namespace Nijo.Models.CommandModelFeatures {
                 .OrderBy(step => step)
                 .ToArray();
 
+            var hookArgs = steps.Length == 0
+                ? new[] { "setError" }
+                : new[] { "getValues", "reset", "setError" };
+
             return $$"""
                 //#region {{_rootAggregate.Item.DisplayName}}ダイアログ
                 /** {{_rootAggregate.Item.DisplayName}}処理実行パラメータ入力ダイアログを開く関数を返します。 */
@@ -41,8 +45,8 @@ namespace Nijo.Models.CommandModelFeatures {
                   return React.useCallback((initialParam?: Types.{{param.TsTypeName}}) => {
                     dispatchDialog(state => state.pushDialog('{{_rootAggregate.Item.DisplayName}}', ({ closeDialog }) => {
                       const rhfMethods = Util.useFormEx<Types.{{param.TsTypeName}}>({ defaultValues: initialParam ?? Types.{{param.TsNewObjectFunction}}() })
-                      const { getValues, setError, clearErrors } = rhfMethods
-                      const {{{(steps.Length != 0 ? " currentStep, allSteps, toPreviousStep, toNextStep," : "")}} launch, resultDetail } = Hooks.{{executor.HookName}}(setError)
+                      const { getValues, setError, clearErrors, reset } = rhfMethods
+                      const {{{(steps.Length != 0 ? " currentStep, allSteps, toPreviousStep, toNextStep," : "")}} launch, resultDetail } = Hooks.{{executor.HookName}}({{hookArgs.Join(", ")}})
 
                       const handleClickExec = useEvent(async () => {
                         clearErrors()

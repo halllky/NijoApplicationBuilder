@@ -2,11 +2,17 @@
 
 <自動テストで作成されたプロジェクト>
 
+  <部署 is="write-model-2 generate-default-read-model">
+    <部署ID is="word key" />
+    <部署名 is="word" />
+  </部署>
+
   <従業員 is="write-model-2 generate-default-read-model">
     <内部ID is="uuid key" />
     <従業員コード is="word" />
     <名前 is="name" />
     <区分 is="従業員区分" />
+    <所属部署 is="ref-to:部署 search-condition-ui:部署検索条件Dialog search-condition-ui:部署Dialog" />
   </従業員>
 
   <従業員区分 is="enum">

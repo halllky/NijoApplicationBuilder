@@ -76,22 +76,6 @@ namespace Nijo.Models.CommandModelFeatures {
                         public virtual {{m.CsErrorMemberType}} {{m.MemberName}} { get; } = new();
                     """)}}
 
-                    {{If(_aggregate.IsRoot(), () => $$"""
-                        /// <summary>
-                        /// 「～ですが処理実行してよいですか？」等の確認メッセージを追加します。
-                        /// </summary>
-                        public void AddConfirm(string message) {
-                            _confirms.Add(message);
-                        }
-                        public bool HasConfirm() {
-                            return _confirms.Count > 0;
-                        }
-                        public IEnumerable<string> GetConfirms() {
-                            return _confirms;
-                        }
-                        private readonly List<string> _confirms = new();
-
-                    """)}}
                     {{If(members.Length > 0, () => $$"""
                         protected override IEnumerable<{{ErrorReceiver.RECEIVER}}> EnumerateChildren() {
                     {{members.SelectTextTemplate(m => $$"""
