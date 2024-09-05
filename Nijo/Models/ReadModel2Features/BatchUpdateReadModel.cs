@@ -42,7 +42,7 @@ namespace Nijo.Models.ReadModel2Features {
         private const string CONTROLLER_ACTION = "display-data";
 
         private const string APPSRV_CONVERT_DISP_TO_SAVE = "ConvertDisplayDataToSaveData";
-        private const string APPSRV_BATCH_UPDATE = "BatchUpdate";
+        private const string APPSRV_BATCH_UPDATE = "BatchUpdateReadModels";
 
         int ISummarizedFile.RenderingOrder => 99; // BatchUpdateのソースに一部埋め込んでいるので
         void ISummarizedFile.OnEndGenerating(CodeRenderingContext context) {
@@ -186,7 +186,7 @@ namespace Nijo.Models.ReadModel2Features {
                     }
 
                     // ----------- 一括更新実行 -----------
-                    {{BatchUpdateWriteModel.APPSRV_METHOD_PROTECTED}}(converted, saveContextState);
+                    {{BatchUpdateWriteModel.APPSRV_METHOD_PRIVATE}}(converted, saveContextState);
 
                     // ----------- エラーメッセージの転送 -----------
                     // 転送元先プロパティの設定
