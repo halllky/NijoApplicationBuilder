@@ -40,7 +40,7 @@ namespace Nijo.Parts {
                                 public static void {{CONFIGURE_SERVICES}}(IServiceCollection services) {
 
                                     // アプリケーションサービス
-                                    services.AddScoped<{{appSrv.ClassName}}, {{appSrv.ConcreteClass}}>();
+                                    services.AddScoped<{{appSrv.ConcreteClassName}}>();
 
                                     // DB接続
                                     services.AddScoped<Microsoft.EntityFrameworkCore.DbContext>(provider => {

@@ -38,7 +38,7 @@ namespace Nijo.Models.CommandModelFeatures {
                             {{sourceCode}}
 
                             """)}}
-                            partial class {{appSrv.ClassName}} {
+                            partial class {{appSrv.AbstractClassName}} {
                             {{_appSrvMethods.SelectTextTemplate(sourceCode => $$"""
                                 {{WithIndent(sourceCode, "    ")}}
 

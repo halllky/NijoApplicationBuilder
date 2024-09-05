@@ -54,12 +54,12 @@ namespace Nijo.Parts.WebServer {
                             [ApiController]
                             [Route("{{Controller.SUBDOMAIN}}/[controller]")]
                             public partial class {{controller.ClassName}} : ControllerBase {
-                                public {{controller.ClassName}}(ILogger<{{controller.ClassName}}> logger, {{appSrv.ClassName}} applicationService) {
+                                public {{controller.ClassName}}(ILogger<{{controller.ClassName}}> logger, {{appSrv.ConcreteClassName}} applicationService) {
                                     _logger = logger;
                                     _applicationService = applicationService;
                                 }
                                 protected readonly ILogger<{{controller.ClassName}}> _logger;
-                                protected readonly {{appSrv.ClassName}} _applicationService;
+                                protected readonly {{appSrv.ConcreteClassName}} _applicationService;
                         
                                 {{WithIndent(ControllerActions, "        ")}}
                             }
@@ -88,7 +88,7 @@ namespace Nijo.Parts.WebServer {
                         using Microsoft.EntityFrameworkCore.Infrastructure;
                         using {{context.Config.EntityNamespace}};
 
-                        partial class {{appSrv.ClassName}} {
+                        partial class {{appSrv.AbstractClassName}} {
                             {{WithIndent(AppServiceMethods, "        ")}}
                         }
 

@@ -98,11 +98,11 @@ namespace Nijo.Models.WriteModel2Features {
                     [ApiController]
                     [Route("{{Controller.SUBDOMAIN}}/{{CONTROLLER_SUBDOMAIN}}")]
                     public partial class BatchUpdateController : ControllerBase {
-                        public BatchUpdateController({{appSrv.ClassName}} applicationService) {
+                        public BatchUpdateController({{appSrv.ConcreteClassName}} applicationService) {
                             _applicationService = applicationService;
                         }
 
-                        private readonly {{appSrv.ClassName}} _applicationService;
+                        private readonly {{appSrv.ConcreteClassName}} _applicationService;
 
                         #region WriteModel一括更新
                         /// <summary>

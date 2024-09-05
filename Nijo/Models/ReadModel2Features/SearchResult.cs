@@ -70,7 +70,7 @@ namespace Nijo.Models.ReadModel2Features {
 
             return $$"""
                 /// <summary>
-                /// <see cref="{{appSrv.ClassName}}.{{loadMethod.AppSrvCreateQueryMethod}}"/> の戻り値の型。
+                /// <see cref="{{appSrv.AbstractClassName}}.{{loadMethod.AppSrvCreateQueryMethod}}"/> の戻り値の型。
                 /// </summary>
                 public partial class {{CsClassName}} {
                 {{GetOwnMembers().SelectTextTemplate(member => $$"""

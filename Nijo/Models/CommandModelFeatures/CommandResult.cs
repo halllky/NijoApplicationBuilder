@@ -163,12 +163,12 @@ namespace Nijo.Models.CommandModelFeatures {
                     /// </summary>
                     public sealed partial class {{GENERATOR_WEB_CLASS_NAME}}<TErrors> : {{GENERATOR_INTERFACE_NAME}}<TErrors>
                         where TErrors : {{ErrorReceiver.RECEIVER}}, new() {
-                        public {{GENERATOR_WEB_CLASS_NAME}}(ControllerBase controller, {{appSrv.ClassName}} applicationService) {
+                        public {{GENERATOR_WEB_CLASS_NAME}}(ControllerBase controller, {{appSrv.ConcreteClassName}} applicationService) {
                             _controller = controller;
                             _applicationService = applicationService;
                         }
                         private readonly ControllerBase _controller;
-                        private readonly {{appSrv.ClassName}} _applicationService;
+                        private readonly {{appSrv.ConcreteClassName}} _applicationService;
 
                         public {{RESULT_INTERFACE_NAME}} Ok<T>(string? text, T detail) {
                             return new {{ACTION_RESULT_CONTAINER}} {
