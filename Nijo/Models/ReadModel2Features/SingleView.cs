@@ -182,7 +182,7 @@ namespace Nijo.Models.ReadModel2Features {
                   }, [{{MODE}}])
 
                   // 保存時
-                  const { {{BatchUpdateReadModel.HOOK_NAME}} } = {{BatchUpdateWriteModel.HOOK_NAME}}()
+                  const { {{BatchUpdateReadModel.FUNC_NAME}} } = {{BatchUpdateWriteModel.HOOK_NAME}}()
                   const navigateToDetailPage = Util.{{GetNavigateFnName(E_Type.ReadOnly)}}()
                   const save = useEvent(async () => {
                     // 閲覧モードでは保存不可
@@ -203,7 +203,7 @@ namespace Nijo.Models.ReadModel2Features {
                       }
                     }
                     // 一括更新APIを呼ぶ
-                    const response = await {{BatchUpdateReadModel.HOOK_NAME}}({
+                    const response = await {{BatchUpdateReadModel.FUNC_NAME}}({
                       dataType: '{{BatchUpdateReadModel.GetDataTypeLiteral(_aggregate)}}',
                       values: currentValues,
                     })

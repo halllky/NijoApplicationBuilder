@@ -35,9 +35,9 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>データ本体のプロパティの名前（TypeScript側）</summary>
         private const string VALUES_TS = "values";
 
-        internal const string HOOK_NAME = "batchUpdateDisplayData";
-        private const string HOOK_PARA_TYPE = "BatchUpdateDisplayDataParam";
-        private const string HOOK_PARAM_ITEMS = "Items";
+        internal const string FUNC_NAME = "batchUpdateReadModels";
+        private const string FUNC_PARA_TYPE = "BatchUpdateDisplayDataParam";
+        private const string FUNC_PARAM_ITEMS = "Items";
 
         private const string CONTROLLER_ACTION = "display-data";
 
@@ -49,27 +49,27 @@ namespace Nijo.Models.ReadModel2Features {
 
             // 一括更新処理
             var batchUpdate = context.UseSummarizedFile<BatchUpdateWriteModel>();
-            context.ReactProject.Types.Add(RenderHookParamType());
-            batchUpdate.AddReactHook(HOOK_NAME, RenderReactHook(context));
+            context.ReactProject.Types.Add(RenderFuncParamType());
+            batchUpdate.AddReactHook(FUNC_NAME, RenderFunction(context));
             context.UseSummarizedFile<Parts.Utility.UtilityClass>().AddJsonConverter(RenderJsonConverter());
             batchUpdate.AddControllerAction(RenderControllerAction(context));
             batchUpdate.AddAppSrvMethod(RenderAppSrvMethod(context));
         }
 
-        private string RenderHookParamType() {
+        private string RenderFuncParamType() {
             return $$"""
-                export type {{HOOK_PARA_TYPE}}
+                export type {{FUNC_PARA_TYPE}}
                 {{_aggregates.SelectTextTemplate((agg, i) => $$"""
                   {{(i == 0 ? "=" : "|")}} { {{DATA_TYPE_TS}}: '{{GetDataTypeLiteral(agg)}}', {{VALUES_TS}}: {{new DataClassForDisplay(agg).TsTypeName}} }
                 """)}}
                 """;
         }
 
-        private string RenderReactHook(CodeRenderingContext context) {
+        private string RenderFunction(CodeRenderingContext context) {
             return $$"""
                 /** 画面表示用データの一括更新を即時実行します。更新するデータの量によっては長い待ち時間が発生する可能性があります。 */
-                const {{HOOK_NAME}} = React.useCallback(async (...{{HOOK_PARAM_ITEMS}}: Types.{{HOOK_PARA_TYPE}}[]) => {
-                  const res = await post(`/{{Controller.SUBDOMAIN}}/{{BatchUpdateWriteModel.CONTROLLER_SUBDOMAIN}}/{{CONTROLLER_ACTION}}`, { {{HOOK_PARAM_ITEMS}} })
+                const {{FUNC_NAME}} = React.useCallback(async (...{{FUNC_PARAM_ITEMS}}: Types.{{FUNC_PARA_TYPE}}[]) => {
+                  const res = await post(`/{{Controller.SUBDOMAIN}}/{{BatchUpdateWriteModel.CONTROLLER_SUBDOMAIN}}/{{CONTROLLER_ACTION}}`, { {{FUNC_PARAM_ITEMS}} })
                   if (res.ok) dispatchToast(msg => msg.info('保存しました。'))
                   return res
                 }, [post, dispatchMsg, dispatchToast])
@@ -117,7 +117,7 @@ namespace Nijo.Models.ReadModel2Features {
                         var context = new {{SaveContext.STATE_CLASS_NAME}}(new() {
                             IgnoreConfirm = ignoreConfirm,
                         });
-                        _applicationService.{{APPSRV_BATCH_UPDATE}}(parameter.{{HOOK_PARAM_ITEMS}}, context);
+                        _applicationService.{{APPSRV_BATCH_UPDATE}}(parameter.{{FUNC_PARAM_ITEMS}}, context);
                 
                         if (context.HasError()) {
                             tran.Rollback();
@@ -132,7 +132,7 @@ namespace Nijo.Models.ReadModel2Features {
                     }
                 }
                 public partial class ReadModelsBatchUpdateParameter {
-                    public List<{{DataClassForDisplay.BASE_CLASS_NAME}}> {{HOOK_PARAM_ITEMS}} { get; set; } = new();
+                    public List<{{DataClassForDisplay.BASE_CLASS_NAME}}> {{FUNC_PARAM_ITEMS}} { get; set; } = new();
                 }
                 #endregion 画面表示用データの一括更新
                 """;

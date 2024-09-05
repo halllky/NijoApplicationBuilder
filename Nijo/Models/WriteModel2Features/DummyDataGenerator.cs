@@ -46,7 +46,7 @@ namespace Nijo.Models.WriteModel2Features {
 
                     export const useDummyDataGenerator2 = () => {
                       const { get } = useHttpRequest()
-                      const { batchUpdateImmediately } = AggregateHook.{{BatchUpdateWriteModel.HOOK_NAME}}()
+                      const { batchUpdateWriteModels } = AggregateHook.{{BatchUpdateWriteModel.HOOK_NAME}}()
                     {{refSearchHooks.SelectTextTemplate(x => $$"""
                       const { {{RefSearchMethod.LOAD}}: {{x.Load}} } = AggregateHook.{{x.Hook}}()
                     """)}}
@@ -60,7 +60,7 @@ namespace Nijo.Models.WriteModel2Features {
                         return true
                       }, [
                         get,
-                        batchUpdateImmediately,
+                        batchUpdateWriteModels,
                     {{refSearchHooks.SelectTextTemplate(x => $$"""
                         {{x.Load}},
                     """)}}
@@ -104,7 +104,7 @@ namespace Nijo.Models.WriteModel2Features {
                 """)}}
 
                 """)}}
-                const {{response}} = await batchUpdateImmediately([{{instanceList.Join(", ")}}].map(data => ({
+                const {{response}} = await batchUpdateWriteModels([{{instanceList.Join(", ")}}].map(data => ({
                   {{DataClassForSaveBase.DATA_TYPE_TS}}: '{{DataClassForSaveBase.GetEnumValueOf(rootAggregate)}}',
                   {{DataClassForSaveBase.ADD_MOD_DEL_TS}}: 'ADD',
                   {{DataClassForSaveBase.VALUES_TS}}: data,
