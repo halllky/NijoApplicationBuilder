@@ -642,7 +642,7 @@ namespace Nijo.Models.ReadModel2Features {
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const { get } = Util.useHttpRequest()
+                      const { get, post } = Util.useHttpRequest()
                       const { mode } = useContext({{SingleView.PAGE_CONTEXT}})
                       const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
                       const { fields, append, remove, update } = useFieldArray({ control, name: `{{registerNameArray.Join(".")}}` })
