@@ -224,7 +224,7 @@ namespace Nijo.IntegrationTest {
         }
 
         internal static async Task WaitUntil(Func<bool> checker, TimeSpan? timeout = null) {
-            var to = timeout ?? TimeSpan.FromSeconds(10);
+            var to = timeout ?? TimeSpan.FromSeconds(30);
             var current = TimeSpan.Zero;
             var interval = TimeSpan.FromSeconds(1);
             while (current <= to) {
@@ -304,7 +304,7 @@ namespace Nijo.IntegrationTest {
 
         internal static OpenQA.Selenium.By ByInnerText(string innerText) {
             var escaped = innerText.Replace("'", "\\'");
-            return OpenQA.Selenium.By.XPath($"//*[contains(text(), '{escaped}')]");
+            return OpenQA.Selenium.By.XPath($"//*[text()='{escaped}']");
         }
         internal static OpenQA.Selenium.By ByValue(string value) {
             var escaped = value.Replace("'", "\\'");
@@ -335,9 +335,9 @@ namespace Nijo.IntegrationTest {
             driver.CancelLocalRepositoryChanges();
         }
         /// <summary>
-        /// MultiViewで「追加」を押して、新しくできた行の「詳細」リンクを押す
+        /// MultiViewからSingleView(新規作成)に遷移する
         /// </summary>
-        internal static async Task AddNewItemAndNavigateToCreateView(this OpenQA.Selenium.IWebDriver driver) {
+        internal static async Task NavigateToCreateView(this OpenQA.Selenium.IWebDriver driver) {
             // 初期データ読み込みのため一瞬待つ
             await Task.Delay(TimeSpan.FromSeconds(1));
 
@@ -347,24 +347,7 @@ namespace Nijo.IntegrationTest {
                 .Select(a => a.GetAttribute("href"))
                 .ToArray();
 
-            driver.FindElement(ByInnerText("追加")).Click();
-            await WaitUntil(() => driver.FindElements(ByInnerText("詳細")).Count > hrefs.Length);
-
-            // 行追加直後に位置がずれることがあるので一瞬待つ
-            await Task.Delay(TimeSpan.FromSeconds(1));
-
-            await driver.SaveInMultiView();
-
-            // 増えた行の「詳細」をクリック
-            foreach (var a in driver.FindElements(ByInnerText("詳細"))) {
-                var href = a.GetAttribute("href");
-                if (!hrefs.Contains(href)) {
-                    a.Click();
-                    await Task.Delay(TimeSpan.FromSeconds(1));
-                    return;
-                }
-            }
-            throw new InvalidOperationException("追加された行を特定できません。");
+            driver.FindElement(ByInnerText("新規作成")).Click();
         }
         /// <summary>
         /// MultiViewで一時保存する
@@ -379,12 +362,11 @@ namespace Nijo.IntegrationTest {
             await Task.Delay(TimeSpan.FromSeconds(1));
         }
         /// <summary>
-        /// SingleViewで一時保存する
+        /// SingleViewで保存する
         /// </summary>
         internal static async Task SaveInSingleView(this OpenQA.Selenium.IWebDriver driver) {
             driver
-                .FindElements(ByInnerText("一時保存"))
-                .Skip(1)
+                .FindElements(ByInnerText("保存"))
                 .Single()
                 .Click();
             await Task.Delay(TimeSpan.FromSeconds(1));

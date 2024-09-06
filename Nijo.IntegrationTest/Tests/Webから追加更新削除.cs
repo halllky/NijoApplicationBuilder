@@ -38,15 +38,15 @@ namespace Nijo.IntegrationTest.Tests {
 
             // 準備: 参照先を作る
             driver.FindElement(Util.ByInnerText("参照先")).Click();
-            await driver.AddNewItemAndNavigateToCreateView();
+            await driver.NavigateToCreateView();
 
-            driver.FindElement(By.Name($"{DataClassForDisplay.VALUES_TS}.Name")).SendKeys("テスト用の参照先");
+            driver.FindElement(By.Name($"{DataClassForDisplay.VALUES_TS}.参照先ID")).SendKeys("テスト用の参照先");
             await driver.SaveInSingleView();
             driver.CommitLocalRepositoryChanges();
 
             // 新規作成できるか: データ作成
             driver.FindElement(Util.ByInnerText("親集約")).Click();
-            await driver.AddNewItemAndNavigateToCreateView();
+            await driver.NavigateToCreateView();
 
             driver.FindElement(By.Name($"{DataClassForDisplay.VALUES_TS}.単語")).SendKeys("自動テストで作られたデータ");
             driver.ActivateTextarea($"{DataClassForDisplay.VALUES_TS}.文章").SendKeys("このデータは自動テストで作られました。\r\n");
@@ -56,8 +56,7 @@ namespace Nijo.IntegrationTest.Tests {
             driver.FindElement(By.Name($"{DataClassForDisplay.VALUES_TS}.日付")).SendKeys("１９９９－２－３");
             driver.FindElement(By.Name($"{DataClassForDisplay.VALUES_TS}.年月")).SendKeys("１９９８－１２");
             driver.FindElement(By.Name($"{DataClassForDisplay.VALUES_TS}.年")).SendKeys("１９９７");
-            driver.FindElement(By.Name($"{DataClassForDisplay.VALUES_TS}.参照")).SendKeys("テスト用の参照先");
-            driver.FindElement(By.Name($"{DataClassForDisplay.VALUES_TS}.参照")).SendKeys(Keys.Tab);
+            driver.FindElement(By.Name($"{DataClassForDisplay.VALUES_TS}.参照.参照先ID")).SendKeys("テスト用の参照先");
             driver.FindElement(By.Name($"{DataClassForDisplay.VALUES_TS}.真偽値")).SendKeys(Keys.Space);
             driver.FindElement(Util.ByInnerText("選択肢2")).Click(); // 列挙体
 
@@ -70,8 +69,9 @@ namespace Nijo.IntegrationTest.Tests {
 
             // 新規作成できるか: 結果確認
             driver.FindElement(Util.ByInnerText("親集約")).Click();
-            driver.FindElement(By.Name("単語")).SendKeys("自動テストで作られたデータ");
-            await driver.SearchSingleAndNavigateToEditView();
+            driver.FindElement(By.Name($"{SearchCondition.FILTER_TS}.単語")).SendKeys("自動テストで作られたデータ"); // この文字列で検索すると1件だけヒットするはず
+            await Task.Delay(TimeSpan.FromSeconds(3));
+            driver.FindElement(Util.ByInnerText("詳細")).Click();
 
             var afterCreate = driver.CaptureScreenShot();
 
@@ -92,9 +92,11 @@ namespace Nijo.IntegrationTest.Tests {
             using var launcher = TestProject.Current.CreateLauncher();
             var exceptions = new List<Exception>();
             launcher.OnError += (s, e) => {
-                exceptions.Add(new Exception(e.ToString()));
-                launcher.Terminate();
-                Assert.Fail($"Launcher catched error: {e}");
+                if (!string.IsNullOrWhiteSpace(e)) {
+                    exceptions.Add(new Exception(e.ToString()));
+                    launcher.Terminate();
+                    Assert.Fail($"Launcher catched error: {e}");
+                }
             };
 
             launcher.Launch();
@@ -105,7 +107,7 @@ namespace Nijo.IntegrationTest.Tests {
 
             // 準備: 参照先を作る
             driver.FindElement(Util.ByInnerText("参照先")).Click();
-            await driver.AddNewItemAndNavigateToCreateView();
+            await driver.NavigateToCreateView();
 
             driver.FindElement(By.Name("参照先集約ID")).SendKeys("あああああ");
             driver.FindElement(By.Name("参照先集約名")).SendKeys("いいいいい");
@@ -114,7 +116,7 @@ namespace Nijo.IntegrationTest.Tests {
 
             // 参照元を作成
             driver.FindElement(Util.ByInnerText("参照元")).Click();
-            await driver.AddNewItemAndNavigateToCreateView();
+            await driver.NavigateToCreateView();
 
             driver.FindElement(By.Name("参照元集約ID")).SendKeys("ううううう");
             driver.FindElement(By.Name("参照元集約名")).SendKeys("えええええ");

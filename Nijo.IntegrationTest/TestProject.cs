@@ -138,7 +138,7 @@ namespace Nijo.IntegrationTest {
         /// 実行中のテスト用プロジェクトをWebから操作する機構を作成します。
         /// </summary>
         public static IWebDriver CreateWebDriver() {
-            var exeDir = Assembly.GetExecutingAssembly().Location;
+            var exeDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             var driver = new ChromeDriver(exeDir);
             try {
 

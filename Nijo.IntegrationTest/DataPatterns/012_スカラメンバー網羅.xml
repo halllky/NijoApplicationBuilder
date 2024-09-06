@@ -56,7 +56,7 @@
   </MyEnum>
 
   <参照先 is="write-model-2 generate-default-read-model">
-    <参照先ID is="uuid" />
+    <参照先ID is="word key" />
     <Name is="name" />
   </参照先>
 </自動テストで作成されたプロジェクト>
