@@ -85,11 +85,6 @@ namespace Nijo.Parts.WebServer {
                 """,
         };
 
-        [Obsolete]
-        private SourceFile RenderConcreteClass() => new() {
-            FileName = ConcreteClassFileName,
-            RenderContent = ctx => RenderConcreteClass(ctx.Config),
-        };
         internal string RenderConcreteClass(Config config) => $$"""
             using Microsoft.EntityFrameworkCore;
 

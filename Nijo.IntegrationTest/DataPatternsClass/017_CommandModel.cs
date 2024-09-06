@@ -8,7 +8,7 @@ namespace Nijo.IntegrationTest.DataPatternsClass {
     public class _017_CommandModel : DataPattern {
         public _017_CommandModel() : base("017_CommandModel.xml") { }
 
-        protected override string? OverridedAppSrvMethods() {
+        protected override string OverridedAppSrvMethods() {
             return $$"""
                 public override ICommandResult Execute従業員データ一括取り込み(従業員データ一括取り込みParameter param, ICommandResultGenerator<従業員データ一括取り込みParameterErrorMessages> result, bool ignoreConfirm) {
                     if (param.処理範囲 == E_処理範囲.特定データのみ) {

@@ -65,7 +65,7 @@ namespace Nijo {
         /// </summary>
         public NijoCodeGenerator GenerateCode(CodeGenerateOptions? options = null) {
 
-            _log?.LogInformation($"コード自動生成開始: {_project.SolutionRoot}");
+            _log?.LogInformation("コード自動生成開始: {solutionRoot}", _project.SolutionRoot);
 
             // コンテキスト生成
             var ctx = new CodeRenderingContext(_project, options ?? new());
@@ -116,7 +116,7 @@ namespace Nijo {
             // 自動テスト用の挿入コードなど
             options?.OnEndGenerating?.Invoke(ctx);
 
-            _log?.LogInformation($"コード自動生成終了: {_project.SolutionRoot}");
+            _log?.LogInformation("コード自動生成終了: {solutionRoot}", _project.SolutionRoot);
             return this;
         }
     }

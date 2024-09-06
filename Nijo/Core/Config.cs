@@ -79,7 +79,6 @@ namespace Nijo.Core {
             if (xDocument.Root == null) throw new FormatException($"設定ファイルのXMLの形式が不正です。");
 
             var configSection = xDocument.Root.Element(XML_CONFIG_SECTION_NAME);
-            var ns = configSection?.Element(SECTION_NAMESPACES);
 
             return new Config {
                 ApplicationName = xDocument.Root.Name.LocalName,

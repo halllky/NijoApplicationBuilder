@@ -58,7 +58,7 @@ namespace Nijo.IntegrationTest.Tests {
             // 完了を待機
             driver.Navigate().GoToUrl("/");
             await Util.WaitUntil(() => driver.FindElements(Util.ByInnerText("完了")).Count > 0);
-            Assert.That(driver.FindElements(Util.ByInnerText("完了")).Count, Is.AtLeast(1));
+            Assert.That(driver.FindElements(Util.ByInnerText("完了")), Has.Count.AtLeast(1));
         }
     }
 }
