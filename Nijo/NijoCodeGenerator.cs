@@ -54,7 +54,10 @@ namespace Nijo {
         /// コード生成の実行時オプション
         /// </summary>
         public sealed class CodeGenerateOptions {
-            public bool OverwriteConcreteAppSrvFile { get; set; }
+            /// <summary>
+            /// コード自動生成の最後に実行される処理
+            /// </summary>
+            public Action<CodeRenderingContext>? OnEndGenerating { get; set; }
         }
 
         /// <summary>
@@ -109,6 +112,9 @@ namespace Nijo {
 
             // 複数の集約から1個のソースが作成されるもの等はこのタイミングで作成
             ctx.OnEndContext();
+
+            // 自動テスト用の挿入コードなど
+            options?.OnEndGenerating?.Invoke(ctx);
 
             _log?.LogInformation($"コード自動生成終了: {_project.SolutionRoot}");
             return this;

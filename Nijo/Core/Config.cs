@@ -16,8 +16,6 @@ namespace Nijo.Core {
         public string DbContextNamespace => RootNamespace;
         public required string DbContextName { get; init; }
 
-        public IEnumerable<string> OverridedApplicationServiceCodeForUnitTest { get; init; } = Enumerable.Empty<string>();
-
         /// <summary>
         /// 一時保存を使用しない
         /// </summary>
@@ -44,8 +42,6 @@ namespace Nijo.Core {
         private const string DISABLE_LOCAL_REPOSITORY = "DisableLocalRepository";
         private const string DISABLE_BATCH_UPDATE = "DisableBatchUpdate";
         private const string DISCARD_SEARCH_LIMIT = "DiscardSearchLimit";
-
-        internal const string REPLACE_OVERRIDED_APPLICATION_SERVICE_CODE_FOR_UNIT_TEST = "ReplaceOverridedApplicationServiceCodeForUnitTest";
 
         public XElement ToXmlWithRoot() {
             var root = new XElement(ApplicationName);
@@ -85,17 +81,12 @@ namespace Nijo.Core {
             var configSection = xDocument.Root.Element(XML_CONFIG_SECTION_NAME);
             var ns = configSection?.Element(SECTION_NAMESPACES);
 
-            var overrridedCode = xDocument.Root
-                .Elements(REPLACE_OVERRIDED_APPLICATION_SERVICE_CODE_FOR_UNIT_TEST)
-                .Select(el => el.Value.Replace("\n", "\r\n"));
-
             return new Config {
                 ApplicationName = xDocument.Root.Name.LocalName,
                 DisableLocalRepository = xDocument.Root.Attribute(DISABLE_LOCAL_REPOSITORY) != null,
                 DisableBatchUpdate = xDocument.Root.Attribute(DISABLE_BATCH_UPDATE) != null,
                 DiscardSearchLimit = xDocument.Root.Attribute(DISCARD_SEARCH_LIMIT) != null,
                 DbContextName = configSection?.Element(DBCONTEXT_NAME)?.Value ?? "MyDbContext",
-                OverridedApplicationServiceCodeForUnitTest = overrridedCode,
             };
         }
     }

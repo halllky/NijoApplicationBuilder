@@ -80,10 +80,6 @@ namespace Nijo {
                 name: "--keep-temp-if-error",
                 description: "作成に失敗した場合、原因調査ができるようにするため一時フォルダを削除せず残します。");
 
-            var overwriteConcreteAppSrvFile = new Option<bool>(
-                name: "--overwrite-overrided-application-service-file",
-                description: $"{new ApplicationService().ConcreteClassFileName} ファイルをXMLの {Config.REPLACE_OVERRIDED_APPLICATION_SERVICE_CODE_FOR_UNIT_TEST} セクションの値で上書きします。");
-
             var mermaid = new Option<bool>(
                 name: "--mermaid",
                 description: "スキーマ定義をMermaid形式で表示します。");
@@ -104,20 +100,18 @@ namespace Nijo {
             }, verbose, applicationName, keepTempIferror);
             rootCommand.AddCommand(create);
 
-            var update = new Command(name: "update", description: "コード自動生成処理をかけなおします。") { verbose, path, overwriteConcreteAppSrvFile };
-            update.SetHandler((verbose, path, overwriteConcreteAppSrvFile) => {
+            var update = new Command(name: "update", description: "コード自動生成処理をかけなおします。") { verbose, path };
+            update.SetHandler((verbose, path) => {
                 var logger = ILoggerExtension.CreateConsoleLogger(verbose);
                 GeneratedProject
                     .Open(path, serviceProvider, logger)
                     .CodeGenerator
-                    .GenerateCode(new NijoCodeGenerator.CodeGenerateOptions {
-                        OverwriteConcreteAppSrvFile = overwriteConcreteAppSrvFile,
-                    });
-            }, verbose, path, overwriteConcreteAppSrvFile);
+                    .GenerateCode();
+            }, verbose, path);
             rootCommand.AddCommand(update);
 
-            var debug = new Command(name: "debug", description: "プロジェクトのデバッグを開始します。") { verbose, path, overwriteConcreteAppSrvFile };
-            debug.SetHandler((verbose, path, overwriteConcreteAppSrvFile) => {
+            var debug = new Command(name: "debug", description: "プロジェクトのデバッグを開始します。") { verbose, path };
+            debug.SetHandler((verbose, path) => {
                 var logger = ILoggerExtension.CreateConsoleLogger(verbose);
                 var project = GeneratedProject.Open(path, serviceProvider, logger);
                 var firstLaunch = true;
@@ -127,9 +121,7 @@ namespace Nijo {
 
                     using var launcher = project.CreateLauncher();
                     try {
-                        project.CodeGenerator.GenerateCode(new NijoCodeGenerator.CodeGenerateOptions {
-                            OverwriteConcreteAppSrvFile = overwriteConcreteAppSrvFile,
-                        });
+                        project.CodeGenerator.GenerateCode();
 
                         launcher.Launch();
                         launcher.WaitForReady();
@@ -161,7 +153,7 @@ namespace Nijo {
                     var input = Console.ReadKey(true);
                     if (input.Key == ConsoleKey.Q) break;
                 }
-            }, verbose, path, overwriteConcreteAppSrvFile);
+            }, verbose, path);
             rootCommand.AddCommand(debug);
 
             var dump = new Command(
