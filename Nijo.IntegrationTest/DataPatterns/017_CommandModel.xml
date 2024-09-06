@@ -35,14 +35,7 @@
   </従業員データ一括取り込み>
 
   <ReplaceOverridedApplicationServiceCodeForUnitTest>
-    protected override void Validate従業員データ一括取り込みParameter(従業員データ一括取り込みParameter param, 従業員データ一括取り込みParameterErrorMessages errors) {
-    if (string.IsNullOrWhiteSpace(param.取込ファイル)) {
-    errors.取込ファイル.Add("ファイルを指定してください。");
-    } else {
-    errors.AddConfirm("実行しますがよいですか？");
-    }
-    }
-    protected override ICommandResult Execute従業員データ一括取り込み(従業員データ一括取り込みParameter param, ICommandResultGenerator result) {
+    public override ICommandResult Execute従業員データ一括取り込み(従業員データ一括取り込みParameter param, ICommandResultGenerator&lt;従業員データ一括取り込みParameterErrorMessages&gt; result, bool ignoreConfirm) {
     if (param.処理範囲 == E_処理範囲.特定データのみ) {
     if (param.特定データのみ?.従業員?.内部ID == null) {
     return result.Error("対象の従業員が指定されていません。");

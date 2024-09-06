@@ -12,7 +12,7 @@
     <従業員コード is="word" />
     <名前 is="name" />
     <区分 is="従業員区分" />
-    <所属部署 is="ref-to:部署 search-condition-ui:部署検索条件Dialog search-condition-ui:部署Dialog" />
+    <所属部署 is="ref-to:部署 search-condition-ui:部署検索条件Dialog single-view-ui:部署Dialog" />
   </従業員>
 
   <従業員区分 is="enum">

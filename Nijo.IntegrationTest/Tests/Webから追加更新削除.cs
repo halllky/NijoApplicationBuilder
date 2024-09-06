@@ -12,10 +12,10 @@ namespace Nijo.IntegrationTest.Tests {
         [UseDataPatterns]
         public async Task Webから追加更新削除(DataPattern pattern) {
 
-            if (pattern.Name == DataPattern.FILENAME_001) {
+            if (pattern is DataPatternsClass._001_Refのみ) {
                 await Webから追加更新削除_Refのみ(pattern);
 
-            } else if (pattern.Name == DataPattern.FILENAME_012) {
+            } else if (pattern is DataPatternsClass._012_スカラメンバー網羅) {
                 await Webから追加更新削除_スカラメンバー網羅(pattern);
 
             } else {
