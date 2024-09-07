@@ -191,3 +191,36 @@ export const usePageOutPrompt = (block: boolean = true) => {
   }, [block])
   useBeforeUnload(handleBeforeUnload)
 }
+
+// --------------------------------------------------
+/**
+ * 引数の値が変更されてから一定時間が経過した後に戻り値の値が切り替わります。
+ * 例えばグリッドの一覧で選択されている行により画面上の別の個所の表示が変わるような場合に、
+ * グリッドの選択行をカーソルキーで高速で切り替えると再レンダリングが頻繁に走ってパフォーマンスが落ちるような場合に使います。
+ */
+export const useDebounce = <T,>(value: T, delay: number) => {
+  const [debouncedValue, setDebouncedValue] = React.useState(value)
+  const [debouncing, setDebouncing] = React.useState(false)
+  const timerRef = React.useRef<NodeJS.Timeout | null>(null)
+
+  React.useEffect(() => {
+    setDebouncing(true)
+    // タイマーをクリアして新しいタイマーを設定
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+    }
+    timerRef.current = setTimeout(() => {
+      setDebouncedValue(value)
+      setDebouncing(false)
+    }, delay)
+
+    // クリーンアップ関数でタイマーをクリア
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current)
+      }
+    }
+  }, [value, delay])
+
+  return { debouncedValue, debouncing }
+}

@@ -272,3 +272,18 @@ const getTdStickeyStyle = (isRowHeader: boolean): React.CSSProperties => ({
 const getLast = <T,>(arr: T[]): T => {
   return arr[arr.length - 1]
 }
+
+// -----------------------------------------------
+// よく使うセル
+
+/** 読み取り専用の通常のテキストセル */
+export const ReadOnlyCell = ({ children }: {
+  children?: React.ReactNode
+}) => {
+  return (
+    <span className="block w-full px-1 overflow-hidden whitespace-nowrap">
+      {children}
+      &nbsp;
+    </span>
+  )
+}
