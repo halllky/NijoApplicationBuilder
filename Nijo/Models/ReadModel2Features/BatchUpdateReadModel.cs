@@ -111,23 +111,19 @@ namespace Nijo.Models.ReadModel2Features {
                 /// <param name="parameter">一括更新内容</param>
                 /// <param name="ignoreConfirm">「○○ですがよろしいですか？」などのコンファームを無視します。</param>
                 [HttpPost("{{CONTROLLER_ACTION}}")]
-                public virtual IActionResult ExecuteImmediately([FromBody] ReadModelsBatchUpdateParameter parameter, [FromQuery] bool ignoreConfirm) {
-                    using var tran = _applicationService.DbContext.Database.BeginTransaction();
+                public virtual IActionResult BatchUpdateReadModels([FromBody] ReadModelsBatchUpdateParameter parameter, [FromQuery] bool ignoreConfirm) {
                     try {
-                        var context = new {{SaveContext.STATE_CLASS_NAME}}(new() {
+                        var options = new {{SaveContext.SAVE_OPTIONS}} {
                             IgnoreConfirm = ignoreConfirm,
-                        });
-                        _applicationService.{{APPSRV_BATCH_UPDATE}}(parameter.{{FUNC_PARAM_ITEMS}}, context);
+                        };
+                        var result = _applicationService.{{APPSRV_BATCH_UPDATE}}(parameter.{{FUNC_PARAM_ITEMS}}, options);
                 
-                        if (context.HasError()) {
-                            tran.Rollback();
-                            return BadRequest(context.GetErrorDataJson());
+                        if (result.HasError()) {
+                            return BadRequest(result.GetErrorDataJson());
                         }
-                        tran.Commit();
                         return Ok();
                 
                     } catch (Exception ex) {
-                        tran.Rollback();
                         return Problem(ex.ToString());
                     }
                 }
@@ -153,7 +149,8 @@ namespace Nijo.Models.ReadModel2Features {
                 /// </summary>
                 /// <param name="items">更新データ</param>
                 /// <param name="saveContext">コンテキスト引数。エラーや警告の送出はこのオブジェクトを通して行なってください。</param>
-                public virtual void {{APPSRV_BATCH_UPDATE}}(IEnumerable<{{DataClassForDisplay.BASE_CLASS_NAME}}> items, {{SaveContext.STATE_CLASS_NAME}} saveContextState) {
+                public virtual {{SaveContext.STATE_CLASS_NAME}} {{APPSRV_BATCH_UPDATE}}(IEnumerable<{{DataClassForDisplay.BASE_CLASS_NAME}}> items, {{SaveContext.SAVE_OPTIONS}} options) {
+                    var batchUpdateState = new {{SaveContext.STATE_CLASS_NAME}}(options);
 
                     var converted = new List<{{DataClassForSaveBase.SAVE_COMMAND_BASE}}>();
                     var errorMessagePairs = new Dictionary<{{ErrorReceiver.RECEIVER}}, {{ErrorReceiver.RECEIVER}}[]>();
@@ -165,28 +162,40 @@ namespace Nijo.Models.ReadModel2Features {
                 {{aggregates.SelectTextTemplate((x, j) => $$"""
                         if (item is {{x.DisplayData.CsClassName}} item{{j}}) {
                             // ReadModelからWriteModelへ変換
-                            var readModelErrorMessageContainer = ({{x.DisplayData.MessageDataCsClassName}})saveContextState
+                            var readModelErrorMessageContainer = ({{x.DisplayData.MessageDataCsClassName}})batchUpdateState
                                 .{{SaveContext.GET_ERR_MSG_CONTAINER}}(item{{j}});
-                            var writeModels = {{APPSRV_CONVERT_DISP_TO_SAVE}}(item{{j}}, readModelErrorMessageContainer, saveContextState).ToArray();
+                            var writeModels = {{APPSRV_CONVERT_DISP_TO_SAVE}}(item{{j}}, readModelErrorMessageContainer, batchUpdateState).ToArray();
 
                             // 一括更新処理後にWriteModel用エラーメッセージコンテナからReadModel用エラーメッセージコンテナに
                             // エラーメッセージの転送を行うため、エラーメッセージコンテナの紐づきを登録する
                             errorMessagePairs[readModelErrorMessageContainer] = writeModels
-                                .Select(saveContextState.{{SaveContext.GET_ERR_MSG_CONTAINER}})
+                                .Select(batchUpdateState.{{SaveContext.GET_ERR_MSG_CONTAINER}})
                                 .ToArray();
 
-                            saveContextState.RegisterErrorData(i, readModelErrorMessageContainer);
+                            batchUpdateState.RegisterErrorDataWithIndex(i, readModelErrorMessageContainer);
                             converted.AddRange(writeModels);
                             continue;
                         }
                 """)}}
 
-                        var unknownError = saveContextState.{{SaveContext.GET_ERR_MSG_CONTAINER}}(item);
+                        var unknownError = batchUpdateState.{{SaveContext.GET_ERR_MSG_CONTAINER}}(item);
                         unknownError.Add($"型 '{item?.GetType().FullName}' の登録更新用データへの変換処理が定義されていません。");
                     }
 
                     // ----------- 一括更新実行 -----------
-                    {{BatchUpdateWriteModel.APPSRV_METHOD_PRIVATE}}(converted, saveContextState);
+                    using var tran = DbContext.Database.BeginTransaction();
+                    try {
+                        {{BatchUpdateWriteModel.APPSRV_METHOD_PRIVATE}}(converted, batchUpdateState);
+
+                        if (!batchUpdateState.HasError() || batchUpdateState.ForceCommit) {
+                            tran.Commit();
+                        } else {
+                            tran.Rollback();
+                        }
+                    } catch {
+                        tran.Rollback();
+                        throw;
+                    }
 
                     // ----------- エラーメッセージの転送 -----------
                     // 転送元先プロパティの設定
@@ -212,6 +221,8 @@ namespace Nijo.Models.ReadModel2Features {
                     foreach (var writeModelError in errorMessagePairs.SelectMany(kv => kv.Value)) {
                         writeModelError.{{ErrorReceiver.EXEC_TRANSFER_MESSAGE}}();
                     }
+
+                    return batchUpdateState;
                 }
 
                 {{aggregates.SelectTextTemplate(x => $$"""

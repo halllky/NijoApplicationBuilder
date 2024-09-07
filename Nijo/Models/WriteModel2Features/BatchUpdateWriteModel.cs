@@ -112,22 +112,18 @@ namespace Nijo.Models.WriteModel2Features {
                         /// <param name="ignoreConfirm">「○○ですがよろしいですか？」などのコンファームを無視します。</param>
                         [HttpPost("{{CONTROLLER_ACTION_IMMEDIATELY}}")]
                         public virtual IActionResult ExecuteImmediately([FromBody] WriteModelsBatchUpdateParameter parameter, [FromQuery] bool ignoreConfirm) {
-                            using var tran = _applicationService.DbContext.Database.BeginTransaction();
                             try {
-                                var context = new {{SaveContext.STATE_CLASS_NAME}}(new() {
+                                var options = new {{SaveContext.SAVE_OPTIONS}} {
                                     IgnoreConfirm = ignoreConfirm,
-                                });
-                                _applicationService.{{APPSRV_METHOD}}(parameter.{{HOOK_PARAM_ITEMS}}, context);
+                                };
+                                var result = _applicationService.{{APPSRV_METHOD}}(parameter.{{HOOK_PARAM_ITEMS}}, options);
 
-                                if (context.HasError()) {
-                                    tran.Rollback();
-                                    return BadRequest(context.GetErrorDataJson());
+                                if (result.HasError()) {
+                                    return BadRequest(result.GetErrorDataJson());
                                 }
-                                tran.Commit();
                                 return Ok();
 
                             } catch (Exception ex) {
-                                tran.Rollback();
                                 return Problem(ex.ToString());
                             }
                         }
@@ -163,9 +159,6 @@ namespace Nijo.Models.WriteModel2Features {
                         Create = new CreateMethod(agg).MethodName, // メソッド名
                         Update = new UpdateMethod(agg).MethodName, // メソッド名
                         Delete = new DeleteMethod(agg).MethodName, // メソッド名
-                        CreateArgs = $"new {SaveContext.BEFORE_SAVE}<{create.ErrorDataCsClassName}>(saveContextState, ({create.ErrorDataCsClassName})saveContextState.{SaveContext.GET_ERR_MSG_CONTAINER}(item))",
-                        UpdateArgs = $"new {SaveContext.BEFORE_SAVE}<{save.ErrorDataCsClassName}>(saveContextState, ({save.ErrorDataCsClassName})saveContextState.{SaveContext.GET_ERR_MSG_CONTAINER}(item))",
-                        DeleteArgs = $"new {SaveContext.BEFORE_SAVE}<{save.ErrorDataCsClassName}>(saveContextState, ({save.ErrorDataCsClassName})saveContextState.{SaveContext.GET_ERR_MSG_CONTAINER}(item))",
                     };
                 })
                 .ToArray();
@@ -181,14 +174,29 @@ namespace Nijo.Models.WriteModel2Features {
                 /// </summary>
                 /// <param name="items">更新データ</param>
                 /// <param name="saveContext">コンテキスト引数。エラーや警告の送出はこのオブジェクトを通して行なってください。</param>
-                public virtual void {{APPSRV_METHOD}}(IReadOnlyList<{{DataClassForSaveBase.SAVE_COMMAND_BASE}}> items, {{SaveContext.STATE_CLASS_NAME}} saveContextState) {
-                    // エラーメッセージの入れ物のオブジェクトを用意する
-                    for (var i = 0; i < items.Count; i++) {
-                        var errorContainer = saveContextState.{{SaveContext.GET_ERR_MSG_CONTAINER}}(items[i]);
-                        saveContextState.RegisterErrorData(i, errorContainer);
-                    }
+                public virtual {{SaveContext.STATE_CLASS_NAME}} {{APPSRV_METHOD}}(IReadOnlyList<{{DataClassForSaveBase.SAVE_COMMAND_BASE}}> items, {{SaveContext.SAVE_OPTIONS}} options) {
+                    var batchUpdateState = new {{SaveContext.STATE_CLASS_NAME}}(options);
+                    using var tran = DbContext.Database.BeginTransaction();
+                    try {
+                        // エラーメッセージの入れ物のオブジェクトを用意する
+                        for (var i = 0; i < items.Count; i++) {
+                            var errorContainer = batchUpdateState.{{SaveContext.GET_ERR_MSG_CONTAINER}}(items[i]);
+                            batchUpdateState.RegisterErrorDataWithIndex(i, errorContainer);
+                        }
 
-                    {{APPSRV_METHOD_PRIVATE}}(items, saveContextState);
+                        // 一括更新実行
+                        {{APPSRV_METHOD_PRIVATE}}(items, batchUpdateState);
+                        if (!batchUpdateState.HasError() || batchUpdateState.ForceCommit) {
+                            tran.Commit();
+                        } else {
+                            tran.Rollback();
+                        }
+
+                        return batchUpdateState;
+                    } catch {
+                        tran.Rollback();
+                        throw;
+                    }
                 }
 
                 /// <summary>
@@ -232,13 +240,13 @@ namespace Nijo.Models.WriteModel2Features {
                     // 5. 依存される側のデータの更新
                     // 6. 依存する側  のデータの更新
                 {{sortedAggregates.Reverse().SelectTextTemplate(agg => $$"""
-                    foreach (var item in {{agg.DeleteItems}}) {{agg.Delete}}(item, {{agg.DeleteArgs}});
+                    foreach (var item in {{agg.DeleteItems}}) {{agg.Delete}}(item, saveContextState);
                 """)}}
                 {{sortedAggregates.SelectTextTemplate(agg => $$"""
-                    foreach (var item in {{agg.CreateItems}}) {{agg.Create}}(item, {{agg.CreateArgs}});
+                    foreach (var item in {{agg.CreateItems}}) {{agg.Create}}(item, saveContextState);
                 """)}}
                 {{sortedAggregates.SelectTextTemplate(agg => $$"""
-                    foreach (var item in {{agg.UpdateItems}}) {{agg.Update}}(item, {{agg.UpdateArgs}});
+                    foreach (var item in {{agg.UpdateItems}}) {{agg.Update}}(item, saveContextState);
                 """)}}
                 }
                 #endregion 一括更新

@@ -48,9 +48,6 @@ namespace Nijo.Models {
                 context.ReactProject.Types.Add(rootAggregate, dataClassForSave.RenderTypeScript(context));
                 context.ReactProject.Types.Add(rootAggregate, dataClassForSave.RenderTypeScriptReadOnlyStructure(context));
 
-                // データ型: 作成・更新・削除で共有するもの
-                aggregateFile.DataClassDeclaring.Add(dataClassForSave.RenderCSharpAfterSaveEventArgs(context));
-
                 // 処理: DataClassForSave, DataClassForNewItem 新規作成関数
                 if (agg.IsRoot() || agg.IsChildrenMember()) {
                     context.ReactProject.Types.Add(dataClassForNewItem.RenderTsNewObjectFunction(context));

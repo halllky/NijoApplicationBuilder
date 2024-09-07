@@ -251,27 +251,6 @@ namespace Nijo.Models.WriteModel2Features {
         #endregion 更新前イベント（エラーデータ構造体）
 
 
-        #region 更新後イベント
-        /// <summary>
-        /// 更新前イベント引数 C#クラス名
-        /// </summary>
-        internal string AfterSaveContextCsClassName => $"{_aggregate.Item.PhysicalName}AfterSaveEventArgs";
-        /// <summary>
-        /// 更新前イベント引数を定義します（C#）
-        /// </summary>
-        internal string RenderCSharpAfterSaveEventArgs(CodeRenderingContext context) {
-            return $$"""
-                /// <summary>
-                /// {{_aggregate.Item.DisplayName}}の更新後イベント
-                /// </summary>
-                public partial class {{AfterSaveContextCsClassName}} {
-                    // 特になし
-                }
-                """;
-        }
-        #endregion 更新後イベント
-
-
         #region 読み取り専用用構造体
         /// <summary>
         /// エラーメッセージ用構造体 C#クラス名

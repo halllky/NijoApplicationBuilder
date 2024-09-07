@@ -50,14 +50,16 @@ namespace Nijo.Models.WriteModel2Features {
                 /// <summary>
                 /// 既存の{{_rootAggregate.Item.DisplayName}}を更新します。
                 /// </summary>
-                public virtual void {{MethodName}}({{argType}} after, {{SaveContext.BEFORE_SAVE}}<{{dataClass.ErrorDataCsClassName}}> saveContext) {
+                public virtual void {{MethodName}}({{argType}} after, {{SaveContext.STATE_CLASS_NAME}} batchUpdateState) {
+                    var errors = ({{dataClass.ErrorDataCsClassName}})batchUpdateState.{{SaveContext.GET_ERR_MSG_CONTAINER}}(after);
+
                     // 更新に必要な項目が空の場合は処理中断
                 {{keys.SelectTextTemplate(k => $$"""
                     if (after.{{DataClassForSaveBase.VALUES_CS}}.{{k.SaveCommandFullPath.Join("?.")}} == null) {
-                        saveContext.Errors.{{k.ErrorFullPath.Join(".")}}.Add("{{k.MemberName}}が空です。");
+                        errors.{{k.ErrorFullPath.Join(".")}}.Add("{{k.MemberName}}が空です。");
                     }
                 """)}}
-                    if (saveContext.Errors.HasError()) {
+                    if (errors.HasError()) {
                         return;
                     }
 
@@ -76,7 +78,7 @@ namespace Nijo.Models.WriteModel2Features {
                     #pragma warning restore CS8602 // null 参照の可能性があるものの逆参照です。
 
                     if (beforeDbEntity == null) {
-                        saveContext.Errors.Add("更新対象のデータが見つかりません。");
+                        errors.Add("更新対象のデータが見つかりません。");
                         return;
                     }
 
@@ -85,7 +87,7 @@ namespace Nijo.Models.WriteModel2Features {
 
                     // 楽観排他制御（なおこことは別に、SQL発行時にEntityFramework側でも重ねて楽観排他の確認がなされる）
                     if (beforeDbEntity.{{EFCoreEntity.VERSION}} != afterDbEntity.{{EFCoreEntity.VERSION}}) {
-                        saveContext.Errors.Add("ほかのユーザーが更新しました。");
+                        errors.Add("ほかのユーザーが更新しました。");
                         return;
                     }
 
@@ -97,28 +99,39 @@ namespace Nijo.Models.WriteModel2Features {
                     afterDbEntity.{{EFCoreEntity.UPDATE_USER}} = {{ApplicationService.CURRENT_USER}};
 
                     // 更新前処理。入力検証や自動補完項目の設定を行う。
-                    {{BeforeMethodName}}(beforeDbEntity, afterDbEntity, saveContext);
+                    var beforeSaveArgs = new {{SaveContext.BEFORE_SAVE}}<{{dataClass.ErrorDataCsClassName}}>(batchUpdateState, errors);
+                    {{BeforeMethodName}}(beforeDbEntity, afterDbEntity, beforeSaveArgs);
 
-                    // エラーやコンファームがある場合は処理中断
-                    if (saveContext.Errors.HasError()) return;
-                    if (!saveContext.Options.IgnoreConfirm && saveContext.HasConfirm()) return;
+                    // 一括更新データ全件のうち1件でもエラーやコンファームがある場合は処理中断
+                    if (batchUpdateState.HasError()) return;
+                    if (!batchUpdateState.Options.IgnoreConfirm && batchUpdateState.HasConfirm()) return;
 
                     // 更新実行
+                    const string SAVE_POINT = "SAVE_POINT"; // 更新後処理でエラーが発生した場合はこのデータの更新のみロールバックする
+                                                            // EntityのStateはUnchangedのままなので、
+                                                            // 以降のデータの更新時にこのデータの更新SQLが再度発行されるといったことはない。
                     try {
                         var entry = {{appSrv.DbContext}}.Entry(afterDbEntity);
                         entry.State = EntityState.Modified;
                         entry.Property(e => e.{{EFCoreEntity.VERSION}}).OriginalValue = beforeDbEntity.{{EFCoreEntity.VERSION}};
 
                         {{WithIndent(RenderDescendantAttaching(), "        ")}}
+                        {{appSrv.DbContext}}.Database.CurrentTransaction!.CreateSavepoint(SAVE_POINT);
                         {{appSrv.DbContext}}.SaveChanges();
                     } catch (DbUpdateException ex) {
-                        saveContext.Errors.Add(ex.Message);
+                        errors.Add(ex.Message);
                         return;
                     }
 
                     // 更新後処理
-                    var afterSaveContext = new {{dataClass.AfterSaveContextCsClassName}}();
-                    {{AfterMethodName}}(beforeDbEntity, afterDbEntity, afterSaveContext);
+                    try {
+                        var afterSaveEventArgs = new {{SaveContext.AFTER_SAVE_EVENT_ARGS}}(batchUpdateState);
+                        {{AfterMethodName}}(beforeDbEntity, afterDbEntity, afterSaveEventArgs);;
+                        {{appSrv.DbContext}}.Database.CurrentTransaction!.ReleaseSavepoint(SAVE_POINT);
+                    } catch (Exception ex) {
+                        errors.Add($"更新後処理でエラーが発生しました: {ex.Message}");
+                        {{appSrv.DbContext}}.Database.CurrentTransaction!.RollbackToSavepoint(SAVE_POINT);
+                    }
                 }
 
                 /// <summary>
@@ -131,7 +144,7 @@ namespace Nijo.Models.WriteModel2Features {
                 /// <summary>
                 /// {{_rootAggregate.Item.DisplayName}}の更新SQL発行後、コミット前に実行されます。
                 /// </summary>
-                protected virtual void {{AfterMethodName}}({{efCoreEntity.ClassName}} beforeDbEntity, {{efCoreEntity.ClassName}} afterDbEntity, {{dataClass.AfterSaveContextCsClassName}} e) {
+                protected virtual void {{AfterMethodName}}({{efCoreEntity.ClassName}} beforeDbEntity, {{efCoreEntity.ClassName}} afterDbEntity, {{SaveContext.AFTER_SAVE_EVENT_ARGS}} e) {
                     // このメソッドをオーバーライドして必要な更新後処理を記述してください。
                 }
                 """;

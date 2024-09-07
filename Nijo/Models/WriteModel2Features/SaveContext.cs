@@ -34,13 +34,17 @@ namespace Nijo.Models.WriteModel2Features {
         /// </summary>
         internal const string BEFORE_SAVE = "BeforeSaveEventArgs";
         /// <summary>
+        /// データ作成・更新・削除の後、トランザクションのコミット前に実行されるイベントの引数
+        /// </summary>
+        internal const string AFTER_SAVE_EVENT_ARGS = "AfterSaveEventArgs";
+        /// <summary>
         /// 保存コマンドのインスタンスと紐づいたエラーメッセージの入れ物を返すメソッド
         /// </summary>
         internal const string GET_ERR_MSG_CONTAINER = "GetErrorMessageContainer";
         /// <summary>
         /// 一括更新処理の細かい挙動を呼び出し元で指定できるようにするためのオプション
         /// </summary>
-        private const string SAVE_OPTIONS = "SaveOptions";
+        internal const string SAVE_OPTIONS = "SaveOptions";
 
         void ISummarizedFile.OnEndGenerating(CodeRenderingContext context) {
             context.CoreLibrary.UtilDir(utilDir => {
@@ -86,13 +90,30 @@ namespace Nijo.Models.WriteModel2Features {
 
                         public {{SAVE_OPTIONS}} Options { get; }
 
+                        /// <summary>
+                        /// エラーが出ていたとしても強制的にトランザクションをコミットするかどうか。
+                        /// 一度でもtrueになった後はfalseに戻ることはない。
+                        /// </summary>
+                        public bool ForceCommit { get; private set; } = false;
+                        /// <summary>
+                        /// たとえエラーが出ていても処理終了時にトランザクションをコミットするよう指定します。
+                        /// </summary>
+                        public void ShouldCommit() {
+                            ForceCommit = true;
+                        }
+
                         #region エラー
                         private readonly Dictionary<int, {{ErrorReceiver.RECEIVER}}> _errors = new();
-                        public void RegisterErrorData(int errorItemIndex, {{ErrorReceiver.RECEIVER}} errorData) {
+                        /// <summary>
+                        /// エラーデータの入れ物のインスタンスを、一括更新の引数の配列のインデックスと紐づけて登録します。
+                        /// 「○件目でエラーが発生しました」といったように何番目のデータでエラーが起きたかを表示するのに必要になります。
+                        /// </summary>
+                        public void RegisterErrorDataWithIndex(int errorItemIndex, {{ErrorReceiver.RECEIVER}} errorData) {
                             _errors[errorItemIndex] = errorData;
                         }
                         public bool HasError() {
-                            return _errors.Values.Any(e => e.HasError());
+                            return _errors.Values.Any(e => e.HasError())
+                                || _errorMessageContainerDict.Values.Any(e => e.HasError());
                         }
                         public JsonNode GetErrorDataJson() {
                             var array = new JsonArray();
@@ -184,6 +205,16 @@ namespace Nijo.Models.WriteModel2Features {
                         public bool HasConfirm() {
                             return _state.HasConfirm();
                         }
+                    }
+
+                    /// <summary>
+                    /// 更新後イベント引数
+                    /// </summary>
+                    public partial class {{AFTER_SAVE_EVENT_ARGS}} {
+                        public {{AFTER_SAVE_EVENT_ARGS}}({{STATE_CLASS_NAME}} batchUpdateState) {
+                            _batchUpdateState = batchUpdateState;
+                        }
+                        protected readonly {{STATE_CLASS_NAME}} _batchUpdateState;
                     }
                     """;
             },
