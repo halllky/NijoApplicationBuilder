@@ -66,7 +66,7 @@ namespace Nijo.Models.WriteModel2Features {
                         {{appSrv.DbContext}}.SaveChanges();
                     } catch (DbUpdateException ex) {
                         {{appSrv.DbContext}}.Database.CurrentTransaction!.RollbackToSavepoint(SAVE_POINT);
-                        errors.Add(ex.Message);
+                        errors.Add(string.Join(Environment.NewLine, ex.GetMessagesRecursively()));
                         return;
                     }
 
@@ -76,7 +76,7 @@ namespace Nijo.Models.WriteModel2Features {
                         {{AfterMethodName}}(dbEntity, afterSaveEventArgs);
                         {{appSrv.DbContext}}.Database.CurrentTransaction!.ReleaseSavepoint(SAVE_POINT);
                     } catch (Exception ex) {
-                        errors.Add($"更新後処理でエラーが発生しました: {ex.Message}");
+                        errors.Add($"更新後処理でエラーが発生しました: {string.Join(Environment.NewLine, ex.GetMessagesRecursively())}");
                         {{appSrv.DbContext}}.Database.CurrentTransaction!.RollbackToSavepoint(SAVE_POINT);
                     }
                 }
