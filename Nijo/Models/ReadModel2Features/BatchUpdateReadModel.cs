@@ -35,11 +35,12 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>データ本体のプロパティの名前（TypeScript側）</summary>
         private const string VALUES_TS = "values";
 
-        internal const string FUNC_NAME = "batchUpdateReadModels";
-        private const string FUNC_PARA_TYPE = "BatchUpdateDisplayDataParam";
-        private const string FUNC_PARAM_ITEMS = "Items";
+        internal const string HOOK_NAME = "useBatchUpdateReadModels";
+        private const string HOOK_PARA_TYPE = "BatchUpdateDisplayDataParam";
+        private const string HOOK_PARAM_ITEMS = "Items";
 
         private const string CONTROLLER_ACTION = "display-data";
+        private const string HTTP_RESULT_DETAIL = "detail";
 
         private const string APPSRV_CONVERT_DISP_TO_SAVE = "ConvertDisplayDataToSaveData";
         private const string APPSRV_BATCH_UPDATE = "BatchUpdateReadModels";
@@ -50,7 +51,7 @@ namespace Nijo.Models.ReadModel2Features {
             // 一括更新処理
             var batchUpdate = context.UseSummarizedFile<BatchUpdateWriteModel>();
             context.ReactProject.Types.Add(RenderFuncParamType());
-            batchUpdate.AddReactHook(FUNC_NAME, RenderFunction(context));
+            batchUpdate.AddReactHook(RenderFunction(context));
             context.UseSummarizedFile<Parts.Utility.UtilityClass>().AddJsonConverter(RenderJsonConverter());
             batchUpdate.AddControllerAction(RenderControllerAction(context));
             batchUpdate.AddAppSrvMethod(RenderAppSrvMethod(context));
@@ -58,7 +59,7 @@ namespace Nijo.Models.ReadModel2Features {
 
         private string RenderFuncParamType() {
             return $$"""
-                export type {{FUNC_PARA_TYPE}}
+                export type {{HOOK_PARA_TYPE}}
                 {{_aggregates.SelectTextTemplate((agg, i) => $$"""
                   {{(i == 0 ? "=" : "|")}} { {{DATA_TYPE_TS}}: '{{GetDataTypeLiteral(agg)}}', {{VALUES_TS}}: {{new DataClassForDisplay(agg).TsTypeName}} }
                 """)}}
@@ -68,11 +69,56 @@ namespace Nijo.Models.ReadModel2Features {
         private string RenderFunction(CodeRenderingContext context) {
             return $$"""
                 /** 画面表示用データの一括更新を即時実行します。更新するデータの量によっては長い待ち時間が発生する可能性があります。 */
-                const {{FUNC_NAME}} = React.useCallback(async (...{{FUNC_PARAM_ITEMS}}: Types.{{FUNC_PARA_TYPE}}[]) => {
-                  const res = await post(`/{{Controller.SUBDOMAIN}}/{{BatchUpdateWriteModel.CONTROLLER_SUBDOMAIN}}/{{CONTROLLER_ACTION}}`, { {{FUNC_PARAM_ITEMS}} })
-                  if (res.ok) dispatchToast(msg => msg.info('保存しました。'))
-                  return res
-                }, [post, dispatchMsg, dispatchToast])
+                export const {{HOOK_NAME}} = () => {
+                  const { post2, handleUnknownResponse } = Util.useHttpRequest()
+                  const [, dispatchToast] = Util.useToastContext()
+                  const [nowSaving, setNowSaving] = React.useState(false)
+
+                  type ReturnType = { ok: true } | { ok: false, errors?: ErrorDetailType } 
+                  type ErrorDetailType = { [index: string]: [ReactHookForm.FieldPath<ReactHookForm.FieldValues>, { types: { [key: string]: string } }][] }
+
+                  const callBatchUpdateApi = useEvent(async ({{HOOK_PARAM_ITEMS}}: Types.{{HOOK_PARA_TYPE}}[], ignoreConfirm: boolean): Promise<ReturnType> => {
+                    const response = await post2(`/{{Controller.SUBDOMAIN}}/{{BatchUpdateWriteModel.CONTROLLER_SUBDOMAIN}}/{{CONTROLLER_ACTION}}?ignoreConfirm=${ignoreConfirm}`, { {{HOOK_PARAM_ITEMS}} })
+                    if (!response) {
+                      return { ok: false }
+
+                    } else if (response.status === 200 /* 成功 */) {
+                      dispatchToast(msg => msg.info('保存しました。'))
+                      return { ok: true }
+
+                    } else if (response.status === 202 /* Accepted. このリクエストにおいては「～してもよいですか？」の確認メッセージ表示を意味する */) {
+                      // 「～してもよいですか？」の確認メッセージ表示
+                      const resData = (await response.json()) as { {{HTTP_RESULT_DETAIL}}: string[] }
+                      for (const msg of resData.{{HTTP_RESULT_DETAIL}}) {
+                        if (!window.confirm(msg)) return { ok: false } // "OK"が選択されなかった場合は処理実行APIを呼ばずに処理中断
+                      }
+                      // すべての確認メッセージで"OK"が選ばれた場合は再度処理実行APIを呼ぶ。確認メッセージを表示しない旨のオプションをつけたうえで呼ぶ。
+                      return await callBatchUpdateApi({{HOOK_PARAM_ITEMS}}, true)
+
+                    } else if (response.status === 422 /* Unprocessable Content. エラー */) {
+                      // 入力内容エラー
+                      const resData = (await response.json()) as { {{HTTP_RESULT_DETAIL}}: ErrorDetailType }
+                      return { ok: false, errors: resData.{{HTTP_RESULT_DETAIL}} }
+
+                    } else {
+                      handleUnknownResponse(response)
+                      return { ok: false }
+                    }
+                  })
+                  const batchUpdateReadModels = useEvent(async (items: Types.{{HOOK_PARA_TYPE}}[]): Promise<ReturnType> => {
+                    if (nowSaving) return { ok: false }
+                    setNowSaving(true)
+                    try {
+                      return await callBatchUpdateApi(items, false)
+                    } finally {
+                      setNowSaving(false)
+                    }
+                  })
+                  return {
+                    batchUpdateReadModels,
+                    nowSaving,
+                  }
+                }
                 """;
         }
 
@@ -116,19 +162,22 @@ namespace Nijo.Models.ReadModel2Features {
                         var options = new {{SaveContext.SAVE_OPTIONS}} {
                             IgnoreConfirm = ignoreConfirm,
                         };
-                        var result = _applicationService.{{APPSRV_BATCH_UPDATE}}(parameter.{{FUNC_PARAM_ITEMS}}, options);
-                
+                        var result = _applicationService.{{APPSRV_BATCH_UPDATE}}(parameter.{{HOOK_PARAM_ITEMS}}, options);
+
                         if (result.HasError()) {
-                            return BadRequest(result.GetErrorDataJson());
+                            return UnprocessableEntity(new { {{HTTP_RESULT_DETAIL}} = result.GetErrorDataJson() });
+                        }
+                        if (!ignoreConfirm && result.HasConfirm()) {
+                            return Accepted(new { {{HTTP_RESULT_DETAIL}} = result.GetConfirms().ToArray() });
                         }
                         return Ok();
-                
+
                     } catch (Exception ex) {
                         return Problem(ex.ToString());
                     }
                 }
                 public partial class ReadModelsBatchUpdateParameter {
-                    public List<{{DataClassForDisplay.BASE_CLASS_NAME}}> {{FUNC_PARAM_ITEMS}} { get; set; } = new();
+                    public List<{{DataClassForDisplay.BASE_CLASS_NAME}}> {{HOOK_PARAM_ITEMS}} { get; set; } = new();
                 }
                 #endregion 画面表示用データの一括更新
                 """;

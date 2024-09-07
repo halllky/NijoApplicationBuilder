@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from "react"
 import { useUserSetting } from "./UserSetting"
 import { useMsgContext } from "./Notification"
+import useEvent from "react-use-event-hook"
 
 type HttpSendResult<T>
   = { ok: true, data: T }
@@ -19,6 +20,37 @@ export const useHttpRequest = () => {
       ? domain.substring(0, domain.length - 1)
       : domain
   }, [apiDomain])
+
+  const handleUnknownResponse = useEvent(async (res: Response) => {
+    const response = res.bodyUsed ? res.clone() : res
+    const body = response.headers.get('content-type')?.toLowerCase().includes('application/json')
+      ? await response.json() as unknown
+      : await response.text()
+    const summary = res.ok
+      ? '処理は成功しましたが処理結果の解釈に失敗しました。'
+      : '処理に失敗しました。'
+
+    // ASP.NET Core のControllerの return BadRequest ではエラー詳細は response.json() の結果そのまま
+    if (response.status >= 400 && response.status <= 499) {
+      dispatchMsg(msg => msg.error([summary, ...parseUnknownErrors(body)].join('\n')))
+      return
+    }
+    // ASP.NET Core のControllerの return Problem ではエラー詳細はcontentやdetailという名前のプロパティの中に入っている
+    if (response.status >= 500 && response.status <= 599) {
+      const { detail } = body as { detail: unknown }
+      if (detail) {
+        dispatchMsg(msg => msg.error([summary, ...parseUnknownErrors(detail)].join('\n')))
+        return
+      }
+      const { content } = body as { content: unknown }
+      if (content) {
+        dispatchMsg(msg => msg.error([summary, ...parseUnknownErrors(content)].join('\n')))
+        return
+      }
+    }
+    // 処理結果解釈不能
+    dispatchMsg(msg => msg.error([summary, ...parseUnknownErrors(body)].join('\n')))
+  })
 
   const sendHttpRequest = useCallback(async <T>(
     /** URLと追加パラメータ */
@@ -93,6 +125,18 @@ export const useHttpRequest = () => {
     }])
   }, [dotnetWebApiDomain, sendHttpRequest])
 
+  const post2 = useEvent(async (url: string, data: object = {}) => {
+    try {
+      return await fetch(`${dotnetWebApiDomain}${url}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+    } catch (errors) {
+      dispatchMsg(msg => msg.error(`通信でエラーが発生しました(${url})\n${parseUnknownErrors(errors).join('\n')}`))
+    }
+  })
+
   const postWithHandler = useCallback(async (url: string, data: object, responseHandler: ResponseHandler) => {
     const result = await sendHttpRequest([`${dotnetWebApiDomain}${url}`, {
       method: 'POST',
@@ -136,6 +180,9 @@ export const useHttpRequest = () => {
     get,
     post,
     /** HTTPレスポンスの内容次第で細かく制御を分けたい場合はこちらを使用 */
+    post2,
+    handleUnknownResponse,
+    /** 廃止予定 */
     postWithHandler,
     /** POSTリクエストを送信し、レスポンスをデータでなくファイルとして解釈してダウンロードを開始します。 */
     postAndDownload,

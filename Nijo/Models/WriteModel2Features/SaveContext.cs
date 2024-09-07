@@ -116,12 +116,13 @@ namespace Nijo.Models.WriteModel2Features {
                                 || _errorMessageContainerDict.Values.Any(e => e.HasError());
                         }
                         public JsonNode GetErrorDataJson() {
-                            var array = new JsonArray();
+                            var obj = new JsonObject();
                             foreach (var kv in _errors.OrderBy(kv => kv.Key)) {
-                                var node = kv.Value.ToJsonNodes(null);
-                                array.Add(node);
+                                var value = new JsonArray();
+                                foreach (var node in kv.Value.ToJsonNodes(null)) value.Add(node);
+                                obj.Add(kv.Key.ToString(), value);
                             }
-                            return array;
+                            return obj;
                         }
                         #endregion エラー
 
@@ -132,6 +133,9 @@ namespace Nijo.Models.WriteModel2Features {
                         }
                         public bool HasConfirm() {
                             return _confirms.Count > 0;
+                        }
+                        public IEnumerable<string> GetConfirms() {
+                            return _confirms;
                         }
                         #endregion 警告
 

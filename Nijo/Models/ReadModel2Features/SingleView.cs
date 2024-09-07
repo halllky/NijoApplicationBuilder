@@ -182,7 +182,7 @@ namespace Nijo.Models.ReadModel2Features {
                   }, [{{MODE}}])
 
                   // 保存時
-                  const { {{BatchUpdateReadModel.FUNC_NAME}} } = {{BatchUpdateWriteModel.HOOK_NAME}}()
+                  const { batchUpdateReadModels, nowSaving } = {{BatchUpdateReadModel.HOOK_NAME}}()
                   const navigateToDetailPage = Util.{{GetNavigateFnName(E_Type.ReadOnly)}}()
                   const save = useEvent(async () => {
                     // 閲覧モードでは保存不可
@@ -203,20 +203,21 @@ namespace Nijo.Models.ReadModel2Features {
                       }
                     }
                     // 一括更新APIを呼ぶ
-                    const response = await {{BatchUpdateReadModel.FUNC_NAME}}({
+                    const result = await batchUpdateReadModels([{
                       dataType: '{{BatchUpdateReadModel.GetDataTypeLiteral(_aggregate)}}',
                       values: currentValues,
-                    })
+                    }])
                     // 処理失敗の場合、入力エラーを画面に表示
-                    if (!response.ok) {
-                      const errors = response.errors as [ReactHookForm.FieldPath<Types.{{dataClass.TsTypeName}}>, { types: { [key: string]: string } }][][]
-                      for (const [name, error] of errors[0]) {
-                        setError(name, error)
+                    if (!result.ok && result.errors) {
+                      // 一括更新だがデータの数は1件しか無いのでインデックスは '0' 決め打ち
+                      for (const [name, error] of result.errors['0']) {
+                        setError(name as ReactHookForm.FieldPath<Types.{{dataClass.TsTypeName}}> | `root.${string}` | 'root', error)
                       }
-                      return
                     }
                     // 処理成功の場合、詳細画面（読み取り専用）へ遷移
-                    navigateToDetailPage(currentValues, 'readonly')
+                    if (result.ok) {
+                      navigateToDetailPage(currentValues, 'readonly')
+                    }
                   })
 
                   // ページの外枠
@@ -228,7 +229,7 @@ namespace Nijo.Models.ReadModel2Features {
                     return (
                       <ReactHookForm.FormProvider {...reactHookFormMethods}>
                         <Layout.PageFrame
-                          nowLoading={loadState === undefined || loadState === 'loading'}
+                          nowLoading={loadState === undefined || loadState === 'loading' || nowSaving}
                           header={<>
                             <Layout.PageTitle>
                               {{_aggregate.Item.DisplayName}}&nbsp;{displayName}
@@ -249,7 +250,7 @@ namespace Nijo.Models.ReadModel2Features {
                         </Layout.PageFrame>
                       </ReactHookForm.FormProvider>
                     )
-                  }, [loadState, displayName])
+                  }, [loadState, displayName, nowSaving])
 
                   return {
                     /** ページの外枠 */

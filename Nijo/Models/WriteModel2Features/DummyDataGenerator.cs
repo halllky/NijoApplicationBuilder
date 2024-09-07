@@ -46,7 +46,7 @@ namespace Nijo.Models.WriteModel2Features {
 
                     export const useDummyDataGenerator2 = () => {
                       const { get } = useHttpRequest()
-                      const { batchUpdateWriteModels } = AggregateHook.{{BatchUpdateWriteModel.HOOK_NAME}}()
+                      const batchUpdateWriteModels = AggregateHook.{{BatchUpdateWriteModel.HOOK_NAME}}()
                     {{refSearchHooks.SelectTextTemplate(x => $$"""
                       const { {{RefSearchMethod.LOAD}}: {{x.Load}} } = AggregateHook.{{x.Hook}}()
                     """)}}

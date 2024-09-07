@@ -19,9 +19,9 @@ namespace Nijo.Models.WriteModel2Features {
             _aggregates.Add(aggregate);
         }
 
-        private readonly Dictionary<string, string> _additionalHooks = new();
-        internal void AddReactHook(string hookName, string code) {
-            _additionalHooks.Add(hookName, code);
+        private readonly List<string> _additionalHooks = new();
+        internal void AddReactHook(string code) {
+            _additionalHooks.Add(code);
         }
 
         private readonly List<string> _additionalControllerActions = new();
@@ -36,7 +36,7 @@ namespace Nijo.Models.WriteModel2Features {
 
         // --------------------------------------------------
 
-        internal const string HOOK_NAME = "useBatchUpdate";
+        internal const string HOOK_NAME = "useBatchUpdateWriteModels";
         internal const string HOOK_PARAM_ITEMS = "Items";
 
         internal const string CONTROLLER_SUBDOMAIN = "batch-update";
@@ -59,7 +59,7 @@ namespace Nijo.Models.WriteModel2Features {
         private string RenderHook(CodeRenderingContext context) {
             return $$"""
                 /** 一括更新処理を使用します。 */
-                export const useBatchUpdate = () => {
+                export const {{HOOK_NAME}} = () => {
                   const [, dispatchMsg] = Util.useMsgContext()
                   const [, dispatchToast] = Util.useToastContext()
                   const { post } = Util.useHttpRequest()
@@ -71,17 +71,12 @@ namespace Nijo.Models.WriteModel2Features {
                     return res
                   }, [post, dispatchMsg, dispatchToast])
 
-                {{_additionalHooks.Values.SelectTextTemplate(code => $$"""
-                  {{WithIndent(code, "  ")}}
-
-                """)}}
-                  return {
-                    batchUpdateWriteModels,
-                {{_additionalHooks.Keys.SelectTextTemplate(hookName => $$"""
-                    {{hookName}},
-                """)}}
-                  }
+                  return batchUpdateWriteModels
                 }
+                {{_additionalHooks.SelectTextTemplate(code => $$"""
+
+                {{code}}
+                """)}}
                 """;
         }
 
