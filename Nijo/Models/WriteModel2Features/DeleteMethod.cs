@@ -113,13 +113,13 @@ namespace Nijo.Models.WriteModel2Features {
                 /// {{_rootAggregate.Item.DisplayName}}の削除前に実行されます。
                 /// エラーチェック、ワーニング、自動算出項目の設定などを行います。
                 /// </summary>
-                protected virtual void {{BeforeMethodName}}({{efCoreEntity.ClassName}} beforeDbEntity, {{efCoreEntity.ClassName}} afterDbEntity, {{SaveContext.BEFORE_SAVE}}<{{dataClass.ErrorDataCsClassName}}> context) {
+                protected virtual void {{BeforeMethodName}}({{efCoreEntity.ClassName}} beforeDbEntity, {{efCoreEntity.ClassName}} afterDbEntity, {{SaveContext.BEFORE_SAVE}}<{{dataClass.ErrorDataCsClassName}}> e) {
                     // このメソッドをオーバーライドしてエラーチェック等を記述してください。
                 }
                 /// <summary>
                 /// {{_rootAggregate.Item.DisplayName}}の削除SQL発行後、コミット前に実行されます。
                 /// </summary>
-                protected virtual void {{AfterMethodName}}({{efCoreEntity.ClassName}} beforeDbEntity, {{efCoreEntity.ClassName}} afterDbEntity, {{dataClass.AfterSaveContextCsClassName}} context) {
+                protected virtual void {{AfterMethodName}}({{efCoreEntity.ClassName}} beforeDbEntity, {{efCoreEntity.ClassName}} afterDbEntity, {{dataClass.AfterSaveContextCsClassName}} e) {
                     // このメソッドをオーバーライドして必要な削除後処理を記述してください。
                 }
                 """;

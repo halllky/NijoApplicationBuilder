@@ -125,13 +125,13 @@ namespace Nijo.Models.WriteModel2Features {
                 /// {{_rootAggregate.Item.DisplayName}}の更新前に実行されます。
                 /// エラーチェック、ワーニング、自動算出項目の設定などを行います。
                 /// </summary>
-                protected virtual void {{BeforeMethodName}}({{efCoreEntity.ClassName}} beforeDbEntity, {{efCoreEntity.ClassName}} afterDbEntity, {{SaveContext.BEFORE_SAVE}}<{{dataClass.ErrorDataCsClassName}}> context) {
+                protected virtual void {{BeforeMethodName}}({{efCoreEntity.ClassName}} beforeDbEntity, {{efCoreEntity.ClassName}} afterDbEntity, {{SaveContext.BEFORE_SAVE}}<{{dataClass.ErrorDataCsClassName}}> e) {
                     // このメソッドをオーバーライドしてエラーチェック等を記述してください。
                 }
                 /// <summary>
                 /// {{_rootAggregate.Item.DisplayName}}の更新SQL発行後、コミット前に実行されます。
                 /// </summary>
-                protected virtual void {{AfterMethodName}}({{efCoreEntity.ClassName}} beforeDbEntity, {{efCoreEntity.ClassName}} afterDbEntity, {{dataClass.AfterSaveContextCsClassName}} context) {
+                protected virtual void {{AfterMethodName}}({{efCoreEntity.ClassName}} beforeDbEntity, {{efCoreEntity.ClassName}} afterDbEntity, {{dataClass.AfterSaveContextCsClassName}} e) {
                     // このメソッドをオーバーライドして必要な更新後処理を記述してください。
                 }
                 """;
