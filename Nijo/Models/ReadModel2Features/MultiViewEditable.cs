@@ -25,13 +25,16 @@ namespace Nijo.Models.ReadModel2Features {
         public bool ShowMenu => false;
         public string? LabelInMenu => null;
 
+        internal const string HANDLE_BLUR = "handleBlur";
+
         public SourceFile GetSourceFile() => new() {
             FileName = "multi-view-editable.tsx",
             RenderContent = ctx => {
                 var dataClass = new DataClassForDisplay(_rootAggregate);
                 var searchCondition = new SearchCondition(_rootAggregate);
                 var loadMethod = new LoadMethod(_rootAggregate);
-                var tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_rootAggregate, $"AggregateType.{dataClass.TsTypeName}", false)
+                var rootAggregateComponent = new MultiViewEditableAggregateComponent(_rootAggregate);
+                var tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_rootAggregate, $"AggregateType.{dataClass.TsTypeName}", true)
                     // 行ヘッダ（列の状態）
                     .Add(new Parts.WebClient.DataTable.AdhocColumn {
                         Header = string.Empty,
@@ -47,11 +50,13 @@ namespace Nijo.Models.ReadModel2Features {
                               )
                             }
                             """,
-                })
-                // メンバーの列
-                .AddMembers(dataClass);
+                    })
+                    // メンバーの列
+                    .AddMembers(dataClass);
 
-                var rootAggregateComponent = new MultiViewEditableAggregateComponent(_rootAggregate);
+                var keys = _rootAggregate
+                    .GetKeys()
+                    .OfType<AggregateMember.ValueMember>();
 
                 return $$"""
                     import React, { useState, useContext } from 'react'
@@ -94,7 +99,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                       // 編集中データ
                       const reactHookFormMethods = Util.useFormEx<{ data: AggregateType.{{dataClass.TsTypeName}}[] }>({ defaultValues: { data } })
-                      const { insert, remove } = useFieldArray({ name: 'data', control: reactHookFormMethods.control })
+                      const { insert, remove, update } = useFieldArray({ name: 'data', control: reactHookFormMethods.control })
                       const fields = useWatch({ name: 'data', control: reactHookFormMethods.control })
 
                       // 詳細部分のレイアウト
@@ -124,8 +129,21 @@ namespace Nijo.Models.ReadModel2Features {
                       // 選択されている行
                       const [activeRowIndex, setActiveRowIndex] = useState<number | undefined>(undefined)
                       const { debouncedValue: debouncedActiveRowIndex, debouncing } = Util.useDebounce(activeRowIndex, fields.length < 100 ? 0 : 300)
-                      const handleActiveRowChanged = useEvent((e: { getRow: () => AggregateType.{{dataClass.TsTypeName}}, rowIndex: number } | undefined) => {
+                      const handleActiveRowChanged = useEvent((e: { rowIndex: number } | undefined) => {
                         setActiveRowIndex(e?.rowIndex)
+                      })
+
+                      // 値変更チェック
+                      const defaultValuesDict: Map<string, AggregateType.{{dataClass.TsTypeName}}> = React.useMemo(() => {
+                        return new Map(data.map(item => [getItemKeyAsString(item), item]))
+                      }, [data])
+                      const setChangeFlag = useEvent((itemIndex: number) => {
+                        const currentValue = reactHookFormMethods.getValues(`data.${itemIndex}`)
+                        if (!currentValue) return
+                        const defaultValue = defaultValuesDict.get(getItemKeyAsString(currentValue))
+                        if (!defaultValue) return
+                        const changed = !AggregateType.{{dataClass.DeepEqualFunction}}(currentValue, defaultValue)
+                        reactHookFormMethods.setValue(`data.${itemIndex}.{{DataClassForDisplay.WILL_BE_CHANGED_TS}}`, changed)
                       })
 
                       // 行追加
@@ -148,10 +166,33 @@ namespace Nijo.Models.ReadModel2Features {
                         remove(removeIndexes)
                       })
 
+                      // 行編集時
+                      const handleChangeRow = useEvent((rowIndex: number, row: AggregateType.{{dataClass.TsTypeName}}) => {
+                        const defaultValue = defaultValuesDict.get(getItemKeyAsString(row))
+                        if (defaultValue) {
+                          const changed = !AggregateType.{{dataClass.DeepEqualFunction}}(row, defaultValue)
+                          update(rowIndex, { ...row, {{DataClassForDisplay.WILL_BE_CHANGED_TS}}: changed })
+                        } else {
+                          update(rowIndex, row)
+                        }
+                      })
+
                       // リセット
                       const handleReset = useEvent(() => {
                         if (!confirm('選択されている行の変更を元に戻しますか？')) return
-                        alert('TODO #43 リセット処理未実装')
+                        if (!tableRef.current) return
+                        for (const x of tableRef.current.getSelectedRows()) {
+                          const state = AggregateType.{{DataClassForSaveBase.GET_ADD_MOD_DEL_ENUM_TS}}(x.row)
+                          if (state === 'MOD' || state === 'DEL') {
+                            const defaultValue = defaultValuesDict.get(getItemKeyAsString(x.row))
+                            if (defaultValue) update(x.rowIndex, { ...defaultValue })
+                          }
+                        }
+                      })
+
+                      // 詳細欄からフォーカスが外れたとき
+                      const {{HANDLE_BLUR}} = useEvent(() => {
+                        if (activeRowIndex !== undefined) setChangeFlag(activeRowIndex)
                       })
 
                       return (
@@ -181,6 +222,7 @@ namespace Nijo.Models.ReadModel2Features {
                                   data={fields}
                                   columns={columnDefs}
                                   onActiveRowChanged={handleActiveRowChanged}
+                                  onChangeRow={handleChangeRow}
                                   className="h-full"
                                 />
                               </Panel>
@@ -211,6 +253,15 @@ namespace Nijo.Models.ReadModel2Features {
 
                     {{component.RenderDeclaring(ctx)}}
                     """)}}
+
+                    /** 値変更チェック用の辞書のキー取得関数 */
+                    const getItemKeyAsString = (item: AggregateType.{{dataClass.TsTypeName}}): string => {
+                      return JSON.stringify([
+                    {{keys.SelectTextTemplate(vm => $$"""
+                        item.{{vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript).Join("?.")}},
+                    """)}}
+                      ])
+                    }
                     """;
             },
         };
