@@ -71,19 +71,17 @@ namespace Nijo.Models.ReadModel2Features {
 
                     export default function () {
                       // 画面初期表示時データ読み込み
-                      const [pageState, setPageState] = React.useState<'init' | 'loading' | 'loaded'>('init')
                       const { search: locationSerach } = useLocation()
-                      const { {{LoadMethod.LOAD}}, {{LoadMethod.CURRENT_PAGE_ITEMS}} } = AggregateHook.{{loadMethod.ReactHookName}}()
+                      const { {{LoadMethod.LOAD}} } = AggregateHook.{{loadMethod.ReactHookName}}(true)
+                      const [data, setData] = React.useState<AggregateType.{{dataClass.TsTypeName}}[]>()
                       React.useEffect(() => {
-                        setPageState('loading')
+                        if (!locationSerach) return
                         const condition = AggregateType.{{searchCondition.ParseQueryParameter}}(locationSerach)
-                        {{LoadMethod.LOAD}}(condition).then(() => {
-                          setPageState('loaded')
-                        })
+                        {{LoadMethod.LOAD}}(condition).then(setData)
                       }, [locationSerach])
 
-                      return pageState === 'loaded' ? (
-                        <AfterLoaded data={{{LoadMethod.CURRENT_PAGE_ITEMS}}} />
+                      return data ? (
+                        <AfterLoaded data={data} />
                       ) : (
                         <Input.NowLoading />
                       )
