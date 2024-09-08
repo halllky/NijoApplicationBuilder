@@ -88,7 +88,9 @@ namespace Nijo.Models.ReadModel2Features {
                       return data ? (
                         <AfterLoaded data={data} />
                       ) : (
-                        <Input.NowLoading />
+                        <div className="relative w-full h-full">
+                          <Input.NowLoading />
+                        </div>
                       )
                     }
 
@@ -204,12 +206,15 @@ namespace Nijo.Models.ReadModel2Features {
                               <Input.IconButton onClick={handleRemove} outline mini>削除</Input.IconButton>
                               <Input.IconButton onClick={handleReset} outline mini>リセット</Input.IconButton>
                               <div className="flex-1"></div>
-                              <div className="self-stretch flex gap-1 border border-color-4">
-                                <Input.IconButton icon={Icon.ArrowsRightLeftIcon} hideText className="p-2" onClick={handleClickHorizontal} fill={!singleViewCollapsed && singleViewPosition === 'horizontal'}>左右に並べる</Input.IconButton>
-                                <Input.IconButton icon={Icon.ArrowsUpDownIcon} hideText className="p-2" onClick={handleClickVertical} fill={!singleViewCollapsed && singleViewPosition === 'vertical'}>上下に並べる</Input.IconButton>
-                                <Input.IconButton icon={Icon.ArrowsPointingOutIcon} hideText className="p-2" onClick={handleClickCollapse} fill={singleViewCollapsed}>一覧のみ表示</Input.IconButton>
+                              <div className="flex gap-2 items-center">
+                                <span className="select-none text-sm text-color-7">表示</span>
+                                <div className="flex gap-1 border border-color-4">
+                                  <Input.IconButton icon={Icon.ArrowsRightLeftIcon} hideText className="p-2" onClick={handleClickHorizontal} fill={!singleViewCollapsed && singleViewPosition === 'horizontal'}>左右に並べる</Input.IconButton>
+                                  <Input.IconButton icon={Icon.ArrowsUpDownIcon} hideText className="p-2" onClick={handleClickVertical} fill={!singleViewCollapsed && singleViewPosition === 'vertical'}>上下に並べる</Input.IconButton>
+                                  <Input.IconButton icon={Icon.ArrowsPointingOutIcon} hideText className="p-2" onClick={handleClickCollapse} fill={singleViewCollapsed}>一覧のみ表示</Input.IconButton>
+                                </div>
                               </div>
-                              <div className="basis-4"></div>
+                              <div className="basis-2"></div>
                               <Input.IconButton fill>保存</Input.IconButton>
                             </>}
                           >
@@ -232,12 +237,16 @@ namespace Nijo.Models.ReadModel2Features {
                               {/* 詳細欄 */}
                               <Panel
                                 ref={singleViewRef}
+                                defaultSize={0} // 初期表示時は折りたたみ状態
                                 collapsible
                                 onCollapse={setSingleViewCollapsed}
                                 className="relative border border-color-4"
                               >
                                 {!singleViewCollapsed && debouncedActiveRowIndex !== undefined && (
                                   {{WithIndent(rootAggregateComponent.RenderCaller(["debouncedActiveRowIndex"]), "              ")}}
+                                )}
+                                {!singleViewCollapsed && debouncedActiveRowIndex == undefined && (
+                                  <span className="select-none text-sm text-color-7">ここには一覧で選択している行の詳細が表示されます。</span>
                                 )}
                                 {debouncing && (
                                   <Input.NowLoading />
