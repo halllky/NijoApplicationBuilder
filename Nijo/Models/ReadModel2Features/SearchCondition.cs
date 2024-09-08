@@ -356,7 +356,7 @@ namespace Nijo.Models.ReadModel2Features {
         internal string RenderParseQueryParameterFunction() {
             return $$"""
                 /** クエリパラメータを解釈して画面初期表示時検索条件オブジェクトを返します。 */
-                export const parseQueryParameter = (url: string): {{TsTypeName}} => {
+                export const {{ParseQueryParameter}} = (url: string): {{TsTypeName}} => {
                   const searchCondition = {{CreateNewObjectFnName}}()
                   if (!url) return searchCondition
 

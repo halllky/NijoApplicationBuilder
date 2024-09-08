@@ -64,7 +64,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                   React.useEffect(() => {
                     if (!{{NOW_LOADING}}) {
-                      {{LOAD}}(initCondition ?? Types.{{searchCondition.CreateNewObjectFnName}}())
+                      {{LOAD}}(initCondition?.() ?? Types.{{searchCondition.CreateNewObjectFnName}}())
                     }
                   }, [{{LOAD}}])
 
