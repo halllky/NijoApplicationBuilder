@@ -33,6 +33,7 @@ namespace Nijo.Models.ReadModel2Features {
                 var dataClass = new DataClassForDisplay(_rootAggregate);
                 var searchCondition = new SearchCondition(_rootAggregate);
                 var loadMethod = new LoadMethod(_rootAggregate);
+                var multiView = new MultiView(_rootAggregate);
                 var rootAggregateComponent = new MultiViewEditableAggregateComponent(_rootAggregate);
                 var tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_rootAggregate, $"AggregateType.{dataClass.TsTypeName}", true)
                     // 行ヘッダ（列の状態）
@@ -85,8 +86,23 @@ namespace Nijo.Models.ReadModel2Features {
                         {{LoadMethod.LOAD}}(condition).then(setData)
                       }, [locationSerach])
 
+                      // 保存時
+                      const { batchUpdateReadModels, nowSaving } = AggregateHook.{{BatchUpdateReadModel.HOOK_NAME}}()
+                      const navigateToMultiView = AggregateHook.{{multiView.NavigationHookName}}()
+                      const handleSave = useEvent(async (updatedData: AggregateType.{{dataClass.TsTypeName}}[]) => {
+                        const batchUpdateArgs = updatedData.map(values => ({ dataType: '{{DataClassForSaveBase.GetEnumValueOf(_rootAggregate)}}' as const, values }))
+                        const result = await batchUpdateReadModels(batchUpdateArgs)
+                        if (!result.ok) {
+                          // TODO #43 エラーデータのマッピング
+                          return
+                        }
+                        // 更新成功時は一覧検索画面に遷移
+                        const condition = AggregateType.{{searchCondition.ParseQueryParameter}}(locationSerach)
+                        navigateToMultiView(condition)
+                      })
+
                       return data ? (
-                        <AfterLoaded data={data} />
+                        <AfterLoaded data={data} onSave={handleSave} nowSaving={nowSaving} />
                       ) : (
                         <div className="relative w-full h-full">
                           <Input.NowLoading />
@@ -94,8 +110,10 @@ namespace Nijo.Models.ReadModel2Features {
                       )
                     }
 
-                    const AfterLoaded = ({ data }: {
+                    const AfterLoaded = ({ data, onSave, nowSaving }: {
                       data: AggregateType.{{dataClass.TsTypeName}}[]
+                      onSave: (value: AggregateType.{{dataClass.TsTypeName}}[]) => void
+                      nowSaving: boolean
                     }) => {
                       const tableRef = React.useRef<Layout.DataTableRef<AggregateType.{{dataClass.TsTypeName}}>>(null)
 
@@ -124,9 +142,10 @@ namespace Nijo.Models.ReadModel2Features {
                       })
 
                       // 列定義
+                      const { post } = Util.useHttpRequest()
                       const columnDefs = React.useMemo((): Layout.ColumnDefEx<AggregateType.{{dataClass.TsTypeName}}>[] => [
                         {{WithIndent(tableBuilder.RenderColumnDef(ctx), "    ")}}
-                      ], [])
+                      ], [post])
 
                       // 選択されている行
                       const [activeRowIndex, setActiveRowIndex] = useState<number | undefined>(undefined)
@@ -197,9 +216,15 @@ namespace Nijo.Models.ReadModel2Features {
                         if (activeRowIndex !== undefined) setChangeFlag(activeRowIndex)
                       })
 
+                      // 保存時
+                      const handleSave = useEvent(() => {
+                        onSave(reactHookFormMethods.getValues('data'))
+                      })
+
                       return (
                         <FormProvider {...reactHookFormMethods}>
                           <Layout.PageFrame
+                            nowLoading={nowSaving}
                             header={<>
                               <Layout.PageTitle>{{_rootAggregate.Item.DisplayName}}&nbsp;一括編集</Layout.PageTitle>
                               <Input.IconButton onClick={handleInsert} outline mini>追加</Input.IconButton>
@@ -215,7 +240,7 @@ namespace Nijo.Models.ReadModel2Features {
                                 </div>
                               </div>
                               <div className="basis-2"></div>
-                              <Input.IconButton fill>保存</Input.IconButton>
+                              <Input.IconButton onClick={handleSave} fill>保存</Input.IconButton>
                             </>}
                           >
                             <PanelGroup direction={singleViewPosition}>
