@@ -125,7 +125,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                       // 選択されている行
                       const [activeRowIndex, setActiveRowIndex] = useState<number | undefined>(undefined)
-                      const { debouncedValue: debouncedActiveRowIndex, debouncing } = Util.useDebounce(activeRowIndex, 300)
+                      const { debouncedValue: debouncedActiveRowIndex, debouncing } = Util.useDebounce(activeRowIndex, fields.length < 100 ? 0 : 300)
                       const handleActiveRowChanged = useEvent((e: { getRow: () => AggregateType.{{dataClass.TsTypeName}}, rowIndex: number } | undefined) => {
                         setActiveRowIndex(e?.rowIndex)
                       })
