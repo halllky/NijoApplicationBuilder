@@ -41,7 +41,7 @@ namespace Nijo.Models.ReadModel2Features {
 
             return $$"""
                 /** {{_aggregate.Item.DisplayName}}の一覧検索を行いその結果を保持します。 */
-                export const {{ReactHookName}} = () => {
+                export const {{ReactHookName}} = (initCondition?: () => Types.{{searchCondition.TsTypeName}}) => {
                   const [{{CURRENT_PAGE_ITEMS}}, setCurrentPageItems] = React.useState<Types.{{searchResult.TsTypeName}}[]>(() => [])
                   const [{{NOW_LOADING}}, setNowLoading] = React.useState(false)
                   const [, dispatchMsg] = Util.useMsgContext()
@@ -63,7 +63,9 @@ namespace Nijo.Models.ReadModel2Features {
                   }, [post, dispatchMsg])
 
                   React.useEffect(() => {
-                    if (!{{NOW_LOADING}}) {{LOAD}}(Types.{{searchCondition.CreateNewObjectFnName}}())
+                    if (!{{NOW_LOADING}}) {
+                      {{LOAD}}(initCondition ?? Types.{{searchCondition.CreateNewObjectFnName}}())
+                    }
                   }, [{{LOAD}}])
 
                   return {

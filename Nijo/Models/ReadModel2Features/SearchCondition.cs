@@ -344,6 +344,35 @@ namespace Nijo.Models.ReadModel2Features {
                 })
                 """;
         }
+
+        #region URLのクエリパラメータとの変換
+        internal string ParseQueryParameter => $"parseQueryParameterAs{TsTypeName}";
+
+        // 画面初期表示時の検索条件をMultiViewに来る前の画面で指定するためのURLクエリパラメータの名前
+        internal const string URL_KEYWORD = "k";
+        internal const string URL_FILTER = "f";
+        internal const string URL_SORT = "s";
+
+        internal string RenderParseQueryParameterFunction() {
+            return $$"""
+                /** クエリパラメータを解釈して画面初期表示時検索条件オブジェクトを返します。 */
+                export const parseQueryParameter = (url: string): {{TsTypeName}} => {
+                  const searchCondition = {{CreateNewObjectFnName}}()
+                  if (!url) return searchCondition
+
+                  const searchParams = new URLSearchParams(new URL(url).search)
+                  if (searchParams.has('{{URL_KEYWORD}}'))
+                    searchCondition.{{KEYWORD_TS}} = searchParams.get('{{URL_KEYWORD}}')!
+                  if (searchParams.has('{{URL_FILTER}}'))
+                    searchCondition.{{FILTER_TS}} = JSON.parse(searchParams.get('{{URL_FILTER}}')!)
+                  if (searchParams.has('{{URL_SORT}}'))
+                    searchCondition.{{SORT_TS}} = JSON.parse(searchParams.get('{{URL_SORT}}')!)
+
+                  return searchCondition
+                }
+                """;
+        }
+        #endregion URLのクエリパラメータとの変換
     }
 
 

@@ -25,11 +25,6 @@ namespace Nijo.Models.ReadModel2Features {
         public bool ShowMenu => true;
         public string? LabelInMenu => _aggregate.Item.DisplayName;
 
-        // 画面初期表示時の検索条件をMultiViewに来る前の画面で指定するためのURLクエリパラメータの名前
-        private const string URL_KEYWORD = "k";
-        private const string URL_FILTER = "f";
-        private const string URL_SORT = "s";
-
         public SourceFile GetSourceFile() => new SourceFile {
             FileName = "multi-view.tsx",
             RenderContent = context => {
@@ -118,7 +113,7 @@ namespace Nijo.Models.ReadModel2Features {
                       // 初期表示時処理
                       const { search: locationSerach } = useLocation()
                       useEffect(() => {
-                        const condition = parseQueryParameter(locationSerach)
+                        const condition = AggregateType.{{searchCondition.ParseQueryParameter}}(locationSerach)
                         {{LoadMethod.LOAD}}(condition) // 再検索
                         resetSearchCondition(condition) // 画面上の検索条件欄の表示を更新する
                       }, [{{LoadMethod.LOAD}}, locationSerach])
@@ -203,22 +198,6 @@ namespace Nijo.Models.ReadModel2Features {
                         </Layout.PageFrame>
                       )
                     }
-
-                    /** クエリパラメータを解釈して画面初期表示時検索条件オブジェクトを返します。 */
-                    function parseQueryParameter(url: string): AggregateType.{{searchCondition.TsTypeName}} {
-                      const searchCondition = AggregateType.{{searchCondition.CreateNewObjectFnName}}()
-                      if (!url) return searchCondition
-
-                      const searchParams = new URLSearchParams(new URL(url).search)
-                      if (searchParams.has('{{URL_KEYWORD}}'))
-                        searchCondition.{{SearchCondition.KEYWORD_TS}} = searchParams.get('{{URL_KEYWORD}}')!
-                      if (searchParams.has('{{URL_FILTER}}'))
-                        searchCondition.{{SearchCondition.FILTER_TS}} = JSON.parse(searchParams.get('{{URL_FILTER}}')!)
-                      if (searchParams.has('{{URL_SORT}}'))
-                        searchCondition.{{SearchCondition.SORT_TS}} = JSON.parse(searchParams.get('{{URL_SORT}}')!)
-
-                      return searchCondition
-                    }
                     """;
             },
         };
@@ -237,9 +216,9 @@ namespace Nijo.Models.ReadModel2Features {
                     // 初期表示時検索条件の設定
                     const searchParams = new URLSearchParams()
                     if (init !== undefined) {
-                      searchParams.append('{{URL_FILTER}}', JSON.stringify(init.{{SearchCondition.FILTER_TS}}))
-                      if (init.{{SearchCondition.KEYWORD_TS}}) searchParams.append('{{URL_KEYWORD}}', init.{{SearchCondition.KEYWORD_TS}})
-                      if (init.{{SearchCondition.SORT_TS}}.length > 0) searchParams.append('{{URL_SORT}}', JSON.stringify(init.{{SearchCondition.SORT_TS}}))
+                      searchParams.append('{{SearchCondition.URL_FILTER}}', JSON.stringify(init.{{SearchCondition.FILTER_TS}}))
+                      if (init.{{SearchCondition.KEYWORD_TS}}) searchParams.append('{{SearchCondition.URL_KEYWORD}}', init.{{SearchCondition.KEYWORD_TS}})
+                      if (init.{{SearchCondition.SORT_TS}}.length > 0) searchParams.append('{{SearchCondition.URL_SORT}}', JSON.stringify(init.{{SearchCondition.SORT_TS}}))
                     }
 
                     navigate({

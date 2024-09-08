@@ -42,6 +42,8 @@ namespace Nijo.Models.WriteModel2Features {
         internal const string ADD_MOD_DEL_ENUM_CS = "E_AddOrModOrDel";
         /// <summary>追加・更新・削除のいずれかを表す区分の型名（TypeScript側）</summary>
         internal const string ADD_MOD_DEL_ENUM_TS = "AddOrModOrDelType";
+        /// <summary>追加・更新・削除のいずれかを表す区分を計算する関数の名前</summary>
+        internal const string GET_ADD_MOD_DEL_ENUM_TS = "getAddOrModOrDelType";
 
         /// <summary>データ種別のプロパティ名（C#側）</summary>
         internal const string DATA_TYPE_CS = "DataType";
@@ -266,6 +268,29 @@ namespace Nijo.Models.WriteModel2Features {
                   | 'MOD'  // 更新
                   | 'DEL'  // 削除
                   | 'NONE' // 変更なし
+
+                /** 追加・更新・削除のいずれかを表す区分を計算します。 */
+                export const {{GET_ADD_MOD_DEL_ENUM_TS}} = (item: {
+                  {{ReadModel2Features.DataClassForDisplay.ADD_MOD_DEL_TS}}?: {{ADD_MOD_DEL_ENUM_TS}}
+                  {{ReadModel2Features.DataClassForDisplay.EXISTS_IN_DB_TS}}?: boolean
+                  {{ReadModel2Features.DataClassForDisplay.WILL_BE_CHANGED_TS}}?: boolean
+                  {{ReadModel2Features.DataClassForDisplay.WILL_BE_DELETED_TS}}?: boolean
+                }): {{ADD_MOD_DEL_ENUM_TS}} => {
+                  // 明示的に指定されている場合はそれを優先
+                  if (item.{{ReadModel2Features.DataClassForDisplay.ADD_MOD_DEL_TS}}) return item.{{ReadModel2Features.DataClassForDisplay.ADD_MOD_DEL_TS}}
+                  // DBに無いデータならば新規追加データ
+                  if (!item.{{ReadModel2Features.DataClassForDisplay.EXISTS_IN_DB_TS}}) {
+                    return item.{{ReadModel2Features.DataClassForDisplay.WILL_BE_DELETED_TS}}
+                      ? 'NONE' // 新規追加かつ削除予定はつまり登録も削除もしないデータ
+                      : 'ADD'
+                  }
+                  // 削除予定
+                  if (item.{{ReadModel2Features.DataClassForDisplay.WILL_BE_DELETED_TS}}) return 'DEL'
+                  // UI上で更新された
+                  if (item.{{ReadModel2Features.DataClassForDisplay.WILL_BE_CHANGED_TS}}) return 'MOD'
+                  // DBから読み込まれた後なにも変更されていない
+                  return 'NONE'
+                }
                 """;
         }
         #endregion 追加更新削除区分

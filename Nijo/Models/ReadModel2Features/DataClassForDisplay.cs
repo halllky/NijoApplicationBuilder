@@ -65,6 +65,15 @@ namespace Nijo.Models.ReadModel2Features {
         /// </summary>
         internal const string INSTANCE_KEY_TS = "instanceKey";
 
+        /// <summary>
+        /// 通常、保存時に追加・更新・削除のどの処理となるかは
+        /// <see cref="EXISTS_IN_DB_TS"/>, <see cref="WILL_BE_CHANGED_TS"/>, <see cref="WILL_BE_DELETED_TS"/>
+        /// から計算されるが、強制的に追加または更新または削除いずれかの処理を走らせたい場合に指定されるプロパティ
+        /// </summary>
+        internal const string ADD_MOD_DEL_CS = "AddModDel";
+        /// <inheritdoc cref="ADD_MOD_DEL_CS"/>
+        internal const string ADD_MOD_DEL_TS = "addModDel";
+
         /// <summary>このデータがDBに保存済みかどうか（C#）。つまり新規作成のときはfalse, 閲覧・更新・削除のときはtrue</summary>
         internal const string EXISTS_IN_DB_CS = "ExistsInDatabase";
         /// <summary>このデータがDBに保存済みかどうか（TypeScript）。つまり新規作成のときはfalse, 閲覧・更新・削除のときはtrue</summary>
@@ -192,6 +201,7 @@ namespace Nijo.Models.ReadModel2Features {
                 """)}}
 
                 {{If(HasLifeCycle, () => $$"""
+                    // TODO #43 ADDMODDDELを明示的に指定できるようにする
                     /// <summary>このデータがDBに保存済みかどうか</summary>
                     [JsonPropertyName("{{EXISTS_IN_DB_TS}}")]
                     public virtual bool {{EXISTS_IN_DB_CS}} { get; set; }
