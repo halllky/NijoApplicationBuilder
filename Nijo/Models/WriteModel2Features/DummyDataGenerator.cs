@@ -48,7 +48,7 @@ namespace Nijo.Models.WriteModel2Features {
                       const { get } = useHttpRequest()
                       const batchUpdateWriteModels = AggregateHook.{{BatchUpdateWriteModel.HOOK_NAME}}()
                     {{refSearchHooks.SelectTextTemplate(x => $$"""
-                      const { {{RefSearchMethod.LOAD}}: {{x.Load}} } = AggregateHook.{{x.Hook}}()
+                      const { {{RefSearchMethod.LOAD}}: {{x.Load}} } = AggregateHook.{{x.Hook}}(true)
                     """)}}
 
                       return useCallback(async () => {

@@ -42,7 +42,7 @@ namespace Nijo.Models.RefTo {
 
             return $$"""
                 /** {{_aggregate.Item.DisplayName}}の参照先検索を行いその結果を保持します。 */
-                export const {{ReactHookName}} = () => {
+                export const {{ReactHookName}} = (disableAutoLoad?: boolean) => {
                   const [{{CURRENT_PAGE_ITEMS}}, setCurrentPageItems] = React.useState<Types.{{searchResult.TsTypeName}}[]>(() => [])
                   const [{{NOW_LOADING}}, setNowLoading] = React.useState(false)
                   const [, dispatchMsg] = Util.useMsgContext()
@@ -64,7 +64,9 @@ namespace Nijo.Models.RefTo {
                   }, [post, dispatchMsg])
 
                   React.useEffect(() => {
-                    if (!{{NOW_LOADING}}) {{LOAD}}(Types.{{searchCondition.CreateNewObjectFnName}}())
+                    if (!{{NOW_LOADING}} && !disableAutoLoad) {
+                      {{LOAD}}(Types.{{searchCondition.CreateNewObjectFnName}}())
+                    }
                   }, [{{LOAD}}])
 
                   return {
