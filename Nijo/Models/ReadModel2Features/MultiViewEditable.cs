@@ -60,7 +60,7 @@ namespace Nijo.Models.ReadModel2Features {
                     .OfType<AggregateMember.ValueMember>();
 
                 return $$"""
-                    import React, { useState, useContext } from 'react'
+                    import React, { useState, useContext, useRef, useMemo, useCallback, useEffect } from 'react'
                     import useEvent from 'react-use-event-hook'
                     import { useLocation } from 'react-router-dom'
                     import { useFieldArray, FormProvider, useWatch } from 'react-hook-form'
