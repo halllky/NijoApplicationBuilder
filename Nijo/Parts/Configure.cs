@@ -41,6 +41,7 @@ namespace Nijo.Parts {
 
                                     // アプリケーションサービス
                                     services.AddScoped<{{appSrv.ConcreteClassName}}>();
+                                    services.AddScoped<{{appSrv.AbstractClassName}}, {{appSrv.ConcreteClassName}}>();
 
                                     // DB接続
                                     services.AddScoped<Microsoft.EntityFrameworkCore.DbContext>(provider => {
