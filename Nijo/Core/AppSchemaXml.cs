@@ -209,6 +209,9 @@ namespace Nijo.Core {
             parser.IfExists("form-depth")
                 .SetAggregateOption(opt => opt.FormDepth, value => int.TryParse(value, out var i) ? i : throw new InvalidOperationException($"{element.Name}: form-depth の値が数値で指定されていません。"), E_Priority.Force);
 
+            parser.IfExists("customize-search-result-conversion")
+                .SetAggregateOption(opt => opt.CustomizeSearchResultConvertion, true, E_Priority.Force);
+
             // ------------------------------------------------
             // 子孫集約用の属性 ここから
 
