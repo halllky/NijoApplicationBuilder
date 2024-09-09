@@ -100,7 +100,8 @@ namespace Nijo.IntegrationTest {
                 .GetExecutingAssembly()
                 .GetTypes()
                 .Where(type => typeof(DataPattern).IsAssignableFrom(type) && !type.IsAbstract)
-                .Select(type => Activator.CreateInstance(type)!);
+                .Select(type => (DataPattern)Activator.CreateInstance(type)!)
+                .OrderByDescending(pattern => pattern._xmlFileName); // テストデータパターンの数字が大きい方がデータ構造が複雑でエラーが出やすい傾向にあるので大きい順から実行
         }
 
         public override string ToString() {
