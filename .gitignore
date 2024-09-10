@@ -1,5 +1,9 @@
 /自動テストで作成されたプロジェクト/*
 
+# SQLiteのコミット前の状態が保存される一時ファイル
+*.sqlite3-shm
+*.sqlite3-wal
+
 # globs
 Makefile.in
 *.userprefs
