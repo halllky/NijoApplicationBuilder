@@ -31,6 +31,10 @@ namespace Nijo.Parts.WebClient.DataTable {
         public bool EnableResizing => true;
 
         IGridColumnSetting? IDataTableColumn2.GetEditSetting() {
+            // 参照先の項目かつキーでない項目は編集不可
+            if (!_vm.Owner.IsInTreeOf(_tableContext.TableOwner)
+                && (!_vm.IsKey || _vm.Owner.GetRefEntryEdge().Terminal != _vm.Owner)) return null;
+
             return _vm.Options.MemberType.GetGridColumnEditSetting();
         }
         string IDataTableColumn2.RenderDisplayContents(CodeRenderingContext ctx, string arg, string argRowObject) {

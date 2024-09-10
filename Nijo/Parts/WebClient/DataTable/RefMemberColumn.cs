@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Nijo.Parts.WebClient.DataTable {
     /// <summary>
-    /// 参照メンバのDataTable列
+    /// 参照メンバのDataTable列（参照先のキーや名前を1つのカラムで表示する場合のもの）
     /// </summary>
     internal class RefMemberColumn : IDataTableColumn2 {
         internal RefMemberColumn(AggregateMember.Ref @ref, IEnumerable<string> pathFromRowObject, DataTableBuilder tableContext) {

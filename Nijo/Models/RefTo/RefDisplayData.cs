@@ -31,7 +31,7 @@ namespace Nijo.Models.RefTo {
         /// <summary>
         /// 参照エントリー
         /// </summary>
-        private readonly GraphNode<Aggregate> _refEntry;
+        internal readonly GraphNode<Aggregate> _refEntry;
 
         internal string CsClassName => _refEntry == _aggregate
             ? $"{_refEntry.Item.PhysicalName}RefTarget"

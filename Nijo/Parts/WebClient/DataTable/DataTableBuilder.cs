@@ -56,11 +56,18 @@ namespace Nijo.Parts.WebClient.DataTable {
                         yield return column;
 
                     } else if (member is AggregateMember.Ref @ref) {
-                        var column = new RefMemberColumn(
-                            @ref,
-                            @ref.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, since: TableOwner),
-                            this);
-                        yield return column;
+                        // RefをChildと同じように複数列に分けて表示する
+                        var desc = new DataClassForDisplayDescendant(@ref);
+                        foreach (var recursive in Enumerate(desc)) {
+                            yield return recursive;
+                        }
+
+                        //// Refのキーと名前を1つのカラムで表示する
+                        //var column = new RefMemberColumn(
+                        //    @ref,
+                        //    @ref.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, since: TableOwner),
+                        //    this);
+                        //yield return column;
                     }
                 }
                 foreach (var desc in rendering.GetChildMembers()) {
@@ -94,11 +101,18 @@ namespace Nijo.Parts.WebClient.DataTable {
                         yield return column;
 
                     } else if (member is AggregateMember.Ref @ref) {
-                        var column = new RefMemberColumn(
-                            @ref,
-                            @ref.GetFullPathAsDataClassForRefTarget(since: TableOwner),
-                            this);
-                        yield return column;
+                        // RefをChildと同じように複数列に分けて表示する
+                        var desc = new RefDisplayDataDescendant(@ref, refDisplayData._refEntry);
+                        foreach (var recursive in Enumerate(desc)) {
+                            yield return recursive;
+                        }
+
+                        //// Refのキーと名前を1つのカラムで表示する
+                        //var column = new RefMemberColumn(
+                        //    @ref,
+                        //    @ref.GetFullPathAsDataClassForRefTarget(since: TableOwner),
+                        //    this);
+                        //yield return column;
                     }
                 }
                 foreach (var desc in rendering.GetChildMembers()) {
@@ -136,11 +150,18 @@ namespace Nijo.Parts.WebClient.DataTable {
                         yield return column;
 
                     } else if (member is AggregateMember.Ref @ref) {
-                        var column = new RefMemberColumn(
-                            @ref,
-                            @ref.GetFullPathAsDataClassForRefTarget(since: TableOwner),
-                            this);
-                        yield return column;
+                        // RefをChildと同じように複数列に分けて表示する
+                        var childParam = new Models.CommandModelFeatures.CommandParameter.Member(@ref);
+                        foreach (var reucusive in Enumerate(childParam.GetMemberParameter()!)) {
+                            yield return reucusive;
+                        }
+
+                        //// Refのキーと名前を1つのカラムで表示する
+                        //var column = new RefMemberColumn(
+                        //    @ref,
+                        //    @ref.GetFullPathAsDataClassForRefTarget(since: TableOwner),
+                        //    this);
+                        //yield return column;
 
                     } else if (member is AggregateMember.Child child) {
                         var childParam = new Models.CommandModelFeatures.CommandParameter.Member(child);
