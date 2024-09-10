@@ -265,17 +265,18 @@ namespace Nijo.Models.ReadModel2Features {
                                 defaultSize={0} // 初期表示時は折りたたみ状態
                                 collapsible
                                 onCollapse={setSingleViewCollapsed}
-                                className="relative border border-color-4"
                               >
-                                {!singleViewCollapsed && debouncedActiveRowIndex !== undefined && (
-                                  {{WithIndent(rootAggregateComponent.RenderCaller(["debouncedActiveRowIndex"]), "              ")}}
-                                )}
-                                {!singleViewCollapsed && debouncedActiveRowIndex == undefined && (
-                                  <span className="select-none text-sm text-color-7">ここには一覧で選択している行の詳細が表示されます。</span>
-                                )}
-                                {debouncing && (
-                                  <Input.NowLoading />
-                                )}
+                                <div className="relative h-full border border-color-4 overflow-auto">
+                                  {!singleViewCollapsed && debouncedActiveRowIndex !== undefined && (
+                                    {{WithIndent(rootAggregateComponent.RenderCaller(["debouncedActiveRowIndex"]), "                ")}}
+                                  )}
+                                  {!singleViewCollapsed && debouncedActiveRowIndex == undefined && (
+                                    <span className="select-none text-sm text-color-7">ここには一覧で選択している行の詳細が表示されます。</span>
+                                  )}
+                                  {debouncing && (
+                                    <Input.NowLoading />
+                                  )}
+                                </div>
                               </Panel>
                             </PanelGroup>
                           </Layout.PageFrame>
