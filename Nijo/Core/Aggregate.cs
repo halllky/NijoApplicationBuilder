@@ -114,6 +114,8 @@ namespace Nijo.Core {
         }
         /// <summary>
         /// ルート集約のツリー内部からツリー外部へ出る瞬間のエッジを返します。
+        /// 「(エントリー) == ref-to:A => (集約A) == ref-to:B => (集約B)」のような場合で
+        /// 集約Bに対してこのメソッドを使用した場合は「ref-to:A」のエッジが返ります。
         /// この集約がルート集約のツリーの外部の集約でない場合は例外になります。
         /// </summary>
         internal static GraphEdge<Aggregate> GetRefEntryEdge(this GraphNode<Aggregate> agg) {
