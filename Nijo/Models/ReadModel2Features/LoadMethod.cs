@@ -285,11 +285,7 @@ namespace Nijo.Models.ReadModel2Features {
                     }
 
                     // 検索結果を画面表示用の型に変換
-                {{If(_aggregate.Item.Options.CustomizeSearchResultConvertion, () => $$"""
                     var displayDataList = query.AsEnumerable().Select({{METHOD_NAME_TO_DISPLAY_DATA}}).ToArray();
-                """).Else(() => $$"""
-                    var displayDataList = query.AsEnumerable().Select(searchResult => {{WithIndent(returnType.RenderConvertFromSearchResult("searchResult", _aggregate, true), "    ")}}).ToArray();
-                """)}}
 
                     // 読み取り専用項目の設定や、追加情報などを付すなど、任意のカスタマイズ処理
                     var returnValue = {{AppSrvAfterLoadedMethod}}(displayDataList);
@@ -299,19 +295,16 @@ namespace Nijo.Models.ReadModel2Features {
                     #pragma warning restore CS8603 // Null 参照戻り値である可能性があります。
                     #pragma warning restore CS8602 // null 参照の可能性があるものの逆参照です。
                 }
-                {{If(_aggregate.Item.Options.CustomizeSearchResultConvertion, () => $$"""
 
                 /// <summary>
                 /// <see cref="{{searchResult.CsClassName}}"/> から <see cref="{{returnType.CsClassName}}"/> への変換処理
                 /// </summary>
                 protected virtual {{returnType.CsClassName}} {{METHOD_NAME_TO_DISPLAY_DATA}}({{searchResult.CsClassName}} searchResult) {
-                    throw new NotImplementedException("{{METHOD_NAME_TO_DISPLAY_DATA}}メソッドをオーバーライドしてSQLクエリ結果を画面表示データにマッピングしてください。");
+                    return {{WithIndent(returnType.RenderConvertFromSearchResult("searchResult", _aggregate, true), "    ")}};
                 }
-                """)}}
                 """;
         }
 
-        /// <inheritdoc cref="AggregateBuildOption.CustomizeSearchResultConvertion" />
         private const string METHOD_NAME_TO_DISPLAY_DATA = $"ToDisplayData";
     }
 }

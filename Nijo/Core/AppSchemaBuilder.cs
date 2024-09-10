@@ -333,14 +333,6 @@ namespace Nijo.Core {
         /// </summary>
         public int? FormDepth { get; set; }
 
-        /// <summary>
-        /// #44 の暫定対応。<see cref="Models.ReadModel2Features.LoadMethod.RenderAppSrvBaseMethod"/> にある、
-        /// 検索結果から画面表示データへの変換処理さえオーバーライドできれば、実質的に#44と似たことができる。
-        /// 理想的には、画面表示データとSQLクエリの型が別物として定義されることで、
-        /// このメソッドは自動的にそれらの境界部分としてオーバーライドされることになり、最終的にはこの仕組みは不要になる。
-        /// </summary>
-        public bool CustomizeSearchResultConvertion { get; set; }
-
         public sealed class GroupOption {
             public required string GroupName { get; init; }
             public required string Key { get; init; }
