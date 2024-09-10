@@ -114,13 +114,18 @@ namespace Nijo.Models.CommandModelFeatures {
 
         internal string TsNewObjectFunction => $"createEmpty{TsTypeName}";
         internal string RenderTsNewObjectFunction(CodeRenderingContext context) {
-            return $$"""
-                export const {{TsNewObjectFunction}} = (): {{TsTypeName}} => ({
-                {{GetOwnMembers().SelectTextTemplate(m => $$"""
+            var aggregates = _aggregate
+                .EnumerateThisAndDescendants()
+                .Where(a => a.IsRoot() || a.IsChildrenMember())
+                .Select(a => new CommandParameter(a));
+
+            return aggregates.SelectTextTemplate(p => $$"""
+                export const {{p.TsNewObjectFunction}} = (): {{p.TsTypeName}} => ({
+                {{p.GetOwnMembers().SelectTextTemplate(m => $$"""
                   {{m.MemberName}}: {{WithIndent(m.RenderInitializer(), "  ")}},
                 """)}}
                 })
-                """;
+                """);
         }
 
         /// <summary>

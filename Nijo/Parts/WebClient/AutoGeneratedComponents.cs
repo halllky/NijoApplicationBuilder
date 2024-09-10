@@ -29,7 +29,7 @@ namespace Nijo.Parts.WebClient {
                 return $$"""
                     import React, { useState, useMemo, useCallback, useRef, useReducer, useImperativeHandle } from 'react'
                     import useEvent from 'react-use-event-hook'
-                    import { FormProvider, useWatch } from 'react-hook-form'
+                    import { FormProvider, useWatch, useFieldArray } from 'react-hook-form'
                     import * as Icon from '@heroicons/react/24/outline'
                     import { Panel, PanelGroup, PanelResizeHandle, ImperativePanelHandle } from 'react-resizable-panels'
                     import * as Util from './util'
