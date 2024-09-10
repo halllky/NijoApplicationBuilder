@@ -262,7 +262,7 @@ namespace Nijo.Core {
             var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
 
             return $$"""
-                <div className="flex flex-wrap items-center gap-1">
+                <div className="flex flex-nowrap items-center gap-1">
                   <{{ComponentName}} {...{{ctx.Register}}(`{{fullpath}}.{{FromTo.FROM_TS}}`)} {{RenderAttributes().Select(x => $"{x} ").Join("")}}/>
                   <span className="select-none">～</span>
                   <{{ComponentName}} {...{{ctx.Register}}(`{{fullpath}}.{{FromTo.TO_TS}}`)} {{RenderAttributes().Select(x => $"{x} ").Join("")}}/>
