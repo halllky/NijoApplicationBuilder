@@ -156,9 +156,7 @@ namespace Nijo.Models.ReadModel2Features {
             foreach (var member in EnumerateRenderedMemberes().OrderBy(m => m.Order)) {
                 if (member is AggregateMember.ValueMember vm) {
                     var readOnlyStatement = GetReadOnlyStatement(vm);
-                    var path1 = new[] { "data", $"${{{FIRST_ARG_NAME}}}" };
-                    var path2 = formContext.GetReactHookFormFieldPath(vm);
-                    var fullpath = path1.Concat(path2);
+                    var fullpath = formContext.GetReactHookFormFieldPath(vm);
                     var body = vm.Options.SingleViewCustomUiComponentName == null
                         ? vm.Options.MemberType.RenderSingleViewVFormBody(vm, formContext)
                         : $$"""
