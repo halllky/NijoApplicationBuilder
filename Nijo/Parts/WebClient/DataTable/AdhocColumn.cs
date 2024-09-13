@@ -28,7 +28,9 @@ namespace Nijo.Parts.WebClient.DataTable {
             throw new NotImplementedException(); // 編集不可のセルでこのメソッドが呼ばれることはない
         }
         string IDataTableColumn2.RenderOnClipboardCopy(CodeRenderingContext ctx) {
-            throw new NotImplementedException(); // 編集不可のセルでこのメソッドが呼ばれることはない
+            return $$"""
+                () => ''
+                """;
         }
         string IDataTableColumn2.RenderOnClipboardPaste(CodeRenderingContext ctx) {
             throw new NotImplementedException(); // 編集不可のセルでこのメソッドが呼ばれることはない

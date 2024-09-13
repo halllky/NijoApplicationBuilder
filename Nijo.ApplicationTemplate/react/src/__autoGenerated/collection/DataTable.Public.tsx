@@ -1,25 +1,39 @@
 import React from 'react'
-import * as RT from '@tanstack/react-table'
 import { AsyncComboProps, SyncComboProps } from '..'
+
+export type DataTableRef<T> = {
+  focus: () => void
+  startEditing: () => void
+  getSelectedRows: () => { row: T, rowIndex: number }[]
+}
 
 export type DataTableProps<T> = {
   data?: T[]
   onChangeRow?: (index: number, data: T) => void
   onKeyDown?: React.KeyboardEventHandler
   onActiveRowChanged?: (activeRow: { getRow: () => T, rowIndex: number } | undefined) => void
-  columns?: ColumnDefEx<T>[]
+  columns?: DataTableColumn<T>[]
   hideHeader?: boolean
   tableWidth?: 'fit' | 'dyanmic'
   className?: string
 }
-export type ColumnDefEx<TRow> = RT.ColumnDef<TRow> & {
-  hidden?: boolean
+
+// -------------------------------------------
+// 列定義
+export type DataTableColumn<TRow> = {
+  id: string
+  header?: string
+  render: (row: TRow) => React.ReactNode
+  onClipboardCopy: (row: TRow) => string
   headerGroupName?: string
+  defaultWidthPx?: number
+  fixedWidth?: boolean
   editSetting?: ColumnEditSetting<TRow>
 }
 
 export type ColumnEditSetting<TRow, TOption = unknown> = {
   readOnly?: ((row: TRow) => boolean)
+  onClipboardPaste: (row: TRow, value: string) => void
 } & (TextColumnEditSetting<TRow>
   | TextareaColumndEditSetting<TRow>
   | SyncComboColumnEditSetting<TRow, TOption>
@@ -27,33 +41,23 @@ export type ColumnEditSetting<TRow, TOption = unknown> = {
 
 type TextColumnEditSetting<TRow> = {
   type: 'text'
-  getTextValue: (row: TRow) => string | undefined
-  setTextValue: (row: TRow, value: string | undefined) => void
+  onStartEditing: (row: TRow) => string | undefined
+  onEndEditing: (row: TRow, value: string | undefined) => void
 }
 type TextareaColumndEditSetting<TRow> = {
   type: 'multiline-text'
-  getTextValue: (row: TRow) => string | undefined
-  setTextValue: (row: TRow, value: string | undefined) => void
+  onStartEditing: (row: TRow) => string | undefined
+  onEndEditing: (row: TRow, value: string | undefined) => void
 }
 type SyncComboColumnEditSetting<TRow, TOption = unknown> = {
   type: 'combo'
-  getValueFromRow: (row: TRow) => TOption | undefined
-  setValueToRow: (row: TRow, value: TOption | undefined) => void
-  onClipboardCopy: (row: TRow) => string
-  onClipboardPaste: (row: TRow, value: string) => void
+  onStartEditing: (row: TRow) => TOption | undefined
+  onEndEditing: (row: TRow, value: TOption | undefined) => void
   comboProps: SyncComboProps<TOption, TOption>
 }
 type AsyncComboColumnEditSetting<TRow, TOption = unknown> = {
   type: 'async-combo'
-  getValueFromRow: (row: TRow) => TOption | undefined
-  setValueToRow: (row: TRow, value: TOption | undefined) => void
-  onClipboardCopy: (row: TRow) => string
-  onClipboardPaste: (row: TRow, value: string) => void
+  onStartEditing: (row: TRow) => TOption | undefined
+  onEndEditing: (row: TRow, value: TOption | undefined) => void
   comboProps: AsyncComboProps<TOption, TOption>
-}
-
-export type DataTableRef<T> = {
-  focus: () => void
-  startEditing: () => void
-  getSelectedRows: () => { row: T, rowIndex: number }[]
 }

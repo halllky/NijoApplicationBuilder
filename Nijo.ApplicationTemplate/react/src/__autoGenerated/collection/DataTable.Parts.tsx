@@ -1,4 +1,5 @@
 import * as RT from '@tanstack/react-table'
+import { DataTableColumn } from './DataTable.Public'
 
 export const TABLE_ZINDEX = {
   CELLEDITOR: 30 as const,
@@ -7,6 +8,12 @@ export const TABLE_ZINDEX = {
   ROWHEADER_SELECTION: 11 as const,
   ROWHEADER: 10 as const,
   SELECTION: 1 as const,
+}
+
+export type RTColumnDefEx<TRow> = Omit<RT.ColumnDef<TRow>, 'cell' | 'header'> & {
+  cell: Exclude<RT.ColumnDef<TRow>['cell'], undefined>
+  header: string
+  ex: DataTableColumn<TRow>
 }
 
 export type CellPosition = {

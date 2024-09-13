@@ -226,8 +226,8 @@ export const LocalReposChangeListPage = () => {
     </div>
   )
 }
-const CHANGE_LIST_COLS: Collection.ColumnDefEx<LocalRepositoryItemListItem>[] = [
-  { id: 'col0', header: '状態', accessorFn: x => x.state, size: 12 },
-  { id: 'col1', header: '種類', accessorFn: x => x.dataTypeKey },
-  { id: 'col2', header: '名前', accessorFn: x => x.itemName },
+const CHANGE_LIST_COLS: Collection.DataTableColumn<LocalRepositoryItemListItem>[] = [
+  { id: 'col0', header: '状態', render: x => x.state, defaultWidthPx: 12, onClipboardCopy: row => row.state },
+  { id: 'col1', header: '種類', render: x => x.dataTypeKey, onClipboardCopy: row => row.dataTypeKey },
+  { id: 'col2', header: '名前', render: x => x.itemName, onClipboardCopy: row => row.itemName },
 ]

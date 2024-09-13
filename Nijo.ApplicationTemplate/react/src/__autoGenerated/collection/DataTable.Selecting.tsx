@@ -1,8 +1,8 @@
 import React, { useState, useRef, useCallback, useImperativeHandle, useMemo, useId } from 'react'
 import * as RT from '@tanstack/react-table'
 import * as Util from '../util'
-import { CellEditorRef, CellPosition, TABLE_ZINDEX } from './DataTable.Parts'
-import { ColumnDefEx, DataTableProps } from '..'
+import { CellEditorRef, CellPosition, RTColumnDefEx, TABLE_ZINDEX } from './DataTable.Parts'
+import { DataTableProps } from '..'
 
 export type SelectTarget
   = { target: 'cell', cell: CellPosition, shiftKey: boolean }
@@ -148,7 +148,7 @@ export const useSelection = <T,>(
     if (caretCellColIndex === -1 || selectionStartColIndex === -1) return []
     const since = Math.min(caretCellColIndex, selectionStartColIndex)
     const until = Math.max(caretCellColIndex, selectionStartColIndex)
-    return allColumns.slice(since, until + 1).map(c => c.columnDef as ColumnDefEx<T>)
+    return allColumns.slice(since, until + 1).map(c => c.columnDef as RTColumnDefEx<T>)
   }, [api, caretCell, selectionStart])
 
   return {

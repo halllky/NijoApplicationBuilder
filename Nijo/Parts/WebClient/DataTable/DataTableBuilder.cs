@@ -186,12 +186,13 @@ namespace Nijo.Parts.WebClient.DataTable {
                     {
                       id: 'col-{{index}}',
                       header: '{{column.Header}}',
-                      cell: {{WithIndent(column.RenderDisplayContents(context, "cellProps", "cellProps.row.original"), "  ")}},
+                      render: {{WithIndent(column.RenderDisplayContents(context, "r", "r"), "  ")}},
+                      onClipboardCopy: {{WithIndent(column.RenderOnClipboardCopy(context), "      ")}},
                     {{If(column.DefaultWidth != null, () => $$"""
-                      size: {{column.DefaultWidth}},
+                      defaultWidthPx: {{column.DefaultWidth}},
                     """)}}
-                    {{If(column.EnableResizing, () => $$"""
-                      enableResizing: true,
+                    {{If(!column.EnableResizing, () => $$"""
+                      fixedWidth: true,
                     """)}}
                     {{If(column.HeaderGroupName != null, () => $$"""
                       headerGroupName: '{{column.HeaderGroupName}}',
@@ -199,17 +200,17 @@ namespace Nijo.Parts.WebClient.DataTable {
                     {{If(_editable && textboxEditSetting != null, () => $$"""
                       editSetting: {
                         type: 'text',
-                        getTextValue: {{WithIndent(column.RenderGetterOnEditStart(context), "    ")}},
-                        setTextValue: {{WithIndent(column.RenderSetterOnEditEnd(context), "    ")}},
+                        onStartEditing: {{WithIndent(column.RenderGetterOnEditStart(context), "    ")}},
+                        onEndEditing: {{WithIndent(column.RenderSetterOnEditEnd(context), "    ")}},
+                        onClipboardPaste: {{WithIndent(column.RenderOnClipboardPaste(context), "    ")}},
                       },
                     """)}}
                     {{If(_editable && comboboxEditSetting != null, () => $$"""
                       editSetting: (() => {
                         const comboSetting: Layout.ColumnEditSetting<{{_rowTypeName}}, {{comboboxEditSetting!.OptionItemTypeName}}> = {
                           type: 'combo',
-                          getValueFromRow: {{WithIndent(column.RenderGetterOnEditStart(context), "      ")}},
-                          setValueToRow: {{WithIndent(column.RenderSetterOnEditEnd(context), "      ")}},
-                          onClipboardCopy: {{WithIndent(column.RenderOnClipboardCopy(context), "      ")}},
+                          onStartEditing: {{WithIndent(column.RenderGetterOnEditStart(context), "      ")}},
+                          onEndEditing: {{WithIndent(column.RenderSetterOnEditEnd(context), "      ")}},
                           onClipboardPaste: {{WithIndent(column.RenderOnClipboardPaste(context), "      ")}},
                           comboProps: {
                             options: {{comboboxEditSetting!.Options}},
@@ -226,9 +227,8 @@ namespace Nijo.Parts.WebClient.DataTable {
                       editSetting: (() => {
                         const asyncComboSetting: Layout.ColumnEditSetting<{{_rowTypeName}}, {{asyncComboEditSetting!.OptionItemTypeName}}> = {
                           type: 'async-combo',
-                          getValueFromRow: {{WithIndent(column.RenderGetterOnEditStart(context), "      ")}},
-                          setValueToRow: {{WithIndent(column.RenderSetterOnEditEnd(context), "      ")}},
-                          onClipboardCopy: {{WithIndent(column.RenderOnClipboardCopy(context), "      ")}},
+                          onStartEditing: {{WithIndent(column.RenderGetterOnEditStart(context), "      ")}},
+                          onEndEditing: {{WithIndent(column.RenderSetterOnEditEnd(context), "      ")}},
                           onClipboardPaste: {{WithIndent(column.RenderOnClipboardPaste(context), "      ")}},
                           comboProps: {
                             queryKey: {{asyncComboEditSetting!.QueryKey}},

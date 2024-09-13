@@ -67,26 +67,33 @@ const getDefaultData = (): DisplayData[] => [
   { strValue: 'THIS IS STRING VALUE.', numValue: '123456789', refValue: { ...DROPDOWN_OPTIONS[1] } },
   {},
 ]
-const getColumnDef = (): Layout.ColumnDefEx<DisplayData>[] => [
+const getColumnDef = (): Layout.DataTableColumn<DisplayData>[] => [
   {
     id: 'col0',
     header: 'strValue',
-    accessorFn: row => row.strValue,
+    render: row => row.strValue,
+    onClipboardCopy: row => row.strValue ?? '',
     editSetting: {
       type: 'text',
-      getTextValue: row => row.strValue,
-      setTextValue: (row, value) => { row.strValue = value },
+      onStartEditing: row => row.strValue,
+      onEndEditing: (row, value) => { row.strValue = value },
+      onClipboardPaste: (row, value) => { row.strValue = value },
     },
   },
   {
     id: 'col1',
     header: 'numValue',
     headerGroupName: '属性項目',
-    accessorFn: row => row.numValue,
+    render: row => row.numValue,
+    onClipboardCopy: row => row.numValue?.toString() ?? '',
     editSetting: {
       type: 'text',
-      getTextValue: row => row.numValue,
-      setTextValue: (row, value) => {
+      onStartEditing: row => row.numValue,
+      onEndEditing: (row, value) => {
+        const { formatted } = Util.tryParseAsNumberOrEmpty(value)
+        row.numValue = formatted
+      },
+      onClipboardPaste: (row, value) => {
         const { formatted } = Util.tryParseAsNumberOrEmpty(value)
         row.numValue = formatted
       },
@@ -96,11 +103,12 @@ const getColumnDef = (): Layout.ColumnDefEx<DisplayData>[] => [
     id: 'col2',
     header: 'enmValue',
     headerGroupName: '属性項目',
-    accessorFn: row => row.enmValue?.t,
+    render: row => row.enmValue?.t,
+    onClipboardCopy: row => row.enmValue?.k ?? '',
     editSetting: ({
       type: 'combo',
-      getValueFromRow: row => row.enmValue,
-      setValueToRow: (row, value) => {
+      onStartEditing: row => row.enmValue,
+      onEndEditing: (row, value) => {
         row.enmValue = value
       },
       comboProps: {
@@ -115,18 +123,18 @@ const getColumnDef = (): Layout.ColumnDefEx<DisplayData>[] => [
   {
     id: 'col3',
     header: 'refValue',
-    accessorFn: row => row.refValue?.t,
+    render: row => row.refValue ? JSON.stringify(row.refValue) : '',
+    onClipboardCopy: row => row.refValue?.k ?? '',
     editSetting: getRefValueEditSetting(),
   },
 ]
 const getRefValueEditSetting = () => {
   const editSetting: Layout.ColumnEditSetting<DisplayData, RefInfo> = {
     type: 'async-combo',
-    getValueFromRow: row => row.refValue,
-    setValueToRow: (row, value) => {
+    onStartEditing: row => row.refValue,
+    onEndEditing: (row, value) => {
       row.refValue = value
     },
-    onClipboardCopy: row => row.refValue ? JSON.stringify(row.refValue) : '',
     onClipboardPaste: (row, value) => {
       try {
         const obj: RefInfo | undefined = JSON.parse(value)

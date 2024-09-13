@@ -1,8 +1,8 @@
 import React, { useCallback, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import * as RT from '@tanstack/react-table'
 import * as Util from '../util'
-import { ColumnDefEx, DataTableProps, DataTableRef } from './DataTable.Public'
-import { TABLE_ZINDEX, CellEditorRef } from './DataTable.Parts'
+import { DataTableColumn, DataTableProps, DataTableRef } from './DataTable.Public'
+import { TABLE_ZINDEX, CellEditorRef, RTColumnDefEx } from './DataTable.Parts'
 import { CellEditor } from './DataTable.Editing'
 import { ActiveCellBorder, SelectTarget, useSelection } from './DataTable.Selecting'
 import { getColumnResizeOption, useColumnResizing } from './DataTable.ColResize'
@@ -26,7 +26,14 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   const columnHelper = useMemo(() => RT.createColumnHelper<T>(), [])
   const columns: RT.ColumnDef<T>[] = useMemo(() => {
     const result: RT.ColumnDef<T>[] = []
-    const colgroups = Util.groupBy(propsColumns ?? [], col => col.headerGroupName ?? '')
+    const rtColumns: RTColumnDefEx<T>[] = propsColumns?.map(c => ({
+      id: c.id,
+      size: c.defaultWidthPx,
+      header: c.header ?? '',
+      cell: cellProps => c.render(cellProps.row.original),
+      ex: c,
+    })) ?? []
+    const colgroups = Util.groupBy(rtColumns, col => col.ex.headerGroupName ?? '')
     for (const [header, columns] of colgroups) {
       if (header) {
         result.push(columnHelper.group({ header, columns }))
@@ -154,7 +161,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
             {api.getHeaderGroups().map((headerGroup, thY) => (
               <tr key={headerGroup.id}>
 
-                {headerGroup.headers.filter(h => !(h.column.columnDef as ColumnDefEx<T>).hidden).map((header, thX) => (
+                {headerGroup.headers.map((header, thX) => (
                   <th key={header.id}
                     colSpan={header.colSpan}
                     className="relative overflow-hidden whitespace-nowrap px-1 py-0 text-start bg-color-2 text-color-7 text-sm border-b border-color-3"
@@ -180,7 +187,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
               key={row.id}
               className="leading-tight"
             >
-              {row.getVisibleCells().filter(c => !(c.column.columnDef as ColumnDefEx<T>).hidden).map((cell, colIndex) => (
+              {row.getVisibleCells().map((cell, colIndex) => (
                 <MemorizedTd key={cell.id}
                   ref={tdRefs.current[rowIndex]?.[colIndex]}
                   cell={cell}

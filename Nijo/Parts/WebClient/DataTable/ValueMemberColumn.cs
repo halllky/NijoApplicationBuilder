@@ -103,39 +103,77 @@ namespace Nijo.Parts.WebClient.DataTable {
 
         string IDataTableColumn2.RenderOnClipboardCopy(CodeRenderingContext ctx) {
             var editSetting = _vm.Options.MemberType.GetGridColumnEditSetting();
-            var onCopy = editSetting switch {
-                TextColumnSetting => throw new NotImplementedException(), // TextColumnSettingの場合はクリップボード処理が呼ばれないので
-                ComboboxColumnSetting combo => combo.OnClipboardCopy,
-                AsyncComboboxColumnSetting asyncCombo => asyncCombo.OnClipboardCopy,
-                _ => throw new NotImplementedException(),
-            };
+            if (editSetting is TextColumnSetting text) {
+                return text.GetValueFromRow == null ? $$"""
+                    row => row.{{_pathFromRowObject.Join("?.")}} ?? ''
+                    """ : $$"""
+                    row => {
+                      const value = row.{{_pathFromRowObject.Join("?.")}}
+                      {{WithIndent(text.GetValueFromRow("value", "formatted"), "  ")}}
+                      return formatted ?? ''
+                    }
+                    """;
 
-            return $$"""
-                row => {
-                  {{WithIndent(onCopy($"row.{_pathFromRowObject?.Join("?.")}", "formatted"), "  ")}}
-                  return formatted
-                }
-                """;
+            } else {
+                var onCopy = editSetting switch {
+                    ComboboxColumnSetting combo => combo.OnClipboardCopy,
+                    AsyncComboboxColumnSetting asyncCombo => asyncCombo.OnClipboardCopy,
+                    _ => throw new NotImplementedException(),
+                };
+                return $$"""
+                    row => {
+                      {{WithIndent(onCopy($"row.{_pathFromRowObject?.Join("?.")}", "formatted"), "  ")}}
+                      return formatted
+                    }
+                    """;
+            }
         }
 
         string IDataTableColumn2.RenderOnClipboardPaste(CodeRenderingContext ctx) {
             var editSetting = _vm.Options.MemberType.GetGridColumnEditSetting();
-            var onPaste = editSetting switch {
-                TextColumnSetting => throw new NotImplementedException(), // TextColumnSettingの場合はクリップボード処理が呼ばれないので
-                ComboboxColumnSetting combo => combo.OnClipboardPaste,
-                AsyncComboboxColumnSetting asyncCombo => asyncCombo.OnClipboardPaste,
-                _ => throw new NotImplementedException(),
-            };
-
-            return $$"""
-                (row, value) => {
-                {{If(_pathFromRowObject.Count() >= 2, () => $$"""
-                  if (row.{{_pathFromRowObject.SkipLast(1).Join("?.")}} === undefined) return
-                """)}}
-                  {{WithIndent(onPaste("value", "formatted"), "  ")}}
-                  row.{{_pathFromRowObject.Join(".")}} = formatted
+            if (editSetting is TextColumnSetting text) {
+                if (_vm.DeclaringAggregate == _tableContext.TableOwner) {
+                    return $$"""
+                        (row, value) => {
+                        {{If(text.SetValueToRow == null, () => $$"""
+                          row.{{_pathFromRowObject.Join(".")}} = value
+                        """).Else(() => $$"""
+                          {{WithIndent(text.SetValueToRow!("value", "formatted"), "  ")}}
+                          row.{{_pathFromRowObject.Join(".")}} = formatted
+                        """)}}
+                        }
+                        """;
+                } else {
+                    return $$"""
+                        (row, value) => {
+                          if (row.{{_pathFromRowObject.SkipLast(1).Join("?.")}}) {
+                        {{If(text.SetValueToRow == null, () => $$"""
+                            row.{{_pathFromRowObject.Join(".")}} = value
+                        """).Else(() => $$"""
+                            {{WithIndent(text.SetValueToRow!("value", "formatted"), "    ")}}
+                            row.{{_pathFromRowObject.Join(".")}} = formatted
+                        """)}}
+                          }
+                        }
+                        """;
                 }
-                """;
+
+            } else {
+                var onPaste = editSetting switch {
+                    ComboboxColumnSetting combo => combo.OnClipboardPaste,
+                    AsyncComboboxColumnSetting asyncCombo => asyncCombo.OnClipboardPaste,
+                    _ => throw new NotImplementedException(),
+                };
+                return $$"""
+                    (row, value) => {
+                    {{If(_pathFromRowObject.Count() >= 2, () => $$"""
+                      if (row.{{_pathFromRowObject.SkipLast(1).Join("?.")}} === undefined) return
+                    """)}}
+                      {{WithIndent(onPaste("value", "formatted"), "  ")}}
+                      row.{{_pathFromRowObject.Join(".")}} = formatted
+                    }
+                    """;
+            }
         }
     }
 }

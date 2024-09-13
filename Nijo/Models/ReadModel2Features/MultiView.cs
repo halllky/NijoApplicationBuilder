@@ -160,8 +160,8 @@ namespace Nijo.Models.ReadModel2Features {
                       })
 
                       // 列定義
-                      const columnDefs: Layout.ColumnDefEx<AggregateType.{{searchResult.TsTypeName}}>[] = useMemo(() => {
-                        const defs: Layout.ColumnDefEx<AggregateType.{{searchResult.TsTypeName}}>[] = [
+                      const columnDefs: Layout.DataTableColumn<AggregateType.{{searchResult.TsTypeName}}>[] = useMemo(() => {
+                        const defs: Layout.DataTableColumn<AggregateType.{{searchResult.TsTypeName}}>[] = [
                           {{WithIndent(tableBuilder.RenderColumnDef(context), "      ")}}
                         ]
                         return {{GridCustomizeFunction}}
@@ -280,7 +280,7 @@ namespace Nijo.Models.ReadModel2Features {
         internal string RenderGridCustomizerType() {
             var displayData = new DataClassForDisplay(_aggregate);
             return $$"""
-                {{GridCustomizeFunction}}?: (columnDef: Layout.ColumnDefEx<AggregateType.{{displayData.TsTypeName}}>[]) => Layout.ColumnDefEx<AggregateType.{{displayData.TsTypeName}}>[]
+                {{GridCustomizeFunction}}?: (columnDef: Layout.DataTableColumn<AggregateType.{{displayData.TsTypeName}}>[]) => Layout.DataTableColumn<AggregateType.{{displayData.TsTypeName}}>[]
                 """;
         }
         #endregion カスタマイズ部分

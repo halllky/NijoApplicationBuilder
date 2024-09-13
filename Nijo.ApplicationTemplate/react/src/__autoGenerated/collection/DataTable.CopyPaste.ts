@@ -1,12 +1,13 @@
 import React, { useCallback } from 'react'
 import * as RT from '@tanstack/react-table'
-import { ColumnDefEx, DataTableProps } from './DataTable.Public'
+import { DataTableProps } from './DataTable.Public'
 import * as Util from '../util'
+import { RTColumnDefEx } from './DataTable.Parts'
 
 export const useCopyPaste = <T>(
   api: RT.Table<T>,
   getSelectedRows: () => RT.Row<T>[],
-  getSelectedColumns: () => ColumnDefEx<T>[],
+  getSelectedColumns: () => RTColumnDefEx<T>[],
   onChangeRow: DataTableProps<T>['onChangeRow'] | undefined,
   editing: boolean,
 ) => {
@@ -25,13 +26,7 @@ export const useCopyPaste = <T>(
       const valueArray: string[] = []
       for (const column of columns) {
         let value: string
-        if (column.editSetting?.type === 'text' || column.editSetting?.type === 'multiline-text') {
-          value = column.editSetting.getTextValue(row.original) ?? ''
-        } else if (column.editSetting?.type === 'combo' || column.editSetting?.type === 'async-combo') {
-          value = column.editSetting.onClipboardCopy(row.original)
-        } else {
-          value = ''
-        }
+        value = column.ex.onClipboardCopy(row.original)
         valueArray.push(value)
       }
       valueTable.push(valueArray)
@@ -78,17 +73,13 @@ export const useCopyPaste = <T>(
 
         const column = allColumns[leftColumnIndex + x]
         if (column === undefined) continue // 貼り付け先の列がなければ中断
-        const columnDef = column.columnDef as ColumnDefEx<T>
+        const columnDef = column.columnDef as RTColumnDefEx<T>
 
         // 読み取り専用列なら中断
-        if (columnDef.editSetting === undefined || columnDef.editSetting.readOnly?.(row.original)) continue
+        if (columnDef.ex.editSetting === undefined || columnDef.ex.editSetting.readOnly?.(row.original)) continue
 
         // 列の定義に従って値を設定
-        if (columnDef.editSetting.type === 'text' || columnDef.editSetting.type === 'multiline-text') {
-          columnDef.editSetting.setTextValue(row.original, strValue)
-        } else if (columnDef.editSetting.type === 'combo' || columnDef.editSetting.type === 'async-combo') {
-          columnDef.editSetting.onClipboardPaste(row.original, strValue)
-        }
+        columnDef.ex.editSetting.onClipboardPaste(row.original, strValue)
       }
       onChangeRow(row.index, row.original)
     }

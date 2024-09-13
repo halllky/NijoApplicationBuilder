@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import * as RT from '@tanstack/react-table'
-import { DataTableProps, ColumnDefEx, ColumnEditSetting } from './DataTable.Public'
-import { CellEditorRef, CellPosition, TABLE_ZINDEX } from './DataTable.Parts'
+import { DataTableProps, ColumnEditSetting } from './DataTable.Public'
+import { CellEditorRef, CellPosition, RTColumnDefEx, TABLE_ZINDEX } from './DataTable.Parts'
 import * as Input from '../input'
 import * as Util from '../util'
 
@@ -42,8 +42,8 @@ export const CellEditor = Util.forwardRefEx(<T,>({
   const editorRef = useRef<Input.CustomComponentRef<string | unknown>>(null)
   useEffect(() => {
     if (caretCell.current) {
-      const columnDef = api.getAllLeafColumns()[caretCell.current.colIndex]?.columnDef as ColumnDefEx<T> | undefined
-      setCaretCellEditingInfo(columnDef?.editSetting)
+      const columnDef = api.getAllLeafColumns()[caretCell.current.colIndex]?.columnDef as RTColumnDefEx<T> | undefined
+      setCaretCellEditingInfo(columnDef?.ex.editSetting)
 
       // エディタを編集対象セルの位置に移動させる
       if (caretTdRef.current && containerRef.current) {
@@ -64,11 +64,11 @@ export const CellEditor = Util.forwardRefEx(<T,>({
 
   /** 編集開始 */
   const startEditing = useCallback((cell: RT.Cell<T, unknown>) => {
-    const columnDef = cell.column.columnDef as ColumnDefEx<T>
+    const columnDef = cell.column.columnDef as RTColumnDefEx<T>
 
     if (!onChangeRow) return // 値が編集されてもコミットできないので編集開始しない
-    if (!columnDef.editSetting) return // 編集不可のセル
-    if (columnDef.editSetting.readOnly?.(cell.row.original)) return // 編集不可のセル
+    if (!columnDef.ex.editSetting) return // 編集不可のセル
+    if (columnDef.ex.editSetting.readOnly?.(cell.row.original)) return // 編集不可のセル
 
     setEditingCellInfo({
       cellId: cell.id,
@@ -78,17 +78,11 @@ export const CellEditor = Util.forwardRefEx(<T,>({
     onChangeEditing(true)
 
     // 現在のセルの値をエディタに渡す
-    if (columnDef.editSetting.type === 'text') {
-      const cellValue = columnDef.editSetting.getTextValue(cell.row.original)
+    if (columnDef.ex.editSetting.type === 'text' || columnDef.ex.editSetting.type === 'multiline-text') {
+      const cellValue = columnDef.ex.editSetting.onStartEditing(cell.row.original)
       setUnComittedText(cellValue)
-    } else if (columnDef.editSetting.type === 'multiline-text') {
-      const cellValue = columnDef.editSetting.getTextValue(cell.row.original)
-      setUnComittedText(cellValue)
-    } else if (columnDef.editSetting.type === 'combo') {
-      const selectedValue = columnDef.editSetting.getValueFromRow(cell.row.original)
-      setComboSelectedItem(selectedValue)
-    } else if (columnDef.editSetting.type === 'async-combo') {
-      const selectedValue = columnDef.editSetting.getValueFromRow(cell.row.original)
+    } else if (columnDef.ex.editSetting.type === 'combo' || columnDef.ex.editSetting.type === 'async-combo') {
+      const selectedValue = columnDef.ex.editSetting.onStartEditing(cell.row.original)
       setComboSelectedItem(selectedValue)
     }
     // エディタにスクロール
@@ -105,14 +99,10 @@ export const CellEditor = Util.forwardRefEx(<T,>({
     if (caretCellEditingInfo === undefined) return
 
     // set value
-    if (caretCellEditingInfo.type === 'text') {
-      caretCellEditingInfo.setTextValue(editingCellInfo.row, (value ?? editorRef.current?.getValue()) as string | undefined)
-    } else if (caretCellEditingInfo.type === 'multiline-text') {
-      caretCellEditingInfo.setTextValue(editingCellInfo.row, (value ?? editorRef.current?.getValue()) as string | undefined)
-    } else if (caretCellEditingInfo.type === 'combo') {
-      caretCellEditingInfo.setValueToRow(editingCellInfo.row, (value ?? editorRef.current?.getValue()) as unknown | undefined)
-    } else if (caretCellEditingInfo.type === 'async-combo') {
-      caretCellEditingInfo.setValueToRow(editingCellInfo.row, (value ?? editorRef.current?.getValue()) as unknown | undefined)
+    if (caretCellEditingInfo.type === 'text' || caretCellEditingInfo.type === 'multiline-text') {
+      caretCellEditingInfo.onEndEditing(editingCellInfo.row, (value ?? editorRef.current?.getValue()) as string | undefined)
+    } else if (caretCellEditingInfo.type === 'combo' || caretCellEditingInfo.type === 'async-combo') {
+      caretCellEditingInfo.onEndEditing(editingCellInfo.row, (value ?? editorRef.current?.getValue()) as unknown | undefined)
     }
 
     onChangeRow?.(editingCellInfo.rowIndex, editingCellInfo.row)

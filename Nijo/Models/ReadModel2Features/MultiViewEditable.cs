@@ -143,7 +143,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                       // 列定義
                       const { post } = Util.useHttpRequest()
-                      const columnDefs = React.useMemo((): Layout.ColumnDefEx<AggregateType.{{dataClass.TsTypeName}}>[] => [
+                      const columnDefs = React.useMemo((): Layout.DataTableColumn<AggregateType.{{dataClass.TsTypeName}}>[] => [
                         {{WithIndent(tableBuilder.RenderColumnDef(ctx), "    ")}}
                       ], [post])
 

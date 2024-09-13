@@ -70,27 +70,28 @@ const AfterLoaded = ({ data }: {
   })
 
   // 列定義
-  const columns = React.useMemo((): Layout.ColumnDefEx<TestData>[] => [{
+  const columns = React.useMemo((): Layout.DataTableColumn<TestData>[] => [{
     id: 'col-1',
     header: '',
-    cell: cellProps => <Layout.AddModDelStateCell state={cellProps.cell.row.original.state} />,
-    size: 48,
-    enableResizing: false,
+    render: row => <Layout.AddModDelStateCell state={row.state} />,
+    onClipboardCopy: row => row.state ?? '',
+    defaultWidthPx: 48,
+    fixedWidth: true,
   }, {
     id: 'col0',
     header: 'ID',
-    cell: cellProps => <Layout.ReadOnlyCell>{cellProps.cell.row.original.id}</Layout.ReadOnlyCell>,
-    enableResizing: true,
+    render: row => <Layout.ReadOnlyCell>{row.id}</Layout.ReadOnlyCell>,
+    onClipboardCopy: row => row.id ?? '',
   }, {
     id: 'col1',
     header: '名前',
-    cell: cellProps => <Layout.ReadOnlyCell>{cellProps.cell.row.original.name}</Layout.ReadOnlyCell>,
-    enableResizing: true,
+    render: row => <Layout.ReadOnlyCell>{row.name}</Layout.ReadOnlyCell>,
+    onClipboardCopy: row => row.name ?? '',
   }, {
     id: 'col2',
     header: '年齢',
-    cell: cellProps => <Layout.ReadOnlyCell>{cellProps.cell.row.original.age}</Layout.ReadOnlyCell>,
-    enableResizing: true,
+    render: row => <Layout.ReadOnlyCell>{row.age}</Layout.ReadOnlyCell>,
+    onClipboardCopy: row => row.age?.toString() ?? '',
   }], [])
 
   // 選択されている行
@@ -192,20 +193,28 @@ const Root = ({ activeRowIndex }: {
   // 詳細
   const { update } = useFieldArray({ name: `data.${activeRowIndex}.details`, control })
   const detail = useWatch({ name: `data.${activeRowIndex}.details`, control })
-  const columns = React.useMemo((): Layout.ColumnDefEx<TestData['details'][0]>[] => [{
+  const columns = React.useMemo((): Layout.DataTableColumn<TestData['details'][0]>[] => [{
     id: 'col0',
     header: 'ITEM',
-    cell: cellProps => <Layout.ReadOnlyCell>{cellProps.cell.row.original.item}</Layout.ReadOnlyCell>,
-    enableResizing: true,
+    render: row => <Layout.ReadOnlyCell>{row.item}</Layout.ReadOnlyCell>,
+    onClipboardCopy: row => row.item ?? '',
   }, {
     id: 'col1',
     header: '価格',
-    cell: cellProps => <Layout.ReadOnlyCell>{cellProps.cell.row.original.price}</Layout.ReadOnlyCell>,
-    enableResizing: true,
+    render: row => <Layout.ReadOnlyCell>{row.price}</Layout.ReadOnlyCell>,
+    onClipboardCopy: row => row.price?.toString() ?? '',
     editSetting: {
       type: 'text',
-      getTextValue: row => row.price?.toString(),
-      setTextValue: (row, value) => {
+      onStartEditing: row => row.price?.toString(),
+      onEndEditing: (row, value) => {
+        if (value === undefined) {
+          row.price = undefined
+        } else {
+          const parsed = Util.tryParseAsNumberOrEmpty(value)
+          row.price = parsed.ok ? parsed.num : undefined
+        }
+      },
+      onClipboardPaste: (row, value) => {
         if (value === undefined) {
           row.price = undefined
         } else {
