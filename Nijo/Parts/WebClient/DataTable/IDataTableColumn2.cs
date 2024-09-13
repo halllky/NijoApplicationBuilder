@@ -21,7 +21,6 @@ namespace Nijo.Parts.WebClient.DataTable {
         string? HeaderGroupName { get; }
 
         // 外観
-        bool Hidden { get; }
         int? DefaultWidth { get; }
         bool EnableResizing { get; }
 

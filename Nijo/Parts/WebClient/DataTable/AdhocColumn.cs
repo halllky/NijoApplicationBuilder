@@ -13,7 +13,6 @@ namespace Nijo.Parts.WebClient.DataTable {
     internal class AdhocColumn : IDataTableColumn2 {
         public string Header { get; init; } = string.Empty;
         public string? HeaderGroupName { get; init; }
-        public bool Hidden { get; init; }
         public int? DefaultWidth { get; init; }
         public bool EnableResizing { get; init; }
         public required Func<CodeRenderingContext, string, string, string> CellContents { get; init; }

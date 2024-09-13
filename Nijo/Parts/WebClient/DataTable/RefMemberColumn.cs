@@ -27,7 +27,6 @@ namespace Nijo.Parts.WebClient.DataTable {
         public string Header => _ref.MemberName;
         public string? HeaderGroupName => _ref.Owner == _tableContext.TableOwner ? null : _ref.Owner.Item.DisplayName;
 
-        public bool Hidden => false;
         public int? DefaultWidth => null;
         public bool EnableResizing => true;
 

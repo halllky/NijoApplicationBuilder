@@ -193,9 +193,6 @@ namespace Nijo.Parts.WebClient.DataTable {
                     {{If(column.EnableResizing, () => $$"""
                       enableResizing: true,
                     """)}}
-                    {{If(column.Hidden, () => $$"""
-                      hidden: true,
-                    """)}}
                     {{If(column.HeaderGroupName != null, () => $$"""
                       headerGroupName: '{{column.HeaderGroupName}}',
                     """)}}

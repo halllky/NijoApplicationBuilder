@@ -26,7 +26,6 @@ namespace Nijo.Parts.WebClient.DataTable {
         public string Header => _vm.MemberName;
         public string? HeaderGroupName => _vm.Owner == _tableContext.TableOwner ? null : _vm.Owner.Item.DisplayName;
 
-        public bool Hidden => _vm.Options.InvisibleInGui;
         public int? DefaultWidth => null;
         public bool EnableResizing => true;
 
