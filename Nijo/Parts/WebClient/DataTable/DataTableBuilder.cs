@@ -212,11 +212,6 @@ namespace Nijo.Parts.WebClient.DataTable {
                         """;
                 }
 
-                var editSetting = column.GetEditSetting();
-                var textboxEditSetting = editSetting as TextColumnSetting;
-                var comboboxEditSetting = editSetting as ComboboxColumnSetting;
-                var asyncComboEditSetting = editSetting as AsyncComboboxColumnSetting;
-
                 return $$"""
                     .add({
                       id: 'col-{{index}}',
@@ -231,51 +226,6 @@ namespace Nijo.Parts.WebClient.DataTable {
                     """)}}
                     {{If(column.HeaderGroupName != null, () => $$"""
                       headerGroupName: '{{column.HeaderGroupName}}',
-                    """)}}
-                    {{If(_editable && textboxEditSetting != null, () => $$"""
-                      editSetting: {
-                        type: 'text',
-                        onStartEditing: {{WithIndent(column.RenderGetterOnEditStart(context), "    ")}},
-                        onEndEditing: {{WithIndent(column.RenderSetterOnEditEnd(context), "    ")}},
-                        onClipboardPaste: {{WithIndent(column.RenderOnClipboardPaste(context), "    ")}},
-                      },
-                    """)}}
-                    {{If(_editable && comboboxEditSetting != null, () => $$"""
-                      editSetting: (() => {
-                        const comboSetting: Layout.ColumnEditSetting<{{_rowTypeName}}, {{comboboxEditSetting!.OptionItemTypeName}}> = {
-                          type: 'combo',
-                          onStartEditing: {{WithIndent(column.RenderGetterOnEditStart(context), "      ")}},
-                          onEndEditing: {{WithIndent(column.RenderSetterOnEditEnd(context), "      ")}},
-                          onClipboardPaste: {{WithIndent(column.RenderOnClipboardPaste(context), "      ")}},
-                          comboProps: {
-                            options: {{comboboxEditSetting!.Options}},
-                            emitValueSelector: {{comboboxEditSetting!.EmitValueSelector}},
-                            matchingKeySelectorFromEmitValue: {{comboboxEditSetting!.MatchingKeySelectorFromEmitValue}},
-                            matchingKeySelectorFromOption: {{comboboxEditSetting!.MatchingKeySelectorFromOption}},
-                            textSelector: {{comboboxEditSetting!.TextSelector}},
-                          },
-                        }
-                        return comboSetting as Layout.ColumnEditSetting<{{_rowTypeName}}, unknown>
-                      })(),
-                    """)}}
-                    {{If(_editable && asyncComboEditSetting != null, () => $$"""
-                      editSetting: (() => {
-                        const asyncComboSetting: Layout.ColumnEditSetting<{{_rowTypeName}}, {{asyncComboEditSetting!.OptionItemTypeName}}> = {
-                          type: 'async-combo',
-                          onStartEditing: {{WithIndent(column.RenderGetterOnEditStart(context), "      ")}},
-                          onEndEditing: {{WithIndent(column.RenderSetterOnEditEnd(context), "      ")}},
-                          onClipboardPaste: {{WithIndent(column.RenderOnClipboardPaste(context), "      ")}},
-                          comboProps: {
-                            queryKey: {{asyncComboEditSetting!.QueryKey}},
-                            query: {{WithIndent(asyncComboEditSetting!.Query, "        ")}},
-                            emitValueSelector: {{asyncComboEditSetting!.EmitValueSelector}},
-                            matchingKeySelectorFromEmitValue: {{asyncComboEditSetting!.MatchingKeySelectorFromEmitValue}},
-                            matchingKeySelectorFromOption: {{asyncComboEditSetting!.MatchingKeySelectorFromOption}},
-                            textSelector: {{asyncComboEditSetting!.TextSelector}},
-                          },
-                        }
-                        return asyncComboSetting as Layout.ColumnEditSetting<{{_rowTypeName}}, unknown>
-                      })(),
                     """)}}
                     })
                     """;
