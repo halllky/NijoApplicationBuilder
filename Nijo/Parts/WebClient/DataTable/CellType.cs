@@ -67,13 +67,12 @@ namespace Nijo.Parts.WebClient.DataTable {
                         ) => DataTableColumnHelper<TRow>
 
                         /** 列定義生成ヘルパー関数のオプション */
-                        type CellTypeHelperOptions<TRow> = Pick<
-                          DataTableColumn<TRow>
-                          , 'id'
+                        type CellTypeHelperOptions<TRow> = Partial<Pick<DataTableColumn<TRow>,
+                          'id'
                           | 'defaultWidthPx'
                           | 'fixedWidth'
                           | 'headerGroupName'
-                        > & {
+                        >> & {
                           readOnly?: boolean | ((row: TRow) => boolean)
                         }
 

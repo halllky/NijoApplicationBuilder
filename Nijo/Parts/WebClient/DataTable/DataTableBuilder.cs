@@ -176,14 +176,49 @@ namespace Nijo.Parts.WebClient.DataTable {
         #endregion AddMembers
 
         internal string RenderColumnDef(CodeRenderingContext context) {
+            return $$"""
+                ...Layout.{{CellType.GET_HELPER}}<{{_rowTypeName}}>()
+                {{_columns.SelectTextTemplate((col, i) => $$"""
+                  {{WithIndent(Render(col, i), "  ")}}
+                """)}}
+                  .toArray(),
+                """;
+
             string Render(IDataTableColumn2 column, int index) {
+
+                if (column is ValueMemberColumn vmColumn) {
+                    var helper = vmColumn._vm.Options.MemberType.DataTableColumnDefHelperName;
+                    var setValue = vmColumn._pathFromRowObject.Count() <= 1
+                        ? $"(r, v) => {{ r.{vmColumn._pathFromRowObject.Join(".")} = v }}"
+                        : $"(r, v) => {{ if (r.{vmColumn._pathFromRowObject.SkipLast(1).Join("?.")} !== undefined) r.{vmColumn._pathFromRowObject.Join(".")} = v }}";
+
+                    return $$"""
+                        .{{helper}}('{{vmColumn.Header}}',
+                          r => r.{{vmColumn._pathFromRowObject.Join("?.")}},
+                          {{setValue}}, {
+                        {{If(column.HeaderGroupName != null, () => $$"""
+                          headerGroupName: '{{column.HeaderGroupName}}',
+                        """)}}
+                        {{If(!_editable, () => $$"""
+                          readOnly: true,
+                        """)}}
+                        {{If(column.DefaultWidth != null, () => $$"""
+                          defaultWidthPx: {{column.DefaultWidth}},
+                        """)}}
+                        {{If(!column.EnableResizing, () => $$"""
+                          fixedWidth: true,
+                        """)}}
+                        })
+                        """;
+                }
+
                 var editSetting = column.GetEditSetting();
                 var textboxEditSetting = editSetting as TextColumnSetting;
                 var comboboxEditSetting = editSetting as ComboboxColumnSetting;
                 var asyncComboEditSetting = editSetting as AsyncComboboxColumnSetting;
 
                 return $$"""
-                    {
+                    .add({
                       id: 'col-{{index}}',
                       header: '{{column.Header}}',
                       render: {{WithIndent(column.RenderDisplayContents(context, "r", "r"), "  ")}},
@@ -242,13 +277,9 @@ namespace Nijo.Parts.WebClient.DataTable {
                         return asyncComboSetting as Layout.ColumnEditSetting<{{_rowTypeName}}, unknown>
                       })(),
                     """)}}
-                    }
+                    })
                     """;
             }
-
-            return _columns.SelectTextTemplate((col, i) => $$"""
-                {{Render(col, i)}},
-                """);
         }
     }
 }

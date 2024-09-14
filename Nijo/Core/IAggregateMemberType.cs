@@ -102,9 +102,15 @@ namespace Nijo.Core {
         /// </summary>
         protected virtual E_SearchBehavior SearchBehavior { get; } = E_SearchBehavior.PartialMatch;
         /// <summary>
+        /// 複数行にわたる文字列になる可能性があるかどうか
+        /// </summary>
+        protected virtual bool MultiLine => false;
+        /// <summary>
         /// 入力に使われる React コンポーネントの名前
         /// </summary>
-        protected abstract string ReactComponentName { get; }
+        protected virtual string ReactComponentName => MultiLine
+            ? "Input.Description"
+            : "Input.Word";
 
         public virtual string GetCSharpTypeName() => "string";
         public virtual string GetTypeScriptTypeName() => "string";
@@ -169,18 +175,21 @@ namespace Nijo.Core {
                 """;
         }
 
-        string IAggregateMemberType.DataTableColumnDefHelperName => "text";
+        public string DataTableColumnDefHelperName => MultiLine
+            ? "multiLineText"
+            : "text";
         string IAggregateMemberType.RenderDataTableColumnDefHelper() {
             return $$"""
                 /** 文字列 */
-                text: {{Parts.WebClient.DataTable.CellType.HELPER_MEHOTD_TYPE}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => {
+                {{DataTableColumnDefHelperName}}: {{Parts.WebClient.DataTable.CellType.HELPER_MEHOTD_TYPE}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => {
                   this._columns.push({
                     ...opt,
                     id: opt?.id ?? `${opt?.headerGroupName}::${header}`,
+                    header,
                     render: row => <PlainCell>{getValue(row)}</PlainCell>,
                     onClipboardCopy: row => getValue(row) ?? '',
                     editSetting: opt?.readOnly === true ? undefined : {
-                      type: 'text',
+                      type: {{(MultiLine ? "'multiline-text'" : "'text'")}},
                       readOnly: typeof opt?.readOnly === 'function'
                         ? opt.readOnly
                         : undefined,

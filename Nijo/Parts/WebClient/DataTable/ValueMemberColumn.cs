@@ -19,8 +19,8 @@ namespace Nijo.Parts.WebClient.DataTable {
             _tableContext = tableContext;
         }
 
-        private readonly AggregateMember.ValueMember _vm;
-        private readonly IEnumerable<string> _pathFromRowObject;
+        internal readonly AggregateMember.ValueMember _vm;
+        internal readonly IEnumerable<string> _pathFromRowObject;
         private readonly DataTableBuilder _tableContext;
 
         public string Header => _vm.MemberName;

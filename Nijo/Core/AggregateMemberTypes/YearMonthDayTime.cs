@@ -32,6 +32,7 @@ namespace Nijo.Core.AggregateMemberTypes {
                   this._columns.push({
                     ...opt,
                     id: opt?.id ?? `${opt?.headerGroupName}::${header}`,
+                    header,
                     render: row => <PlainCell>{getValue(row)}</PlainCell>,
                     onClipboardCopy: row => getValue(row) ?? '',
                     editSetting: opt?.readOnly === true ? undefined : {

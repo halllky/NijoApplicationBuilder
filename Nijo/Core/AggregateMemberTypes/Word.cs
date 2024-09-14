@@ -7,6 +7,5 @@ using System.Threading.Tasks;
 
 namespace Nijo.Core.AggregateMemberTypes {
     public class Word : StringMemberType {
-        protected override string ReactComponentName => "Input.Word";
     }
 }

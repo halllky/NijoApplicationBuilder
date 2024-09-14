@@ -1,4 +1,3 @@
-using Nijo.Models.ReadModel2Features;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,6 +6,6 @@ using System.Threading.Tasks;
 
 namespace Nijo.Core.AggregateMemberTypes {
     public class Sentence : StringMemberType {
-        protected override string ReactComponentName => "Input.Description";
+        protected override bool MultiLine => true;
     }
 }
