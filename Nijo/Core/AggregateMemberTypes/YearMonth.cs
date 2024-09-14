@@ -45,5 +45,36 @@ namespace Nijo.Core.AggregateMemberTypes {
                 },
             };
         }
+
+        public override string DataTableColumnDefHelperName => "yearMonth";
+        public override string RenderDataTableColumnDefHelper() {
+            return $$"""
+                /** 年月 */
+                yearMonth: {{Parts.WebClient.DataTable.CellType.HELPER_MEHOTD_TYPE}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => {
+                  this._columns.push({
+                    ...opt,
+                    id: opt?.id ?? `${opt?.headerGroupName}::${header}`,
+                    render: row => <PlainCell>{getValue(row)}</PlainCell>,
+                    onClipboardCopy: row => getValue(row)?.toString() ?? '',
+                    editSetting: opt?.readOnly === true ? undefined : {
+                      type: 'text',
+                      readOnly: typeof opt?.readOnly === 'function'
+                        ? opt.readOnly
+                        : undefined,
+                      onStartEditing: row => getValue(row)?.toString(),
+                      onEndEditing: (row, value) => {
+                        const { yyyymm } = Util.tryParseAsYearMonthOrEmpty(value)
+                        setValue(row, yyyymm)
+                      },
+                      onClipboardPaste: (row, value) => {
+                        const { yyyymm } = Util.tryParseAsYearMonthOrEmpty(value)
+                        setValue(row, yyyymm)
+                      },
+                    },
+                  })
+                  return this
+                }
+                """;
+        }
     }
 }

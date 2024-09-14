@@ -1,7 +1,7 @@
 import React, { useCallback, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import * as RT from '@tanstack/react-table'
 import * as Util from '../util'
-import { DataTableColumn, DataTableProps, DataTableRef } from './DataTable.Public'
+import { DataTableProps, DataTableRef } from './DataTable.Public'
 import { TABLE_ZINDEX, CellEditorRef, RTColumnDefEx } from './DataTable.Parts'
 import { CellEditor } from './DataTable.Editing'
 import { ActiveCellBorder, SelectTarget, useSelection } from './DataTable.Selecting'
@@ -9,6 +9,7 @@ import { getColumnResizeOption, useColumnResizing } from './DataTable.ColResize'
 import { useCopyPaste } from './DataTable.CopyPaste'
 
 export * from './DataTable.Public'
+export * from './DataTable.CellType'
 
 export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: React.ForwardedRef<DataTableRef<T>>) => {
   const {
@@ -278,19 +279,4 @@ const getTdStickeyStyle = (isRowHeader: boolean): React.CSSProperties => ({
 // 配列の最後の要素を返す。配列の要素数が0の場合は考慮していない。
 const getLast = <T,>(arr: T[]): T => {
   return arr[arr.length - 1]
-}
-
-// -----------------------------------------------
-// よく使うセル
-
-/** 読み取り専用の通常のテキストセル */
-export const ReadOnlyCell = ({ children }: {
-  children?: React.ReactNode
-}) => {
-  return (
-    <span className="block w-full px-1 overflow-hidden whitespace-nowrap">
-      {children}
-      &nbsp;
-    </span>
-  )
 }

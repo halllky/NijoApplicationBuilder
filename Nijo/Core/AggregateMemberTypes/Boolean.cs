@@ -106,5 +106,50 @@ namespace Nijo.Core.AggregateMemberTypes {
                 {{ctx.RenderErrorMessage(vm)}}
                 """;
         }
+
+        string IAggregateMemberType.DataTableColumnDefHelperName => "bool";
+        string IAggregateMemberType.RenderDataTableColumnDefHelper() {
+            return $$"""
+                /** 真偽値 */
+                bool: {{Parts.WebClient.DataTable.CellType.HELPER_MEHOTD_TYPE}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => {
+                  const editSetting: ColumnEditSetting<TRow, { key: 'T' | 'F', text: string }> = {
+                    type: 'combo',
+                    readOnly: typeof opt?.readOnly === 'function'
+                      ? opt.readOnly
+                      : undefined,
+                    onStartEditing: row => getValue(row) ? { key: 'T', text: '✓' } : { key: 'F', text: '' },
+                    onEndEditing: (row, value) => {
+                      setValue(row, value?.key === 'T')
+                    },
+                    onClipboardPaste: (row, value) => {
+                      const normalized = Util.normalize(value).toLowerCase()
+                      const blnValue =
+                        normalized === 't'
+                        || normalized === 'true'
+                        || normalized === '1'
+                        || normalized === '✓'
+                      setValue(row, blnValue)
+                    },
+                    comboProps: {
+                      options: [{ key: 'T', text: '✓' }, { key: 'F', text: '' }],
+                      emitValueSelector: x => x,
+                      matchingKeySelectorFromEmitValue: x => x.key,
+                      matchingKeySelectorFromOption: x => x.key,
+                      textSelector: x => x.text,
+                    }
+                  }
+                  this._columns.push({
+                    ...opt,
+                    id: opt?.id ?? `${opt?.headerGroupName}::${header}`,
+                    render: row => <PlainCell>{(getValue(row) ? '✓' : '')}</PlainCell>,
+                    onClipboardCopy: row => getValue(row) ? 'TRUE' : 'FALSE',
+                    editSetting: opt?.readOnly === true
+                      ? undefined
+                      : (editSetting as ColumnEditSetting<TRow, unknown>),
+                  })
+                  return this
+                }
+                """;
+        }
     }
 }

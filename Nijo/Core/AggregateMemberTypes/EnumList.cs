@@ -127,5 +127,51 @@ namespace Nijo.Core.AggregateMemberTypes {
                 {{ctx.RenderErrorMessage(vm)}}
                 """;
         }
+
+        string IAggregateMemberType.DataTableColumnDefHelperName => Definition.Name;
+        string IAggregateMemberType.RenderDataTableColumnDefHelper() {
+            return $$"""
+                /** {{Definition.Name}} */
+                {{Definition.Name}}: {{Parts.WebClient.DataTable.CellType.HELPER_MEHOTD_TYPE}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => {
+                  const editSetting: ColumnEditSetting<TRow, {{GetTypeScriptTypeName()}}> = {
+                    type: 'combo',
+                    readOnly: typeof opt?.readOnly === 'function'
+                      ? opt.readOnly
+                      : undefined,
+                    onStartEditing: row => getValue(row),
+                    onEndEditing: (row, value) => {
+                      setValue(row, value)
+                    },
+                    onClipboardPaste: (row, value) => {
+                      const trimmed = value.trim()
+                {{Definition.Items.SelectTextTemplate((x, i) => $$"""
+                      {{(i == 0 ? "if" : "} else if")}} (trimmed === '{{x.PhysicalName}}') {
+                        setValue(row, '{{x.PhysicalName}}')
+                """)}}
+                      } else {
+                        setValue(row, undefined)
+                      }
+                    },
+                    comboProps: {
+                      options: [{{Definition.Items.Select(x => $"'{x.PhysicalName}'").Join(", ")}}],
+                      emitValueSelector: x => x,
+                      matchingKeySelectorFromEmitValue: x => x,
+                      matchingKeySelectorFromOption: x => x,
+                      textSelector: x => x,
+                    }
+                  }
+                  this._columns.push({
+                    ...opt,
+                    id: opt?.id ?? `${opt?.headerGroupName}::${header}`,
+                    render: row => <PlainCell>{(getValue(row) ? '✓' : '')}</PlainCell>,
+                    onClipboardCopy: row => getValue(row) ?? '',
+                    editSetting: opt?.readOnly === true
+                      ? undefined
+                      : (editSetting as ColumnEditSetting<TRow, unknown>),
+                  })
+                  return this
+                }
+                """;
+        }
     }
 }

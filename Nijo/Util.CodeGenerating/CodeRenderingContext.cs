@@ -183,6 +183,7 @@ namespace Nijo.Util.CodeGenerating {
 
 
             // メンバー型のコード生成。列挙体の定義などの生成を行う。
+            var cellType = UseSummarizedFile<Parts.WebClient.DataTable.CellType>();
             var allMemberTypes = Schema
                 .AllAggregates()
                 .SelectMany(agg => agg.GetMembers())
@@ -191,6 +192,7 @@ namespace Nijo.Util.CodeGenerating {
                 .Distinct();
             foreach (var memberType in allMemberTypes) {
                 memberType.GenerateCode(this);
+                cellType.Add(memberType.RenderDataTableColumnDefHelper());
             }
 
             // モデルと関係するがルート集約1個と対応しないソースコードを生成する

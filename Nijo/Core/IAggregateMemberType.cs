@@ -18,6 +18,7 @@ namespace Nijo.Core {
         /// <summary>
         /// グリッド用のReactの入力コンポーネントを設定するコードの詳細を行います。
         /// </summary>
+        [Obsolete("DataTableColumnDefHelperNameに移行")]
         IGridColumnSetting GetGridColumnEditSetting();
 
         /// <summary>
@@ -64,6 +65,15 @@ namespace Nijo.Core {
         /// 未指定の場合はそういった追加のプロパティは特になし。
         /// </summary>
         IEnumerable<string> EnumerateSingleViewCustomFormUiAdditionalProps() => [];
+
+        /// <summary>
+        /// <see cref="Parts.WebClient.DataTable.CellType"/> で使用される列定義生成ヘルパーメソッドの名前
+        /// </summary>
+        string DataTableColumnDefHelperName { get; }
+        /// <summary>
+        /// <see cref="DataTableColumnDefHelperName"/> のメソッド本体をレンダリングします。
+        /// </summary>
+        string RenderDataTableColumnDefHelper();
     }
 
     /// <summary>検索条件のオブジェクトの型</summary>
@@ -156,6 +166,31 @@ namespace Nijo.Core {
             return $$"""
                 <{{ReactComponentName}} {{attrs.Join(" ")}}/>
                 {{ctx.RenderErrorMessage(vm)}}
+                """;
+        }
+
+        string IAggregateMemberType.DataTableColumnDefHelperName => "text";
+        string IAggregateMemberType.RenderDataTableColumnDefHelper() {
+            return $$"""
+                /** 文字列 */
+                text: {{Parts.WebClient.DataTable.CellType.HELPER_MEHOTD_TYPE}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => {
+                  this._columns.push({
+                    ...opt,
+                    id: opt?.id ?? `${opt?.headerGroupName}::${header}`,
+                    render: row => <PlainCell>{getValue(row)}</PlainCell>,
+                    onClipboardCopy: row => getValue(row) ?? '',
+                    editSetting: opt?.readOnly === true ? undefined : {
+                      type: 'text',
+                      readOnly: typeof opt?.readOnly === 'function'
+                        ? opt.readOnly
+                        : undefined,
+                      onStartEditing: row => getValue(row),
+                      onEndEditing: setValue,
+                      onClipboardPaste: setValue,
+                    },
+                  })
+                  return this
+                }
                 """;
         }
 
@@ -284,6 +319,9 @@ namespace Nijo.Core {
                 {{ctx.RenderErrorMessage(vm)}}
                 """;
         }
+
+        public abstract string DataTableColumnDefHelperName { get; }
+        public abstract string RenderDataTableColumnDefHelper();
     }
 
     /// <summary>

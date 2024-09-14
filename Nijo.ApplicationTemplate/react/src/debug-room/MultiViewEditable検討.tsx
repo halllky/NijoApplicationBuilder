@@ -80,17 +80,17 @@ const AfterLoaded = ({ data }: {
   }, {
     id: 'col0',
     header: 'ID',
-    render: row => <Layout.ReadOnlyCell>{row.id}</Layout.ReadOnlyCell>,
+    render: row => <ReadOnlyCell>{row.id}</ReadOnlyCell>,
     onClipboardCopy: row => row.id ?? '',
   }, {
     id: 'col1',
     header: '名前',
-    render: row => <Layout.ReadOnlyCell>{row.name}</Layout.ReadOnlyCell>,
+    render: row => <ReadOnlyCell>{row.name}</ReadOnlyCell>,
     onClipboardCopy: row => row.name ?? '',
   }, {
     id: 'col2',
     header: '年齢',
-    render: row => <Layout.ReadOnlyCell>{row.age}</Layout.ReadOnlyCell>,
+    render: row => <ReadOnlyCell>{row.age}</ReadOnlyCell>,
     onClipboardCopy: row => row.age?.toString() ?? '',
   }], [])
 
@@ -196,12 +196,12 @@ const Root = ({ activeRowIndex }: {
   const columns = React.useMemo((): Layout.DataTableColumn<TestData['details'][0]>[] => [{
     id: 'col0',
     header: 'ITEM',
-    render: row => <Layout.ReadOnlyCell>{row.item}</Layout.ReadOnlyCell>,
+    render: row => <ReadOnlyCell>{row.item}</ReadOnlyCell>,
     onClipboardCopy: row => row.item ?? '',
   }, {
     id: 'col1',
     header: '価格',
-    render: row => <Layout.ReadOnlyCell>{row.price}</Layout.ReadOnlyCell>,
+    render: row => <ReadOnlyCell>{row.price}</ReadOnlyCell>,
     onClipboardCopy: row => row.price?.toString() ?? '',
     editSetting: {
       type: 'text',
@@ -254,5 +254,16 @@ const Root = ({ activeRowIndex }: {
         />
       </div>
     </div>
+  )
+}
+
+const ReadOnlyCell = ({ children }: {
+  children?: React.ReactNode
+}) => {
+  return (
+    <span className="block w-full px-1 overflow-hidden whitespace-nowrap">
+      {children}
+      &nbsp;
+    </span>
   )
 }

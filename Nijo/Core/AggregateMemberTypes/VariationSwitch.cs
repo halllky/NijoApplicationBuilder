@@ -142,5 +142,51 @@ namespace Nijo.Core.AggregateMemberTypes {
                 {{ctx.RenderErrorMessage(vm)}}
                 """;
         }
+
+        string IAggregateMemberType.DataTableColumnDefHelperName => _variationGroup.GroupName;
+        string IAggregateMemberType.RenderDataTableColumnDefHelper() {
+            return $$"""
+                /** {{_variationGroup.GroupName}} */
+                {{_variationGroup.GroupName}}: {{Parts.WebClient.DataTable.CellType.HELPER_MEHOTD_TYPE}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => {
+                  const editSetting: ColumnEditSetting<TRow, {{GetTypeScriptTypeName()}}> = {
+                    type: 'combo',
+                    readOnly: typeof opt?.readOnly === 'function'
+                      ? opt.readOnly
+                      : undefined,
+                    onStartEditing: row => getValue(row),
+                    onEndEditing: (row, value) => {
+                      setValue(row, value)
+                    },
+                    onClipboardPaste: (row, value) => {
+                      const trimmed = value.trim()
+                {{_variationGroup.VariationAggregates.SelectTextTemplate((x, i) => $$"""
+                      {{(i == 0 ? "if" : "} else if")}} (trimmed === '{{x.Value.RelationName}}') {
+                        setValue(row, '{{x.Value.RelationName}}')
+                """)}}
+                      } else {
+                        setValue(row, undefined)
+                      }
+                    },
+                    comboProps: {
+                      options: [{{_variationGroup.VariationAggregates.Select(x => $"'{x.Value.RelationName}'").Join(", ")}}],
+                      emitValueSelector: x => x,
+                      matchingKeySelectorFromEmitValue: x => x,
+                      matchingKeySelectorFromOption: x => x,
+                      textSelector: x => x,
+                    }
+                  }
+                  this._columns.push({
+                    ...opt,
+                    id: opt?.id ?? `${opt?.headerGroupName}::${header}`,
+                    render: row => <PlainCell>{(getValue(row) ? '✓' : '')}</PlainCell>,
+                    onClipboardCopy: row => getValue(row) ?? '',
+                    editSetting: opt?.readOnly === true
+                      ? undefined
+                      : (editSetting as ColumnEditSetting<TRow, unknown>),
+                  })
+                  return this
+                }
+                """;
+        }
     }
 }

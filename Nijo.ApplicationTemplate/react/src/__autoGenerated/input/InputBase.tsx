@@ -50,7 +50,7 @@ export type CustomComponentProps<
   }
 
 // ---------------------------------------------
-export type SyncComboProps<TOption, TEmitValue, TMatchingKey extends string = string> = {
+export type SyncComboProps<TOption, TEmitValue = TOption, TMatchingKey extends string = string> = {
   options: TOption[]
   matchingKeySelectorFromOption: (item: TOption) => TMatchingKey | undefined
   matchingKeySelectorFromEmitValue: (value: TEmitValue) => TMatchingKey | undefined
@@ -60,7 +60,7 @@ export type SyncComboProps<TOption, TEmitValue, TMatchingKey extends string = st
   dropdownAutoOpen?: boolean
 }
 
-export type AsyncComboProps<TOption, TEmitValue, TMatchingKey extends string = string> = {
+export type AsyncComboProps<TOption, TEmitValue = TOption, TMatchingKey extends string = string> = {
   queryKey?: string
   query: ((keyword: string | undefined) => Promise<TOption[]>)
   matchingKeySelectorFromOption: (item: TOption) => TMatchingKey | undefined

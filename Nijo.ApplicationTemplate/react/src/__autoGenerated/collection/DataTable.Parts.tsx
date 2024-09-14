@@ -10,9 +10,11 @@ export const TABLE_ZINDEX = {
   SELECTION: 1 as const,
 }
 
+/** Tanstack React Table の列定義 + DataTableコンポーネント独自のプロパティ */
 export type RTColumnDefEx<TRow> = Omit<RT.ColumnDef<TRow>, 'cell' | 'header'> & {
   cell: Exclude<RT.ColumnDef<TRow>['cell'], undefined>
   header: string
+  /** DataTableコンポーネント独自のプロパティ */
   ex: DataTableColumn<TRow>
 }
 
