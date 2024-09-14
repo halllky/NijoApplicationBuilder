@@ -30,8 +30,9 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     const rtColumns: RTColumnDefEx<T>[] = propsColumns?.map(c => ({
       id: c.id,
       size: c.defaultWidthPx,
+      enableResizing: !c.fixedWidth,
       header: c.header ?? '',
-      cell: cellProps => c.render(cellProps.row.original),
+      cell: cellProps => c.render(cellProps.row.original, cellProps.row.index),
       ex: c,
     })) ?? []
     const colgroups = Util.groupBy(rtColumns, col => col.ex.headerGroupName ?? '')

@@ -26,7 +26,7 @@ export const useCopyPaste = <T>(
       const valueArray: string[] = []
       for (const column of columns) {
         let value: string
-        value = column.ex.onClipboardCopy(row.original)
+        value = column.ex.onClipboardCopy(row.original, row.index)
         valueArray.push(value)
       }
       valueTable.push(valueArray)

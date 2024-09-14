@@ -23,8 +23,8 @@ export type DataTableProps<T> = {
 export type DataTableColumn<TRow> = {
   id: string
   header?: string
-  render: (row: TRow) => React.ReactNode
-  onClipboardCopy: (row: TRow) => string
+  render: (row: TRow, rowIndex: number) => React.ReactNode
+  onClipboardCopy: (row: TRow, rowIndex: number) => string
   headerGroupName?: string
   defaultWidthPx?: number
   fixedWidth?: boolean
