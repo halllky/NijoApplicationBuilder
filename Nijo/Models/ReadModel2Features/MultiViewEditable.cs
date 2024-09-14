@@ -35,7 +35,19 @@ namespace Nijo.Models.ReadModel2Features {
                 var loadMethod = new LoadMethod(_rootAggregate);
                 var multiView = new MultiView(_rootAggregate);
                 var rootAggregateComponent = new MultiViewEditableAggregateComponent(_rootAggregate);
-                var tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_rootAggregate, $"AggregateType.{dataClass.TsTypeName}", true)
+
+                string OnValueChange(AggregateMember.AggregateMemberBase m) {
+                    return $$"""
+                        (row, value, rowIndex) => {
+                        {{If(m.Owner != _rootAggregate, () => $$"""
+                          if (row.{{m.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, _rootAggregate).SkipLast(1).Join("?.")}} === undefined) return
+                        """)}}
+                          row.{{m.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, _rootAggregate).Join(".")}} = value
+                          handleChangeRow(rowIndex, row)
+                        }
+                        """;
+                }
+                var tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_rootAggregate, $"AggregateType.{dataClass.TsTypeName}", true, OnValueChange)
                     // 行ヘッダ（列の状態）
                     .Add(new Parts.WebClient.DataTable.AdhocColumn {
                         Header = string.Empty,
@@ -143,9 +155,19 @@ namespace Nijo.Models.ReadModel2Features {
 
                       // 列定義
                       const { post } = Util.useHttpRequest()
+                      const cellType = Layout.{{Parts.WebClient.DataTable.CellType.USE_HELPER}}<AggregateType.{{dataClass.TsTypeName}}>()
+                      const handleChangeRow = useEvent((rowIndex: number, row: AggregateType.{{dataClass.TsTypeName}}) => {
+                        const defaultValue = defaultValuesDict.get(getItemKeyAsString(row))
+                        if (defaultValue) {
+                          const changed = !AggregateType.{{dataClass.DeepEqualFunction}}(row, defaultValue)
+                          update(rowIndex, { ...row, {{DataClassForDisplay.WILL_BE_CHANGED_TS}}: changed })
+                        } else {
+                          update(rowIndex, row)
+                        }
+                      })
                       const columnDefs = React.useMemo((): Layout.DataTableColumn<AggregateType.{{dataClass.TsTypeName}}>[] => [
                         {{WithIndent(tableBuilder.RenderColumnDef(ctx), "    ")}}
-                      ], [post])
+                      ], [post, cellType])
 
                       // 選択されている行
                       const [activeRowIndex, setActiveRowIndex] = useState<number | undefined>(undefined)
@@ -185,17 +207,6 @@ namespace Nijo.Models.ReadModel2Features {
                           }
                         }
                         remove(removeIndexes)
-                      })
-
-                      // 行編集時
-                      const handleChangeRow = useEvent((rowIndex: number, row: AggregateType.{{dataClass.TsTypeName}}) => {
-                        const defaultValue = defaultValuesDict.get(getItemKeyAsString(row))
-                        if (defaultValue) {
-                          const changed = !AggregateType.{{dataClass.DeepEqualFunction}}(row, defaultValue)
-                          update(rowIndex, { ...row, {{DataClassForDisplay.WILL_BE_CHANGED_TS}}: changed })
-                        } else {
-                          update(rowIndex, row)
-                        }
                       })
 
                       // リセット

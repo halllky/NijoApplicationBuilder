@@ -99,11 +99,10 @@ export const CellEditor = Util.forwardRefEx(<T,>({
     if (caretCellEditingInfo === undefined) return
 
     // set value
-    if (caretCellEditingInfo.type === 'text' || caretCellEditingInfo.type === 'multiline-text') {
-      caretCellEditingInfo.onEndEditing(editingCellInfo.row, (value ?? editorRef.current?.getValue()) as string | undefined)
-    } else if (caretCellEditingInfo.type === 'combo' || caretCellEditingInfo.type === 'async-combo') {
-      caretCellEditingInfo.onEndEditing(editingCellInfo.row, (value ?? editorRef.current?.getValue()) as unknown | undefined)
-    }
+    caretCellEditingInfo.onEndEditing(
+      editingCellInfo.row,
+      (value ?? editorRef.current?.getValue()) as undefined, // getValueの戻り値とvalueの型は一致している前提
+      editingCellInfo.rowIndex)
 
     onChangeRow?.(editingCellInfo.rowIndex, editingCellInfo.row)
     setEditingCellInfo(undefined)

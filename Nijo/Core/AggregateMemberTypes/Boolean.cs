@@ -107,28 +107,28 @@ namespace Nijo.Core.AggregateMemberTypes {
                 """;
         }
 
-        string IAggregateMemberType.DataTableColumnDefHelperName => "bool";
-        string IAggregateMemberType.RenderDataTableColumnDefHelper() {
-            return $$"""
+        public string DataTableColumnDefHelperName => "bool";
+        Parts.WebClient.DataTable.CellType.Helper IAggregateMemberType.RenderDataTableColumnDefHelper() {
+            var body = $$"""
                 /** 真偽値 */
-                bool: {{Parts.WebClient.DataTable.CellType.HELPER_MEHOTD_TYPE}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => {
+                const bool: {{Parts.WebClient.DataTable.CellType.RETURNS_ONE_COLUMN}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => {
                   const editSetting: ColumnEditSetting<TRow, { key: 'T' | 'F', text: string }> = {
                     type: 'combo',
                     readOnly: typeof opt?.readOnly === 'function'
                       ? opt.readOnly
                       : undefined,
                     onStartEditing: row => getValue(row) ? { key: 'T', text: '✓' } : { key: 'F', text: '' },
-                    onEndEditing: (row, value) => {
-                      setValue(row, value?.key === 'T')
+                    onEndEditing: (row, value, rowIndex) => {
+                      setValue(row, value?.key === 'T', rowIndex)
                     },
-                    onClipboardPaste: (row, value) => {
+                    onClipboardPaste: (row, value, rowIndex) => {
                       const normalized = Util.normalize(value).toLowerCase()
                       const blnValue =
                         normalized === 't'
                         || normalized === 'true'
                         || normalized === '1'
                         || normalized === '✓'
-                      setValue(row, blnValue)
+                      setValue(row, blnValue, rowIndex)
                     },
                     comboProps: {
                       options: [{ key: 'T', text: '✓' }, { key: 'F', text: '' }],
@@ -138,7 +138,7 @@ namespace Nijo.Core.AggregateMemberTypes {
                       textSelector: x => x.text,
                     }
                   }
-                  this._columns.push({
+                  return {
                     ...opt,
                     id: opt?.id ?? `${opt?.headerGroupName}::${header}`,
                     header,
@@ -147,10 +147,13 @@ namespace Nijo.Core.AggregateMemberTypes {
                     editSetting: opt?.readOnly === true
                       ? undefined
                       : (editSetting as ColumnEditSetting<TRow, unknown>),
-                  })
-                  return this
+                  }
                 }
                 """;
+            return new() {
+                Body = body,
+                FunctionName = DataTableColumnDefHelperName,
+            };
         }
     }
 }

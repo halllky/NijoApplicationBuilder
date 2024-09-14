@@ -45,7 +45,7 @@ namespace Nijo.Models.ReadModel2Features {
                     RenderErrorMessage = vm => throw new InvalidOperationException("検索条件欄では項目ごとにエラーメッセージを表示するという概念が無い"),
                 };
 
-                var tableBuilder = new DataTableBuilder(_aggregate, $"AggregateType.{searchResult.TsTypeName}", false)
+                var tableBuilder = new DataTableBuilder(_aggregate, $"AggregateType.{searchResult.TsTypeName}", false, _ => "() => {}")
                     // 行ヘッダ（詳細リンク）
                     .Add(new AdhocColumn {
                         Header = string.Empty,
@@ -160,6 +160,7 @@ namespace Nijo.Models.ReadModel2Features {
                       })
 
                       // 列定義
+                      const cellType = Layout.{{CellType.USE_HELPER}}<AggregateType.{{searchResult.TsTypeName}}>()
                       const columnDefs: Layout.DataTableColumn<AggregateType.{{searchResult.TsTypeName}}>[] = useMemo(() => {
                         const defs: Layout.DataTableColumn<AggregateType.{{searchResult.TsTypeName}}>[] = [
                           {{WithIndent(tableBuilder.RenderColumnDef(context), "      ")}}
@@ -167,7 +168,7 @@ namespace Nijo.Models.ReadModel2Features {
                         return {{GridCustomizeFunction}}
                           ? {{GridCustomizeFunction}}(defs)
                           : defs
-                      }, [get, post, {{TO_DETAIL_VIEW}}, {{GridCustomizeFunction}}])
+                      }, [get, post, {{TO_DETAIL_VIEW}}, {{GridCustomizeFunction}}, cellType])
 
                       return (
                         <Layout.PageFrame

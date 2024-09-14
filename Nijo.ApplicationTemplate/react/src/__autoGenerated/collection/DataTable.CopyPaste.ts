@@ -51,7 +51,7 @@ export const useCopyPaste = <T>(
     const topRowIndex = selectedRows[0]?.index
     const leftColumn = selectedColumns[0]
     if (topRowIndex === undefined || leftColumn === undefined) return
-    const allColumns = api.getAllColumns()
+    const allColumns = api.getAllLeafColumns()
     const leftColumnIndex = allColumns.findIndex(c => c.id === leftColumn.id)
     if (topRowIndex === -1 || leftColumnIndex === -1) return
 
@@ -79,7 +79,7 @@ export const useCopyPaste = <T>(
         if (columnDef.ex.editSetting === undefined || columnDef.ex.editSetting.readOnly?.(row.original)) continue
 
         // 列の定義に従って値を設定
-        columnDef.ex.editSetting.onClipboardPaste(row.original, strValue)
+        columnDef.ex.editSetting.onClipboardPaste(row.original, strValue, row.index)
       }
       onChangeRow(row.index, row.original)
     }

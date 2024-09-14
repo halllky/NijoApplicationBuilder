@@ -33,7 +33,7 @@ export type DataTableColumn<TRow> = {
 
 export type ColumnEditSetting<TRow, TOption = unknown> = {
   readOnly?: ((row: TRow) => boolean)
-  onClipboardPaste: (row: TRow, value: string) => void
+  onClipboardPaste: (row: TRow, value: string, rowIndex: number) => void
 } & (TextColumnEditSetting<TRow>
   | TextareaColumndEditSetting<TRow>
   | SyncComboColumnEditSetting<TRow, TOption>
@@ -42,22 +42,22 @@ export type ColumnEditSetting<TRow, TOption = unknown> = {
 type TextColumnEditSetting<TRow> = {
   type: 'text'
   onStartEditing: (row: TRow) => string | undefined
-  onEndEditing: (row: TRow, value: string | undefined) => void
+  onEndEditing: (row: TRow, value: string | undefined, rowIndex: number) => void
 }
 type TextareaColumndEditSetting<TRow> = {
   type: 'multiline-text'
   onStartEditing: (row: TRow) => string | undefined
-  onEndEditing: (row: TRow, value: string | undefined) => void
+  onEndEditing: (row: TRow, value: string | undefined, rowIndex: number) => void
 }
 type SyncComboColumnEditSetting<TRow, TOption = unknown> = {
   type: 'combo'
   onStartEditing: (row: TRow) => TOption | undefined
-  onEndEditing: (row: TRow, value: TOption | undefined) => void
+  onEndEditing: (row: TRow, value: TOption | undefined, rowIndex: number) => void
   comboProps: SyncComboProps<TOption, TOption>
 }
 type AsyncComboColumnEditSetting<TRow, TOption = unknown> = {
   type: 'async-combo'
   onStartEditing: (row: TRow) => TOption | undefined
-  onEndEditing: (row: TRow, value: TOption | undefined) => void
+  onEndEditing: (row: TRow, value: TOption | undefined, rowIndex: number) => void
   comboProps: AsyncComboProps<TOption, TOption>
 }

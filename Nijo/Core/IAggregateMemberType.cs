@@ -73,7 +73,7 @@ namespace Nijo.Core {
         /// <summary>
         /// <see cref="DataTableColumnDefHelperName"/> のメソッド本体をレンダリングします。
         /// </summary>
-        string RenderDataTableColumnDefHelper();
+        Parts.WebClient.DataTable.CellType.Helper RenderDataTableColumnDefHelper();
     }
 
     /// <summary>検索条件のオブジェクトの型</summary>
@@ -178,29 +178,30 @@ namespace Nijo.Core {
         public string DataTableColumnDefHelperName => MultiLine
             ? "multiLineText"
             : "text";
-        string IAggregateMemberType.RenderDataTableColumnDefHelper() {
-            return $$"""
+        Parts.WebClient.DataTable.CellType.Helper IAggregateMemberType.RenderDataTableColumnDefHelper() {
+            var body = $$"""
                 /** 文字列 */
-                {{DataTableColumnDefHelperName}}: {{Parts.WebClient.DataTable.CellType.HELPER_MEHOTD_TYPE}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => {
-                  this._columns.push({
-                    ...opt,
-                    id: opt?.id ?? `${opt?.headerGroupName}::${header}`,
-                    header,
-                    render: row => <PlainCell>{getValue(row)}</PlainCell>,
-                    onClipboardCopy: row => getValue(row) ?? '',
-                    editSetting: opt?.readOnly === true ? undefined : {
-                      type: {{(MultiLine ? "'multiline-text'" : "'text'")}},
-                      readOnly: typeof opt?.readOnly === 'function'
-                        ? opt.readOnly
-                        : undefined,
-                      onStartEditing: row => getValue(row),
-                      onEndEditing: setValue,
-                      onClipboardPaste: setValue,
-                    },
-                  })
-                  return this
-                }
+                const {{DataTableColumnDefHelperName}}: {{Parts.WebClient.DataTable.CellType.RETURNS_ONE_COLUMN}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => ({
+                  ...opt,
+                  id: opt?.id ?? `${opt?.headerGroupName}::${header}`,
+                  header,
+                  render: row => <PlainCell>{getValue(row)}</PlainCell>,
+                  onClipboardCopy: row => getValue(row) ?? '',
+                  editSetting: opt?.readOnly === true ? undefined : {
+                    type: {{(MultiLine ? "'multiline-text'" : "'text'")}},
+                    readOnly: typeof opt?.readOnly === 'function'
+                      ? opt.readOnly
+                      : undefined,
+                    onStartEditing: row => getValue(row),
+                    onEndEditing: setValue,
+                    onClipboardPaste: setValue,
+                  },
+                })
                 """;
+            return new() {
+                FunctionName = DataTableColumnDefHelperName,
+                Body = body,
+            };
         }
 
         /// <summary>
@@ -330,7 +331,7 @@ namespace Nijo.Core {
         }
 
         public abstract string DataTableColumnDefHelperName { get; }
-        public abstract string RenderDataTableColumnDefHelper();
+        public abstract Parts.WebClient.DataTable.CellType.Helper RenderDataTableColumnDefHelper();
     }
 
     /// <summary>

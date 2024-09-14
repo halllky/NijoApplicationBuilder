@@ -14,10 +14,11 @@ namespace Nijo.Parts.WebClient.DataTable {
     /// テーブル列定義ビルダー
     /// </summary>
     internal class DataTableBuilder {
-        internal DataTableBuilder(GraphNode<Aggregate> tableOwner, string rowTypeName, bool editable) {
+        internal DataTableBuilder(GraphNode<Aggregate> tableOwner, string rowTypeName, bool editable, Func<AggregateMember.AggregateMemberBase, string> onValueChange) {
             TableOwner = tableOwner;
             _rowTypeName = rowTypeName;
             _editable = editable;
+            _onValueChange = onValueChange;
         }
 
         /// <summary>
@@ -27,6 +28,7 @@ namespace Nijo.Parts.WebClient.DataTable {
         private readonly string _rowTypeName;
         private readonly bool _editable;
         private readonly List<IDataTableColumn2> _columns = [];
+        private readonly Func<AggregateMember.AggregateMemberBase, string> _onValueChange;
 
         /// <summary>
         /// 列を追加します。
@@ -198,25 +200,20 @@ namespace Nijo.Parts.WebClient.DataTable {
 
         internal string RenderColumnDef(CodeRenderingContext context) {
             return $$"""
-                ...Layout.{{CellType.GET_HELPER}}<{{_rowTypeName}}>()
                 {{_columns.SelectTextTemplate((col, i) => $$"""
-                  {{WithIndent(Render(col, i), "  ")}}
+                {{WithIndent(Render(col, i), "")}},
                 """)}}
-                  .toArray(),
                 """;
 
             string Render(IDataTableColumn2 column, int index) {
 
                 if (column is ValueMemberColumn vmColumn) {
                     var helper = vmColumn._vm.Options.MemberType.DataTableColumnDefHelperName;
-                    var setValue = vmColumn._pathFromRowObject.Count() <= 1
-                        ? $"(r, v) => {{ r.{vmColumn._pathFromRowObject.Join(".")} = v }}"
-                        : $"(r, v) => {{ if (r.{vmColumn._pathFromRowObject.SkipLast(1).Join("?.")} !== undefined) r.{vmColumn._pathFromRowObject.Join(".")} = v }}";
 
                     return $$"""
-                        .{{helper}}('{{vmColumn.Header}}',
+                        cellType.{{helper}}('{{vmColumn.Header}}',
                           r => r.{{vmColumn._pathFromRowObject.Join("?.")}},
-                          {{setValue}}, {
+                          {{WithIndent(_onValueChange(vmColumn._vm), "  ")}}, {
                         {{If(column.HeaderGroupName != null, () => $$"""
                           headerGroupName: '{{column.HeaderGroupName}}',
                         """)}}
@@ -235,14 +232,11 @@ namespace Nijo.Parts.WebClient.DataTable {
 
                 if (column is RefMemberColumn refColumn) {
                     var helper = new DataTableRefColumnHelper(refColumn._ref.RefTo);
-                    var setValue = refColumn._pathFromRowObject.Count() <= 1
-                        ? $"(r, v) => {{ r.{refColumn._pathFromRowObject.Join(".")} = v }}"
-                        : $"(r, v) => {{ if (r.{refColumn._pathFromRowObject.SkipLast(1).Join("?.")} !== undefined) r.{refColumn._pathFromRowObject.Join(".")} = v }}";
 
                     return $$"""
-                        .{{helper.MethodName}}('{{refColumn._ref.MemberName}}',
+                        ...cellType.{{helper.MethodName}}('{{refColumn._ref.MemberName}}',
                           r => r.{{refColumn._pathFromRowObject.Join("?.")}},
-                          {{setValue}}, {
+                          {{_onValueChange(refColumn._ref)}}, {
                         {{If(!_editable, () => $$"""
                           readOnly: true,
                         """)}}
@@ -252,7 +246,7 @@ namespace Nijo.Parts.WebClient.DataTable {
                 }
 
                 return $$"""
-                    .add({
+                    {
                       id: 'col-{{index}}',
                       header: '{{column.Header}}',
                       render: {{WithIndent(column.RenderDisplayContents(context, "r", "r"), "  ")}},
@@ -266,7 +260,7 @@ namespace Nijo.Parts.WebClient.DataTable {
                     {{If(column.HeaderGroupName != null, () => $$"""
                       headerGroupName: '{{column.HeaderGroupName}}',
                     """)}}
-                    })
+                    }
                     """;
             }
         }

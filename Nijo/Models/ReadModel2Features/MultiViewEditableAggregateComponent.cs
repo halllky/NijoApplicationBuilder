@@ -662,14 +662,26 @@ namespace Nijo.Models.ReadModel2Features {
                     var displayData = new RefDisplayData(_aggregate, refEntry);
                     rowType = $"AggregateType.{displayData.TsTypeName}";
                     createNewItem = string.Empty;
-                    tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_aggregate, rowType, false);
+                    tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_aggregate, rowType, false, _ => "() => {}");
                     tableBuilder.AddMembers(displayData);
                 } else {
                     var displayData = new DataClassForDisplay(_aggregate);
                     rowType = $"AggregateType.{displayData.TsTypeName}";
                     createNewItem = $"AggregateType.{displayData.TsNewObjectFunction}()";
-                    tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_aggregate, rowType, true);
+                    tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_aggregate, rowType, true, OnValueChange);
                     tableBuilder.AddMembers(displayData);
+
+                    string OnValueChange(AggregateMember.AggregateMemberBase m) {
+                        return $$"""
+                            (row, value, rowIndex) => {
+                            {{If(m.Owner != _aggregate, () => $$"""
+                              if (row.{{m.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, _aggregate).SkipLast(1).Join("?.")}} === undefined) return
+                            """)}}
+                              row.{{m.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, _aggregate).Join(".")}} = value
+                              update(rowIndex, row)
+                            }
+                            """;
+                    }
                 }
 
                 var args = GetArguments().ToArray();
@@ -701,6 +713,7 @@ namespace Nijo.Models.ReadModel2Features {
                       }, [dtRef, remove])
 
                     """)}}
+                      const cellType = Layout.{{Parts.WebClient.DataTable.CellType.USE_HELPER}}<{{rowType}}>()
                       const options = useMemo<Layout.DataTableProps<{{rowType}}>>(() => ({
                     {{If(editable, () => $$"""
                         onChangeRow: update,
@@ -708,7 +721,7 @@ namespace Nijo.Models.ReadModel2Features {
                         columns: [
                           {{WithIndent(tableBuilder.RenderColumnDef(context), "      ")}}
                         ],
-                      }), [get, update, setValue{{args.Select(a => $", {a}").Join("")}}])
+                      }), [get, update, setValue{{args.Select(a => $", {a}").Join("")}}, cellType])
 
                       return (
                         <VForm2.Item wideLabelValue

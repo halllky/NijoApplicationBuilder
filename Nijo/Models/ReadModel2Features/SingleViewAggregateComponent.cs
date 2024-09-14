@@ -612,22 +612,34 @@ namespace Nijo.Models.ReadModel2Features {
             internal ChildrenGridComponent(AggregateMember.Children children, int depth) : base(children, depth) { }
 
             internal override string RenderDeclaring(CodeRenderingContext context) {
+                var displayData = new DataClassForDisplay(_aggregate);
                 Parts.WebClient.DataTable.DataTableBuilder tableBuilder;
                 string rowType;
                 string createNewItem;
                 if (_aggregate.IsOutOfEntryTree()) {
                     var refEntry = _aggregate.GetRefEntryEdge().Terminal;
-                    var displayData = new RefDisplayData(_aggregate, refEntry);
-                    rowType = $"AggregateType.{displayData.TsTypeName}";
+                    var refDisplayData = new RefDisplayData(_aggregate, refEntry);
+                    rowType = $"AggregateType.{refDisplayData.TsTypeName}";
                     createNewItem = string.Empty;
-                    tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_aggregate, rowType, false);
-                    tableBuilder.AddMembers(displayData);
+                    tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_aggregate, rowType, false, _ => "() => {}");
+                    tableBuilder.AddMembers(refDisplayData);
                 } else {
-                    var displayData = new DataClassForDisplay(_aggregate);
                     rowType = $"AggregateType.{displayData.TsTypeName}";
                     createNewItem = $"AggregateType.{displayData.TsNewObjectFunction}()";
-                    tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_aggregate, rowType, true);
+                    tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_aggregate, rowType, true, OnValueChange);
                     tableBuilder.AddMembers(displayData);
+
+                    string OnValueChange(AggregateMember.AggregateMemberBase m) {
+                        return $$"""
+                            (row, value, rowIndex) => {
+                            {{If(m.Owner != _aggregate, () => $$"""
+                              if (row.{{m.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, _aggregate).SkipLast(1).Join("?.")}} === undefined) return
+                            """)}}
+                              row.{{m.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, _aggregate).Join(".")}} = value
+                              update(rowIndex, row)
+                            }
+                            """;
+                    }
                 }
 
                 var args = GetArguments().ToArray();
@@ -660,6 +672,7 @@ namespace Nijo.Models.ReadModel2Features {
                       }, [dtRef, remove])
 
                     """)}}
+                      const cellType = Layout.{{Parts.WebClient.DataTable.CellType.USE_HELPER}}<AggregateType.{{displayData.TsTypeName}}>()
                       const options = useMemo<Layout.DataTableProps<{{rowType}}>>(() => ({
                     {{If(editable, () => $$"""
                         // 未指定の場合はセル編集不可になる
@@ -668,7 +681,7 @@ namespace Nijo.Models.ReadModel2Features {
                         columns: [
                           {{WithIndent(tableBuilder.RenderColumnDef(context), "      ")}}
                         ],
-                      }), [mode, get, update, setValue{{args.Select(a => $", {a}").Join("")}}])
+                      }), [mode, get, update, setValue{{args.Select(a => $", {a}").Join("")}}, cellType])
 
                       return (
                         <VForm2.Item wideLabelValue

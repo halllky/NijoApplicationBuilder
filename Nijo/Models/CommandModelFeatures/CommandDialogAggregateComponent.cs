@@ -568,22 +568,34 @@ namespace Nijo.Models.CommandModelFeatures {
             internal ChildrenGridComponent(AggregateMember.Children children, int depth) : base(children, depth) { }
 
             internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
+                var displayData = new CommandParameter(_aggregate);
                 Parts.WebClient.DataTable.DataTableBuilder tableBuilder;
                 string rowType;
                 string createNewItem;
                 if (_aggregate.IsOutOfEntryTree()) {
                     var refEntry = _aggregate.GetRefEntryEdge().Terminal;
-                    var displayData = new RefDisplayData(_aggregate, refEntry);
-                    rowType = $"Types.{displayData.TsTypeName}";
+                    var refDisplayData = new RefDisplayData(_aggregate, refEntry);
+                    rowType = $"Types.{refDisplayData.TsTypeName}";
                     createNewItem = string.Empty;
-                    tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_aggregate, rowType, false);
-                    tableBuilder.AddMembers(displayData);
+                    tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_aggregate, rowType, false, _ => "() => {}");
+                    tableBuilder.AddMembers(refDisplayData);
                 } else {
-                    var displayData = new CommandParameter(_aggregate);
                     rowType = $"Types.{displayData.TsTypeName}";
                     createNewItem = $"Types.{displayData.TsNewObjectFunction}()";
-                    tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_aggregate, rowType, !isReadOnly);
+                    tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_aggregate, rowType, !isReadOnly, OnValueChange);
                     tableBuilder.AddMembers(displayData);
+
+                    string OnValueChange(AggregateMember.AggregateMemberBase m) {
+                        return $$"""
+                            (row, value, rowIndex) => {
+                            {{If(m.Owner != _aggregate, () => $$"""
+                              if (row.{{m.GetFullPathAsCommandParameter(_aggregate).SkipLast(1).Join("?.")}} === undefined) return
+                            """)}}
+                              row.{{m.GetFullPathAsCommandParameter(_aggregate).Join(".")}} = value
+                              update(rowIndex, row)
+                            }
+                            """;
+                    }
                 }
 
                 var args = GetArguments().ToArray();
@@ -615,6 +627,7 @@ namespace Nijo.Models.CommandModelFeatures {
                       }, [dtRef, remove])
 
                     """)}}
+                      const cellType = Layout.{{Parts.WebClient.DataTable.CellType.USE_HELPER}}<AggregateType.{{displayData.TsTypeName}}>()
                       const options = useMemo<Layout.DataTableProps<{{rowType}}>>(() => ({
                     {{If(editable, () => $$"""
                         onChangeRow: update,
@@ -622,7 +635,7 @@ namespace Nijo.Models.CommandModelFeatures {
                         columns: [
                           {{WithIndent(tableBuilder.RenderColumnDef(context), "      ")}}
                         ],
-                      }), [get, update, setValue{{args.Select(a => $", {a}").Join("")}}])
+                      }), [get, update, setValue{{args.Select(a => $", {a}").Join("")}}, cellType])
 
                       return (
                         <VForm2.Item wideLabelValue

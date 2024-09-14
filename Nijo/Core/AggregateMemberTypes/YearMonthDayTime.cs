@@ -25,35 +25,36 @@ namespace Nijo.Core.AggregateMemberTypes {
         }
 
         public override string DataTableColumnDefHelperName => "datetime";
-        public override string RenderDataTableColumnDefHelper() {
-            return $$"""
+        public override Parts.WebClient.DataTable.CellType.Helper RenderDataTableColumnDefHelper() {
+            var body = $$"""
                 /** 日付時刻 */
-                datetime: {{Parts.WebClient.DataTable.CellType.HELPER_MEHOTD_TYPE}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => {
-                  this._columns.push({
-                    ...opt,
-                    id: opt?.id ?? `${opt?.headerGroupName}::${header}`,
-                    header,
-                    render: row => <PlainCell>{getValue(row)}</PlainCell>,
-                    onClipboardCopy: row => getValue(row) ?? '',
-                    editSetting: opt?.readOnly === true ? undefined : {
-                      type: 'text',
-                      readOnly: typeof opt?.readOnly === 'function'
-                        ? opt.readOnly
-                        : undefined,
-                      onStartEditing: row => getValue(row),
-                      onEndEditing: (row, value) => {
-                        const { result } = Util.tryParseAsDateTimeOrEmpty(value)
-                        setValue(row, result)
-                      },
-                      onClipboardPaste: (row, value) => {
-                        const { result } = Util.tryParseAsDateTimeOrEmpty(value)
-                        setValue(row, result)
-                      },
+                const datetime: {{Parts.WebClient.DataTable.CellType.RETURNS_ONE_COLUMN}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => ({
+                  ...opt,
+                  id: opt?.id ?? `${opt?.headerGroupName}::${header}`,
+                  header,
+                  render: row => <PlainCell>{getValue(row)}</PlainCell>,
+                  onClipboardCopy: row => getValue(row) ?? '',
+                  editSetting: opt?.readOnly === true ? undefined : {
+                    type: 'text',
+                    readOnly: typeof opt?.readOnly === 'function'
+                      ? opt.readOnly
+                      : undefined,
+                    onStartEditing: row => getValue(row),
+                    onEndEditing: (row, value, rowIndex) => {
+                      const { result } = Util.tryParseAsDateTimeOrEmpty(value)
+                      setValue(row, result, rowIndex)
                     },
-                  })
-                  return this
-                }
+                    onClipboardPaste: (row, value, rowIndex) => {
+                      const { result } = Util.tryParseAsDateTimeOrEmpty(value)
+                      setValue(row, result, rowIndex)
+                    },
+                  },
+                })
                 """;
+            return new() {
+                Body = body,
+                FunctionName = DataTableColumnDefHelperName,
+            };
         }
     }
 }

@@ -143,28 +143,28 @@ namespace Nijo.Core.AggregateMemberTypes {
                 """;
         }
 
-        string IAggregateMemberType.DataTableColumnDefHelperName => _variationGroup.GroupName;
-        string IAggregateMemberType.RenderDataTableColumnDefHelper() {
-            return $$"""
+        public string DataTableColumnDefHelperName => _variationGroup.GroupName;
+        Parts.WebClient.DataTable.CellType.Helper IAggregateMemberType.RenderDataTableColumnDefHelper() {
+            var body = $$"""
                 /** {{_variationGroup.GroupName}} */
-                {{_variationGroup.GroupName}}: {{Parts.WebClient.DataTable.CellType.HELPER_MEHOTD_TYPE}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => {
+                const {{_variationGroup.GroupName}}: {{Parts.WebClient.DataTable.CellType.RETURNS_ONE_COLUMN}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => {
                   const editSetting: ColumnEditSetting<TRow, {{GetTypeScriptTypeName()}}> = {
                     type: 'combo',
                     readOnly: typeof opt?.readOnly === 'function'
                       ? opt.readOnly
                       : undefined,
                     onStartEditing: row => getValue(row),
-                    onEndEditing: (row, value) => {
-                      setValue(row, value)
+                    onEndEditing: (row, value, rowIndex) => {
+                      setValue(row, value, rowIndex)
                     },
-                    onClipboardPaste: (row, value) => {
+                    onClipboardPaste: (row, value, rowIndex) => {
                       const trimmed = value.trim()
                 {{_variationGroup.VariationAggregates.SelectTextTemplate((x, i) => $$"""
                       {{(i == 0 ? "if" : "} else if")}} (trimmed === '{{x.Value.RelationName}}') {
-                        setValue(row, '{{x.Value.RelationName}}')
+                        setValue(row, '{{x.Value.RelationName}}', rowIndex)
                 """)}}
                       } else {
-                        setValue(row, undefined)
+                        setValue(row, undefined, rowIndex)
                       }
                     },
                     comboProps: {
@@ -175,7 +175,7 @@ namespace Nijo.Core.AggregateMemberTypes {
                       textSelector: x => x,
                     }
                   }
-                  this._columns.push({
+                  return {
                     ...opt,
                     id: opt?.id ?? `${opt?.headerGroupName}::${header}`,
                     header,
@@ -184,10 +184,13 @@ namespace Nijo.Core.AggregateMemberTypes {
                     editSetting: opt?.readOnly === true
                       ? undefined
                       : (editSetting as ColumnEditSetting<TRow, unknown>),
-                  })
-                  return this
+                  }
                 }
                 """;
+            return new() {
+                Body = body,
+                FunctionName = DataTableColumnDefHelperName,
+            };
         }
     }
 }

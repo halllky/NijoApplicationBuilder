@@ -22,38 +22,70 @@ namespace Nijo.Models.RefTo {
 
         internal string MethodName => $"refTo{_refEntry.Item.PhysicalName}";
 
-        internal string Render() {
-            var displayData = new RefDisplayData(_refEntry, _refEntry);
+        internal Parts.WebClient.DataTable.CellType.Helper Render() {
             var keys = _refEntry
                 .GetKeys()
                 .OfType<AggregateMember.ValueMember>()
-                .Where(vm => !vm.Options.InvisibleInGui);
+                .Where(vm => !vm.Options.InvisibleInGui)
+                .ToArray();
             var names = _refEntry
                 .GetNames()
                 .OfType<AggregateMember.ValueMember>()
                 .Where(vm => !vm.Options.InvisibleInGui);
             var refColumns = keys.Concat(names).ToArray();
 
-            return $$"""
-                /** {{_refEntry.Item.DisplayName}}を参照する列 */
-                {{MethodName}}: {{Parts.WebClient.DataTable.CellType.HELPER_MEHOTD_TYPE}}<TRow, AggregateType.{{displayData.TsTypeName}} | undefined> = (header, getValue, setValue, opt) => {
-                {{If(refColumns.Length > 0, () => $$"""
-                  this
-                """)}}
-                {{refColumns.SelectTextTemplate(vm => $$"""
-                    .{{vm.Options.MemberType.DataTableColumnDefHelperName}}('{{vm.MemberName}}',
-                      row => getValue(row)?.{{vm.GetFullPathAsDataClassForRefTarget(since: _refEntry).Join("?.")}},
-                      (r, v) => { /* TODO: 変更されたキーで再検索をかける */ }, {
-                      ...opt,
-                      headerGroupName: header,
-                {{If(!vm.IsKey, () => $$"""
-                      readOnly: true,
-                """)}}
-                    })
-                """)}}
-                  return this
-                }
+            var displayData = new RefDisplayData(_refEntry, _refEntry);
+            var refSearch = new RefSearchMethod(_refEntry, _refEntry);
+            var refSearchCondition = new RefSearchCondition(_refEntry, _refEntry);
+
+            var use = $$"""
+                const { {{RefSearchMethod.LOAD}}: load{{_refEntry.Item.PhysicalName}} } = AggregateHook.{{refSearch.ReactHookName}}(true)
                 """;
+            var body = $$"""
+                /** {{_refEntry.Item.DisplayName}}を参照する列 */
+                const {{MethodName}}: {{Parts.WebClient.DataTable.CellType.RETURNS_MANY_COLUMN}}<TRow, AggregateType.{{displayData.TsTypeName}} | undefined> = (header, getValue, setValue, opt) => [
+                {{refColumns.SelectTextTemplate(vm => $$"""
+                  {{vm.Options.MemberType.DataTableColumnDefHelperName}}('{{vm.MemberName}}',
+                    row => getValue(row)?.{{vm.GetFullPathAsDataClassForRefTarget(since: _refEntry).Join("?.")}},
+                    (row, value, rowIndex) => {
+                {{If(vm.IsKey, () => $$"""
+                      // 変更されたキーで再検索をかける
+                      const cond = AggregateType.{{refSearchCondition.CreateNewObjectFnName}}()
+                {{keys.SelectTextTemplate(k => $$"""
+                {{If(k.Declared == vm.Declared, () => $$"""
+                      cond.{{k.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript).Join(".")}} = value
+                """).Else(() => $$"""
+                      cond.{{k.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript).Join(".")}} = getValue(row)?.{{k.Declared.GetFullPathAsDataClassForRefTarget().Join("?.")}}
+                """)}}
+                """)}}
+                      cond.take = 2 // 検索で1件だけヒットしたときのみ値変更
+                      load{{_refEntry.Item.PhysicalName}}(cond).then(result => {
+                        if (result.length === 0) {
+                          setValue(row, undefined, rowIndex)
+                        } else if (result.length >= 2) {
+                          setValue(row, undefined, rowIndex)
+                        } else {
+                          setValue(row, result[0], rowIndex)
+                        }
+                      })
+                """)}}
+                    }, {
+                    ...opt,
+                    headerGroupName: header,
+                {{If(!vm.IsKey, () => $$"""
+                    readOnly: true,
+                """)}}
+                  }),
+                """)}}
+                ]
+                """;
+
+            return new() {
+                Uses = [use],
+                Body = body,
+                Deps = [$"load{_refEntry.Item.PhysicalName}"],
+                FunctionName = MethodName,
+            };
         }
     }
 }

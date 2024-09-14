@@ -32,35 +32,36 @@ namespace Nijo.Core.AggregateMemberTypes {
         }
 
         public override string DataTableColumnDefHelperName => "year";
-        public override string RenderDataTableColumnDefHelper() {
-            return $$"""
+        public override Parts.WebClient.DataTable.CellType.Helper RenderDataTableColumnDefHelper() {
+            var body = $$"""
                 /** 年 */
-                year: {{Parts.WebClient.DataTable.CellType.HELPER_MEHOTD_TYPE}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => {
-                  this._columns.push({
-                    ...opt,
-                    id: opt?.id ?? `${opt?.headerGroupName}::${header}`,
-                    header,
-                    render: row => <PlainCell>{getValue(row)}</PlainCell>,
-                    onClipboardCopy: row => getValue(row)?.toString() ?? '',
-                    editSetting: opt?.readOnly === true ? undefined : {
-                      type: 'text',
-                      readOnly: typeof opt?.readOnly === 'function'
-                        ? opt.readOnly
-                        : undefined,
-                      onStartEditing: row => getValue(row)?.toString(),
-                      onEndEditing: (row, value) => {
-                        const { year } = Util.tryParseAsYearOrEmpty(value)
-                        setValue(row, year)
-                      },
-                      onClipboardPaste: (row, value) => {
-                        const { year } = Util.tryParseAsYearOrEmpty(value)
-                        setValue(row, year)
-                      },
+                const year: {{Parts.WebClient.DataTable.CellType.RETURNS_ONE_COLUMN}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => ({
+                  ...opt,
+                  id: opt?.id ?? `${opt?.headerGroupName}::${header}`,
+                  header,
+                  render: row => <PlainCell>{getValue(row)}</PlainCell>,
+                  onClipboardCopy: row => getValue(row)?.toString() ?? '',
+                  editSetting: opt?.readOnly === true ? undefined : {
+                    type: 'text',
+                    readOnly: typeof opt?.readOnly === 'function'
+                      ? opt.readOnly
+                      : undefined,
+                    onStartEditing: row => getValue(row)?.toString(),
+                    onEndEditing: (row, value, rowIndex) => {
+                      const { year } = Util.tryParseAsYearOrEmpty(value)
+                      setValue(row, year, rowIndex)
                     },
-                  })
-                  return this
-                }
+                    onClipboardPaste: (row, value, rowIndex) => {
+                      const { year } = Util.tryParseAsYearOrEmpty(value)
+                      setValue(row, year, rowIndex)
+                    },
+                  },
+                })
                 """;
+            return new() {
+                Body = body,
+                FunctionName = DataTableColumnDefHelperName,
+            };
         }
     }
 }
