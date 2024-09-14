@@ -56,11 +56,18 @@ namespace Nijo.Parts.WebClient.DataTable {
                         yield return column;
 
                     } else if (member is AggregateMember.Ref @ref) {
-                        // RefをChildと同じように複数列に分けて表示する
-                        var desc = new DataClassForDisplayDescendant(@ref);
-                        foreach (var recursive in Enumerate(desc)) {
-                            yield return recursive;
-                        }
+                        // Refのヘルパー関数を呼ぶ
+                        var column = new RefMemberColumn(
+                            @ref,
+                            @ref.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, since: TableOwner),
+                            this);
+                        yield return column;
+
+                        //// RefをChildと同じように複数列に分けて表示する
+                        //var desc = new DataClassForDisplayDescendant(@ref);
+                        //foreach (var recursive in Enumerate(desc)) {
+                        //    yield return recursive;
+                        //}
 
                         //// Refのキーと名前を1つのカラムで表示する
                         //var column = new RefMemberColumn(
@@ -101,11 +108,18 @@ namespace Nijo.Parts.WebClient.DataTable {
                         yield return column;
 
                     } else if (member is AggregateMember.Ref @ref) {
-                        // RefをChildと同じように複数列に分けて表示する
-                        var desc = new RefDisplayDataDescendant(@ref, refDisplayData._refEntry);
-                        foreach (var recursive in Enumerate(desc)) {
-                            yield return recursive;
-                        }
+                        // Refのヘルパー関数を呼ぶ
+                        var column = new RefMemberColumn(
+                            @ref,
+                            @ref.GetFullPathAsDataClassForRefTarget(since: TableOwner),
+                            this);
+                        yield return column;
+
+                        //// RefをChildと同じように複数列に分けて表示する
+                        //var desc = new RefDisplayDataDescendant(@ref, refDisplayData._refEntry);
+                        //foreach (var recursive in Enumerate(desc)) {
+                        //    yield return recursive;
+                        //}
 
                         //// Refのキーと名前を1つのカラムで表示する
                         //var column = new RefMemberColumn(
@@ -150,11 +164,18 @@ namespace Nijo.Parts.WebClient.DataTable {
                         yield return column;
 
                     } else if (member is AggregateMember.Ref @ref) {
-                        // RefをChildと同じように複数列に分けて表示する
-                        var childParam = new Models.CommandModelFeatures.CommandParameter.Member(@ref);
-                        foreach (var reucusive in Enumerate(childParam.GetMemberParameter()!)) {
-                            yield return reucusive;
-                        }
+                        // Refのヘルパー関数を呼ぶ
+                        var column = new RefMemberColumn(
+                            @ref,
+                            @ref.GetFullPathAsDataClassForRefTarget(since: TableOwner),
+                            this);
+                        yield return column;
+
+                        //// RefをChildと同じように複数列に分けて表示する
+                        //var childParam = new Models.CommandModelFeatures.CommandParameter.Member(@ref);
+                        //foreach (var reucusive in Enumerate(childParam.GetMemberParameter()!)) {
+                        //    yield return reucusive;
+                        //}
 
                         //// Refのキーと名前を1つのカラムで表示する
                         //var column = new RefMemberColumn(
@@ -210,6 +231,24 @@ namespace Nijo.Parts.WebClient.DataTable {
                         """)}}
                         })
                         """;
+                }
+
+                if (column is RefMemberColumn refColumn) {
+                    var helper = new DataTableRefColumnHelper(refColumn._ref.RefTo);
+                    var setValue = refColumn._pathFromRowObject.Count() <= 1
+                        ? $"(r, v) => {{ r.{refColumn._pathFromRowObject.Join(".")} = v }}"
+                        : $"(r, v) => {{ if (r.{refColumn._pathFromRowObject.SkipLast(1).Join("?.")} !== undefined) r.{refColumn._pathFromRowObject.Join(".")} = v }}";
+
+                    return $$"""
+                        .{{helper.MethodName}}('{{refColumn._ref.MemberName}}',
+                          r => r.{{refColumn._pathFromRowObject.Join("?.")}},
+                          {{setValue}}, {
+                        {{If(!_editable, () => $$"""
+                          readOnly: true,
+                        """)}}
+                        })
+                        """;
+                    // readOnly以外のオプションは参照先のどの列にかかるかが不明瞭なので敢えて設定していない
                 }
 
                 return $$"""

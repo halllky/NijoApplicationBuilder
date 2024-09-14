@@ -20,8 +20,8 @@ namespace Nijo.Parts.WebClient.DataTable {
             _tableContext = tableContext;
         }
 
-        private readonly AggregateMember.Ref _ref;
-        private readonly IEnumerable<string> _pathFromRowObject;
+        internal readonly AggregateMember.Ref _ref;
+        internal readonly IEnumerable<string> _pathFromRowObject;
         private readonly DataTableBuilder _tableContext;
 
         public string Header => _ref.MemberName;
