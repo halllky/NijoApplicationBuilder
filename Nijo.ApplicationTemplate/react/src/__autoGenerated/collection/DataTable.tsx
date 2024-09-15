@@ -8,9 +8,6 @@ import { ActiveCellBorder, SelectTarget, useSelection } from './DataTable.Select
 import { getColumnResizeOption, useColumnResizing } from './DataTable.ColResize'
 import { useCopyPaste } from './DataTable.CopyPaste'
 
-export * from './DataTable.Public'
-export * from './DataTable.CellType'
-
 export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: React.ForwardedRef<DataTableRef<T>>) => {
   const {
     data,

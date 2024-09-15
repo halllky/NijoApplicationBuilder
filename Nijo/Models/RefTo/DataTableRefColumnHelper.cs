@@ -76,7 +76,7 @@ namespace Nijo.Models.RefTo {
                   }
                 {{refColumns.SelectTextTemplate(vm => $$"""
                   cols.push({{vm.Options.MemberType.DataTableColumnDefHelperName}}('{{vm.MemberName}}',
-                    row => getValue(row)?.{{vm.GetFullPathAsDataClassForRefTarget(since: _refEntry).Join("?.")}},
+                    row => getValue(row)?.{{vm.Declared.GetFullPathAsDataClassForRefTarget(since: _refEntry).Join("?.")}},
                     (row, value, rowIndex) => {
                 {{If(vm.IsKey, () => $$"""
                       // 変更されたキーで再検索をかける
