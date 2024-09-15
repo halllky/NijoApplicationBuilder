@@ -111,6 +111,9 @@ const getColumnDef = (): Layout.DataTableColumn<DisplayData>[] => [
       onEndEditing: (row, value) => {
         row.enmValue = value
       },
+      onClipboardPaste: () => {
+        console.warn('未実装')
+      },
       comboProps: {
         options: [...DROPDOWN_OPTIONS],
         emitValueSelector: opt => opt,
