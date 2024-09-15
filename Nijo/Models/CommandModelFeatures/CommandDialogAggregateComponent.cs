@@ -627,7 +627,7 @@ namespace Nijo.Models.CommandModelFeatures {
                       }, [dtRef, remove])
 
                     """)}}
-                      const cellType = Layout.{{Parts.WebClient.DataTable.CellType.USE_HELPER}}<AggregateType.{{displayData.TsTypeName}}>()
+                      const cellType = Layout.{{Parts.WebClient.DataTable.CellType.USE_HELPER}}<Types.{{displayData.TsTypeName}}>()
                       const options = useMemo<Layout.DataTableProps<{{rowType}}>>(() => ({
                     {{If(editable, () => $$"""
                         onChangeRow: update,
