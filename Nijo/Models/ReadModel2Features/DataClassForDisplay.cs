@@ -865,10 +865,19 @@ namespace Nijo.Models.ReadModel2Features {
                     ? DataClassForDisplay.VALUES_CS
                     : DataClassForDisplay.VALUES_TS);
             }
+
             if (!isArray && member is AggregateMember.Children) {
                 isArray = true;
+                result.Add(member.MemberName);
+
+            } else if (isArray) {
+                result.Add(csts == E_CsTs.CSharp
+                    ? $"Select(x => x.{member.MemberName})"
+                    : $"map(x => x.{member.MemberName})");
+
+            } else {
+                result.Add(member.MemberName);
             }
-            result.Add(member.MemberName);
 
             return result;
         }
