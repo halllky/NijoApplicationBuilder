@@ -1,5 +1,6 @@
 using Nijo.Core;
 using Nijo.Models.ReadModel2Features;
+using Nijo.Parts.Utility;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -33,6 +34,19 @@ namespace Nijo.Models.RefTo {
                 .OfType<AggregateMember.ValueMember>()
                 .Where(vm => !vm.Options.InvisibleInGui);
             var refColumns = keys.Concat(names).ToArray();
+
+            // フォーカス離脱時の検索
+            var keysForSearchOnBlur = keys.Select(vm => {
+                // 右辺
+                Func<string, string> Right = vm.Options.MemberType is SchalarMemberType
+                    ? ((string v) => $"{{ {FromTo.FROM_TS}: {v}, {FromTo.TO_TS}: {v} }}")
+                    : ((string v) => v);
+                return new {
+                    vm.Declared,
+                    LeftFullPath = vm.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript),
+                    Right,
+                };
+            });
 
             var displayData = new RefDisplayData(_refEntry, _refEntry);
             var refSearch = new RefSearchMethod(_refEntry, _refEntry);
@@ -81,11 +95,11 @@ namespace Nijo.Models.RefTo {
                 {{If(vm.IsKey, () => $$"""
                       // 変更されたキーで再検索をかける
                       const cond = AggregateType.{{refSearchCondition.CreateNewObjectFnName}}()
-                {{keys.SelectTextTemplate(k => $$"""
+                {{keysForSearchOnBlur.SelectTextTemplate(k => $$"""
                 {{If(k.Declared == vm.Declared, () => $$"""
-                      cond.{{k.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript).Join(".")}} = value
+                      cond.{{k.LeftFullPath.Join(".")}} = {{k.Right("value")}}
                 """).Else(() => $$"""
-                      cond.{{k.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript).Join(".")}} = getValue(row)?.{{k.Declared.GetFullPathAsDataClassForRefTarget().Join("?.")}}
+                      cond.{{k.LeftFullPath.Join(".")}} = {{k.Right($"getValue(row)?.{k.Declared.GetFullPathAsDataClassForRefTarget().Join("?.")}")}}
                 """)}}
                 """)}}
                       cond.take = 2 // 検索で1件だけヒットしたときのみ値変更
