@@ -76,31 +76,14 @@ namespace Nijo.Parts.WebClient.DataTable {
                     }
                     """,
                 EmitValueSelector = $"item => item",
-                MatchingKeySelectorFromEmitValue = $"item => item.{RefDisplayData.INSTANCE_KEY_TS}",
-                MatchingKeySelectorFromOption = $"item => item.{RefDisplayData.INSTANCE_KEY_TS}",
+                MatchingKeySelectorFromEmitValue = $"item => /* 未実装 */",
+                MatchingKeySelectorFromOption = $"item => /* 未実装 */",
                 TextSelector = $"item => `{names.Select(n => $"${{item.{n.Declared.GetFullPathAsDataClassForRefTarget().Join("?.")} ?? ''}}").Join("")}`",
                 OnClipboardCopy = (value, formatted) => $$"""
                     const {{formatted}} = {{value}} ? JSON.stringify({{value}}) : ''
                     """,
                 OnClipboardPaste = (value, formatted) => $$"""
-                    let {{formatted}}: AggregateType.{{refInfo.TsTypeName}} | undefined
-                    if ({{value}}) {
-                      try {
-                        const obj: AggregateType.{{refInfo.TsTypeName}} = JSON.parse({{value}})
-                        // 登録にはインスタンスキーが使われるのでキーの型だけは細かくチェックする
-                        if (obj.{{RefDisplayData.INSTANCE_KEY_TS}} === undefined) throw new Error
-                        const arrInstanceKey: [{{keys.Select(k => k.Options.MemberType.GetTypeScriptTypeName()).Join(", ")}}] = JSON.parse(obj.{{RefDisplayData.INSTANCE_KEY_TS}})
-                        if (!Array.isArray(arrInstanceKey)) throw new Error
-                    {{keys.SelectTextTemplate((k, i) => $$"""
-                        if (typeof arrInstanceKey[{{i}}] !== '{{k.Options.MemberType.GetTypeScriptTypeName()}}') throw new Error
-                    """)}}
-                        {{formatted}} = obj
-                      } catch {
-                        {{formatted}} = undefined
-                      }
-                    } else {
-                      {{formatted}} = undefined
-                    }
+                    let {{formatted}} // 未実装
                     """,
             };
         }

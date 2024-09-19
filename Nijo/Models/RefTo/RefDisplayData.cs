@@ -49,16 +49,6 @@ namespace Nijo.Models.RefTo {
             }
         }
 
-        internal bool HasInstanceKey => _aggregate == _refEntry;
-        /// <summary>
-        /// <see cref="ReadModel2Features.DataClassForDisplay.INSTANCE_KEY_CS"/> と同様の趣旨で必要な項目
-        /// </summary>
-        internal const string INSTANCE_KEY_CS = "InstanceKey";
-        /// <summary>
-        /// <see cref="ReadModel2Features.DataClassForDisplay.INSTANCE_KEY_TS"/> と同様の趣旨で必要な項目
-        /// </summary>
-        internal const string INSTANCE_KEY_TS = "instanceKey";
-
         internal IEnumerable<AggregateMember.AggregateMemberBase> GetOwnMembers() {
             foreach (var member in _aggregate.GetMembers()) {
                 if (member is AggregateMember.ValueMember vm
@@ -105,16 +95,6 @@ namespace Nijo.Models.RefTo {
             return refTargets.SelectTextTemplate(rt => $$"""
                 /// <summary>{{rt._refEntry.Item.DisplayName}}が他の集約から参照されたときの{{rt._aggregate.Item.DisplayName}}の画面表示用データ型</summary>
                 public partial class {{rt.CsClassName}} {
-                {{If(rt.HasInstanceKey, () => $$"""
-                    /// <summary>
-                    /// インスタンスを一意に表す文字列。新規作成の場合はUUID。閲覧・更新・削除のときは主キーの値の配列のJSON。
-                    /// 新規作成データの場合は画面上で主キー項目を編集可能であり、
-                    /// 別途何らかの識別子を設けないと同一性を判定する方法が無いため、この項目が必要になる。
-                    /// </summary>
-                    [JsonPropertyName("{{INSTANCE_KEY_TS}}")]
-                    public virtual {{InstanceKey.CS_CLASS_NAME}} {{INSTANCE_KEY_CS}} { get; set; } = {{InstanceKey.CS_CLASS_NAME}}.{{InstanceKey.EMPTY}}();
-
-                """)}}
                 {{rt.GetOwnMembers().SelectTextTemplate(m => $$"""
                     public virtual {{GetCSharpMemberType(m)}}? {{GetMemberName(m)}} { get; set; }
                 """)}}
@@ -139,15 +119,6 @@ namespace Nijo.Models.RefTo {
             return refTargets.SelectTextTemplate(rt => $$"""
                 /** {{rt._refEntry.Item.DisplayName}}が他の集約から参照されたときの{{rt._aggregate.Item.DisplayName}}の画面表示用データ型 */
                 export type {{rt.TsTypeName}} = {
-                {{If(rt.HasInstanceKey, () => $$"""
-                  /**
-                   * インスタンスを一意に表す文字列。新規作成の場合はUUID。閲覧・更新・削除のときは主キーの値の配列のJSON。
-                   * 新規作成データの場合は画面上で主キー項目を編集可能であり、
-                   * 別途何らかの識別子を設けないと同一性を判定する方法が無いため、この項目が必要になる。
-                   */
-                  {{INSTANCE_KEY_TS}}: string
-
-                """)}}
                 {{rt.GetOwnMembers().SelectTextTemplate(m => $$"""
                   {{GetMemberName(m)}}: {{GetTypeScriptMemberType(m)}} | undefined
                 """)}}
@@ -239,9 +210,6 @@ namespace Nijo.Models.RefTo {
                 var pk = keys.Select(vm => pkVarNames[(vm.Declared, vm.DeclaringAggregate.PathFromEntry())]);
                 return $$"""
                 {{newStatement}} {
-                {{If(rsr.HasInstanceKey, () => $$"""
-                    {{INSTANCE_KEY_CS}} = {{InstanceKey.CS_CLASS_NAME}}.{{InstanceKey.FROM_PK}}({{pk.Join(", ")}}),
-                """)}}
                 {{rsr.GetOwnMembers().SelectTextTemplate(m => $$"""
                     {{GetMemberName(m)}} = {{WithIndent(RenderMemberStatement(m), "    ")}},
                 """)}}
@@ -276,9 +244,6 @@ namespace Nijo.Models.RefTo {
                 : $"new()";
             return $$"""
                 {{newStatement}} {
-                {{If(HasInstanceKey, () => $$"""
-                    {{INSTANCE_KEY_CS}} = {{InstanceKey.CS_CLASS_NAME}}.{{InstanceKey.FROM_PK}}({{keys.Join(", ")}}),
-                """)}}
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
                     {{GetMemberName(m)}} = {{WithIndent(RenderMember(m), "    ")}},
                 """)}}

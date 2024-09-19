@@ -273,12 +273,6 @@ namespace Nijo.Models.RefTo {
                     .ToArray();
                 return $$"""
                     {{@new}} {
-                    {{If(rsr == refSearchResult, () => $$"""
-                        {{RefDisplayData.INSTANCE_KEY_CS}} = {{InstanceKey.CS_CLASS_NAME}}.{{InstanceKey.FROM_PK}}(
-                    {{keys.SelectTextTemplate((vm, i) => $$"""
-                            {{instance}}.{{GetFullPathBeforeReturn(vm.Declared, instanceAggregate).Join("?.")}}{{(i < keys.Length - 1 ? "," : "")}}
-                    """)}}),
-                    """)}}
                     {{rsr.GetOwnMembers().SelectTextTemplate(member => $$"""
                         {{RefDisplayData.GetMemberName(member)}} = {{WithIndent(RenderMember(member), "    ")}},
                     """)}}

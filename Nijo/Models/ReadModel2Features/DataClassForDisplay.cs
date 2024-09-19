@@ -49,23 +49,6 @@ namespace Nijo.Models.ReadModel2Features {
         internal string ReadOnlyDataCsClassName => $"{CsClassName}ReadOnly";
 
         /// <summary>
-        /// インスタンスを一意に表す文字列（C#）。
-        /// 新規作成の場合はUUID。閲覧・更新・削除のときは主キーの値の配列のJSON。
-        /// 
-        /// 新規作成データの場合は画面上で主キー項目を編集可能であり、
-        /// 別途何らかの識別子を設けないと同一性を判定する方法が無いため、この項目が必要になる。
-        /// </summary>
-        internal const string INSTANCE_KEY_CS = "InstanceKey";
-        /// <summary>
-        /// インスタンスを一意に表す文字列（C#）。
-        /// 新規作成の場合はUUID。閲覧・更新・削除のときは主キーの値の配列のJSON。
-        /// 
-        /// 新規作成データの場合は画面上で主キー項目を編集可能であり、
-        /// 別途何らかの識別子を設けないと同一性を判定する方法が無いため、この項目が必要になる。
-        /// </summary>
-        internal const string INSTANCE_KEY_TS = "instanceKey";
-
-        /// <summary>
         /// 通常、保存時に追加・更新・削除のどの処理となるかは
         /// <see cref="EXISTS_IN_DB_TS"/>, <see cref="WILL_BE_CHANGED_TS"/>, <see cref="WILL_BE_DELETED_TS"/>
         /// から計算されるが、強制的に追加または更新または削除いずれかの処理を走らせたい場合に指定されるプロパティ
@@ -105,12 +88,6 @@ namespace Nijo.Models.ReadModel2Features {
         /// 楽観排他制御用のバージョンをもつかどうか
         /// </summary>
         internal bool HasVersion => Aggregate.IsRoot() || Aggregate.Item.Options.HasLifeCycle;
-        /// <summary>
-        /// インスタンスキー（<see cref="INSTANCE_KEY_CS"/>, <see cref="INSTANCE_KEY_TS"/>）を持つかどうか。
-        /// 追加更新削除のタイミングが親と異なる場合以外であっても、配列の要素の場合は配列の並び順が変わるなどしても
-        /// 従前の要素を追跡できるようにしておくためにインスタンスキーをもつ。
-        /// </summary>
-        internal bool HasInstanceKey => HasLifeCycle || Aggregate.IsChildrenMember();
 
         /// <summary>
         /// <see cref="VALUES_CS"/>, <see cref="VALUES_TS"/> に含まれるメンバーを列挙します。
@@ -179,16 +156,6 @@ namespace Nijo.Models.ReadModel2Features {
                 /// {{Aggregate.Item.DisplayName}}の画面表示用データ構造
                 /// </summary>
                 public partial class {{CsClassName}} {{(implements.Count == 0 ? "" : $": {implements.Join(", ")} ")}}{
-                {{If(HasInstanceKey, () => $$"""
-                    /// <summary>
-                    /// インスタンスを一意に表す文字列。新規作成の場合はUUID。閲覧・更新・削除のときは主キーの値の配列のJSON。
-                    /// 新規作成データの場合は画面上で主キー項目を編集可能であり、
-                    /// 別途何らかの識別子を設けないと同一性を判定する方法が無いため、この項目が必要になる。
-                    /// </summary>
-                    [JsonPropertyName("{{INSTANCE_KEY_TS}}")]
-                    public virtual {{InstanceKey.CS_CLASS_NAME}} {{INSTANCE_KEY_CS}} { get; set; } = {{InstanceKey.CS_CLASS_NAME}}.{{InstanceKey.EMPTY}}();
-                """)}}
-
                     /// <summary>値</summary>
                     [JsonPropertyName("{{VALUES_TS}}")]
                     public virtual {{ValueCsClassName}} {{VALUES_CS}} { get; set; } = new();
@@ -233,15 +200,6 @@ namespace Nijo.Models.ReadModel2Features {
             return $$"""
                 /** {{Aggregate.Item.DisplayName}}の画面表示用データ構造 */
                 export type {{TsTypeName}} = {
-                {{If(HasInstanceKey, () => $$"""
-                  /**
-                   * インスタンスを一意に表す文字列。新規作成の場合はUUID。閲覧・更新・削除のときは主キーの値の配列のJSON。
-                   * 新規作成データの場合は画面上で主キー項目を編集可能であり、
-                   * 別途何らかの識別子を設けないと同一性を判定する方法が無いため、この項目が必要になる。
-                   */
-                  {{INSTANCE_KEY_TS}}: string
-                """)}}
-
                   /** 値 */
                   {{VALUES_TS}}: {{WithIndent(RenderTsValueType(context), "  ")}}
                 {{GetChildMembers().SelectTextTemplate(member => member.Aggregate.IsChildrenMember() ? $$"""
@@ -505,9 +463,6 @@ namespace Nijo.Models.ReadModel2Features {
             return $$"""
                 /** {{Aggregate.Item.DisplayName}}の画面表示用オブジェクトを新規作成します。 */
                 export const {{TsNewObjectFunction}} = (): {{TsTypeName}} => ({
-                {{If(HasInstanceKey, () => $$"""
-                  {{INSTANCE_KEY_TS}}: JSON.stringify(UUID.generate()) as Util.ItemKey,
-                """)}}
                   {{VALUES_TS}}: {
                 {{GetOwnMembers().Select(RenderOwnMemberInitialize).OfType<string>().SelectTextTemplate(line => $$"""
                     {{WithIndent(line, "    ")}}
@@ -577,9 +532,14 @@ namespace Nijo.Models.ReadModel2Features {
                             """;
                     } else if (member is AggregateMember.Ref @ref) {
                         var fullpath = @ref.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, instanceAgg);
-                        var instanceKey = $"{fullpath.Join("?.")}?.{RefDisplayData.INSTANCE_KEY_TS}";
+                        var keyFullpaths = @ref.RefTo
+                            .GetKeys()
+                            .OfType<AggregateMember.ValueMember>()
+                            .Select(vm => vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, instanceAgg));
                         return $$"""
-                            if (({{a}}.{{instanceKey}} ?? undefined) !== ({{b}}.{{instanceKey}} ?? undefined)) return false
+                            {{keyFullpaths.SelectTextTemplate(path => $$"""
+                            if ({{a}}.{{path.Join("?.")}} ?? undefined !== {{b}}.{{path.Join("?.")}} ?? undefined) return false
+                            """)}}
                             """;
                     } else {
                         throw new NotImplementedException();
@@ -631,6 +591,10 @@ namespace Nijo.Models.ReadModel2Features {
                         DefaultValue = $"{disp.Aggregate.Item.PhysicalName}defaultValue{(isArray ? "s" : "")}{i}",
                         CurrentValue = $"{disp.Aggregate.Item.PhysicalName}currentValue{(isArray ? "s" : "")}{i}",
                         disp.TsTypeName,
+                        KeyPaths = disp.MemberInfo.MemberAggregate
+                            .GetKeys()
+                            .OfType<AggregateMember.ValueMember>()
+                            .Select(vm => vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, disp.MemberInfo.MemberAggregate)),
                     };
                 });
 
@@ -650,10 +614,13 @@ namespace Nijo.Models.ReadModel2Features {
                   }
 
                 {{descendants.SelectTextTemplate(x => x.IsArray ? $$"""
-                  const {{x.DefaultValue}} = new Map((defaultValues.{{x.Path.Join("?.")}} ?? []).map(x => [x.{{INSTANCE_KEY_TS}}, x]))
+                  const {{x.DefaultValue}} = defaultValues.{{x.Path.Join("?.")}} ?? []
                   const {{x.CurrentValue}} = currentValues.{{x.Path.Join("?.")}} ?? []
                   for (const after of {{x.CurrentValue}}) {
-                    const before = {{x.DefaultValue}}.get(after.{{INSTANCE_KEY_TS}})
+                    const before = {{x.DefaultValue}}.find(b =>
+                {{x.KeyPaths.SelectTextTemplate((keyPath, i) => $$"""
+                      {{(i == 0 ? "" : "&& ")}}b.{{keyPath.Join("?.")}} === after.{{keyPath.Join("?.")}}
+                """)}})
                     if (before && {{x.DeepEquals}}(before, after)) {
                       after.{{WILL_BE_CHANGED_TS}} = false
                     } else {
@@ -718,9 +685,6 @@ namespace Nijo.Models.ReadModel2Features {
 
             return $$"""
                 {{newStatement}} {
-                {{If(HasInstanceKey, () => $$"""
-                    {{INSTANCE_KEY_CS}} = {{InstanceKey.CS_CLASS_NAME}}.{{InstanceKey.FROM_PK}}({{keys.Join(", ")}}),
-                """)}}
                 {{If(HasLifeCycle, () => $$"""
                     {{EXISTS_IN_DB_CS}} = true,
                     {{WILL_BE_CHANGED_CS}} = false,
