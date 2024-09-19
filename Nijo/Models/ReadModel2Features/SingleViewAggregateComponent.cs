@@ -672,7 +672,7 @@ namespace Nijo.Models.ReadModel2Features {
                       }, [dtRef, remove])
 
                     """)}}
-                      const cellType = Layout.{{Parts.WebClient.DataTable.CellType.USE_HELPER}}<AggregateType.{{displayData.TsTypeName}}>()
+                      const cellType = Layout.{{Parts.WebClient.DataTable.CellType.USE_HELPER}}<{{rowType}}>()
                       const options = useMemo<Layout.DataTableProps<{{rowType}}>>(() => ({
                     {{If(editable, () => $$"""
                         // 未指定の場合はセル編集不可になる
