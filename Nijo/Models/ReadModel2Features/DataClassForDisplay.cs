@@ -684,6 +684,10 @@ namespace Nijo.Models.ReadModel2Features {
                 .Count();
             var loopVar = depth == 0 ? "item" : $"item{depth}";
 
+            var version = Aggregate
+                .GetFullPathAsSearchResult(instanceAgg)
+                .Concat([SearchResult.VERSION]);
+
             return $$"""
                 {{newStatement}} {
                 {{If(HasLifeCycle, () => $$"""
@@ -692,7 +696,7 @@ namespace Nijo.Models.ReadModel2Features {
                     {{WILL_BE_DELETED_CS}} = false,
                 """)}}
                 {{If(HasVersion, () => $$"""
-                    {{VERSION_CS}} = {{instance}}.{{SearchResult.VERSION}},
+                    {{VERSION_CS}} = {{instance}}.{{version.Join("?.")}},
                 """)}}
                     {{VALUES_CS}} = new {{ValueCsClassName}} {
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
