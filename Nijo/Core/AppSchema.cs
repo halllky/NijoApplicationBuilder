@@ -1,3 +1,4 @@
+using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
@@ -120,6 +121,77 @@ namespace Nijo.Core {
                     builder.Append($"{indent2L}{member.MemberName}{indent2R}");
                     builder.AppendLine(columns.Select(c => c.Item2(member)).Join("\t"));
                 }
+            }
+
+            return builder.ToString();
+        }
+
+        /// <summary>
+        /// mermaid.js 記法でスキーマ定義を出力します。
+        /// </summary>
+        public string ToMermaidText() {
+            var builder = new StringBuilder();
+            builder.AppendLine("graph LR;");
+
+            foreach (var edge in Graph.Edges) {
+                var id1 = edge.Initial.Value.ToHashedString();
+                var id2 = edge.Terminal.Value.ToHashedString();
+                var label1 = edge.Initial.Value.Replace("\"", "");
+                var label2 = edge.Terminal.Value.Replace("\"", "");
+
+                // 分かりやすさのため、親子は関係性を、Refはリレーション名を表示
+                string relation;
+                if (edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, out var type)
+                    && (string)type! == DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD) {
+
+                    if (edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_MULTIPLE, out var isArray) && (bool)isArray!) {
+                        relation = "Children";
+
+                    } else if (edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, out var groupName)
+                        && (string)groupName! != string.Empty) {
+                        relation = "Variation";
+
+                    } else {
+                        relation = "Child";
+                    }
+
+                } else {
+                    relation = edge.RelationName.Replace("\"", "");
+                }
+
+                builder.AppendLine($"  {id1}(\"{label1}\") --\"{relation}\"--> {id2}(\"{label2}\");");
+            }
+
+            // ルート集約のくくりごとにsubgraphにまとめる
+            foreach (var root in RootAggregates()) {
+                var aggregates = root
+                    .EnumerateThisAndDescendants();
+                var schalarMembers = root
+                    .EnumerateThisAndDescendants()
+                    .SelectMany(agg => agg.GetMembers())
+                    .OfType<AggregateMember.Schalar>();
+
+                string type;
+                if (root.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel2.Key) {
+                    type = root.Item.Options.GenerateDefaultReadModel
+                        ? "(Write/Read Model)"
+                        : "(Write Model)";
+                } else if (root.Item.Options.Handler == NijoCodeGenerator.Models.ReadModel2.Key) {
+                    type = "(Read Model)";
+                } else {
+                    type = string.Empty;
+                }
+
+                builder.AppendLine($$"""
+                      subgraph "{{root.Item.PhysicalName}}{{type}}"
+                    {{aggregates.SelectTextTemplate(agg => $$"""
+                        {{agg.Item.Id.ToString().ToHashedString()}}
+                    """)}}
+                    {{schalarMembers.SelectTextTemplate(schalar => $$"""
+                        {{schalar.GraphNode.Item.Id.ToString().ToHashedString()}}
+                    """)}}
+                      end
+                    """);
             }
 
             return builder.ToString();

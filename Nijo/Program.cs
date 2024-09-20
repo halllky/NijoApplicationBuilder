@@ -166,7 +166,7 @@ namespace Nijo {
                     .Open(path, serviceProvider, logger)
                     .BuildSchema();
                 if (mermaid) {
-                    Console.WriteLine(schema.Graph.ToMermaidText());
+                    Console.WriteLine(schema.ToMermaidText());
                 } else {
                     Console.WriteLine(schema.DumpTsv());
                 }

@@ -21,7 +21,7 @@ namespace Nijo.IntegrationTest.Tests {
 
             } catch (Exception ex) {
                 TestContext.Out.WriteLine("--- SCHEMA ---");
-                TestContext.Out.WriteLine(TestProject.Current.BuildSchema().Graph.ToMermaidText());
+                TestContext.Out.WriteLine(TestProject.Current.BuildSchema().ToMermaidText());
                 Assert.Fail(ex.Message);
             }
         }
