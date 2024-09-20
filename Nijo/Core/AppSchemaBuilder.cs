@@ -197,9 +197,7 @@ namespace Nijo.Core {
                 }
 
                 // バリデーションおよびグラフ構成要素の作成: 集約メンバー
-                var hasNameMember = false;
                 foreach (var member in aggregateDef.Members) {
-                    if (member.Options.IsDisplayName == true) hasNameMember = true;
 
                     // refはリレーションの方で作成する
                     if (member.Options.IsReferenceTo != null) continue;
@@ -242,7 +240,7 @@ namespace Nijo.Core {
 
                 if (successToParse) {
                     var displayName = aggregateDef.TreePath.BaseName;
-                    var aggregate = new Aggregate(aggregateId, displayName, !hasNameMember, aggregateDef.Options);
+                    var aggregate = new Aggregate(aggregateId, displayName, aggregateDef.Options);
                     aggregates.Add(aggregateId, aggregate);
                 }
             }

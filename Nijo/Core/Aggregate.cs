@@ -8,10 +8,9 @@ using static Nijo.Core.DirectedEdgeExtensions;
 
 namespace Nijo.Core {
     public class Aggregate : ValueObject, IGraphNode {
-        internal Aggregate(NodeId id, string displayName, bool useKeyInsteadOfName, AggregateBuildOption options) {
+        internal Aggregate(NodeId id, string displayName, AggregateBuildOption options) {
             Id = id;
             DisplayName = displayName;
-            UseKeyInsteadOfName = useKeyInsteadOfName;
             Options = options;
         }
 
@@ -25,7 +24,6 @@ namespace Nijo.Core {
         public string EFCoreEntityClassName => $"{PhysicalName}DbEntity";
         public string DbSetName => $"{PhysicalName}DbSet";
 
-        internal bool UseKeyInsteadOfName { get; }
         internal AggregateBuildOption Options { get; }
 
         protected override IEnumerable<object?> ValueObjectIdentifiers() {
