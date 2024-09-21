@@ -55,7 +55,7 @@ namespace Nijo.Models.WriteModel2Features {
         internal const string DATA_TYPE_ENUM_TS = "UpdateDataType";
         /// <summary>データ種別の値を返します（C#, TypeScript共通）</summary>
         internal static string GetEnumValueOf(GraphNode<Aggregate> aggregate) {
-            return aggregate.Item.DisplayName.ToCSharpSafe();
+            return aggregate.Item.PhysicalName;
         }
 
 

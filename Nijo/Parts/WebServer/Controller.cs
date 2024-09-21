@@ -14,7 +14,7 @@ namespace Nijo.Parts.WebServer {
         internal Controller(string physicalName) {
             _physicalName = physicalName;
         }
-        internal Controller(Aggregate aggregate) : this(aggregate.DisplayName.ToCSharpSafe()) {
+        internal Controller(Aggregate aggregate) : this(aggregate.PhysicalName) {
         }
 
         private readonly string _physicalName;

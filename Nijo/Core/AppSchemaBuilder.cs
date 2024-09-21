@@ -84,6 +84,8 @@ namespace Nijo.Core {
                         { DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, aggregate.Options.IsVariationGroupMember?.GroupName ?? string.Empty },
                         { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, aggregate.Options.IsPrimary == true },
                         { DirectedEdgeExtensions.REL_ATTR_INVISIBLE_IN_GUI, aggregate.Options.InvisibleInGui == true },
+                        { DirectedEdgeExtensions.REL_ATTR_DISPLAY_NAME, aggregate.Options.DisplayName },
+                        { DirectedEdgeExtensions.REL_ATTR_DB_NAME, aggregate.Options.DbName },
                         { DirectedEdgeExtensions.REL_ATTR_MEMBER_ORDER, aggregate.Order },
                     },
                 });
@@ -103,6 +105,8 @@ namespace Nijo.Core {
                         { DirectedEdgeExtensions.REL_ATTR_INVISIBLE_IN_GUI, x.member.Options.InvisibleInGui == true },
                         { DirectedEdgeExtensions.REL_ATTR_SINGLEVIEW_CUSTOM_UI_COMPONENT_NAME, x.member.Options.SingleViewCustomUiComponentName },
                         { DirectedEdgeExtensions.REL_ATTR_SEARCHCONDITION_CUSTOM_UI_COMPONENT_NAME, x.member.Options.SearchConditionCustomUiComponentName },
+                        { DirectedEdgeExtensions.REL_ATTR_DISPLAY_NAME, x.member.Options.DisplayName },
+                        { DirectedEdgeExtensions.REL_ATTR_DB_NAME, x.member.Options.DbName },
                         { DirectedEdgeExtensions.REL_ATTR_MEMBER_ORDER, x.member.Order },
                     },
                 });
@@ -132,7 +136,8 @@ namespace Nijo.Core {
                 foreach (var item in @enum.Value) {
                     if (item.Value.HasValue) {
                         items.Add(new EnumDefinition.Item {
-                            PhysicalName = item.Name,
+                            PhysicalName = item.PhysicalName,
+                            DisplayName = item.DisplayName ?? item.PhysicalName,
                             Value = item.Value.Value,
                         });
                     } else {
@@ -140,7 +145,8 @@ namespace Nijo.Core {
                         while (usedInt.Contains(unusedInt)) unusedInt++;
                         usedInt.Add(unusedInt);
                         items.Add(new EnumDefinition.Item {
-                            PhysicalName = item.Name,
+                            PhysicalName = item.PhysicalName,
+                            DisplayName = item.DisplayName ?? item.PhysicalName,
                             Value = unusedInt,
                         });
                     }
@@ -226,6 +232,8 @@ namespace Nijo.Core {
                         SearchConditionCustomUiComponentName = member.Options.SearchConditionCustomUiComponentName,
                         UiWidth = member.Options.UiWidthRem,
                         WideInVForm = member.Options.WideInVForm == true,
+                        DisplayName = member.Options.DisplayName,
+                        DbName = member.Options.DbName,
                     });
                     edgesFromAggToMember.Add(new GraphEdgeInfo {
                         Initial = aggregateId,
@@ -239,8 +247,10 @@ namespace Nijo.Core {
                 }
 
                 if (successToParse) {
-                    var displayName = aggregateDef.TreePath.BaseName;
-                    var aggregate = new Aggregate(aggregateId, displayName, aggregateDef.Options);
+                    var aggregate = new Aggregate(
+                        aggregateId,
+                        aggregateDef.TreePath.BaseName,
+                        aggregateDef.Options);
                     aggregates.Add(aggregateId, aggregate);
                 }
             }
@@ -335,6 +345,19 @@ namespace Nijo.Core {
             public required string GroupName { get; init; }
             public required string Key { get; init; }
         }
+
+        /// <summary>
+        /// 画面表示名
+        /// </summary>
+        public string? DisplayName { get; set; }
+        /// <summary>
+        /// データベーステーブル名
+        /// </summary>
+        public string? DbName { get; set; }
+        /// <summary>
+        /// ラテン語名
+        /// </summary>
+        public string? LatinName { get; set; }
     }
     // TODO: それぞれのオプションの説明を書く
     public sealed class AggregateMemberBuildOption {
@@ -353,10 +376,20 @@ namespace Nijo.Core {
         public TextBoxWidth? UiWidthRem { get; set; }
         /// <summary>フォームのUIで横幅いっぱい占有するかどうか</summary>
         public bool? WideInVForm { get; set; }
+
+        /// <summary>
+        /// 画面表示名
+        /// </summary>
+        public string? DisplayName { get; set; }
+        /// <summary>
+        /// データベーステーブル名 or カラム名
+        /// </summary>
+        public string? DbName { get; set; }
     }
     public sealed class EnumValueOption {
-        public string Name { get; set; } = string.Empty;
+        public string PhysicalName { get; set; } = string.Empty;
         public int? Value { get; set; }
+        public string? DisplayName { get; set; }
     }
     public sealed class TextBoxWidth {
         public required E_ZenHan ZenHan { get; init; }
@@ -398,6 +431,8 @@ namespace Nijo.Core {
         internal const string REL_ATTR_INVISIBLE_IN_GUI = "invisible-in-gui";
         internal const string REL_ATTR_SINGLEVIEW_CUSTOM_UI_COMPONENT_NAME = "singleview-custom-ui-component-name";
         internal const string REL_ATTR_SEARCHCONDITION_CUSTOM_UI_COMPONENT_NAME = "searchcondition-custom-ui-component-name";
+        internal const string REL_ATTR_DISPLAY_NAME = "display-name";
+        internal const string REL_ATTR_DB_NAME = "ref-db-name";
         internal const string REL_ATTR_MEMBER_ORDER = "relation-aggregate-order";
 
 
@@ -430,12 +465,22 @@ namespace Nijo.Core {
         internal static int GetMemberOrder(this GraphEdge graphEdge) {
             return (int)graphEdge.Attributes[REL_ATTR_MEMBER_ORDER]!;
         }
+
+        internal static string? GetDisplayName(this GraphEdge graphEdge) {
+            return graphEdge.Attributes
+                .TryGetValue(REL_ATTR_DISPLAY_NAME, out var displayName)
+                && !string.IsNullOrWhiteSpace((string?)displayName)
+                ? (string)displayName
+                : null;
+        }
     }
 
     internal class VariationGroup<T> where T : IGraphNode {
         internal GraphNode<T> Owner => VariationAggregates.First().Value.Initial.As<T>();
         internal required string GroupName { get; init; }
         internal required IReadOnlyDictionary<string, GraphEdge<T>> VariationAggregates { get; init; }
+        internal required string? DisplayName { get; init; }
+        internal required string? DbName { get; init; }
         internal required int MemberOrder { get; init; }
         internal bool IsPrimary => VariationAggregates.First().Value.IsPrimary();
         internal bool IsInstanceName => VariationAggregates.First().Value.IsInstanceName();

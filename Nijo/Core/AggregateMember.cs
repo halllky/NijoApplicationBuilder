@@ -22,6 +22,8 @@ namespace Nijo.Core {
         public required string? SearchConditionCustomUiComponentName { get; init; }
         public required TextBoxWidth? UiWidth { get; init; }
         public required bool WideInVForm { get; init; }
+        public required string? DisplayName { get; init; }
+        public required string? DbName { get; init; }
 
         public override string ToString() => Id.Value;
     }
@@ -79,6 +81,12 @@ namespace Nijo.Core {
                     VariationAggregates = group.ToDictionary(
                         edge => (string)edge.Attributes[DirectedEdgeExtensions.REL_ATTR_VARIATIONSWITCH]!,
                         edge => edge.As<Aggregate>()),
+                    DisplayName = group.First().GetDisplayName(),
+                    DbName = group.First().Attributes
+                        .TryGetValue(DirectedEdgeExtensions.REL_ATTR_DB_NAME, out var dbName)
+                        && !string.IsNullOrWhiteSpace((string?)dbName)
+                        ? (string)dbName!
+                        : null,
                     MemberOrder = group.First().GetMemberOrder(),
                 });
             foreach (var group in variationGroups) {
@@ -161,7 +169,16 @@ namespace Nijo.Core {
             /// そもそもDeclaringAggregateはValueMemberにのみ存在する概念と考えるのが自然な気がする。
             /// </summary>
             internal abstract GraphNode<Aggregate> DeclaringAggregate { get; }
+
+            /// <summary>
+            /// 物理名
+            /// </summary>
             internal abstract string MemberName { get; }
+            /// <summary>
+            /// 画面表示名
+            /// </summary>
+            internal abstract string DisplayName { get; }
+
             /// <summary>
             /// スキーマ定義でこのメンバーが定義されている順番
             /// </summary>
@@ -205,6 +222,37 @@ namespace Nijo.Core {
                     return _membername;
                 }
             }
+
+            internal override string DisplayName => Options.DisplayName ?? MemberName;
+
+            private string? _dbColumnName;
+            /// <summary>
+            /// DBカラム名
+            /// </summary>
+            //internal string DbColumnName => Options.DbName ?? MemberName;
+            internal string DbColumnName {
+                get {
+                    if (_dbColumnName == null) {
+                        if (Inherits == null) {
+                            _dbColumnName = Options.DbName ?? Options.MemberName;
+
+                        } else if (Inherits.Relation.IsParentChild()) {
+                            // 親のメンバーと対応して暗黙的に定義されるメンバーの名前
+                            _dbColumnName = $"PARENT_{Inherits.Member.DbColumnName}";
+                        } else {
+                            // 参照先のメンバーと対応して暗黙的に定義されるメンバーの名前
+                            var prefix = Inherits.Relation.Attributes
+                                .TryGetValue(DirectedEdgeExtensions.REL_ATTR_DB_NAME, out var dbName)
+                                && !string.IsNullOrWhiteSpace((string?)dbName)
+                                ? (string)dbName!
+                                : Inherits.Relation.RelationName;
+                            _dbColumnName = $"{prefix}_{Inherits.Member.DbColumnName}";
+                        }
+                    }
+                    return _dbColumnName;
+                }
+            }
+
             internal sealed override GraphNode<Aggregate> DeclaringAggregate => Inherits?.Member.DeclaringAggregate ?? Owner;
 
             internal bool IsKey {
@@ -263,6 +311,7 @@ namespace Nijo.Core {
             internal override GraphNode<Aggregate> Owner => Relation.Initial;
             internal override GraphNode<Aggregate> DeclaringAggregate => Relation.Initial;
             internal override string MemberName => Relation.RelationName;
+            internal override string DisplayName => Relation.GetDisplayName() ?? MemberName;
             internal override decimal Order => Relation.GetMemberOrder();
 
             internal NavigationProperty GetNavigationProperty() {
@@ -354,6 +403,8 @@ namespace Nijo.Core {
                     SearchConditionCustomUiComponentName = null,
                     UiWidth = null,
                     WideInVForm = false,
+                    DbName = group.DbName,
+                    DisplayName = group.DisplayName,
                 };
                 Owner = group.Owner;
             }

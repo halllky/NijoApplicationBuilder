@@ -8,17 +8,18 @@ using static Nijo.Core.DirectedEdgeExtensions;
 
 namespace Nijo.Core {
     public class Aggregate : ValueObject, IGraphNode {
-        internal Aggregate(NodeId id, string displayName, AggregateBuildOption options) {
+        internal Aggregate(NodeId id, string treePathBaseName, AggregateBuildOption options) {
             Id = id;
-            DisplayName = displayName;
+            DisplayName = options.DisplayName ?? treePathBaseName;
+            PhysicalName = treePathBaseName.ToCSharpSafe();
             Options = options;
         }
 
         public NodeId Id { get; }
-        internal string DisplayName { get; }
         internal string UniqueId => Id.Value.ToHashedString();
 
-        public string PhysicalName => DisplayName.ToCSharpSafe();
+        internal string DisplayName { get; }
+        public string PhysicalName { get; }
 
         // TODO: EFCoerEntityやDbSetを表すクラスがこれらの情報を保持するべき
         public string EFCoreEntityClassName => $"{PhysicalName}DbEntity";

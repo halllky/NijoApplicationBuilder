@@ -78,7 +78,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     } else {
                       return
                     }
-                    const success = await callStepChangeEvent(`/{{Controller.SUBDOMAIN}}/{{CommandController.SUBDOMAIN}}/{{_rootAggregate.Item.UniqueId}}/{{CONTROLLER_CHAGNE_STEPS}}`, getValues(), beforeStep, afterStep, visitedSteps)
+                    const success = await callStepChangeEvent(`/{{Controller.SUBDOMAIN}}/{{CommandController.SUBDOMAIN}}/{{(_rootAggregate.Item.Options.LatinName ?? _rootAggregate.Item.UniqueId).ToKebabCase()}}/{{CONTROLLER_CHAGNE_STEPS}}`, getValues(), beforeStep, afterStep, visitedSteps)
                     if (success) setCurrentStep(afterStep)
                   })
                   const toNextStep = useEvent(async () => {
@@ -91,13 +91,13 @@ namespace Nijo.Models.CommandModelFeatures {
                     } else {
                       return
                     }
-                    const success = await callStepChangeEvent(`/{{Controller.SUBDOMAIN}}/{{CommandController.SUBDOMAIN}}/{{_rootAggregate.Item.UniqueId}}/{{CONTROLLER_CHAGNE_STEPS}}`, getValues(), beforeStep, afterStep, visitedSteps)
+                    const success = await callStepChangeEvent(`/{{Controller.SUBDOMAIN}}/{{CommandController.SUBDOMAIN}}/{{(_rootAggregate.Item.Options.LatinName ?? _rootAggregate.Item.UniqueId).ToKebabCase()}}/{{CONTROLLER_CHAGNE_STEPS}}`, getValues(), beforeStep, afterStep, visitedSteps)
                     if (success) setCurrentStep(afterStep)
                   })
                 """)}}
                   const launch = useEvent(async (param: Types.{{param.TsTypeName}}) => {
                     return await executeCommandApi({
-                      url: `/{{Controller.SUBDOMAIN}}/{{CommandController.SUBDOMAIN}}/{{_rootAggregate.Item.UniqueId}}`,
+                      url: `/{{Controller.SUBDOMAIN}}/{{CommandController.SUBDOMAIN}}/{{(_rootAggregate.Item.Options.LatinName ?? _rootAggregate.Item.UniqueId).ToKebabCase()}}`,
                       param,
                       defaultSuccessMessage: '{{_rootAggregate.Item.DisplayName}}処理が成功しました。',
                     })
@@ -276,7 +276,7 @@ namespace Nijo.Models.CommandModelFeatures {
                 /// <summary>
                 /// {{_rootAggregate.Item.DisplayName}}のステップ変更時イベント
                 /// </summary>
-                [HttpPost("{{_rootAggregate.Item.UniqueId}}/{{CONTROLLER_CHAGNE_STEPS}}")]
+                [HttpPost("{{(_rootAggregate.Item.Options.LatinName ?? _rootAggregate.Item.UniqueId).ToKebabCase()}}/{{CONTROLLER_CHAGNE_STEPS}}")]
                 public virtual IActionResult {{_rootAggregate.Item.PhysicalName}}ChgngeStep([FromBody] {{STEP_CHANGING_EVENT_ARGS}}<{{param.CsClassName}}, {{StepEnumName}}, {{param.MessageDataCsClassName}}> e) {
                     _applicationService.{{AppSrvOnStepChangingMethod}}(e);
                     if (e.Errors.HasError()) {
@@ -291,7 +291,7 @@ namespace Nijo.Models.CommandModelFeatures {
                 /// <summary>
                 /// {{_rootAggregate.Item.DisplayName}}処理をWebAPI経由で実行するためのエンドポイント
                 /// </summary>
-                [HttpPost("{{_rootAggregate.Item.UniqueId}}")]
+                [HttpPost("{{(_rootAggregate.Item.Options.LatinName ?? _rootAggregate.Item.UniqueId).ToKebabCase()}}")]
                 public virtual IActionResult {{_rootAggregate.Item.PhysicalName}}([FromBody] {{param.CsClassName}} param, [FromQuery] bool {{HTTP_PARAM_IGNORECONFIRM}}) {
                     var resultGenerator = new {{CommandResult.GENERATOR_WEB_CLASS_NAME}}<{{param.MessageDataCsClassName}}>(this, _applicationService);
                     var commandResult = _applicationService.{{AppSrvExecuteMethod}}(param, resultGenerator, {{HTTP_PARAM_IGNORECONFIRM}});

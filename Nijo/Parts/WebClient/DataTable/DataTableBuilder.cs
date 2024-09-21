@@ -211,11 +211,11 @@ namespace Nijo.Parts.WebClient.DataTable {
                     var helper = vmColumn._vm.Options.MemberType.DataTableColumnDefHelperName;
 
                     return $$"""
-                        cellType.{{helper}}('{{vmColumn.Header}}',
+                        cellType.{{helper}}('{{vmColumn.Header.Replace("'", "\\'")}}',
                           r => r.{{vmColumn._pathFromRowObject.Join("?.")}},
                           {{WithIndent(_onValueChange(vmColumn._vm), "  ")}}, {
                         {{If(column.HeaderGroupName != null, () => $$"""
-                          headerGroupName: '{{column.HeaderGroupName}}',
+                          headerGroupName: '{{column.HeaderGroupName?.Replace("'", "\\'")}}',
                         """)}}
                         {{If(!_editable, () => $$"""
                           readOnly: true,
@@ -234,7 +234,7 @@ namespace Nijo.Parts.WebClient.DataTable {
                     var helper = new DataTableRefColumnHelper(refColumn._ref.RefTo);
 
                     return $$"""
-                        ...cellType.{{helper.MethodName}}('{{refColumn._ref.MemberName}}',
+                        ...cellType.{{helper.MethodName}}('{{refColumn._ref.DisplayName.Replace("'", "\\'")}}',
                           r => r.{{refColumn._pathFromRowObject.Join("?.")}},
                           {{_onValueChange(refColumn._ref)}}, {
                         {{If(!_editable, () => $$"""
@@ -258,7 +258,7 @@ namespace Nijo.Parts.WebClient.DataTable {
                       fixedWidth: true,
                     """)}}
                     {{If(column.HeaderGroupName != null, () => $$"""
-                      headerGroupName: '{{column.HeaderGroupName}}',
+                      headerGroupName: '{{column.HeaderGroupName?.Replace("'", "\\'")}}',
                     """)}}
                     }
                     """;

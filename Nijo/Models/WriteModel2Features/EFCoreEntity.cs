@@ -120,6 +120,8 @@ namespace Nijo.Models.WriteModel2Features {
                     public static void {{ON_MODEL_CREATING}}(ModelBuilder modelBuilder) {
                         modelBuilder.Entity<{{context.Config.EntityNamespace}}.{{_aggregate.Item.EFCoreEntityClassName}}>(entity => {
 
+                            entity.ToTable("{{_aggregate.Item.Options.DbName ?? _aggregate.Item.PhysicalName}}");
+
                             entity.HasKey(e => new {
                 {{_aggregate.GetKeys().OfType<AggregateMember.ValueMember>().SelectTextTemplate(pk => $$"""
                                 e.{{pk.MemberName}},
@@ -128,6 +130,7 @@ namespace Nijo.Models.WriteModel2Features {
 
                 {{_aggregate.GetMembers().OfType<AggregateMember.ValueMember>().SelectTextTemplate(col => $$"""
                             entity.Property(e => e.{{col.MemberName}})
+                                .HasColumnName("{{col.DbColumnName}}")
                                 .IsRequired({{(col.IsRequired ? "true" : "false")}});
                 """)}}
                 {{If(_aggregate.IsRoot(), () => $$"""

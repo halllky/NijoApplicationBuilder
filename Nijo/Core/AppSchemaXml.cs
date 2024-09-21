@@ -74,13 +74,22 @@ namespace Nijo.Core {
                     foreach (var innerElement in xElement.Elements()) {
                         var enumName = innerElement.Name.LocalName;
                         var strValue = innerElement.Attribute("key")?.Value;
+
+                        int? intValue;
                         if (strValue == null) {
-                            enumValues.Add(new EnumValueOption { Name = enumName });
-                        } else if (int.TryParse(strValue, out var intValue)) {
-                            enumValues.Add(new EnumValueOption { Name = enumName, Value = intValue });
+                            intValue = null;
+                        } else if (int.TryParse(strValue, out var i)) {
+                            intValue = i;
                         } else {
                             errorList.Add($"'{xElement.Name.LocalName}' の '{enumName}' の値 '{strValue}' を整数に変換できません。");
+                            continue;
                         }
+
+                        enumValues.Add(new EnumValueOption {
+                            PhysicalName = enumName,
+                            Value = intValue,
+                            DisplayName = innerElement.Attribute("DisplayName")?.Value,
+                        });
                     }
 
                     builder.AddEnum(xElement.Name.LocalName, enumValues);
@@ -307,6 +316,17 @@ namespace Nijo.Core {
             var aggregateOption = parser.CreateAggregateOption();
             var memberOption = parser.CreateMemberOption();
 
+            // ------------------------------------------------
+            // is="" 以外の属性
+
+            aggregateOption.DisplayName = element.Attribute(XName.Get("DisplayName"))?.Value;
+            aggregateOption.DbName = element.Attribute(XName.Get("DbName"))?.Value;
+            aggregateOption.LatinName = element.Attribute(XName.Get("Latin"))?.Value;
+
+            memberOption.DisplayName = element.Attribute(XName.Get("DisplayName"))?.Value;
+            memberOption.DbName = element.Attribute(XName.Get("DbName"))?.Value;
+
+            // ------------------------------------------------
             // この時点で判断できない属性はenumかユーザー定義型とみなす
             if (parser.NotHandledKeys.Count >= 2) {
                 errors.Add($"'{element.Name.LocalName}' に不明な属性が含まれています: {parser.NotHandledKeys.Join(" ")}");

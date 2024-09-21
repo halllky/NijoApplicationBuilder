@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <自動テストで作成されたプロジェクト>
-  <ルート is="write-model-2 generate-default-read-model">
+  <ルート is="write-model-2 generate-default-read-model" DisplayName="#ルート[(&quot; &#x0A; &apos;)]" DbName="ROOT_TABLE" Latin="Root Object">
     <ID1 is="uuid" />
     <名前1 is="name" />
 
@@ -17,10 +17,10 @@
         <ID4 is="uuid" />
         <名前4 is="name" />
       </子の子配列>
-      <子の子バリエーション is="variation">
-        <子の子バリエーションA is="variation-key:1">
+      <子の子バリエーション is="variation" DisplayName="# 子の子バリエーション [(&quot; &#x0A; &apos;)]" DbName="KONOKKKKKKVARIATTTTTTTTTTTTION">
+        <子の子バリエーションA is="variation-key:1" DisplayName="#子の子バリエーションA [(&quot; &#x0A; &apos;)]" DbName="KONOKKKKKKVARIATTTTTTTTTTTTION____A">
           <ID5 is="uuid" />
-          <名前5 is="name" />
+          <名前5 is="name" DisplayName="#名前5 [(&quot; &#x0A; &apos;)]" />
         </子の子バリエーションA>
         <子の子バリエーションB is="variation-key:2">
           <ID6 is="uuid" />
@@ -29,7 +29,7 @@
       </子の子バリエーション>
     </子>
 
-    <子配列 is="array">
+    <子配列 is="array">1
       <ID7 is="uuid" />
       <名前7 is="name" />
 
@@ -44,7 +44,7 @@
       <子配列の子バリエーション is="variation">
         <子配列の子バリエーションA is="variation-key:1">
           <ID10 is="uuid" />
-          <名前10 is="name" />
+          <名前10 is="name" DisplayName="#名前10 [(&quot; &#x0A; &apos;)]" DbName="NAME_10_0_0_0_0_0_0_0_0_0_0_0_0_0_0__________" />
         </子配列の子バリエーションA>
         <子配列の子バリエーションB is="variation-key:2">
           <ID11 is="uuid" />
@@ -95,9 +95,9 @@
             <ID20 is="uuid" />
             <名前20 is="name" />
           </子バリエーション種別Bの子バリエーションA>
-          <子バリエーション種別Bの子バリエーションB is="variation-key:2">
+          <子バリエーション種別Bの子バリエーションB is="variation-key:2" DisplayName="#子バリエーション種別Bの子バリエーションB [(&quot; &#x0A; &apos;)]" DbName="VARIATION21">
             <ID21 is="uuid" />
-            <名前21 is="name" />
+            <名前21 is="name" DisplayName="#名前21 [(&quot; &#x0A; &apos;)]" DbName="COLUMN21" />
           </子バリエーション種別Bの子バリエーションB>
         </子バリエーション種別Bの子バリエーション>
       </子バリエーション種別B>
@@ -108,7 +108,7 @@
   <ルートを参照1 is="write-model-2 generate-default-read-model">
     <ルート子配列子配列 is="key ref-to:ルート/子配列/子配列の子配列" />
     <名前100 is="name" />
-    <キーでないルート is="ref-to:ルート/子配列/子配列の子配列" />
+    <キーでないルート is="ref-to:ルート/子配列/子配列の子配列" DbName="NON_KEY_ROOT" DisplayName="キー でない ルート [(&quot; &#x0A; &apos;)]" />
   </ルートを参照1>
 
   <ルートを参照2 is="write-model-2 generate-default-read-model">

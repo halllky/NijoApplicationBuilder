@@ -28,7 +28,10 @@ namespace Nijo.Parts.WebClient {
             var attrs = new List<string>();
 
             // ラベル
-            if (label != null) attrs.Add($"label=\"{label}\"");
+            if (label != null) {
+                var escaped = label.Replace("\"", "&quot;");
+                attrs.Add($"label=\"{escaped}\"");
+            }
 
             // 深さ未指定の場合は自動計算
             maxDepth ??= _childItems
@@ -142,8 +145,9 @@ namespace Nijo.Parts.WebClient {
             if (_label == null) {
                 label = string.Empty;
             } else if (_labelType == E_VForm2LabelType.String) {
+                var escaped = _label.Replace("\"", "&quot;");
                 label = $$"""
-                     label="{{_label}}"
+                     label="{{escaped}}"
                     """;
             } else {
                 label = $$"""
@@ -214,8 +218,9 @@ namespace Nijo.Parts.WebClient {
             if (_label == null) {
                 label = string.Empty;
             } else if (_labelType == E_VForm2LabelType.String) {
+                var escaped = _label.Replace("\"", "&quot;");
                 label = $$"""
-                     label="{{_label}}"
+                     label="{{escaped}}"
                     """;
             } else {
                 label = $$"""

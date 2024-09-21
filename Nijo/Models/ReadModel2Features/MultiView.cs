@@ -19,8 +19,8 @@ namespace Nijo.Models.ReadModel2Features {
         }
         private readonly GraphNode<Aggregate> _aggregate;
 
-        public string Url => $"/{_aggregate.Item.UniqueId}"; // React Router は全角文字非対応なので
-        public string DirNameInPageDir => _aggregate.Item.DisplayName.ToFileNameSafe();
+        public string Url => $"/{(_aggregate.Item.Options.LatinName ?? _aggregate.Item.UniqueId).ToKebabCase()}"; // React Router は全角文字非対応なので
+        public string DirNameInPageDir => _aggregate.Item.PhysicalName.ToFileNameSafe();
         public string ComponentPhysicalName => $"{_aggregate.Item.PhysicalName}MultiView";
         public bool ShowMenu => true;
         public string? LabelInMenu => _aggregate.Item.DisplayName;

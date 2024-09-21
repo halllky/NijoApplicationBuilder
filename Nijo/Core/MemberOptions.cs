@@ -19,6 +19,8 @@ namespace Nijo.Core {
         public required string? SearchConditionCustomUiComponentName { get; set; }
         public required TextBoxWidth? UiWidth { get; set; }
         public required bool WideInVForm { get; set; }
+        public required string? DisplayName { get; set; }
+        public required string? DbName { get; set; }
     }
 
     internal interface IReadOnlyMemberOptions {
@@ -33,5 +35,7 @@ namespace Nijo.Core {
         string? SearchConditionCustomUiComponentName { get; }
         TextBoxWidth? UiWidth { get; }
         bool WideInVForm { get; }
+        public string? DisplayName { get; }
+        public string? DbName { get; }
     }
 }

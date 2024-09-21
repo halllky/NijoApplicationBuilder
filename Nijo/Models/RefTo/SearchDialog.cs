@@ -73,7 +73,7 @@ namespace Nijo.Models.RefTo {
                     multiSelect: true
                     onSelect: (selectedItems: Types.{{searchResult.TsTypeName}}[]) => void
                   })) => {
-                    dispatch(state => state.pushDialog('{{_aggregate.Item.DisplayName}}検索', ({ closeDialog }) => {
+                    dispatch(state => state.pushDialog('{{_aggregate.Item.DisplayName.Replace("'", "\\'")}}検索', ({ closeDialog }) => {
 
                       // 検索条件
                       const [currentPage, dispatchPaging] = useReducer(Util.pagingReducer, { pageIndex: 0 })

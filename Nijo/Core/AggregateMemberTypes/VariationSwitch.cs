@@ -122,10 +122,15 @@ namespace Nijo.Core.AggregateMemberTypes {
             return $$"""
                 <div className="flex flex-wrap gap-x-2 gap-y-1">
                 {{_variationGroup.VariationAggregates.SelectTextTemplate(kv => $$"""
-                  <Input.CheckBox label="{{kv.Value.RelationName}}" {...{{ctx.Register}}(`{{fullpath}}.{{kv.Value.RelationName}}`)} />
+                  <Input.CheckBox label="{{GetLabel(kv.Value)}}" {...{{ctx.Register}}(`{{fullpath}}.{{kv.Value.RelationName}}`)} />
                 """)}}
                 </div>
                 """;
+
+            string GetLabel(GraphEdge edge) {
+                var displayName = edge.GetDisplayName() ?? edge.RelationName;
+                return displayName.Replace("\"", "&quot;");
+            }
         }
 
         string IAggregateMemberType.RenderSingleViewVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {

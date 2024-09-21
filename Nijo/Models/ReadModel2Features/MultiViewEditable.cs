@@ -19,8 +19,8 @@ namespace Nijo.Models.ReadModel2Features {
         }
         private readonly GraphNode<Aggregate> _rootAggregate;
 
-        public string Url => $"/{_rootAggregate.Item.UniqueId}/multi-edit";
-        public string DirNameInPageDir => _rootAggregate.Item.DisplayName.ToFileNameSafe();
+        public string Url => $"/{(_rootAggregate.Item.Options.LatinName ?? _rootAggregate.Item.UniqueId).ToKebabCase()}/multi-edit";
+        public string DirNameInPageDir => _rootAggregate.Item.PhysicalName.ToFileNameSafe();
         public string ComponentPhysicalName => $"{_rootAggregate.Item.PhysicalName}MultiViewEditable";
         public bool ShowMenu => false;
         public string? LabelInMenu => null;

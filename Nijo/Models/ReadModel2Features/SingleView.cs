@@ -40,7 +40,7 @@ namespace Nijo.Models.ReadModel2Features {
                 return $"/{UrlSubDomain}/:{MODE}{urlKeys.Join("")}";
             }
         }
-        private string UrlSubDomain => _aggregate.Item.UniqueId;
+        private string UrlSubDomain => (_aggregate.Item.Options.LatinName ?? _aggregate.Item.UniqueId).ToKebabCase();
         private const string URL_NEW = "new";
         private const string URL_DETAIL = "detail";
         private const string URL_EDIT = "edit";
@@ -64,8 +64,8 @@ namespace Nijo.Models.ReadModel2Features {
             }
         }
 
-        public string DirNameInPageDir => _aggregate.Item.DisplayName.ToFileNameSafe();
-        public string ComponentPhysicalName => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}SingleView";
+        public string DirNameInPageDir => _aggregate.Item.PhysicalName.ToFileNameSafe();
+        public string ComponentPhysicalName => $"{_aggregate.Item.PhysicalName}SingleView";
         public bool ShowMenu => false;
         public string? LabelInMenu => null;
 

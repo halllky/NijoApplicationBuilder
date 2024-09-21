@@ -32,7 +32,7 @@ namespace Nijo.Parts.WebServer {
                             public enum {{def.Name}} {
                         {{def.Items.SelectTextTemplate(item => $$"""
                         {{If(!string.IsNullOrWhiteSpace(item.DisplayName), () => $$"""
-                                [Display(Name = "{{item.DisplayName}}")]
+                                [Display(Name = "{{item.DisplayName.Replace("\"", "\\\"")}}")]
                         """)}}
                                 {{item.PhysicalName}} = {{item.Value}},
                         """)}}

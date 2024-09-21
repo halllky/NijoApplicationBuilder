@@ -146,7 +146,7 @@ namespace Nijo.Models.ReadModel2Features {
                             """;
                     formBuilder.AddItem(
                         vm.Options.WideInVForm,
-                        member.MemberName,
+                        member.DisplayName,
                         E_VForm2LabelType.String,
                         body);
 
@@ -166,7 +166,7 @@ namespace Nijo.Models.ReadModel2Features {
                             """;
                         formBuilder.AddItem(
                             false,
-                            @ref.MemberName,
+                            @ref.DisplayName,
                             E_VForm2LabelType.String,
                             body);
 
@@ -320,7 +320,7 @@ namespace Nijo.Models.ReadModel2Features {
                 var fullpath = _member.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, GetArgumentsAndLoopVar());
                 var sectionName = _member is AggregateMember.Parent parent
                     ? parent.ParentAggregate.Item.DisplayName
-                    : _member.MemberName;
+                    : _member.DisplayName;
                 var label = $$"""
                     <>
                       <VForm2.LabelText>{{sectionName}}</VForm2.LabelText>
@@ -422,7 +422,7 @@ namespace Nijo.Models.ReadModel2Features {
                 var label = $$"""
                     <>
                       <div className="inline-flex items-center py-1 gap-2">
-                        <VForm2.LabelText>{{_ref.MemberName}}</VForm2.LabelText>
+                        <VForm2.LabelText>{{_ref.DisplayName}}</VForm2.LabelText>
                     {{If(showMagnifyingGlass, () => $$"""
                         {mode !== 'detail' && (
                           <Input.IconButton underline mini icon={Icon.MagnifyingGlassIcon} onClick={handleClickSearch}>検索</Input.IconButton>
@@ -585,7 +585,7 @@ namespace Nijo.Models.ReadModel2Features {
                       return (
                         <VForm2.Indent label={<>
                           <div className="inline-flex gap-2 py-px justify-start items-center">
-                            <VForm2.LabelText>{{_aggregate.GetParent()?.RelationName}}</VForm2.LabelText>
+                            <VForm2.LabelText>{{_aggregate.GetParent()?.GetDisplayName() ?? _aggregate.GetParent()?.RelationName}}</VForm2.LabelText>
                     {{If(creatable, () => $$"""
                             {mode !== 'detail' && (
                               <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={onCreate}>追加</Input.IconButton>
@@ -687,7 +687,7 @@ namespace Nijo.Models.ReadModel2Features {
                         <VForm2.Item wideLabelValue
                           label={<>
                             <div className="flex items-center gap-2">
-                              <VForm2.LabelText>{{_aggregate.GetParent()?.RelationName}}</VForm2.LabelText>
+                              <VForm2.LabelText>{{_aggregate.GetParent()?.GetDisplayName() ?? _aggregate.GetParent()?.RelationName}}</VForm2.LabelText>
                     {{If(editable, () => $$"""
                               {mode !== 'detail' && (<>
                                 <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={onAdd}>追加</Input.IconButton>

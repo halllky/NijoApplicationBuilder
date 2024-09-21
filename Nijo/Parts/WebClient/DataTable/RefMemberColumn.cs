@@ -24,7 +24,7 @@ namespace Nijo.Parts.WebClient.DataTable {
         internal readonly IEnumerable<string> _pathFromRowObject;
         private readonly DataTableBuilder _tableContext;
 
-        public string Header => _ref.MemberName;
+        public string Header => _ref.DisplayName;
         public string? HeaderGroupName => _ref.Owner == _tableContext.TableOwner ? null : _ref.Owner.Item.DisplayName;
 
         public int? DefaultWidth => null;

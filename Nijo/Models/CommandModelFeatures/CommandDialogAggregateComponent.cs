@@ -149,7 +149,7 @@ namespace Nijo.Models.CommandModelFeatures {
                 if (member is AggregateMember.ValueMember vm) {
                     formBuilder.AddItem(
                         vm.Options.WideInVForm,
-                        member.MemberName,
+                        member.DisplayName,
                         E_VForm2LabelType.String,
                         vm.Options.MemberType.RenderSingleViewVFormBody(vm, formContext));
 
@@ -279,7 +279,7 @@ namespace Nijo.Models.CommandModelFeatures {
                 var fullpath = _member.GetFullPathAsCommandParameterRHFRegisterName(GetArgumentsAndLoopVar());
                 var sectionName = _member is AggregateMember.Parent parent
                     ? parent.ParentAggregate.Item.DisplayName
-                    : _member.MemberName;
+                    : _member.DisplayName;
                 var label = $$"""
                     <>
                       <VForm2.LabelText>{{sectionName}}</VForm2.LabelText>
@@ -400,7 +400,7 @@ namespace Nijo.Models.CommandModelFeatures {
                 var label = $$"""
                     <>
                       <div className="inline-flex items-center py-1 gap-2">
-                        <VForm2.LabelText>{{_ref.MemberName}}</VForm2.LabelText>
+                        <VForm2.LabelText>{{_ref.DisplayName}}</VForm2.LabelText>
                     {{If(!isReadOnly, () => $$"""
                         <Input.IconButton underline mini icon={Icon.MagnifyingGlassIcon} onClick={handleClickSearch}>検索</Input.IconButton>
                     """)}}

@@ -47,7 +47,7 @@ namespace Nijo.Core {
         public class Item {
             public required int Value { get; init; }
             public required string PhysicalName { get; init; }
-            public string? DisplayName { get; init; }
+            public required string DisplayName { get; init; }
         }
     }
 }

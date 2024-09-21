@@ -26,7 +26,7 @@ namespace Nijo.Parts.WebClient {
                 ]
                 export const menuItems: { url: string, text: string }[] = [
                 {{context.ReactProject.Pages.Where(p => p.ShowMenu).SelectTextTemplate(page => $$"""
-                  { url: '{{page.Url}}', text: '{{page.LabelInMenu}}' },
+                  { url: '{{page.Url}}', text: '{{page.LabelInMenu?.Replace("'", "\\'")}}' },
                 """)}}
                 ]
 
