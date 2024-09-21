@@ -24,7 +24,13 @@ namespace Nijo.Parts.WebClient {
                   { path: '{{page.Url}}', element: <{{page.ComponentPhysicalName}} /> },
                 """)}}
                 ]
-                export const menuItems: { url: string, text: string }[] = [
+
+                export type SideMenuItem = {
+                  url: string
+                  text: string
+                  children?: SideMenuItem[]
+                }
+                export const menuItems: SideMenuItem[] = [
                 {{context.ReactProject.Pages.Where(p => p.ShowMenu).SelectTextTemplate(page => $$"""
                   { url: '{{page.Url}}', text: '{{page.LabelInMenu?.Replace("'", "\\'")}}' },
                 """)}}

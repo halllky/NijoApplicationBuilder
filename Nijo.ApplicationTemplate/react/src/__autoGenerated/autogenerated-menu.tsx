@@ -6,5 +6,11 @@ import { RouteObject } from 'react-router-dom'
 
 export const THIS_APPLICATION_NAME = 'サンプルアプリケーション' as const
 export const routes: RouteObject[] = []
-export const menuItems: { url: string, text: string }[] = []
+export const menuItems: SideMenuItem[] = []
 export const SHOW_LOCAL_REPOSITORY_MENU = true
+
+export type SideMenuItem = {
+  url: string
+  text: string
+  children?: SideMenuItem[]
+}
