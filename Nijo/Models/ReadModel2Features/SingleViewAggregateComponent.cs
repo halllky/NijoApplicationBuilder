@@ -673,15 +673,9 @@ namespace Nijo.Models.ReadModel2Features {
 
                     """)}}
                       const cellType = Layout.{{Parts.WebClient.DataTable.CellType.USE_HELPER}}<{{rowType}}>()
-                      const options = useMemo<Layout.DataTableProps<{{rowType}}>>(() => ({
-                    {{If(editable, () => $$"""
-                        // 未指定の場合はセル編集不可になる
-                        onChangeRow: mode === 'detail' ? undefined : update,
-                    """)}}
-                        columns: [
-                          {{WithIndent(tableBuilder.RenderColumnDef(context), "      ")}}
-                        ],
-                      }), [mode, get, update, setValue{{args.Select(a => $", {a}").Join("")}}, cellType])
+                      const columns = useMemo((): Layout.DataTableColumn<{{rowType}}>[] => [
+                        {{WithIndent(tableBuilder.RenderColumnDef(context), "    ")}}
+                      ], [mode, get, update, setValue{{args.Select(a => $", {a}").Join("")}}, cellType])
 
                       return (
                         <VForm2.Item wideLabelValue
@@ -701,7 +695,10 @@ namespace Nijo.Models.ReadModel2Features {
                           <Layout.DataTable
                             ref={dtRef}
                             data={fields}
-                            {...options}
+                            columns={columns}
+                    {{If(editable, () => $$"""
+                            onChangeRow={(mode === 'detail' ? undefined : update)} // undefinedの場合はセル編集不可
+                    """)}}
                             className="h-64 resize-y w-full border-none"
                           />
                         </VForm2.Item>
