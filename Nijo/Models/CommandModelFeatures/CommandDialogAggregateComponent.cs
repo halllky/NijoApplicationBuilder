@@ -628,14 +628,9 @@ namespace Nijo.Models.CommandModelFeatures {
 
                     """)}}
                       const cellType = Layout.{{Parts.WebClient.DataTable.CellType.USE_HELPER}}<Types.{{displayData.TsTypeName}}>()
-                      const options = useMemo<Layout.DataTableProps<{{rowType}}>>(() => ({
-                    {{If(editable, () => $$"""
-                        onChangeRow: update,
-                    """)}}
-                        columns: [
-                          {{WithIndent(tableBuilder.RenderColumnDef(context), "      ")}}
-                        ],
-                      }), [get, update, setValue{{args.Select(a => $", {a}").Join("")}}, cellType])
+                      const columns = useMemo((): Layout.DataTableColumn<{{rowType}}>[] => [
+                        {{WithIndent(tableBuilder.RenderColumnDef(context), "    ")}}
+                      ], [get, update, setValue{{args.Select(a => $", {a}").Join("")}}, cellType])
 
                       return (
                         <VForm2.Item wideLabelValue
@@ -653,7 +648,10 @@ namespace Nijo.Models.CommandModelFeatures {
                           <Layout.DataTable
                             ref={dtRef}
                             data={fields}
-                            {...options}
+                            columns={columns}
+                    {{If(editable, () => $$"""
+                            onChangeRow={update}
+                    """)}}
                             className="h-64 resize-y w-full border-none"
                           />
                         </VForm2.Item>
