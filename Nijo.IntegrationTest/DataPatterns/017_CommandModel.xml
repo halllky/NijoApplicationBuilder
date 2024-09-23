@@ -27,10 +27,10 @@
     <!-- <取込ファイル is="file" /> -->
 
     <処理範囲 is="variation">
-      <特定データのみ is="variation-key:1">
+      <特定データのみ is="variation-item:1">
         <従業員 is="ref-to:従業員" />
       </特定データのみ>
-      <全部更新 is="variation-key:2" />
+      <全部更新 is="variation-item:2" />
     </処理範囲>
   </従業員データ一括取り込み>
 </自動テストで作成されたプロジェクト>

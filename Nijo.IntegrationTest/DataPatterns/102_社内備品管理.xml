@@ -37,7 +37,7 @@
     <資産ID is="uuid" />
     <名前 is="word" />
     <種別 is="資産種別" />
-    <履歴 is="array">
+    <履歴 is="children">
       <連番 is="int key" />
       <期間FROM is="date" />
       <期間TO is="date" />

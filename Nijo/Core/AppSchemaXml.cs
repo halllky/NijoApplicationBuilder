@@ -221,15 +221,28 @@ namespace Nijo.Core {
             // ------------------------------------------------
             // 子孫集約用の属性 ここから
 
-            parser.IfExists("section")
+            parser.IfExists("child")
                 .ElementTypeIs(E_XElementType.ChildAggregate, E_Priority.Force)
                 .SetAggregateOption(opt => opt.IsArray, false, E_Priority.Force);
-            parser.IfExists("array")
+            parser.IfExists("children")
                 .ElementTypeIs(E_XElementType.ChildAggregate, E_Priority.Force)
                 .SetAggregateOption(opt => opt.IsArray, true, E_Priority.Force);
 
             parser.IfExists("variation")
                 .ElementTypeIs(E_XElementType.VariationContainer, E_Priority.Force);
+            parser.IfExists("variation-item")
+                .ElementTypeIs(E_XElementType.ChildAggregate, E_Priority.Force)
+                .SetAggregateOption(opt => opt.IsVariationGroupMember, variationKey => new() { GroupName = element.Parent?.Name.LocalName ?? string.Empty, Key = variationKey }, E_Priority.Force);
+
+            // childと同じ。非推奨
+            parser.IfExists("section")
+                .ElementTypeIs(E_XElementType.ChildAggregate, E_Priority.Force)
+                .SetAggregateOption(opt => opt.IsArray, false, E_Priority.Force);
+            // childrenと同じ。非推奨
+            parser.IfExists("array")
+                .ElementTypeIs(E_XElementType.ChildAggregate, E_Priority.Force)
+                .SetAggregateOption(opt => opt.IsArray, true, E_Priority.Force);
+            // variation-itemと同じ。非推奨
             parser.IfExists("variation-key")
                 .ElementTypeIs(E_XElementType.ChildAggregate, E_Priority.Force)
                 .SetAggregateOption(opt => opt.IsVariationGroupMember, variationKey => new() { GroupName = element.Parent?.Name.LocalName ?? string.Empty, Key = variationKey }, E_Priority.Force);

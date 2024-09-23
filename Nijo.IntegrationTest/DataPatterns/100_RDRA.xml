@@ -6,10 +6,10 @@
     <アクターID is="uuid" />
     <アクター名 is="name" />
     <種別 is="variation">
-      <人 is="variation-key:1">
+      <人 is="variation-item:1">
         <自社か社外か is="word" />
       </人>
-      <外部システム is="variation-key:2">
+      <外部システム is="variation-item:2">
       </外部システム>
     </種別>
   </アクター>
@@ -18,7 +18,7 @@
     <ユースケースID is="uuid" />
     <概要 is="sentence name" />
     <主体 is="ref-to:アクター" />
-    <関連機能 is="array">
+    <関連機能 is="children">
       <機能 is="ref-to:機能 key" />
       <メモ is="sentence" />
     </関連機能>
@@ -28,7 +28,7 @@
     <機能ID is="uuid" />
     <機能名 is="name" />
     <参照更新の別 is="E_参照更新" />
-    <非機能要件 is="section">
+    <非機能要件 is="child">
       <レスポンス is="sentence" />
       <セキュリティ is="sentence" />
     </非機能要件>

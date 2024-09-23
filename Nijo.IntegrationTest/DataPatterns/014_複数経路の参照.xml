@@ -5,7 +5,7 @@
     <営業区ID is="uuid" />
     <営業区名 is="name" />
 
-    <部署 is="array">
+    <部署 is="children">
       <部署ID is="uuid" />
       <部署名 is="name" />
     </部署>

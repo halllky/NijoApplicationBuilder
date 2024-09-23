@@ -6,7 +6,7 @@
     <ID is="uuid" />
     <表示名称 is="name" />
     <受注日 is="date" />
-    <明細 is="array">
+    <明細 is="children">
       <連番 is="key int" />
       <商品名 is="word" />
       <数量 is="int" />
@@ -18,7 +18,7 @@
     <表示名称 is="name" />
     <納品日 is="date" />
     <納品数量 is="int" />
-    <備考 is="array">
+    <備考 is="children">
       <備考連番 is="key int" />
       <本文 is="sentence" />
     </備考>

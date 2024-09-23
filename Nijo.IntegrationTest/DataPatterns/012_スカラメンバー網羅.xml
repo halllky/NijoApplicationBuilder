@@ -24,7 +24,7 @@
     <真偽値 is="bool" />
     <列挙体 is="MyEnum" />
 
-    <Children is="array">
+    <Children is="children">
       <!--ID-->
       <ID is="uuid" />
 

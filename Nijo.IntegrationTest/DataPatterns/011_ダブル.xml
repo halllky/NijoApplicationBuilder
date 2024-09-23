@@ -5,48 +5,48 @@
     <ID1 is="uuid" />
     <名前1 is="name" />
 
-    <子 is="section">
+    <子 is="child">
       <ID2 is="uuid" />
       <名前2 is="name" />
 
-      <子の子 is="section">
+      <子の子 is="child">
         <ID3 is="uuid" />
         <名前3 is="name" />
       </子の子>
-      <子の子配列 is="array">
+      <子の子配列 is="children">
         <ID4 is="uuid" />
         <名前4 is="name" />
       </子の子配列>
       <子の子バリエーション is="variation" DisplayName="# 子の子バリエーション [(&quot;  &apos;)]" DbName="KONOKKKKKKVARIATTTTTTTTTTTTION">
-        <子の子バリエーションA is="variation-key:1" DisplayName="#子の子バリエーションA [(&quot;  &apos;)]" DbName="KONOKKKKKKVARIATTTTTTTTTTTTION____A">
+        <子の子バリエーションA is="variation-item:1" DisplayName="#子の子バリエーションA [(&quot;  &apos;)]" DbName="KONOKKKKKKVARIATTTTTTTTTTTTION____A">
           <ID5 is="uuid" />
           <名前5 is="name" DisplayName="#名前5 [(&quot;  &apos;)]" />
         </子の子バリエーションA>
-        <子の子バリエーションB is="variation-key:2">
+        <子の子バリエーションB is="variation-item:2">
           <ID6 is="uuid" />
           <名前6 is="name" />
         </子の子バリエーションB>
       </子の子バリエーション>
     </子>
 
-    <子配列 is="array">1
+    <子配列 is="children">1
       <ID7 is="uuid" />
       <名前7 is="name" />
 
-      <子配列の子 is="section">
+      <子配列の子 is="child">
         <ID8 is="uuid" />
         <名前8 is="name" />
       </子配列の子>
-      <子配列の子配列 is="array">
+      <子配列の子配列 is="children">
         <ID9 is="uuid" />
         <名前9 is="name" />
       </子配列の子配列>
       <子配列の子バリエーション is="variation">
-        <子配列の子バリエーションA is="variation-key:1">
+        <子配列の子バリエーションA is="variation-item:1">
           <ID10 is="uuid" />
           <名前10 is="name" DisplayName="#名前10 [(&quot;  &apos;)]" DbName="NAME_10_0_0_0_0_0_0_0_0_0_0_0_0_0_0__________" />
         </子配列の子バリエーションA>
-        <子配列の子バリエーションB is="variation-key:2">
+        <子配列の子バリエーションB is="variation-item:2">
           <ID11 is="uuid" />
           <名前11 is="name" />
         </子配列の子バリエーションB>
@@ -54,48 +54,48 @@
     </子配列>
 
     <子バリエーション is="variation">
-      <子バリエーション種別A is="variation-key:1">
+      <子バリエーション種別A is="variation-item:1">
         <ID12 is="uuid" />
         <名前12 is="name" />
 
-        <子バリエーション種別Aの子 is="section">
+        <子バリエーション種別Aの子 is="child">
           <ID13 is="uuid" />
           <名前13 is="name" />
         </子バリエーション種別Aの子>
-        <子バリエーション種別Aの子配列 is="array">
+        <子バリエーション種別Aの子配列 is="children">
           <ID14 is="uuid" />
           <名前14 is="name" />
         </子バリエーション種別Aの子配列>
         <子バリエーション種別Aの子バリエーション is="variation">
-          <子バリエーション種別Aの子バリエーションA is="variation-key:1">
+          <子バリエーション種別Aの子バリエーションA is="variation-item:1">
             <ID15 is="uuid" />
             <名前15 is="name" />
           </子バリエーション種別Aの子バリエーションA>
-          <子バリエーション種別Aの子バリエーションB is="variation-key:2">
+          <子バリエーション種別Aの子バリエーションB is="variation-item:2">
             <ID16 is="uuid" />
             <名前16 is="name" />
           </子バリエーション種別Aの子バリエーションB>
         </子バリエーション種別Aの子バリエーション>
       </子バリエーション種別A>
 
-      <子バリエーション種別B is="variation-key:2">
+      <子バリエーション種別B is="variation-item:2">
         <ID17 is="uuid" />
         <名前17 is="name" />
 
-        <子バリエーション種別Bの子 is="section">
+        <子バリエーション種別Bの子 is="child">
           <ID18 is="uuid" />
           <名前18 is="name" />
         </子バリエーション種別Bの子>
-        <子バリエーション種別Bの子配列 is="array">
+        <子バリエーション種別Bの子配列 is="children">
           <ID19 is="uuid" />
           <名前19 is="name" />
         </子バリエーション種別Bの子配列>
         <子バリエーション種別Bの子バリエーション is="variation">
-          <子バリエーション種別Bの子バリエーションA is="variation-key:1">
+          <子バリエーション種別Bの子バリエーションA is="variation-item:1">
             <ID20 is="uuid" />
             <名前20 is="name" />
           </子バリエーション種別Bの子バリエーションA>
-          <子バリエーション種別Bの子バリエーションB is="variation-key:2" DisplayName="#子バリエーション種別Bの子バリエーションB [(&quot;  &apos;)]" DbName="VARIATION21">
+          <子バリエーション種別Bの子バリエーションB is="variation-item:2" DisplayName="#子バリエーション種別Bの子バリエーションB [(&quot;  &apos;)]" DbName="VARIATION21">
             <ID21 is="uuid" />
             <名前21 is="name" DisplayName="#名前21 [(&quot;  &apos;)]" DbName="COLUMN21" />
           </子バリエーション種別Bの子バリエーションB>
@@ -115,10 +115,10 @@
     <中継 is="key ref-to:ルートを参照1" />
     <名前201 is="name" />
     <キーでない中継 is="ref-to:ルートを参照1" />
-    <参照2の子配列 is="array">
+    <参照2の子配列 is="children">
       <参照2子配列ID is="uuid" />
       <名前202 is="name" />
-      <参照2の子配列の子配列 is="array">
+      <参照2の子配列の子配列 is="children">
         <参照2子配列子配列ID is="uuid" />
         <名前203 is="name" />
       </参照2の子配列の子配列>

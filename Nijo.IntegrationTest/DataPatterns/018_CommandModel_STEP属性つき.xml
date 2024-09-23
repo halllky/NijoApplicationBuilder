@@ -28,10 +28,10 @@
 
     <これは2画面目です is="step:2">
       <処理範囲 is="variation">
-        <特定データのみ is="variation-key:1">
+        <特定データのみ is="variation-item:1">
           <従業員 is="ref-to:従業員" />
         </特定データのみ>
-        <全部更新 is="variation-key:2" />
+        <全部更新 is="variation-item:2" />
       </処理範囲>
     </これは2画面目です>
   </従業員データ一括取り込み>
