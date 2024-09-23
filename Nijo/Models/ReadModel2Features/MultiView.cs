@@ -100,7 +100,7 @@ namespace Nijo.Models.ReadModel2Features {
                       } = rhfSearchMethods
 
                       // 検索結果
-                      const { {{LoadMethod.LOAD}}, {{LoadMethod.CURRENT_PAGE_ITEMS}} } = AggregateHook.{{loadMethod.ReactHookName}}()
+                      const { {{LoadMethod.LOAD}}, {{LoadMethod.CURRENT_PAGE_ITEMS}} } = AggregateHook.{{loadMethod.ReactHookName}}(true)
 
                       // 検索条件欄の開閉
                       const searchConditionPanelRef = useRef<ImperativePanelHandle>(null)
@@ -114,19 +114,20 @@ namespace Nijo.Models.ReadModel2Features {
                       }, [searchConditionPanelRef])
 
                       // 初期表示時処理
-                      const { search: locationSerach } = useLocation()
+                      const { search: locationSearch } = useLocation()
                       useEffect(() => {
-                        const condition = AggregateType.{{searchCondition.ParseQueryParameter}}(locationSerach)
+                        const condition = AggregateType.{{searchCondition.ParseQueryParameter}}(locationSearch)
                         {{LoadMethod.LOAD}}(condition) // 再検索
                         resetSearchCondition(condition) // 画面上の検索条件欄の表示を更新する
-                      }, [{{LoadMethod.LOAD}}, locationSerach])
+
+                        // URLで検索条件が指定されている場合、わざわざ画面上の検索条件欄に入力することが少ないため、検索条件欄を閉じる
+                        if (locationSearch) searchConditionPanelRef.current?.collapse()
+                      }, [{{LoadMethod.LOAD}}, locationSearch])
 
                       // 再読み込み時処理
+                      const navigateToThis = AggregateHook.{{NavigationHookName}}()
                       const handleReload = useCallback(() => {
-                        const condition = getConditionValues()
-                        {{LoadMethod.LOAD}}(condition) // 再検索
-                        resetSearchCondition(condition) // 画面上の検索条件欄の表示を更新する
-                        searchConditionPanelRef.current?.collapse() // 検索条件欄を閉じる
+                        navigateToThis(getConditionValues()) // 画面まるごと再表示
                       }, [{{LoadMethod.LOAD}}, getConditionValues, resetSearchCondition, searchConditionPanelRef])
 
                       // クリア時処理
