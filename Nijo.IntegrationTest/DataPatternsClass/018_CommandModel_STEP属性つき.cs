@@ -11,15 +11,17 @@ namespace Nijo.IntegrationTest.DataPatternsClass {
         protected override string AppTsxCustomizer() {
             return $$"""
                 {
-                  Into従業員MultiViewHeader: ({ getSelectedItems }) => {
-                    const openCommandDialog = Comps.use従業員データ一括取り込みDialog()
-                    const handleClick = useEvent(() => {
-                      const items = getSelectedItems()
-                      openCommandDialog({ これは最初の画面です: { 取込ファイル: items.map(x => x.values.名前).join(',') } })
-                    })
-                    return (
-                      <Input.IconButton onClick={handleClick}>コマンド</Input.IconButton>
-                    )
+                  従業員MultiView: {
+                    HeaderComponent: ({ getSelectedItems }) => {
+                      const openCommandDialog = Comps.use従業員データ一括取り込みDialog()
+                      const handleClick = useEvent(() => {
+                        const items = getSelectedItems()
+                        openCommandDialog({ これは最初の画面です: { 取込ファイル: items.map(x => x.values.名前).join(',') } })
+                      })
+                      return (
+                        <Input.IconButton onClick={handleClick}>コマンド</Input.IconButton>
+                      )
+                    },
                   },
                   CustomUiComponent: {
                     部署検索条件Dialog: ({ value, onChange, readOnly }) => {
