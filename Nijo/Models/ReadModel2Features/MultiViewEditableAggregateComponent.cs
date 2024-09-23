@@ -270,6 +270,9 @@ namespace Nijo.Models.ReadModel2Features {
                 .Select((a, i) => $"{a}={{{args?.ElementAtOrDefault(i)}}} ")
                 .ToList();
 
+            // アクティブ行が変わったタイミングでコンポーネントごと破棄され再レンダリングされるようにする
+            parameters.Add($"key={{{args?.First()}}} ");
+
             // 詳細欄からフォーカスが外れたタイミングでそのデータの変更有無チェックを行うので
             if (_aggregate.GetEntry().As<Aggregate>() == _aggregate) {
                 parameters.Add($"onBlur={{{MultiViewEditable.HANDLE_BLUR}}}");
