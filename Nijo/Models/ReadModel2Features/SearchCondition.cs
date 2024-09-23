@@ -276,6 +276,13 @@ namespace Nijo.Models.ReadModel2Features {
         internal string RenderVForm2(FormUIRenderingContext context) {
             var builder = new Parts.WebClient.VerticalFormBuilder();
             BuildVForm2(context, builder);
+
+            // 表示件数
+            var take = builder.AddSection("", Parts.WebClient.E_VForm2LabelType.String);
+            take.AddItem(false, "表示件数", Parts.WebClient.E_VForm2LabelType.String, $$"""
+                <Input.Num {...{{context.Register}}(`{{TAKE_TS}}`)} />
+                """);
+
             return builder.RenderAsRoot(
                 context.CodeRenderingContext,
                 "検索条件",
@@ -362,6 +369,7 @@ namespace Nijo.Models.ReadModel2Features {
         internal const string URL_KEYWORD = "k";
         internal const string URL_FILTER = "f";
         internal const string URL_SORT = "s";
+        internal const string URL_TAKE = "t";
 
         internal string RenderParseQueryParameterFunction() {
             return $$"""
@@ -377,6 +385,8 @@ namespace Nijo.Models.ReadModel2Features {
                     searchCondition.{{FILTER_TS}} = JSON.parse(searchParams.get('{{URL_FILTER}}')!)
                   if (searchParams.has('{{URL_SORT}}'))
                     searchCondition.{{SORT_TS}} = JSON.parse(searchParams.get('{{URL_SORT}}')!)
+                  if (searchParams.has('{{URL_TAKE}}'))
+                    searchCondition.take = Number(searchParams.get('{{URL_TAKE}}'))
 
                   return searchCondition
                 }

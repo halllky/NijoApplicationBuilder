@@ -243,6 +243,7 @@ namespace Nijo.Models.ReadModel2Features {
                       searchParams.append('{{SearchCondition.URL_FILTER}}', JSON.stringify(init.{{SearchCondition.FILTER_TS}}))
                       if (init.{{SearchCondition.KEYWORD_TS}}) searchParams.append('{{SearchCondition.URL_KEYWORD}}', init.{{SearchCondition.KEYWORD_TS}})
                       if (init.{{SearchCondition.SORT_TS}}.length > 0) searchParams.append('{{SearchCondition.URL_SORT}}', JSON.stringify(init.{{SearchCondition.SORT_TS}}))
+                      if (init.{{SearchCondition.TAKE_TS}} !== undefined) searchParams.append('{{SearchCondition.URL_TAKE}}', init.{{SearchCondition.TAKE_TS}}.toString())
                     }
 
                     navigate({
