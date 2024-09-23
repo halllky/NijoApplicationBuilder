@@ -147,7 +147,7 @@ namespace Nijo.Models.RefTo {
                 /// </summary>
                 /// <param name="searchConditionFilter">検索条件</param>
                 /// <returns>検索結果</returns>
-                public vitual int {{AppSrvCountMethod}}({{searchCondition.CsFilterClassName}} searchConditionFilter) {
+                public virtual int {{AppSrvCountMethod}}({{searchCondition.CsFilterClassName}} searchConditionFilter) {
                     var searchCondition = new {{searchCondition.CsClassName}}();
                     searchCondition.{{RefSearchCondition.FILTER_CS}} = searchConditionFilter;
 
@@ -222,7 +222,7 @@ namespace Nijo.Models.RefTo {
                 /// <summary>
                 /// <see cref="{{AppSrvLoadMethod}}"/> のフィルタリング処理
                 /// </summary>
-                protected virtual IQueryable<{{dbEntity.ClassName}}> {{APPEND_WHERE_CLAUSE}}(IQueryable<{{dbEntity.ClassName}}> query) {
+                protected virtual IQueryable<{{dbEntity.ClassName}}> {{APPEND_WHERE_CLAUSE}}(IQueryable<{{dbEntity.ClassName}}> query, {{searchCondition.CsClassName}} searchCondition) {
                     #pragma warning disable CS8602 // null 参照の可能性があるものの逆参照です。
                     #pragma warning disable CS8603 // Null 参照戻り値である可能性があります。
                     #pragma warning disable CS8604 // Null 参照引数の可能性があります。
