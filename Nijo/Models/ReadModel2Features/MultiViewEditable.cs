@@ -71,6 +71,12 @@ namespace Nijo.Models.ReadModel2Features {
                     .GetKeys()
                     .OfType<AggregateMember.ValueMember>();
 
+                // 詳細欄を表示するかどうか
+                var showDetailView = _rootAggregate
+                    .EnumerateDescendants()
+                    .Any(agg => agg.IsChildrenMember()
+                             || agg.IsVariationMember());
+
                 return $$"""
                     import React, { useState, useContext, useRef, useMemo, useCallback, useEffect } from 'react'
                     import useEvent from 'react-use-event-hook'
@@ -242,6 +248,7 @@ namespace Nijo.Models.ReadModel2Features {
                               <Input.IconButton onClick={handleRemove} outline mini>削除</Input.IconButton>
                               <Input.IconButton onClick={handleReset} outline mini>リセット</Input.IconButton>
                               <div className="flex-1"></div>
+                    {{If(showDetailView, () => $$"""
                               <div className="flex gap-2 items-center">
                                 <span className="select-none text-sm text-color-7">表示</span>
                                 <div className="flex gap-1 border border-color-4">
@@ -251,6 +258,7 @@ namespace Nijo.Models.ReadModel2Features {
                                 </div>
                               </div>
                               <div className="basis-2"></div>
+                    """)}}
                               <Input.IconButton onClick={handleSave} fill>保存</Input.IconButton>
                             </>}
                           >
@@ -267,6 +275,7 @@ namespace Nijo.Models.ReadModel2Features {
                                   className="h-full"
                                 />
                               </Panel>
+                    {{If(showDetailView, () => $$"""
 
                               <PanelResizeHandle className={resizerCssClass} />
 
@@ -289,6 +298,7 @@ namespace Nijo.Models.ReadModel2Features {
                                   )}
                                 </div>
                               </Panel>
+                    """)}}
                             </PanelGroup>
                           </Layout.PageFrame>
                         </FormProvider>
