@@ -75,12 +75,12 @@ namespace Nijo.Models.RefTo {
                     dispatch(state => state.pushDialog('{{_aggregate.Item.DisplayName.Replace("'", "\\'")}}検索', ({ closeDialog }) => {
 
                       // 検索条件
-                      const [currentPage, dispatchPaging] = useReducer(Util.pagingReducer, { pageIndex: 0 })
                       const rhfSearchMethods = Util.useFormEx<Types.{{searchCondition.TsTypeName}}>({ defaultValues: initialSearchCondition })
                       const {
                         getValues: getConditionValues,
                         registerEx: registerExCondition,
                         reset: resetSearchCondition,
+                        formState: { defaultValues },
                       } = rhfSearchMethods
 
                       // クリア時処理
@@ -89,13 +89,23 @@ namespace Nijo.Models.RefTo {
                       })
 
                       // 検索時処理
-                      const handleReload = useEvent(() => {
-                        const condition = getConditionValues()
+                      const { {{RefSearchMethod.LOAD}}, {{RefSearchMethod.COUNT}}, {{RefSearchMethod.CURRENT_PAGE_ITEMS}} } = Hooks.{{search.ReactHookName}}()
+                      const reload = useEvent((condition: Types.{{searchCondition.TsTypeName}}) => {
+                        resetSearchCondition(condition)
+                        {{RefSearchMethod.COUNT}}(condition.filter).then(setTotalItemCount)
                         {{RefSearchMethod.LOAD}}(condition)
                       })
+                      const handleReload = useEvent(() => {
+                        reload(getConditionValues())
+                      })
 
-                      // 検索結果
-                      const { {{RefSearchMethod.LOAD}}, {{RefSearchMethod.CURRENT_PAGE_ITEMS}} } = Hooks.{{search.ReactHookName}}()
+                      // ページング
+                      const [totalItemCount, setTotalItemCount] = useState(0)
+                      const pagerState = Input.usePager(
+                        defaultValues?.skip,
+                        defaultValues?.take,
+                        totalItemCount,
+                        skip => reload({ ...getConditionValues(), skip }))
 
                       // 1件選択
                       const handleSelectSingle = (item: Types.{{searchResult.TsTypeName}}) => {
@@ -153,12 +163,13 @@ namespace Nijo.Models.RefTo {
                             <PanelResizeHandle className="h-2" />
 
                             {/* 検索結果欄 */}
-                            <Panel>
+                            <Panel className="flex flex-col gap-1">
                               <Layout.DataTable
                                 data={{{RefSearchMethod.CURRENT_PAGE_ITEMS}}}
                                 columns={columnDefs}
-                                className="h-full border border-color-4"
-                              ></Layout.DataTable>
+                                className="flex-1 border border-color-4"
+                              />
+                              <Input.ServerSidePager {...pagerState} className="self-center" />
                             </Panel>
                           </PanelGroup>
 
