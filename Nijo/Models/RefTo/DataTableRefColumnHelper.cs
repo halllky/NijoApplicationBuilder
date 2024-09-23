@@ -33,7 +33,10 @@ namespace Nijo.Models.RefTo {
                 .GetNames()
                 .OfType<AggregateMember.ValueMember>()
                 .Where(vm => !vm.Options.InvisibleInGui);
-            var refColumns = keys.Concat(names).ToArray();
+            var refColumns = keys
+                .Union(names)
+                .OrderBy(vm => vm.Order)
+                .ToArray();
 
             // フォーカス離脱時の検索
             var keysForSearchOnBlur = keys.Select(vm => {
@@ -54,9 +57,14 @@ namespace Nijo.Models.RefTo {
 
             var searchDialog = new SearchDialog(_refEntry, _refEntry);
 
-            var use = $$"""
+            var uses = new List<string>();
+            var deps = new List<string>();
+
+            uses.Add($$"""
                 const { {{RefSearchMethod.LOAD}}: load{{_refEntry.Item.PhysicalName}} } = AggregateHook.{{refSearch.ReactHookName}}(true)
-                """;
+                """);
+            deps.Add($"load{_refEntry.Item.PhysicalName}");
+
             var body = $$"""
                 /** {{_refEntry.Item.DisplayName}}を参照する列 */
                 const {{MethodName}}: {{Parts.WebClient.DataTable.CellType.RETURNS_MANY_COLUMN}}<TRow, AggregateType.{{displayData.TsTypeName}} | undefined> = (header, getValue, setValue, opt) => {
@@ -126,9 +134,9 @@ namespace Nijo.Models.RefTo {
                 """;
 
             return new() {
-                Uses = [use],
+                Uses = uses,
                 Body = body,
-                Deps = [$"load{_refEntry.Item.PhysicalName}"],
+                Deps = deps,
                 FunctionName = MethodName,
             };
         }
