@@ -27,13 +27,20 @@ namespace Nijo.Models.RefTo {
         internal const string CURRENT_PAGE_ITEMS = "currentPageItems";
         internal const string NOW_LOADING = "nowLoading";
         internal const string LOAD = "load";
+        internal const string COUNT = "count";
 
-        internal string Url => $"/{new Controller(_aggregate.Item).SubDomain}/{ControllerAction}";
-        private string ControllerAction => _aggregate.IsRoot()
+        internal string Url => $"/{new Controller(_aggregate.Item).SubDomain}/{ControllerLoadAction}";
+        private string ControllerLoadAction => _aggregate.IsRoot()
             ? $"search-refs"
             : $"search-refs/{_aggregate.Item.PhysicalName}";
+        private string ControllerCountAction => _aggregate.IsRoot()
+            ? $"search-refs-count"
+            : $"search-refs-count/{_aggregate.Item.PhysicalName}";
         private string AppSrvLoadMethod => $"SearchRefs{_aggregate.Item.PhysicalName}";
+        private string AppSrvCountMethod => $"SearchRefsCount{_aggregate.Item.PhysicalName}";
         private string AppSrvBeforeLoadMethod => $"OnBeforeLoadSearchRefs{_aggregate.Item.PhysicalName}";
+
+        private const string APPEND_WHERE_CLAUSE = "AppendWhereClause";
 
         internal string RenderHook(CodeRenderingContext context) {
             var controller = new Controller(_aggregate.GetRoot().Item);
@@ -51,7 +58,7 @@ namespace Nijo.Models.RefTo {
                   const {{LOAD}} = React.useCallback(async (searchCondition: Types.{{searchCondition.TsTypeName}}): Promise<Types.{{searchResult.TsTypeName}}[]> => {
                     setNowLoading(true)
                     try {
-                      const res = await post<Types.{{searchResult.TsTypeName}}[]>(`/{{controller.SubDomain}}/{{ControllerAction}}`, searchCondition)
+                      const res = await post<Types.{{searchResult.TsTypeName}}[]>(`/{{controller.SubDomain}}/{{ControllerLoadAction}}`, searchCondition)
                       if (!res.ok) {
                         dispatchMsg(msg => msg.error('データ読み込みに失敗しました。'))
                         return []
@@ -62,6 +69,15 @@ namespace Nijo.Models.RefTo {
                       setNowLoading(false)
                     }
                   }, [post, dispatchMsg])
+
+                  const {{COUNT}} = React.useCallback(async (searchConditionFilter: Types.{{searchCondition.TsFilterTypeName}}): Promise<number> => {
+                    try {
+                      const res = await post<number>(`/{{controller.SubDomain}}/{{ControllerCountAction}}`, searchConditionFilter)
+                      return res.ok ? res.data : 0
+                    } catch {
+                      return 0
+                    }
+                  }, [post])
 
                   React.useEffect(() => {
                     if (!{{NOW_LOADING}} && !disableAutoLoad) {
@@ -81,6 +97,8 @@ namespace Nijo.Models.RefTo {
                      * どちらか使いやすい方で参照してください。
                      */
                     {{LOAD}},
+                    /** 検索結果件数カウント */
+                    {{COUNT}},
                   }
                 }
                 """;
@@ -90,10 +108,15 @@ namespace Nijo.Models.RefTo {
             var searchCondition = new RefSearchCondition(_aggregate, _refEntry);
 
             return $$"""
-                [HttpPost("{{ControllerAction}}")]
+                [HttpPost("{{ControllerLoadAction}}")]
                 public virtual IActionResult Load{{_aggregate.Item.PhysicalName}}([FromBody] {{searchCondition.CsClassName}} searchCondition) {
                     var searchResult = _applicationService.{{AppSrvLoadMethod}}(searchCondition);
                     return this.JsonContent(searchResult.ToArray());
+                }
+                [HttpPost("{{ControllerCountAction}}")]
+                public virtual IActionResult Count{{_aggregate.Item.PhysicalName}}([FromBody] {{searchCondition.CsFilterClassName}} searchConditionFilter) {
+                    var count = _applicationService.{{AppSrvCountMethod}}(searchConditionFilter);
+                    return this.JsonContent(count);
                 }
                 """;
         }
@@ -120,6 +143,21 @@ namespace Nijo.Models.RefTo {
 
             return $$"""
                 /// <summary>
+                /// {{_aggregate.Item.DisplayName}} が他の集約から参照されるときの検索処理の結果件数を数えます。
+                /// </summary>
+                /// <param name="searchConditionFilter">検索条件</param>
+                /// <returns>検索結果</returns>
+                public vitual int {{AppSrvCountMethod}}({{searchCondition.CsFilterClassName}} searchConditionFilter) {
+                    var searchCondition = new {{searchCondition.CsClassName}}();
+                    searchCondition.{{RefSearchCondition.FILTER_CS}} = searchConditionFilter;
+
+                    var querySource = (IQueryable<{{dbEntity.ClassName}}>)DbContext.{{dbEntity.DbSetName}};
+                    var query = {{APPEND_WHERE_CLAUSE}}(querySource, searchCondition);
+                    var count = query.Count();
+
+                    return count;
+                }
+                /// <summary>
                 /// {{_aggregate.Item.DisplayName}} が他の集約から参照されるときの検索処理
                 /// </summary>
                 /// <param name="searchCondition">検索条件</param>
@@ -129,15 +167,10 @@ namespace Nijo.Models.RefTo {
                     #pragma warning disable CS8603 // Null 参照戻り値である可能性があります。
                     #pragma warning disable CS8604 // Null 参照引数の可能性があります。
 
-                    var query = (IQueryable<{{dbEntity.ClassName}}>)DbContext.{{dbEntity.DbSetName}};
+                    var querySource = (IQueryable<{{dbEntity.ClassName}}>)DbContext.{{dbEntity.DbSetName}};
 
-                {{filterMembers.SelectTextTemplate(m => $$"""
-                    // フィルタリング: {{m.MemberName}}
-                    {{WithIndent(m.Member.Options.MemberType.RenderFilteringStatement(m.Member, "query", "searchCondition", E_SearchConditionObject.RefSearchCondition, E_SearchQueryObject.EFCoreEntity), "    ")}}
-
-                """)}}
-                    // フィルタリング: 任意の処理
-                    query = {{AppSrvBeforeLoadMethod}}(query);
+                    // フィルタリング
+                    var query = {{APPEND_WHERE_CLAUSE}}(querySource, searchCondition);
 
                     // ソート
                     IOrderedQueryable<{{dbEntity.ClassName}}>? sorted = null;
@@ -187,6 +220,28 @@ namespace Nijo.Models.RefTo {
                 }
 
                 /// <summary>
+                /// <see cref="{{AppSrvLoadMethod}}"/> のフィルタリング処理
+                /// </summary>
+                protected virtual IQueryable<{{dbEntity.ClassName}}> {{APPEND_WHERE_CLAUSE}}(IQueryable<{{dbEntity.ClassName}}> query) {
+                    #pragma warning disable CS8602 // null 参照の可能性があるものの逆参照です。
+                    #pragma warning disable CS8603 // Null 参照戻り値である可能性があります。
+                    #pragma warning disable CS8604 // Null 参照引数の可能性があります。
+                {{filterMembers.SelectTextTemplate(m => $$"""
+                    // フィルタリング: {{m.MemberName}}
+                    {{WithIndent(m.Member.Options.MemberType.RenderFilteringStatement(m.Member, "query", "searchCondition", E_SearchConditionObject.RefSearchCondition, E_SearchQueryObject.EFCoreEntity), "    ")}}
+
+                """)}}
+                    // フィルタリング: 任意の処理
+                    query = {{AppSrvBeforeLoadMethod}}(query);
+
+                    return query;
+
+                    #pragma warning restore CS8604 // Null 参照引数の可能性があります。
+                    #pragma warning restore CS8603 // Null 参照戻り値である可能性があります。
+                    #pragma warning restore CS8602 // null 参照の可能性があるものの逆参照です。
+                }
+
+                /// <summary>
                 /// <see cref="{{AppSrvLoadMethod}}"/> のフィルタリング処理の前で実行されるカスタマイズフィルタリング処理
                 /// </summary>
                 /// <param name="query">クエリ</param>
@@ -218,6 +273,29 @@ namespace Nijo.Models.RefTo {
                 .ToArray();
 
             return $$"""
+                /// <summary>
+                /// {{_aggregate.Item.DisplayName}} が他の集約から参照されるときの検索結果カウント
+                /// </summary>
+                public virtual int {{AppSrvCountMethod}}({{refSearchCondition.CsFilterClassName}} refSearchConditionFilter) {
+                    // 通常の一覧検索結果カウント処理を流用する
+                    var searchCondition = new {{searchCondition.CsClassName}} {
+                        Filter = {{WithIndent(RenderFilterConverting(searchCondition).Replace($"refSearchCondition.{RefSearchCondition.FILTER_CS}", "refSearchConditionFilter"), "        ")}},
+                    };
+                    var querySource = {{load.AppSrvCreateQueryMethod}}(searchCondition);
+                    var query = {{LoadMethod.METHOD_NAME_APPEND_WHERE_CLAUSE}}(querySource, searchCondition);
+
+                #pragma warning disable CS8603 // Null 参照戻り値である可能性があります。
+                    var count = query
+                {{_aggregate.EnumerateAncestors().SelectTextTemplate(edge => edge.Terminal.IsChildrenMember() ? $$"""
+                        .SelectMany(e => e.{{edge.Terminal.AsChildRelationMember().MemberName}})
+                """ : $$"""
+                        .Select(e => e.{{edge.Terminal.AsChildRelationMember().MemberName}})
+                """)}}
+                        .Count();
+                #pragma warning restore CS8603 // Null 参照戻り値である可能性があります。
+
+                    return count;
+                }
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}} が他の集約から参照されるときの検索処理
                 /// </summary>

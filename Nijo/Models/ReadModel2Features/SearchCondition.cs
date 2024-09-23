@@ -370,6 +370,7 @@ namespace Nijo.Models.ReadModel2Features {
         internal const string URL_FILTER = "f";
         internal const string URL_SORT = "s";
         internal const string URL_TAKE = "t";
+        internal const string URL_SKIP = "p";
 
         internal string RenderParseQueryParameterFunction() {
             return $$"""
@@ -386,7 +387,9 @@ namespace Nijo.Models.ReadModel2Features {
                   if (searchParams.has('{{URL_SORT}}'))
                     searchCondition.{{SORT_TS}} = JSON.parse(searchParams.get('{{URL_SORT}}')!)
                   if (searchParams.has('{{URL_TAKE}}'))
-                    searchCondition.take = Number(searchParams.get('{{URL_TAKE}}'))
+                    searchCondition.{{TAKE_TS}} = Number(searchParams.get('{{URL_TAKE}}'))
+                  if (searchParams.has('{{URL_SKIP}}'))
+                    searchCondition.{{SKIP_TS}} = Number(searchParams.get('{{URL_SKIP}}'))
 
                   return searchCondition
                 }

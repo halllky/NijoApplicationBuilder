@@ -125,6 +125,12 @@ const AfterLoaded = ({ data }: {
     if (!confirm('選択されている行の変更を元に戻しますか？')) return
   })
 
+  // ページャ
+  const [skip, setSkip] = useState(20)
+  const [pageSize, setPageSize] = useState(20)
+  const [totalItemCount, setTotalItemCount] = useState(42)
+  const pager = Input.usePager(skip, pageSize, totalItemCount, s => console.log(`skip ${s} で再検索！`))
+
   return (
     <FormProvider {...reactHookFormMethods}>
       <Layout.PageFrame
@@ -146,14 +152,15 @@ const AfterLoaded = ({ data }: {
         <PanelGroup direction={singleViewPosition}>
 
           {/* 一覧欄 */}
-          <Panel className="border border-color-4">
+          <Panel className="flex flex-col border border-color-4">
             <Layout.DataTable
               ref={tableRef}
               data={fields2}
               columns={columns}
               onActiveRowChanged={handleActiveRowChanged}
-              className="h-full"
+              className="flex-1"
             />
+            <Input.ServerSidePager {...pager} className="self-center" />
           </Panel>
 
           <PanelResizeHandle className={resizerCssClass} />

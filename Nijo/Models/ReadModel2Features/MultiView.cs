@@ -90,7 +90,6 @@ namespace Nijo.Models.ReadModel2Features {
                       const { get, post } = Util.useHttpRequest()
 
                       // 検索条件
-                      const [currentPage, dispatchPaging] = useReducer(Util.pagingReducer, { pageIndex: 0 })
                       const rhfSearchMethods = Util.useFormEx<AggregateType.{{searchCondition.TsTypeName}}>({ defaultValues: AggregateType.{{searchCondition.CreateNewObjectFnName}}() })
                       const {
                         getValues: getConditionValues,
@@ -100,7 +99,7 @@ namespace Nijo.Models.ReadModel2Features {
                       } = rhfSearchMethods
 
                       // 検索結果
-                      const { {{LoadMethod.LOAD}}, {{LoadMethod.CURRENT_PAGE_ITEMS}} } = AggregateHook.{{loadMethod.ReactHookName}}(true)
+                      const { {{LoadMethod.LOAD}}, {{LoadMethod.COUNT}}, {{LoadMethod.CURRENT_PAGE_ITEMS}} } = AggregateHook.{{loadMethod.ReactHookName}}(true)
 
                       // 検索条件欄の開閉
                       const searchConditionPanelRef = useRef<ImperativePanelHandle>(null)
@@ -113,15 +112,29 @@ namespace Nijo.Models.ReadModel2Features {
                         }
                       }, [searchConditionPanelRef])
 
+                      // ページング
+                      const [totalItemCount, setTotalItemCount] = useState(0)
+                      const paging = Input.usePager(
+                        defaultValues?.skip,
+                        defaultValues?.take,
+                        totalItemCount,
+                        skip => navigateToThis({ ...getConditionValues(), skip }))
+
                       // 初期表示時処理
                       const { search: locationSearch } = useLocation()
-                      useEffect(() => {
+                      const executeLoading = useEvent(async () => {
                         const condition = AggregateType.{{searchCondition.ParseQueryParameter}}(locationSearch)
-                        {{LoadMethod.LOAD}}(condition) // 再検索
                         resetSearchCondition(condition) // 画面上の検索条件欄の表示を更新する
 
                         // URLで検索条件が指定されている場合、わざわざ画面上の検索条件欄に入力することが少ないため、検索条件欄を閉じる
                         if (locationSearch) searchConditionPanelRef.current?.collapse()
+
+                        // 再検索
+                        {{LoadMethod.COUNT}}(condition.{{SearchCondition.FILTER_TS}}).then(setTotalItemCount)
+                        await {{LoadMethod.LOAD}}(condition)
+                      })
+                      useEffect(() => {
+                        executeLoading()
                       }, [{{LoadMethod.LOAD}}, locationSearch])
 
                       // 再読み込み時処理
@@ -209,13 +222,14 @@ namespace Nijo.Models.ReadModel2Features {
                             <PanelResizeHandle className="h-2" />
 
                             {/* 検索結果欄 */}
-                            <Panel>
+                            <Panel className="flex flex-col gap-1">
                               <Layout.DataTable
                                 ref={tableRef}
                                 data={{{LoadMethod.CURRENT_PAGE_ITEMS}}}
                                 columns={columnDefs}
-                                className="h-full border border-color-4"
-                              ></Layout.DataTable>
+                                className="flex-1 border border-color-4"
+                              />
+                              <Input.ServerSidePager {...paging} className="self-center" />
                             </Panel>
                           </PanelGroup>
 
@@ -244,6 +258,7 @@ namespace Nijo.Models.ReadModel2Features {
                       if (init.{{SearchCondition.KEYWORD_TS}}) searchParams.append('{{SearchCondition.URL_KEYWORD}}', init.{{SearchCondition.KEYWORD_TS}})
                       if (init.{{SearchCondition.SORT_TS}}.length > 0) searchParams.append('{{SearchCondition.URL_SORT}}', JSON.stringify(init.{{SearchCondition.SORT_TS}}))
                       if (init.{{SearchCondition.TAKE_TS}} !== undefined) searchParams.append('{{SearchCondition.URL_TAKE}}', init.{{SearchCondition.TAKE_TS}}.toString())
+                      if (init.{{SearchCondition.SKIP_TS}} !== undefined) searchParams.append('{{SearchCondition.URL_SKIP}}', init.{{SearchCondition.SKIP_TS}}.toString())
                     }
 
                     navigate({
