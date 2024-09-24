@@ -227,7 +227,8 @@ export const LocalReposChangeListPage = () => {
   )
 }
 const CHANGE_LIST_COLS: Collection.DataTableColumn<LocalRepositoryItemListItem>[] = [
-  { id: 'col0', header: '状態', render: x => x.state, defaultWidthPx: 12, onClipboardCopy: row => row.state },
-  { id: 'col1', header: '種類', render: x => x.dataTypeKey, onClipboardCopy: row => row.dataTypeKey },
-  { id: 'col2', header: '名前', render: x => x.itemName, onClipboardCopy: row => row.itemName },
+  // // 2024-09-24 一時保存機能自体を作り直したいが時間がないのでコメントアウト
+  // { id: 'col0', header: '状態', render: x => x.state, defaultWidthPx: 12, onClipboardCopy: row => row.state },
+  // { id: 'col1', header: '種類', render: x => x.dataTypeKey, onClipboardCopy: row => row.dataTypeKey },
+  // { id: 'col2', header: '名前', render: x => x.itemName, onClipboardCopy: row => row.itemName },
 ]
