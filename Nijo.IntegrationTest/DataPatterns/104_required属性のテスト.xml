@@ -37,7 +37,7 @@
 
   -->
 
-  <課題 Latin="Issue" is="write-model-2 generate-derault-read-model">
+  <課題 Latin="Issue" is="write-model-2 generate-default-read-model">
     <課題番号 is="word key" />
     <概要 is="sentence required" />
     <見積工数D DisplayName="見積工数（人日）" is="numeric required" />
@@ -66,5 +66,20 @@
     <アカウントID is="word key" />
     <アカウント名 is="word name required" />
   </アカウント>
+
+  <課題エクスポート is="command">
+    <対象課題 is="step:1">
+      <課題 is="ref-to:課題 required"/>
+    </対象課題>
+    <オプション is="step:2">
+      <形式 is="課題エクスポート形式 required"/>
+    </オプション>
+  </課題エクスポート>
+
+  <課題エクスポート形式 is="enum">
+    <CSV/>
+    <Excel/>
+    <HTML/>
+  </課題エクスポート形式>
 
 </自動テストで作成されたプロジェクト>

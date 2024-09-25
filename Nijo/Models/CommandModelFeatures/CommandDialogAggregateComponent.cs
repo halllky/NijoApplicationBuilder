@@ -147,11 +147,19 @@ namespace Nijo.Models.CommandModelFeatures {
             };
             foreach (var member in EnumerateRenderedMemberes().OrderBy(m => m.Order)) {
                 if (member is AggregateMember.ValueMember vm) {
-                    formBuilder.AddItem(
-                        vm.Options.WideInVForm,
-                        member.DisplayName,
-                        E_VForm2LabelType.String,
-                        vm.Options.MemberType.RenderSingleViewVFormBody(vm, formContext));
+                    var label = vm.IsRequired
+                        ? $$"""
+                            <VForm2.LabelText>
+                              {{member.DisplayName}}
+                              <Input.RequiredChip />
+                            </VForm2.LabelText>
+                            """
+                        : member.DisplayName;
+                    var labelType = vm.IsRequired
+                        ? E_VForm2LabelType.JsxElement
+                        : E_VForm2LabelType.String;
+
+                    formBuilder.AddItem(vm.Options.WideInVForm, label, labelType, vm.Options.MemberType.RenderSingleViewVFormBody(vm, formContext));
 
                 } else if (member is AggregateMember.RelationMember rel) {
                     var descendant = GetDescendantComponent(rel);
@@ -400,7 +408,12 @@ namespace Nijo.Models.CommandModelFeatures {
                 var label = $$"""
                     <>
                       <div className="inline-flex items-center py-1 gap-2">
-                        <VForm2.LabelText>{{_ref.DisplayName}}</VForm2.LabelText>
+                        <VForm2.LabelText>
+                          {{_ref.DisplayName}}
+                    {{If(_ref.Relation.IsRequired(), () => $$"""
+                          <Input.RequiredChip />
+                    """)}}
+                        </VForm2.LabelText>
                     {{If(!isReadOnly, () => $$"""
                         <Input.IconButton underline mini icon={Icon.MagnifyingGlassIcon} onClick={handleClickSearch}>検索</Input.IconButton>
                     """)}}
@@ -494,7 +507,12 @@ namespace Nijo.Models.CommandModelFeatures {
                 var label = $$"""
                     <>
                       <div className="inline-flex gap-2 py-px justify-start items-center">
-                        <VForm2.LabelText>{{{loopVar}}}</VForm2.LabelText>
+                        <VForm2.LabelText>
+                          {{{loopVar}}}
+                    {{If(_children.Relation.IsRequired(), () => $$"""
+                          <Input.RequiredChip />
+                    """)}}
+                        </VForm2.LabelText>
                     {{If(creatable, () => $$"""
                         <Input.IconButton outline mini icon={Icon.XMarkIcon} onClick={onRemove({{loopVar}})}>削除</Input.IconButton>
                     """)}}
@@ -636,7 +654,12 @@ namespace Nijo.Models.CommandModelFeatures {
                         <VForm2.Item wideLabelValue
                           label={<>
                             <div className="flex items-center gap-2">
-                              <VForm2.LabelText>{{_aggregate.GetParent()?.RelationName}}</VForm2.LabelText>
+                              <VForm2.LabelText>
+                                {{_aggregate.GetParent()?.RelationName}}
+                    {{If(_children.Relation.IsRequired(), () => $$"""
+                                <Input.RequiredChip />
+                    """)}}
+                              </VForm2.LabelText>
                     {{If(editable, () => $$"""
                               <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={onAdd}>追加</Input.IconButton>
                               <Input.IconButton outline mini icon={Icon.XMarkIcon} onClick={onRemove}>削除</Input.IconButton>
