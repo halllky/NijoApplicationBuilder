@@ -627,7 +627,7 @@ namespace Nijo.Models.CommandModelFeatures {
                       }, [dtRef, remove])
 
                     """)}}
-                      const cellType = Layout.{{Parts.WebClient.DataTable.CellType.USE_HELPER}}<Types.{{displayData.TsTypeName}}>()
+                      const cellType = Layout.{{Parts.WebClient.DataTable.CellType.USE_HELPER}}<{{rowType}}>()
                       const columns = useMemo((): Layout.DataTableColumn<{{rowType}}>[] => [
                         {{WithIndent(tableBuilder.RenderColumnDef(context), "    ")}}
                       ], [get, update, setValue{{args.Select(a => $", {a}").Join("")}}, cellType])
