@@ -11,6 +11,7 @@ export const SHOW_LOCAL_REPOSITORY_MENU = true
 
 export type SideMenuItem = {
   url: string
-  text: string
+  text: React.ReactNode
+  icon?: React.ElementType
   children?: SideMenuItem[]
 }
