@@ -71,6 +71,12 @@ namespace Nijo.Parts.WebClient {
                               modifyRoutes?: (defaultRoutes: RouteObject[]) => RouteObject[]
                               /** サイドメニューをカスタマイズします。 */
                               modifySideMenu?: (defaultMenu: SideMenuItem[]) => SideMenuItem[]
+                              /** ログイン画面を使用する場合はここに指定してください。ログイン成功の場合は引数のコンポーネントをそのまま返してください。 */
+                              LoginPage?: (props: {
+                                /** ログイン済みの場合に表示されるコンポーネント */
+                                LoggedInContents: JSX.Element
+                              }) => React.ReactNode
+
                             {{_sourceCode.SelectTextTemplate(source => $$"""
                               {{WithIndent(source, "  ")}}
                             """)}}
