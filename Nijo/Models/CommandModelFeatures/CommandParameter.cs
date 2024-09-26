@@ -21,7 +21,7 @@ namespace Nijo.Models.CommandModelFeatures {
 
         internal string CsClassName => $"{_aggregate.Item.PhysicalName}Parameter{GetUniqueId()}";
         internal string TsTypeName => $"{_aggregate.Item.PhysicalName}Parameter{GetUniqueId()}";
-        internal string MessageDataCsClassName => $"{_aggregate.Item.PhysicalName}ParameterErrorMessages{GetUniqueId()}";
+        internal string MessageDataCsClassName => $"{_aggregate.Item.PhysicalName}ParameterMessages{GetUniqueId()}";
 
         /// <summary>
         /// 異なるコマンドの子孫要素同士で名称衝突するのを防ぐためにフルパスの経路をクラス名に含める

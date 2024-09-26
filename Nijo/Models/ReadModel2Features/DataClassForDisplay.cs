@@ -34,8 +34,8 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>値クラス名</summary>
         internal string ValueCsClassName => $"{CsClassName}Values";
 
-        /// <summary>エラーメッセージ用構造体 C#クラス名</summary>
-        internal string MessageDataCsClassName => $"{CsClassName}ErrorMessages";
+        /// <summary>メッセージ用構造体 C#クラス名</summary>
+        internal string MessageDataCsClassName => $"{CsClassName}Messages";
 
         /// <summary>読み取り専用か否かが格納されるプロパティの名前（C#）</summary>
         internal const string READONLY_CS = "ReadOnly";

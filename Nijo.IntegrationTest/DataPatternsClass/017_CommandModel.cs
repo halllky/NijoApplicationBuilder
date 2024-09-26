@@ -10,7 +10,7 @@ namespace Nijo.IntegrationTest.DataPatternsClass {
 
         protected override string OverridedAppSrvMethods() {
             return $$"""
-                public override ICommandResult Execute従業員データ一括取り込み(従業員データ一括取り込みParameter param, ICommandResultGenerator<従業員データ一括取り込みParameterErrorMessages> result, bool ignoreConfirm) {
+                public override ICommandResult Execute従業員データ一括取り込み(従業員データ一括取り込みParameter param, ICommandResultGenerator<従業員データ一括取り込みParameterMessages> result, bool ignoreConfirm) {
                     if (param.処理範囲 == E_処理範囲.特定データのみ) {
                         if (param.特定データのみ?.従業員?.内部ID == null) {
                             return result.Error("対象の従業員が指定されていません。");
