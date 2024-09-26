@@ -126,7 +126,12 @@ namespace Nijo.Parts.WebServer {
                             ExecuteTransferMessages(_forwardTo);
                         }
                         private void ExecuteTransferMessages({{RECEIVER}}? forwardOfAncestor) {
+                            // このオブジェクトに転送先が指定されている場合はそこへ、
+                            // 指定されていない場合はこのオブジェクトの親へ、エラーメッセージを転送する。
+                            // 親が無い（このオブジェクトがルート要素である）場合は
+                            // 転送を行わずこのオブジェクト内にメッセージを保持しておく（つまり画面上のトップ部分にメッセージが表示される）。
                             var f = _forwardTo ?? forwardOfAncestor;
+
                             if (f != null) {
                                 f._errors.AddRange(_errors);
                                 f._warnings.AddRange(_warnings);
