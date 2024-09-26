@@ -76,7 +76,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     /// コマンド本処理実行時引数。
                     /// 主な役割は処理結果のハンドリングに関する処理。
                     /// </summary>
-                    public interface {{GENERATOR_INTERFACE_NAME}}<TErrors> where TErrors : {{ErrorReceiver.RECEIVER}} {
+                    public interface {{GENERATOR_INTERFACE_NAME}}<TErrors> where TErrors : {{MessageReceiver.RECEIVER}} {
                         /// <summary>
                         /// 処理が成功した旨のみをユーザーに伝えます。
                         /// </summary>
@@ -162,7 +162,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     /// 主な役割は処理結果のハンドリングに関する処理。
                     /// </summary>
                     public sealed partial class {{GENERATOR_WEB_CLASS_NAME}}<TErrors> : {{GENERATOR_INTERFACE_NAME}}<TErrors>
-                        where TErrors : {{ErrorReceiver.RECEIVER}}, new() {
+                        where TErrors : {{MessageReceiver.RECEIVER}}, new() {
                         public {{GENERATOR_WEB_CLASS_NAME}}(ControllerBase controller, {{appSrv.ConcreteClassName}} applicationService) {
                             _controller = controller;
                             _applicationService = applicationService;
@@ -227,7 +227,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     /// 主な役割は処理結果のハンドリングに関する処理。
                     /// </summary>
                     public sealed partial class {{GENERATOR_CLI_CLASS_NAME}}<TErrors> : {{GENERATOR_INTERFACE_NAME}}<TErrors>
-                        where TErrors : {{ErrorReceiver.RECEIVER}} {
+                        where TErrors : {{MessageReceiver.RECEIVER}} {
                         public {{RESULT_INTERFACE_NAME}} Ok<T>(string? text, T detail) {
                             throw new NotImplementedException("TODO #3 未実装");
                         }

@@ -102,13 +102,13 @@ namespace Nijo.Models.WriteModel2Features {
                             ForceCommit = true;
                         }
 
-                        #region エラー
-                        private readonly Dictionary<int, {{ErrorReceiver.RECEIVER}}> _errors = new();
+                        #region メッセージ
+                        private readonly Dictionary<int, {{MessageReceiver.RECEIVER}}> _errors = new();
                         /// <summary>
-                        /// エラーデータの入れ物のインスタンスを、一括更新の引数の配列のインデックスと紐づけて登録します。
-                        /// 「○件目でエラーが発生しました」といったように何番目のデータでエラーが起きたかを表示するのに必要になります。
+                        /// メッセージデータの入れ物のインスタンスを、一括更新の引数の配列のインデックスと紐づけて登録します。
+                        /// 「○件目でエラーが発生しました」といったように何番目のデータでエラーなどが起きたかを表示するのに必要になります。
                         /// </summary>
-                        public void RegisterErrorDataWithIndex(int errorItemIndex, {{ErrorReceiver.RECEIVER}} errorData) {
+                        public void RegisterErrorDataWithIndex(int errorItemIndex, {{MessageReceiver.RECEIVER}} errorData) {
                             _errors[errorItemIndex] = errorData;
                         }
                         public bool HasError() {
@@ -124,7 +124,7 @@ namespace Nijo.Models.WriteModel2Features {
                             }
                             return obj;
                         }
-                        #endregion エラー
+                        #endregion メッセージ
 
                         #region 警告
                         private readonly List<string> _confirms = new();
@@ -139,51 +139,51 @@ namespace Nijo.Models.WriteModel2Features {
                         }
                         #endregion 警告
 
-                        #region エラーメッセージ用ユーティリティ
-                        /// <summary>更新コマンドとエラーメッセージコンテナの紐づけ</summary>
-                        private readonly Dictionary<object, {{ErrorReceiver.RECEIVER}}> _errorMessageContainerDict = new();
+                        #region メッセージ用ユーティリティ
+                        /// <summary>更新コマンドとメッセージコンテナの紐づけ</summary>
+                        private readonly Dictionary<object, {{MessageReceiver.RECEIVER}}> _errorMessageContainerDict = new();
 
                         /// <summary>
-                        /// エラーメッセージの入れ物のオブジェクトを取得します。
+                        /// メッセージの入れ物のオブジェクトを取得します。
                         /// 戻り値のインスタンスは引数のコマンドと紐づけられており、一括更新処理全体を通じて1つに定まります。
                         /// </summary>
-                        public {{ErrorReceiver.RECEIVER}} {{GET_ERR_MSG_CONTAINER}}(object obj) {
+                        public {{MessageReceiver.RECEIVER}} {{GET_ERR_MSG_CONTAINER}}(object obj) {
                             if (!_errorMessageContainerDict.TryGetValue(obj, out var receiver)) {
                                 // 引数のコマンドと対応するエラーメッセージが登録されていない場合はここで作成する
                                 receiver = obj switch {
                     {{saveCommands.SelectTextTemplate(x => $$"""
-                                    {{DataClassForSaveBase.CREATE_COMMAND}}<{{x.CreateCommand.CsClassName}}> => new {{x.CreateCommand.ErrorDataCsClassName}}(),
-                                    {{DataClassForSaveBase.UPDATE_COMMAND}}<{{x.SaveCommand.CsClassName}}> => new {{x.SaveCommand.ErrorDataCsClassName}}(),
-                                    {{DataClassForSaveBase.DELETE_COMMAND}}<{{x.SaveCommand.CsClassName}}> => new {{x.SaveCommand.ErrorDataCsClassName}}(),
+                                    {{DataClassForSaveBase.CREATE_COMMAND}}<{{x.CreateCommand.CsClassName}}> => new {{x.CreateCommand.MessageDataCsClassName}}(),
+                                    {{DataClassForSaveBase.UPDATE_COMMAND}}<{{x.SaveCommand.CsClassName}}> => new {{x.SaveCommand.MessageDataCsClassName}}(),
+                                    {{DataClassForSaveBase.DELETE_COMMAND}}<{{x.SaveCommand.CsClassName}}> => new {{x.SaveCommand.MessageDataCsClassName}}(),
                     """)}}
                     {{displayData.SelectTextTemplate(x => $$"""
                                     {{x.DisplayData.CsClassName}} => new {{x.DisplayData.MessageDataCsClassName}}(),
                     """)}}
-                                    _ => new {{ErrorReceiver.RECEIVER}}(), // この分岐にくることはありえない
+                                    _ => new {{MessageReceiver.RECEIVER}}(), // この分岐にくることはありえない
                                 };
                                 _errorMessageContainerDict[obj] = receiver;
                             }
                             return receiver;
                         }
-                        #endregion エラーメッセージ用ユーティリティ
+                        #endregion メッセージ用ユーティリティ
                     }
 
                     /// <summary>
                     /// 一括更新処理のデータ1件分のコンテキスト引数。エラーメッセージや確認メッセージなどを書きやすくするためのもの。
                     /// </summary>
-                    /// <typeparam name="TError">ユーザーに通知するエラーデータの構造体</typeparam>
-                    public partial class {{BEFORE_SAVE}}<TError> {
-                        public {{BEFORE_SAVE}}({{STATE_CLASS_NAME}} state, TError errors) {
+                    /// <typeparam name="TMessage">ユーザーに通知するメッセージデータの構造体</typeparam>
+                    public partial class {{BEFORE_SAVE}}<TMessage> {
+                        public {{BEFORE_SAVE}}({{STATE_CLASS_NAME}} state, TMessage messages) {
                             _state = state;
-                            Errors = errors;
+                            Messages = messages;
                         }
                         private readonly {{STATE_CLASS_NAME}} _state;
 
                         /// <inheritdoc cref="{{SAVE_OPTIONS}}" />
                         public {{SAVE_OPTIONS}} Options => _state.Options;
 
-                        /// <summary>ユーザーに通知するエラーデータ</summary>
-                        public TError Errors { get; }
+                        /// <summary>ユーザーに通知するメッセージデータ</summary>
+                        public TMessage Messages { get; }
 
                         /// <summary>
                         /// <para>

@@ -167,7 +167,7 @@ namespace Nijo.Models {
             // ユーティリティクラス等
             context.CoreLibrary.UtilDir(dir => {
                 dir.Generate(DataClassForDisplay.RenderBaseClass());
-                dir.Generate(ErrorReceiver.RenderCSharp());
+                dir.Generate(MessageReceiver.RenderCSharp());
                 dir.Generate(ISaveCommandConvertible.Render());
             });
             context.CoreLibrary.Enums.Add(SingleView.RenderSingleViewNavigationEnums());

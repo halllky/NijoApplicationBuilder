@@ -192,41 +192,41 @@ namespace Nijo.Models.WriteModel2Features {
         #endregion 値
 
 
-        #region 更新前イベント（エラーデータ構造体）
+        #region 更新前イベント（エラー、警告、インフォメーションデータ構造体）
         /// <summary>
-        /// エラーメッセージ用構造体 C#型名
+        /// メッセージ用構造体 C#型名
         /// </summary>
-        internal string ErrorDataCsClassName => Type == E_Type.Create
-            ? $"{_aggregate.Item.PhysicalName}CreateCommandErrorData"
-            : $"{_aggregate.Item.PhysicalName}SaveCommandErrorData";
+        internal string MessageDataCsClassName => Type == E_Type.Create
+            ? $"{_aggregate.Item.PhysicalName}CreateCommandMessages"
+            : $"{_aggregate.Item.PhysicalName}SaveCommandMessages";
 
         /// <summary>
-        /// エラーデータ構造体を定義します（C#）
+        /// メッセージ構造体を定義します（C#）
         /// </summary>
-        internal string RenderCSharpErrorStructure(CodeRenderingContext context) {
+        internal string RenderCSharpMessageStructure(CodeRenderingContext context) {
             var members = GetOwnMembers().Select(m => {
                 if (m is AggregateMember.ValueMember || m is AggregateMember.Ref) {
-                    return new { m.MemberName, Type = ErrorReceiver.RECEIVER };
+                    return new { m.MemberName, Type = MessageReceiver.RECEIVER };
                 } else if (m is AggregateMember.Children children) {
                     var descendant = new DataClassForSave(children.ChildrenAggregate, Type);
-                    return new { m.MemberName, Type = $"{ErrorReceiver.RECEIVER_LIST}<{descendant.ErrorDataCsClassName}>" };
+                    return new { m.MemberName, Type = $"{MessageReceiver.RECEIVER_LIST}<{descendant.MessageDataCsClassName}>" };
                 } else {
                     var descendant = new DataClassForSave(((AggregateMember.RelationMember)m).MemberAggregate, Type);
-                    return new { m.MemberName, Type = descendant.ErrorDataCsClassName };
+                    return new { m.MemberName, Type = descendant.MessageDataCsClassName };
                 }
             }).ToArray();
 
             return $$"""
                 /// <summary>
-                /// {{_aggregate.Item.DisplayName}}のエラーデータ
+                /// {{_aggregate.Item.DisplayName}}の画面表示メッセージデータ
                 /// </summary>
-                public partial class {{ErrorDataCsClassName}} : {{ErrorReceiver.RECEIVER}} {
+                public partial class {{MessageDataCsClassName}} : {{MessageReceiver.RECEIVER}} {
                 {{members.SelectTextTemplate(m => $$"""
                     public {{m.Type}} {{m.MemberName}} { get; } = new();
                 """)}}
 
                 {{If(members.Length > 0, () => $$"""
-                    protected override IEnumerable<{{ErrorReceiver.RECEIVER}}> EnumerateChildren() {
+                    protected override IEnumerable<{{MessageReceiver.RECEIVER}}> EnumerateChildren() {
                 {{members.SelectTextTemplate(m => $$"""
                         yield return {{m.MemberName}};
                 """)}}
@@ -234,12 +234,12 @@ namespace Nijo.Models.WriteModel2Features {
                 """)}}
 
                     public override IEnumerable<JsonNode> ToJsonNodes(string? path) {
-                        // このオブジェクト自身に対するエラー
+                        // このオブジェクト自身に対するメッセージ
                         foreach (var node in base.ToJsonNodes(path)) {
                             yield return node;
                         }
 
-                        // 各メンバーに対するエラー
+                        // 各メンバーに対するメッセージ
                         var p = path == null ? string.Empty : $"{path}.";
                 {{members.SelectTextTemplate(m => $$"""
                         foreach (var node in {{m.MemberName}}.ToJsonNodes($"{p}{{m.MemberName}}")) yield return node;
@@ -248,18 +248,18 @@ namespace Nijo.Models.WriteModel2Features {
                 }
                 """;
         }
-        #endregion 更新前イベント（エラーデータ構造体）
+        #endregion 更新前イベント（エラー、警告、インフォメーションデータ構造体）
 
 
         #region 読み取り専用用構造体
         /// <summary>
-        /// エラーメッセージ用構造体 C#クラス名
+        /// 読み取り専用用構造体 C#クラス名
         /// </summary>
         internal string ReadOnlyCsClassName => Type == E_Type.Create
             ? $"{_aggregate.Item.PhysicalName}CreateCommandReadOnlyData"
             : $"{_aggregate.Item.PhysicalName}SaveCommandReadOnlyData";
         /// <summary>
-        /// エラーメッセージ用構造体 TypeScript型名
+        /// 読み取り専用用構造体 TypeScript型名
         /// </summary>
         internal string ReadOnlyTsTypeName => Type == E_Type.Create
             ? $"{_aggregate.Item.PhysicalName}CreateCommandReadOnlyData"
@@ -294,7 +294,7 @@ namespace Nijo.Models.WriteModel2Features {
             }
             return $$"""
                 /// <summary>
-                /// {{_aggregate.Item.DisplayName}}のエラーメッセージ格納用クラス
+                /// {{_aggregate.Item.DisplayName}}の読み取り専用用構造体用クラス
                 /// </summary>
                 public sealed class {{ReadOnlyCsClassName}} {
                     [JsonPropertyName("{{THIS_IS_READONLY_TS}}")]

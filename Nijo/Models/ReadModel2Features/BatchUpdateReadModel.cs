@@ -202,7 +202,7 @@ namespace Nijo.Models.ReadModel2Features {
                     var batchUpdateState = new {{SaveContext.STATE_CLASS_NAME}}(options);
 
                     var converted = new List<{{DataClassForSaveBase.SAVE_COMMAND_BASE}}>();
-                    var errorMessagePairs = new Dictionary<{{ErrorReceiver.RECEIVER}}, {{ErrorReceiver.RECEIVER}}[]>();
+                    var messagePairs = new Dictionary<{{MessageReceiver.RECEIVER}}, {{MessageReceiver.RECEIVER}}[]>();
 
                     // ----------- 画面表示用データから登録更新用データへの変換 -----------
                     var unknownItems = items.ToArray();
@@ -215,9 +215,9 @@ namespace Nijo.Models.ReadModel2Features {
                                 .{{SaveContext.GET_ERR_MSG_CONTAINER}}(item{{j}});
                             var writeModels = {{APPSRV_CONVERT_DISP_TO_SAVE}}(item{{j}}, readModelErrorMessageContainer, batchUpdateState).ToArray();
 
-                            // 一括更新処理後にWriteModel用エラーメッセージコンテナからReadModel用エラーメッセージコンテナに
-                            // エラーメッセージの転送を行うため、エラーメッセージコンテナの紐づきを登録する
-                            errorMessagePairs[readModelErrorMessageContainer] = writeModels
+                            // 一括更新処理後にWriteModel用メッセージコンテナからReadModel用メッセージコンテナに
+                            // メッセージの転送を行うため、メッセージコンテナの紐づきを登録する
+                            messagePairs[readModelErrorMessageContainer] = writeModels
                                 .Select(batchUpdateState.{{SaveContext.GET_ERR_MSG_CONTAINER}})
                                 .ToArray();
 
@@ -246,17 +246,17 @@ namespace Nijo.Models.ReadModel2Features {
                         throw;
                     }
 
-                    // ----------- エラーメッセージの転送 -----------
+                    // ----------- メッセージの転送 -----------
                     // 転送元先プロパティの設定
-                    foreach (var kv in errorMessagePairs) {
+                    foreach (var kv in messagePairs) {
                         var readModel = kv.Key;
                         var writeModels = kv.Value;
 
                         // 既定の転送先はルート要素
                         foreach (var container in writeModels) {
-                            container.{{ErrorReceiver.FORWARD_TO}}(readModel);
+                            container.{{MessageReceiver.FORWARD_TO}}(readModel);
                         }
-                        // エラーメッセージ転送の細かい転送先指定（カスタマイズ処理）
+                        // メッセージ転送の細かい転送先指定（カスタマイズ処理）
                         var mapper = new ErrorMessageMapper(writeModels);
                 {{aggregates.SelectTextTemplate((x, j) => $$"""
                         {{(j == 0 ? "if" : "} else if")}} (readModel is {{x.DisplayData.MessageDataCsClassName}} item{{j}}) {
@@ -267,8 +267,8 @@ namespace Nijo.Models.ReadModel2Features {
                 """)}}
                     }
                     // 上記で設定された転送先への転送を実行する
-                    foreach (var writeModelError in errorMessagePairs.SelectMany(kv => kv.Value)) {
-                        writeModelError.{{ErrorReceiver.EXEC_TRANSFER_MESSAGE}}();
+                    foreach (var writeModelError in messagePairs.SelectMany(kv => kv.Value)) {
+                        writeModelError.{{MessageReceiver.EXEC_TRANSFER_MESSAGE}}();
                     }
 
                     return batchUpdateState;
@@ -279,7 +279,7 @@ namespace Nijo.Models.ReadModel2Features {
                 /// 画面表示用データを登録更新用データに変換します。
                 /// </summary>
                 /// <param name="displayData">画面表示用データ</param>
-                /// <param name="errors">エラーメッセージの入れ物</param>
+                /// <param name="errors">メッセージの入れ物</param>
                 /// <param name="saveContext">コンテキスト引数。警告の送出はこのオブジェクトを通して行なってください。</param>
                 /// <returns>登録更新用データ（複数返却可）</returns>
                 public virtual IEnumerable<{{DataClassForSaveBase.SAVE_COMMAND_BASE}}> {{APPSRV_CONVERT_DISP_TO_SAVE}}({{x.DisplayData.CsClassName}} displayData, {{x.DisplayData.MessageDataCsClassName}} errors, {{SaveContext.STATE_CLASS_NAME}} saveContextState) {

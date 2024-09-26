@@ -260,13 +260,13 @@ namespace Nijo.Models.ReadModel2Features {
             var members = GetOwnMembers().Select(m => new {
                 m.MemberName,
                 RHFName = $"{VALUES_TS}.{m.MemberName}",
-                CsTypeName = ErrorReceiver.RECEIVER,
+                CsTypeName = MessageReceiver.RECEIVER,
                 m.Order,
             }).Concat(GetChildMembers().Select(desc => new {
                 desc.MemberName,
                 RHFName = desc.MemberName,
                 CsTypeName = desc.MemberInfo is AggregateMember.Children children
-                    ? $"{ErrorReceiver.RECEIVER_LIST}<{desc.MessageDataCsClassName}>"
+                    ? $"{MessageReceiver.RECEIVER_LIST}<{desc.MessageDataCsClassName}>"
                     : desc.MessageDataCsClassName,
                 desc.MemberInfo.Order,
             }))
@@ -277,14 +277,14 @@ namespace Nijo.Models.ReadModel2Features {
                 /// <summary>
                 /// {{Aggregate.Item.DisplayName}}の画面表示用データのメッセージ情報格納部分
                 /// </summary>
-                public partial class {{MessageDataCsClassName}} : {{ErrorReceiver.RECEIVER}} {
+                public partial class {{MessageDataCsClassName}} : {{MessageReceiver.RECEIVER}} {
                 {{members.SelectTextTemplate(m => $$"""
                     /// <summary>{{m.MemberName}}についてのメッセージ</summary>
                     public virtual {{m.CsTypeName}} {{m.MemberName}} { get; } = new();
                 """)}}
 
                 {{If(members.Length > 0, () => $$"""
-                    protected override IEnumerable<{{ErrorReceiver.RECEIVER}}> EnumerateChildren() {
+                    protected override IEnumerable<{{MessageReceiver.RECEIVER}}> EnumerateChildren() {
                 {{members.SelectTextTemplate(m => $$"""
                         yield return {{m.MemberName}};
                 """)}}
@@ -323,25 +323,25 @@ namespace Nijo.Models.ReadModel2Features {
 
             return $$"""
                 /// <summary>
-                /// 登録更新処理中で発生したエラーメッセージはWriteModelに対して設定されますが、
+                /// 登録更新処理中で発生したエラーなどのメッセージはWriteModelに対して設定されますが、
                 /// 画面に表示されるデータ型は <see cref="{{MessageDataCsClassName}}"/> のため、
                 /// そのままでは画面のどの項目にエラーメッセージを表示させるべきかが定まりません。
                 /// そのエラーメッセージの項目をマッピングするのがこのメソッドです。
                 ///
                 /// なお、どこにもマッピングされなかったエラーは特定の画面項目に紐づかない画面全体のエラーとして表示されます。
                 /// </summary>
-                public virtual void {{DEFINE_ERR_MSG_MAPPING}}({{MessageDataCsClassName}} displayData, {{ErrorReceiver.ERROR_MESSAGE_MAPPER}} mapper) {
+                public virtual void {{DEFINE_ERR_MSG_MAPPING}}({{MessageDataCsClassName}} displayData, {{MessageReceiver.MESSAGE_OBJECT_MAPPER}} mapper) {
                     // マッピング処理は自動生成されません。
                     // このメソッドをオーバーライドし、以下の例のようにマッピング処理を記述してください。
                     //
-                    // mapper.Map<WriteModelのエラーデータのクラス名>(error => {
-                    //     error.{{ErrorReceiver.FORWARD_TO}}(displayData);
+                    // mapper.Map<WriteModelのメッセージデータのクラス名>(error => {
+                    //     error.{{MessageReceiver.FORWARD_TO}}(displayData);
                 {{If(firstMemberPath != null, () => $$"""
-                    //     error.{{firstMemberPath}}.{{ErrorReceiver.FORWARD_TO}}(displayData.{{firstMemberPath}});
+                    //     error.{{firstMemberPath}}.{{MessageReceiver.FORWARD_TO}}(displayData.{{firstMemberPath}});
                 """)}}
                 {{If(childrenPath != null, () => $$"""
                     //     for (var i = 0; i < error.{{childrenPath}}.Count; i++) {
-                    //         error.{{childrenPath}}[i].{{ErrorReceiver.FORWARD_TO}}(displayData.{{childrenPath}}[i]);
+                    //         error.{{childrenPath}}[i].{{MessageReceiver.FORWARD_TO}}(displayData.{{childrenPath}}[i]);
                     //     }
                 """)}}
                     // });

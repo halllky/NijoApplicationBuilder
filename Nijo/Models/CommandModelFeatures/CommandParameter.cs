@@ -69,15 +69,15 @@ namespace Nijo.Models.CommandModelFeatures {
 
                 return $$"""
                     /// <summary>
-                    /// {{_aggregate.Item.DisplayName}}処理のパラメータ{{(param._aggregate.IsRoot() ? "" : "の一部")}}のエラーメッセージ格納用クラス
+                    /// {{_aggregate.Item.DisplayName}}処理のパラメータ{{(param._aggregate.IsRoot() ? "" : "の一部")}}のメッセージ格納用クラス
                     /// </summary>
-                    public partial class {{param.MessageDataCsClassName}} : {{ErrorReceiver.RECEIVER}} {
+                    public partial class {{param.MessageDataCsClassName}} : {{MessageReceiver.RECEIVER}} {
                     {{members.SelectTextTemplate(m => $$"""
                         public virtual {{m.CsErrorMemberType}} {{m.MemberName}} { get; } = new();
                     """)}}
 
                     {{If(members.Length > 0, () => $$"""
-                        protected override IEnumerable<{{ErrorReceiver.RECEIVER}}> EnumerateChildren() {
+                        protected override IEnumerable<{{MessageReceiver.RECEIVER}}> EnumerateChildren() {
                     {{members.SelectTextTemplate(m => $$"""
                             yield return {{m.MemberName}};
                     """)}}
@@ -156,11 +156,11 @@ namespace Nijo.Models.CommandModelFeatures {
             };
 
             internal string CsErrorMemberType => MemberInfo switch {
-                AggregateMember.ValueMember => ErrorReceiver.RECEIVER,
-                AggregateMember.Children children => $"{ErrorReceiver.RECEIVER_LIST}<{new CommandParameter(children.ChildrenAggregate).MessageDataCsClassName}>",
+                AggregateMember.ValueMember => MessageReceiver.RECEIVER,
+                AggregateMember.Children children => $"{MessageReceiver.RECEIVER_LIST}<{new CommandParameter(children.ChildrenAggregate).MessageDataCsClassName}>",
                 AggregateMember.Child child => new CommandParameter(child.ChildAggregate).MessageDataCsClassName,
                 AggregateMember.VariationItem variation => new CommandParameter(variation.VariationAggregate).MessageDataCsClassName,
-                AggregateMember.Ref => ErrorReceiver.RECEIVER,
+                AggregateMember.Ref => MessageReceiver.RECEIVER,
                 _ => throw new NotImplementedException(),
             };
 

@@ -8,30 +8,31 @@ using System.Threading.Tasks;
 namespace Nijo.Parts.WebServer {
     /// <summary>
     /// <see cref="Models.ReadModel2"/> においてサーバーからクライアント側に返すエラーメッセージ等のコンテナ。
+    /// ここで設定されたエラー等は React hook form のエラーメッセージのAPIを通して表示されるため、当該APIの仕様の影響を強く受ける。
     /// 
     /// <code>インスタンス.プロパティ名.AddError(メッセージ)</code> のように直感的に書ける、
     /// 無駄なペイロードを避けるためにメッセージが無いときはJSON化されない、といった性質を持つ。
     /// </summary>
-    internal class ErrorReceiver {
-        internal const string RECEIVER = "ErrorReceiver";
+    internal class MessageReceiver {
+        internal const string RECEIVER = "MessageReceiver";
         internal const string FORWARD_TO = "ForwardTo";
         internal const string EXEC_TRANSFER_MESSAGE = "ExecuteTransferMessages";
 
-        internal const string RECEIVER_LIST = "ErrorReceiverList";
+        internal const string RECEIVER_LIST = "MessageReceiverList";
 
-        internal const string ERROR_MESSAGE_MAPPER = "ErrorMessageMapper";
+        internal const string MESSAGE_OBJECT_MAPPER = "MessageObjectMapper";
 
         /// <summary>
         /// React hook form のsetErrorsの引数の形に準じている
         /// </summary>
-        internal const string CLIENT_TYPE_TS = "[string, { types: { [key: string]: string } }]";
+        internal const string CLIENT_TYPE_TS = "[string, { types: { [key: `ERROR-${number}` | `WARN-${number}` | `INFO-${number}`]: string } }]";
         /// <summary>
         /// React hook form ではルート要素自体へのエラーはこの名前で設定される
         /// </summary>
-        internal const string ERROR_TO_ROOT = "root";
+        internal const string ROOT = "root";
 
         internal static SourceFile RenderCSharp() => new SourceFile {
-            FileName = "ErrorReceiver.cs",
+            FileName = "MessageReceiver.cs",
             RenderContent = context => {
                 return $$"""
                     using System.Collections;
@@ -44,20 +45,34 @@ namespace Nijo.Parts.WebServer {
                     /// エラーメッセージの入れ物
                     /// </summary>
                     public partial class {{RECEIVER}} {
-                        private readonly List<string> _errorMessages = new();
-
+                        private readonly List<string> _errors = new();
+                        private readonly List<string> _warnings = new();
+                        private readonly List<string> _informations = new();
+                    
                         /// <summary>
                         /// エラーメッセージを追加します。
                         /// </summary>
-                        public void Add(string message) {
-                            _errorMessages.Add(message);
+                        public void AddError(string message) {
+                            _errors.Add(message);
+                        }
+                        /// <summary>
+                        /// ワーニングメッセージを追加します。
+                        /// </summary>
+                        public void AddWarn(string message) {
+                            _warnings.Add(message);
+                        }
+                        /// <summary>
+                        /// インフォメーションメッセージを追加します。
+                        /// </summary>
+                        public void AddInfo(string message) {
+                            _informations.Add(message);
                         }
                         /// <summary>
                         /// このオブジェクト内または子孫にエラーが1件以上あるかどうかを返します。
                         /// </summary>
                         public bool HasError() {
                             return EnumerateThisDescendants()
-                                .Any(r => r._errorMessages.Count > 0);
+                                .Any(r => r._errors.Count > 0);
                         }
 
                         /// <summary>
@@ -67,16 +82,22 @@ namespace Nijo.Parts.WebServer {
                         /// </summary>
                         /// <param name="path">React hook form のフィールドパスの記法に従った祖先要素のパス（末尾ピリオドなし）。nullの場合はルート要素であることを示す</param>
                         public virtual IEnumerable<JsonNode> ToJsonNodes(string? path) {
-                            if (_errorMessages.Count == 0) {
+                            if (_errors.Count == 0 && _warnings.Count == 0 && _informations.Count == 0) {
                                 yield break;
                             }
                             var types = new JsonObject();
-                            for (var i = 0; i < _errorMessages.Count; i++) {
-                                types[i.ToString()] = _errorMessages[i];
+                            for (var i = 0; i < _errors.Count; i++) {
+                                types[$"ERROR-{i}"] = _errors[i]; // キーを "ERROR-" で始めるというルールはTypeScript側と合わせる必要がある
+                            }
+                            for (var i = 0; i < _warnings.Count; i++) {
+                                types[$"WARN-{i}"] = _warnings[i]; // キーを "WARN-" で始めるというルールはTypeScript側と合わせる必要がある
+                            }
+                            for (var i = 0; i < _informations.Count; i++) {
+                                types[$"INFO-{i}"] = _informations[i]; // キーを "INFO-" で始めるというルールはTypeScript側と合わせる必要がある
                             }
                             yield return new JsonArray {
-                                path ?? "{{ERROR_TO_ROOT}}",
-                                new JsonObject { ["types"] = types },
+                                path ?? "{{ROOT}}",
+                                new JsonObject { ["types"] = types }, // "types" という名前は React hook form のエラーデータのルール
                             };
                         }
 
@@ -107,7 +128,9 @@ namespace Nijo.Parts.WebServer {
                         private void ExecuteTransferMessages({{RECEIVER}}? forwardOfAncestor) {
                             var f = _forwardTo ?? forwardOfAncestor;
                             if (f != null) {
-                                f._errorMessages.AddRange(_errorMessages);
+                                f._errors.AddRange(_errors);
+                                f._warnings.AddRange(_warnings);
+                                f._informations.AddRange(_informations);
                             }
                             foreach (var child in EnumerateChildren()) {
                                 child.ExecuteTransferMessages(f);
@@ -176,7 +199,7 @@ namespace Nijo.Parts.WebServer {
                                 var item = items[i];
                                 if (item == null) continue;
 
-                                foreach (var node in item.ToJsonNodes($"{path ?? "{{ERROR_TO_ROOT}}"}.{i}")) {
+                                foreach (var node in item.ToJsonNodes($"{path ?? "{{ROOT}}"}.{i}")) {
                                     yield return node;
                                 }
                             }
@@ -187,18 +210,18 @@ namespace Nijo.Parts.WebServer {
                     /// WriteModelで発生したエラーを画面のどこに表示するか（ReadModelのどの項目にマッピングするか）を指定する処理を
                     /// 直感的に書けるようにするためのクラス
                     /// </summary>
-                    public sealed class {{ERROR_MESSAGE_MAPPER}} {
-                        public {{ERROR_MESSAGE_MAPPER}}({{RECEIVER}}[] containers) {
-                            _errorContainers = containers;
+                    public sealed class {{MESSAGE_OBJECT_MAPPER}} {
+                        public {{MESSAGE_OBJECT_MAPPER}}({{RECEIVER}}[] containers) {
+                            _containers = containers;
                         }
-                        private readonly {{RECEIVER}}[] _errorContainers;
+                        private readonly {{RECEIVER}}[] _containers;
 
                         /// <summary>
                         /// WriteModelで発生したエラーを画面のどこに表示するか（ReadModelのどの項目にマッピングするか）を指定する処理を記述してください。
                         /// </summary>
-                        public void Map<TWriteModelError>(Action<TWriteModelError> mapping) where TWriteModelError : {{RECEIVER}} {
-                            foreach (var item in _errorContainers) {
-                                if (item is TWriteModelError casted) {
+                        public void Map<TWriteModelMessage>(Action<TWriteModelMessage> mapping) where TWriteModelMessage : {{RECEIVER}} {
+                            foreach (var item in _containers) {
+                                if (item is TWriteModelMessage casted) {
                                     mapping(casted);
                                 }
                             }

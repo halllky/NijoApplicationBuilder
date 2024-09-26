@@ -51,7 +51,7 @@ namespace Nijo.Models.WriteModel2Features {
                 /// 既存の{{_rootAggregate.Item.DisplayName}}を更新します。
                 /// </summary>
                 public virtual void {{MethodName}}({{argType}} after, {{SaveContext.STATE_CLASS_NAME}} batchUpdateState) {
-                    var errors = ({{dataClass.ErrorDataCsClassName}})batchUpdateState.{{SaveContext.GET_ERR_MSG_CONTAINER}}(after);
+                    var errors = ({{dataClass.MessageDataCsClassName}})batchUpdateState.{{SaveContext.GET_ERR_MSG_CONTAINER}}(after);
 
                     // 更新に必要な項目が空の場合は処理中断
                 {{keys.SelectTextTemplate(k => $$"""
@@ -99,7 +99,7 @@ namespace Nijo.Models.WriteModel2Features {
                     afterDbEntity.{{EFCoreEntity.UPDATE_USER}} = {{ApplicationService.CURRENT_USER}};
 
                     // 更新前処理。入力検証や自動補完項目の設定を行う。
-                    var beforeSaveArgs = new {{SaveContext.BEFORE_SAVE}}<{{dataClass.ErrorDataCsClassName}}>(batchUpdateState, errors);
+                    var beforeSaveArgs = new {{SaveContext.BEFORE_SAVE}}<{{dataClass.MessageDataCsClassName}}>(batchUpdateState, errors);
                     {{BeforeMethodName}}(beforeDbEntity, afterDbEntity, beforeSaveArgs);
 
                     // 一括更新データ全件のうち1件でもエラーやコンファームがある場合は処理中断
@@ -138,7 +138,7 @@ namespace Nijo.Models.WriteModel2Features {
                 /// {{_rootAggregate.Item.DisplayName}}の更新前に実行されます。
                 /// エラーチェック、ワーニング、自動算出項目の設定などを行います。
                 /// </summary>
-                protected virtual void {{BeforeMethodName}}({{efCoreEntity.ClassName}} beforeDbEntity, {{efCoreEntity.ClassName}} afterDbEntity, {{SaveContext.BEFORE_SAVE}}<{{dataClass.ErrorDataCsClassName}}> e) {
+                protected virtual void {{BeforeMethodName}}({{efCoreEntity.ClassName}} beforeDbEntity, {{efCoreEntity.ClassName}} afterDbEntity, {{SaveContext.BEFORE_SAVE}}<{{dataClass.MessageDataCsClassName}}> e) {
                     // このメソッドをオーバーライドしてエラーチェック等を記述してください。
                 }
                 /// <summary>
