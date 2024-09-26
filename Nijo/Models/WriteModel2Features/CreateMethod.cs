@@ -37,7 +37,7 @@ namespace Nijo.Models.WriteModel2Features {
                 /// 新しい{{_rootAggregate.Item.DisplayName}}を作成する情報を受け取って登録します。
                 /// </summary>
                 public virtual void {{MethodName}}({{argType}} command, {{SaveContext.STATE_CLASS_NAME}} batchUpdateState) {
-                    var errors = ({{dataClass.MessageDataCsClassName}})batchUpdateState.{{SaveContext.GET_ERR_MSG_CONTAINER}}(command);
+                    var messages = ({{dataClass.MessageDataCsClassName}})batchUpdateState.{{SaveContext.GET_MSG_CONTAINER}}(command);
 
                     var dbEntity = command.{{DataClassForSaveBase.VALUES_CS}}.{{DataClassForSave.TO_DBENTITY}}();
 
@@ -49,7 +49,7 @@ namespace Nijo.Models.WriteModel2Features {
                     dbEntity.{{EFCoreEntity.UPDATE_USER}} = {{ApplicationService.CURRENT_USER}};
 
                     // 更新前処理。入力検証や自動補完項目の設定を行う。
-                    var beforeSaveArgs = new {{SaveContext.BEFORE_SAVE}}<{{dataClass.MessageDataCsClassName}}>(batchUpdateState, errors);
+                    var beforeSaveArgs = new {{SaveContext.BEFORE_SAVE}}<{{dataClass.MessageDataCsClassName}}>(batchUpdateState, messages);
                     {{BeforeMethodName}}(dbEntity, beforeSaveArgs);
 
                     // 一括更新データ全件のうち1件でもエラーやコンファームがある場合は処理中断
@@ -66,7 +66,7 @@ namespace Nijo.Models.WriteModel2Features {
                         {{appSrv.DbContext}}.SaveChanges();
                     } catch (DbUpdateException ex) {
                         {{appSrv.DbContext}}.Database.CurrentTransaction!.RollbackToSavepoint(SAVE_POINT);
-                        errors.Add(string.Join(Environment.NewLine, ex.GetMessagesRecursively()));
+                        messages.AddError(string.Join(Environment.NewLine, ex.GetMessagesRecursively()));
                         return;
                     }
 
@@ -76,7 +76,7 @@ namespace Nijo.Models.WriteModel2Features {
                         {{AfterMethodName}}(dbEntity, afterSaveEventArgs);
                         {{appSrv.DbContext}}.Database.CurrentTransaction!.ReleaseSavepoint(SAVE_POINT);
                     } catch (Exception ex) {
-                        errors.Add($"更新後処理でエラーが発生しました: {string.Join(Environment.NewLine, ex.GetMessagesRecursively())}");
+                        messages.AddError($"更新後処理でエラーが発生しました: {string.Join(Environment.NewLine, ex.GetMessagesRecursively())}");
                         {{appSrv.DbContext}}.Database.CurrentTransaction!.RollbackToSavepoint(SAVE_POINT);
                     }
                 }

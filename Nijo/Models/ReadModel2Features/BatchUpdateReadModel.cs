@@ -212,13 +212,13 @@ namespace Nijo.Models.ReadModel2Features {
                         if (item is {{x.DisplayData.CsClassName}} item{{j}}) {
                             // ReadModelからWriteModelへ変換
                             var readModelErrorMessageContainer = ({{x.DisplayData.MessageDataCsClassName}})batchUpdateState
-                                .{{SaveContext.GET_ERR_MSG_CONTAINER}}(item{{j}});
+                                .{{SaveContext.GET_MSG_CONTAINER}}(item{{j}});
                             var writeModels = {{APPSRV_CONVERT_DISP_TO_SAVE}}(item{{j}}, readModelErrorMessageContainer, batchUpdateState).ToArray();
 
                             // 一括更新処理後にWriteModel用メッセージコンテナからReadModel用メッセージコンテナに
                             // メッセージの転送を行うため、メッセージコンテナの紐づきを登録する
                             messagePairs[readModelErrorMessageContainer] = writeModels
-                                .Select(batchUpdateState.{{SaveContext.GET_ERR_MSG_CONTAINER}})
+                                .Select(batchUpdateState.{{SaveContext.GET_MSG_CONTAINER}})
                                 .ToArray();
 
                             batchUpdateState.RegisterErrorDataWithIndex(i, readModelErrorMessageContainer);
@@ -227,8 +227,8 @@ namespace Nijo.Models.ReadModel2Features {
                         }
                 """)}}
 
-                        var unknownError = batchUpdateState.{{SaveContext.GET_ERR_MSG_CONTAINER}}(item);
-                        unknownError.Add($"型 '{item?.GetType().FullName}' の登録更新用データへの変換処理が定義されていません。");
+                        var unknownError = batchUpdateState.{{SaveContext.GET_MSG_CONTAINER}}(item);
+                        unknownError.AddError($"型 '{item?.GetType().FullName}' の登録更新用データへの変換処理が定義されていません。");
                     }
 
                     // ----------- 一括更新実行 -----------
@@ -257,7 +257,7 @@ namespace Nijo.Models.ReadModel2Features {
                             container.{{MessageReceiver.FORWARD_TO}}(readModel);
                         }
                         // メッセージ転送の細かい転送先指定（カスタマイズ処理）
-                        var mapper = new ErrorMessageMapper(writeModels);
+                        var mapper = new MessageObjectMapper(writeModels);
                 {{aggregates.SelectTextTemplate((x, j) => $$"""
                         {{(j == 0 ? "if" : "} else if")}} (readModel is {{x.DisplayData.MessageDataCsClassName}} item{{j}}) {
                             {{DataClassForDisplay.DEFINE_ERR_MSG_MAPPING}}(item{{j}}, mapper);
@@ -310,7 +310,7 @@ namespace Nijo.Models.ReadModel2Features {
                     };
                 } else if (saveType == {{DataClassForSaveBase.ADD_MOD_DEL_ENUM_CS}}.MOD) {
                     if (displayData.{{DataClassForDisplay.VERSION_CS}} == null) {
-                        errors.Add("更新対象データの更新前のバージョンが指定されていません。");
+                        errors.AddError("更新対象データの更新前のバージョンが指定されていません。");
                         yield break;
                     }
                     yield return new {{DataClassForSaveBase.UPDATE_COMMAND}}<{{saveCommand.CsClassName}}> {
@@ -319,7 +319,7 @@ namespace Nijo.Models.ReadModel2Features {
                     };
                 } else if (saveType == {{DataClassForSaveBase.ADD_MOD_DEL_ENUM_CS}}.DEL) {
                     if (displayData.{{DataClassForDisplay.VERSION_CS}} == null) {
-                        errors.Add("更新対象データの更新前のバージョンが指定されていません。");
+                        errors.AddError("更新対象データの更新前のバージョンが指定されていません。");
                         yield break;
                     }
                     yield return new {{DataClassForSaveBase.DELETE_COMMAND}}<{{saveCommand.CsClassName}}> {

@@ -175,7 +175,7 @@ namespace Nijo.Models.WriteModel2Features {
                     try {
                         // エラーメッセージの入れ物のオブジェクトを用意する
                         for (var i = 0; i < items.Count; i++) {
-                            var errorContainer = batchUpdateState.{{SaveContext.GET_ERR_MSG_CONTAINER}}(items[i]);
+                            var errorContainer = batchUpdateState.{{SaveContext.GET_MSG_CONTAINER}}(items[i]);
                             batchUpdateState.RegisterErrorDataWithIndex(i, errorContainer);
                         }
 

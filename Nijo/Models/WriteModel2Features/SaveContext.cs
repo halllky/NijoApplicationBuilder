@@ -38,9 +38,9 @@ namespace Nijo.Models.WriteModel2Features {
         /// </summary>
         internal const string AFTER_SAVE_EVENT_ARGS = "AfterSaveEventArgs";
         /// <summary>
-        /// 保存コマンドのインスタンスと紐づいたエラーメッセージの入れ物を返すメソッド
+        /// 保存コマンドのインスタンスと紐づいたメッセージの入れ物を返すメソッド
         /// </summary>
-        internal const string GET_ERR_MSG_CONTAINER = "GetErrorMessageContainer";
+        internal const string GET_MSG_CONTAINER = "GetMessageContainer";
         /// <summary>
         /// 一括更新処理の細かい挙動を呼び出し元で指定できるようにするためのオプション
         /// </summary>
@@ -147,7 +147,7 @@ namespace Nijo.Models.WriteModel2Features {
                         /// メッセージの入れ物のオブジェクトを取得します。
                         /// 戻り値のインスタンスは引数のコマンドと紐づけられており、一括更新処理全体を通じて1つに定まります。
                         /// </summary>
-                        public {{MessageReceiver.RECEIVER}} {{GET_ERR_MSG_CONTAINER}}(object obj) {
+                        public {{MessageReceiver.RECEIVER}} {{GET_MSG_CONTAINER}}(object obj) {
                             if (!_errorMessageContainerDict.TryGetValue(obj, out var receiver)) {
                                 // 引数のコマンドと対応するエラーメッセージが登録されていない場合はここで作成する
                                 receiver = obj switch {

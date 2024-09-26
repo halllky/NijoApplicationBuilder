@@ -192,7 +192,7 @@ namespace Nijo.Models.CommandModelFeatures {
 
                         public {{RESULT_INTERFACE_NAME}} Error(string error) {
                             var errorObject = new TErrors();
-                            errorObject.Add(error);
+                            errorObject.AddError(error);
                             return Error(errorObject);
                         }
                         public {{RESULT_INTERFACE_NAME}} Error(TErrors errors) {
