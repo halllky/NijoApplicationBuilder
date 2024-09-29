@@ -260,7 +260,7 @@ namespace Nijo.Models.WriteModel2Features {
                 """;
 
             static string RenderConstructor(AggregateMember.AggregateMemberBase member) {
-                if (member is AggregateMember.ValueMember) {
+                if (member is AggregateMember.ValueMember || member is AggregateMember.Ref) {
                     return $$"""
                         {{member.MemberName}} = new {{MessageReceiver.RECEIVER_CONCRETE_CLASS}}([.. path, "{{member.MemberName}}"]);
                         """;

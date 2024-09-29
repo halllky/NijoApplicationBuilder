@@ -339,7 +339,7 @@ namespace Nijo.Models.ReadModel2Features {
                 """;
 
             string RenderConstructor(AggregateMember.AggregateMemberBase member) {
-                if (member is AggregateMember.ValueMember) {
+                if (member is AggregateMember.ValueMember || member is AggregateMember.Ref) {
                     return isInGrid ? $$"""
                         {{member.MemberName}} = new {{MessageReceiver.RECEIVER_CONCRETE_CLASS_IN_GRID}}([.. path, "{{VALUES_TS}}", "{{member.MemberName}}"], grid, rowIndex);
                         """ : $$"""
