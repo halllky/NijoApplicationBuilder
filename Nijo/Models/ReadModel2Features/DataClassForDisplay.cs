@@ -587,7 +587,7 @@ namespace Nijo.Models.ReadModel2Features {
                             .Select(vm => vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, instanceAgg));
                         return $$"""
                             {{keyFullpaths.SelectTextTemplate(path => $$"""
-                            if ({{a}}.{{path.Join("?.")}} ?? undefined !== {{b}}.{{path.Join("?.")}} ?? undefined) return false
+                            if (({{a}}.{{path.Join("?.")}} ?? undefined) !== ({{b}}.{{path.Join("?.")}} ?? undefined)) return false
                             """)}}
                             """;
                     } else {
