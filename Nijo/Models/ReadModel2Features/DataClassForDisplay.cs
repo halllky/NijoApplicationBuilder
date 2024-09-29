@@ -365,7 +365,11 @@ namespace Nijo.Models.ReadModel2Features {
                     var desc = new DataClassForDisplayDescendant(children);
                     return $$"""
                         {{member.MemberName}} = new([.. path, "{{member.MemberName}}"], rowIndex => {
+                        {{If(children.ChildrenAggregate.CanDisplayAllMembersAs2DGrid(), () => $$"""
                             return new {{desc.MessageDataCsClassName}}([.. path, "{{member.MemberName}}", rowIndex.ToString()], {{member.MemberName}}!, rowIndex);
+                        """).Else(() => $$"""
+                            return new {{desc.MessageDataCsClassName}}([.. path, "{{member.MemberName}}", rowIndex.ToString()]);
+                        """)}}
                         });
                         """;
 
