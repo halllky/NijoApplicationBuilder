@@ -33,8 +33,8 @@ namespace Nijo.Models.CommandModelFeatures {
                 .ToArray();
 
             var hookArgs = steps.Length == 0
-                ? new[] { "setError" }
-                : new[] { "getValues", "reset", "setError" };
+                ? new[] { "setError", "clearErrors" }
+                : new[] { "getValues", "reset", "setError", "clearErrors" };
 
             return $$"""
                 //#region {{_rootAggregate.Item.DisplayName}}ダイアログ

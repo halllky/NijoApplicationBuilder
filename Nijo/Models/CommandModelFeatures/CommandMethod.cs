@@ -56,15 +56,16 @@ namespace Nijo.Models.CommandModelFeatures {
                 args.Add($"resetData: ReactHookForm.UseFormReset<Types.{param.TsTypeName}>");
             }
             args.Add($"setError: ReactHookForm.UseFormSetError<Types.{param.TsTypeName}>");
+            args.Add($"clearErrors: ReactHookForm.UseFormClearErrors<Types.{param.TsTypeName}>");
 
             return $$"""
                 /** {{_rootAggregate.Item.DisplayName}}処理を呼び出す関数を返します。 */
                 export const {{HookName}} = ({{args.Join(", ")}}) => {
-                  const { executeCommandApi, resultDetail } = {{USE_COMMAND_RESULT_PARSER}}(setError)
+                  const { executeCommandApi, resultDetail } = {{USE_COMMAND_RESULT_PARSER}}(setError, clearErrors)
                 {{If(steps.Length != 0, () => $$"""
                   const [currentStep, setCurrentStep] = React.useState({{steps.First()}}) // 現在表示中のステップの番号
                   const [visitedSteps, setVisitedSteps] = React.useState<number[]>([]) // 一度以上表示したことがあるステップの番号
-                  const callStepChangeEvent = {{USE_STEP_CHAGNE_HOOK}}(resetData, setError, setVisitedSteps)
+                  const callStepChangeEvent = {{USE_STEP_CHAGNE_HOOK}}(resetData, setError, clearErrors, setVisitedSteps)
                   const allSteps = React.useMemo(() => {
                     return [{{steps.Select(s => s.ToString()).Join(", ")}}]
                   }, [])
@@ -128,11 +129,13 @@ namespace Nijo.Models.CommandModelFeatures {
                 export const {{USE_STEP_CHAGNE_HOOK}} = <T extends object>(
                   resetData: ReactHookForm.UseFormReset<T>,
                   setError: ReactHookForm.UseFormSetError<T>,
+                  clearErrors: ReactHookForm.UseFormClearErrors<T>,
                   setVisitedSteps: ((v: number[]) => void)) => {
                   const { postWithHandler } = Util.useHttpRequest()
                   const [, dispatchMsg] = Util.useMsgContext()
 
                   const callStepChangeEvent = useEvent(async (url: string, {{DATA_TS}}: T, {{BEFORE_STEP_TS}}: number | undefined, {{AFTER_STEP_TS}}: number, {{VISITED_STEPS_TS}}: number[], {{IGNORE_CONFIRM_TS}}?: boolean): Promise<boolean> => {
+                    clearErrors()
                     return await postWithHandler(url, { {{DATA_TS}}, {{BEFORE_STEP_TS}}, {{AFTER_STEP_TS}}, {{VISITED_STEPS_TS}}, {{IGNORE_CONFIRM_TS}} }, async response => {
                       if (response.status === 200 /* 成功 */) {
                         // サーバー側で編集された値を画面に反映する
@@ -170,7 +173,7 @@ namespace Nijo.Models.CommandModelFeatures {
                   return callStepChangeEvent
                 }
                 /** コマンドを呼び出し、その処理結果を解釈して画面遷移したりファイルダウンロードを開始したりする */
-                export const {{USE_COMMAND_RESULT_PARSER}} = <T extends object>(setError: ReactHookForm.UseFormSetError<T>) => {
+                export const {{USE_COMMAND_RESULT_PARSER}} = <T extends object>(setError: ReactHookForm.UseFormSetError<T>, clearErrors: ReactHookForm.UseFormClearErrors<T>) => {
                   const navigate = ReactRouter.useNavigate()
                   const { postWithHandler } = Util.useHttpRequest()
                   const [, dispatchToast] = Util.useToastContext()
@@ -184,6 +187,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     /** 処理結果のファイルダウンロード時の既定の名前 */
                     defaultFileName?: string
                   }): Promise<boolean> => {
+                    clearErrors()
                     return await postWithHandler(url, param, async response => {
                       if (response.status === 202 /* Accepted. このリクエストにおいては「～してもよいですか？」の確認メッセージ表示を意味する */) {
                         // 「～してもよいですか？」の確認メッセージ表示
