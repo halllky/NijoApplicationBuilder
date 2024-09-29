@@ -31,21 +31,6 @@ namespace Nijo.Core.AggregateMemberTypes {
             yield return $"className=\"w-20\"";
         }
 
-        public override IGridColumnSetting GetGridColumnEditSetting() {
-            return new TextColumnSetting {
-                GetValueFromRow = (value, formatted) => {
-                    return $$"""
-                        const {{formatted}} = {{value}}?.toString()
-                        """;
-                },
-                SetValueToRow = (value, parsed) => {
-                    return $$"""
-                        const { yyyymm: {{parsed}} } = Util.tryParseAsYearMonthOrEmpty({{value}})
-                        """;
-                },
-            };
-        }
-
         public override string DataTableColumnDefHelperName => "yearMonth";
         public override Parts.WebClient.DataTable.CellType.Helper RenderDataTableColumnDefHelper() {
             var body = $$"""

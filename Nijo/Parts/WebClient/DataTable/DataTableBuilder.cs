@@ -245,23 +245,27 @@ namespace Nijo.Parts.WebClient.DataTable {
                     // readOnly以外のオプションは参照先のどの列にかかるかが不明瞭なので敢えて設定していない
                 }
 
-                return $$"""
-                    {
-                      id: 'col-{{index}}',
-                      header: '{{column.Header}}',
-                      render: {{WithIndent(column.RenderDisplayContents(context, "r", "r"), "  ")}},
-                      onClipboardCopy: {{WithIndent(column.RenderOnClipboardCopy(context), "      ")}},
-                    {{If(column.DefaultWidth != null, () => $$"""
-                      defaultWidthPx: {{column.DefaultWidth}},
-                    """)}}
-                    {{If(!column.EnableResizing, () => $$"""
-                      fixedWidth: true,
-                    """)}}
-                    {{If(column.HeaderGroupName != null, () => $$"""
-                      headerGroupName: '{{column.HeaderGroupName?.Replace("'", "\\'")}}',
-                    """)}}
-                    }
-                    """;
+                if (column is AdhocColumn adhocColumn) {
+                    return $$"""
+                        {
+                          id: 'col-{{index}}',
+                          header: '{{adhocColumn.Header}}',
+                          render: {{WithIndent(adhocColumn.CellContents(context, "r", "r"), "  ")}},
+                          onClipboardCopy: () => '',
+                        {{If(adhocColumn.DefaultWidth != null, () => $$"""
+                          defaultWidthPx: {{adhocColumn.DefaultWidth}},
+                        """)}}
+                        {{If(!adhocColumn.EnableResizing, () => $$"""
+                          fixedWidth: true,
+                        """)}}
+                        {{If(adhocColumn.HeaderGroupName != null, () => $$"""
+                          headerGroupName: '{{adhocColumn.HeaderGroupName?.Replace("'", "\\'")}}',
+                        """)}}
+                        }
+                        """;
+                }
+
+                throw new NotImplementedException();
             }
         }
     }

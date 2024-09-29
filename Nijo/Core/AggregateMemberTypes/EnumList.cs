@@ -22,31 +22,6 @@ namespace Nijo.Core.AggregateMemberTypes {
             return Definition.Items.Select(x => $"'{x.PhysicalName}'").Join(" | ");
         }
 
-        public IGridColumnSetting GetGridColumnEditSetting() {
-            return new ComboboxColumnSetting {
-                OptionItemTypeName = GetTypeScriptTypeName(),
-                Options = $"[{Definition.Items.Select(x => $"'{x.PhysicalName}' as const").Join(", ")}]",
-                EmitValueSelector = $"opt => opt",
-                MatchingKeySelectorFromEmitValue = $"value => value",
-                MatchingKeySelectorFromOption = $"opt => opt",
-                TextSelector = $"opt => opt",
-                OnClipboardCopy = (value, formatted) => $$"""
-                    const {{formatted}} = {{value}} ?? ''
-                    """,
-                OnClipboardPaste = (value, formatted) => $$"""
-                    let {{formatted}}: {{Definition.Items.Select(x => $"'{x.PhysicalName}'").Join(" | ")}} | undefined
-                    {{Definition.Items.SelectTextTemplate((x, i) => $$"""
-                    {{(i == 0 ? "if" : "} else if")}} ({{value}} === '{{x.PhysicalName}}') {
-                      {{formatted}} = '{{x.PhysicalName}}'
-                    """)}}
-                    } else {
-                      {{formatted}} = undefined
-                    }
-                    """,
-            };
-        }
-
-
         private string SearchConditionEnum => $"{Definition.Name}SearchCondition";
         private const string ANY_CHECKED = "AnyChecked";
 

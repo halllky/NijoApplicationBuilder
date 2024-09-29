@@ -16,27 +16,5 @@ namespace Nijo.Parts.WebClient.DataTable {
         public int? DefaultWidth { get; init; }
         public bool EnableResizing { get; init; }
         public required Func<CodeRenderingContext, string, string, string> CellContents { get; init; }
-
-        string IDataTableColumn2.RenderDisplayContents(CodeRenderingContext ctx, string arg, string argRowObject) {
-            return CellContents(ctx, arg, argRowObject);
-        }
-
-        IGridColumnSetting? IDataTableColumn2.GetEditSetting() {
-            return null;
-        }
-        string IDataTableColumn2.RenderGetterOnEditStart(CodeRenderingContext ctx) {
-            throw new NotImplementedException(); // 編集不可のセルでこのメソッドが呼ばれることはない
-        }
-        string IDataTableColumn2.RenderOnClipboardCopy(CodeRenderingContext ctx) {
-            return $$"""
-                () => ''
-                """;
-        }
-        string IDataTableColumn2.RenderOnClipboardPaste(CodeRenderingContext ctx) {
-            throw new NotImplementedException(); // 編集不可のセルでこのメソッドが呼ばれることはない
-        }
-        string IDataTableColumn2.RenderSetterOnEditEnd(CodeRenderingContext ctx) {
-            throw new NotImplementedException(); // 編集不可のセルでこのメソッドが呼ばれることはない
-        }
     }
 }
