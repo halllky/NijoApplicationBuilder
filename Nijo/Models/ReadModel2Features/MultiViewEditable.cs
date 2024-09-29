@@ -81,7 +81,7 @@ namespace Nijo.Models.ReadModel2Features {
                     import React, { useState, useContext, useRef, useMemo, useCallback, useEffect } from 'react'
                     import useEvent from 'react-use-event-hook'
                     import { useLocation } from 'react-router-dom'
-                    import { useFieldArray, FormProvider, useWatch } from 'react-hook-form'
+                    import { useFieldArray, FormProvider, useWatch, UseFormReturn, FieldPath } from 'react-hook-form'
                     import * as Icon from '@heroicons/react/24/outline'
                     import { Panel, PanelGroup, PanelResizeHandle, ImperativePanelHandle } from 'react-resizable-panels'
                     import * as Layout from '../../collection'
@@ -95,23 +95,36 @@ namespace Nijo.Models.ReadModel2Features {
 
                     export default function () {
                       // 画面初期表示時データ読み込み
+                      const [loaded, setLoaded] = useState(false)
                       const { search: locationSerach } = useLocation()
                       const { {{LoadMethod.LOAD}} } = AggregateHook.{{loadMethod.ReactHookName}}(true)
-                      const [data, setData] = React.useState<AggregateType.{{dataClass.TsTypeName}}[]>()
+                      const reactHookFormMethods = Util.useFormEx<{ data: AggregateType.{{dataClass.TsTypeName}}[] }>({})
+                      const { reset, setError, clearErrors } = reactHookFormMethods
                       React.useEffect(() => {
                         if (!locationSerach) return
                         const condition = AggregateType.{{searchCondition.ParseQueryParameter}}(locationSerach)
-                        {{LoadMethod.LOAD}}(condition).then(setData)
+                        {{LoadMethod.LOAD}}(condition).then(data => {
+                          reset({ data })
+                          setLoaded(true)
+                        })
                       }, [locationSerach])
 
                       // 保存時
                       const { batchUpdateReadModels, nowSaving } = AggregateHook.{{BatchUpdateReadModel.HOOK_NAME}}()
                       const navigateToMultiView = AggregateHook.{{multiView.NavigationHookName}}()
                       const handleSave = useEvent(async (updatedData: AggregateType.{{dataClass.TsTypeName}}[]) => {
+                        clearErrors()
                         const batchUpdateArgs = updatedData.map(values => ({ dataType: '{{DataClassForSaveBase.GetEnumValueOf(_rootAggregate)}}' as const, values }))
                         const result = await batchUpdateReadModels(batchUpdateArgs)
                         if (!result.ok) {
-                          // TODO #43 エラーデータのマッピング
+                          if (result.errors) {
+                            setError('root', { types: { 'ERROR-0': 'エラーがあります。' } })
+                            for (const [index, errors] of Object.entries(result.errors)) {
+                              for (const [name, error] of errors) {
+                                setError(`data.${index}.${name}` as FieldPath<{ data: AggregateType.{{dataClass.TsTypeName}}[] }>, error)
+                              }
+                            }
+                          }
                           return
                         }
                         // 更新成功時は一覧検索画面に遷移
@@ -119,8 +132,8 @@ namespace Nijo.Models.ReadModel2Features {
                         navigateToMultiView(condition)
                       })
 
-                      return data ? (
-                        <AfterLoaded data={data} onSave={handleSave} nowSaving={nowSaving} />
+                      return loaded ? (
+                        <AfterLoaded reactHookFormMethods={reactHookFormMethods} onSave={handleSave} nowSaving={nowSaving} />
                       ) : (
                         <div className="relative w-full h-full">
                           <Input.NowLoading />
@@ -128,15 +141,14 @@ namespace Nijo.Models.ReadModel2Features {
                       )
                     }
 
-                    const AfterLoaded = ({ data, onSave, nowSaving }: {
-                      data: AggregateType.{{dataClass.TsTypeName}}[]
+                    const AfterLoaded = ({ reactHookFormMethods, onSave, nowSaving }: {
+                      reactHookFormMethods: UseFormReturn<{ data: AggregateType.{{dataClass.TsTypeName}}[] }>
                       onSave: (value: AggregateType.{{dataClass.TsTypeName}}[]) => void
                       nowSaving: boolean
                     }) => {
                       const tableRef = React.useRef<Layout.DataTableRef<AggregateType.{{dataClass.TsTypeName}}>>(null)
 
                       // 編集中データ
-                      const reactHookFormMethods = Util.useFormEx<{ data: AggregateType.{{dataClass.TsTypeName}}[] }>({ defaultValues: { data } })
                       const { insert, remove, update } = useFieldArray({ name: 'data', control: reactHookFormMethods.control })
                       const fields = useWatch({ name: 'data', control: reactHookFormMethods.control })
 
@@ -184,8 +196,9 @@ namespace Nijo.Models.ReadModel2Features {
 
                       // 値変更チェック
                       const defaultValuesDict: Map<string, AggregateType.{{dataClass.TsTypeName}}> = React.useMemo(() => {
+                        const data = (reactHookFormMethods.formState.defaultValues?.data ?? []) as AggregateType.{{dataClass.TsTypeName}}[]
                         return new Map(data.map(item => [getItemKeyAsString(item), item]))
-                      }, [data])
+                      }, [reactHookFormMethods.formState.defaultValues])
                       const setChangeFlag = useEvent((itemIndex: number) => {
                         const currentValue = reactHookFormMethods.getValues(`data.${itemIndex}`)
                         if (!currentValue) return
@@ -265,14 +278,15 @@ namespace Nijo.Models.ReadModel2Features {
                             <PanelGroup direction={singleViewPosition}>
 
                               {/* 一覧欄 */}
-                              <Panel className="border border-color-4">
+                              <Panel className="flex flex-col border border-color-4">
+                                <Input.FormItemMessage name="root" />
                                 <Layout.DataTable
                                   ref={tableRef}
                                   data={fields}
                                   columns={columnDefs}
                                   onActiveRowChanged={handleActiveRowChanged}
                                   onChangeRow={handleChangeRow}
-                                  className="h-full"
+                                  className="flex-1"
                                 />
                               </Panel>
                     {{If(showDetailView, () => $$"""

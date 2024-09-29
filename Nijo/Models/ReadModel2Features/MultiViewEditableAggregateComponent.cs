@@ -313,7 +313,6 @@ namespace Nijo.Models.ReadModel2Features {
 
                   return (
                     <div onBlur={handleBlur}>
-                      <Input.FormItemMessage name="root" errors={errors} />
                       {{WithIndent(vForm.RenderAsRoot(context, _aggregate.Item.DisplayName, maxDepth, _aggregate.Item.Options.EstimatedLabelWidth), "      ")}}
                     </div>
                   )
