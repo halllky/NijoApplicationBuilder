@@ -84,6 +84,10 @@ namespace Nijo {
                 name: "--mermaid",
                 description: "スキーマ定義をMermaid形式で表示します。");
 
+            var noBuild = new Option<bool>(
+                ["-n", "--no-build"],
+                description: "デバッグ開始時にコード自動生成をせず、アプリケーションの起動のみ行います。");
+
             // コマンド定義
             var create = new Command(name: "create", description: "新しいプロジェクトを作成します。") { verbose, applicationName, keepTempIferror };
             create.SetHandler((verbose, applicationName, keepTempIferror) => {
@@ -110,8 +114,8 @@ namespace Nijo {
             }, verbose, path);
             rootCommand.AddCommand(update);
 
-            var debug = new Command(name: "debug", description: "プロジェクトのデバッグを開始します。") { verbose, path };
-            debug.SetHandler((verbose, path) => {
+            var debug = new Command(name: "debug", description: "プロジェクトのデバッグを開始します。") { verbose, path, noBuild };
+            debug.SetHandler((verbose, path, noBuild) => {
                 var logger = ILoggerExtension.CreateConsoleLogger(verbose);
                 var project = GeneratedProject.Open(path, serviceProvider, logger);
                 var firstLaunch = true;
@@ -121,7 +125,9 @@ namespace Nijo {
 
                     using var launcher = project.CreateLauncher();
                     try {
-                        project.CodeGenerator.GenerateCode();
+                        if (!noBuild) {
+                            project.CodeGenerator.GenerateCode();
+                        }
 
                         launcher.Launch();
                         launcher.WaitForReady();
@@ -153,7 +159,7 @@ namespace Nijo {
                     var input = Console.ReadKey(true);
                     if (input.Key == ConsoleKey.Q) break;
                 }
-            }, verbose, path);
+            }, verbose, path, noBuild);
             rootCommand.AddCommand(debug);
 
             var dump = new Command(
