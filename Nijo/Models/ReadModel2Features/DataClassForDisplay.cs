@@ -295,11 +295,13 @@ namespace Nijo.Models.ReadModel2Features {
                 .Any(agg => agg.IsChildrenMember()
                          && agg.CanDisplayAllMembersAs2DGrid());
 
+            var writeModelInterface = new DataClassForSave(Aggregate, DataClassForSave.E_Type.UpdateOrDelete).MessageDataCsInterfaceName;
+
             string[] implements = [
                 isInGrid
                     ? MessageReceiver.RECEIVER_CONCRETE_CLASS_IN_GRID
                     : MessageReceiver.RECEIVER_ABSTRACT_CLASS ,
-                new DataClassForSave(Aggregate, DataClassForSave.E_Type.UpdateOrDelete).MessageDataCsInterfaceName,
+                writeModelInterface,
             ];
             string[] args = isInGrid
                 ? ["IEnumerable<string> path", $"{MessageReceiver.RECEIVER_ABSTRACT_CLASS} grid", "int rowIndex"]
@@ -310,7 +312,8 @@ namespace Nijo.Models.ReadModel2Features {
 
             return $$"""
                 /// <summary>
-                /// {{Aggregate.Item.DisplayName}}の画面表示用データのメッセージ情報格納部分
+                /// {{Aggregate.Item.DisplayName}}の画面表示用データのメッセージ情報格納部分。
+                /// <see cref="{{writeModelInterface}}"/> の更新処理で発生したエラー等を画面項目にマッピングする。
                 /// </summary>
                 public partial class {{MessageDataCsClassName}} : {{implements.Join(", ")}} {
                     public {{MessageDataCsClassName}}({{args.Join(", ")}}) : base({{@base.Join(", ")}}) {
