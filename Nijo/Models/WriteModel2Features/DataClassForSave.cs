@@ -208,10 +208,10 @@ namespace Nijo.Models.WriteModel2Features {
         internal string RenderCSharpMessageStructure(CodeRenderingContext context) {
             var members = GetOwnMembers().Select(m => {
                 if (m is AggregateMember.ValueMember || m is AggregateMember.Ref) {
-                    return new { MemberInfo = m, m.MemberName, Type = MessageReceiver.RECEIVER_INTERFACE };
+                    return new { MemberInfo = m, m.MemberName, Type = DisplayMessageContainer.INTERFACE };
                 } else if (m is AggregateMember.Children children) {
                     var descendant = new DataClassForSave(children.ChildrenAggregate, Type);
-                    return new { MemberInfo = m, m.MemberName, Type = $"{MessageReceiver.RECEIVER_LIST}<{descendant.MessageDataCsInterfaceName}>" };
+                    return new { MemberInfo = m, m.MemberName, Type = $"{DisplayMessageContainer.CONCRETE_CLASS_LIST}<{descendant.MessageDataCsInterfaceName}>" };
                 } else {
                     var descendant = new DataClassForSave(((AggregateMember.RelationMember)m).MemberAggregate, Type);
                     return new { MemberInfo = m, m.MemberName, Type = descendant.MessageDataCsInterfaceName };
@@ -229,7 +229,7 @@ namespace Nijo.Models.WriteModel2Features {
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}}の更新処理中に発生したメッセージを画面表示するための入れ物
                 /// </summary>
-                public interface {{MessageDataCsInterfaceName}} : {{MessageReceiver.RECEIVER_INTERFACE}} {
+                public interface {{MessageDataCsInterfaceName}} : {{DisplayMessageContainer.INTERFACE}} {
                 {{members.SelectTextTemplate(m => $$"""
                     {{m.Type}} {{m.MemberName}} { get; }
                 """)}}
@@ -237,7 +237,7 @@ namespace Nijo.Models.WriteModel2Features {
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}}の更新処理中に発生したメッセージを画面表示するための入れ物の具象クラス
                 /// </summary>
-                public partial class {{MessageDataCsClassName}} : {{MessageReceiver.RECEIVER_ABSTRACT_CLASS}}, {{MessageDataCsInterfaceName}} {
+                public partial class {{MessageDataCsClassName}} : {{DisplayMessageContainer.ABSTRACT_CLASS}}, {{MessageDataCsInterfaceName}} {
                     public {{MessageDataCsClassName}}({{args.Join(", ")}}) : base({{@base.Join(", ")}}) {
                 {{members.SelectTextTemplate(m => $$"""
                         {{WithIndent(RenderConstructor(m.MemberInfo), "        ")}}
@@ -248,7 +248,7 @@ namespace Nijo.Models.WriteModel2Features {
                     public {{m.Type}} {{m.MemberName}} { get; }
                 """)}}
 
-                    public override IEnumerable<{{MessageReceiver.RECEIVER_INTERFACE}}> EnumerateChildren() {
+                    public override IEnumerable<{{DisplayMessageContainer.INTERFACE}}> EnumerateChildren() {
                 {{If(members.Length == 0, () => $$"""
                         yield break;
                 """)}}
@@ -262,13 +262,13 @@ namespace Nijo.Models.WriteModel2Features {
             static string RenderConstructor(AggregateMember.AggregateMemberBase member) {
                 if (member is AggregateMember.ValueMember || member is AggregateMember.Ref) {
                     return $$"""
-                        {{member.MemberName}} = new {{MessageReceiver.RECEIVER_CONCRETE_CLASS}}([.. path, "{{member.MemberName}}"]);
+                        {{member.MemberName}} = new {{DisplayMessageContainer.CONCRETE_CLASS}}([.. path, "{{member.MemberName}}"]);
                         """;
 
                 } else if (member is AggregateMember.Children children) {
                     var desc = new DataClassForSave(children.ChildrenAggregate, E_Type.UpdateOrDelete);
                     return $$"""
-                        {{member.MemberName}} = new {{MessageReceiver.RECEIVER_LIST}}<{{desc.MessageDataCsInterfaceName}}>([.. path, "{{member.MemberName}}"], i => {
+                        {{member.MemberName}} = new {{DisplayMessageContainer.CONCRETE_CLASS_LIST}}<{{desc.MessageDataCsInterfaceName}}>([.. path, "{{member.MemberName}}"], i => {
                             return new {{desc.MessageDataCsClassName}}([.. path, "{{member.MemberName}}"], i);
                         });
                         """;

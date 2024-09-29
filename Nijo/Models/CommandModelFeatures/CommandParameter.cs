@@ -76,14 +76,14 @@ namespace Nijo.Models.CommandModelFeatures {
                 // このクラスが継承する基底クラスやインターフェース
                 var implements = new List<string>();
                 if (isInGrid) {
-                    implements.Add(MessageReceiver.RECEIVER_CONCRETE_CLASS_IN_GRID);
+                    implements.Add(DisplayMessageContainer.CONCRETE_CLASS_IN_GRID);
                 } else {
-                    implements.Add(MessageReceiver.RECEIVER_ABSTRACT_CLASS);
+                    implements.Add(DisplayMessageContainer.ABSTRACT_CLASS);
                 }
 
                 string[] args;
                 if (isInGrid) {
-                    args = ["IEnumerable<string> path", $"{MessageReceiver.RECEIVER_ABSTRACT_CLASS} grid", "int rowIndex"];
+                    args = ["IEnumerable<string> path", $"{DisplayMessageContainer.ABSTRACT_CLASS} grid", "int rowIndex"];
                 } else if (!param._aggregate.IsRoot()) {
                     args = ["IEnumerable<string> path"];
                 } else {
@@ -113,7 +113,7 @@ namespace Nijo.Models.CommandModelFeatures {
                         public virtual {{m.CsErrorMemberType}} {{m.MemberName}} { get; }
                     """)}}
 
-                        public override IEnumerable<{{MessageReceiver.RECEIVER_INTERFACE}}> EnumerateChildren() {
+                        public override IEnumerable<{{DisplayMessageContainer.INTERFACE}}> EnumerateChildren() {
                     {{If(members.Length == 0, () => $$"""
                             yield break;
                     """)}}
@@ -131,9 +131,9 @@ namespace Nijo.Models.CommandModelFeatures {
 
                     if (member is AggregateMember.ValueMember || member is AggregateMember.Ref) {
                         return isInGrid ? $$"""
-                            {{member.MemberName}} = new {{MessageReceiver.RECEIVER_CONCRETE_CLASS_IN_GRID}}([{{path}}"{{member.MemberName}}"], grid, rowIndex);
+                            {{member.MemberName}} = new {{DisplayMessageContainer.CONCRETE_CLASS_IN_GRID}}([{{path}}"{{member.MemberName}}"], grid, rowIndex);
                             """ : $$"""
-                            {{member.MemberName}} = new {{MessageReceiver.RECEIVER_CONCRETE_CLASS}}([{{path}}"{{member.MemberName}}"]);
+                            {{member.MemberName}} = new {{DisplayMessageContainer.CONCRETE_CLASS}}([{{path}}"{{member.MemberName}}"]);
                             """;
 
                     } else if (member is AggregateMember.Children children) {
@@ -216,11 +216,11 @@ namespace Nijo.Models.CommandModelFeatures {
             };
 
             internal string CsErrorMemberType => MemberInfo switch {
-                AggregateMember.ValueMember => MessageReceiver.RECEIVER_CONCRETE_CLASS,
-                AggregateMember.Children children => $"{MessageReceiver.RECEIVER_LIST}<{new CommandParameter(children.ChildrenAggregate).MessageDataCsClassName}>",
+                AggregateMember.ValueMember => DisplayMessageContainer.CONCRETE_CLASS,
+                AggregateMember.Children children => $"{DisplayMessageContainer.CONCRETE_CLASS_LIST}<{new CommandParameter(children.ChildrenAggregate).MessageDataCsClassName}>",
                 AggregateMember.Child child => new CommandParameter(child.ChildAggregate).MessageDataCsClassName,
                 AggregateMember.VariationItem variation => new CommandParameter(variation.VariationAggregate).MessageDataCsClassName,
-                AggregateMember.Ref => MessageReceiver.RECEIVER_CONCRETE_CLASS,
+                AggregateMember.Ref => DisplayMessageContainer.CONCRETE_CLASS,
                 _ => throw new NotImplementedException(),
             };
 

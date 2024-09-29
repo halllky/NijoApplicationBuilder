@@ -13,12 +13,12 @@ namespace Nijo.Parts.WebServer {
     /// <code>インスタンス.プロパティ名.AddError(メッセージ)</code> のように直感的に書ける、
     /// 無駄なペイロードを避けるためにメッセージが無いときはJSON化されない、といった性質を持つ。
     /// </summary>
-    internal class MessageReceiver {
-        internal const string RECEIVER_INTERFACE = "IDisplayMessageContainer";
-        internal const string RECEIVER_ABSTRACT_CLASS = "DisplayMessageContainerBase";
-        internal const string RECEIVER_CONCRETE_CLASS = "DisplayMessageContainer";
-        internal const string RECEIVER_CONCRETE_CLASS_IN_GRID = "DisplayMessageContainerInGrid";
-        internal const string RECEIVER_LIST = "DisplayMessageContainerList";
+    internal class DisplayMessageContainer {
+        internal const string INTERFACE = "IDisplayMessageContainer";
+        internal const string ABSTRACT_CLASS = "DisplayMessageContainerBase";
+        internal const string CONCRETE_CLASS = "DisplayMessageContainer";
+        internal const string CONCRETE_CLASS_IN_GRID = "DisplayMessageContainerInGrid";
+        internal const string CONCRETE_CLASS_LIST = "DisplayMessageContainerList";
 
         /// <summary>
         /// React hook form のsetErrorsの引数の形に準じている
@@ -42,11 +42,11 @@ namespace Nijo.Parts.WebServer {
                     /// <summary>
                     /// 登録処理などで生じたエラーメッセージなどをHTTPレスポンスとして返すまでの入れ物のインターフェース
                     /// </summary>
-                    public interface {{RECEIVER_INTERFACE}} {
+                    public interface {{INTERFACE}} {
                         void AddError(string message);
                         void AddInfo(string message);
                         void AddWarn(string message);
-                        IEnumerable<{{RECEIVER_INTERFACE}}> EnumerateChildren();
+                        IEnumerable<{{INTERFACE}}> EnumerateChildren();
 
                         bool HasError();
                         bool HasConfirm();
@@ -70,8 +70,8 @@ namespace Nijo.Parts.WebServer {
                     /// <summary>
                     /// 登録処理などで生じたエラーメッセージなどをHTTPレスポンスとして返すまでの入れ物の抽象クラス
                     /// </summary>
-                    public abstract class {{RECEIVER_ABSTRACT_CLASS}} : {{RECEIVER_INTERFACE}} {
-                        public {{RECEIVER_ABSTRACT_CLASS}}(IEnumerable<string> path) {
+                    public abstract class {{ABSTRACT_CLASS}} : {{INTERFACE}} {
+                        public {{ABSTRACT_CLASS}}(IEnumerable<string> path) {
                             _path = path;
                         }
                         private readonly IEnumerable<string> _path;
@@ -118,17 +118,17 @@ namespace Nijo.Parts.WebServer {
                                     new JsonObject { ["types"] = types }, // "types" という名前は React hook form のエラーデータのルール
                                 };
                             }
-                            foreach (var child in EnumerateChildren().OfType<{{RECEIVER_ABSTRACT_CLASS}}>()) {
+                            foreach (var child in EnumerateChildren().OfType<{{ABSTRACT_CLASS}}>()) {
                                 foreach (var msg in child.ToReactHookFormErrors()) {
                                     yield return msg;
                                 }
                             }
                         }
 
-                        public abstract IEnumerable<{{RECEIVER_INTERFACE}}> EnumerateChildren();
+                        public abstract IEnumerable<{{INTERFACE}}> EnumerateChildren();
 
-                        public IEnumerable<{{RECEIVER_ABSTRACT_CLASS}}> EnumerateDescendants() {
-                            foreach (var child in EnumerateChildren().OfType<{{RECEIVER_ABSTRACT_CLASS}}>()) {
+                        public IEnumerable<{{ABSTRACT_CLASS}}> EnumerateDescendants() {
+                            foreach (var child in EnumerateChildren().OfType<{{ABSTRACT_CLASS}}>()) {
                                 yield return child;
 
                                 foreach (var desc in child.EnumerateDescendants()) {
@@ -141,10 +141,10 @@ namespace Nijo.Parts.WebServer {
                     /// <summary>
                     /// 登録処理などで生じたエラーメッセージなどをHTTPレスポンスとして返すまでの入れ物
                     /// </summary>
-                    public class {{RECEIVER_CONCRETE_CLASS}} : {{RECEIVER_ABSTRACT_CLASS}} {
-                        public {{RECEIVER_CONCRETE_CLASS}}(IEnumerable<string> path) : base(path) { }
+                    public class {{CONCRETE_CLASS}} : {{ABSTRACT_CLASS}} {
+                        public {{CONCRETE_CLASS}}(IEnumerable<string> path) : base(path) { }
 
-                        public override IEnumerable<{{RECEIVER_INTERFACE}}> EnumerateChildren() {
+                        public override IEnumerable<{{INTERFACE}}> EnumerateChildren() {
                             yield break;
                         }
                     }
@@ -154,15 +154,15 @@ namespace Nijo.Parts.WebServer {
                     /// グリッドのヘッダと自身のセルの部分の2か所にエラー等のメッセージを表示する必要があるため、
                     /// エラーメッセージが1個追加されるごとにHTTPレスポンスのエラーメッセージのオブジェクトが2個ずつ増えていく。
                     /// </summary>
-                    public class {{RECEIVER_CONCRETE_CLASS_IN_GRID}} : {{RECEIVER_ABSTRACT_CLASS}} {
+                    public class {{CONCRETE_CLASS_IN_GRID}} : {{ABSTRACT_CLASS}} {
                         /// <param name="path">このメンバー自身のパス</param>
                         /// <param name="gridRoot">グリッドに表示されるメッセージの入れ物</param>
                         /// <param name="rowIndex">このオブジェクトがグリッドの何行目か</param>
-                        public {{RECEIVER_CONCRETE_CLASS_IN_GRID}}(IEnumerable<string> path, {{RECEIVER_ABSTRACT_CLASS}} gridRoot, int rowIndex) : base(path) {
+                        public {{CONCRETE_CLASS_IN_GRID}}(IEnumerable<string> path, {{ABSTRACT_CLASS}} gridRoot, int rowIndex) : base(path) {
                             _gridRoot = gridRoot;
                             _rowIndex = rowIndex;
                         }
-                        private readonly {{RECEIVER_ABSTRACT_CLASS}} _gridRoot;
+                        private readonly {{ABSTRACT_CLASS}} _gridRoot;
                         private readonly int _rowIndex;
 
                         public override void AddError(string message) {
@@ -186,8 +186,8 @@ namespace Nijo.Parts.WebServer {
                     /// <summary>
                     /// 登録処理などで生じたエラーメッセージなどをHTTPレスポンスとして返すまでの入れ物の配列
                     /// </summary>
-                    public class {{RECEIVER_LIST}}<T> : {{RECEIVER_ABSTRACT_CLASS}}, IReadOnlyList<T> where T : {{RECEIVER_INTERFACE}} {
-                        public {{RECEIVER_LIST}}(IEnumerable<string> path, Func<int, T> createItem) : base(path) {
+                    public class {{CONCRETE_CLASS_LIST}}<T> : {{ABSTRACT_CLASS}}, IReadOnlyList<T> where T : {{INTERFACE}} {
+                        public {{CONCRETE_CLASS_LIST}}(IEnumerable<string> path, Func<int, T> createItem) : base(path) {
                             _createItem = createItem;
                         }
 
@@ -224,8 +224,8 @@ namespace Nijo.Parts.WebServer {
                             return GetEnumerator();
                         }
 
-                        public override IEnumerable<{{RECEIVER_INTERFACE}}> EnumerateChildren() {
-                            return this.Cast<{{RECEIVER_INTERFACE}}>();
+                        public override IEnumerable<{{INTERFACE}}> EnumerateChildren() {
+                            return this.Cast<{{INTERFACE}}>();
                         }
                     }
                     """;

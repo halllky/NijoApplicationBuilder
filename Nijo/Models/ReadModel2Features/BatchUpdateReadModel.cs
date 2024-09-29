@@ -201,7 +201,7 @@ namespace Nijo.Models.ReadModel2Features {
                 public virtual {{SaveContext.STATE_CLASS_NAME}} {{APPSRV_BATCH_UPDATE}}(IEnumerable<{{DataClassForDisplay.BASE_CLASS_NAME}}> items, {{SaveContext.SAVE_OPTIONS}} options) {
                     var batchUpdateState = new {{SaveContext.STATE_CLASS_NAME}}(options);
 
-                    var converted = new List<({{DataClassForSaveBase.SAVE_COMMAND_BASE}}, {{MessageReceiver.RECEIVER_INTERFACE}})>();
+                    var converted = new List<({{DataClassForSaveBase.SAVE_COMMAND_BASE}}, {{DisplayMessageContainer.INTERFACE}})>();
 
                     // ----------- 画面表示用データから登録更新用データへの変換 -----------
                     var unknownItems = items.ToArray();
@@ -248,7 +248,7 @@ namespace Nijo.Models.ReadModel2Features {
                 /// <param name="errors">メッセージの入れ物</param>
                 /// <param name="saveContext">コンテキスト引数。警告の送出はこのオブジェクトを通して行なってください。</param>
                 /// <returns>登録更新用データ（複数返却可）</returns>
-                public virtual IEnumerable<({{DataClassForSaveBase.SAVE_COMMAND_BASE}}, {{MessageReceiver.RECEIVER_INTERFACE}})> {{APPSRV_CONVERT_DISP_TO_SAVE}}({{x.DisplayData.CsClassName}} displayData, {{x.DisplayData.MessageDataCsClassName}} errors, {{SaveContext.STATE_CLASS_NAME}} saveContextState) {
+                public virtual IEnumerable<({{DataClassForSaveBase.SAVE_COMMAND_BASE}}, {{DisplayMessageContainer.INTERFACE}})> {{APPSRV_CONVERT_DISP_TO_SAVE}}({{x.DisplayData.CsClassName}} displayData, {{x.DisplayData.MessageDataCsClassName}} errors, {{SaveContext.STATE_CLASS_NAME}} saveContextState) {
                 {{If(x.Aggregate.Item.Options.GenerateDefaultReadModel, () => $$"""
                     {{WithIndent(RenderWriteModelDefaultConversion(x.Aggregate), "    ")}}
                 """).Else(() => $$"""

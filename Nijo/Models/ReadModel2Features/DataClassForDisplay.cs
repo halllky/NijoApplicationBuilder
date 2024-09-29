@@ -272,7 +272,7 @@ namespace Nijo.Models.ReadModel2Features {
             var members = GetOwnMembers().Select(m => new {
                 MemberInfo = m,
                 m.MemberName,
-                CsTypeName = MessageReceiver.RECEIVER_INTERFACE,
+                CsTypeName = DisplayMessageContainer.INTERFACE,
                 m.Order,
             }).Concat(GetChildMembers().Select(desc => {
                 // Read/Write が同形の場合は、WriteModelのインターフェースを実装できるようWrite側のインターフェース名で宣言。
@@ -285,7 +285,7 @@ namespace Nijo.Models.ReadModel2Features {
                     MemberInfo = (AggregateMember.AggregateMemberBase)desc.MemberInfo,
                     desc.MemberName,
                     CsTypeName = desc.MemberInfo is AggregateMember.Children children
-                        ? $"{MessageReceiver.RECEIVER_LIST}<{descType}>"
+                        ? $"{DisplayMessageContainer.CONCRETE_CLASS_LIST}<{descType}>"
                         : descType,
                     desc.MemberInfo.Order,
                 };
@@ -305,16 +305,16 @@ namespace Nijo.Models.ReadModel2Features {
             // このクラスが継承する基底クラスやインターフェース
             var implements = new List<string>();
             if (isInGrid) {
-                implements.Add(MessageReceiver.RECEIVER_CONCRETE_CLASS_IN_GRID);
+                implements.Add(DisplayMessageContainer.CONCRETE_CLASS_IN_GRID);
             } else {
-                implements.Add(MessageReceiver.RECEIVER_ABSTRACT_CLASS);
+                implements.Add(DisplayMessageContainer.ABSTRACT_CLASS);
             }
             if (areReadAndWriteSame) {
                 implements.Add(writeModelInterface);
             }
 
             string[] args = isInGrid
-                ? ["IEnumerable<string> path", $"{MessageReceiver.RECEIVER_ABSTRACT_CLASS} grid", "int rowIndex"]
+                ? ["IEnumerable<string> path", $"{DisplayMessageContainer.ABSTRACT_CLASS} grid", "int rowIndex"]
                 : ["IEnumerable<string> path"];
             string[] @base = isInGrid
                 ? ["path, grid, rowIndex"]
@@ -342,7 +342,7 @@ namespace Nijo.Models.ReadModel2Features {
                     public {{m.CsTypeName}} {{m.MemberName}} { get; }
                 """)}}
 
-                    public override IEnumerable<{{MessageReceiver.RECEIVER_INTERFACE}}> EnumerateChildren() {
+                    public override IEnumerable<{{DisplayMessageContainer.INTERFACE}}> EnumerateChildren() {
                 {{If(members.Length == 0, () => $$"""
                         yield break;
                 """)}}
@@ -356,9 +356,9 @@ namespace Nijo.Models.ReadModel2Features {
             string RenderConstructor(AggregateMember.AggregateMemberBase member) {
                 if (member is AggregateMember.ValueMember || member is AggregateMember.Ref) {
                     return isInGrid ? $$"""
-                        {{member.MemberName}} = new {{MessageReceiver.RECEIVER_CONCRETE_CLASS_IN_GRID}}([.. path, "{{VALUES_TS}}", "{{member.MemberName}}"], grid, rowIndex);
+                        {{member.MemberName}} = new {{DisplayMessageContainer.CONCRETE_CLASS_IN_GRID}}([.. path, "{{VALUES_TS}}", "{{member.MemberName}}"], grid, rowIndex);
                         """ : $$"""
-                        {{member.MemberName}} = new {{MessageReceiver.RECEIVER_CONCRETE_CLASS}}([.. path, "{{VALUES_TS}}", "{{member.MemberName}}"]);
+                        {{member.MemberName}} = new {{DisplayMessageContainer.CONCRETE_CLASS}}([.. path, "{{VALUES_TS}}", "{{member.MemberName}}"]);
                         """;
 
                 } else if (member is AggregateMember.Children children) {
@@ -392,7 +392,7 @@ namespace Nijo.Models.ReadModel2Features {
                 /// <summary>
                 /// {{Aggregate.Item.DisplayName}}の画面表示用データのメッセージ情報格納部分
                 /// </summary>
-                public partial class {{MessageDataCsClassName}} : {{MessageReceiver.RECEIVER_ABSTRACT_CLASS}} {
+                public partial class {{MessageDataCsClassName}} : {{DisplayMessageContainer.ABSTRACT_CLASS}} {
                     // このクラスはpartialクラスです。
                     // ソース自動生成で洗い替えられない場所に別ファイルでこのクラスの実装を記述し、必要なメソッド等はそちらで定義してください。
                 }

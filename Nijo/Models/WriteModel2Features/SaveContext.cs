@@ -99,12 +99,12 @@ namespace Nijo.Models.WriteModel2Features {
                         }
 
                         #region メッセージ
-                        private readonly Dictionary<int, {{MessageReceiver.RECEIVER_ABSTRACT_CLASS}}> _errors = new();
+                        private readonly Dictionary<int, {{DisplayMessageContainer.ABSTRACT_CLASS}}> _errors = new();
                         /// <summary>
                         /// メッセージデータの入れ物のインスタンスを、一括更新の引数の配列のインデックスと紐づけて登録します。
                         /// 「○件目でエラーが発生しました」といったように何番目のデータでエラーなどが起きたかを表示するのに必要になります。
                         /// </summary>
-                        public void RegisterErrorDataWithIndex(int errorItemIndex, {{MessageReceiver.RECEIVER_ABSTRACT_CLASS}} errorData) {
+                        public void RegisterErrorDataWithIndex(int errorItemIndex, {{DisplayMessageContainer.ABSTRACT_CLASS}} errorData) {
                             _errors[errorItemIndex] = errorData;
                         }
                         public bool HasError() {

@@ -176,9 +176,9 @@ namespace Nijo.Models.WriteModel2Features {
                     using var tran = DbContext.Database.BeginTransaction();
                     try {
                         // エラーメッセージの入れ物のオブジェクトを用意する
-                        var itemsAndMessages = new List<({{DataClassForSaveBase.SAVE_COMMAND_BASE}}, {{MessageReceiver.RECEIVER_INTERFACE}})>();
+                        var itemsAndMessages = new List<({{DataClassForSaveBase.SAVE_COMMAND_BASE}}, {{DisplayMessageContainer.INTERFACE}})>();
                         for (var i = 0; i < items.Count; i++) {
-                            {{MessageReceiver.RECEIVER_ABSTRACT_CLASS}} errorContainer = items[i] switch {
+                            {{DisplayMessageContainer.ABSTRACT_CLASS}} errorContainer = items[i] switch {
                 {{sortedAggregates.SelectTextTemplate(x => $$"""
                                 {{x.CreateCommand}} or
                                 {{x.UpdateCommand}} or
@@ -210,7 +210,7 @@ namespace Nijo.Models.WriteModel2Features {
                 /// </summary>
                 /// <param name="items">更新データ</param>
                 /// <param name="saveContext">コンテキスト引数。エラーや警告の送出はこのオブジェクトを通して行なってください。</param>
-                private void {{APPSRV_METHOD_PRIVATE}}(IEnumerable<({{DataClassForSaveBase.SAVE_COMMAND_BASE}}, {{MessageReceiver.RECEIVER_INTERFACE}})> itemsAndMessages, {{SaveContext.STATE_CLASS_NAME}} saveContextState) {
+                private void {{APPSRV_METHOD_PRIVATE}}(IEnumerable<({{DataClassForSaveBase.SAVE_COMMAND_BASE}}, {{DisplayMessageContainer.INTERFACE}})> itemsAndMessages, {{SaveContext.STATE_CLASS_NAME}} saveContextState) {
 
                     // パラメータの各要素の型を仕分けてそれぞれの配列に格納する
                 {{sortedAggregates.SelectTextTemplate(agg => $$"""
