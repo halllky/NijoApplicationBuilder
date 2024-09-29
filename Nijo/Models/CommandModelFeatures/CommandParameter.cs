@@ -72,7 +72,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     /// {{_aggregate.Item.DisplayName}}処理のパラメータ{{(param._aggregate.IsRoot() ? "" : "の一部")}}のメッセージ格納用クラス
                     /// </summary>
                     public partial class {{param.MessageDataCsClassName}} : {{MessageReceiver.RECEIVER_ABSTRACT_CLASS}} {
-                        public {{param.MessageDataCsClassName}}(IEnumerable<string> path, Func<string, string>? modifyMessage = null) : base(path, modifyMessage) {
+                        public {{param.MessageDataCsClassName}}(IEnumerable<string> path) : base(path) {
                         }
                     {{members.SelectTextTemplate(m => $$"""
                         public virtual {{m.CsErrorMemberType}} {{m.MemberName}} { get; } = new();

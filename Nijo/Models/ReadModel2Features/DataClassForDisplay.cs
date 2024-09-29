@@ -289,17 +289,31 @@ namespace Nijo.Models.ReadModel2Features {
             .OrderBy(m => m.Order)
             .ToArray();
 
+            // この集約がグリッドで表示される場合はエラーメッセージの表示方法が特殊
+            var isInGrid = Aggregate
+                .EnumerateAncestorsAndThis()
+                .Any(agg => agg.IsChildrenMember()
+                         && agg.CanDisplayAllMembersAs2DGrid());
+
             string[] implements = [
-                MessageReceiver.RECEIVER_ABSTRACT_CLASS,
+                isInGrid
+                    ? MessageReceiver.RECEIVER_CONCRETE_CLASS_IN_GRID
+                    : MessageReceiver.RECEIVER_ABSTRACT_CLASS ,
                 new DataClassForSave(Aggregate, DataClassForSave.E_Type.UpdateOrDelete).MessageDataCsInterfaceName,
             ];
+            string[] args = isInGrid
+                ? ["IEnumerable<string> path", $"{MessageReceiver.RECEIVER_ABSTRACT_CLASS} grid", "int rowIndex"]
+                : ["IEnumerable<string> path"];
+            string[] @base = isInGrid
+                ? ["path, grid, rowIndex"]
+                : ["path"];
 
             return $$"""
                 /// <summary>
                 /// {{Aggregate.Item.DisplayName}}の画面表示用データのメッセージ情報格納部分
                 /// </summary>
                 public partial class {{MessageDataCsClassName}} : {{implements.Join(", ")}} {
-                    public {{MessageDataCsClassName}}(IEnumerable<string> path, Func<string, string>? modifyMessage = null) : base(path, modifyMessage) {
+                    public {{MessageDataCsClassName}}({{args.Join(", ")}}) : base({{@base.Join(", ")}}) {
                 {{members.SelectTextTemplate(m => $$"""
                         {{WithIndent(RenderConstructor(m.MemberInfo), "        ")}}
                 """)}}
@@ -320,9 +334,11 @@ namespace Nijo.Models.ReadModel2Features {
                 }
                 """;
 
-            static string RenderConstructor(AggregateMember.AggregateMemberBase member) {
+            string RenderConstructor(AggregateMember.AggregateMemberBase member) {
                 if (member is AggregateMember.ValueMember) {
-                    return $$"""
+                    return isInGrid ? $$"""
+                        {{member.MemberName}} = new {{MessageReceiver.RECEIVER_CONCRETE_CLASS_IN_GRID}}([.. path, "{{VALUES_TS}}", "{{member.MemberName}}"], grid, rowIndex);
+                        """ : $$"""
                         {{member.MemberName}} = new {{MessageReceiver.RECEIVER_CONCRETE_CLASS}}([.. path, "{{VALUES_TS}}", "{{member.MemberName}}"]);
                         """;
 
@@ -330,8 +346,8 @@ namespace Nijo.Models.ReadModel2Features {
                     var desc = new DataClassForDisplayDescendant(children);
                     var forSave = new DataClassForSave(children.ChildrenAggregate, DataClassForSave.E_Type.UpdateOrDelete);
                     return $$"""
-                        {{member.MemberName}} = new {{MessageReceiver.RECEIVER_LIST}}<{{forSave.MessageDataCsInterfaceName}}>([.. path, "{{member.MemberName}}"], i => {
-                            return new {{desc.MessageDataCsClassName}}([.. path, "{{member.MemberName}}", i.ToString()]);
+                        {{member.MemberName}} = new {{MessageReceiver.RECEIVER_LIST}}<{{forSave.MessageDataCsInterfaceName}}>([.. path, "{{member.MemberName}}"], rowIndex => {
+                            return new {{desc.MessageDataCsClassName}}([.. path, "{{member.MemberName}}", rowIndex.ToString()], {{member.MemberName}}!, rowIndex);
                         });
                         """;
 

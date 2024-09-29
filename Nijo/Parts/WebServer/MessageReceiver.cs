@@ -17,6 +17,7 @@ namespace Nijo.Parts.WebServer {
         internal const string RECEIVER_INTERFACE = "IDisplayMessageContainer";
         internal const string RECEIVER_ABSTRACT_CLASS = "DisplayMessageContainerBase";
         internal const string RECEIVER_CONCRETE_CLASS = "DisplayMessageContainer";
+        internal const string RECEIVER_CONCRETE_CLASS_IN_GRID = "DisplayMessageContainerInGrid";
         internal const string RECEIVER_LIST = "DisplayMessageContainerList";
 
         /// <summary>
@@ -70,25 +71,23 @@ namespace Nijo.Parts.WebServer {
                     /// 登録処理などで生じたエラーメッセージなどをHTTPレスポンスとして返すまでの入れ物の抽象クラス
                     /// </summary>
                     public abstract class {{RECEIVER_ABSTRACT_CLASS}} : {{RECEIVER_INTERFACE}} {
-                        public {{RECEIVER_ABSTRACT_CLASS}}(IEnumerable<string> path, Func<string, string>? modifyMessage = null) {
+                        public {{RECEIVER_ABSTRACT_CLASS}}(IEnumerable<string> path) {
                             _path = path;
-                            _modifyMessage = modifyMessage;
                         }
                         private readonly IEnumerable<string> _path;
-                        private readonly Func<string, string>? _modifyMessage;
 
                         private readonly List<string> _errors = new();
                         private readonly List<string> _warnings = new();
                         private readonly List<string> _informations = new();
 
-                        public void AddError(string message) {
-                            _errors.Add(_modifyMessage?.Invoke(message) ?? message);
+                        public virtual void AddError(string message) {
+                            _errors.Add(message);
                         }
-                        public void AddWarn(string message) {
-                            _warnings.Add(_modifyMessage?.Invoke(message) ?? message);
+                        public virtual void AddWarn(string message) {
+                            _warnings.Add(message);
                         }
-                        public void AddInfo(string message) {
-                            _informations.Add(_modifyMessage?.Invoke(message) ?? message);
+                        public virtual void AddInfo(string message) {
+                            _informations.Add(message);
                         }
 
                         public bool HasError() {
@@ -102,7 +101,7 @@ namespace Nijo.Parts.WebServer {
                             return false;
                         }
 
-                        public IEnumerable<JsonArray> ToReactHookFormErrors() {
+                        public virtual IEnumerable<JsonArray> ToReactHookFormErrors() {
                             if (_errors.Count > 0 || _warnings.Count > 0 || _informations.Count > 0) {
                                 var types = new JsonObject();
                                 for (var i = 0; i < _errors.Count; i++) {
@@ -143,9 +142,43 @@ namespace Nijo.Parts.WebServer {
                     /// 登録処理などで生じたエラーメッセージなどをHTTPレスポンスとして返すまでの入れ物
                     /// </summary>
                     public class {{RECEIVER_CONCRETE_CLASS}} : {{RECEIVER_ABSTRACT_CLASS}} {
-                        public {{RECEIVER_CONCRETE_CLASS}}(IEnumerable<string> path, Func<string, string>? modifyMessage = null) : base(path, modifyMessage) { }
+                        public {{RECEIVER_CONCRETE_CLASS}}(IEnumerable<string> path) : base(path) { }
 
                         public override IEnumerable<{{RECEIVER_INTERFACE}}> EnumerateChildren() {
+                            yield break;
+                        }
+                    }
+
+                    /// <summary>
+                    /// 登録処理などで生じたエラーメッセージなどをHTTPレスポンスとして返すまでの入れ物のうち、グリッドの内部の項目。
+                    /// グリッドのヘッダと自身のセルの部分の2か所にエラー等のメッセージを表示する必要があるため、
+                    /// エラーメッセージが1個追加されるごとにHTTPレスポンスのエラーメッセージのオブジェクトが2個ずつ増えていく。
+                    /// </summary>
+                    public class {{RECEIVER_CONCRETE_CLASS_IN_GRID}} : {{RECEIVER_ABSTRACT_CLASS}} {
+                        /// <param name="path">このメンバー自身のパス</param>
+                        /// <param name="gridRoot">グリッドに表示されるメッセージの入れ物</param>
+                        /// <param name="rowIndex">このオブジェクトがグリッドの何行目か</param>
+                        public {{RECEIVER_CONCRETE_CLASS_IN_GRID}}(IEnumerable<string> path, {{RECEIVER_ABSTRACT_CLASS}} gridRoot, int rowIndex) : base(path) {
+                            _gridRoot = gridRoot;
+                            _rowIndex = rowIndex;
+                        }
+                        private readonly {{RECEIVER_ABSTRACT_CLASS}} _gridRoot;
+                        private readonly int _rowIndex;
+
+                        public override void AddError(string message) {
+                            _gridRoot.AddError($"{_rowIndex + 1}行目: {message}");
+                            base.AddError(message);
+                        }
+                        public override void AddWarn(string message) {
+                            _gridRoot.AddWarn($"{_rowIndex + 1}行目: {message}");
+                            base.AddWarn(message);
+                        }
+                        public override void AddInfo(string message) {
+                            _gridRoot.AddInfo($"{_rowIndex + 1}行目: {message}");
+                            base.AddInfo(message);
+                        }
+
+                        public override IEnumerable<IDisplayMessageContainer> EnumerateChildren() {
                             yield break;
                         }
                     }

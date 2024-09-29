@@ -218,6 +218,13 @@ namespace Nijo.Models.WriteModel2Features {
                 }
             }).ToArray();
 
+            string[] args = _aggregate.IsChildrenMember()
+                ? ["IEnumerable<string> path", "int index"] // 子配列の場合は自身のインデックスを表す変数を親から受け取る必要がある
+                : ["IEnumerable<string> path"];
+            string[] @base = _aggregate.IsChildrenMember()
+                ? ["[.. path, index.ToString()]"]
+                : ["path"];
+
             return $$"""
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}}の更新処理中に発生したメッセージを画面表示するための入れ物
@@ -231,7 +238,7 @@ namespace Nijo.Models.WriteModel2Features {
                 /// {{_aggregate.Item.DisplayName}}の更新処理中に発生したメッセージを画面表示するための入れ物の具象クラス
                 /// </summary>
                 public partial class {{MessageDataCsClassName}} : {{MessageReceiver.RECEIVER_ABSTRACT_CLASS}}, {{MessageDataCsInterfaceName}} {
-                    public {{MessageDataCsClassName}}(IEnumerable<string> path, Func<string, string>? modifyMessage = null) : base(path, modifyMessage) {
+                    public {{MessageDataCsClassName}}({{args.Join(", ")}}) : base({{@base.Join(", ")}}) {
                 {{members.SelectTextTemplate(m => $$"""
                         {{WithIndent(RenderConstructor(m.MemberInfo), "        ")}}
                 """)}}
@@ -262,7 +269,7 @@ namespace Nijo.Models.WriteModel2Features {
                     var desc = new DataClassForSave(children.ChildrenAggregate, E_Type.UpdateOrDelete);
                     return $$"""
                         {{member.MemberName}} = new {{MessageReceiver.RECEIVER_LIST}}<{{desc.MessageDataCsInterfaceName}}>([.. path, "{{member.MemberName}}"], i => {
-                            return new {{desc.MessageDataCsClassName}}([.. path, "{{member.MemberName}}", i.ToString()]);
+                            return new {{desc.MessageDataCsClassName}}([.. path, "{{member.MemberName}}"], i);
                         });
                         """;
 
