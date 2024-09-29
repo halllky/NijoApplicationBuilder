@@ -99,7 +99,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                   // 表示データ
                   const reactHookFormMethods = Util.useFormEx<Types.{{dataClass.TsTypeName}}>({ criteriaMode: 'all' })
-                  const { register, registerEx, getValues, setValue, setError, reset, formState: { defaultValues }, control } = reactHookFormMethods
+                  const { register, registerEx, getValues, setValue, setError, clearErrors, reset, formState: { defaultValues }, control } = reactHookFormMethods
                   const [displayName, setDisplayName] = React.useState('')
 
                   // 画面表示時
@@ -185,6 +185,8 @@ namespace Nijo.Models.ReadModel2Features {
                   const { batchUpdateReadModels, nowSaving } = {{BatchUpdateReadModel.HOOK_NAME}}()
                   const navigateToDetailPage = Util.{{GetNavigateFnName(E_Type.ReadOnly)}}()
                   const save = useEvent(async () => {
+                    clearErrors()
+
                     // 閲覧モードでは保存不可
                     if ({{MODE}} === 'detail') {
                       dispatchMsg(msg => msg.warn('閲覧モードで表示中のためデータを更新することができません。'))

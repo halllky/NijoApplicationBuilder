@@ -14,16 +14,6 @@ namespace Nijo.Core.AggregateMemberTypes {
             yield return $"className=\"w-48\"";
         }
 
-        public override IGridColumnSetting GetGridColumnEditSetting() {
-            return new TextColumnSetting {
-                SetValueToRow = (value, parsed) => {
-                    return $$"""
-                        const { result: {{parsed}} } = Util.tryParseAsDateTimeOrEmpty({{value}})
-                        """;
-                },
-            };
-        }
-
         public override string DataTableColumnDefHelperName => "datetime";
         public override Parts.WebClient.DataTable.CellType.Helper RenderDataTableColumnDefHelper() {
             var body = $$"""

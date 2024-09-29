@@ -65,8 +65,9 @@ namespace Nijo.Models.WriteModel2Features {
                   const { post } = Util.useHttpRequest()
 
                   /** 一括更新を即時実行します。更新するデータの量によっては長い待ち時間が発生する可能性があります。 */
-                  const batchUpdateWriteModels = React.useCallback(async ({{HOOK_PARAM_ITEMS}}: Types.{{DataClassForSaveBase.TS_SAVE_COMMAND}}[], options?: { noMessage?: boolean }) => {
-                    const res = await post(`/{{Controller.SUBDOMAIN}}/{{CONTROLLER_SUBDOMAIN}}/{{CONTROLLER_ACTION_IMMEDIATELY}}`, { {{HOOK_PARAM_ITEMS}} })
+                  const batchUpdateWriteModels = React.useCallback(async ({{HOOK_PARAM_ITEMS}}: Types.{{DataClassForSaveBase.TS_SAVE_COMMAND}}[], options?: { noMessage?: boolean, ignoreConfirm?: boolean }) => {
+                    const query = options?.ignoreConfirm ? '?ignoreConfirm=true' : ''
+                    const res = await post(`/{{Controller.SUBDOMAIN}}/{{CONTROLLER_SUBDOMAIN}}/{{CONTROLLER_ACTION_IMMEDIATELY}}${query}`, { {{HOOK_PARAM_ITEMS}} })
                     if (res.ok && !options?.noMessage) dispatchToast(msg => msg.info('保存しました。'))
                     return res
                   }, [post, dispatchMsg, dispatchToast])
@@ -154,6 +155,8 @@ namespace Nijo.Models.WriteModel2Features {
                         Create = new CreateMethod(agg).MethodName, // メソッド名
                         Update = new UpdateMethod(agg).MethodName, // メソッド名
                         Delete = new DeleteMethod(agg).MethodName, // メソッド名
+                        DisplayMessageInterface = save.MessageDataCsInterfaceName,
+                        DisplayMessageClass = save.MessageDataCsClassName,
                     };
                 })
                 .ToArray();
@@ -174,13 +177,22 @@ namespace Nijo.Models.WriteModel2Features {
                     using var tran = DbContext.Database.BeginTransaction();
                     try {
                         // エラーメッセージの入れ物のオブジェクトを用意する
+                        var itemsAndMessages = new List<({{DataClassForSaveBase.SAVE_COMMAND_BASE}}, {{DisplayMessageContainer.INTERFACE}})>();
                         for (var i = 0; i < items.Count; i++) {
-                            var errorContainer = batchUpdateState.{{SaveContext.GET_ERR_MSG_CONTAINER}}(items[i]);
+                            {{DisplayMessageContainer.ABSTRACT_CLASS}} errorContainer = items[i] switch {
+                {{sortedAggregates.SelectTextTemplate(x => $$"""
+                                {{x.CreateCommand}} or
+                                {{x.UpdateCommand}} or
+                                {{x.DeleteCommand}} => new {{x.DisplayMessageClass}}([i.ToString()]),
+                """)}}
+                                _ => throw new InvalidOperationException(),
+                            };
+                            itemsAndMessages.Add((items[i], errorContainer));
                             batchUpdateState.RegisterErrorDataWithIndex(i, errorContainer);
                         }
 
                         // 一括更新実行
-                        {{APPSRV_METHOD_PRIVATE}}(items, batchUpdateState);
+                        {{APPSRV_METHOD_PRIVATE}}(itemsAndMessages, batchUpdateState);
                         if (!batchUpdateState.HasError() || batchUpdateState.ForceCommit) {
                             tran.Commit();
                         } else {
@@ -199,30 +211,30 @@ namespace Nijo.Models.WriteModel2Features {
                 /// </summary>
                 /// <param name="items">更新データ</param>
                 /// <param name="saveContext">コンテキスト引数。エラーや警告の送出はこのオブジェクトを通して行なってください。</param>
-                private void {{APPSRV_METHOD_PRIVATE}}(IEnumerable<{{DataClassForSaveBase.SAVE_COMMAND_BASE}}> items, {{SaveContext.STATE_CLASS_NAME}} saveContextState) {
+                private void {{APPSRV_METHOD_PRIVATE}}(IEnumerable<({{DataClassForSaveBase.SAVE_COMMAND_BASE}}, {{DisplayMessageContainer.INTERFACE}})> itemsAndMessages, {{SaveContext.STATE_CLASS_NAME}} saveContextState) {
 
                     // パラメータの各要素の型を仕分けてそれぞれの配列に格納する
                 {{sortedAggregates.SelectTextTemplate(agg => $$"""
-                    var {{agg.CreateItems}} = new List<{{agg.CreateCommand}}>();
-                    var {{agg.UpdateItems}} = new List<{{agg.UpdateCommand}}>();
-                    var {{agg.DeleteItems}} = new List<{{agg.DeleteCommand}}>();
+                    var {{agg.CreateItems}} = new List<({{agg.CreateCommand}}, {{agg.DisplayMessageInterface}})>();
+                    var {{agg.UpdateItems}} = new List<({{agg.UpdateCommand}}, {{agg.DisplayMessageInterface}})>();
+                    var {{agg.DeleteItems}} = new List<({{agg.DeleteCommand}}, {{agg.DisplayMessageInterface}})>();
                 """)}}
 
-                    foreach (var item in items) {
+                    foreach (var (item, msg) in itemsAndMessages) {
                 {{If(sortedAggregates.Length == 0, () => $$"""
-                        throw new InvalidOperationException($"引数{nameof(items)}の要素が想定外の型です: {item.ToJson()}");
+                        throw new InvalidOperationException($"引数{nameof(itemsAndMessages)}の要素が想定外の型です: {item.ToJson()}");
                 """).Else(() => $$"""
                 {{sortedAggregates.SelectTextTemplate((agg, i) => $$"""
                         {{(i == 0 ? "if" : "} else if")}} (item is {{agg.CreateCommand}} {{agg.TempVar0}}) {
-                            {{agg.CreateItems}}.Add({{agg.TempVar0}});
+                            {{agg.CreateItems}}.Add(({{agg.TempVar0}}, ({{agg.DisplayMessageInterface}})msg));
                         } else if (item is {{agg.UpdateCommand}} {{agg.TempVar1}}) {
-                            {{agg.UpdateItems}}.Add({{agg.TempVar1}});
+                            {{agg.UpdateItems}}.Add(({{agg.TempVar1}}, ({{agg.DisplayMessageInterface}})msg));
                         } else if (item is {{agg.DeleteCommand}} {{agg.TempVar2}}) {
-                            {{agg.DeleteItems}}.Add({{agg.TempVar2}});
+                            {{agg.DeleteItems}}.Add(({{agg.TempVar2}}, ({{agg.DisplayMessageInterface}})msg));
 
                 """)}}
                         } else {
-                            throw new InvalidOperationException($"引数{nameof(items)}の要素が想定外の型です: {item.ToJson()}");
+                            throw new InvalidOperationException($"引数{nameof(itemsAndMessages)}の要素が想定外の型です: {item.ToJson()}");
                         }
                 """)}}
                     }
@@ -235,13 +247,13 @@ namespace Nijo.Models.WriteModel2Features {
                     // 5. 依存される側のデータの更新
                     // 6. 依存する側  のデータの更新
                 {{sortedAggregates.Reverse().SelectTextTemplate(agg => $$"""
-                    foreach (var item in {{agg.DeleteItems}}) {{agg.Delete}}(item, saveContextState);
+                    foreach (var (item, msg) in {{agg.DeleteItems}}) {{agg.Delete}}(item, msg, saveContextState);
                 """)}}
                 {{sortedAggregates.SelectTextTemplate(agg => $$"""
-                    foreach (var item in {{agg.CreateItems}}) {{agg.Create}}(item, saveContextState);
+                    foreach (var (item, msg) in {{agg.CreateItems}}) {{agg.Create}}(item, msg, saveContextState);
                 """)}}
                 {{sortedAggregates.SelectTextTemplate(agg => $$"""
-                    foreach (var item in {{agg.UpdateItems}}) {{agg.Update}}(item, saveContextState);
+                    foreach (var (item, msg) in {{agg.UpdateItems}}) {{agg.Update}}(item, msg, saveContextState);
                 """)}}
                 }
                 #endregion 一括更新

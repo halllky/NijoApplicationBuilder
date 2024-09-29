@@ -1,5 +1,6 @@
 using Nijo.Core;
 using Nijo.Models.RefTo;
+using Nijo.Models.WriteModel2Features;
 using Nijo.Parts.Utility;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
@@ -9,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static Nijo.Models.CommandModelFeatures.CommandParameter;
 
 namespace Nijo.Models.ReadModel2Features {
     /// <summary>
@@ -34,8 +36,8 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>値クラス名</summary>
         internal string ValueCsClassName => $"{CsClassName}Values";
 
-        /// <summary>エラーメッセージ用構造体 C#クラス名</summary>
-        internal string MessageDataCsClassName => $"{CsClassName}ErrorMessages";
+        /// <summary>メッセージ用構造体 C#クラス名</summary>
+        internal string MessageDataCsClassName => $"{CsClassName}Messages";
 
         /// <summary>読み取り専用か否かが格納されるプロパティの名前（C#）</summary>
         internal const string READONLY_CS = "ReadOnly";
@@ -256,99 +258,146 @@ namespace Nijo.Models.ReadModel2Features {
 
 
         #region メッセージ用構造体
+        /// <summary>
+        /// メッセージ用構造体をレンダリングします。
+        /// </summary>
         private string RenderCsMessageClass(CodeRenderingContext context) {
+            // ReadModel, WriteModel が同型のオブジェクトの場合、
+            // Write側の各プロジェクトをそのままRead型の各プロパティにマッピングすればよいのでクラスの内容も自動生成する。
+            // それ以外の場合、とりあえずReadModelと同じ型の構造で定義する。
+            // （ただ、ほとんどの場合はWriteModelのエラーデータのインターフェースを実装できないと考えられるため、
+            //   ここで生成されたクラスが実際に使われることは少ないだろう）
+            var areReadAndWriteSame = Aggregate.GetRoot().Item.Options.GenerateDefaultReadModel;
+
             var members = GetOwnMembers().Select(m => new {
+                MemberInfo = m,
                 m.MemberName,
-                RHFName = $"{VALUES_TS}.{m.MemberName}",
-                CsTypeName = ErrorReceiver.RECEIVER,
+                CsTypeName = DisplayMessageContainer.INTERFACE,
                 m.Order,
-            }).Concat(GetChildMembers().Select(desc => new {
-                desc.MemberName,
-                RHFName = desc.MemberName,
-                CsTypeName = desc.MemberInfo is AggregateMember.Children children
-                    ? $"{ErrorReceiver.RECEIVER_LIST}<{desc.MessageDataCsClassName}>"
-                    : desc.MessageDataCsClassName,
-                desc.MemberInfo.Order,
+            }).Concat(GetChildMembers().Select(desc => {
+                // Read/Write が同形の場合は、WriteModelのインターフェースを実装できるようWrite側のインターフェース名で宣言。
+                // そうでない場合は別になんでもよいのでReadModelのクラス名で直接宣言。
+                var descType = areReadAndWriteSame
+                    ? new DataClassForSave(desc.MemberInfo.MemberAggregate, DataClassForSave.E_Type.UpdateOrDelete).MessageDataCsInterfaceName
+                    : desc.MessageDataCsClassName;
+
+                return new {
+                    MemberInfo = (AggregateMember.AggregateMemberBase)desc.MemberInfo,
+                    desc.MemberName,
+                    CsTypeName = desc.MemberInfo is AggregateMember.Children children
+                        ? $"{DisplayMessageContainer.CONCRETE_CLASS_LIST}<{descType}>"
+                        : descType,
+                    desc.MemberInfo.Order,
+                };
             }))
             .OrderBy(m => m.Order)
             .ToArray();
 
+            // この集約がグリッドで表示される場合はエラーメッセージの表示方法が特殊
+            var isInGrid = Aggregate
+                .EnumerateAncestorsAndThis()
+                .Any(agg => agg.IsChildrenMember()
+                         && agg.CanDisplayAllMembersAs2DGrid());
+
+            // WriteModel側のエラーデータのインターフェース
+            var writeModelInterface = new DataClassForSave(Aggregate, DataClassForSave.E_Type.UpdateOrDelete).MessageDataCsInterfaceName;
+
+            // このクラスが継承する基底クラスやインターフェース
+            var implements = new List<string>();
+            if (isInGrid) {
+                implements.Add(DisplayMessageContainer.CONCRETE_CLASS_IN_GRID);
+            } else {
+                implements.Add(DisplayMessageContainer.ABSTRACT_CLASS);
+            }
+            if (areReadAndWriteSame) {
+                implements.Add(writeModelInterface);
+            }
+
+            string[] args = isInGrid
+                ? ["IEnumerable<string> path", $"{DisplayMessageContainer.ABSTRACT_CLASS} grid", "int rowIndex"]
+                : ["IEnumerable<string> path"];
+            string[] @base = isInGrid
+                ? ["path, grid, rowIndex"]
+                : ["path"];
+
             return $$"""
                 /// <summary>
-                /// {{Aggregate.Item.DisplayName}}の画面表示用データのメッセージ情報格納部分
+                /// {{Aggregate.Item.DisplayName}}の画面表示用データのメッセージ情報格納部分。
+                {{If(areReadAndWriteSame, () => $$"""
+                /// <see cref="{{writeModelInterface}}"/> の更新処理で発生したエラー等を画面項目にマッピングする。
+                """).Else(() => $$"""
+                /// WriteModelのデータとのマッピングが必要になる場合、このクラスを使用せず、
+                /// 別途当該WriteModelのエラーデータのインターフェースを実装したクラスを新規作成して、そちらを使用してください。
+                """)}}
                 /// </summary>
-                public partial class {{MessageDataCsClassName}} : {{ErrorReceiver.RECEIVER}} {
+                public partial class {{MessageDataCsClassName}} : {{implements.Join(", ")}} {
+                    public {{MessageDataCsClassName}}({{args.Join(", ")}}) : base({{@base.Join(", ")}}) {
+                {{members.SelectTextTemplate(m => $$"""
+                        {{WithIndent(RenderConstructor(m.MemberInfo), "        ")}}
+                """)}}
+                    }
+
                 {{members.SelectTextTemplate(m => $$"""
                     /// <summary>{{m.MemberName}}についてのメッセージ</summary>
-                    public virtual {{m.CsTypeName}} {{m.MemberName}} { get; } = new();
+                    public {{m.CsTypeName}} {{m.MemberName}} { get; }
                 """)}}
 
-                {{If(members.Length > 0, () => $$"""
-                    protected override IEnumerable<{{ErrorReceiver.RECEIVER}}> EnumerateChildren() {
+                    public override IEnumerable<{{DisplayMessageContainer.INTERFACE}}> EnumerateChildren() {
+                {{If(members.Length == 0, () => $$"""
+                        yield break;
+                """)}}
                 {{members.SelectTextTemplate(m => $$"""
                         yield return {{m.MemberName}};
                 """)}}
                     }
-                """)}}
-
-                    public override IEnumerable<JsonNode> ToJsonNodes(string? path) {
-                        // このオブジェクト自身に対するエラー
-                        foreach (var node in base.ToJsonNodes(path)) {
-                            yield return node;
-                        }
-
-                        // 各メンバーに対するエラー
-                        var p = path == null ? string.Empty : $"{path}.";
-                {{members.SelectTextTemplate(m => $$"""
-                        foreach (var node in {{m.MemberName}}.ToJsonNodes($"{p}{{m.RHFName}}")) yield return node;
-                """)}}
-                    }
                 }
                 """;
-        }
-        internal string RenderErrorMessageMappingMethod() {
-            // 記述例のレンダリング用
-            var firstMemberPath = Aggregate
-                .GetMembers()
-                .OfType<AggregateMember.ValueMember>()
-                .FirstOrDefault(vm => !vm.Options.InvisibleInGui)
-                ?.GetFullPathAsDataClassForDisplay(E_CsTs.CSharp)
-                .Join(".");
-            var childrenPath = Aggregate
-                .GetMembers()
-                .OfType<AggregateMember.Children>()
-                .FirstOrDefault()
-                ?.GetFullPathAsDataClassForDisplay(E_CsTs.CSharp)
-                .Join(".");
 
+            string RenderConstructor(AggregateMember.AggregateMemberBase member) {
+                if (member is AggregateMember.ValueMember || member is AggregateMember.Ref) {
+                    return isInGrid ? $$"""
+                        {{member.MemberName}} = new {{DisplayMessageContainer.CONCRETE_CLASS_IN_GRID}}([.. path, "{{VALUES_TS}}", "{{member.MemberName}}"], grid, rowIndex);
+                        """ : $$"""
+                        {{member.MemberName}} = new {{DisplayMessageContainer.CONCRETE_CLASS}}([.. path, "{{VALUES_TS}}", "{{member.MemberName}}"]);
+                        """;
+
+                } else if (member is AggregateMember.Children children) {
+                    var desc = new DataClassForDisplayDescendant(children);
+                    return $$"""
+                        {{member.MemberName}} = new([.. path, "{{member.MemberName}}"], rowIndex => {
+                        {{If(children.ChildrenAggregate.CanDisplayAllMembersAs2DGrid(), () => $$"""
+                            return new {{desc.MessageDataCsClassName}}([.. path, "{{member.MemberName}}", rowIndex.ToString()], {{member.MemberName}}!, rowIndex);
+                        """).Else(() => $$"""
+                            return new {{desc.MessageDataCsClassName}}([.. path, "{{member.MemberName}}", rowIndex.ToString()]);
+                        """)}}
+                        });
+                        """;
+
+                } else if (member is AggregateMember.RelationMember rel) {
+                    var desc = new DataClassForDisplayDescendant(rel);
+                    return $$"""
+                        {{member.MemberName}} = new {{desc.MessageDataCsClassName}}([.. path, "{{member.MemberName}}"]);
+                        """;
+
+                } else {
+                    throw new NotImplementedException();
+                }
+            }
+        }
+        /// <summary>
+        /// ReadModel, WriteModel が同型のオブジェクトではない場合のメッセージ構造体定義
+        /// </summary>
+        private string RenderCsMessageClassOnlyPartialDeclaring(CodeRenderingContext context) {
             return $$"""
                 /// <summary>
-                /// 登録更新処理中で発生したエラーメッセージはWriteModelに対して設定されますが、
-                /// 画面に表示されるデータ型は <see cref="{{MessageDataCsClassName}}"/> のため、
-                /// そのままでは画面のどの項目にエラーメッセージを表示させるべきかが定まりません。
-                /// そのエラーメッセージの項目をマッピングするのがこのメソッドです。
-                ///
-                /// なお、どこにもマッピングされなかったエラーは特定の画面項目に紐づかない画面全体のエラーとして表示されます。
+                /// {{Aggregate.Item.DisplayName}}の画面表示用データのメッセージ情報格納部分
                 /// </summary>
-                public virtual void {{DEFINE_ERR_MSG_MAPPING}}({{MessageDataCsClassName}} displayData, {{ErrorReceiver.ERROR_MESSAGE_MAPPER}} mapper) {
-                    // マッピング処理は自動生成されません。
-                    // このメソッドをオーバーライドし、以下の例のようにマッピング処理を記述してください。
-                    //
-                    // mapper.Map<WriteModelのエラーデータのクラス名>(error => {
-                    //     error.{{ErrorReceiver.FORWARD_TO}}(displayData);
-                {{If(firstMemberPath != null, () => $$"""
-                    //     error.{{firstMemberPath}}.{{ErrorReceiver.FORWARD_TO}}(displayData.{{firstMemberPath}});
-                """)}}
-                {{If(childrenPath != null, () => $$"""
-                    //     for (var i = 0; i < error.{{childrenPath}}.Count; i++) {
-                    //         error.{{childrenPath}}[i].{{ErrorReceiver.FORWARD_TO}}(displayData.{{childrenPath}}[i]);
-                    //     }
-                """)}}
-                    // });
+                public partial class {{MessageDataCsClassName}} : {{DisplayMessageContainer.ABSTRACT_CLASS}} {
+                    // このクラスはpartialクラスです。
+                    // ソース自動生成で洗い替えられない場所に別ファイルでこのクラスの実装を記述し、必要なメソッド等はそちらで定義してください。
                 }
                 """;
         }
-        internal const string DEFINE_ERR_MSG_MAPPING = "DefineErrorMessageMapping";
         #endregion メッセージ用構造体
 
 
@@ -538,7 +587,7 @@ namespace Nijo.Models.ReadModel2Features {
                             .Select(vm => vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, instanceAgg));
                         return $$"""
                             {{keyFullpaths.SelectTextTemplate(path => $$"""
-                            if ({{a}}.{{path.Join("?.")}} ?? undefined !== {{b}}.{{path.Join("?.")}} ?? undefined) return false
+                            if (({{a}}.{{path.Join("?.")}} ?? undefined) !== ({{b}}.{{path.Join("?.")}} ?? undefined)) return false
                             """)}}
                             """;
                     } else {

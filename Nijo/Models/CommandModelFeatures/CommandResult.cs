@@ -32,8 +32,8 @@ namespace Nijo.Models.CommandModelFeatures {
         // HTTPレスポンス
         internal const string TYPE_MESSAGE = "message";
         internal const string TYPE_REDIRECT = "redirect";
-        internal const string HTTP_CONFIRM_DETAIL = "detail";
-        internal const string HTTP_ERROR_DETAIL = "detail";
+        internal const string HTTP_CONFIRM = "confirm";
+        internal const string HTTP_MESSAGE_DETAIL = "detail";
 
         /// <summary>
         /// コマンド処理でこの詳細画面へ遷移する処理を書けるように登録する
@@ -76,7 +76,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     /// コマンド本処理実行時引数。
                     /// 主な役割は処理結果のハンドリングに関する処理。
                     /// </summary>
-                    public interface {{GENERATOR_INTERFACE_NAME}}<TErrors> where TErrors : {{ErrorReceiver.RECEIVER}} {
+                    public interface {{GENERATOR_INTERFACE_NAME}}<TErrors> where TErrors : {{DisplayMessageContainer.ABSTRACT_CLASS}} {
                         /// <summary>
                         /// 処理が成功した旨のみをユーザーに伝えます。
                         /// </summary>
@@ -162,7 +162,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     /// 主な役割は処理結果のハンドリングに関する処理。
                     /// </summary>
                     public sealed partial class {{GENERATOR_WEB_CLASS_NAME}}<TErrors> : {{GENERATOR_INTERFACE_NAME}}<TErrors>
-                        where TErrors : {{ErrorReceiver.RECEIVER}}, new() {
+                        where TErrors : {{DisplayMessageContainer.ABSTRACT_CLASS}}, new() {
                         public {{GENERATOR_WEB_CLASS_NAME}}(ControllerBase controller, {{appSrv.ConcreteClassName}} applicationService) {
                             _controller = controller;
                             _applicationService = applicationService;
@@ -192,12 +192,12 @@ namespace Nijo.Models.CommandModelFeatures {
 
                         public {{RESULT_INTERFACE_NAME}} Error(string error) {
                             var errorObject = new TErrors();
-                            errorObject.Add(error);
+                            errorObject.AddError(error);
                             return Error(errorObject);
                         }
                         public {{RESULT_INTERFACE_NAME}} Error(TErrors errors) {
                             return new {{ACTION_RESULT_CONTAINER}} {
-                                ActionResult = _controller.UnprocessableEntity(new { {{HTTP_ERROR_DETAIL}} = errors.ToJsonNodes(null) }),
+                                ActionResult = _controller.UnprocessableEntity(new { {{HTTP_MESSAGE_DETAIL}} = errors.ToReactHookFormErrors().ToArray() }),
                             };
                         }
                         public {{RESULT_INTERFACE_NAME}} Confirm(string confirm) {
@@ -205,7 +205,7 @@ namespace Nijo.Models.CommandModelFeatures {
                         }
                         public {{RESULT_INTERFACE_NAME}} Confirm(IEnumerable<string> confirms) {
                             return new {{ACTION_RESULT_CONTAINER}} {
-                                ActionResult = _controller.Accepted(new { {{HTTP_CONFIRM_DETAIL}} = confirms.ToArray() }),
+                                ActionResult = _controller.Accepted(new { {{HTTP_CONFIRM}} = confirms.ToArray() }),
                             };
                         }
 
@@ -227,7 +227,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     /// 主な役割は処理結果のハンドリングに関する処理。
                     /// </summary>
                     public sealed partial class {{GENERATOR_CLI_CLASS_NAME}}<TErrors> : {{GENERATOR_INTERFACE_NAME}}<TErrors>
-                        where TErrors : {{ErrorReceiver.RECEIVER}} {
+                        where TErrors : {{DisplayMessageContainer.ABSTRACT_CLASS}} {
                         public {{RESULT_INTERFACE_NAME}} Ok<T>(string? text, T detail) {
                             throw new NotImplementedException("TODO #3 未実装");
                         }

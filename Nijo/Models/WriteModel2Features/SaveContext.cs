@@ -38,10 +38,6 @@ namespace Nijo.Models.WriteModel2Features {
         /// </summary>
         internal const string AFTER_SAVE_EVENT_ARGS = "AfterSaveEventArgs";
         /// <summary>
-        /// 保存コマンドのインスタンスと紐づいたエラーメッセージの入れ物を返すメソッド
-        /// </summary>
-        internal const string GET_ERR_MSG_CONTAINER = "GetErrorMessageContainer";
-        /// <summary>
         /// 一括更新処理の細かい挙動を呼び出し元で指定できるようにするためのオプション
         /// </summary>
         internal const string SAVE_OPTIONS = "SaveOptions";
@@ -102,29 +98,30 @@ namespace Nijo.Models.WriteModel2Features {
                             ForceCommit = true;
                         }
 
-                        #region エラー
-                        private readonly Dictionary<int, {{ErrorReceiver.RECEIVER}}> _errors = new();
+                        #region メッセージ
+                        private readonly Dictionary<int, {{DisplayMessageContainer.ABSTRACT_CLASS}}> _errors = new();
                         /// <summary>
-                        /// エラーデータの入れ物のインスタンスを、一括更新の引数の配列のインデックスと紐づけて登録します。
-                        /// 「○件目でエラーが発生しました」といったように何番目のデータでエラーが起きたかを表示するのに必要になります。
+                        /// メッセージデータの入れ物のインスタンスを、一括更新の引数の配列のインデックスと紐づけて登録します。
+                        /// 「○件目でエラーが発生しました」といったように何番目のデータでエラーなどが起きたかを表示するのに必要になります。
                         /// </summary>
-                        public void RegisterErrorDataWithIndex(int errorItemIndex, {{ErrorReceiver.RECEIVER}} errorData) {
+                        public void RegisterErrorDataWithIndex(int errorItemIndex, {{DisplayMessageContainer.ABSTRACT_CLASS}} errorData) {
                             _errors[errorItemIndex] = errorData;
                         }
                         public bool HasError() {
-                            return _errors.Values.Any(e => e.HasError())
-                                || _errorMessageContainerDict.Values.Any(e => e.HasError());
+                            return _errors.Values.Any(e => e.HasError());
                         }
                         public JsonNode GetErrorDataJson() {
                             var obj = new JsonObject();
                             foreach (var kv in _errors.OrderBy(kv => kv.Key)) {
-                                var value = new JsonArray();
-                                foreach (var node in kv.Value.ToJsonNodes(null)) value.Add(node);
-                                obj.Add(kv.Key.ToString(), value);
+                                var pathAndMessages = new JsonArray();
+                                foreach (var x in kv.Value.ToReactHookFormErrors()) {
+                                    pathAndMessages.Add(x);
+                                }
+                                obj.Add(kv.Key.ToString(), pathAndMessages);
                             }
                             return obj;
                         }
-                        #endregion エラー
+                        #endregion メッセージ
 
                         #region 警告
                         private readonly List<string> _confirms = new();
@@ -132,58 +129,38 @@ namespace Nijo.Models.WriteModel2Features {
                             _confirms.Add(message);
                         }
                         public bool HasConfirm() {
-                            return _confirms.Count > 0;
+                            // 「保存します。よろしいですか？」の確認があるので常に真
+                            return true;
+                            // return _confirms.Count > 0 || _errors.Values.Any(x => x.HasConfirm());
                         }
                         public IEnumerable<string> GetConfirms() {
-                            return _confirms;
+                            if (_confirms.Count > 0) {
+                                return _confirms;
+                            } else if (_errors.Values.Any(x => x.HasConfirm())) {
+                                return ["警告があります。続行してよいですか？"];
+                            } else {
+                                return ["保存します。よろしいですか？"];
+                            }
                         }
                         #endregion 警告
-
-                        #region エラーメッセージ用ユーティリティ
-                        /// <summary>更新コマンドとエラーメッセージコンテナの紐づけ</summary>
-                        private readonly Dictionary<object, {{ErrorReceiver.RECEIVER}}> _errorMessageContainerDict = new();
-
-                        /// <summary>
-                        /// エラーメッセージの入れ物のオブジェクトを取得します。
-                        /// 戻り値のインスタンスは引数のコマンドと紐づけられており、一括更新処理全体を通じて1つに定まります。
-                        /// </summary>
-                        public {{ErrorReceiver.RECEIVER}} {{GET_ERR_MSG_CONTAINER}}(object obj) {
-                            if (!_errorMessageContainerDict.TryGetValue(obj, out var receiver)) {
-                                // 引数のコマンドと対応するエラーメッセージが登録されていない場合はここで作成する
-                                receiver = obj switch {
-                    {{saveCommands.SelectTextTemplate(x => $$"""
-                                    {{DataClassForSaveBase.CREATE_COMMAND}}<{{x.CreateCommand.CsClassName}}> => new {{x.CreateCommand.ErrorDataCsClassName}}(),
-                                    {{DataClassForSaveBase.UPDATE_COMMAND}}<{{x.SaveCommand.CsClassName}}> => new {{x.SaveCommand.ErrorDataCsClassName}}(),
-                                    {{DataClassForSaveBase.DELETE_COMMAND}}<{{x.SaveCommand.CsClassName}}> => new {{x.SaveCommand.ErrorDataCsClassName}}(),
-                    """)}}
-                    {{displayData.SelectTextTemplate(x => $$"""
-                                    {{x.DisplayData.CsClassName}} => new {{x.DisplayData.MessageDataCsClassName}}(),
-                    """)}}
-                                    _ => new {{ErrorReceiver.RECEIVER}}(), // この分岐にくることはありえない
-                                };
-                                _errorMessageContainerDict[obj] = receiver;
-                            }
-                            return receiver;
-                        }
-                        #endregion エラーメッセージ用ユーティリティ
                     }
 
                     /// <summary>
                     /// 一括更新処理のデータ1件分のコンテキスト引数。エラーメッセージや確認メッセージなどを書きやすくするためのもの。
                     /// </summary>
-                    /// <typeparam name="TError">ユーザーに通知するエラーデータの構造体</typeparam>
-                    public partial class {{BEFORE_SAVE}}<TError> {
-                        public {{BEFORE_SAVE}}({{STATE_CLASS_NAME}} state, TError errors) {
+                    /// <typeparam name="TMessage">ユーザーに通知するメッセージデータの構造体</typeparam>
+                    public partial class {{BEFORE_SAVE}}<TMessage> {
+                        public {{BEFORE_SAVE}}({{STATE_CLASS_NAME}} state, TMessage messages) {
                             _state = state;
-                            Errors = errors;
+                            Messages = messages;
                         }
                         private readonly {{STATE_CLASS_NAME}} _state;
 
                         /// <inheritdoc cref="{{SAVE_OPTIONS}}" />
                         public {{SAVE_OPTIONS}} Options => _state.Options;
 
-                        /// <summary>ユーザーに通知するエラーデータ</summary>
-                        public TError Errors { get; }
+                        /// <summary>ユーザーに通知するメッセージデータ</summary>
+                        public TMessage Messages { get; }
 
                         /// <summary>
                         /// <para>

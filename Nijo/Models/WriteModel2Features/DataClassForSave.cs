@@ -192,74 +192,110 @@ namespace Nijo.Models.WriteModel2Features {
         #endregion 値
 
 
-        #region 更新前イベント（エラーデータ構造体）
+        #region 更新前イベント（エラー、警告、インフォメーションデータ構造体）
         /// <summary>
-        /// エラーメッセージ用構造体 C#型名
+        /// メッセージ用構造体 C#インターフェース名
         /// </summary>
-        internal string ErrorDataCsClassName => Type == E_Type.Create
-            ? $"{_aggregate.Item.PhysicalName}CreateCommandErrorData"
-            : $"{_aggregate.Item.PhysicalName}SaveCommandErrorData";
+        internal string MessageDataCsInterfaceName => $"I{_aggregate.Item.PhysicalName}SaveCommandMessages";
+        /// <summary>
+        /// メッセージ用構造体 C#型名（ダミーデータ作成時ぐらいにしか使われないはず）
+        /// </summary>
+        internal string MessageDataCsClassName => $"{_aggregate.Item.PhysicalName}SaveCommandMessages";
 
         /// <summary>
-        /// エラーデータ構造体を定義します（C#）
+        /// メッセージ構造体を定義します（C#）
         /// </summary>
-        internal string RenderCSharpErrorStructure(CodeRenderingContext context) {
+        internal string RenderCSharpMessageStructure(CodeRenderingContext context) {
             var members = GetOwnMembers().Select(m => {
                 if (m is AggregateMember.ValueMember || m is AggregateMember.Ref) {
-                    return new { m.MemberName, Type = ErrorReceiver.RECEIVER };
+                    return new { MemberInfo = m, m.MemberName, Type = DisplayMessageContainer.INTERFACE };
                 } else if (m is AggregateMember.Children children) {
                     var descendant = new DataClassForSave(children.ChildrenAggregate, Type);
-                    return new { m.MemberName, Type = $"{ErrorReceiver.RECEIVER_LIST}<{descendant.ErrorDataCsClassName}>" };
+                    return new { MemberInfo = m, m.MemberName, Type = $"{DisplayMessageContainer.CONCRETE_CLASS_LIST}<{descendant.MessageDataCsInterfaceName}>" };
                 } else {
                     var descendant = new DataClassForSave(((AggregateMember.RelationMember)m).MemberAggregate, Type);
-                    return new { m.MemberName, Type = descendant.ErrorDataCsClassName };
+                    return new { MemberInfo = m, m.MemberName, Type = descendant.MessageDataCsInterfaceName };
                 }
             }).ToArray();
 
+            string[] args = _aggregate.IsChildrenMember()
+                ? ["IEnumerable<string> path", "int index"] // 子配列の場合は自身のインデックスを表す変数を親から受け取る必要がある
+                : ["IEnumerable<string> path"];
+            string[] @base = _aggregate.IsChildrenMember()
+                ? ["[.. path, index.ToString()]"]
+                : ["path"];
+
             return $$"""
                 /// <summary>
-                /// {{_aggregate.Item.DisplayName}}のエラーデータ
+                /// {{_aggregate.Item.DisplayName}}の更新処理中に発生したメッセージを画面表示するための入れ物
                 /// </summary>
-                public partial class {{ErrorDataCsClassName}} : {{ErrorReceiver.RECEIVER}} {
+                public interface {{MessageDataCsInterfaceName}} : {{DisplayMessageContainer.INTERFACE}} {
                 {{members.SelectTextTemplate(m => $$"""
-                    public {{m.Type}} {{m.MemberName}} { get; } = new();
+                    {{m.Type}} {{m.MemberName}} { get; }
+                """)}}
+                }
+                /// <summary>
+                /// {{_aggregate.Item.DisplayName}}の更新処理中に発生したメッセージを画面表示するための入れ物の具象クラス
+                /// </summary>
+                public partial class {{MessageDataCsClassName}} : {{DisplayMessageContainer.ABSTRACT_CLASS}}, {{MessageDataCsInterfaceName}} {
+                    public {{MessageDataCsClassName}}({{args.Join(", ")}}) : base({{@base.Join(", ")}}) {
+                {{members.SelectTextTemplate(m => $$"""
+                        {{WithIndent(RenderConstructor(m.MemberInfo), "        ")}}
+                """)}}
+                    }
+
+                {{members.SelectTextTemplate(m => $$"""
+                    public {{m.Type}} {{m.MemberName}} { get; }
                 """)}}
 
-                {{If(members.Length > 0, () => $$"""
-                    protected override IEnumerable<{{ErrorReceiver.RECEIVER}}> EnumerateChildren() {
+                    public override IEnumerable<{{DisplayMessageContainer.INTERFACE}}> EnumerateChildren() {
+                {{If(members.Length == 0, () => $$"""
+                        yield break;
+                """)}}
                 {{members.SelectTextTemplate(m => $$"""
                         yield return {{m.MemberName}};
                 """)}}
                     }
-                """)}}
-
-                    public override IEnumerable<JsonNode> ToJsonNodes(string? path) {
-                        // このオブジェクト自身に対するエラー
-                        foreach (var node in base.ToJsonNodes(path)) {
-                            yield return node;
-                        }
-
-                        // 各メンバーに対するエラー
-                        var p = path == null ? string.Empty : $"{path}.";
-                {{members.SelectTextTemplate(m => $$"""
-                        foreach (var node in {{m.MemberName}}.ToJsonNodes($"{p}{{m.MemberName}}")) yield return node;
-                """)}}
-                    }
                 }
                 """;
+
+            static string RenderConstructor(AggregateMember.AggregateMemberBase member) {
+                if (member is AggregateMember.ValueMember || member is AggregateMember.Ref) {
+                    return $$"""
+                        {{member.MemberName}} = new {{DisplayMessageContainer.CONCRETE_CLASS}}([.. path, "{{member.MemberName}}"]);
+                        """;
+
+                } else if (member is AggregateMember.Children children) {
+                    var desc = new DataClassForSave(children.ChildrenAggregate, E_Type.UpdateOrDelete);
+                    return $$"""
+                        {{member.MemberName}} = new {{DisplayMessageContainer.CONCRETE_CLASS_LIST}}<{{desc.MessageDataCsInterfaceName}}>([.. path, "{{member.MemberName}}"], i => {
+                            return new {{desc.MessageDataCsClassName}}([.. path, "{{member.MemberName}}"], i);
+                        });
+                        """;
+
+                } else if (member is AggregateMember.RelationMember rel) {
+                    var desc = new DataClassForSave(rel.MemberAggregate, E_Type.UpdateOrDelete);
+                    return $$"""
+                        {{member.MemberName}} = new {{desc.MessageDataCsClassName}}([.. path, "{{member.MemberName}}"]);
+                        """;
+
+                } else {
+                    throw new NotImplementedException();
+                }
+            }
         }
-        #endregion 更新前イベント（エラーデータ構造体）
+        #endregion 更新前イベント（エラー、警告、インフォメーションデータ構造体）
 
 
         #region 読み取り専用用構造体
         /// <summary>
-        /// エラーメッセージ用構造体 C#クラス名
+        /// 読み取り専用用構造体 C#クラス名
         /// </summary>
         internal string ReadOnlyCsClassName => Type == E_Type.Create
             ? $"{_aggregate.Item.PhysicalName}CreateCommandReadOnlyData"
             : $"{_aggregate.Item.PhysicalName}SaveCommandReadOnlyData";
         /// <summary>
-        /// エラーメッセージ用構造体 TypeScript型名
+        /// 読み取り専用用構造体 TypeScript型名
         /// </summary>
         internal string ReadOnlyTsTypeName => Type == E_Type.Create
             ? $"{_aggregate.Item.PhysicalName}CreateCommandReadOnlyData"
@@ -294,7 +330,7 @@ namespace Nijo.Models.WriteModel2Features {
             }
             return $$"""
                 /// <summary>
-                /// {{_aggregate.Item.DisplayName}}のエラーメッセージ格納用クラス
+                /// {{_aggregate.Item.DisplayName}}の読み取り専用用構造体用クラス
                 /// </summary>
                 public sealed class {{ReadOnlyCsClassName}} {
                     [JsonPropertyName("{{THIS_IS_READONLY_TS}}")]

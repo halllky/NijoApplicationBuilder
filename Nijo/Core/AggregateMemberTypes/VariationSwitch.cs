@@ -26,31 +26,6 @@ namespace Nijo.Core.AggregateMemberTypes {
                 .Join(" | ");
         }
 
-        public IGridColumnSetting GetGridColumnEditSetting() {
-            return new ComboboxColumnSetting {
-                OptionItemTypeName = _variationGroup.VariationAggregates.Select(kv => $"'{kv.Value.RelationName}'").Join(" | "),
-                Options = $"[{_variationGroup.VariationAggregates.Select(kv => $"'{kv.Value.RelationName}' as const").Join(", ")}]",
-                EmitValueSelector = $"opt => opt",
-                MatchingKeySelectorFromEmitValue = $"value => value",
-                MatchingKeySelectorFromOption = $"opt => opt",
-                TextSelector = $"opt => opt",
-                OnClipboardCopy = (value, formatted) => $$"""
-                    const {{formatted}} = {{value}} ?? ''
-                    """,
-                OnClipboardPaste = (value, formatted) => $$"""
-                    let {{formatted}}: {{_variationGroup.VariationAggregates.Select(kv => $"'{kv.Value.RelationName}'").Join(" | ")}} | undefined
-                    {{_variationGroup.VariationAggregates.SelectTextTemplate((kv, i) => $$"""
-                    {{(i == 0 ? "if" : "} else if")}} ({{value}} === '{{kv.Value.RelationName}}') {
-                      {{formatted}} = '{{kv.Value.RelationName}}'
-                    """)}}
-                    } else {
-                      {{formatted}} = undefined
-                    }
-                    """,
-            };
-        }
-
-
         private string SearchConditionClass => $"{_variationGroup.GroupName}SearchCondition";
         private const string ANY_CHECKED = "AnyChecked";
         private const string ALL_CHECKED = "AllChecked";

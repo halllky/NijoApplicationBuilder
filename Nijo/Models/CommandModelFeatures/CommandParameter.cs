@@ -21,7 +21,7 @@ namespace Nijo.Models.CommandModelFeatures {
 
         internal string CsClassName => $"{_aggregate.Item.PhysicalName}Parameter{GetUniqueId()}";
         internal string TsTypeName => $"{_aggregate.Item.PhysicalName}Parameter{GetUniqueId()}";
-        internal string MessageDataCsClassName => $"{_aggregate.Item.PhysicalName}ParameterErrorMessages{GetUniqueId()}";
+        internal string MessageDataCsClassName => $"{_aggregate.Item.PhysicalName}ParameterMessages{GetUniqueId()}";
 
         /// <summary>
         /// 異なるコマンドの子孫要素同士で名称衝突するのを防ぐためにフルパスの経路をクラス名に含める
@@ -63,41 +63,101 @@ namespace Nijo.Models.CommandModelFeatures {
                 """);
         }
 
-        internal string RenderCSharpErrorClassDeclaring(CodeRenderingContext context) {
+        internal string RenderCSharpMessageClassDeclaring(CodeRenderingContext context) {
             return EnumerateThisAndDescendants().SelectTextTemplate(param => {
                 var members = param.GetOwnMembers().ToArray();
 
+                // この集約がグリッドで表示される場合はエラーメッセージの表示方法が特殊
+                var isInGrid = param._aggregate
+                    .EnumerateAncestorsAndThis()
+                    .Any(agg => agg.IsChildrenMember()
+                             && agg.CanDisplayAllMembersAs2DGrid());
+
+                // このクラスが継承する基底クラスやインターフェース
+                var implements = new List<string>();
+                if (isInGrid) {
+                    implements.Add(DisplayMessageContainer.CONCRETE_CLASS_IN_GRID);
+                } else {
+                    implements.Add(DisplayMessageContainer.ABSTRACT_CLASS);
+                }
+
+                string[] args;
+                if (isInGrid) {
+                    args = ["IEnumerable<string> path", $"{DisplayMessageContainer.ABSTRACT_CLASS} grid", "int rowIndex"];
+                } else if (!param._aggregate.IsRoot()) {
+                    args = ["IEnumerable<string> path"];
+                } else {
+                    args = []; // ルート集約の場合
+                }
+
+                string[] @base;
+                if (isInGrid) {
+                    @base = ["path, grid, rowIndex"];
+                } else if (!param._aggregate.IsRoot()) {
+                    @base = ["path"];
+                } else {
+                    @base = ["[]"]; // ルート集約の場合
+                }
+
                 return $$"""
                     /// <summary>
-                    /// {{_aggregate.Item.DisplayName}}処理のパラメータ{{(param._aggregate.IsRoot() ? "" : "の一部")}}のエラーメッセージ格納用クラス
+                    /// {{_aggregate.Item.DisplayName}}処理のパラメータ{{(param._aggregate.IsRoot() ? "" : "の一部")}}のメッセージ格納用クラス
                     /// </summary>
-                    public partial class {{param.MessageDataCsClassName}} : {{ErrorReceiver.RECEIVER}} {
+                    public partial class {{param.MessageDataCsClassName}} : {{implements.Join(", ")}} {
+                        public {{param.MessageDataCsClassName}}({{args.Join(", ")}}) : base({{@base.Join(", ")}}) {
                     {{members.SelectTextTemplate(m => $$"""
-                        public virtual {{m.CsErrorMemberType}} {{m.MemberName}} { get; } = new();
+                            {{WithIndent(RenderConstructor(m.MemberInfo), "        ")}}
+                    """)}}
+                        }
+                    {{members.SelectTextTemplate(m => $$"""
+                        public virtual {{m.CsErrorMemberType}} {{m.MemberName}} { get; }
                     """)}}
 
-                    {{If(members.Length > 0, () => $$"""
-                        protected override IEnumerable<{{ErrorReceiver.RECEIVER}}> EnumerateChildren() {
+                        public override IEnumerable<{{DisplayMessageContainer.INTERFACE}}> EnumerateChildren() {
+                    {{If(members.Length == 0, () => $$"""
+                            yield break;
+                    """)}}
                     {{members.SelectTextTemplate(m => $$"""
                             yield return {{m.MemberName}};
                     """)}}
                         }
-                    """)}}
-
-                        public override IEnumerable<JsonNode> ToJsonNodes(string? path) {
-                            // このオブジェクト自身に対するエラー
-                            foreach (var node in base.ToJsonNodes(path)) {
-                                yield return node;
-                            }
-
-                            // 各メンバーに対するエラー
-                            var p = path == null ? string.Empty : $"{path}.";
-                    {{members.SelectTextTemplate(m => $$"""
-                            foreach (var node in {{m.MemberName}}.ToJsonNodes($"{p}{{m.MemberName}}")) yield return node;
-                    """)}}
-                        }
                     }
                     """;
+
+                string RenderConstructor(AggregateMember.AggregateMemberBase member) {
+                    var path = param._aggregate.IsRoot()
+                        ? string.Empty
+                        : ".. path, ";
+
+                    if (member is AggregateMember.ValueMember || member is AggregateMember.Ref) {
+                        return isInGrid ? $$"""
+                            {{member.MemberName}} = new {{DisplayMessageContainer.CONCRETE_CLASS_IN_GRID}}([{{path}}"{{member.MemberName}}"], grid, rowIndex);
+                            """ : $$"""
+                            {{member.MemberName}} = new {{DisplayMessageContainer.CONCRETE_CLASS}}([{{path}}"{{member.MemberName}}"]);
+                            """;
+
+                    } else if (member is AggregateMember.Children children) {
+                        var desc = new CommandParameter(children.ChildrenAggregate);
+                        return $$"""
+                            {{member.MemberName}} = new([{{path}}"{{member.MemberName}}"], rowIndex => {
+                            {{If(children.ChildrenAggregate.CanDisplayAllMembersAs2DGrid(), () => $$"""
+                                return new {{desc.MessageDataCsClassName}}([{{path}}"{{member.MemberName}}", rowIndex.ToString()], {{member.MemberName}}!, rowIndex);
+                            """).Else(() => $$"""
+                                return new {{desc.MessageDataCsClassName}}([{{path}}"{{member.MemberName}}", rowIndex.ToString()]);
+                            """)}}
+                            });
+                            """;
+
+                    } else if (member is AggregateMember.RelationMember rel) {
+                        var desc = new CommandParameter(rel.MemberAggregate);
+                            return $$"""
+                            {{member.MemberName}} = new {{desc.MessageDataCsClassName}}([{{path}}"{{member.MemberName}}"]);
+                            """;
+
+                    } else {
+                        throw new NotImplementedException();
+                    }
+                }
             });
         }
 
@@ -156,11 +216,11 @@ namespace Nijo.Models.CommandModelFeatures {
             };
 
             internal string CsErrorMemberType => MemberInfo switch {
-                AggregateMember.ValueMember => ErrorReceiver.RECEIVER,
-                AggregateMember.Children children => $"{ErrorReceiver.RECEIVER_LIST}<{new CommandParameter(children.ChildrenAggregate).MessageDataCsClassName}>",
+                AggregateMember.ValueMember => DisplayMessageContainer.CONCRETE_CLASS,
+                AggregateMember.Children children => $"{DisplayMessageContainer.CONCRETE_CLASS_LIST}<{new CommandParameter(children.ChildrenAggregate).MessageDataCsClassName}>",
                 AggregateMember.Child child => new CommandParameter(child.ChildAggregate).MessageDataCsClassName,
                 AggregateMember.VariationItem variation => new CommandParameter(variation.VariationAggregate).MessageDataCsClassName,
-                AggregateMember.Ref => ErrorReceiver.RECEIVER,
+                AggregateMember.Ref => DisplayMessageContainer.CONCRETE_CLASS,
                 _ => throw new NotImplementedException(),
             };
 

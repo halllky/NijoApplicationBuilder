@@ -11,7 +11,6 @@ namespace Nijo.Parts.WebClient.DataTable {
     /// <summary>
     /// Reactテンプレート側で宣言されているコンポーネント DataTable の列定義。
     /// <see cref="Models.ReadModel2"/> 用。
-    /// 将来的に <see cref="DataTableColumn"/> を廃止してこちらに統合する予定。
     /// </summary>
     internal interface IDataTableColumn2 {
         // 基本
@@ -23,23 +22,5 @@ namespace Nijo.Parts.WebClient.DataTable {
         // 外観
         int? DefaultWidth { get; }
         bool EnableResizing { get; }
-
-        /// <summary>
-        /// 非編集時のセルの表示内容をレンダリングします。
-        /// </summary>
-        /// <param name="arg">関数の引数（括弧までを含む）</param>
-        /// <param name="argRowObject">関数の引数の中の行オブジェクトまでのパス</param>
-        string RenderDisplayContents(CodeRenderingContext ctx, string arg, string argRowObject);
-
-        /// <summary>編集設定。nullの場合は常に編集不可の列であることを意味する</summary>
-        IGridColumnSetting? GetEditSetting();
-        /// <summary>セル編集開始時の値取得処理をレンダリングします。</summary>
-        string RenderGetterOnEditStart(CodeRenderingContext ctx);
-        /// <summary>セル編集終了時の値設定処理をレンダリングします。</summary>
-        string RenderSetterOnEditEnd(CodeRenderingContext ctx);
-        /// <summary>セルの値をクリップボードへコピーする処理をレンダリングします。</summary>
-        string RenderOnClipboardCopy(CodeRenderingContext ctx);
-        /// <summary>クリップボードの内容をセルへペーストする処理をレンダリングします。</summary>
-        string RenderOnClipboardPaste(CodeRenderingContext ctx);
     }
 }

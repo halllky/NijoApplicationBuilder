@@ -51,7 +51,6 @@ namespace Nijo.Models {
 
             // データ型: 一括更新処理 エラーメッセージの入れ物
             context.UseSummarizedFile<SaveContext>().AddReadModel(rootAggregate);
-            context.CoreLibrary.AppSrvMethods.Add(rootDisplayData.RenderErrorMessageMappingMethod());
 
             // 処理: 一括更新処理
             context.UseSummarizedFile<BatchUpdateReadModel>().Register(rootAggregate);
@@ -167,7 +166,7 @@ namespace Nijo.Models {
             // ユーティリティクラス等
             context.CoreLibrary.UtilDir(dir => {
                 dir.Generate(DataClassForDisplay.RenderBaseClass());
-                dir.Generate(ErrorReceiver.RenderCSharp());
+                dir.Generate(DisplayMessageContainer.RenderCSharp());
                 dir.Generate(ISaveCommandConvertible.Render());
             });
             context.CoreLibrary.Enums.Add(SingleView.RenderSingleViewNavigationEnums());

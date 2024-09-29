@@ -24,7 +24,7 @@ namespace Nijo.Models {
             context.ReactProject.Types.Add(parameter.RenderTsDeclaring(context));
 
             // データ型: エラーメッセージ
-            commandFile.AddClassDeclaring(parameter.RenderCSharpErrorClassDeclaring(context));
+            commandFile.AddClassDeclaring(parameter.RenderCSharpMessageClassDeclaring(context));
 
             // 処理: Reactフック、Webエンドポイント、本処理抽象メソッド
             var commandMethod = new CommandMethod(rootAggregate);

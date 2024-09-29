@@ -140,7 +140,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     var render = vm.DeclaringAggregate == _aggregate; // 参照先のValueMemberにはエラーメッセージが無い。エラーメッセージは参照先のValueMemberではなくRefにつく
                     return $$"""
                         {{If(render, () => $$"""
-                        <Input.ErrorMessage name={`{{fullpath.Join(".")}}`} errors={errors} />
+                        <Input.FormItemMessage name={`{{fullpath.Join(".")}}`} errors={errors} />
                         """)}}
                         """;
                 },
@@ -227,7 +227,7 @@ namespace Nijo.Models.CommandModelFeatures {
 
                   return (
                     <div className="p-px">
-                      <Input.ErrorMessage name="root" errors={errors} />
+                      <Input.FormItemMessage name="root" errors={errors} />
                       {{WithIndent(vForm.RenderAsRoot(context, null, maxDepth, _aggregate.Item.Options.EstimatedLabelWidth), "      ")}}
                     </div>
                   )
@@ -283,7 +283,7 @@ namespace Nijo.Models.CommandModelFeatures {
                 var label = $$"""
                     <>
                       <VForm2.LabelText>{{sectionName}}</VForm2.LabelText>
-                      <Input.ErrorMessage name={`{{fullpath.Join(".")}}`} errors={errors} />
+                      <Input.FormItemMessage name={`{{fullpath.Join(".")}}`} errors={errors} />
                     </>
                     """;
                 return new VerticalFormBuilder(label, E_VForm2LabelType.JsxElement);
@@ -405,7 +405,7 @@ namespace Nijo.Models.CommandModelFeatures {
                         <Input.IconButton underline mini icon={Icon.MagnifyingGlassIcon} onClick={handleClickSearch}>検索</Input.IconButton>
                     """)}}
                       </div>
-                      <Input.ErrorMessage name={`{{fullpath.Join(".")}}`} errors={errors} />
+                      <Input.FormItemMessage name={`{{fullpath.Join(".")}}`} errors={errors} />
                     </>
                     """;
                 return new VerticalFormBuilder(label, E_VForm2LabelType.JsxElement);
@@ -499,7 +499,7 @@ namespace Nijo.Models.CommandModelFeatures {
                         <Input.IconButton outline mini icon={Icon.XMarkIcon} onClick={onRemove({{loopVar}})}>削除</Input.IconButton>
                     """)}}
                       </div>
-                      <Input.ErrorMessage name={`{{fullpath.Join(".")}}.${{{loopVar}}}`} errors={errors} />
+                      <Input.FormItemMessage name={`{{fullpath.Join(".")}}.${{{loopVar}}}`} errors={errors} />
                     </>
                     """;
                 return new VerticalFormBuilder(label, E_VForm2LabelType.JsxElement, $"key={{{loopVar}}}");
@@ -548,7 +548,7 @@ namespace Nijo.Models.CommandModelFeatures {
                             <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={onCreate}>追加</Input.IconButton>
                     """)}}
                           </div>
-                          <Input.ErrorMessage name={`{{registerNameArray.Join(".")}}`} errors={errors} />
+                          <Input.FormItemMessage name={`{{registerNameArray.Join(".")}}`} errors={errors} />
                         </>}>
                           {fields.map((item, {{loopVar}}) => (
                             {{WithIndent(vForm.Render(context), "        ")}}
@@ -642,7 +642,7 @@ namespace Nijo.Models.CommandModelFeatures {
                               <Input.IconButton outline mini icon={Icon.XMarkIcon} onClick={onRemove}>削除</Input.IconButton>
                     """)}}
                             </div>
-                            <Input.ErrorMessage name={`{{registerNameArray.Join(".")}}`} errors={errors} />
+                            <Input.FormItemMessage name={`{{registerNameArray.Join(".")}}`} errors={errors} />
                           </>}
                         >
                           <Layout.DataTable

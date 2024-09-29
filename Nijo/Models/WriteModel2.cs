@@ -36,7 +36,6 @@ namespace Nijo.Models {
                 // データ型: DataClassForNewItem
                 var dataClassForNewItem = new DataClassForSave(agg, DataClassForSave.E_Type.Create);
                 aggregateFile.DataClassDeclaring.Add(dataClassForNewItem.RenderCSharp(context));
-                aggregateFile.DataClassDeclaring.Add(dataClassForNewItem.RenderCSharpErrorStructure(context));
                 aggregateFile.DataClassDeclaring.Add(dataClassForNewItem.RenderCSharpReadOnlyStructure(context));
                 context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScript(context));
                 context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScriptReadOnlyStructure(context));
@@ -44,7 +43,7 @@ namespace Nijo.Models {
                 // データ型: DataClassForSave
                 var dataClassForSave = new DataClassForSave(agg, DataClassForSave.E_Type.UpdateOrDelete);
                 aggregateFile.DataClassDeclaring.Add(dataClassForSave.RenderCSharp(context));
-                aggregateFile.DataClassDeclaring.Add(dataClassForSave.RenderCSharpErrorStructure(context));
+                aggregateFile.DataClassDeclaring.Add(dataClassForSave.RenderCSharpMessageStructure(context)); // メッセージクラスはCreate/Saveで共用
                 aggregateFile.DataClassDeclaring.Add(dataClassForSave.RenderCSharpReadOnlyStructure(context));
                 context.ReactProject.Types.Add(rootAggregate, dataClassForSave.RenderTypeScript(context));
                 context.ReactProject.Types.Add(rootAggregate, dataClassForSave.RenderTypeScriptReadOnlyStructure(context));

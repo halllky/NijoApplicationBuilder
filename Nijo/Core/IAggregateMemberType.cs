@@ -16,12 +16,6 @@ namespace Nijo.Core {
         string GetTypeScriptTypeName();
 
         /// <summary>
-        /// グリッド用のReactの入力コンポーネントを設定するコードの詳細を行います。
-        /// </summary>
-        [Obsolete("DataTableColumnDefHelperNameに移行")]
-        IGridColumnSetting GetGridColumnEditSetting();
-
-        /// <summary>
         /// コード自動生成時に呼ばれる。C#の列挙体の定義を作成するなどの用途を想定している。
         /// </summary>
         void GenerateCode(CodeRenderingContext context) { }
@@ -118,10 +112,6 @@ namespace Nijo.Core {
         public virtual string GetSearchConditionCSharpType() => "string";
         public virtual string GetSearchConditionTypeScriptType() => "string";
 
-        public virtual IGridColumnSetting GetGridColumnEditSetting() {
-            return new TextColumnSetting {
-            };
-        }
         string IAggregateMemberType.RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition, E_SearchConditionObject searchConditionObject, E_SearchQueryObject searchQueryObject) {
             var pathFromSearchCondition = searchConditionObject == E_SearchConditionObject.SearchCondition
                 ? member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.CSharp)
@@ -250,8 +240,6 @@ namespace Nijo.Core {
             return $"{{ {FromTo.FROM_TS}?: {type}, {FromTo.TO_TS}?: {type} }}";
         }
 
-        public abstract IGridColumnSetting GetGridColumnEditSetting();
-
         string IAggregateMemberType.RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition, E_SearchConditionObject searchConditionObject, E_SearchQueryObject searchQueryObject) {
             var pathFromSearchCondition = searchConditionObject == E_SearchConditionObject.SearchCondition
                 ? member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.CSharp)
@@ -332,60 +320,5 @@ namespace Nijo.Core {
 
         public abstract string DataTableColumnDefHelperName { get; }
         public abstract Parts.WebClient.DataTable.CellType.Helper RenderDataTableColumnDefHelper();
-    }
-
-    /// <summary>
-    /// グリッド用のReactの入力コンポーネントの設定
-    /// </summary>
-    public interface IGridColumnSetting {
-        /// <summary>
-        /// セルの値を表示するとき、テキストボックスの初期値を設定するときに使われる文字列フォーマット処理。
-        /// 第1引数はフォーマット前の値が入っている変数の名前、第2引数はフォーマット後の値が入る変数の名前。
-        /// </summary>
-        public Func<string, string, string>? GetValueFromRow { get; set; }
-        /// <summary>
-        /// テキストボックスで入力された文字列をデータクラスのプロパティに設定するときのフォーマット処理。
-        /// 第1引数はフォーマット前の値が入っている変数の名前、第2引数はフォーマット後の値が入る変数の名前。
-        /// </summary>
-        public Func<string, string, string>? SetValueToRow { get; set; }
-    }
-    /// <summary>
-    /// テキストボックスで編集するカラムの設定
-    /// </summary>
-    public sealed class TextColumnSetting : IGridColumnSetting {
-        public Func<string, string, string>? GetValueFromRow { get; set; }
-        public Func<string, string, string>? SetValueToRow { get; set; }
-    }
-    /// <summary>
-    /// コンボボックスで編集するカラムの設定
-    /// </summary>
-    public sealed class ComboboxColumnSetting : IGridColumnSetting {
-        public required string OptionItemTypeName { get; set; }
-        public required string Options { get; set; }
-        public required string EmitValueSelector { get; set; }
-        public required string MatchingKeySelectorFromEmitValue { get; set; }
-        public required string MatchingKeySelectorFromOption { get; set; }
-        public required string TextSelector { get; set; }
-        public required Func<string, string, string> OnClipboardCopy { get; set; }
-        public required Func<string, string, string> OnClipboardPaste { get; set; }
-        public Func<string, string, string>? GetDisplayText { get; set; }
-        public Func<string, string, string>? GetValueFromRow { get; set; }
-        public Func<string, string, string>? SetValueToRow { get; set; }
-    }
-    /// <summary>
-    /// 非同期コンボボックスで編集するカラムの設定
-    /// </summary>
-    public sealed class AsyncComboboxColumnSetting : IGridColumnSetting {
-        public required string OptionItemTypeName { get; set; }
-        public required string QueryKey { get; set; }
-        public required string Query { get; set; }
-        public required string EmitValueSelector { get; set; }
-        public required string MatchingKeySelectorFromEmitValue { get; set; }
-        public required string MatchingKeySelectorFromOption { get; set; }
-        public required string TextSelector { get; set; }
-        public required Func<string, string, string> OnClipboardCopy { get; set; }
-        public required Func<string, string, string> OnClipboardPaste { get; set; }
-        public Func<string, string, string>? GetValueFromRow { get; set; }
-        public Func<string, string, string>? SetValueToRow { get; set; }
     }
 }
