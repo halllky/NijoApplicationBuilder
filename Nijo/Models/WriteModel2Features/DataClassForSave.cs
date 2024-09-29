@@ -194,11 +194,13 @@ namespace Nijo.Models.WriteModel2Features {
 
         #region 更新前イベント（エラー、警告、インフォメーションデータ構造体）
         /// <summary>
-        /// メッセージ用構造体 C#型名
+        /// メッセージ用構造体 C#インターフェース名
         /// </summary>
-        internal string MessageDataCsClassName => Type == E_Type.Create
-            ? $"{_aggregate.Item.PhysicalName}CreateCommandMessages"
-            : $"{_aggregate.Item.PhysicalName}SaveCommandMessages";
+        internal string MessageDataCsInterfaceName => $"I{_aggregate.Item.PhysicalName}SaveCommandMessages";
+        /// <summary>
+        /// メッセージ用構造体 C#型名（ダミーデータ作成時ぐらいにしか使われないはず）
+        /// </summary>
+        internal string MessageDataCsClassName => $"{_aggregate.Item.PhysicalName}SaveCommandMessages";
 
         /// <summary>
         /// メッセージ構造体を定義します（C#）
@@ -206,47 +208,81 @@ namespace Nijo.Models.WriteModel2Features {
         internal string RenderCSharpMessageStructure(CodeRenderingContext context) {
             var members = GetOwnMembers().Select(m => {
                 if (m is AggregateMember.ValueMember || m is AggregateMember.Ref) {
-                    return new { m.MemberName, Type = MessageReceiver.RECEIVER };
+                    return new { MemberInfo = m, m.MemberName, Type = MessageReceiver.RECEIVER_INTERFACE };
                 } else if (m is AggregateMember.Children children) {
                     var descendant = new DataClassForSave(children.ChildrenAggregate, Type);
-                    return new { m.MemberName, Type = $"{MessageReceiver.RECEIVER_LIST}<{descendant.MessageDataCsClassName}>" };
+                    return new { MemberInfo = m, m.MemberName, Type = $"{MessageReceiver.RECEIVER_LIST}<{descendant.MessageDataCsInterfaceName}>" };
                 } else {
                     var descendant = new DataClassForSave(((AggregateMember.RelationMember)m).MemberAggregate, Type);
-                    return new { m.MemberName, Type = descendant.MessageDataCsClassName };
+                    return new { MemberInfo = m, m.MemberName, Type = descendant.MessageDataCsInterfaceName };
                 }
             }).ToArray();
 
+            string[] args = _aggregate.IsChildrenMember()
+                ? ["IEnumerable<string> path", "int index", "Func<string, string>? modifyMessage = null"] // 子配列の場合は自身のインデックスを表す変数を親から受け取る必要がある
+                : ["IEnumerable<string> path", "Func<string, string>? modifyMessage = null"];
+            string[] @base = _aggregate.IsChildrenMember()
+                ? ["[.. path, index.ToString()]", "modifyMessage"]
+                : ["path", "modifyMessage"];
+
             return $$"""
                 /// <summary>
-                /// {{_aggregate.Item.DisplayName}}の画面表示メッセージデータ
+                /// {{_aggregate.Item.DisplayName}}の更新処理中に発生したメッセージを画面表示するための入れ物
                 /// </summary>
-                public partial class {{MessageDataCsClassName}} : {{MessageReceiver.RECEIVER}} {
+                public interface {{MessageDataCsInterfaceName}} : {{MessageReceiver.RECEIVER_INTERFACE}} {
                 {{members.SelectTextTemplate(m => $$"""
-                    public {{m.Type}} {{m.MemberName}} { get; } = new();
+                    {{m.Type}} {{m.MemberName}} { get; }
+                """)}}
+                }
+                /// <summary>
+                /// {{_aggregate.Item.DisplayName}}の更新処理中に発生したメッセージを画面表示するための入れ物の具象クラス
+                /// </summary>
+                public partial class {{MessageDataCsClassName}} : {{MessageReceiver.RECEIVER_ABSTRACT_CLASS}}, {{MessageDataCsInterfaceName}} {
+                    public {{MessageDataCsClassName}}({{args.Join(", ")}}) : base({{@base.Join(", ")}}) {
+                {{members.SelectTextTemplate(m => $$"""
+                        {{WithIndent(RenderConstructor(m.MemberInfo), "        ")}}
+                """)}}
+                    }
+
+                {{members.SelectTextTemplate(m => $$"""
+                    public {{m.Type}} {{m.MemberName}} { get; }
                 """)}}
 
-                {{If(members.Length > 0, () => $$"""
-                    protected override IEnumerable<{{MessageReceiver.RECEIVER}}> EnumerateChildren() {
+                    public override IEnumerable<{{MessageReceiver.RECEIVER_INTERFACE}}> EnumerateChildren() {
+                {{If(members.Length == 0, () => $$"""
+                        yield break;
+                """)}}
                 {{members.SelectTextTemplate(m => $$"""
                         yield return {{m.MemberName}};
                 """)}}
                     }
-                """)}}
-
-                    public override IEnumerable<JsonNode> ToJsonNodes(string? path) {
-                        // このオブジェクト自身に対するメッセージ
-                        foreach (var node in base.ToJsonNodes(path)) {
-                            yield return node;
-                        }
-
-                        // 各メンバーに対するメッセージ
-                        var p = path == null ? string.Empty : $"{path}.";
-                {{members.SelectTextTemplate(m => $$"""
-                        foreach (var node in {{m.MemberName}}.ToJsonNodes($"{p}{{m.MemberName}}")) yield return node;
-                """)}}
-                    }
                 }
                 """;
+
+            static string RenderConstructor(AggregateMember.AggregateMemberBase member) {
+                if (member is AggregateMember.ValueMember) {
+                    return $$"""
+                        {{member.MemberName}} = new {{MessageReceiver.RECEIVER_CONCRETE_CLASS}}([.. path, "{{member.MemberName}}"]);
+                        """;
+
+                } else if (member is AggregateMember.Children children) {
+                    var desc = new DataClassForSave(children.ChildrenAggregate, E_Type.UpdateOrDelete);
+                    return $$"""
+                        {{member.MemberName}} = new {{MessageReceiver.RECEIVER_LIST}}<{{desc.MessageDataCsInterfaceName}}>([.. path, "{{member.MemberName}}"], i => {
+                            return new {{desc.MessageDataCsClassName}}([.. path, "{{member.MemberName}}"], i);
+                        });
+                        """;
+
+                } else if (member is AggregateMember.RelationMember rel) {
+                    var desc = new DataClassForSave(rel.MemberAggregate, E_Type.UpdateOrDelete);
+                    return $$"""
+                        {{member.MemberName}} = new {{desc.MessageDataCsClassName}}([.. path, "{{member.MemberName}}"]);
+                        """;
+
+                } else {
+                    throw new NotImplementedException();
+                }
+            }
         }
         #endregion 更新前イベント（エラー、警告、インフォメーションデータ構造体）
 

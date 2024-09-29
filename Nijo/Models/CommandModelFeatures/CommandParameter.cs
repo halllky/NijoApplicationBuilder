@@ -63,7 +63,7 @@ namespace Nijo.Models.CommandModelFeatures {
                 """);
         }
 
-        internal string RenderCSharpErrorClassDeclaring(CodeRenderingContext context) {
+        internal string RenderCSharpMessageClassDeclaring(CodeRenderingContext context) {
             return EnumerateThisAndDescendants().SelectTextTemplate(param => {
                 var members = param.GetOwnMembers().ToArray();
 
@@ -71,13 +71,15 @@ namespace Nijo.Models.CommandModelFeatures {
                     /// <summary>
                     /// {{_aggregate.Item.DisplayName}}処理のパラメータ{{(param._aggregate.IsRoot() ? "" : "の一部")}}のメッセージ格納用クラス
                     /// </summary>
-                    public partial class {{param.MessageDataCsClassName}} : {{MessageReceiver.RECEIVER}} {
+                    public partial class {{param.MessageDataCsClassName}} : {{MessageReceiver.RECEIVER_ABSTRACT_CLASS}} {
+                        public {{param.MessageDataCsClassName}}(IEnumerable<string> path, Func<string, string>? modifyMessage = null) : base(path, modifyMessage) {
+                        }
                     {{members.SelectTextTemplate(m => $$"""
                         public virtual {{m.CsErrorMemberType}} {{m.MemberName}} { get; } = new();
                     """)}}
 
                     {{If(members.Length > 0, () => $$"""
-                        protected override IEnumerable<{{MessageReceiver.RECEIVER}}> EnumerateChildren() {
+                        public override IEnumerable<{{MessageReceiver.RECEIVER_INTERFACE}}> EnumerateChildren() {
                     {{members.SelectTextTemplate(m => $$"""
                             yield return {{m.MemberName}};
                     """)}}
@@ -156,11 +158,11 @@ namespace Nijo.Models.CommandModelFeatures {
             };
 
             internal string CsErrorMemberType => MemberInfo switch {
-                AggregateMember.ValueMember => MessageReceiver.RECEIVER,
+                AggregateMember.ValueMember => MessageReceiver.RECEIVER_CONCRETE_CLASS,
                 AggregateMember.Children children => $"{MessageReceiver.RECEIVER_LIST}<{new CommandParameter(children.ChildrenAggregate).MessageDataCsClassName}>",
                 AggregateMember.Child child => new CommandParameter(child.ChildAggregate).MessageDataCsClassName,
                 AggregateMember.VariationItem variation => new CommandParameter(variation.VariationAggregate).MessageDataCsClassName,
-                AggregateMember.Ref => MessageReceiver.RECEIVER,
+                AggregateMember.Ref => MessageReceiver.RECEIVER_CONCRETE_CLASS,
                 _ => throw new NotImplementedException(),
             };
 

@@ -201,8 +201,7 @@ namespace Nijo.Models.ReadModel2Features {
                 public virtual {{SaveContext.STATE_CLASS_NAME}} {{APPSRV_BATCH_UPDATE}}(IEnumerable<{{DataClassForDisplay.BASE_CLASS_NAME}}> items, {{SaveContext.SAVE_OPTIONS}} options) {
                     var batchUpdateState = new {{SaveContext.STATE_CLASS_NAME}}(options);
 
-                    var converted = new List<{{DataClassForSaveBase.SAVE_COMMAND_BASE}}>();
-                    var messagePairs = new Dictionary<{{MessageReceiver.RECEIVER}}, {{MessageReceiver.RECEIVER}}[]>();
+                    var converted = new List<({{DataClassForSaveBase.SAVE_COMMAND_BASE}}, {{MessageReceiver.RECEIVER_INTERFACE}})>();
 
                     // ----------- 画面表示用データから登録更新用データへの変換 -----------
                     var unknownItems = items.ToArray();
@@ -211,15 +210,8 @@ namespace Nijo.Models.ReadModel2Features {
                 {{aggregates.SelectTextTemplate((x, j) => $$"""
                         if (item is {{x.DisplayData.CsClassName}} item{{j}}) {
                             // ReadModelからWriteModelへ変換
-                            var readModelErrorMessageContainer = ({{x.DisplayData.MessageDataCsClassName}})batchUpdateState
-                                .{{SaveContext.GET_MSG_CONTAINER}}(item{{j}});
+                            var readModelErrorMessageContainer = new {{x.DisplayData.MessageDataCsClassName}}([]);
                             var writeModels = {{APPSRV_CONVERT_DISP_TO_SAVE}}(item{{j}}, readModelErrorMessageContainer, batchUpdateState).ToArray();
-
-                            // 一括更新処理後にWriteModel用メッセージコンテナからReadModel用メッセージコンテナに
-                            // メッセージの転送を行うため、メッセージコンテナの紐づきを登録する
-                            messagePairs[readModelErrorMessageContainer] = writeModels
-                                .Select(batchUpdateState.{{SaveContext.GET_MSG_CONTAINER}})
-                                .ToArray();
 
                             batchUpdateState.RegisterErrorDataWithIndex(i, readModelErrorMessageContainer);
                             converted.AddRange(writeModels);
@@ -227,8 +219,7 @@ namespace Nijo.Models.ReadModel2Features {
                         }
                 """)}}
 
-                        var unknownError = batchUpdateState.{{SaveContext.GET_MSG_CONTAINER}}(item);
-                        unknownError.AddError($"型 '{item?.GetType().FullName}' の登録更新用データへの変換処理が定義されていません。");
+                        throw new InvalidOperationException($"型 '{item?.GetType().FullName}' の登録更新用データへの変換処理が定義されていません。");
                     }
 
                     // ----------- 一括更新実行 -----------
@@ -246,31 +237,6 @@ namespace Nijo.Models.ReadModel2Features {
                         throw;
                     }
 
-                    // ----------- メッセージの転送 -----------
-                    // 転送元先プロパティの設定
-                    foreach (var kv in messagePairs) {
-                        var readModel = kv.Key;
-                        var writeModels = kv.Value;
-
-                        // 既定の転送先はルート要素
-                        foreach (var container in writeModels) {
-                            container.{{MessageReceiver.FORWARD_TO}}(readModel);
-                        }
-                        // メッセージ転送の細かい転送先指定（カスタマイズ処理）
-                        var mapper = new MessageObjectMapper(writeModels);
-                {{aggregates.SelectTextTemplate((x, j) => $$"""
-                        {{(j == 0 ? "if" : "} else if")}} (readModel is {{x.DisplayData.MessageDataCsClassName}} item{{j}}) {
-                            {{DataClassForDisplay.DEFINE_ERR_MSG_MAPPING}}(item{{j}}, mapper);
-                """)}}
-                {{If(aggregates.Length > 0, () => $$"""
-                        }
-                """)}}
-                    }
-                    // 上記で設定された転送先への転送を実行する
-                    foreach (var writeModelError in messagePairs.SelectMany(kv => kv.Value)) {
-                        writeModelError.{{MessageReceiver.EXEC_TRANSFER_MESSAGE}}();
-                    }
-
                     return batchUpdateState;
                 }
 
@@ -282,7 +248,7 @@ namespace Nijo.Models.ReadModel2Features {
                 /// <param name="errors">メッセージの入れ物</param>
                 /// <param name="saveContext">コンテキスト引数。警告の送出はこのオブジェクトを通して行なってください。</param>
                 /// <returns>登録更新用データ（複数返却可）</returns>
-                public virtual IEnumerable<{{DataClassForSaveBase.SAVE_COMMAND_BASE}}> {{APPSRV_CONVERT_DISP_TO_SAVE}}({{x.DisplayData.CsClassName}} displayData, {{x.DisplayData.MessageDataCsClassName}} errors, {{SaveContext.STATE_CLASS_NAME}} saveContextState) {
+                public virtual IEnumerable<({{DataClassForSaveBase.SAVE_COMMAND_BASE}}, {{MessageReceiver.RECEIVER_INTERFACE}})> {{APPSRV_CONVERT_DISP_TO_SAVE}}({{x.DisplayData.CsClassName}} displayData, {{x.DisplayData.MessageDataCsClassName}} errors, {{SaveContext.STATE_CLASS_NAME}} saveContextState) {
                 {{If(x.Aggregate.Item.Options.GenerateDefaultReadModel, () => $$"""
                     {{WithIndent(RenderWriteModelDefaultConversion(x.Aggregate), "    ")}}
                 """).Else(() => $$"""
@@ -305,27 +271,27 @@ namespace Nijo.Models.ReadModel2Features {
             return $$"""
                 var saveType = displayData.{{DataClassForDisplay.GET_SAVE_TYPE}}();
                 if (saveType == {{DataClassForSaveBase.ADD_MOD_DEL_ENUM_CS}}.ADD) {
-                    yield return new {{DataClassForSaveBase.CREATE_COMMAND}}<{{createCommand.CsClassName}}> {
+                    yield return (new {{DataClassForSaveBase.CREATE_COMMAND}}<{{createCommand.CsClassName}}> {
                         {{DataClassForSaveBase.VALUES_CS}} = {{WithIndent(RenderValues(createCommand, "displayData", aggregate, false), "        ")}},
-                    };
+                    }, errors);
                 } else if (saveType == {{DataClassForSaveBase.ADD_MOD_DEL_ENUM_CS}}.MOD) {
                     if (displayData.{{DataClassForDisplay.VERSION_CS}} == null) {
                         errors.AddError("更新対象データの更新前のバージョンが指定されていません。");
                         yield break;
                     }
-                    yield return new {{DataClassForSaveBase.UPDATE_COMMAND}}<{{saveCommand.CsClassName}}> {
+                    yield return (new {{DataClassForSaveBase.UPDATE_COMMAND}}<{{saveCommand.CsClassName}}> {
                         {{DataClassForSaveBase.VALUES_CS}} = {{WithIndent(RenderValues(saveCommand, "displayData", aggregate, false), "        ")}},
                         {{DataClassForSaveBase.VERSION_CS}} = displayData.{{DataClassForDisplay.VERSION_CS}}.Value,
-                    };
+                    }, errors);
                 } else if (saveType == {{DataClassForSaveBase.ADD_MOD_DEL_ENUM_CS}}.DEL) {
                     if (displayData.{{DataClassForDisplay.VERSION_CS}} == null) {
                         errors.AddError("更新対象データの更新前のバージョンが指定されていません。");
                         yield break;
                     }
-                    yield return new {{DataClassForSaveBase.DELETE_COMMAND}}<{{saveCommand.CsClassName}}> {
+                    yield return (new {{DataClassForSaveBase.DELETE_COMMAND}}<{{saveCommand.CsClassName}}> {
                         {{DataClassForSaveBase.VALUES_CS}} = {{WithIndent(RenderValues(saveCommand, "displayData", aggregate, false), "        ")}},
                         {{DataClassForSaveBase.VERSION_CS}} = displayData.{{DataClassForDisplay.VERSION_CS}}.Value,
-                    };
+                    }, errors);
                 }
                 """;
 

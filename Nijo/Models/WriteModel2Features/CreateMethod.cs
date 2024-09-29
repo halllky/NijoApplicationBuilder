@@ -36,8 +36,7 @@ namespace Nijo.Models.WriteModel2Features {
                 /// <summary>
                 /// 新しい{{_rootAggregate.Item.DisplayName}}を作成する情報を受け取って登録します。
                 /// </summary>
-                public virtual void {{MethodName}}({{argType}} command, {{SaveContext.STATE_CLASS_NAME}} batchUpdateState) {
-                    var messages = ({{dataClass.MessageDataCsClassName}})batchUpdateState.{{SaveContext.GET_MSG_CONTAINER}}(command);
+                public virtual void {{MethodName}}({{argType}} command, {{dataClass.MessageDataCsInterfaceName}} messages, {{SaveContext.STATE_CLASS_NAME}} batchUpdateState) {
 
                     var dbEntity = command.{{DataClassForSaveBase.VALUES_CS}}.{{DataClassForSave.TO_DBENTITY}}();
 
@@ -49,7 +48,7 @@ namespace Nijo.Models.WriteModel2Features {
                     dbEntity.{{EFCoreEntity.UPDATE_USER}} = {{ApplicationService.CURRENT_USER}};
 
                     // 更新前処理。入力検証や自動補完項目の設定を行う。
-                    var beforeSaveArgs = new {{SaveContext.BEFORE_SAVE}}<{{dataClass.MessageDataCsClassName}}>(batchUpdateState, messages);
+                    var beforeSaveArgs = new {{SaveContext.BEFORE_SAVE}}<{{dataClass.MessageDataCsInterfaceName}}>(batchUpdateState, messages);
                     {{BeforeMethodName}}(dbEntity, beforeSaveArgs);
 
                     // 一括更新データ全件のうち1件でもエラーやコンファームがある場合は処理中断
@@ -85,7 +84,7 @@ namespace Nijo.Models.WriteModel2Features {
                 /// {{_rootAggregate.Item.DisplayName}}の新規登録前に実行されます。
                 /// エラーチェック、ワーニング、自動算出項目の設定などを行います。
                 /// </summary>
-                protected virtual void {{BeforeMethodName}}({{efCoreEntity.ClassName}} dbEntity, {{SaveContext.BEFORE_SAVE}}<{{dataClass.MessageDataCsClassName}}> e) {
+                protected virtual void {{BeforeMethodName}}({{efCoreEntity.ClassName}} dbEntity, {{SaveContext.BEFORE_SAVE}}<{{dataClass.MessageDataCsInterfaceName}}> e) {
                     // このメソッドをオーバーライドしてエラーチェック等を記述してください。
                 }
                 /// <summary>

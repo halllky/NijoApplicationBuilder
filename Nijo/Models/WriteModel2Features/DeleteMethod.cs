@@ -50,8 +50,7 @@ namespace Nijo.Models.WriteModel2Features {
                 /// <summary>
                 /// 既存の{{_rootAggregate.Item.DisplayName}}を削除します。
                 /// </summary>
-                public virtual void {{MethodName}}({{argType}} after, {{SaveContext.STATE_CLASS_NAME}} batchUpdateState) {
-                    var messages = ({{dataClass.MessageDataCsClassName}})batchUpdateState.{{SaveContext.GET_MSG_CONTAINER}}(after);
+                public virtual void {{MethodName}}({{argType}} after, {{dataClass.MessageDataCsInterfaceName}} messages, {{SaveContext.STATE_CLASS_NAME}} batchUpdateState) {
 
                     // 削除に必要な項目が空の場合は処理中断
                 {{keys.SelectTextTemplate(k => $$"""
@@ -91,7 +90,7 @@ namespace Nijo.Models.WriteModel2Features {
                     }
 
                     // 削除前処理。入力検証や自動補完項目の設定を行う。
-                    var beforeSaveArgs = new {{SaveContext.BEFORE_SAVE}}<{{dataClass.MessageDataCsClassName}}>(batchUpdateState, messages);
+                    var beforeSaveArgs = new {{SaveContext.BEFORE_SAVE}}<{{dataClass.MessageDataCsInterfaceName}}>(batchUpdateState, messages);
                     {{BeforeMethodName}}(beforeDbEntity, afterDbEntity, beforeSaveArgs);
 
                     // 一括更新データ全件のうち1件でもエラーやコンファームがある場合は処理中断
@@ -126,7 +125,7 @@ namespace Nijo.Models.WriteModel2Features {
                 /// {{_rootAggregate.Item.DisplayName}}の削除前に実行されます。
                 /// エラーチェック、ワーニング、自動算出項目の設定などを行います。
                 /// </summary>
-                protected virtual void {{BeforeMethodName}}({{efCoreEntity.ClassName}} beforeDbEntity, {{efCoreEntity.ClassName}} afterDbEntity, {{SaveContext.BEFORE_SAVE}}<{{dataClass.MessageDataCsClassName}}> e) {
+                protected virtual void {{BeforeMethodName}}({{efCoreEntity.ClassName}} beforeDbEntity, {{efCoreEntity.ClassName}} afterDbEntity, {{SaveContext.BEFORE_SAVE}}<{{dataClass.MessageDataCsInterfaceName}}> e) {
                     // このメソッドをオーバーライドしてエラーチェック等を記述してください。
                 }
                 /// <summary>

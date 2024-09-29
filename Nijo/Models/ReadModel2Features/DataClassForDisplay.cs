@@ -1,5 +1,6 @@
 using Nijo.Core;
 using Nijo.Models.RefTo;
+using Nijo.Models.WriteModel2Features;
 using Nijo.Parts.Utility;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
@@ -9,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static Nijo.Models.CommandModelFeatures.CommandParameter;
 
 namespace Nijo.Models.ReadModel2Features {
     /// <summary>
@@ -257,98 +259,113 @@ namespace Nijo.Models.ReadModel2Features {
 
         #region メッセージ用構造体
         private string RenderCsMessageClass(CodeRenderingContext context) {
+            // ReadModel, WriteModel が同型のオブジェクトの場合、
+            // Write側の各プロジェクトをそのままRead型の各プロパティにマッピングすればよいのでクラスの内容も自動生成する。
+            // それ以外の場合、ソース自動生成できないので、個別実装に任せる。
+            if (Aggregate.GetRoot().Item.Options.GenerateDefaultReadModel) {
+                return RenderCsMessageClassWithContents(context);
+
+            } else {
+                return RenderCsMessageClassOnlyPartialDeclaring(context);
+            }
+        }
+        /// <summary>
+        /// ReadModel, WriteModel が同型のオブジェクトの場合のメッセージ構造体定義
+        /// </summary>
+        private string RenderCsMessageClassWithContents(CodeRenderingContext context) {
             var members = GetOwnMembers().Select(m => new {
+                MemberInfo = m,
                 m.MemberName,
-                RHFName = $"{VALUES_TS}.{m.MemberName}",
-                CsTypeName = MessageReceiver.RECEIVER,
+                CsTypeName = MessageReceiver.RECEIVER_INTERFACE,
                 m.Order,
             }).Concat(GetChildMembers().Select(desc => new {
+                MemberInfo = (AggregateMember.AggregateMemberBase)desc.MemberInfo,
                 desc.MemberName,
-                RHFName = desc.MemberName,
                 CsTypeName = desc.MemberInfo is AggregateMember.Children children
-                    ? $"{MessageReceiver.RECEIVER_LIST}<{desc.MessageDataCsClassName}>"
-                    : desc.MessageDataCsClassName,
+                    ? $"{MessageReceiver.RECEIVER_LIST}<{new DataClassForSave(desc.MemberInfo.MemberAggregate, DataClassForSave.E_Type.UpdateOrDelete).MessageDataCsInterfaceName}>"
+                    : new DataClassForSave(desc.MemberInfo.MemberAggregate, DataClassForSave.E_Type.UpdateOrDelete).MessageDataCsInterfaceName,
                 desc.MemberInfo.Order,
             }))
             .OrderBy(m => m.Order)
             .ToArray();
 
+            string[] implements = [
+                MessageReceiver.RECEIVER_ABSTRACT_CLASS,
+                new DataClassForSave(Aggregate, DataClassForSave.E_Type.UpdateOrDelete).MessageDataCsInterfaceName,
+            ];
+            string[] args = Aggregate.IsChildrenMember()
+                ? ["IEnumerable<string> path", "int index", "Func<string, string>? modifyMessage = null"] // 子配列の場合は自身のインデックスを表す変数を親から受け取る必要がある
+                : ["IEnumerable<string> path", "Func<string, string>? modifyMessage = null"];
+            string[] @base = Aggregate.IsChildrenMember()
+                ? ["[.. path, index.ToString()]", "modifyMessage"]
+                : ["path", "modifyMessage"];
+
             return $$"""
                 /// <summary>
                 /// {{Aggregate.Item.DisplayName}}の画面表示用データのメッセージ情報格納部分
                 /// </summary>
-                public partial class {{MessageDataCsClassName}} : {{MessageReceiver.RECEIVER}} {
+                public partial class {{MessageDataCsClassName}} : {{implements.Join(", ")}} {
+                    public {{MessageDataCsClassName}}({{args.Join(", ")}}) : base({{@base.Join(", ")}}) {
+                {{members.SelectTextTemplate(m => $$"""
+                        {{WithIndent(RenderConstructor(m.MemberInfo), "        ")}}
+                """)}}
+                    }
+
                 {{members.SelectTextTemplate(m => $$"""
                     /// <summary>{{m.MemberName}}についてのメッセージ</summary>
-                    public virtual {{m.CsTypeName}} {{m.MemberName}} { get; } = new();
+                    public {{m.CsTypeName}} {{m.MemberName}} { get; }
                 """)}}
 
                 {{If(members.Length > 0, () => $$"""
-                    protected override IEnumerable<{{MessageReceiver.RECEIVER}}> EnumerateChildren() {
+                    public override IEnumerable<{{MessageReceiver.RECEIVER_INTERFACE}}> EnumerateChildren() {
                 {{members.SelectTextTemplate(m => $$"""
                         yield return {{m.MemberName}};
                 """)}}
                     }
                 """)}}
-
-                    public override IEnumerable<JsonNode> ToJsonNodes(string? path) {
-                        // このオブジェクト自身に対するエラー
-                        foreach (var node in base.ToJsonNodes(path)) {
-                            yield return node;
-                        }
-
-                        // 各メンバーに対するエラー
-                        var p = path == null ? string.Empty : $"{path}.";
-                {{members.SelectTextTemplate(m => $$"""
-                        foreach (var node in {{m.MemberName}}.ToJsonNodes($"{p}{{m.RHFName}}")) yield return node;
-                """)}}
-                    }
                 }
                 """;
-        }
-        internal string RenderErrorMessageMappingMethod() {
-            // 記述例のレンダリング用
-            var firstMemberPath = Aggregate
-                .GetMembers()
-                .OfType<AggregateMember.ValueMember>()
-                .FirstOrDefault(vm => !vm.Options.InvisibleInGui)
-                ?.GetFullPathAsDataClassForDisplay(E_CsTs.CSharp)
-                .Join(".");
-            var childrenPath = Aggregate
-                .GetMembers()
-                .OfType<AggregateMember.Children>()
-                .FirstOrDefault()
-                ?.GetFullPathAsDataClassForDisplay(E_CsTs.CSharp)
-                .Join(".");
 
+            static string RenderConstructor(AggregateMember.AggregateMemberBase member) {
+                if (member is AggregateMember.ValueMember) {
+                    return $$"""
+                        {{member.MemberName}} = new {{MessageReceiver.RECEIVER_CONCRETE_CLASS}}([.. path, "{{VALUES_TS}}", "{{member.MemberName}}"]);
+                        """;
+
+                } else if (member is AggregateMember.Children children) {
+                    var desc = new DataClassForDisplayDescendant(children);
+                    var forSave = new DataClassForSave(children.ChildrenAggregate, DataClassForSave.E_Type.UpdateOrDelete);
+                    return $$"""
+                        {{member.MemberName}} = new {{MessageReceiver.RECEIVER_LIST}}<{{forSave.MessageDataCsInterfaceName}}>([.. path, "{{member.MemberName}}"], i => {
+                            return new {{desc.MessageDataCsClassName}}([.. path, "{{member.MemberName}}"], i);
+                        });
+                        """;
+
+                } else if (member is AggregateMember.RelationMember rel) {
+                    var desc = new DataClassForDisplayDescendant(rel);
+                    return $$"""
+                        {{member.MemberName}} = new {{desc.MessageDataCsClassName}}([.. path, "{{member.MemberName}}"]);
+                        """;
+
+                } else {
+                    throw new NotImplementedException();
+                }
+            }
+        }
+        /// <summary>
+        /// ReadModel, WriteModel が同型のオブジェクトではない場合のメッセージ構造体定義
+        /// </summary>
+        private string RenderCsMessageClassOnlyPartialDeclaring(CodeRenderingContext context) {
             return $$"""
                 /// <summary>
-                /// 登録更新処理中で発生したエラーなどのメッセージはWriteModelに対して設定されますが、
-                /// 画面に表示されるデータ型は <see cref="{{MessageDataCsClassName}}"/> のため、
-                /// そのままでは画面のどの項目にエラーメッセージを表示させるべきかが定まりません。
-                /// そのエラーメッセージの項目をマッピングするのがこのメソッドです。
-                ///
-                /// なお、どこにもマッピングされなかったエラーは特定の画面項目に紐づかない画面全体のエラーとして表示されます。
+                /// {{Aggregate.Item.DisplayName}}の画面表示用データのメッセージ情報格納部分
                 /// </summary>
-                public virtual void {{DEFINE_ERR_MSG_MAPPING}}({{MessageDataCsClassName}} displayData, {{MessageReceiver.MESSAGE_OBJECT_MAPPER}} mapper) {
-                    // マッピング処理は自動生成されません。
-                    // このメソッドをオーバーライドし、以下の例のようにマッピング処理を記述してください。
-                    //
-                    // mapper.Map<WriteModelのメッセージデータのクラス名>(error => {
-                    //     error.{{MessageReceiver.FORWARD_TO}}(displayData);
-                {{If(firstMemberPath != null, () => $$"""
-                    //     error.{{firstMemberPath}}.{{MessageReceiver.FORWARD_TO}}(displayData.{{firstMemberPath}});
-                """)}}
-                {{If(childrenPath != null, () => $$"""
-                    //     for (var i = 0; i < error.{{childrenPath}}.Count; i++) {
-                    //         error.{{childrenPath}}[i].{{MessageReceiver.FORWARD_TO}}(displayData.{{childrenPath}}[i]);
-                    //     }
-                """)}}
-                    // });
+                public partial class {{MessageDataCsClassName}} : {{MessageReceiver.RECEIVER_ABSTRACT_CLASS}} {
+                    // このクラスはpartialクラスです。
+                    // ソース自動生成で洗い替えられない場所に別ファイルでこのクラスの実装を記述し、必要なメソッド等はそちらで定義してください。
                 }
                 """;
         }
-        internal const string DEFINE_ERR_MSG_MAPPING = "DefineErrorMessageMapping";
         #endregion メッセージ用構造体
 
 

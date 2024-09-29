@@ -38,10 +38,6 @@ namespace Nijo.Models.WriteModel2Features {
         /// </summary>
         internal const string AFTER_SAVE_EVENT_ARGS = "AfterSaveEventArgs";
         /// <summary>
-        /// 保存コマンドのインスタンスと紐づいたメッセージの入れ物を返すメソッド
-        /// </summary>
-        internal const string GET_MSG_CONTAINER = "GetMessageContainer";
-        /// <summary>
         /// 一括更新処理の細かい挙動を呼び出し元で指定できるようにするためのオプション
         /// </summary>
         internal const string SAVE_OPTIONS = "SaveOptions";
@@ -103,23 +99,23 @@ namespace Nijo.Models.WriteModel2Features {
                         }
 
                         #region メッセージ
-                        private readonly Dictionary<int, {{MessageReceiver.RECEIVER}}> _errors = new();
+                        private readonly Dictionary<int, {{MessageReceiver.RECEIVER_ABSTRACT_CLASS}}> _errors = new();
                         /// <summary>
                         /// メッセージデータの入れ物のインスタンスを、一括更新の引数の配列のインデックスと紐づけて登録します。
                         /// 「○件目でエラーが発生しました」といったように何番目のデータでエラーなどが起きたかを表示するのに必要になります。
                         /// </summary>
-                        public void RegisterErrorDataWithIndex(int errorItemIndex, {{MessageReceiver.RECEIVER}} errorData) {
+                        public void RegisterErrorDataWithIndex(int errorItemIndex, {{MessageReceiver.RECEIVER_ABSTRACT_CLASS}} errorData) {
                             _errors[errorItemIndex] = errorData;
                         }
                         public bool HasError() {
-                            return _errors.Values.Any(e => e.HasError())
-                                || _errorMessageContainerDict.Values.Any(e => e.HasError());
+                            return _errors.Values.Any(e => e.HasError());
                         }
                         public JsonNode GetErrorDataJson() {
                             var obj = new JsonObject();
                             foreach (var kv in _errors.OrderBy(kv => kv.Key)) {
                                 var value = new JsonArray();
-                                foreach (var node in kv.Value.ToJsonNodes(null)) value.Add(node);
+                                var node = kv.Value.ToJsonNode();
+                                if (node != null) value.Add(node);
                                 obj.Add(kv.Key.ToString(), value);
                             }
                             return obj;
@@ -138,34 +134,6 @@ namespace Nijo.Models.WriteModel2Features {
                             return _confirms;
                         }
                         #endregion 警告
-
-                        #region メッセージ用ユーティリティ
-                        /// <summary>更新コマンドとメッセージコンテナの紐づけ</summary>
-                        private readonly Dictionary<object, {{MessageReceiver.RECEIVER}}> _errorMessageContainerDict = new();
-
-                        /// <summary>
-                        /// メッセージの入れ物のオブジェクトを取得します。
-                        /// 戻り値のインスタンスは引数のコマンドと紐づけられており、一括更新処理全体を通じて1つに定まります。
-                        /// </summary>
-                        public {{MessageReceiver.RECEIVER}} {{GET_MSG_CONTAINER}}(object obj) {
-                            if (!_errorMessageContainerDict.TryGetValue(obj, out var receiver)) {
-                                // 引数のコマンドと対応するエラーメッセージが登録されていない場合はここで作成する
-                                receiver = obj switch {
-                    {{saveCommands.SelectTextTemplate(x => $$"""
-                                    {{DataClassForSaveBase.CREATE_COMMAND}}<{{x.CreateCommand.CsClassName}}> => new {{x.CreateCommand.MessageDataCsClassName}}(),
-                                    {{DataClassForSaveBase.UPDATE_COMMAND}}<{{x.SaveCommand.CsClassName}}> => new {{x.SaveCommand.MessageDataCsClassName}}(),
-                                    {{DataClassForSaveBase.DELETE_COMMAND}}<{{x.SaveCommand.CsClassName}}> => new {{x.SaveCommand.MessageDataCsClassName}}(),
-                    """)}}
-                    {{displayData.SelectTextTemplate(x => $$"""
-                                    {{x.DisplayData.CsClassName}} => new {{x.DisplayData.MessageDataCsClassName}}(),
-                    """)}}
-                                    _ => new {{MessageReceiver.RECEIVER}}(), // この分岐にくることはありえない
-                                };
-                                _errorMessageContainerDict[obj] = receiver;
-                            }
-                            return receiver;
-                        }
-                        #endregion メッセージ用ユーティリティ
                     }
 
                     /// <summary>

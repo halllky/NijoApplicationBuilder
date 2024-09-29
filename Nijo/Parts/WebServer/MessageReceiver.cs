@@ -14,13 +14,10 @@ namespace Nijo.Parts.WebServer {
     /// 無駄なペイロードを避けるためにメッセージが無いときはJSON化されない、といった性質を持つ。
     /// </summary>
     internal class MessageReceiver {
-        internal const string RECEIVER = "MessageReceiver";
-        internal const string FORWARD_TO = "ForwardTo";
-        internal const string EXEC_TRANSFER_MESSAGE = "ExecuteTransferMessages";
-
-        internal const string RECEIVER_LIST = "MessageReceiverList";
-
-        internal const string MESSAGE_OBJECT_MAPPER = "MessageObjectMapper";
+        internal const string RECEIVER_INTERFACE = "IDisplayMessageContainer";
+        internal const string RECEIVER_ABSTRACT_CLASS = "DisplayMessageContainerBase";
+        internal const string RECEIVER_CONCRETE_CLASS = "DisplayMessageContainer";
+        internal const string RECEIVER_LIST = "DisplayMessageContainerList";
 
         /// <summary>
         /// React hook form のsetErrorsの引数の形に準じている
@@ -42,48 +39,75 @@ namespace Nijo.Parts.WebServer {
                     namespace {{context.Config.RootNamespace}};
 
                     /// <summary>
-                    /// エラーメッセージの入れ物
+                    /// 登録処理などで生じたエラーメッセージなどをHTTPレスポンスとして返すまでの入れ物のインターフェース
                     /// </summary>
-                    public partial class {{RECEIVER}} {
+                    public interface {{RECEIVER_INTERFACE}} {
+                        void AddError(string message);
+                        void AddInfo(string message);
+                        void AddWarn(string message);
+                        IEnumerable<{{RECEIVER_INTERFACE}}> EnumerateChildren();
+
+                        bool HasError();
+                        bool HasConfirm();
+                    }
+
+                    public static class DisplayMessageContainerExtensions {
+                        /// <summary>
+                        /// 自身に加え子孫要素を再帰的に列挙します。
+                        /// </summary>
+                        public static IEnumerable<IDisplayMessageContainer> EnumerateThisAndDescendants(this IDisplayMessageContainer container) {
+                            yield return container;
+
+                            var descendants = container
+                                .EnumerateChildren()
+                                .SelectMany(child => child.EnumerateThisAndDescendants());
+                            foreach (var desc in descendants) {
+                                yield return desc;
+                            }
+                        }
+                    }
+
+                    /// <summary>
+                    /// 登録処理などで生じたエラーメッセージなどをHTTPレスポンスとして返すまでの入れ物の抽象クラス
+                    /// </summary>
+                    public abstract class {{RECEIVER_ABSTRACT_CLASS}} : {{RECEIVER_INTERFACE}} {
+                        public {{RECEIVER_ABSTRACT_CLASS}}(IEnumerable<string> path, Func<string, string>? modifyMessage = null) {
+                            _path = path;
+                            _modifyMessage = modifyMessage;
+                        }
+                        private readonly IEnumerable<string> _path;
+                        private readonly Func<string, string>? _modifyMessage;
+
                         private readonly List<string> _errors = new();
                         private readonly List<string> _warnings = new();
                         private readonly List<string> _informations = new();
-                    
-                        /// <summary>
-                        /// エラーメッセージを追加します。
-                        /// </summary>
+
                         public void AddError(string message) {
-                            _errors.Add(message);
+                            _errors.Add(_modifyMessage?.Invoke(message) ?? message);
                         }
-                        /// <summary>
-                        /// ワーニングメッセージを追加します。
-                        /// </summary>
                         public void AddWarn(string message) {
-                            _warnings.Add(message);
+                            _warnings.Add(_modifyMessage?.Invoke(message) ?? message);
                         }
-                        /// <summary>
-                        /// インフォメーションメッセージを追加します。
-                        /// </summary>
                         public void AddInfo(string message) {
-                            _informations.Add(message);
-                        }
-                        /// <summary>
-                        /// このオブジェクト内または子孫にエラーが1件以上あるかどうかを返します。
-                        /// </summary>
-                        public bool HasError() {
-                            return EnumerateThisDescendants()
-                                .Any(r => r._errors.Count > 0);
+                            _informations.Add(_modifyMessage?.Invoke(message) ?? message);
                         }
 
-                        /// <summary>
-                        /// このオブジェクトをJSON要素に変換します。
-                        /// クライアント側へ返されるHTTPレスポンスではこのメソッドが使用されます。
-                        /// JSON要素はクライアント側の画面でハンドリングされるエラーデータと同じ構造を持つ必要があります。
-                        /// </summary>
-                        /// <param name="path">React hook form のフィールドパスの記法に従った祖先要素のパス（末尾ピリオドなし）。nullの場合はルート要素であることを示す</param>
-                        public virtual IEnumerable<JsonNode> ToJsonNodes(string? path) {
+                        public bool HasError() {
+                            if (_errors.Count > 0) return true;
+                            return this
+                                .EnumerateThisAndDescendants()
+                                .Any(container => container.HasError());
+                        }
+                        public bool HasConfirm() {
+                            if (_warnings.Count > 0) return true;
+                            return this
+                                .EnumerateThisAndDescendants()
+                                .Any(container => container.HasConfirm());
+                        }
+
+                        public JsonArray? ToJsonNode() {
                             if (_errors.Count == 0 && _warnings.Count == 0 && _informations.Count == 0) {
-                                yield break;
+                                return null;
                             }
                             var types = new JsonObject();
                             for (var i = 0; i < _errors.Count; i++) {
@@ -95,61 +119,35 @@ namespace Nijo.Parts.WebServer {
                             for (var i = 0; i < _informations.Count; i++) {
                                 types[$"INFO-{i}"] = _informations[i]; // キーを "INFO-" で始めるというルールはTypeScript側と合わせる必要がある
                             }
-                            yield return new JsonArray {
-                                path ?? "{{ROOT}}",
+                            return new JsonArray {
+                                _path.Any() ? string.Join(".", _path) : "root", // "root" という名前は React hook form のエラーデータのルール
                                 new JsonObject { ["types"] = types }, // "types" という名前は React hook form のエラーデータのルール
                             };
                         }
 
-                        /// <summary>直近の子要素を列挙する。</summary>
-                        protected virtual IEnumerable<{{RECEIVER}}> EnumerateChildren() {
+                        public abstract IEnumerable<{{RECEIVER_INTERFACE}}> EnumerateChildren();
+                    }
+
+                    /// <summary>
+                    /// 登録処理などで生じたエラーメッセージなどをHTTPレスポンスとして返すまでの入れ物
+                    /// </summary>
+                    public class {{RECEIVER_CONCRETE_CLASS}} : {{RECEIVER_ABSTRACT_CLASS}} {
+                        public {{RECEIVER_CONCRETE_CLASS}}(IEnumerable<string> path, Func<string, string>? modifyMessage = null) : base(path, modifyMessage) { }
+
+                        public override IEnumerable<{{RECEIVER_INTERFACE}}> EnumerateChildren() {
                             yield break;
                         }
-                        /// <summary>子孫を再帰的に列挙する。</summary>
-                        private IEnumerable<{{RECEIVER}}> EnumerateThisDescendants() {
-                            yield return this;
-                            foreach (var descendant in EnumerateChildren().SelectMany(d => d.EnumerateThisDescendants())) {
-                                yield return descendant;
-                            }
-                        }
-
-                        #region WriteModelのオブジェクトに発生したエラーをReadModelのオブジェクトに転送するための仕組み（ReadModel一括更新処理用）
-                        /// <summary>転送先</summary>
-                        private {{RECEIVER}}? _forwardTo;
-
-                        /// <summary>メッセージ転送紐づけ（このオブジェクトが転送する方、引数のオブジェクトが転送される方）</summary>
-                        public void {{FORWARD_TO}}({{RECEIVER}} receiver) {
-                            _forwardTo = receiver;
-                        }
-                        /// <summary>このオブジェクトと子孫のメッセージを、予め登録された転送先に転送します。</summary>
-                        public void {{EXEC_TRANSFER_MESSAGE}}() {
-                            ExecuteTransferMessages(_forwardTo);
-                        }
-                        private void ExecuteTransferMessages({{RECEIVER}}? forwardOfAncestor) {
-                            // このオブジェクトに転送先が指定されている場合はそこへ、
-                            // 指定されていない場合はこのオブジェクトの親へ、エラーメッセージを転送する。
-                            // 親が無い（このオブジェクトがルート要素である）場合は
-                            // 転送を行わずこのオブジェクト内にメッセージを保持しておく（つまり画面上のトップ部分にメッセージが表示される）。
-                            var f = _forwardTo ?? forwardOfAncestor;
-
-                            if (f != null) {
-                                f._errors.AddRange(_errors);
-                                f._warnings.AddRange(_warnings);
-                                f._informations.AddRange(_informations);
-                            }
-                            foreach (var child in EnumerateChildren()) {
-                                child.ExecuteTransferMessages(f);
-                            }
-                        }
-                        #endregion WriteModelのオブジェクトに発生したエラーをReadModelのオブジェクトに転送するための仕組み（ReadModel一括更新処理用）
                     }
-                    
+
                     /// <summary>
-                    /// エラーメッセージの入れ物の配列。
-                    /// 対応するデータの実際の件数が分からないので、インデクサでアクセスされた瞬間にそのインデックス位置の要素が存在するかのうように振る舞う。
+                    /// 登録処理などで生じたエラーメッセージなどをHTTPレスポンスとして返すまでの入れ物の配列
                     /// </summary>
-                    /// <typeparam name="T">要素の型</typeparam>
-                    public partial class {{RECEIVER_LIST}}<T> : {{RECEIVER}}, IReadOnlyList<T?> where T : {{RECEIVER}}, new() {
+                    public class {{RECEIVER_LIST}}<T> : {{RECEIVER_ABSTRACT_CLASS}}, IReadOnlyList<T> where T : {{RECEIVER_INTERFACE}} {
+                        public {{RECEIVER_LIST}}(IEnumerable<string> path, Func<int, T> createItem) : base(path) {
+                            _createItem = createItem;
+                        }
+
+                        private readonly Func<int, T> _createItem;
                         private readonly Dictionary<int, T> _items = new();
 
                         public T this[int index] {
@@ -159,7 +157,7 @@ namespace Nijo.Parts.WebServer {
                                 if (_items.TryGetValue(index, out var item)) {
                                     return item;
                                 } else {
-                                    var newItem = new T();
+                                    var newItem = _createItem(index);
                                     _items[index] = newItem;
                                     return newItem;
                                 }
@@ -170,66 +168,20 @@ namespace Nijo.Parts.WebServer {
                             ? 0
                             : (_items.Keys.Max() + 1);
 
-                        public IEnumerator<T?> GetEnumerator() {
+                        public IEnumerator<T> GetEnumerator() {
                             if (_items.Count == 0) yield break;
 
                             var max = _items.Keys.Max() + 1;
                             for (int i = 0; i < max; i++) {
-                                if (_items.TryGetValue(i, out var item)) {
-                                    yield return item;
-                                } else {
-                                    yield return default; // 存在しない位置の要素はnullを返す
-                                }
+                                yield return this[i];
                             }
                         }
                         IEnumerator IEnumerable.GetEnumerator() {
                             return GetEnumerator();
                         }
 
-                        protected override IEnumerable<{{RECEIVER}}> EnumerateChildren() {
-                            foreach (var item in this) {
-                                if (item != null) yield return item;
-                            }
-                        }
-
-                        public override IEnumerable<JsonNode> ToJsonNodes(string? path) {
-                            // この配列自身に対するエラー
-                            foreach (var node in base.ToJsonNodes(path)) {
-                                yield return node;
-                            }
-
-                            // 配列の各要素に対するエラー
-                            var items = this.ToArray();
-                            for (var i = 0; i < items.Length; i++) {
-                                var item = items[i];
-                                if (item == null) continue;
-
-                                foreach (var node in item.ToJsonNodes($"{path ?? "{{ROOT}}"}.{i}")) {
-                                    yield return node;
-                                }
-                            }
-                        }
-                    }
-
-                    /// <summary>
-                    /// WriteModelで発生したエラーを画面のどこに表示するか（ReadModelのどの項目にマッピングするか）を指定する処理を
-                    /// 直感的に書けるようにするためのクラス
-                    /// </summary>
-                    public sealed class {{MESSAGE_OBJECT_MAPPER}} {
-                        public {{MESSAGE_OBJECT_MAPPER}}({{RECEIVER}}[] containers) {
-                            _containers = containers;
-                        }
-                        private readonly {{RECEIVER}}[] _containers;
-
-                        /// <summary>
-                        /// WriteModelで発生したエラーを画面のどこに表示するか（ReadModelのどの項目にマッピングするか）を指定する処理を記述してください。
-                        /// </summary>
-                        public void Map<TWriteModelMessage>(Action<TWriteModelMessage> mapping) where TWriteModelMessage : {{RECEIVER}} {
-                            foreach (var item in _containers) {
-                                if (item is TWriteModelMessage casted) {
-                                    mapping(casted);
-                                }
-                            }
+                        public override IEnumerable<{{RECEIVER_INTERFACE}}> EnumerateChildren() {
+                            return this.Cast<{{RECEIVER_INTERFACE}}>();
                         }
                     }
                     """;
