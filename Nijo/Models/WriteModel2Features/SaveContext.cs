@@ -129,10 +129,18 @@ namespace Nijo.Models.WriteModel2Features {
                             _confirms.Add(message);
                         }
                         public bool HasConfirm() {
-                            return _confirms.Count > 0;
+                            // 「保存します。よろしいですか？」の確認があるので常に真
+                            return true;
+                            // return _confirms.Count > 0 || _errors.Values.Any(x => x.HasConfirm());
                         }
                         public IEnumerable<string> GetConfirms() {
-                            return _confirms;
+                            if (_confirms.Count > 0) {
+                                return _confirms;
+                            } else if (_errors.Values.Any(x => x.HasConfirm())) {
+                                return ["警告があります。続行してよいですか？"];
+                            } else {
+                                return ["保存します。よろしいですか？"];
+                            }
                         }
                         #endregion 警告
                     }

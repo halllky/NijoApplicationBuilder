@@ -146,8 +146,11 @@ namespace Nijo.Models.CommandModelFeatures {
 
                       } else if (response.status === 202 /* Accepted. このリクエストにおいては「～してもよいですか？」の確認メッセージ表示を意味する */) {
                         // 「～してもよいですか？」の確認メッセージ表示
-                        const resData = (await response.json()) as { {{CommandResult.HTTP_CONFIRM_DETAIL}}: string[] }
-                        for (const msg of resData.{{CommandResult.HTTP_CONFIRM_DETAIL}}) {
+                        const resData = (await response.json()) as { {{CommandResult.HTTP_CONFIRM}}: string[], {{CommandResult.HTTP_MESSAGE_DETAIL}}: [ReactHookForm.FieldPath<T>, { types: { [key: string]: string } }][] }
+                        for (const [name, error] of resData.{{CommandResult.HTTP_MESSAGE_DETAIL}}) {
+                          setError(name, error)
+                        }
+                        for (const msg of resData.{{CommandResult.HTTP_CONFIRM}}) {
                           if (!window.confirm(msg)) {
                             return { success: false } // "OK"が選択されなかった場合は処理実行APIを呼ばずに処理中断
                           }
@@ -158,13 +161,13 @@ namespace Nijo.Models.CommandModelFeatures {
 
                       } else if (response.status === 422 /* Unprocessable Content. エラー */) {
                         // 入力内容エラー
-                        const resData = (await response.json()) as { {{CommandResult.HTTP_ERROR_DETAIL}}: [ReactHookForm.FieldPath<T>, { types: { [key: string]: string } }][] }
+                        const resData = (await response.json()) as { {{CommandResult.HTTP_MESSAGE_DETAIL}}: [ReactHookForm.FieldPath<T>, { types: { [key: string]: string } }][] }
                         if (setError) {
-                          for (const [name, error] of resData.{{CommandResult.HTTP_ERROR_DETAIL}}) {
+                          for (const [name, error] of resData.{{CommandResult.HTTP_MESSAGE_DETAIL}}) {
                             setError(name, error)
                           }
                         } else {
-                          dispatchMsg(msg => msg.error(`入力内容が不正です: ${JSON.stringify(resData.{{CommandResult.HTTP_ERROR_DETAIL}})}`))
+                          dispatchMsg(msg => msg.error(`入力内容が不正です: ${JSON.stringify(resData.{{CommandResult.HTTP_MESSAGE_DETAIL}})}`))
                         }
                         return { success: false }
                       }
@@ -191,8 +194,11 @@ namespace Nijo.Models.CommandModelFeatures {
                     return await postWithHandler(url, param, async response => {
                       if (response.status === 202 /* Accepted. このリクエストにおいては「～してもよいですか？」の確認メッセージ表示を意味する */) {
                         // 「～してもよいですか？」の確認メッセージ表示
-                        const data = (await response.json()) as { {{CommandResult.HTTP_CONFIRM_DETAIL}}: string[] }
-                        for (const msg of data.{{CommandResult.HTTP_CONFIRM_DETAIL}}) {
+                        const data = (await response.json()) as { {{CommandResult.HTTP_CONFIRM}}: string[], {{CommandResult.HTTP_MESSAGE_DETAIL}}: [ReactHookForm.FieldPath<T>, { types: { [key: string]: string } }][] }
+                        for (const [name, error] of data.{{CommandResult.HTTP_MESSAGE_DETAIL}}) {
+                          setError(name, error)
+                        }
+                        for (const msg of data.{{CommandResult.HTTP_CONFIRM}}) {
                           if (!window.confirm(msg)) {
                             return { success: false } // "OK"が選択されなかった場合は処理実行APIを呼ばずに処理中断
                           }
@@ -255,8 +261,8 @@ namespace Nijo.Models.CommandModelFeatures {
 
                       } else if (response.status === 422 /* Unprocessable Content. エラー */) {
                         // 入力内容エラー
-                        const data = (await response.json()) as { {{CommandResult.HTTP_ERROR_DETAIL}}: [ReactHookForm.FieldPath<T>, { types: { [key: string]: string } }][] }
-                        for (const [name, error] of data.{{CommandResult.HTTP_ERROR_DETAIL}}) {
+                        const data = (await response.json()) as { {{CommandResult.HTTP_MESSAGE_DETAIL}}: [ReactHookForm.FieldPath<T>, { types: { [key: string]: string } }][] }
+                        for (const [name, error] of data.{{CommandResult.HTTP_MESSAGE_DETAIL}}) {
                           setError(name, error)
                         }
                         return { success: false }
@@ -283,10 +289,15 @@ namespace Nijo.Models.CommandModelFeatures {
                 [HttpPost("{{(_rootAggregate.Item.Options.LatinName ?? _rootAggregate.Item.UniqueId).ToKebabCase()}}/{{CONTROLLER_CHAGNE_STEPS}}")]
                 public virtual IActionResult {{_rootAggregate.Item.PhysicalName}}ChgngeStep([FromBody] {{STEP_CHANGING_EVENT_ARGS}}<{{param.CsClassName}}, {{StepEnumName}}, {{param.MessageDataCsClassName}}> e) {
                     _applicationService.{{AppSrvOnStepChangingMethod}}(e);
-                    if (e.Errors.HasError()) {
-                        return UnprocessableEntity(new { {{CommandResult.HTTP_ERROR_DETAIL}} = e.Errors.ToReactHookFormErrors().ToArray() });
+                    if (e.Messages.HasError()) {
+                        return UnprocessableEntity(new {
+                            {{CommandResult.HTTP_MESSAGE_DETAIL}} = e.Messages.ToReactHookFormErrors().ToArray(),
+                        });
                     } else if (!e.IgnoreConfirm && e.HasConfirm()) {
-                        return Accepted(new { {{CommandResult.HTTP_CONFIRM_DETAIL}} = e.GetConfirms().ToArray() });
+                        return Accepted(new {
+                            {{CommandResult.HTTP_CONFIRM}} = e.GetConfirms().ToArray(),
+                            {{CommandResult.HTTP_MESSAGE_DETAIL}} = e.Messages.ToReactHookFormErrors().ToArray(),
+                        });
                     } else {
                         return Ok(e);
                     }
@@ -373,7 +384,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     /// </summary>
                     public partial class {{STEP_CHANGING_EVENT_ARGS}}<TData, TStep, TErrors>
                         where TStep : struct, Enum
-                        where TErrors : new() {
+                        where TErrors : {{DisplayMessageContainer.INTERFACE}}, new() {
 
                     #pragma warning disable CS8618 // null 非許容のフィールドには、コンストラクターの終了時に null 以外の値が入っていなければなりません。Null 許容として宣言することをご検討ください。
                         /// <summary>
@@ -404,17 +415,25 @@ namespace Nijo.Models.CommandModelFeatures {
                     #pragma warning restore CS8618 // null 非許容のフィールドには、コンストラクターの終了時に null 以外の値が入っていなければなりません。Null 許容として宣言することをご検討ください。
 
                         /// <summary>
-                        /// エラーメッセージ。1件以上ある場合はステップの切り替えが中断されます。
+                        /// エラーメッセージなど。エラーが1件以上ある場合はステップの切り替えが中断されます。
                         /// </summary>
                         [JsonIgnore]
-                        public TErrors Errors { get; } = new();
+                        public TErrors Messages { get; } = new();
 
                         /// <summary>
                         /// 「～ですが処理実行してよいですか？」等の確認メッセージを追加します。
                         /// </summary>
                         public void AddConfirm(string message) => _confirms.Add(message);
-                        public bool HasConfirm() => _confirms.Count > 0;
-                        public IEnumerable<string> GetConfirms() => _confirms;
+                        public bool HasConfirm() => _confirms.Count > 0 || Messages.HasConfirm();
+                        public IEnumerable<string> GetConfirms() {
+                            if (_confirms.Count > 0) {
+                                return _confirms;
+                            } else if (Messages.HasConfirm()) {
+                                return ["警告があります。続行してよいですか？"];
+                            } else {
+                                return [];
+                            }
+                        }
                         private readonly List<string> _confirms = new();
                     }
                     """;

@@ -40,7 +40,10 @@ namespace Nijo.Models.ReadModel2Features {
         private const string HOOK_PARAM_ITEMS = "Items";
 
         private const string CONTROLLER_ACTION = "display-data";
+        /// <summary><see cref="DisplayMessageContainer.INTERFACE"/>エラーが格納されるプロパティ</summary>
         private const string HTTP_RESULT_DETAIL = "detail";
+        /// <summary>ブラウザのアラートに表示されるstringの配列</summary>
+        private const string HTTP_RESULT_CONFIRM = "confirm";
 
         private const string APPSRV_CONVERT_DISP_TO_SAVE = "ConvertDisplayDataToSaveData";
         private const string APPSRV_BATCH_UPDATE = "BatchUpdateReadModels";
@@ -88,9 +91,9 @@ namespace Nijo.Models.ReadModel2Features {
 
                     } else if (response.status === 202 /* Accepted. このリクエストにおいては「～してもよいですか？」の確認メッセージ表示を意味する */) {
                       // 「～してもよいですか？」の確認メッセージ表示
-                      const resData = (await response.json()) as { {{HTTP_RESULT_DETAIL}}: string[] }
-                      for (const msg of resData.{{HTTP_RESULT_DETAIL}}) {
-                        if (!window.confirm(msg)) return { ok: false } // "OK"が選択されなかった場合は処理実行APIを呼ばずに処理中断
+                      const resData = (await response.json()) as { {{HTTP_RESULT_CONFIRM}}: string[], {{HTTP_RESULT_DETAIL}}: ErrorDetailType }
+                      for (const msg of resData.{{HTTP_RESULT_CONFIRM}}) {
+                        if (!window.confirm(msg)) return { ok: false, errors: resData.{{HTTP_RESULT_DETAIL}} } // "OK"が選択されなかった場合は処理実行APIを呼ばずに処理中断
                       }
                       // すべての確認メッセージで"OK"が選ばれた場合は再度処理実行APIを呼ぶ。確認メッセージを表示しない旨のオプションをつけたうえで呼ぶ。
                       return await callBatchUpdateApi({{HOOK_PARAM_ITEMS}}, true)
@@ -165,10 +168,15 @@ namespace Nijo.Models.ReadModel2Features {
                         var result = _applicationService.{{APPSRV_BATCH_UPDATE}}(parameter.{{HOOK_PARAM_ITEMS}}, options);
 
                         if (result.HasError()) {
-                            return UnprocessableEntity(new { {{HTTP_RESULT_DETAIL}} = result.GetErrorDataJson() });
+                            return UnprocessableEntity(new {
+                                {{HTTP_RESULT_DETAIL}} = result.GetErrorDataJson(),
+                            });
                         }
                         if (!ignoreConfirm && result.HasConfirm()) {
-                            return Accepted(new { {{HTTP_RESULT_DETAIL}} = result.GetConfirms().ToArray() });
+                            return Accepted(new {
+                                {{HTTP_RESULT_CONFIRM}} = result.GetConfirms().ToArray(),
+                                {{HTTP_RESULT_DETAIL}} = result.GetErrorDataJson(),
+                            });
                         }
                         return Ok();
 

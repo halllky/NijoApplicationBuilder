@@ -32,8 +32,8 @@ namespace Nijo.Models.CommandModelFeatures {
         // HTTPレスポンス
         internal const string TYPE_MESSAGE = "message";
         internal const string TYPE_REDIRECT = "redirect";
-        internal const string HTTP_CONFIRM_DETAIL = "detail";
-        internal const string HTTP_ERROR_DETAIL = "detail";
+        internal const string HTTP_CONFIRM = "confirm";
+        internal const string HTTP_MESSAGE_DETAIL = "detail";
 
         /// <summary>
         /// コマンド処理でこの詳細画面へ遷移する処理を書けるように登録する
@@ -197,7 +197,7 @@ namespace Nijo.Models.CommandModelFeatures {
                         }
                         public {{RESULT_INTERFACE_NAME}} Error(TErrors errors) {
                             return new {{ACTION_RESULT_CONTAINER}} {
-                                ActionResult = _controller.UnprocessableEntity(new { {{HTTP_ERROR_DETAIL}} = errors.ToReactHookFormErrors().ToArray() }),
+                                ActionResult = _controller.UnprocessableEntity(new { {{HTTP_MESSAGE_DETAIL}} = errors.ToReactHookFormErrors().ToArray() }),
                             };
                         }
                         public {{RESULT_INTERFACE_NAME}} Confirm(string confirm) {
@@ -205,7 +205,7 @@ namespace Nijo.Models.CommandModelFeatures {
                         }
                         public {{RESULT_INTERFACE_NAME}} Confirm(IEnumerable<string> confirms) {
                             return new {{ACTION_RESULT_CONTAINER}} {
-                                ActionResult = _controller.Accepted(new { {{HTTP_CONFIRM_DETAIL}} = confirms.ToArray() }),
+                                ActionResult = _controller.Accepted(new { {{HTTP_CONFIRM}} = confirms.ToArray() }),
                             };
                         }
 
