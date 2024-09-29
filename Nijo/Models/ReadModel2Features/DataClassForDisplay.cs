@@ -293,19 +293,13 @@ namespace Nijo.Models.ReadModel2Features {
                 MessageReceiver.RECEIVER_ABSTRACT_CLASS,
                 new DataClassForSave(Aggregate, DataClassForSave.E_Type.UpdateOrDelete).MessageDataCsInterfaceName,
             ];
-            string[] args = Aggregate.IsChildrenMember()
-                ? ["IEnumerable<string> path", "int index", "Func<string, string>? modifyMessage = null"] // 子配列の場合は自身のインデックスを表す変数を親から受け取る必要がある
-                : ["IEnumerable<string> path", "Func<string, string>? modifyMessage = null"];
-            string[] @base = Aggregate.IsChildrenMember()
-                ? ["[.. path, index.ToString()]", "modifyMessage"]
-                : ["path", "modifyMessage"];
 
             return $$"""
                 /// <summary>
                 /// {{Aggregate.Item.DisplayName}}の画面表示用データのメッセージ情報格納部分
                 /// </summary>
                 public partial class {{MessageDataCsClassName}} : {{implements.Join(", ")}} {
-                    public {{MessageDataCsClassName}}({{args.Join(", ")}}) : base({{@base.Join(", ")}}) {
+                    public {{MessageDataCsClassName}}(IEnumerable<string> path, Func<string, string>? modifyMessage = null) : base(path, modifyMessage) {
                 {{members.SelectTextTemplate(m => $$"""
                         {{WithIndent(RenderConstructor(m.MemberInfo), "        ")}}
                 """)}}
@@ -337,7 +331,7 @@ namespace Nijo.Models.ReadModel2Features {
                     var forSave = new DataClassForSave(children.ChildrenAggregate, DataClassForSave.E_Type.UpdateOrDelete);
                     return $$"""
                         {{member.MemberName}} = new {{MessageReceiver.RECEIVER_LIST}}<{{forSave.MessageDataCsInterfaceName}}>([.. path, "{{member.MemberName}}"], i => {
-                            return new {{desc.MessageDataCsClassName}}([.. path, "{{member.MemberName}}"], i);
+                            return new {{desc.MessageDataCsClassName}}([.. path, "{{member.MemberName}}", i.ToString()]);
                         });
                         """;
 

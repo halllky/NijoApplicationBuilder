@@ -197,7 +197,7 @@ namespace Nijo.Models.CommandModelFeatures {
                         }
                         public {{RESULT_INTERFACE_NAME}} Error(TErrors errors) {
                             return new {{ACTION_RESULT_CONTAINER}} {
-                                ActionResult = _controller.UnprocessableEntity(new { {{HTTP_ERROR_DETAIL}} = errors.ToJsonNode() }),
+                                ActionResult = _controller.UnprocessableEntity(new { {{HTTP_ERROR_DETAIL}} = errors.ToReactHookFormErrors().ToArray() }),
                             };
                         }
                         public {{RESULT_INTERFACE_NAME}} Confirm(string confirm) {

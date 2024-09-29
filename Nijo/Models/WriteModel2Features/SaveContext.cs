@@ -113,10 +113,11 @@ namespace Nijo.Models.WriteModel2Features {
                         public JsonNode GetErrorDataJson() {
                             var obj = new JsonObject();
                             foreach (var kv in _errors.OrderBy(kv => kv.Key)) {
-                                var value = new JsonArray();
-                                var node = kv.Value.ToJsonNode();
-                                if (node != null) value.Add(node);
-                                obj.Add(kv.Key.ToString(), value);
+                                var pathAndMessages = new JsonArray();
+                                foreach (var x in kv.Value.ToReactHookFormErrors()) {
+                                    pathAndMessages.Add(x);
+                                }
+                                obj.Add(kv.Key.ToString(), pathAndMessages);
                             }
                             return obj;
                         }

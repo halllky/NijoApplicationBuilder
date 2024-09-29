@@ -53,16 +53,15 @@ namespace Nijo.Parts.WebServer {
 
                     public static class DisplayMessageContainerExtensions {
                         /// <summary>
-                        /// 自身に加え子孫要素を再帰的に列挙します。
+                        /// 子孫要素を再帰的に列挙します。
                         /// </summary>
-                        public static IEnumerable<IDisplayMessageContainer> EnumerateThisAndDescendants(this IDisplayMessageContainer container) {
-                            yield return container;
+                        public static IEnumerable<IDisplayMessageContainer> EnumerateDescendants(this IDisplayMessageContainer container) {
+                            foreach (var child in container.EnumerateChildren()) {
+                                yield return child;
 
-                            var descendants = container
-                                .EnumerateChildren()
-                                .SelectMany(child => child.EnumerateThisAndDescendants());
-                            foreach (var desc in descendants) {
-                                yield return desc;
+                                foreach (var desc in child.EnumerateDescendants()) {
+                                    yield return desc;
+                                }
                             }
                         }
                     }
@@ -94,38 +93,50 @@ namespace Nijo.Parts.WebServer {
 
                         public bool HasError() {
                             if (_errors.Count > 0) return true;
-                            return this
-                                .EnumerateThisAndDescendants()
-                                .Any(container => container.HasError());
+                            if (EnumerateDescendants().Any(container => container.HasError())) return true;
+                            return false;
                         }
                         public bool HasConfirm() {
                             if (_warnings.Count > 0) return true;
-                            return this
-                                .EnumerateThisAndDescendants()
-                                .Any(container => container.HasConfirm());
+                            if (EnumerateDescendants().Any(container => container.HasConfirm())) return true;
+                            return false;
                         }
 
-                        public JsonArray? ToJsonNode() {
-                            if (_errors.Count == 0 && _warnings.Count == 0 && _informations.Count == 0) {
-                                return null;
+                        public IEnumerable<JsonArray> ToReactHookFormErrors() {
+                            if (_errors.Count > 0 || _warnings.Count > 0 || _informations.Count > 0) {
+                                var types = new JsonObject();
+                                for (var i = 0; i < _errors.Count; i++) {
+                                    types[$"ERROR-{i}"] = _errors[i]; // キーを "ERROR-" で始めるというルールはTypeScript側と合わせる必要がある
+                                }
+                                for (var i = 0; i < _warnings.Count; i++) {
+                                    types[$"WARN-{i}"] = _warnings[i]; // キーを "WARN-" で始めるというルールはTypeScript側と合わせる必要がある
+                                }
+                                for (var i = 0; i < _informations.Count; i++) {
+                                    types[$"INFO-{i}"] = _informations[i]; // キーを "INFO-" で始めるというルールはTypeScript側と合わせる必要がある
+                                }
+                                yield return new JsonArray {
+                                    _path.Any() ? string.Join(".", _path) : "root", // "root" という名前は React hook form のエラーデータのルール
+                                    new JsonObject { ["types"] = types }, // "types" という名前は React hook form のエラーデータのルール
+                                };
                             }
-                            var types = new JsonObject();
-                            for (var i = 0; i < _errors.Count; i++) {
-                                types[$"ERROR-{i}"] = _errors[i]; // キーを "ERROR-" で始めるというルールはTypeScript側と合わせる必要がある
+                            foreach (var desc in EnumerateDescendants()) {
+                                foreach (var msg in desc.ToReactHookFormErrors()) {
+                                    yield return msg;
+                                }
                             }
-                            for (var i = 0; i < _warnings.Count; i++) {
-                                types[$"WARN-{i}"] = _warnings[i]; // キーを "WARN-" で始めるというルールはTypeScript側と合わせる必要がある
-                            }
-                            for (var i = 0; i < _informations.Count; i++) {
-                                types[$"INFO-{i}"] = _informations[i]; // キーを "INFO-" で始めるというルールはTypeScript側と合わせる必要がある
-                            }
-                            return new JsonArray {
-                                _path.Any() ? string.Join(".", _path) : "root", // "root" という名前は React hook form のエラーデータのルール
-                                new JsonObject { ["types"] = types }, // "types" という名前は React hook form のエラーデータのルール
-                            };
                         }
 
                         public abstract IEnumerable<{{RECEIVER_INTERFACE}}> EnumerateChildren();
+
+                        public IEnumerable<{{RECEIVER_ABSTRACT_CLASS}}> EnumerateDescendants() {
+                            foreach (var child in EnumerateChildren().OfType<{{RECEIVER_ABSTRACT_CLASS}}>()) {
+                                yield return child;
+
+                                foreach (var desc in child.EnumerateDescendants()) {
+                                    yield return desc;
+                                }
+                            }
+                        }
                     }
 
                     /// <summary>

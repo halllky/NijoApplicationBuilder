@@ -280,7 +280,7 @@ namespace Nijo.Models.CommandModelFeatures {
                 public virtual IActionResult {{_rootAggregate.Item.PhysicalName}}ChgngeStep([FromBody] {{STEP_CHANGING_EVENT_ARGS}}<{{param.CsClassName}}, {{StepEnumName}}, {{param.MessageDataCsClassName}}> e) {
                     _applicationService.{{AppSrvOnStepChangingMethod}}(e);
                     if (e.Errors.HasError()) {
-                        return UnprocessableEntity(new { {{CommandResult.HTTP_ERROR_DETAIL}} = e.Errors.ToJsonNodes(null) });
+                        return UnprocessableEntity(new { {{CommandResult.HTTP_ERROR_DETAIL}} = e.Errors.ToReactHookFormErrors().ToArray() });
                     } else if (!e.IgnoreConfirm && e.HasConfirm()) {
                         return Accepted(new { {{CommandResult.HTTP_CONFIRM_DETAIL}} = e.GetConfirms().ToArray() });
                     } else {
