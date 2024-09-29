@@ -327,13 +327,14 @@ namespace Nijo.Models.ReadModel2Features {
                     public {{m.CsTypeName}} {{m.MemberName}} { get; }
                 """)}}
 
-                {{If(members.Length > 0, () => $$"""
                     public override IEnumerable<{{MessageReceiver.RECEIVER_INTERFACE}}> EnumerateChildren() {
+                {{If(members.Length == 0, () => $$"""
+                        yield break;
+                """)}}
                 {{members.SelectTextTemplate(m => $$"""
                         yield return {{m.MemberName}};
                 """)}}
                     }
-                """)}}
                 }
                 """;
 
