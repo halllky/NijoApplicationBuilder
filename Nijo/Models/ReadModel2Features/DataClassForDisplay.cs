@@ -258,33 +258,37 @@ namespace Nijo.Models.ReadModel2Features {
 
 
         #region メッセージ用構造体
+        /// <summary>
+        /// メッセージ用構造体をレンダリングします。
+        /// </summary>
         private string RenderCsMessageClass(CodeRenderingContext context) {
             // ReadModel, WriteModel が同型のオブジェクトの場合、
             // Write側の各プロジェクトをそのままRead型の各プロパティにマッピングすればよいのでクラスの内容も自動生成する。
-            // それ以外の場合、ソース自動生成できないので、個別実装に任せる。
-            if (Aggregate.GetRoot().Item.Options.GenerateDefaultReadModel) {
-                return RenderCsMessageClassWithContents(context);
+            // それ以外の場合、とりあえずReadModelと同じ型の構造で定義する。
+            // （ただ、ほとんどの場合はWriteModelのエラーデータのインターフェースを実装できないと考えられるため、
+            //   ここで生成されたクラスが実際に使われることは少ないだろう）
+            var areReadAndWriteSame = Aggregate.GetRoot().Item.Options.GenerateDefaultReadModel;
 
-            } else {
-                return RenderCsMessageClassOnlyPartialDeclaring(context);
-            }
-        }
-        /// <summary>
-        /// ReadModel, WriteModel が同型のオブジェクトの場合のメッセージ構造体定義
-        /// </summary>
-        private string RenderCsMessageClassWithContents(CodeRenderingContext context) {
             var members = GetOwnMembers().Select(m => new {
                 MemberInfo = m,
                 m.MemberName,
                 CsTypeName = MessageReceiver.RECEIVER_INTERFACE,
                 m.Order,
-            }).Concat(GetChildMembers().Select(desc => new {
-                MemberInfo = (AggregateMember.AggregateMemberBase)desc.MemberInfo,
-                desc.MemberName,
-                CsTypeName = desc.MemberInfo is AggregateMember.Children children
-                    ? $"{MessageReceiver.RECEIVER_LIST}<{new DataClassForSave(desc.MemberInfo.MemberAggregate, DataClassForSave.E_Type.UpdateOrDelete).MessageDataCsInterfaceName}>"
-                    : new DataClassForSave(desc.MemberInfo.MemberAggregate, DataClassForSave.E_Type.UpdateOrDelete).MessageDataCsInterfaceName,
-                desc.MemberInfo.Order,
+            }).Concat(GetChildMembers().Select(desc => {
+                // Read/Write が同形の場合は、WriteModelのインターフェースを実装できるようWrite側のインターフェース名で宣言。
+                // そうでない場合は別になんでもよいのでReadModelのクラス名で直接宣言。
+                var descType = areReadAndWriteSame
+                    ? new DataClassForSave(desc.MemberInfo.MemberAggregate, DataClassForSave.E_Type.UpdateOrDelete).MessageDataCsInterfaceName
+                    : desc.MessageDataCsClassName;
+
+                return new {
+                    MemberInfo = (AggregateMember.AggregateMemberBase)desc.MemberInfo,
+                    desc.MemberName,
+                    CsTypeName = desc.MemberInfo is AggregateMember.Children children
+                        ? $"{MessageReceiver.RECEIVER_LIST}<{descType}>"
+                        : descType,
+                    desc.MemberInfo.Order,
+                };
             }))
             .OrderBy(m => m.Order)
             .ToArray();
@@ -295,14 +299,20 @@ namespace Nijo.Models.ReadModel2Features {
                 .Any(agg => agg.IsChildrenMember()
                          && agg.CanDisplayAllMembersAs2DGrid());
 
+            // WriteModel側のエラーデータのインターフェース
             var writeModelInterface = new DataClassForSave(Aggregate, DataClassForSave.E_Type.UpdateOrDelete).MessageDataCsInterfaceName;
 
-            string[] implements = [
-                isInGrid
-                    ? MessageReceiver.RECEIVER_CONCRETE_CLASS_IN_GRID
-                    : MessageReceiver.RECEIVER_ABSTRACT_CLASS ,
-                writeModelInterface,
-            ];
+            // このクラスが継承する基底クラスやインターフェース
+            var implements = new List<string>();
+            if (isInGrid) {
+                implements.Add(MessageReceiver.RECEIVER_CONCRETE_CLASS_IN_GRID);
+            } else {
+                implements.Add(MessageReceiver.RECEIVER_ABSTRACT_CLASS);
+            }
+            if (areReadAndWriteSame) {
+                implements.Add(writeModelInterface);
+            }
+
             string[] args = isInGrid
                 ? ["IEnumerable<string> path", $"{MessageReceiver.RECEIVER_ABSTRACT_CLASS} grid", "int rowIndex"]
                 : ["IEnumerable<string> path"];
@@ -313,7 +323,12 @@ namespace Nijo.Models.ReadModel2Features {
             return $$"""
                 /// <summary>
                 /// {{Aggregate.Item.DisplayName}}の画面表示用データのメッセージ情報格納部分。
+                {{If(areReadAndWriteSame, () => $$"""
                 /// <see cref="{{writeModelInterface}}"/> の更新処理で発生したエラー等を画面項目にマッピングする。
+                """).Else(() => $$"""
+                /// WriteModelのデータとのマッピングが必要になる場合、このクラスを使用せず、
+                /// 別途当該WriteModelのエラーデータのインターフェースを実装したクラスを新規作成して、そちらを使用してください。
+                """)}}
                 /// </summary>
                 public partial class {{MessageDataCsClassName}} : {{implements.Join(", ")}} {
                     public {{MessageDataCsClassName}}({{args.Join(", ")}}) : base({{@base.Join(", ")}}) {
@@ -348,9 +363,8 @@ namespace Nijo.Models.ReadModel2Features {
 
                 } else if (member is AggregateMember.Children children) {
                     var desc = new DataClassForDisplayDescendant(children);
-                    var forSave = new DataClassForSave(children.ChildrenAggregate, DataClassForSave.E_Type.UpdateOrDelete);
                     return $$"""
-                        {{member.MemberName}} = new {{MessageReceiver.RECEIVER_LIST}}<{{forSave.MessageDataCsInterfaceName}}>([.. path, "{{member.MemberName}}"], rowIndex => {
+                        {{member.MemberName}} = new([.. path, "{{member.MemberName}}"], rowIndex => {
                             return new {{desc.MessageDataCsClassName}}([.. path, "{{member.MemberName}}", rowIndex.ToString()], {{member.MemberName}}!, rowIndex);
                         });
                         """;
