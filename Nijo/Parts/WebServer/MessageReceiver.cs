@@ -118,8 +118,8 @@ namespace Nijo.Parts.WebServer {
                                     new JsonObject { ["types"] = types }, // "types" という名前は React hook form のエラーデータのルール
                                 };
                             }
-                            foreach (var desc in EnumerateDescendants()) {
-                                foreach (var msg in desc.ToReactHookFormErrors()) {
+                            foreach (var child in EnumerateChildren().OfType<{{RECEIVER_ABSTRACT_CLASS}}>()) {
+                                foreach (var msg in child.ToReactHookFormErrors()) {
                                     yield return msg;
                                 }
                             }
