@@ -278,7 +278,7 @@ namespace Nijo.Models.ReadModel2Features {
                             <PanelGroup direction={singleViewPosition}>
 
                               {/* 一覧欄 */}
-                              <Panel className="flex flex-col border border-color-4">
+                              <Panel collapsible className="flex flex-col">
                                 <Input.FormItemMessage name="root" />
                                 <Layout.DataTable
                                   ref={tableRef}
@@ -286,7 +286,7 @@ namespace Nijo.Models.ReadModel2Features {
                                   columns={columnDefs}
                                   onActiveRowChanged={handleActiveRowChanged}
                                   onChangeRow={handleChangeRow}
-                                  className="flex-1"
+                                  className="flex-1 border border-color-4"
                                 />
                               </Panel>
                     {{If(showDetailView, () => $$"""
