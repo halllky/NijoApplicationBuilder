@@ -63,15 +63,23 @@ namespace Nijo.Models.CommandModelFeatures {
                 """);
         }
 
+        /// <summary>
+        /// この集約がグリッドで表示される場合はエラーメッセージの表示方法が特殊
+        /// （グリッドのヘッダとセル内部の計2か所にエラーメッセージが出る）
+        /// </summary>
+        private static bool IsInGrid(GraphNode<Aggregate> agg) {
+            return agg
+            .EnumerateAncestorsAndThis()
+            .Any(agg => agg.IsChildrenMember()
+                     && agg.CanDisplayAllMembersAs2DGrid());
+        }
+
         internal string RenderCSharpMessageClassDeclaring(CodeRenderingContext context) {
             return EnumerateThisAndDescendants().SelectTextTemplate(param => {
                 var members = param.GetOwnMembers().ToArray();
 
                 // この集約がグリッドで表示される場合はエラーメッセージの表示方法が特殊
-                var isInGrid = param._aggregate
-                    .EnumerateAncestorsAndThis()
-                    .Any(agg => agg.IsChildrenMember()
-                             && agg.CanDisplayAllMembersAs2DGrid());
+                var isInGrid = IsInGrid(param._aggregate);
 
                 // このクラスが継承する基底クラスやインターフェース
                 var implements = new List<string>();
@@ -216,7 +224,9 @@ namespace Nijo.Models.CommandModelFeatures {
             };
 
             internal string CsErrorMemberType => MemberInfo switch {
-                AggregateMember.ValueMember => DisplayMessageContainer.CONCRETE_CLASS,
+                AggregateMember.ValueMember => IsInGrid(MemberInfo.Owner)
+                    ? DisplayMessageContainer.CONCRETE_CLASS_IN_GRID
+                    : DisplayMessageContainer.CONCRETE_CLASS,
                 AggregateMember.Children children => $"{DisplayMessageContainer.CONCRETE_CLASS_LIST}<{new CommandParameter(children.ChildrenAggregate).MessageDataCsClassName}>",
                 AggregateMember.Child child => new CommandParameter(child.ChildAggregate).MessageDataCsClassName,
                 AggregateMember.VariationItem variation => new CommandParameter(variation.VariationAggregate).MessageDataCsClassName,
