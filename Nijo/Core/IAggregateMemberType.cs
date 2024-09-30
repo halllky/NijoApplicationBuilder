@@ -173,7 +173,7 @@ namespace Nijo.Core {
                 /** 文字列 */
                 const {{DataTableColumnDefHelperName}}: {{Parts.WebClient.DataTable.CellType.RETURNS_ONE_COLUMN}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => ({
                   ...opt,
-                  id: opt?.id ?? `${opt?.headerGroupName}::${header}`,
+                  id: `${opt?.headerGroupName}::${header}`,
                   header,
                   render: row => <PlainCell>{getValue(row)}</PlainCell>,
                   onClipboardCopy: row => getValue(row) ?? '',

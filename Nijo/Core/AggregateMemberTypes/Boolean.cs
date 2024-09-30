@@ -107,7 +107,7 @@ namespace Nijo.Core.AggregateMemberTypes {
                   }
                   return {
                     ...opt,
-                    id: opt?.id ?? `${opt?.headerGroupName}::${header}`,
+                    id: `${opt?.headerGroupName}::${header}`,
                     header,
                     render: row => <PlainCell>{(getValue(row) ? '✓' : '')}</PlainCell>,
                     onClipboardCopy: row => getValue(row) ? 'TRUE' : 'FALSE',
