@@ -66,7 +66,7 @@ const Indent = ({ label, children, className }: {
   className?: string
 }) => {
   return (
-    <div className={`grid grid-cols-[subgrid] col-span-full border-vform ${className ?? ''}`}>
+    <div className={`grid grid-cols-[subgrid] col-span-full border-vform m-1 ${className ?? ''}`}>
       <div className="px-1 col-span-full select-none">
         {renderLabel(label)}&nbsp;
       </div>
@@ -88,7 +88,7 @@ const Item = ({ label, wideLabelValue, wideValue, children }: {
   // 要素がグリッドの横幅いっぱい確保される場合のレイアウト
   if (wideLabelValue) return (
     <>
-      <div className="px-1 col-span-full border-vform">
+      <div className="px-1 pt-1 col-span-full">
         {renderLabel(label)}
       </div>
       <div className="col-span-full border-vform bg-color-0">
