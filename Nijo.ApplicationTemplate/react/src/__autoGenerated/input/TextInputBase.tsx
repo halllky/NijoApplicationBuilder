@@ -65,6 +65,7 @@ export const TextInputBase = defineCustomComponent<string, {
         setFormatError(true)
       }
     } else {
+      onChangeFormattedText?.(unFormatText)
       setFormatError(false)
     }
   }, [onValidate, unFormatText, setUnFormatText, onChangeFormattedText])
@@ -88,8 +89,7 @@ export const TextInputBase = defineCustomComponent<string, {
   // イベント
   const onChange: React.ChangeEventHandler<HTMLInputElement> = useCallback(e => {
     setUnFormatText(e.target.value)
-    if (onValidate === undefined) onChangeFormattedText?.(e.target.value)
-  }, [onValidate, onChangeFormattedText])
+  }, [onValidate])
 
   const handleFocus: React.FocusEventHandler<HTMLInputElement> = useCallback(e => {
     inputRef.current?.select()
