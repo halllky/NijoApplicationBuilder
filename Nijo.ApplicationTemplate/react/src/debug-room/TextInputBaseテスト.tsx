@@ -22,17 +22,24 @@ export default function () {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="grid grid-cols-[8rem,1fr] px-8 py-4 gap-2">
-        <label>普通のテキスト</label>
-        <Input.Word {...registerEx('普通のテキスト')} />
-        <label>フォーマッタつき</label>
-        <Input.Date {...registerEx('フォーマッタつき')} />
-        <label>同期DDL</label>
-        <Input.ComboBox {...registerEx('同期DDL')} {...propsAlias1} />
-        <label>非同期DDL</label>
-        <Input.AsyncComboBox {...registerEx('非同期DDL')} {...propsAlias2} />
+      <div className="flex p-4 gap-2">
+        <div className="grid grid-cols-[8rem,16rem] grid-rows-[auto,auto,auto,auto,fr1] gap-2">
+          <label>普通のテキスト</label>
+          <Input.Word {...registerEx('普通のテキスト')} />
 
-        <Layout.UnknownObjectViewer value={rootValue} className="col-span-2 pt-8" />
+          <label>フォーマッタつき</label>
+          <Input.Date {...registerEx('フォーマッタつき')} />
+
+          <label>同期DDL</label>
+          <Input.ComboBox {...registerEx('同期DDL')} {...propsAlias1} />
+
+          <label>非同期DDL</label>
+          <Input.AsyncComboBox {...registerEx('非同期DDL')} {...propsAlias2} />
+
+          <div className="col-span-2"></div>
+        </div>
+
+        <Layout.UnknownObjectViewer label="状態表示" value={rootValue} className="flex-1" />
       </div>
     </QueryClientProvider>
   )

@@ -2,6 +2,7 @@ import { ChevronUpDownIcon } from "@heroicons/react/24/solid";
 import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { ValidationHandler, ValidationResult, defineCustomComponent } from "./InputBase";
 import { useOutsideClick, useUserSetting } from "..";
+import useEvent from "react-use-event-hook";
 
 export type TextInputBaseArgs = Parameters<typeof TextInputBase>['0']
 export type DropDownBody = (props: { focusRef: React.RefObject<never> }) => React.ReactNode
@@ -47,13 +48,13 @@ export const TextInputBase = defineCustomComponent<string, {
     setUnFormatText(value ?? '')
   }, [value])
 
-  const getValidationResult = useCallback((rawText: string | undefined): ValidationResult => {
+  const getValidationResult = useEvent((rawText: string | undefined): ValidationResult => {
     if (!rawText) return { ok: true, formatted: '' }
     if (!onValidate) return { ok: true, formatted: rawText }
     return onValidate(rawText)
-  }, [onValidate])
+  })
 
-  const executeFormat = useCallback(() => {
+  const executeFormat = useEvent(() => {
     if (onValidate) {
       const result = getValidationResult(unFormatText)
       if (result.ok) {
@@ -68,7 +69,7 @@ export const TextInputBase = defineCustomComponent<string, {
       onChangeFormattedText?.(unFormatText)
       setFormatError(false)
     }
-  }, [onValidate, unFormatText, setUnFormatText, onChangeFormattedText])
+  })
 
   // ドロップダウン開閉
   const [open, setOpen] = useState(false)
@@ -77,27 +78,27 @@ export const TextInputBase = defineCustomComponent<string, {
     open: () => setOpen(true),
     close: () => setOpen(false),
   }
-  const onSideButtonClick = useCallback(() => {
+  const onSideButtonClick = useEvent(() => {
     setOpen(!open)
     onDropdownOpened?.()
-  }, [open, onDropdownOpened])
-  const onClose = useCallback(() => {
+  })
+  const onClose = useEvent(() => {
     setOpen(false)
     inputRef.current?.focus()
-  }, [])
+  })
 
   // イベント
-  const onChange: React.ChangeEventHandler<HTMLInputElement> = useCallback(e => {
+  const onChange: React.ChangeEventHandler<HTMLInputElement> = useEvent(e => {
     setUnFormatText(e.target.value)
-  }, [onValidate])
+  })
 
-  const handleFocus: React.FocusEventHandler<HTMLInputElement> = useCallback(e => {
+  const handleFocus: React.FocusEventHandler<HTMLInputElement> = useEvent(e => {
     inputRef.current?.select()
     onFocus?.(e)
-  }, [onFocus])
+  })
 
   const divRef = useRef<HTMLDivElement>(null)
-  const handleBlur: React.FocusEventHandler<HTMLInputElement> = useCallback(e => {
+  const handleBlur: React.FocusEventHandler<HTMLInputElement> = useEvent(e => {
     // フォーマットされた値を表示に反映
     executeFormat()
 
@@ -110,14 +111,14 @@ export const TextInputBase = defineCustomComponent<string, {
     }
 
     onBlur?.(e)
-  }, [onBlur, executeFormat])
+  })
 
   // バリデーションのルールが変わったときに再評価
   useEffect(() => {
     executeFormat()
   }, [onValidate])
 
-  const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = useCallback(e => {
+  const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = useEvent(e => {
     if (!dropdownAutoOpen && open && e.key === 'Escape') {
       setOpen(false)
       e.preventDefault()
@@ -126,7 +127,7 @@ export const TextInputBase = defineCustomComponent<string, {
       e.preventDefault() // Enterキーでsubmitされるのを防ぐ
     }
     onKeyDown?.(e)
-  }, [onKeyDown, open, dropdownAutoOpen])
+  })
 
   useImperativeHandle(ref, () => ({
     getValue: () => {
@@ -195,15 +196,15 @@ const Dropdown = ({ onClose, children }: {
     onClose?.()
   }, [onClose])
 
-  const onBlur: React.FocusEventHandler = useCallback(e => {
+  const onBlur: React.FocusEventHandler = useEvent(e => {
     onClose?.()
-  }, [onClose])
-  const onKeyDown: React.KeyboardEventHandler = useCallback(e => {
+  })
+  const onKeyDown: React.KeyboardEventHandler = useEvent(e => {
     if (e.key === 'Escape') {
       onClose?.()
       e.preventDefault()
     }
-  }, [onClose])
+  })
 
   return (
     <div
