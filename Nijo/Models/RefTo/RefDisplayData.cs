@@ -149,7 +149,7 @@ namespace Nijo.Models.RefTo {
                 string RenderMemberStatement(AggregateMember.AggregateMemberBase member) {
                     if (member is AggregateMember.ValueMember vm) {
                         return $$"""
-                            {{dbEntityInstance}}.{{vm.Declared.GetFullPathAsDbEntity(dbEntityAggregate).Join(".")}}
+                            {{dbEntityInstance}}.{{vm.Declared.GetFullPathAsDbEntity(dbEntityAggregate).Join("?.")}}
                             """;
 
                     } else if (member is AggregateMember.Ref @ref) {
@@ -171,7 +171,7 @@ namespace Nijo.Models.RefTo {
                             string RenderRefSearchResultMember(AggregateMember.AggregateMemberBase m) {
                                 if (m is AggregateMember.ValueMember vm3) {
                                     return $$"""
-                                    {{instance}}.{{vm3.Declared.GetFullPathAsDbEntity(instanceAgg).Join(".")}}
+                                    {{instance}}.{{vm3.Declared.GetFullPathAsDbEntity(instanceAgg).Join("?.")}}
                                     """;
 
                                 } else if (m is AggregateMember.Children children3) {
