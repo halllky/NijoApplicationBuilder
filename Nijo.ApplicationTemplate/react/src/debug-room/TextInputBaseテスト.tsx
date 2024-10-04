@@ -16,14 +16,26 @@ const queryClient = new QueryClient({
 })
 
 export default function () {
+  return (
+    <Layout.DialogContextProvider>
+      <QueryClientProvider client={queryClient}>
+        <Page />
+      </QueryClientProvider>
+    </Layout.DialogContextProvider>
+  )
+}
+
+const Page = () => {
 
   const { registerEx, control } = Util.useFormEx<TestData>({ defaultValues: getDefaultTestData() })
   const rootValue = useWatch({ control })
 
+  const [, dispatchDialog] = Layout.useDialogContext()
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <div className="flex p-4 gap-2">
-        <div className="grid grid-cols-[8rem,16rem] grid-rows-[auto,auto,auto,auto,fr1] gap-2">
+    <div className="flex p-4 gap-2">
+      <div className="flex justify-stretch items-start">
+        <div className="grid grid-cols-[8rem,16rem] grid-rows-[auto,auto,auto,auto,fr1] gap-2 overflow-x-auto">
           <label>普通のテキスト</label>
           <Input.Word {...registerEx('普通のテキスト')} />
 
@@ -36,12 +48,21 @@ export default function () {
           <label>非同期DDL</label>
           <Input.AsyncComboBox {...registerEx('非同期DDL')} {...propsAlias2} />
 
-          <div className="col-span-2"></div>
-        </div>
+          <div className="col-span-2">
+            <button type="button" onClick={() => {
+              dispatchDialog(state => state.pushDialog('aaa', ctx => (
+                <div className="w-64 h-64">
+                  aassa
+                </div>
+              )))
+            }}>test</button>
 
-        <Layout.UnknownObjectViewer label="状態表示" value={rootValue} className="flex-1" />
+          </div>
+        </div>
       </div>
-    </QueryClientProvider>
+
+      <Layout.UnknownObjectViewer label="状態表示" value={rootValue} className="flex-1" />
+    </div>
   )
 }
 
@@ -74,7 +95,15 @@ const propsAlias1 = {
   options: ddlSource,
 }
 const propsAlias2 = {
-  query: async (q: string | undefined) => (q ? ddlSource.filter(y => y.key.includes(q)) : []),
+  query: (keyword: string | undefined) => {
+    return new Promise<DDLItem[]>(resolve => {
+      if (keyword) {
+        resolve(ddlSource.filter(y => y.key.includes(keyword) || y.text.includes(keyword)))
+      } else {
+        resolve([...ddlSource])
+      }
+    })
+  },
   emitValueSelector: (x: DDLItem) => x,
   matchingKeySelectorFromEmitValue: (x: DDLItem) => x.key,
   matchingKeySelectorFromOption: (x: DDLItem) => x.key,

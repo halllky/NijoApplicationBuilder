@@ -1,7 +1,10 @@
 import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
-import { useIMEOpened, normalize } from "../util"
-import { DropDownApi, TextInputBase } from "./TextInputBase"
+import { ChevronUpDownIcon } from "@heroicons/react/24/solid"
+import { useIMEOpened, normalize, useOutsideClick } from "../util"
+import { TextInputBase, TextInputBaseAdditionalRef } from "./TextInputBase"
 import { CustomComponentProps, CustomComponentRef, SyncComboProps, defineCustomComponent } from "./InputBase"
+import useEvent from "react-use-event-hook"
+import { useDialogContext } from "../collection"
 
 export const ComboBoxBase = defineCustomComponent(<TOption, TEmitValue, TMatchingKey extends string = string>(
   props2: CustomComponentProps<TEmitValue, SyncComboProps<TOption, TEmitValue, TMatchingKey>>,
@@ -27,8 +30,6 @@ export const ComboBoxBase = defineCustomComponent(<TOption, TEmitValue, TMatchin
 
   // フィルタリング
   const [keyword, setKeyword] = useState<string | undefined>(undefined) // フォーカスを当ててから何か入力された場合のみundefinedでなくなる
-  useEffect(() => {
-  }, [options, keyword])
   const filtered = useMemo(() => {
     if (keyword === undefined) return [...options]
     const normalized = normalize(keyword)
@@ -145,7 +146,7 @@ export const ComboBoxBase = defineCustomComponent(<TOption, TEmitValue, TMatchin
     textBaseRef.current?.focus()
   }, [highlightAnyItem])
 
-  const textBaseRef = useRef<CustomComponentRef>(null)
+  const textBaseRef = useRef<CustomComponentRef & TextInputBaseAdditionalRef>(null)
   useImperativeHandle(ref, () => ({
     getValue: () => {
       const anyItem = getHighlightedOrAnyItem()
@@ -165,37 +166,94 @@ export const ComboBoxBase = defineCustomComponent(<TOption, TEmitValue, TMatchin
     return ''
   }, [keyword, value, textSelector, matchingKeySelectorFromOption, matchingKeySelectorFromEmitValue, options])
 
+  const [, dispatchDialog] = useDialogContext()
+  const openDropdown = useEvent(() => {
+    dispatchDialog(state => state.openPopup(textBaseRef.current?.element, () => (
+      <ul>
+        {filtered.length === 0 && (
+          <ListItem className="text-color-6">データなし</ListItem>
+        )}
+        {filtered.map(item => (
+          <ListItem
+            key={matchingKeySelectorFromOption(item)}
+            value={matchingKeySelectorFromOption(item)}
+            active={matchingKeySelectorFromOption(item) === highlighted}
+            onClick={onClickItem}
+          >
+            {textSelector(item)}&nbsp;
+          </ListItem>
+        ))}
+      </ul>
+    )))
+  })
+
   return (
     <TextInputBase
       ref={textBaseRef}
       readOnly={readOnly}
       name={name}
       value={displayText}
-      onChange={onChangeKeyword}
+      onOneCharChanged={onChangeKeyword}
       onKeyDown={handleKeyDown}
-      onDropdownOpened={onDropdownOpened}
-      dropdownRef={dropdownRef}
-      dropdownAutoOpen={dropdownAutoOpen}
-      dropdownBody={() => (
-        <ul>
-          {filtered.length === 0 && (
-            <ListItem className="text-color-6">データなし</ListItem>
-          )}
-          {filtered.map(item => (
-            <ListItem
-              key={matchingKeySelectorFromOption(item)}
-              value={matchingKeySelectorFromOption(item)}
-              active={matchingKeySelectorFromOption(item) === highlighted}
-              onClick={onClickItem}
-            >
-              {textSelector(item)}&nbsp;
-            </ListItem>
-          ))}
-        </ul>
-      )}
+      AtEnd={<DropdownButton onClick={openDropdown} />}
     />
   )
 })
+
+const DropdownButton = ({ onClick }: {
+  onClick?: () => void
+}) => {
+  return (
+    <ChevronUpDownIcon
+      className="w-6 text-color-5 border-l border-color-5 cursor-pointer"
+      onClick={onClick}
+    />
+  )
+}
+
+export type DropDownBody = (props: { focusRef: React.RefObject<never> }) => React.ReactNode
+export type DropDownApi = { isOpened: boolean, open: () => void, close: () => void }
+
+const Dropdown = ({ onClose, children }: {
+  onClose?: () => void
+  children?: DropDownBody
+}) => {
+  const divRef = useRef<HTMLDivElement>(null)
+  const focusRef = useRef<never | null>(null)
+
+  useEffect(() => {
+    // ドロップダウン内の要素にフォーカスを当てる
+    const htmlElement = focusRef.current as { focus: () => void } | null
+    if (typeof htmlElement?.focus === 'function') {
+      htmlElement.focus()
+    }
+  }, [])
+
+  useOutsideClick(divRef, () => {
+    onClose?.()
+  }, [onClose])
+
+  const onBlur: React.FocusEventHandler = useEvent(e => {
+    onClose?.()
+  })
+  const onKeyDown: React.KeyboardEventHandler = useEvent(e => {
+    if (e.key === 'Escape') {
+      onClose?.()
+      e.preventDefault()
+    }
+  })
+
+  return (
+    <div
+      ref={divRef}
+      className="absolute top-[calc(100%+2px)] left-[-1px] min-w-[calc(100%+2px)] z-10 bg-color-base border border-color-5 outline-none"
+      onBlur={onBlur}
+      onKeyDown={onKeyDown}
+    >
+      {children?.({ focusRef })}
+    </div>
+  )
+}
 
 const ListItem = (props: React.LiHTMLAttributes<HTMLLIElement> & {
   active?: boolean

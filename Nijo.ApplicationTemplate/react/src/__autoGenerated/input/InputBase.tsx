@@ -11,10 +11,11 @@ export type ValidationResult = ReturnType<ValidationHandler>
 export const defineCustomComponent = <
   TValue,
   TAdditionalProp extends {} = {},
-  TElementAttrs extends HTMLAttributes<HTMLElement> = HTMLAttributes<HTMLElement>
+  TElementAttrs extends HTMLAttributes<HTMLElement> = HTMLAttributes<HTMLElement>,
+  TAdditionalRef extends {} = {},
 >(fn: (
   props: CustomComponentProps<TValue, TAdditionalProp, TElementAttrs>,
-  ref: React.ForwardedRef<CustomComponentRef<TValue>>) => React.ReactNode
+  ref: React.ForwardedRef<CustomComponentRef<TValue> & TAdditionalRef>) => React.ReactNode
 ) => {
   return forwardRefEx(fn)
 }

@@ -5,7 +5,7 @@ export * from "./TreeExplorer"
 export * from "./DataTable"
 export * from './DataTable.Public'
 export * from './DataTable.CellType'
-export * from "./ModalDialog"
+export * from "./DialogAndPopup"
 export * from "./UnknownObjectViewer"
 export * from "./PageFrame"
 export * from "./AddModDelState"

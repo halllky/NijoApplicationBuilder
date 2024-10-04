@@ -2,7 +2,7 @@ import React, { useLayoutEffect, useRef } from 'react'
 import useEvent from 'react-use-event-hook'
 import { IconButton } from '../input/IconButton'
 import { UUID } from 'uuidjs'
-import { defineContext2 } from '../util/ReactUtil'
+import { defineContext2, useOutsideClick } from '../util/ReactUtil'
 import { MsgContextProvider, InlineMessageList } from '../util/Notification'
 
 /** モーダルダイアログの枠 */
@@ -62,45 +62,100 @@ const ModalDialog = ({ title, open, onClose, children, className }: {
   )
 }
 
+/** ポップアップの枠 */
+const PopupFrame = ({ target, onClose, children }: {
+  /** この要素の脇にポップアップが表示されます。 */
+  target: HTMLElement | null | undefined
+  onClose: () => void
+  children?: React.ReactNode
+}) => {
+  const divRef = useRef<HTMLDivElement>(null)
+
+  // targetの脇に表示する
+  React.useEffect(() => {
+    if (divRef.current && target) {
+      const rect = target.getBoundingClientRect()
+      // TODO:
+      // - divRef.current を target の右下に表示しても画面内に収まる場合、右下に表示する。
+      // - 画面内に収まらない場合、右上に表示する。
+      divRef.current.style.top = `${rect.bottom + 1}px`
+      divRef.current.style.right = `${rect.right + target.clientLeft}px`
+    }
+  }, [divRef])
+
+  // // 外側クリックでポップアップを閉じる
+  // useOutsideClick(divRef, () => {
+  //   onClose?.()
+  // }, [onClose])
+
+  return (
+    <div ref={divRef} className="fixed bg-color-ridge border border-color-5">
+      {children}
+    </div>
+  )
+}
+
 // -----------------------
-// ダイアログの枠とダイアログを呼び出す各画面は React Context を使って接続する ここから
+// ダイアログやポップアップの枠とそれらを呼び出す各画面は React Context を使って接続する ここから
 
 type DialogContextState = {
-  stack: { id: string, title: string, contents: DialogContents }[]
+  stack: { id: string, title: string, contents: DialogOrPopupContents }[]
+  popup: { target: HTMLElement | null | undefined, contents: DialogOrPopupContents } | undefined
 }
-type DialogContents = (props: {
+type DialogOrPopupContents = (props: {
   closeDialog: () => void
 }) => React.ReactNode
 
 const initialize = (): DialogContextState => ({
-  stack: []
+  stack: [],
+  popup: undefined,
 })
 const { reducer, ContextProvider, useContext: useDialogContext } = defineContext2(
   initialize,
   state => ({
-    pushDialog: (title: string, contents: DialogContents) => ({
+    /** 新しいダイアログを開きます。一度に複数のダイアログが開かれる可能性を考慮し、新しいダイアログはスタックに積まれます。 */
+    pushDialog: (title: string, contents: DialogOrPopupContents) => ({
       stack: [{ id: UUID.generate(), title, contents }, ...state.stack],
+      popup: state.popup,
     }),
+    /** ダイアログを閉じます（スタックからダイアログを除去します）。 */
     removeDialog: (id: string) => {
       return ({
         stack: state.stack.filter(d => d.id !== id),
+        popup: state.popup,
       })
     },
+    /** ポップアップを開きます。既存のポップアップは閉じられます。 */
+    openPopup: (target: HTMLElement | null | undefined, contents: DialogOrPopupContents) => ({
+      stack: state.stack,
+      popup: { target, contents },
+    }),
+    /** 現在開かれているポップアップを閉じます。ポップアップが開かれていない場合は何も起きません。 */
+    closePopup: () => ({
+      stack: state.stack,
+      popup: undefined,
+    }),
   }),
 )
 
+/** コンテキスト */
 const DialogContextProvider = ({ children }: {
   children?: React.ReactNode
 }) => {
   const reducerReturns = React.useReducer(reducer, undefined, initialize)
-  const [{ stack }, dispatch] = reducerReturns
+  const [{ stack, popup }, dispatch] = reducerReturns
   const handleCancel = useEvent((id: string) => {
     return () => dispatch(state => state.removeDialog(id))
+  })
+  const handleClosePopup = useEvent(() => {
+    dispatch(state => state.closePopup())
   })
 
   return (
     <ContextProvider value={reducerReturns}>
       {children}
+
+      {/* ダイアログ。ダイアログが一度に複数開かれている場合は後にスタックに積まれた方が手前に表示される。 */}
       {stack.map(({ id, title, contents }) => (
         <ModalDialog key={id} open title={title} onClose={handleCancel(id)}>
           {React.createElement(contents, {
@@ -108,11 +163,19 @@ const DialogContextProvider = ({ children }: {
           })}
         </ModalDialog>
       ))}
+
+      {/* ポップアップ。ポップアップは一度に複数表示できないので常に最大1個。 */}
+      {popup && (
+        <PopupFrame target={popup.target} onClose={handleClosePopup}>
+          {React.createElement(popup.contents)}
+        </PopupFrame>
+      )}
+
     </ContextProvider>
   )
 }
 
-// ダイアログの枠とダイアログを呼び出す各画面は React Context を使って接続する ここまで
+// ダイアログやポップアップの枠とそれらを呼び出す各画面は React Context を使って接続する ここまで
 // -----------------------
 
 export {
