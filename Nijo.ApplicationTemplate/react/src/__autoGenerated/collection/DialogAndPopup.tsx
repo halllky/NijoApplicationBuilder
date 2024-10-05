@@ -74,19 +74,26 @@ const PopupFrame = ({ target, onClose, children }: {
   // targetの脇に表示する
   React.useEffect(() => {
     if (divRef.current && target) {
-      const rect = target.getBoundingClientRect()
-      // TODO:
-      // - divRef.current を target の右下に表示しても画面内に収まる場合、右下に表示する。
-      // - 画面内に収まらない場合、右上に表示する。
-      divRef.current.style.top = `${rect.bottom + 1}px`
-      divRef.current.style.right = `${rect.right + target.clientLeft}px`
-    }
-  }, [divRef])
+      const rect = target.getBoundingClientRect();
+      const popupWidth = divRef.current.offsetWidth;
+      const popupHeight = divRef.current.offsetHeight;
 
-  // // 外側クリックでポップアップを閉じる
-  // useOutsideClick(divRef, () => {
-  //   onClose?.()
-  // }, [onClose])
+      // 右下に表示する場合の位置
+      const top = rect.bottom + 1 // ターゲットの下に1pxの隙間を開ける
+      const left = rect.right - popupWidth // ターゲットの右に表示
+
+      // 画面内に収まるか確認
+      if (top + popupHeight > window.innerHeight) {
+        // 画面内に収まらない場合、右上に表示
+        divRef.current.style.top = `${rect.top - popupHeight - 1}px`
+        divRef.current.style.left = `${left}px`
+      } else {
+        // 画面内に収まる場合、右下に表示
+        divRef.current.style.top = `${top}px`
+        divRef.current.style.left = `${left}px`
+      }
+    }
+  }, [divRef, target]);
 
   return (
     <div ref={divRef} className="fixed bg-color-ridge border border-color-5">
