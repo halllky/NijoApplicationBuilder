@@ -15,7 +15,7 @@ type TextInputBaseAdditionalAttrs = {
 }
 /** TextInputBase特有のRef */
 export type TextInputBaseAdditionalRef = {
-  element: HTMLElement | null
+  element?: HTMLElement | null
 }
 
 export const TextInputBase = defineCustomComponent<
