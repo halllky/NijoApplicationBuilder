@@ -128,11 +128,15 @@ namespace Nijo.Core.AggregateMemberTypes {
                       }
                     },
                     comboProps: {
-                      options: [{{Definition.Items.Select(x => $"'{x.PhysicalName}'").Join(", ")}}],
-                      emitValueSelector: x => x,
-                      matchingKeySelectorFromEmitValue: x => x,
-                      matchingKeySelectorFromOption: x => x,
-                      textSelector: x => x,
+                      onFilter: async keyword => {
+                        const array = [{{Definition.Items.Select(x => $"'{x.PhysicalName}' as const").Join(", ")}}]
+                        if (!keyword) return array // 絞り込みワード未指定の場合は全件表示
+                        const normalized = Util.normalize(keyword)
+                        return array.filter(opt => Util.normalize(opt).includes(normalized))
+                      },
+                      getOptionText: opt => opt,
+                      getValueFromOption: opt => opt,
+                      getValueText: value => value,
                     }
                   }
                   return {

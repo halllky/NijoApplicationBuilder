@@ -115,11 +115,12 @@ const getColumnDef = (): Layout.DataTableColumn<DisplayData>[] => [
         console.warn('未実装')
       },
       comboProps: {
-        options: [...DROPDOWN_OPTIONS],
-        emitValueSelector: opt => opt,
-        matchingKeySelectorFromEmitValue: opt => opt.k,
-        matchingKeySelectorFromOption: opt => opt.k,
-        textSelector: opt => opt?.t,
+        getOptionText: opt => opt.t,
+        getValueFromOption: opt => opt,
+        getValueText: value => value.t,
+        onFilter: async keyword => keyword
+          ? DROPDOWN_OPTIONS.filter(x => x.k.includes(keyword))
+          : [...DROPDOWN_OPTIONS],
       },
     } as Layout.ColumnEditSetting<DisplayData, RefInfo>) as Layout.ColumnEditSetting<DisplayData, unknown>,
   },
@@ -147,14 +148,12 @@ const getRefValueEditSetting = () => {
       }
     },
     comboProps: {
-      queryKey: 'REFINFO',
-      query: async keyword => keyword
+      onFilter: async keyword => keyword
         ? DROPDOWN_OPTIONS.filter(opt => opt.t.includes(keyword))
         : [...DROPDOWN_OPTIONS],
-      emitValueSelector: opt => opt,
-      matchingKeySelectorFromEmitValue: opt => opt.k,
-      matchingKeySelectorFromOption: opt => opt.k,
-      textSelector: opt => opt?.t,
+      getValueFromOption: opt => opt,
+      getOptionText: opt => opt.t,
+      getValueText: value => value.t,
     },
   }
   return editSetting as Layout.ColumnEditSetting<DisplayData, unknown>

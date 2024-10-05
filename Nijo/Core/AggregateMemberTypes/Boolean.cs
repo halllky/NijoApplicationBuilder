@@ -98,11 +98,10 @@ namespace Nijo.Core.AggregateMemberTypes {
                       setValue(row, blnValue, rowIndex)
                     },
                     comboProps: {
-                      options: [{ key: 'T', text: '✓' }, { key: 'F', text: '' }],
-                      emitValueSelector: x => x,
-                      matchingKeySelectorFromEmitValue: x => x.key,
-                      matchingKeySelectorFromOption: x => x.key,
-                      textSelector: x => x.text,
+                      onFilter: async () => [{ key: 'T', text: '✓' }, { key: 'F', text: '' }],
+                      getOptionText: opt => opt.text,
+                      getValueFromOption: opt => opt,
+                      getValueText: value => value.text,
                     }
                   }
                   return {

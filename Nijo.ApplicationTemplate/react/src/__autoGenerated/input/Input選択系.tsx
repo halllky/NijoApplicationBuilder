@@ -1,8 +1,8 @@
 import React, { useMemo, useCallback, useRef, useImperativeHandle } from "react"
 import useEvent from "react-use-event-hook"
-import { normalize, useMsgContext } from "../util"
-import { CustomComponentProps, CustomComponentRef, defineCustomComponent } from "./InputBase"
-import { ComboBoxBase, ComboProps2 } from "./ComboBoxBase"
+import { normalize } from "../util"
+import { CustomComponentProps, ComboProps, CustomComponentRef, defineCustomComponent } from "./InputBase"
+import { ComboBoxBase } from "./ComboBoxBase"
 import { RadioGroupBase, ToggleBase } from "./ToggleBase"
 
 /** コンボボックス */
@@ -68,7 +68,7 @@ export const Selection = defineCustomComponent(<TItem extends string = string>(
 
 /** コンボボックス（非同期） */
 export const AsyncComboBox = defineCustomComponent(<TOption, TEmitValue>(
-  props: CustomComponentProps<TEmitValue, ComboProps2<TOption, TEmitValue>>,
+  props: CustomComponentProps<TEmitValue, ComboProps<TOption, TEmitValue>>,
   ref: React.ForwardedRef<CustomComponentRef<TEmitValue>>
 ) => {
 
@@ -84,11 +84,6 @@ export const AsyncComboBox = defineCustomComponent(<TOption, TEmitValue>(
     />
   )
 })
-
-/** 非同期コンボボックスのプロパティ */
-export type AsyncComboBoxProps<TOption, TEmitValue = TOption> = {
-  query: (keyword: string | undefined) => Promise<TOption[]>
-} & Pick<ComboProps2<TOption, TEmitValue>, 'getOptionText' | 'getValueFromOption' | 'getValueText'>
 
 /** チェックボックス */
 export const CheckBox = defineCustomComponent<boolean, { label?: React.ReactNode }>((props, ref) => {
@@ -130,7 +125,7 @@ const booleanComboBoxOptions = [
   { text: "○", boolValue: true },
   { text: "-", boolValue: false },
 ]
-const boolComboProps: ComboProps2<typeof booleanComboBoxOptions[0], boolean> = {
+const boolComboProps: ComboProps<typeof booleanComboBoxOptions[0], boolean> = {
   onFilter: () => Promise.resolve(booleanComboBoxOptions),
   getOptionText: opt => opt.text,
   getValueFromOption: opt => opt.boolValue,

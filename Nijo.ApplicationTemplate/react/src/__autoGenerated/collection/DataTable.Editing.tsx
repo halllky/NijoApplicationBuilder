@@ -212,7 +212,6 @@ export const CellEditor = Util.forwardRefEx(<T,>({
       )}
       {caretCellEditingInfo?.type === 'combo' && (
         <Input.ComboBox
-          dropdownAutoOpen={editingCellInfo !== undefined}
           ref={editorRef}
           value={comboSelectedItem}
           onChange={handleChangeCombobox}
@@ -222,7 +221,6 @@ export const CellEditor = Util.forwardRefEx(<T,>({
       )}
       {caretCellEditingInfo?.type === 'async-combo' && (
         <Input.AsyncComboBox
-          dropdownAutoOpen={editingCellInfo !== undefined}
           ref={editorRef}
           value={comboSelectedItem}
           onChange={handleChangeCombobox}

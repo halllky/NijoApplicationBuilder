@@ -51,22 +51,23 @@ export type CustomComponentProps<
   }
 
 // ---------------------------------------------
-export type SyncComboProps<TOption, TEmitValue = TOption, TMatchingKey extends string = string> = {
-  options: TOption[]
-  matchingKeySelectorFromOption: (item: TOption) => TMatchingKey | undefined
-  matchingKeySelectorFromEmitValue: (value: TEmitValue) => TMatchingKey | undefined
-  emitValueSelector: (item: TOption) => TEmitValue | undefined
-  textSelector: (item: TOption) => string
-  onKeywordChanged?: (keyword: string | undefined) => void
-  dropdownAutoOpen?: boolean
-}
 
-export type AsyncComboProps<TOption, TEmitValue = TOption, TMatchingKey extends string = string> = {
-  queryKey?: string
-  query: ((keyword: string | undefined) => Promise<TOption[]>)
-  matchingKeySelectorFromOption: (item: TOption) => TMatchingKey | undefined
-  matchingKeySelectorFromEmitValue: (value: TEmitValue) => TMatchingKey | undefined
-  emitValueSelector: (item: TOption) => TEmitValue | undefined
-  textSelector: (item: TOption) => string
-  dropdownAutoOpen?: boolean
+/** コンボボックスのプロパティ */
+export type ComboProps<TOption, TValue = TOption> = {
+  /**
+   * キーワードにヒットする選択肢を返す処理。
+   * サイドボタンクリックなどキーワード入力に依らない場合は引数がundefinedになる。
+  */
+  onFilter: (keyword: string | undefined) => Promise<TOption[]>
+  /**
+   * 短時間で連続してクエリが発行されるのを防ぐための待ち時間。
+   * 単位はミリ秒。規定値は0。
+   */
+  waitTimeMS?: number
+  /** ドロップダウンの選択肢からvalueを抜き出す */
+  getValueFromOption: (opt: TOption) => TValue
+  /** ドロップダウンの選択肢から画面上に表示されるテキストを抜き出す */
+  getOptionText: (opt: TOption) => string
+  /** valueから画面上に表示されるテキストを抜き出す */
+  getValueText: (value: TValue) => string
 }
