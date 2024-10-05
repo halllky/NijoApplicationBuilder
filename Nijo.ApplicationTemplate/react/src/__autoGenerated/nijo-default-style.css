@@ -212,6 +212,13 @@ button[type="reset"].bg-color-button {
   @apply bg-neutral-700 dark:bg-neutral-300;
 }
 
+.bg-color-button-loading,
+button[type="button"].bg-color-button-loading,
+button[type="submit"].bg-color-button-loading,
+button[type="reset"].bg-color-button-loading {
+  @apply bg-neutral-300 dark:bg-neutral-700;
+}
+
 .text-link {
   @apply text-sky-600 dark:text-sky-300 underline;
 }
