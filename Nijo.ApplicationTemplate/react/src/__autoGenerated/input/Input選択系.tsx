@@ -1,14 +1,14 @@
-import React, { useMemo, useCallback, useRef, useImperativeHandle, useState } from "react"
-import { useQuery } from "react-query"
-import { useMsgContext } from "../util"
-import { AsyncComboProps, CustomComponentProps, CustomComponentRef, defineCustomComponent } from "./InputBase"
-import { ComboBoxBase } from "./ComboBoxBase"
+import React, { useMemo, useCallback, useRef, useImperativeHandle } from "react"
+import useEvent from "react-use-event-hook"
+import { normalize, useMsgContext } from "../util"
+import { CustomComponentProps, CustomComponentRef, defineCustomComponent } from "./InputBase"
+import { ComboBoxBase, ComboProps2 } from "./ComboBoxBase"
 import { RadioGroupBase, ToggleBase } from "./ToggleBase"
 
 /** コンボボックス */
 export const ComboBox = ComboBoxBase
 
-/** ラジオボタン or コンボボックス */
+/** ラジオボタンまたはコンボボックス。選択肢がリテラル型の場合のみ使用可能。 */
 export const Selection = defineCustomComponent(<TItem extends string = string>(
   props: CustomComponentProps<TItem, {
     options: TItem[]
@@ -38,14 +38,23 @@ export const Selection = defineCustomComponent(<TItem extends string = string>(
     return value
   }, [])
 
+  const handleFiltering = useEvent(async (keyword: string | undefined): Promise<TItem[]> => {
+    if (!keyword) {
+      return options
+    } else {
+      const normalizedKeyword = normalize(keyword)
+      return options.filter(opt => normalize(opt).includes(normalizedKeyword))
+    }
+  })
+
   return type === 'combo' ? (
     <ComboBoxBase
       {...rest}
       ref={radioRef}
-      options={options}
-      matchingKeySelectorFromOption={selector}
-      matchingKeySelectorFromEmitValue={selector}
-      emitValueSelector={selector}
+      onFilter={handleFiltering}
+      getOptionText={selector}
+      getValueFromOption={selector}
+      getValueText={selector}
     />
   ) : (
     <RadioGroupBase
@@ -58,42 +67,28 @@ export const Selection = defineCustomComponent(<TItem extends string = string>(
 })
 
 /** コンボボックス（非同期） */
-export const AsyncComboBox = defineCustomComponent(<TOption, TEmitValue, TMatchingKey extends string = string>(
-  props: CustomComponentProps<TEmitValue, AsyncComboProps<TOption, TEmitValue, TMatchingKey>>,
+export const AsyncComboBox = defineCustomComponent(<TOption, TEmitValue>(
+  props: CustomComponentProps<TEmitValue, ComboProps2<TOption, TEmitValue>>,
   ref: React.ForwardedRef<CustomComponentRef<TEmitValue>>
 ) => {
-  const [, dispatchMsg] = useMsgContext()
-
-  // 検索結結果取得
-  const { data, refetch } = useQuery({
-    queryKey: props.queryKey,
-    queryFn: async () => await props.query(keyword),
-    onError: error => {
-      dispatchMsg(msg => msg.error(`ERROR!: ${JSON.stringify(error)}`))
-    },
-  })
-
-  // 検索処理発火
-  const [keyword, setKeyword] = useState<string | undefined>()
-  const [setTimeoutHandle, setSetTimeoutHandle] = useState<NodeJS.Timeout | undefined>(undefined)
-  const onKeywordChanged = useCallback((value: string | undefined) => {
-    setKeyword(value)
-    if (setTimeoutHandle !== undefined) clearTimeout(setTimeoutHandle)
-    setSetTimeoutHandle(setTimeout(() => {
-      refetch()
-      setSetTimeoutHandle(undefined)
-    }, 300))
-  }, [refetch, setTimeoutHandle])
 
   return (
     <ComboBoxBase
       ref={ref}
       {...props}
-      options={data ?? []}
-      onKeywordChanged={onKeywordChanged}
+      onFilter={props.onFilter}
+      waitTimeMS={props.waitTimeMS ?? 300}
+      getOptionText={props.getOptionText}
+      getValueFromOption={props.getValueFromOption}
+      getValueText={props.getValueText}
     />
   )
 })
+
+/** 非同期コンボボックスのプロパティ */
+export type AsyncComboBoxProps<TOption, TEmitValue = TOption> = {
+  query: (keyword: string | undefined) => Promise<TOption[]>
+} & Pick<ComboProps2<TOption, TEmitValue>, 'getOptionText' | 'getValueFromOption' | 'getValueText'>
 
 /** チェックボックス */
 export const CheckBox = defineCustomComponent<boolean, { label?: React.ReactNode }>((props, ref) => {
@@ -123,26 +118,11 @@ export const BooleanComboBox = defineCustomComponent<boolean>((props, ref) => {
     focus: opt => comboRef.current?.focus(opt),
   }), [comboRef])
 
-  const getBoolValue = useCallback((item: typeof booleanComboBoxOptions[0]) => {
-    return item.boolValue
-  }, [])
-  const getText = useCallback((item: typeof booleanComboBoxOptions[0]) => {
-    return item.text
-  }, [])
-  const getTextFromBool = useCallback((boolValue: boolean) => {
-    if (boolValue) return booleanComboBoxOptions[0].text
-    else return booleanComboBoxOptions[1].text
-  }, [])
-
   return (
     <ComboBoxBase
       ref={comboRef}
       {...props}
-      options={booleanComboBoxOptions}
-      emitValueSelector={getBoolValue}
-      matchingKeySelectorFromEmitValue={getTextFromBool}
-      matchingKeySelectorFromOption={getText}
-      textSelector={getText}
+      {...boolComboProps}
     />
   )
 })
@@ -150,3 +130,9 @@ const booleanComboBoxOptions = [
   { text: "○", boolValue: true },
   { text: "-", boolValue: false },
 ]
+const boolComboProps: ComboProps2<typeof booleanComboBoxOptions[0], boolean> = {
+  onFilter: () => Promise.resolve(booleanComboBoxOptions),
+  getOptionText: opt => opt.text,
+  getValueFromOption: opt => opt.boolValue,
+  getValueText: value => value ? "○" : "-",
+}

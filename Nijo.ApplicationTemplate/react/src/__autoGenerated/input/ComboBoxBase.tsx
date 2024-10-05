@@ -1,205 +1,177 @@
-import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
+import React from "react"
 import { ChevronUpDownIcon } from "@heroicons/react/24/solid"
-import { useIMEOpened, normalize, useOutsideClick } from "../util"
+import { useIMEOpened, useMsgContext, useRefArray } from "../util"
 import { TextInputBase, TextInputBaseAdditionalRef } from "./TextInputBase"
-import { CustomComponentProps, CustomComponentRef, SyncComboProps, defineCustomComponent } from "./InputBase"
+import { CustomComponentProps, CustomComponentRef, defineCustomComponent } from "./InputBase"
 import useEvent from "react-use-event-hook"
-import { useDialogContext } from "../collection"
+import { DialogOrPopupContents, useDialogContext } from "../collection"
 
-export const ComboBoxBase = defineCustomComponent(<TOption, TEmitValue, TMatchingKey extends string = string>(
-  props2: CustomComponentProps<TEmitValue, SyncComboProps<TOption, TEmitValue, TMatchingKey>>,
-  ref: React.ForwardedRef<CustomComponentRef<TEmitValue>>
+/** コンボボックスのプロパティ */
+export type ComboProps2<TOption, TValue = TOption> = {
+  /**
+   * キーワードにヒットする選択肢を返す処理。
+   * サイドボタンクリックなどキーワード入力に依らない場合は引数がundefinedになる。
+  */
+  onFilter: (keyword: string | undefined) => Promise<TOption[]>
+  /**
+   * 短時間で連続してクエリが発行されるのを防ぐための待ち時間。
+   * 単位はミリ秒。規定値は0。
+   */
+  waitTimeMS?: number
+  /** ドロップダウンの選択肢からvalueを抜き出す */
+  getValueFromOption: (opt: TOption) => TValue
+  /** ドロップダウンの選択肢から画面上に表示されるテキストを抜き出す */
+  getOptionText: (opt: TOption) => string
+  /** valueから画面上に表示されるテキストを抜き出す */
+  getValueText: (value: TValue) => string
+}
+
+/** コンボボックス基底クラス */
+export const ComboBoxBase = defineCustomComponent(<TOption, TValue = TOption>(
+  props: CustomComponentProps<TValue, ComboProps2<TOption, TValue>>,
+  ref: React.ForwardedRef<CustomComponentRef<TValue>>
 ) => {
-  const {
-    options,
-    matchingKeySelectorFromOption,
-    matchingKeySelectorFromEmitValue,
-    emitValueSelector,
-    textSelector,
-    value,
-    onChange,
-    onBlur,
-    onKeyDown,
-    readOnly,
-    onKeywordChanged,
-    name,
-    dropdownAutoOpen,
-  } = props2
 
-  const dropdownRef = useRef<DropDownApi>(null)
+  // 選択確定
+  const handleSelectOption = useEvent((opt: TOption | undefined) => {
+    props.onChange?.(opt ? props.getValueFromOption(opt) : undefined)
+  })
 
-  // フィルタリング
-  const [keyword, setKeyword] = useState<string | undefined>(undefined) // フォーカスを当ててから何か入力された場合のみundefinedでなくなる
-  const filtered = useMemo(() => {
-    if (keyword === undefined) return [...options]
-    const normalized = normalize(keyword)
-    if (!normalized) return [...options]
-    return options.filter(item => textSelector(item).includes(normalized))
-  }, [options, keyword, textSelector])
+  // 絞り込み
+  const [keyword, setKeyword] = React.useState<string | undefined>()
+  const executeFiltering = useLazyQuery(props.onFilter, props.waitTimeMS ?? 0)
+  const handleKeywordChange = useEvent(async (k: string | undefined) => {
+    setKeyword(k)
+    const options = await executeFiltering(k)
+    if (options) openDropdown(options)
+  })
 
-  // リストのカーソル移動
-  const [highlighted, setHighlightItem] = useState<TMatchingKey>()
-  const highlightAnyItem = useCallback(() => {
-    if (value) {
-      setHighlightItem(matchingKeySelectorFromEmitValue(value))
-    } else if (filtered.length > 0) {
-      setHighlightItem(matchingKeySelectorFromOption(filtered[0]))
-    } else {
-      setHighlightItem(undefined)
-    }
-  }, [value, filtered, matchingKeySelectorFromOption, matchingKeySelectorFromEmitValue])
-  const highlightUpItem = useCallback(() => {
-    const currentIndex = filtered.findIndex(item => matchingKeySelectorFromOption(item) === highlighted)
-    if (currentIndex === -1) {
-      if (filtered.length > 0) setHighlightItem(matchingKeySelectorFromOption(filtered[0]))
-    } else if (currentIndex > 0) {
-      setHighlightItem(matchingKeySelectorFromOption(filtered[currentIndex - 1]))
-    }
-  }, [filtered, highlighted, matchingKeySelectorFromOption])
-  const highlightDownItem = useCallback(() => {
-    const currentIndex = filtered.findIndex(item => matchingKeySelectorFromOption(item) === highlighted)
-    if (currentIndex === -1) {
-      if (filtered.length > 0) setHighlightItem(matchingKeySelectorFromOption(filtered[0]))
-    } else if (currentIndex < (filtered.length - 1)) {
-      setHighlightItem(matchingKeySelectorFromOption(filtered[currentIndex + 1]))
-    }
-  }, [filtered, highlighted, matchingKeySelectorFromOption])
+  // テキストボックスに表示するテキスト
+  const displayText = React.useMemo(() => {
+    if (keyword !== undefined) return keyword
+    if (props.value !== undefined) return props.getValueText(props.value)
+    return ''
+  }, [keyword, props.value, props.getValueText])
 
-  // 選択
-  const selectItemByValue = useCallback((value: string | undefined) => {
-    const foundItem = options.find(item => matchingKeySelectorFromOption(item) === value)
-    const emitValue = foundItem ? emitValueSelector(foundItem) : undefined
-    setHighlightItem(foundItem ? matchingKeySelectorFromOption(foundItem) : undefined)
-    setKeyword(undefined)
-    onChange?.(emitValue)
-  }, [options, onChange, matchingKeySelectorFromOption, emitValueSelector])
+  // ドロップダウン
+  const textBaseRef = React.useRef<CustomComponentRef<string> & TextInputBaseAdditionalRef>(null)
+  const dropdownRef = React.useRef<DropdownListRef<TOption>>(null)
+  const [isOpened, setIsOpened] = React.useState(false)
+  const [highlightIndex, setHighlightIndex] = React.useState<number | undefined>()
+  const [{ popupElementRef }, dispatchPopup] = useDialogContext()
+  const openDropdown = useEvent((options: TOption[]) => {
+    setIsOpened(true)
+    dispatchPopup(state => state.openPopup(
+      textBaseRef.current?.element,
+      createDropdownList(
+        options,
+        props.getOptionText,
+        setHighlightIndex,
+        handleSelectOption,
+        dropdownRef),
+      () => setIsOpened(false),
+    ))
+  })
 
-  // 入力中のテキストに近い最も適当な要素を取得する
-  const getHighlightedOrAnyItem = useCallback((): TOption | undefined => {
-    if (highlighted && (dropdownAutoOpen || dropdownRef.current?.isOpened)) {
-      const found = filtered.find(item => matchingKeySelectorFromOption(item) === highlighted)
-      if (found) return found
-    }
-    if (keyword === undefined && value) {
-      const keyOfValue = matchingKeySelectorFromEmitValue(value)
-      return filtered.find(x => matchingKeySelectorFromOption(x) === keyOfValue)
-    }
-    if (!dropdownAutoOpen && dropdownRef.current?.isOpened === false) return undefined
-    if (keyword && normalize(keyword) === '') return undefined
-    if (filtered.length > 0) return filtered[0]
-    return undefined
-  }, [value, keyword, filtered, highlighted, matchingKeySelectorFromOption, matchingKeySelectorFromEmitValue, dropdownAutoOpen])
-
-  // events
-  const onChangeKeyword = useCallback((value: string | undefined) => {
-    dropdownRef.current?.open()
-    setKeyword(value)
-    onKeywordChanged?.(value)
-  }, [onKeywordChanged])
-
+  // キーボード操作
   const [{ isImeOpen }] = useIMEOpened()
-  const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = useCallback(e => {
+  const handleKeyDown: React.KeyboardEventHandler = useEvent(async e => {
+    // ドロップダウン内のハイライトの上下移動
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-      // ドロップダウンを開く
-      if (!dropdownAutoOpen && !isImeOpen && !dropdownRef.current?.isOpened) {
-        dropdownRef.current?.open()
-        highlightAnyItem()
+      if (!isImeOpen && !isOpened) {
+        // ドロップダウンを開く
+        setHighlightIndex(undefined)
+        const options = await executeFiltering(undefined)
+        if (options) openDropdown(options)
+        e.preventDefault()
+
+      } else if (e.key === 'ArrowUp') {
+        // 一つ上を選択
+        dropdownRef.current?.highlightAbove()
+        e.preventDefault()
+
+      } else {
+        // 一つ下を選択
+        dropdownRef.current?.highlightBelow()
+        e.preventDefault()
+      }
+      return
+    }
+
+    // ドロップダウン中のハイライトが当たっている要素の選択を確定する
+    if (isOpened && !isImeOpen && e.key === 'Enter') {
+      if (highlightIndex === undefined) {
+        // 選択肢がハイライトされていない状態でEnterが押されたらクリア
+        handleSelectOption(undefined)
+        dropdownRef.current?.close()
         e.preventDefault()
         return
       }
-
-      // 上下移動
-      if (e.key === 'ArrowUp') {
-        highlightUpItem()
-      } else {
-        highlightDownItem()
-      }
-      e.preventDefault()
-    }
-    // ドロップダウン中のハイライトが当たっている要素の選択を確定する
-    else if (e.key === 'Enter'
-      && !isImeOpen
-      && (dropdownAutoOpen || dropdownRef.current?.isOpened)
-    ) {
-      const anyItem = getHighlightedOrAnyItem()
-      const valueOfAnyItem = anyItem ? emitValueSelector(anyItem) : undefined
-      onChange?.(valueOfAnyItem)
+      const opt = dropdownRef.current?.options?.[highlightIndex]
+      if (!opt) return
+      handleSelectOption(opt)
       setKeyword(undefined)
-      setHighlightItem(undefined)
-      dropdownRef.current?.close()
+      setHighlightIndex(undefined)
+      dropdownRef.current.close()
       e.preventDefault()
     }
-    // 任意の処理
-    else {
-      onKeyDown?.(e)
-    }
-  }, [isImeOpen, getHighlightedOrAnyItem, highlightAnyItem, highlightUpItem, highlightDownItem, onChange, onKeyDown, emitValueSelector, dropdownAutoOpen])
+  })
 
-  const onClickItem: React.MouseEventHandler<HTMLLIElement> = useCallback(e => {
-    selectItemByValue((e.target as HTMLLIElement).getAttribute('value') as string)
-    setHighlightItem(undefined)
+  // ドロップダウン横ボタン
+  const handleSideButtonClick = useEvent(async () => {
+    const options = await executeFiltering(undefined)
+    if (options) openDropdown(options)
+  })
+
+  /** 現在のUIの状態を総合的に考慮して値を確定させる */
+  const getCurrentValue = useEvent((): TValue | undefined => {
+    if (dropdownRef.current && highlightIndex !== undefined) {
+      // ハイライトが当たっている選択肢がある場合はそれを返す
+      const item = dropdownRef.current.options[highlightIndex]
+      return item ? props.getValueFromOption(item) : undefined
+    } else if (keyword !== undefined) {
+      // キーワード入力中にもかかわらずハイライトが当たっている選択肢がない場合はクリア
+      return undefined
+    } else {
+      // 編集に関する操作が行われていないので現在の値をそのまま返す
+      return props.value
+    }
+  })
+
+  // ref
+  React.useImperativeHandle(ref, () => ({
+    focus: () => textBaseRef.current?.focus(),
+    getValue: getCurrentValue,
+  }), [textBaseRef, getCurrentValue])
+
+  // フォーカス離脱時
+  const handleBlur: React.FocusEventHandler = useEvent(e => {
+    setKeyword(undefined)
+
+    // ドロップダウンリスト内の要素がクリックされた場合、
+    // クリック処理側での値確定処理を優先するため、ここではonChange処理を呼ばない
+    if (popupElementRef.current?.contains(e.relatedTarget)) return
+
+    props.onChange?.(getCurrentValue())
     dropdownRef.current?.close()
-  }, [selectItemByValue])
-
-  const onDropdownOpened = useCallback(() => {
-    highlightAnyItem()
-    textBaseRef.current?.focus()
-  }, [highlightAnyItem])
-
-  const textBaseRef = useRef<CustomComponentRef & TextInputBaseAdditionalRef>(null)
-  useImperativeHandle(ref, () => ({
-    getValue: () => {
-      const anyItem = getHighlightedOrAnyItem()
-      const valueOfAnyItem = anyItem ? emitValueSelector(anyItem) : undefined
-      return valueOfAnyItem
-    },
-    focus: opt => textBaseRef.current?.focus(opt),
-  }), [getHighlightedOrAnyItem, emitValueSelector, textBaseRef])
-
-  const displayText = useMemo(() => {
-    if (keyword !== undefined) return keyword
-    if (value !== undefined) {
-      const keyOfValue = matchingKeySelectorFromEmitValue(value)
-      const valueFromOptions = options.find(x => matchingKeySelectorFromOption(x) === keyOfValue)
-      return valueFromOptions ? textSelector(valueFromOptions) : keyOfValue
-    }
-    return ''
-  }, [keyword, value, textSelector, matchingKeySelectorFromOption, matchingKeySelectorFromEmitValue, options])
-
-  const [, dispatchDialog] = useDialogContext()
-  const openDropdown = useEvent(() => {
-    dispatchDialog(state => state.openPopup(textBaseRef.current?.element, () => (
-      <ul>
-        {filtered.length === 0 && (
-          <ListItem className="text-color-6">データなし</ListItem>
-        )}
-        {filtered.map(item => (
-          <ListItem
-            key={matchingKeySelectorFromOption(item)}
-            value={matchingKeySelectorFromOption(item)}
-            active={matchingKeySelectorFromOption(item) === highlighted}
-            onClick={onClickItem}
-          >
-            {textSelector(item)}&nbsp;
-          </ListItem>
-        ))}
-      </ul>
-    )))
   })
 
   return (
     <TextInputBase
       ref={textBaseRef}
-      readOnly={readOnly}
-      name={name}
+      readOnly={props.readOnly}
       value={displayText}
-      onOneCharChanged={onChangeKeyword}
+      onOneCharChanged={handleKeywordChange}
       onKeyDown={handleKeyDown}
-      AtEnd={<DropdownButton onClick={openDropdown} />}
+      onBlur={handleBlur}
+      AtEnd={<DropdownButton onClick={handleSideButtonClick} />}
     />
   )
 })
 
+// ------------------------------------------------------
+
+/** ドロップダウン開閉ボタン */
 const DropdownButton = ({ onClick }: {
   onClick?: () => void
 }) => {
@@ -211,65 +183,140 @@ const DropdownButton = ({ onClick }: {
   )
 }
 
-export type DropDownBody = (props: { focusRef: React.RefObject<never> }) => React.ReactNode
-export type DropDownApi = { isOpened: boolean, open: () => void, close: () => void }
-
-const Dropdown = ({ onClose, children }: {
-  onClose?: () => void
-  children?: DropDownBody
-}) => {
-  const divRef = useRef<HTMLDivElement>(null)
-  const focusRef = useRef<never | null>(null)
-
-  useEffect(() => {
-    // ドロップダウン内の要素にフォーカスを当てる
-    const htmlElement = focusRef.current as { focus: () => void } | null
-    if (typeof htmlElement?.focus === 'function') {
-      htmlElement.focus()
-    }
-  }, [])
-
-  useOutsideClick(divRef, () => {
-    onClose?.()
-  }, [onClose])
-
-  const onBlur: React.FocusEventHandler = useEvent(e => {
-    onClose?.()
-  })
-  const onKeyDown: React.KeyboardEventHandler = useEvent(e => {
-    if (e.key === 'Escape') {
-      onClose?.()
-      e.preventDefault()
-    }
-  })
-
-  return (
-    <div
-      ref={divRef}
-      className="absolute top-[calc(100%+2px)] left-[-1px] min-w-[calc(100%+2px)] z-10 bg-color-base border border-color-5 outline-none"
-      onBlur={onBlur}
-      onKeyDown={onKeyDown}
-    >
-      {children?.({ focusRef })}
-    </div>
-  )
+/** ドロップダウンリストのref */
+type DropdownListRef<TOption> = {
+  options: TOption[]
+  /** 現在選択されている選択肢の一つ上の選択肢を選択します。 */
+  highlightAbove: () => void
+  /** 現在選択されている選択肢の一つ下の選択肢を選択します。 */
+  highlightBelow: () => void
+  close: () => void
 }
 
-const ListItem = (props: React.LiHTMLAttributes<HTMLLIElement> & {
-  active?: boolean
-}) => {
-  const {
-    active,
-    children,
-    className,
-    ...rest
-  } = props
+/** ドロップダウンリストを生成して返します。 */
+const createDropdownList = <TOption,>(
+  /** 選択肢 */
+  options: TOption[],
+  /** 画面に表示する文字列を取得する関数 */
+  getOptionText: (opt: TOption) => string,
+  /** カーソルが当たっているインデックスが変わったタイミングのイベント */
+  onHighlightIndexChanged: (i: number) => void,
+  /** 選択確定 */
+  onSelect: (opt: TOption) => void,
+  /** ref */
+  ref: React.Ref<DropdownListRef<TOption>>,
+): DialogOrPopupContents => {
 
-  const lighlight = active ? 'bg-color-4' : ''
+  return ({ closeDialog }) => {
+    const [highlightIndex, setHighlightIndex] = React.useState<number | undefined>()
+    const listItemRefs = useRefArray<HTMLLIElement>(options.length)
+
+    /** 一つ上の選択肢にハイライトをあてる */
+    const highlightAbove = useEvent(() => {
+      const newIndex = highlightIndex === undefined
+        ? 0
+        : Math.max(0, highlightIndex - 1)
+      if (newIndex !== highlightIndex) onHighlightIndexChanged(newIndex)
+      setHighlightIndex(newIndex)
+      listItemRefs.current?.[newIndex]?.current?.scrollIntoView({ block: 'nearest' })
+    })
+    /** 一つ下の選択肢にハイライトをあてる */
+    const highlightBelow = useEvent(() => {
+      const newIndex = highlightIndex === undefined
+        ? 0
+        : Math.min(options.length - 1, highlightIndex + 1)
+      if (newIndex !== highlightIndex) onHighlightIndexChanged(newIndex)
+      setHighlightIndex(newIndex)
+      listItemRefs.current?.[newIndex]?.current?.scrollIntoView({ block: 'nearest' })
+    })
+    /** 要素クリック */
+    const handleListItemClick = useEvent((index: number) => {
+      const item = options[index]
+      if (item) onSelect(item)
+      closeDialog()
+    })
+
+    // ref
+    React.useImperativeHandle(ref, () => ({
+      options,
+      highlightAbove,
+      highlightBelow,
+      close: closeDialog,
+    }), [options, highlightAbove, highlightBelow, closeDialog])
+
+    return (
+      <ul>
+        {options.length === 0 && (
+          <li className="text-color-6">
+            データなし
+          </li>
+        )}
+        {options.map((item, index) => (
+          <ListItem
+            key={index}
+            index={index}
+            text={getOptionText(item)}
+            onClick={handleListItemClick}
+            highlight={index === highlightIndex}
+            liRef={listItemRefs.current[index]}
+          />
+        ))}
+      </ul>
+    )
+  }
+}
+
+/** ドロップダウンのリストの要素 */
+const ListItem = React.memo(({ index, text, onClick, highlight, className, liRef }: {
+  index?: number
+  text: string
+  onClick?: (index: number) => void
+  highlight?: boolean
+  className?: string
+  liRef: React.RefObject<HTMLLIElement>
+}) => {
 
   return (
-    <li {...rest} className={`cursor-pointer ${lighlight} ${className}`}>
-      {children}
+    <li
+      ref={liRef}
+      className={`cursor-pointer relative ${(highlight ? 'bg-color-4' : '')} ${className}`}
+      onClick={(index !== undefined ? (() => onClick?.(index)) : undefined)}
+    >
+      {/* ホバー時の背景色 */}
+      <div className="bg-color-4 absolute inset-0 opacity-0 hover:opacity-25"></div>
+
+      {text}&nbsp;
     </li>
   )
+})
+
+// ------------------------------------------------------
+
+/**
+ * 非同期コンボボックスのための遅延クエリ発行。
+ * 短時間で連続してクエリが発行されることでサーバーに負荷がかかるのを防ぐため、
+ * キーワード入力から一定時間経過しないとクエリ発行が実行されないようにするための仕組み。
+ */
+const useLazyQuery = <TOption,>(queryFunction: (keyword: string | undefined) => Promise<TOption[]>, waitTime: number) => {
+  const [, dispatchMsg] = useMsgContext()
+  const timeoutHandle = React.useRef<NodeJS.Timeout | undefined>(undefined)
+
+  return useEvent((keyword: string | undefined): Promise<TOption[] | false> => {
+    // 直前に処理の予約がある場合はそれをキャンセルする
+    if (timeoutHandle.current !== undefined) clearTimeout(timeoutHandle.current)
+
+    // クエリ実行処理の予約を行う
+    return new Promise<TOption[] | false>(resolve => {
+      timeoutHandle.current = setTimeout(async () => {
+        // 一定時間内に処理がキャンセルされなかった場合のみここの処理が実行される
+        try {
+          const result = await queryFunction(keyword)
+          resolve(result)
+        } catch (error) {
+          dispatchMsg(msg => msg.error(`データ取得に失敗しました: ${error}`))
+          resolve(false)
+        }
+      }, waitTime)
+    })
+  })
 }

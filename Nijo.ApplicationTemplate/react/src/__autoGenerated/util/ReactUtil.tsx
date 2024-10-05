@@ -110,9 +110,9 @@ export const useOutsideClick = (ref: React.RefObject<HTMLElement | null>, onOuts
 
 // --------------------------------------------------
 // 配列ref
-export const useRefArray = <T,>(arr: any[]) => {
+export const useRefArray = <T,>(count: number) => {
   const elementRefs = React.useRef<React.RefObject<T>[]>([])
-  for (let i = 0; i < arr.length; i++) {
+  for (let i = 0; i < count; i++) {
     elementRefs.current[i] = React.createRef()
   }
   return elementRefs

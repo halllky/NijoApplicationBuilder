@@ -63,16 +63,22 @@ const ModalDialog = ({ title, open, onClose, children, className }: {
 }
 
 /** ポップアップの枠 */
-const PopupFrame = ({ target, onClose, children }: {
+const PopupFrame = ({ target, onClose, elementRef, children }: {
   /** この要素の脇にポップアップが表示されます。 */
   target: HTMLElement | null | undefined
+  /** ポップアップが閉じられるときのイベント */
   onClose: () => void
+  /** html要素への参照 */
+  elementRef: React.MutableRefObject<HTMLElement | null>
   children?: React.ReactNode
 }) => {
-  const divRef = useRef<HTMLDivElement>(null)
+  const divRef = useRef<HTMLDivElement | null>(null)
+  const divRefCallback = React.useCallback((div: HTMLDivElement | null) => {
+    elementRef.current = divRef.current = div
+  }, [divRef, elementRef])
 
   // targetの脇に表示する
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     if (divRef.current && target) {
       const rect = target.getBoundingClientRect();
       const popupWidth = divRef.current.offsetWidth;
@@ -92,11 +98,21 @@ const PopupFrame = ({ target, onClose, children }: {
         divRef.current.style.top = `${top}px`
         divRef.current.style.left = `${left}px`
       }
+
+      // ポップアップの横幅
+      divRef.current.style.minWidth = `${rect.width}px`
     }
-  }, [divRef, target]);
+  }, [divRef, target])
+
+  // 外側クリックで閉じる
+  useOutsideClick(divRef, () => {
+    onClose?.()
+  }, [onClose])
 
   return (
-    <div ref={divRef} className="fixed bg-color-ridge border border-color-5">
+    // ポップアップクリック時、コンボボックスのblurでフォーカス離脱先がポップアップか否かで分岐する必要がある。
+    // tabIndexを設定しないとFocusEventのrelatedTargetにならない
+    <div ref={divRefCallback} tabIndex={0} className="fixed max-h-64 overflow-y-auto bg-color-ridge border border-color-5 outline-none">
       {children}
     </div>
   )
@@ -106,16 +122,22 @@ const PopupFrame = ({ target, onClose, children }: {
 // ダイアログやポップアップの枠とそれらを呼び出す各画面は React Context を使って接続する ここから
 
 type DialogContextState = {
+  /** 開かれているダイアログ。一度に複数開くことができ、そして後から開かれたダイアログが前面に表示されるので、スタックの形をとっている。 */
   stack: { id: string, title: string, contents: DialogOrPopupContents }[]
-  popup: { target: HTMLElement | null | undefined, contents: DialogOrPopupContents } | undefined
+  /** 開かれているポップアップ。一度に1つしか開けない。 */
+  popup: { target: HTMLElement | null | undefined, contents: DialogOrPopupContents, onClose: (() => void) | undefined } | undefined
+  /** 開かれているポップアップのHTML要素への参照 */
+  popupElementRef: React.MutableRefObject<HTMLElement | null>
 }
-type DialogOrPopupContents = (props: {
+export type DialogOrPopupContents = (props: {
+  /** ダイアログまたはポップアップを閉じる */
   closeDialog: () => void
 }) => React.ReactNode
 
 const initialize = (): DialogContextState => ({
   stack: [],
   popup: undefined,
+  popupElementRef: React.createRef(),
 })
 const { reducer, ContextProvider, useContext: useDialogContext } = defineContext2(
   initialize,
@@ -124,23 +146,27 @@ const { reducer, ContextProvider, useContext: useDialogContext } = defineContext
     pushDialog: (title: string, contents: DialogOrPopupContents) => ({
       stack: [{ id: UUID.generate(), title, contents }, ...state.stack],
       popup: state.popup,
+      popupElementRef: state.popupElementRef,
     }),
     /** ダイアログを閉じます（スタックからダイアログを除去します）。 */
     removeDialog: (id: string) => {
       return ({
         stack: state.stack.filter(d => d.id !== id),
         popup: state.popup,
+        popupElementRef: state.popupElementRef,
       })
     },
     /** ポップアップを開きます。既存のポップアップは閉じられます。 */
-    openPopup: (target: HTMLElement | null | undefined, contents: DialogOrPopupContents) => ({
+    openPopup: (target: HTMLElement | null | undefined, contents: DialogOrPopupContents, onClose?: () => void) => ({
       stack: state.stack,
-      popup: { target, contents },
+      popup: { target, contents, onClose },
+      popupElementRef: state.popupElementRef,
     }),
     /** 現在開かれているポップアップを閉じます。ポップアップが開かれていない場合は何も起きません。 */
     closePopup: () => ({
       stack: state.stack,
       popup: undefined,
+      popupElementRef: state.popupElementRef,
     }),
   }),
 )
@@ -150,12 +176,13 @@ const DialogContextProvider = ({ children }: {
   children?: React.ReactNode
 }) => {
   const reducerReturns = React.useReducer(reducer, undefined, initialize)
-  const [{ stack, popup }, dispatch] = reducerReturns
+  const [{ stack, popup, popupElementRef }, dispatch] = reducerReturns
   const handleCancel = useEvent((id: string) => {
     return () => dispatch(state => state.removeDialog(id))
   })
   const handleClosePopup = useEvent(() => {
     dispatch(state => state.closePopup())
+    popup?.onClose?.()
   })
 
   return (
@@ -173,8 +200,10 @@ const DialogContextProvider = ({ children }: {
 
       {/* ポップアップ。ポップアップは一度に複数表示できないので常に最大1個。 */}
       {popup && (
-        <PopupFrame target={popup.target} onClose={handleClosePopup}>
-          {React.createElement(popup.contents)}
+        <PopupFrame target={popup.target} onClose={handleClosePopup} elementRef={popupElementRef}>
+          {React.createElement(popup.contents, {
+            closeDialog: handleClosePopup,
+          })}
         </PopupFrame>
       )}
 
