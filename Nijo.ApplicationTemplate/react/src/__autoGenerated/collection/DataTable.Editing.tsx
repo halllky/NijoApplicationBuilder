@@ -8,7 +8,7 @@ import * as Util from '../util'
 
 export type CellEditorProps<T> = {
   api: RT.Table<T>
-  caretCell: React.RefObject<CellPosition | undefined>
+  caretCell: CellPosition | undefined
   caretTdRef: React.RefObject<HTMLTableCellElement | undefined>
   onChangeEditing: (editing: boolean) => void
   onChangeRow: DataTableProps<T>['onChangeRow']
@@ -42,8 +42,8 @@ export const CellEditor = Util.forwardRefEx(<T,>({
   const containerRef = useRef<HTMLLabelElement>(null)
   const editorRef = useRef<Input.CustomComponentRef<string | unknown> & Input.ComboAdditionalRef>(null)
   useEffect(() => {
-    if (caretCell.current) {
-      const columnDef = api.getAllLeafColumns()[caretCell.current.colIndex]?.columnDef as RTColumnDefEx<T> | undefined
+    if (caretCell) {
+      const columnDef = api.getAllLeafColumns()[caretCell.colIndex]?.columnDef as RTColumnDefEx<T> | undefined
       setCaretCellEditingInfo(columnDef?.ex.editSetting)
 
       // エディタを編集対象セルの位置に移動させる
@@ -58,7 +58,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
     } else {
       setCaretCellEditingInfo(undefined)
     }
-  }, [caretCell.current, api, caretTdRef, containerRef])
+  }, [caretCell, api, caretTdRef, containerRef])
   useEffect(() => {
     if (caretCellEditingInfo) editorRef.current?.focus()
   }, [caretCellEditingInfo])
@@ -149,7 +149,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
       }
     } else {
       // 編集を始める
-      if (caretCell.current && (
+      if (caretCell && (
         e.key === 'F2'
 
         // クイック編集（編集モードでない状態でいきなり文字入力して編集を開始する）
@@ -162,8 +162,8 @@ export const CellEditor = Util.forwardRefEx(<T,>({
         && e.altKey
         && e.key === 'ArrowDown'
       )) {
-        const row = api.getCoreRowModel().flatRows[caretCell.current.rowIndex]
-        const cell = row.getAllCells()[caretCell.current.colIndex]
+        const row = api.getCoreRowModel().flatRows[caretCell.rowIndex]
+        const cell = row.getAllCells()[caretCell.colIndex]
         if (cell) startEditing(cell)
         return
       }
