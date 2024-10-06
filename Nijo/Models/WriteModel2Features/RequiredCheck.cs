@@ -124,7 +124,7 @@ namespace Nijo.Models.WriteModel2Features {
                     yield return $$"""
 
                         // {{children.DisplayName}} の各項目の必須チェック
-                        for (var {{i}} = 0; {{i}} < ({{instance}}.{{childrenPath.Join("?.")}}.Count ?? 0); {{i}}++) {
+                        for (var {{i}} = 0; {{i}} < {{instance}}.{{childrenPath.Join("?.")}}.Count; {{i}}++) {
                             var {{item}} = {{instance}}.{{childrenPath.Join("!.")}}.ElementAt({{i}});
 
                             {{WithIndent(RenderAggregate(children.ChildrenAggregate, item, children.ChildrenAggregate), "    ")}}
