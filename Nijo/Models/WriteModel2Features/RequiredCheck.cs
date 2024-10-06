@@ -38,16 +38,13 @@ namespace Nijo.Models.WriteModel2Features {
             foreach (var member in renderingAggregate.GetMembers()) {
                 var memberDisplayName = member.DisplayName.Replace("\"", "\\\"");
 
-                if (member is AggregateMember.Parent) {
-                    continue;
-
-                } else if (member is AggregateMember.ValueMember vm) {
-                    if (vm.DeclaringAggregate != renderingAggregate) continue; // 親のキーの子側でのチェックは不要。参照先のキーはRefの分岐でチェック。
-                    if (!vm.IsKey && !vm.IsRequired) continue;
+                if (member is AggregateMember.Schalar schalar) {
+                    if (schalar.DeclaringAggregate != renderingAggregate) continue; // 親や参照先のキーはParentやRefの分岐でチェックする
+                    if (!schalar.IsKey && !schalar.IsRequired) continue;
 
                     // stringならIsNullOrWhiteSpaceで判定、それ以外はnullか否かで判定
-                    var path = vm.Declared.GetFullPathAsDbEntity(since: instanceAggregate);
-                    var isEmpty = vm.Options.MemberType.GetCSharpTypeName() == "string"
+                    var path = schalar.Declared.GetFullPathAsDbEntity(since: instanceAggregate);
+                    var isEmpty = schalar.Options.MemberType.GetCSharpTypeName() == "string"
                         ? $"string.IsNullOrWhiteSpace({instance}.{path.Join("?.")})"
                         : $"{instance}.{path.Join("?.")} == null";
 
@@ -57,17 +54,18 @@ namespace Nijo.Models.WriteModel2Features {
                         }
                         """;
 
+                } else if (member is AggregateMember.Parent parent) {
+                    // 親のキーは指定不要（親エンティティにある子へのナビゲーションプロパティが設定されているならばEFCoreが暗黙的に設定してくれる）
+                    continue;
+
                 } else if (member is AggregateMember.Ref @ref) {
                     if (!@ref.Relation.IsPrimary() && !@ref.Relation.IsRequired()) continue;
 
                     var isEmpty = new List<string>();
-                    var refKeys = @ref.RefTo
-                        .GetKeys()
-                        .OfType<AggregateMember.ValueMember>();
-                    foreach (var refKey in refKeys) {
+                    foreach (var fk in @ref.GetForeignKeys()) {
                         // stringならIsNullOrWhiteSpaceで判定、それ以外はnullか否かで判定
-                        var path = refKey.Declared.GetFullPathAsDbEntity(since: instanceAggregate);
-                        isEmpty.Add(refKey.Options.MemberType.GetCSharpTypeName() == "string"
+                        var path = fk.GetFullPathAsDbEntity(since: instanceAggregate);
+                        isEmpty.Add(fk.Options.MemberType.GetCSharpTypeName() == "string"
                             ? $"string.IsNullOrWhiteSpace({instance}.{path.Join("?.")})"
                             : $"{instance}.{path.Join("?.")} == null");
                     }
@@ -78,12 +76,33 @@ namespace Nijo.Models.WriteModel2Features {
                         """;
 
                 } else if (member is AggregateMember.Child child) {
-                    foreach (var expr in RenderAggregate(child.ChildAggregate, instance, instanceAggregate)) {
-                        yield return expr;
-                    }
-                } else if (member is AggregateMember.VariationItem variationItem) {
-                    foreach (var expr in RenderAggregate(variationItem.VariationAggregate, instance, instanceAggregate)) {
-                        yield return expr;
+                    yield return $$"""
+
+                        // {{child.DisplayName}} の各項目の必須チェック
+                        {{WithIndent(RenderAggregate(child.ChildAggregate, instance, instanceAggregate), "")}}
+                        """;
+
+                } else if (member is AggregateMember.Variation variation) {
+                    if (variation.DeclaringAggregate != renderingAggregate) continue; // 親や参照先のキーはParentやRefの分岐でチェックする
+
+                    var switchPath = variation.GetFullPathAsDbEntity(since: instanceAggregate);
+
+                    // バリエーションの種別は必須指定されなくても常に必須
+                    yield return $$"""
+                        if ({{instance}}.{{switchPath.Join("?.")}} == null) {
+                            e.{{GetErrorMemberPath(variation).Join(".")}}.AddError("{{memberDisplayName}}が未指定です。");
+                        }
+                        """;
+
+                    // バリエーションの子要素はその種別の場合のみチェック
+                    foreach (var variationItem in variation.GetGroupItems()) {
+                        yield return $$"""
+
+                            // {{variation.DisplayName}} が '{{variationItem.Key}}:{{variationItem.DisplayName}}' の場合のみ必須チェック
+                            if ({{instance}}.{{switchPath.Join("?.")}} == {{variation.CsEnumType}}.{{variationItem.Relation.RelationName}}) {
+                                {{WithIndent(RenderAggregate(variationItem.VariationAggregate, instance, instanceAggregate), "    ")}}
+                            }
+                            """;
                     }
 
                 } else if (member is AggregateMember.Children children) {
@@ -103,6 +122,8 @@ namespace Nijo.Models.WriteModel2Features {
                     var i = depth == 0 ? "i" : $"i{depth}";
                     var item = depth == 0 ? "item" : $"item{depth}";
                     yield return $$"""
+
+                        // {{children.DisplayName}} の各項目の必須チェック
                         for (var {{i}} = 0; {{i}} < ({{instance}}.{{childrenPath.Join("?.")}}.Count ?? 0); {{i}}++) {
                             var {{item}} = {{instance}}.{{childrenPath.Join("!.")}}.ElementAt({{i}});
 

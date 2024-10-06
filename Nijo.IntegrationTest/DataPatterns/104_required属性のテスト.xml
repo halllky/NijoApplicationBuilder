@@ -64,6 +64,7 @@
 
   <アカウント Latin="Account" is="write-model-2 generate-derault-read-model">
     <アカウントID is="word key" />
+    <アカウント種別 is="E_アカウント種別 key" />
     <アカウント名 is="word name required" />
   </アカウント>
 
@@ -72,14 +73,19 @@
       <課題 is="ref-to:課題 required"/>
     </対象課題>
     <オプション is="step:2">
-      <形式 is="課題エクスポート形式 required"/>
+      <形式 is="E_課題エクスポート形式 required"/>
     </オプション>
   </課題エクスポート>
 
-  <課題エクスポート形式 is="enum">
+  <E_課題エクスポート形式 is="enum">
     <CSV/>
     <Excel/>
     <HTML/>
-  </課題エクスポート形式>
+  </E_課題エクスポート形式>
+
+  <E_アカウント種別 is="enum">
+    <IDパスワード />
+    <OAuth2 />
+  </E_アカウント種別>
 
 </自動テストで作成されたプロジェクト>

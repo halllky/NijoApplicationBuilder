@@ -419,7 +419,7 @@ namespace Nijo.Core {
             internal override GraphNode<Aggregate> Owner { get; }
             internal override decimal Order => VariationGroup.MemberOrder;
 
-            internal string CsEnumType => $"E_{VariationGroup.GroupName}";
+            internal string CsEnumType => VariationGroup.CsEnumType;
 
             internal IEnumerable<VariationItem> GetGroupItems() {
                 foreach (var kv in VariationGroup.VariationAggregates) {
