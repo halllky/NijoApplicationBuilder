@@ -221,7 +221,7 @@ namespace Nijo.Models.ReadModel2Features {
                                   {Customizers?.{{SEARCH_CONDITION_CUSTOMIZER}} ? (
                                     <Customizers.{{SEARCH_CONDITION_CUSTOMIZER}} />
                                   ) : (
-                                    {{WithIndent(searchCondition.RenderVForm2(pageRenderingContext), "                ")}}
+                                    {{WithIndent(searchCondition.RenderVForm2(pageRenderingContext, true), "                ")}}
                                   )}
                                 </FormProvider>
                               </div>
@@ -276,7 +276,7 @@ namespace Nijo.Models.ReadModel2Features {
                     if (init !== undefined) {
                       searchParams.append('{{SearchCondition.URL_FILTER}}', JSON.stringify(init.{{SearchCondition.FILTER_TS}}))
                       if (init.{{SearchCondition.KEYWORD_TS}}) searchParams.append('{{SearchCondition.URL_KEYWORD}}', init.{{SearchCondition.KEYWORD_TS}})
-                      if (init.{{SearchCondition.SORT_TS}}.length > 0) searchParams.append('{{SearchCondition.URL_SORT}}', JSON.stringify(init.{{SearchCondition.SORT_TS}}))
+                      if (init.{{SearchCondition.SORT_TS}} && init.{{SearchCondition.SORT_TS}}.length > 0) searchParams.append('{{SearchCondition.URL_SORT}}', JSON.stringify(init.{{SearchCondition.SORT_TS}}))
                       if (init.{{SearchCondition.TAKE_TS}} !== undefined) searchParams.append('{{SearchCondition.URL_TAKE}}', init.{{SearchCondition.TAKE_TS}}.toString())
                       if (init.{{SearchCondition.SKIP_TS}} !== undefined) searchParams.append('{{SearchCondition.URL_SKIP}}', init.{{SearchCondition.SKIP_TS}}.toString())
                     }

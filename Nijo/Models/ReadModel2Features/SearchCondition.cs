@@ -282,7 +282,7 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>
         /// フォームのUIをレンダリングします。
         /// </summary>
-        internal string RenderVForm2(FormUIRenderingContext context) {
+        internal string RenderVForm2(FormUIRenderingContext context, bool useSortComboBox) {
             var builder = new Parts.WebClient.VerticalFormBuilder();
             BuildVForm2(context, builder);
 
@@ -291,13 +291,15 @@ namespace Nijo.Models.ReadModel2Features {
                 <Input.Num {...{{context.Register}}(`{{TAKE_TS}}`)} />
                 """);
             // ソート
-            builder.AddItem(true, "検索時並び順", Parts.WebClient.E_VForm2LabelType.String, $$"""
-                <Input.MultiSelect
-                  {...{{context.Register}}(`{{SORT_TS}}`)}
-                  {...{{MultiView.SORT_COMBO_SETTING}}}
-                  onFilter={{{MultiView.SORT_COMBO_FILTERING}}}
-                />
-                """);
+            if (useSortComboBox) {
+                builder.AddItem(true, "検索時並び順", Parts.WebClient.E_VForm2LabelType.String, $$"""
+                    <Input.MultiSelect
+                      {...{{context.Register}}(`{{SORT_TS}}`)}
+                      {...{{MultiView.SORT_COMBO_SETTING}}}
+                      onFilter={{{MultiView.SORT_COMBO_FILTERING}}}
+                    />
+                    """);
+            }
 
             return builder.RenderAsRoot(
                 context.CodeRenderingContext,
