@@ -1,9 +1,11 @@
 import React, { useMemo, useCallback, useRef, useImperativeHandle } from "react"
 import useEvent from "react-use-event-hook"
+import { XMarkIcon } from "@heroicons/react/24/outline"
 import { normalize } from "../util"
 import { CustomComponentProps, ComboProps, CustomComponentRef, defineCustomComponent, ComboAdditionalRef } from "./InputBase"
 import { ComboBoxBase } from "./ComboBoxBase"
 import { RadioGroupBase, ToggleBase } from "./ToggleBase"
+import { IconButton } from "./IconButton"
 
 /** コンボボックス */
 export const ComboBox = ComboBoxBase
@@ -85,6 +87,64 @@ export const AsyncComboBox = defineCustomComponent(<TOption, TEmitValue>(
     />
   )
 })
+
+/** コンボボックス（複数選択） */
+export const MultiSelect = defineCustomComponent(<TOption,>(
+  props: CustomComponentProps<TOption[], ComboProps<TOption, TOption>>,
+  ref: React.ForwardedRef<CustomComponentRef<TOption[]> & ComboAdditionalRef>
+) => {
+  const { value, onChange, ...rest } = props
+  const comboRef = useRef<CustomComponentRef & ComboAdditionalRef>(null)
+
+  useImperativeHandle(ref, () => ({
+    getValue: () => value,
+    focus: opt => comboRef.current?.focus(opt),
+    closeDropdown: () => comboRef.current?.closeDropdown?.(),
+  }), [comboRef, value])
+
+  const handleOptionSelect = useEvent((selectedOption: TOption | undefined) => {
+    if (!selectedOption) return
+    const addedValue = props.getValueFromOption(selectedOption)
+    const newValue = value ? [...value, addedValue] : [addedValue]
+    onChange?.(newValue)
+  })
+
+  const handleOptionRemove = useCallback((optionToRemove: TOption) => {
+    onChange?.(value?.filter(option => option !== optionToRemove) ?? [])
+  }, [value, onChange])
+
+  return (
+    <div className="flex flex-col">
+      <div className="flex flex-wrap gap-2 mb-2">
+        {value?.map((option, i) => (
+          <MultiSelectItem key={i} option={option} onRemove={handleOptionRemove}>
+            {props.getOptionText(option)}
+          </MultiSelectItem>
+        ))}
+      </div>
+      <ComboBoxBase
+        ref={comboRef}
+        {...rest}
+        onChange={handleOptionSelect}
+      />
+    </div>
+  )
+})
+
+const MultiSelectItem = <TOption,>({ option, children, onRemove }: {
+  option: TOption
+  onRemove?: (opt: TOption) => void
+  children?: React.ReactNode
+}) => {
+  return (
+    <div className="inline-flex items-center border border-color-4 rounded p-px gap-1">
+      <span className="whitespace-nowrap select-none">
+        {children}
+      </span>
+      <IconButton icon={XMarkIcon} onClick={() => onRemove?.(option)} hideText className="cursor-pointer">削除</IconButton>
+    </div>
+  )
+}
 
 /** チェックボックス */
 export const CheckBox = defineCustomComponent<boolean, { label?: React.ReactNode }>((props, ref) => {
