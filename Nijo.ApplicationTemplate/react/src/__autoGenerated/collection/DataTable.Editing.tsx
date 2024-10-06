@@ -107,6 +107,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
 
     onChangeRow?.(editingCellInfo.rowIndex, editingCellInfo.row)
     setEditingCellInfo(undefined)
+    setComboSelectedItem(undefined)
     onChangeEditing(false)
     editorRef.current?.closeDropdown?.()
   })
@@ -114,6 +115,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
   /** 編集キャンセル */
   const cancelEditing = useEvent(() => {
     setEditingCellInfo(undefined)
+    setComboSelectedItem(undefined)
     onChangeEditing(false)
     editorRef.current?.closeDropdown?.()
   })
