@@ -129,16 +129,27 @@ namespace Nijo.Models.ReadModel2Features {
             return GetOwnMembers();
         }
         /// <summary>
-        /// '子要素.孫要素.プロパティ名::ASC' のような並び順候補の文字列を返します。
+        /// '子要素.孫要素.プロパティ名（昇順）' のような並び順候補の文字列の一覧を返します。
+        /// </summary>
+        internal IEnumerable<string> GetSortLiterals() {
+            foreach (var sortMember in EnumerateSortMembersRecursively()) {
+                yield return GetSortLiteral(sortMember, E_AscDesc.ASC);
+                yield return GetSortLiteral(sortMember, E_AscDesc.DESC);
+            }
+        }
+        /// <summary>
+        /// '子要素.孫要素.プロパティ名（昇順）' のような並び順候補の文字列を返します。
         /// </summary>
         internal static string GetSortLiteral(SearchConditionMember member, E_AscDesc ascDesc) {
             var fullpath = member.Member
                 .GetFullPathAsSearchConditionFilter(E_CsTs.CSharp)
                 .Skip(1); // "Filter"という名称を除外
             return ascDesc == E_AscDesc.ASC
-                ? $"{fullpath.Join(".")}::ASC"
-                : $"{fullpath.Join(".")}::DESC";
+                ? $"{fullpath.Join(".")}{ASC_SUFFIX}"
+                : $"{fullpath.Join(".")}{DESC_SUFFIX}";
         }
+        internal const string ASC_SUFFIX = "（昇順）";
+        internal const string DESC_SUFFIX = "（降順）";
         #endregion ソート
 
 
@@ -179,7 +190,7 @@ namespace Nijo.Models.ReadModel2Features {
                     public virtual {{CsFilterClassName}} {{FILTER_CS}} { get; set; } = new();
                     /// <summary>並び順</summary>
                     [JsonPropertyName("{{SORT_TS}}")]
-                    public virtual List<string> {{SORT_CS}} { get; set; } = new();
+                    public virtual List<string>? {{SORT_CS}} { get; set; } = new();
                     /// <summary>先頭から何件スキップするか</summary>
                     [JsonPropertyName("{{SKIP_TS}}")]
                     public virtual int? {{SKIP_CS}} { get; set; }
@@ -226,13 +237,11 @@ namespace Nijo.Models.ReadModel2Features {
                 """;
         }
         protected virtual string RenderTypeScriptDeclaring(CodeRenderingContext context) {
-            var sortLiteral = new List<string>();
-            foreach (var sortMember in EnumerateSortMembersRecursively()) {
-                sortLiteral.Add($"'{GetSortLiteral(sortMember, E_AscDesc.ASC)}'");
-                sortLiteral.Add($"'{GetSortLiteral(sortMember, E_AscDesc.DESC)}'");
-            }
-            var last = sortLiteral.Count - 1;
-            var sortType = sortLiteral.Count == 0
+            var sortLiteral = GetSortLiterals()
+                .Select(sort => $"'{sort}'")
+                .ToArray();
+            var last = sortLiteral.Length - 1;
+            var sortType = sortLiteral.Length == 0
                 ? "never[]"
                 : $$"""
                     (
@@ -251,7 +260,7 @@ namespace Nijo.Models.ReadModel2Features {
                   /** 絞り込み条件 */
                   {{FILTER_TS}}: {{TsFilterTypeName}}
                   /** 並び順 */
-                  {{SORT_TS}}: {{WithIndent(sortType, "  ")}}
+                  {{SORT_TS}}?: {{WithIndent(sortType, "  ")}}
                   /** 先頭から何件スキップするか */
                   {{SKIP_TS}}?: number
                   /** 最大何件取得するか */
@@ -278,9 +287,16 @@ namespace Nijo.Models.ReadModel2Features {
             BuildVForm2(context, builder);
 
             // 表示件数
-            var take = builder.AddSection("", Parts.WebClient.E_VForm2LabelType.String);
-            take.AddItem(false, "表示件数", Parts.WebClient.E_VForm2LabelType.String, $$"""
+            builder.AddItem(true, "表示件数", Parts.WebClient.E_VForm2LabelType.String, $$"""
                 <Input.Num {...{{context.Register}}(`{{TAKE_TS}}`)} />
+                """);
+            // ソート
+            builder.AddItem(true, "検索時並び順", Parts.WebClient.E_VForm2LabelType.String, $$"""
+                <Input.MultiSelect
+                  {...{{context.Register}}(`{{SORT_TS}}`)}
+                  {...{{MultiView.SORT_COMBO_SETTING}}}
+                  onFilter={{{MultiView.SORT_COMBO_FILTERING}}}
+                />
                 """);
 
             return builder.RenderAsRoot(

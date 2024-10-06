@@ -25,6 +25,9 @@ namespace Nijo.Models.ReadModel2Features {
         public bool ShowMenu => true;
         public string? LabelInMenu => _aggregate.Item.DisplayName;
 
+        internal const string SORT_COMBO_SETTING = "sortComboSetting";
+        internal const string SORT_COMBO_FILTERING = "onFilterSortCombo";
+
         public SourceFile GetSourceFile() => new SourceFile {
             FileName = "multi-view.tsx",
             RenderContent = context => {
@@ -89,6 +92,19 @@ namespace Nijo.Models.ReadModel2Features {
                         reset: resetSearchCondition,
                         formState: { defaultValues }, // 最後に検索した時の検索条件
                       } = rhfSearchMethods
+
+                      // 検索条件の並び順コンボボックス
+                      const {{SORT_COMBO_FILTERING}} = useEvent((keyword: string | undefined) => {
+                        // 既に選択されている選択肢を除外する。
+                        // 同じ項目の「昇順」「降順」はどちらか片方のみ選択可能なので、末尾の昇順降順を除いた値で判定する
+                        const selected = new Set(getConditionValues('{{SearchCondition.SORT_TS}}')?.map(x => x.replace(/({{SearchCondition.ASC_SUFFIX}}|{{SearchCondition.DESC_SUFFIX}})$/, '')))
+                        const notSelected = SORT_COMBO_SOURCE.filter(x => {
+                          const cleanedOption = x.replace(/({{SearchCondition.ASC_SUFFIX}}|{{SearchCondition.DESC_SUFFIX}})$/, '')
+                          return !selected.has(cleanedOption)
+                        })
+                        const filtered = keyword ? notSelected.filter(x => x.includes(keyword)) : notSelected
+                        return Promise.resolve(filtered)
+                      })
 
                       // 検索結果
                       const { {{LoadMethod.LOAD}}, {{LoadMethod.COUNT}}, {{LoadMethod.CURRENT_PAGE_ITEMS}} } = AggregateHook.{{loadMethod.ReactHookName}}(true)
@@ -228,6 +244,18 @@ namespace Nijo.Models.ReadModel2Features {
                         </Layout.PageFrame>
                       )
                     }
+
+                    const {{SORT_COMBO_SETTING}} = {
+                      getOptionText: (opt: typeof SORT_COMBO_SOURCE[0]) => opt,
+                      getValueText: (value: typeof SORT_COMBO_SOURCE[0]) => value,
+                      getValueFromOption: (opt: typeof SORT_COMBO_SOURCE[0]) => opt,
+                    }
+                    /** 初期並び順のコンボボックスのデータソース */
+                    const SORT_COMBO_SOURCE = [
+                    {{searchCondition.GetSortLiterals().SelectTextTemplate(sort => $$"""
+                      '{{sort}}' as const,
+                    """)}}
+                    ]
                     """;
             },
         };
