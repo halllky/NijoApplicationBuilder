@@ -59,6 +59,8 @@ export type ComboProps<TOption, TValue = TOption> = {
    * サイドボタンクリックなどキーワード入力に依らない場合は引数がundefinedになる。
   */
   onFilter: (keyword: string | undefined) => Promise<TOption[]>
+  /** ドロップダウンが開く前のイベント。falseを返すとドロップダウンの展開がキャンセルされる。 */
+  onDropdownOpening?: () => void | boolean
   /**
    * 短時間で連続してクエリが発行されるのを防ぐための待ち時間。
    * 単位はミリ秒。規定値は0。
@@ -70,4 +72,8 @@ export type ComboProps<TOption, TValue = TOption> = {
   getOptionText: (opt: TOption) => string
   /** valueから画面上に表示されるテキストを抜き出す */
   getValueText: (value: TValue) => string
+}
+
+export type ComboAdditionalRef = {
+  closeDropdown: (() => void) | undefined
 }

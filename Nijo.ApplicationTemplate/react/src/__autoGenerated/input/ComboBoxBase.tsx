@@ -2,14 +2,14 @@ import React from "react"
 import { ChevronUpDownIcon } from "@heroicons/react/24/solid"
 import { useIMEOpened, useMsgContext, useRefArray } from "../util"
 import { TextInputBase, TextInputBaseAdditionalRef } from "./TextInputBase"
-import { ComboProps, CustomComponentProps, CustomComponentRef, defineCustomComponent } from "./InputBase"
+import { ComboAdditionalRef, ComboProps, CustomComponentProps, CustomComponentRef, defineCustomComponent } from "./InputBase"
 import useEvent from "react-use-event-hook"
 import { DialogOrPopupContents, useDialogContext } from "../collection"
 
 /** コンボボックス基底クラス */
 export const ComboBoxBase = defineCustomComponent(<TOption, TValue = TOption>(
   props: CustomComponentProps<TValue, ComboProps<TOption, TValue>>,
-  ref: React.ForwardedRef<CustomComponentRef<TValue>>
+  ref: React.ForwardedRef<CustomComponentRef<TValue> & ComboAdditionalRef>
 ) => {
 
   // 選択確定
@@ -40,6 +40,10 @@ export const ComboBoxBase = defineCustomComponent(<TOption, TValue = TOption>(
   const [highlightIndex, setHighlightIndex] = React.useState<number | undefined>()
   const [{ popupElementRef }, dispatchPopup] = useDialogContext()
   const openDropdown = useEvent((options: TOption[]) => {
+    // カスタマイズ処理でfalseが返されたら展開中止
+    const openingEventResult = props.onDropdownOpening?.()
+    if (openingEventResult === false) return
+
     setIsOpened(true)
     dispatchPopup(state => state.openPopup(
       textBaseRef.current?.element,
@@ -122,7 +126,8 @@ export const ComboBoxBase = defineCustomComponent(<TOption, TValue = TOption>(
   React.useImperativeHandle(ref, () => ({
     focus: () => textBaseRef.current?.focus(),
     getValue: getCurrentValue,
-  }), [textBaseRef, getCurrentValue])
+    closeDropdown: () => dropdownRef.current?.close(),
+  }), [textBaseRef, getCurrentValue, dropdownRef])
 
   // フォーカス離脱時
   const handleBlur: React.FocusEventHandler = useEvent(e => {
@@ -159,6 +164,10 @@ const DropdownButton = ({ onClick }: {
     <ChevronUpDownIcon
       className="w-6 text-color-5 border-l border-color-5 cursor-pointer"
       onClick={onClick}
+
+      // TextInputBaseのblurイベントでフォーカス移動先がTextInputBaseの外か中かの判定をしているので
+      // このアイコンをフォーカス可能に指定する必要がある
+      tabIndex={0}
     />
   )
 }

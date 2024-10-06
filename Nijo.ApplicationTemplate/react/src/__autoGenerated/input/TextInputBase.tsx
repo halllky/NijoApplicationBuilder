@@ -95,6 +95,9 @@ export const TextInputBase = defineCustomComponent<
 
   const divRef = useRef<HTMLDivElement>(null)
   const handleBlur: React.FocusEventHandler<HTMLInputElement> = useEvent(e => {
+    // サイドボタンのクリックでblurが発火してしまうのを防ぐ
+    if (divRef.current?.contains(e.relatedTarget)) return
+
     // フォーマットされた値を表示に反映
     executeFormat()
     onBlur?.(e)
@@ -130,6 +133,7 @@ export const TextInputBase = defineCustomComponent<
       className={readOnly
         ? `inline-flex relative min-w-0 max-w-full ${className} border border-transparent`
         : `inline-flex relative min-w-0 max-w-full ${className} border border-color-5 text-color-12 ${bgColor}`}
+      onBlur={handleBlur}
     >
       {AtStart}
       <input
@@ -144,7 +148,6 @@ export const TextInputBase = defineCustomComponent<
         placeholder={readOnly ? undefined : placeholder}
         onKeyDown={handleKeyDown}
         onFocus={handleFocus}
-        onBlur={handleBlur}
         onChange={onChange}
       />
       {AtEnd}

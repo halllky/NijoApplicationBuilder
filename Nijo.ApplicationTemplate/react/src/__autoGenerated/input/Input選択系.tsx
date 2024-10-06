@@ -1,7 +1,7 @@
 import React, { useMemo, useCallback, useRef, useImperativeHandle } from "react"
 import useEvent from "react-use-event-hook"
 import { normalize } from "../util"
-import { CustomComponentProps, ComboProps, CustomComponentRef, defineCustomComponent } from "./InputBase"
+import { CustomComponentProps, ComboProps, CustomComponentRef, defineCustomComponent, ComboAdditionalRef } from "./InputBase"
 import { ComboBoxBase } from "./ComboBoxBase"
 import { RadioGroupBase, ToggleBase } from "./ToggleBase"
 
@@ -16,15 +16,16 @@ export const Selection = defineCustomComponent(<TItem extends string = string>(
     radio?: boolean
     combo?: boolean
   }>,
-  ref: React.ForwardedRef<CustomComponentRef<TItem>>
+  ref: React.ForwardedRef<CustomComponentRef<TItem> & ComboAdditionalRef>
 ) => {
   const { options, radio, combo, ...rest } = props
 
-  const radioRef = useRef<CustomComponentRef<TItem>>(null)
+  const comboOrRadioRef = useRef<CustomComponentRef<TItem> & ComboAdditionalRef>(null)
   useImperativeHandle(ref, () => ({
-    getValue: () => radioRef.current?.getValue(),
-    focus: opt => radioRef.current?.focus(opt),
-  }), [radioRef])
+    getValue: () => comboOrRadioRef.current?.getValue(),
+    focus: opt => comboOrRadioRef.current?.focus(opt),
+    closeDropdown: () => comboOrRadioRef.current?.closeDropdown?.(),
+  }), [comboOrRadioRef])
 
   const type = useMemo(() => {
     if (radio) return 'radio' as const
@@ -50,7 +51,7 @@ export const Selection = defineCustomComponent(<TItem extends string = string>(
   return type === 'combo' ? (
     <ComboBoxBase
       {...rest}
-      ref={radioRef}
+      ref={comboOrRadioRef}
       onFilter={handleFiltering}
       getOptionText={selector}
       getValueFromOption={selector}
@@ -59,7 +60,7 @@ export const Selection = defineCustomComponent(<TItem extends string = string>(
   ) : (
     <RadioGroupBase
       {...rest}
-      ref={radioRef}
+      ref={comboOrRadioRef}
       options={options}
       keySelector={selector}
     />
@@ -69,7 +70,7 @@ export const Selection = defineCustomComponent(<TItem extends string = string>(
 /** コンボボックス（非同期） */
 export const AsyncComboBox = defineCustomComponent(<TOption, TEmitValue>(
   props: CustomComponentProps<TEmitValue, ComboProps<TOption, TEmitValue>>,
-  ref: React.ForwardedRef<CustomComponentRef<TEmitValue>>
+  ref: React.ForwardedRef<CustomComponentRef<TEmitValue> & ComboAdditionalRef>
 ) => {
 
   return (
@@ -102,7 +103,7 @@ export const CheckBox = defineCustomComponent<boolean, { label?: React.ReactNode
 /** チェックボックス（グリッド用） */
 export const BooleanComboBox = defineCustomComponent<boolean>((props, ref) => {
 
-  const comboRef = useRef<CustomComponentRef>(null)
+  const comboRef = useRef<CustomComponentRef & ComboAdditionalRef>(null)
   useImperativeHandle(ref, () => ({
     getValue: () => {
       const selectedItem = comboRef.current?.getValue()
