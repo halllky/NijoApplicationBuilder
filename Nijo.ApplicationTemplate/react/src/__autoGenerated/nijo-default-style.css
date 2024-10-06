@@ -223,6 +223,10 @@ button[type="reset"].bg-color-button-loading {
   @apply text-sky-600 dark:text-sky-300 underline;
 }
 
+.text-error {
+  @apply text-rose-600 dark:text-rose-300;
+}
+
 .bg-color-selected {
   @apply bg-sky-500 bg-opacity-25;
 }

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<自動テストで作成されたプロジェクト>
+
+  <!--
+    ## 確認パターン
+
+    - 属性
+      - ルート要素
+        - 指定不可なので確認不要
+      - ValueMember
+        - string型の場合は string.lsNullOrWhiteSpace で判定
+        - それ以外の場合はnullか否かで判定
+      - Ref
+        - nullか否かで判定
+      - Child
+        - 指定不可なので確認不要
+      - Variation
+        - requiredを指定せずとも必ず必須
+        - UIでnullにすることはできないので、ソースコード上（WriteModelの 新規作成、更新、UPSERT）で必須チェックがかかっているかを確認
+        - 選択されていない種別の必須チェックがかかっていないことを確認
+      - Children
+        - requiredを指定すると「1件以上ない場合はエラー」
+    - 画面
+      - コマンド
+      - 詳細画面
+      - 一括編集画面
+        - 一覧欄
+        - 詳細欄
+      - 検索ダイアログ（必須入力になってはいけない）
+    - 欄
+      - フォーム中の必須項目
+      - グリッド中の必須項目
+    - Owner
+      - 自身のメンバー
+      - 参照先のメンバー
+
+  -->
+
+  <課題 Latin="Issue" is="write-model-2 generate-default-read-model">
+    <課題番号 is="word key" />
+    <概要 is="sentence required" />
+    <見積工数D DisplayName="見積工数（人日）" is="numeric required" />
+    <種別 is="variation">
+      <プロジェクト全体課題 is="variation-item:2">
+        <結論 is="課題対応方針 required" />
+        <この課題について話し合われたセッションの日付 is="date required" />
+      </プロジェクト全体課題>
+      <個別チーム課題 is="variation-item:1">
+        <担当者 is="ref-to:アカウント required" />
+        <チェックポイント is="children required">
+          <ID is="uuid key hidden" />
+          <完了 is="bool required" />
+          <観点 is="word required" />
+        </チェックポイント>
+      </個別チーム課題>
+    </種別>
+  </課題>
+
+  <課題対応方針 is="enum">
+    <通常の保守契約内で対応 />
+    <別途契約 />
+  </課題対応方針>
+
+  <アカウント Latin="Account" is="write-model-2 generate-derault-read-model">
+    <アカウントID is="word key" />
+    <アカウント種別 is="E_アカウント種別 key" />
+    <アカウント名 is="word name required" />
+  </アカウント>
+
+  <課題エクスポート is="command">
+    <対象課題 is="step:1">
+      <課題 is="ref-to:課題 required"/>
+    </対象課題>
+    <オプション is="step:2">
+      <形式 is="E_課題エクスポート形式 required"/>
+    </オプション>
+  </課題エクスポート>
+
+  <E_課題エクスポート形式 is="enum">
+    <CSV/>
+    <Excel/>
+    <HTML/>
+  </E_課題エクスポート形式>
+
+  <E_アカウント種別 is="enum">
+    <IDパスワード />
+    <OAuth2 />
+  </E_アカウント種別>
+
+</自動テストで作成されたプロジェクト>

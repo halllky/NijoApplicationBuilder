@@ -52,17 +52,9 @@ namespace Nijo.Models.ReadModel2Features {
                         DefaultWidth = 64,
                         EnableResizing = false,
                         CellContents = (ctx, arg, argRowObject) => $$"""
-                        {{arg}} => {
-                          const row = {{argRowObject}}
-                          const state = Util.getUpdateType(row)
-
-                          return (
-                            <div className="flex items-center gap-1 pl-1">
-                              <button type="button" onClick={() => {{TO_DETAIL_VIEW}}(row, 'readonly')} className="text-link">詳細</button>
-                              <span className="inline-block w-4 text-center">{state}</span>
-                            </div>
-                          )
-                        }
+                        {{arg}} => (
+                          <button type="button" onClick={() => {{TO_DETAIL_VIEW}}({{argRowObject}}, 'readonly')} className="text-link whitespace-nowrap px-1">詳細</button>
+                        )
                         """,
                     })
                     // メンバーの列

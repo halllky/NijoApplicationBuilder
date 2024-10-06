@@ -71,6 +71,9 @@ namespace Nijo.Models {
             aggregateFile.AppServiceMethods.Add(update.Render(context));
             aggregateFile.AppServiceMethods.Add(delete.Render(context));
 
+            // 処理: 必須チェックメソッド
+            aggregateFile.AppServiceMethods.Add(RequiredCheck.Render(rootAggregate, context));
+
             // 処理: SetReadOnly AppSrv
             var setReadOnly = new SetReadOnly(rootAggregate);
             aggregateFile.AppServiceMethods.Add(setReadOnly.Render(context));
