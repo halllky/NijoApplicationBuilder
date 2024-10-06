@@ -277,6 +277,7 @@ namespace Nijo.Core {
                 .SetMemberOption(opt => opt.MemberType, MemberTypeResolver.TYPE_WORD, E_Priority.IfNotSpecified);
 
             parser.IfExists("required")
+                .SetAggregateOption(opt => opt.IsRequiredArray, true, E_Priority.Force)
                 .SetMemberOption(opt => opt.IsRequired, true, E_Priority.Force);
 
             // 廃止予定 非推奨

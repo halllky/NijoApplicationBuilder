@@ -83,6 +83,7 @@ namespace Nijo.Core {
                         { DirectedEdgeExtensions.REL_ATTR_VARIATIONSWITCH, aggregate.Options.IsVariationGroupMember?.Key ?? string.Empty },
                         { DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, aggregate.Options.IsVariationGroupMember?.GroupName ?? string.Empty },
                         { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, aggregate.Options.IsPrimary == true },
+                        { DirectedEdgeExtensions.REL_ATTR_IS_REQUIRED, aggregate.Options.IsRequiredArray == true },
                         { DirectedEdgeExtensions.REL_ATTR_INVISIBLE_IN_GUI, aggregate.Options.InvisibleInGui == true },
                         { DirectedEdgeExtensions.REL_ATTR_DISPLAY_NAME, aggregate.Options.DisplayName },
                         { DirectedEdgeExtensions.REL_ATTR_DB_NAME, aggregate.Options.DbName },
@@ -305,6 +306,12 @@ namespace Nijo.Core {
     public sealed class AggregateBuildOption {
         public bool? IsPrimary { get; set; }
         public bool? IsArray { get; set; }
+
+        /// <summary>
+        /// Childrenにのみ設定可能。配列の要素が0件のときにエラーにするかどうか。
+        /// </summary>
+        public bool? IsRequiredArray { get; set; }
+
         public GroupOption? IsVariationGroupMember { get; set; }
         public bool? InvisibleInGui { get; set; }
         public string? Handler { get; set; }

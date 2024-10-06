@@ -49,6 +49,7 @@ namespace Nijo.Models.WriteModel2Features {
 
                     // 更新前処理。入力検証や自動補完項目の設定を行う。
                     var beforeSaveArgs = new {{SaveContext.BEFORE_SAVE}}<{{dataClass.MessageDataCsInterfaceName}}>(batchUpdateState, messages);
+                    {{RequiredCheck.METHOD_NAME}}(dbEntity, beforeSaveArgs);
                     {{BeforeMethodName}}(dbEntity, beforeSaveArgs);
 
                     // 一括更新データ全件のうち1件でもエラーやコンファームがある場合は処理中断
