@@ -24,8 +24,8 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   const columnHelper = useMemo(() => RT.createColumnHelper<T>(), [])
   const columns: RT.ColumnDef<T>[] = useMemo(() => {
     const result: RT.ColumnDef<T>[] = []
-    const rtColumns: RTColumnDefEx<T>[] = propsColumns?.map(c => ({
-      id: c.id,
+    const rtColumns: RTColumnDefEx<T>[] = propsColumns?.map((c, ix) => ({
+      id: `col-${ix}`,
       size: c.defaultWidthPx,
       enableResizing: !c.fixedWidth,
       header: c.header ?? '',
