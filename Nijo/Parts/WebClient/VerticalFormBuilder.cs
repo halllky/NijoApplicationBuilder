@@ -82,7 +82,7 @@ namespace Nijo.Parts.WebClient {
                     /* VForm2: 横{{col}}列の場合のレイアウト */
                     @container {{minmax.Join(" and ")}} {
                       .vform-template-column {
-                        grid-template-columns: calc((var(--vform-indent-size) * var(--vform-max-depth)) + var(--vform-label-width)) 1fr{{(col >= 2 ? $" repeat({col - 1}, var(--vform-label-width) 1fr)" : "")}};
+                        grid-template-columns: calc((1px * var(--vform-max-depth)) + var(--vform-label-width)) 1fr{{(col >= 2 ? $" repeat({col - 1}, var(--vform-label-width) 1fr)" : "")}};
                       }
                     {{Enumerable.Range(1, MAX_MEMBER).SelectTextTemplate(i => $$"""
 

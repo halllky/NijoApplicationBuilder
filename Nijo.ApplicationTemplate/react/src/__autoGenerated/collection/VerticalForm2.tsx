@@ -1,15 +1,12 @@
 import React, { useMemo } from 'react'
 
-const DEFAULT_INDENT_SIZE = '1.5rem'
 const DEFAULT_LABEL_WIDTH = '8rem'
 
 
-const Root = ({ label, estimatedLabelWidth, indentSize, maxDepth, children }: {
+const Root = ({ label, estimatedLabelWidth, maxDepth, children }: {
   label?: React.ReactNode
   /** フォーム内のラベルの横幅のうち最も大きいもの */
   estimatedLabelWidth?: string
-  /** 子孫要素の部分のインデントの大きさ */
-  indentSize?: string
   /** 最も深い子孫要素の深さ */
   maxDepth?: number
   children?: React.ReactNode
@@ -22,9 +19,8 @@ const Root = ({ label, estimatedLabelWidth, indentSize, maxDepth, children }: {
     // デフォルトのCSSファイルの中でこれらのCSS変数を使ってラベル列の横幅を計算している
     // @ts-ignore
     '--vform-max-depth': maxDepth?.toString() ?? '0',
-    '--vform-indent-size': indentSize ?? DEFAULT_INDENT_SIZE,
     '--vform-label-width': estimatedLabelWidth ?? DEFAULT_LABEL_WIDTH,
-  }), [maxDepth, indentSize, estimatedLabelWidth])
+  }), [maxDepth, estimatedLabelWidth])
 
   return (
     <div style={rootStyle}>
@@ -70,7 +66,7 @@ const Indent = ({ label, children, className }: {
       <div className="px-1 col-span-full select-none">
         {renderLabel(label)}&nbsp;
       </div>
-      <div className="grid gap-px grid-cols-[subgrid] col-span-full pl-[var(--vform-indent-size)]">
+      <div className="grid gap-px grid-cols-[subgrid] col-span-full">
         {children}
       </div>
     </div>

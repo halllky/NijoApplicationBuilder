@@ -109,6 +109,7 @@ namespace Nijo.Parts {
                                     });
 
                                     // npm start で実行されるポートがASP.NETのそれと別なので
+
                                     builder.Services.AddCors(options => {
                                         options.AddDefaultPolicy(builder => {
                                             builder.AllowAnyOrigin()

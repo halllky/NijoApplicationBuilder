@@ -40,7 +40,7 @@ export const TreeExplorer = <T,>({
     return visible
   }, [data, expanded, filter, getId, getLabel, toTreeLogic])
 
-  const liRefs = Util.useRefArray<HTMLLIElement>(dataAsTree)
+  const liRefs = Util.useRefArray<HTMLLIElement>(dataAsTree.length)
   const {
     activeItemIndex,
     isSelected,

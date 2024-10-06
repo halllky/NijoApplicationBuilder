@@ -1,35 +1,43 @@
-import { ChevronUpDownIcon } from "@heroicons/react/24/solid";
-import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+import React, { useEffect, useImperativeHandle, useRef, useState } from "react";
 import { ValidationHandler, ValidationResult, defineCustomComponent } from "./InputBase";
-import { useOutsideClick, useUserSetting } from "..";
+import { useUserSetting } from "..";
 import useEvent from "react-use-event-hook";
 
-export type TextInputBaseArgs = Parameters<typeof TextInputBase>['0']
-export type DropDownBody = (props: { focusRef: React.RefObject<never> }) => React.ReactNode
-export type DropDownApi = { isOpened: boolean, open: () => void, close: () => void }
-
-export const TextInputBase = defineCustomComponent<string, {
-  dropdownBody?: DropDownBody
+/** TextInputBase特有の属性 */
+type TextInputBaseAdditionalAttrs = {
   onValidate?: ValidationHandler
-  onDropdownOpened?: () => void
-  dropdownRef?: React.RefObject<DropDownApi>
-  dropdownAutoOpen?: boolean
-}>((props, ref) => {
+  /** onChangeと異なり1文字入力されるごとに発火する */
+  onOneCharChanged?: (value: string) => void
+  /** テキストボックスの左側に表示されるコンポーネント */
+  AtStart?: React.ReactNode
+  /** テキストボックスの右側に表示されるコンポーネント */
+  AtEnd?: React.ReactNode
+}
+/** TextInputBase特有のRef */
+export type TextInputBaseAdditionalRef = {
+  element?: HTMLElement | null
+}
+
+export const TextInputBase = defineCustomComponent<
+  string,
+  TextInputBaseAdditionalAttrs,
+  React.HTMLAttributes<HTMLElement>,
+  TextInputBaseAdditionalRef
+>((props, ref) => {
 
   const {
-    dropdownBody,
-    onDropdownOpened,
     onValidate,
-    dropdownRef,
-    dropdownAutoOpen,
     value,
     readOnly,
     placeholder,
     className,
     onChange: onChangeFormattedText,
+    onOneCharChanged,
     onFocus,
     onBlur,
     onKeyDown,
+    AtStart,
+    AtEnd,
     ...rest
   } = props
 
@@ -55,40 +63,28 @@ export const TextInputBase = defineCustomComponent<string, {
   })
 
   const executeFormat = useEvent(() => {
+    let formatted: string
     if (onValidate) {
       const result = getValidationResult(unFormatText)
       if (result.ok) {
-        setUnFormatText(result.formatted)
-        onChangeFormattedText?.(result.formatted)
+        formatted = result.formatted
         setFormatError(false)
       } else {
-        onChangeFormattedText?.('')
+        formatted = ''
         setFormatError(true)
       }
     } else {
-      onChangeFormattedText?.(unFormatText)
+      formatted = unFormatText
       setFormatError(false)
     }
-  })
-
-  // ドロップダウン開閉
-  const [open, setOpen] = useState(false)
-  if (dropdownRef) (dropdownRef as React.MutableRefObject<DropDownApi>).current = {
-    isOpened: open || (dropdownAutoOpen ?? false),
-    open: () => setOpen(true),
-    close: () => setOpen(false),
-  }
-  const onSideButtonClick = useEvent(() => {
-    setOpen(!open)
-    onDropdownOpened?.()
-  })
-  const onClose = useEvent(() => {
-    setOpen(false)
-    inputRef.current?.focus()
+    if ((value ?? '') !== formatted) {
+      onChangeFormattedText?.(formatted)
+    }
   })
 
   // イベント
   const onChange: React.ChangeEventHandler<HTMLInputElement> = useEvent(e => {
+    onOneCharChanged?.(e.target.value)
     setUnFormatText(e.target.value)
   })
 
@@ -99,17 +95,11 @@ export const TextInputBase = defineCustomComponent<string, {
 
   const divRef = useRef<HTMLDivElement>(null)
   const handleBlur: React.FocusEventHandler<HTMLInputElement> = useEvent(e => {
+    // サイドボタンのクリックでblurが発火してしまうのを防ぐ
+    if (divRef.current?.contains(e.relatedTarget)) return
+
     // フォーマットされた値を表示に反映
     executeFormat()
-
-    // コンボボックスではテキストにフォーカスが当たったままドロップダウンが展開されることがあるため
-    // blur先がdivの外に移った時に強制的にドロップダウンを閉じる
-    if (e.target === divRef.current
-      && e.relatedTarget
-      && !divRef.current.contains(e.relatedTarget)) {
-      setOpen(false)
-    }
-
     onBlur?.(e)
   })
 
@@ -119,10 +109,6 @@ export const TextInputBase = defineCustomComponent<string, {
   }, [onValidate])
 
   const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = useEvent(e => {
-    if (!dropdownAutoOpen && open && e.key === 'Escape') {
-      setOpen(false)
-      e.preventDefault()
-    }
     if (e.key === 'Enter') {
       e.preventDefault() // Enterキーでsubmitされるのを防ぐ
     }
@@ -130,6 +116,7 @@ export const TextInputBase = defineCustomComponent<string, {
   })
 
   useImperativeHandle(ref, () => ({
+    element: divRef.current,
     getValue: () => {
       const result = getValidationResult(unFormatText)
       return result.ok ? result.formatted : ''
@@ -146,7 +133,9 @@ export const TextInputBase = defineCustomComponent<string, {
       className={readOnly
         ? `inline-flex relative min-w-0 max-w-full ${className} border border-transparent`
         : `inline-flex relative min-w-0 max-w-full ${className} border border-color-5 text-color-12 ${bgColor}`}
+      onBlur={handleBlur}
     >
+      {AtStart}
       <input
         {...rest}
         type="text"
@@ -159,61 +148,9 @@ export const TextInputBase = defineCustomComponent<string, {
         placeholder={readOnly ? undefined : placeholder}
         onKeyDown={handleKeyDown}
         onFocus={handleFocus}
-        onBlur={handleBlur}
         onChange={onChange}
       />
-      {!readOnly && dropdownBody &&
-        <ChevronUpDownIcon
-          className="w-6 text-color-5 border-l border-color-5 cursor-pointer"
-          onClick={onSideButtonClick}
-        />}
-
-      {(open || dropdownAutoOpen) && !readOnly && dropdownBody &&
-        <Dropdown onClose={onClose}>
-          {dropdownBody}
-        </Dropdown>}
+      {AtEnd}
     </div>
   )
 })
-
-
-const Dropdown = ({ onClose, children }: {
-  onClose?: () => void
-  children?: DropDownBody
-}) => {
-  const divRef = useRef<HTMLDivElement>(null)
-  const focusRef = useRef<never | null>(null)
-
-  useEffect(() => {
-    // ドロップダウン内の要素にフォーカスを当てる
-    const htmlElement = focusRef.current as { focus: () => void } | null
-    if (typeof htmlElement?.focus === 'function') {
-      htmlElement.focus()
-    }
-  }, [])
-
-  useOutsideClick(divRef, () => {
-    onClose?.()
-  }, [onClose])
-
-  const onBlur: React.FocusEventHandler = useEvent(e => {
-    onClose?.()
-  })
-  const onKeyDown: React.KeyboardEventHandler = useEvent(e => {
-    if (e.key === 'Escape') {
-      onClose?.()
-      e.preventDefault()
-    }
-  })
-
-  return (
-    <div
-      ref={divRef}
-      className="absolute top-[calc(100%+2px)] left-[-1px] min-w-[calc(100%+2px)] z-10 bg-color-base border border-color-5 outline-none"
-      onBlur={onBlur}
-      onKeyDown={onKeyDown}
-    >
-      {children?.({ focusRef })}
-    </div>
-  )
-}

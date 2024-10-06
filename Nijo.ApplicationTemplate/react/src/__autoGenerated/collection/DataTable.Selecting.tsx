@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useImperativeHandle, useMemo, useId } from 'react'
+import useEvent from 'react-use-event-hook'
 import * as RT from '@tanstack/react-table'
 import * as Util from '../util'
 import { CellEditorRef, CellPosition, RTColumnDefEx, TABLE_ZINDEX } from './DataTable.Parts'
@@ -15,6 +16,7 @@ export const useSelection = <T,>(
   columns: RT.ColumnDef<T>[],
   tdRefs: React.MutableRefObject<React.RefObject<HTMLTableCellElement>[][]>,
   onActiveRowChanged: DataTableProps<T>['onActiveRowChanged'] | undefined,
+  onCaretCellChanged: (cell: CellPosition | undefined) => void,
   cellEditorRef: React.RefObject<CellEditorRef<T>>,
 ) => {
   const colCount = columns.length
@@ -46,11 +48,14 @@ export const useSelection = <T,>(
 
   // -----------------------------------------
   // 選択
-  const selectObject = useCallback((obj: SelectTarget) => {
+  const selectObject = useEvent((obj: SelectTarget) => {
     // シングル選択
     if (obj.target === 'cell') {
       selectionStart.current = { ...obj.cell }
-      if (!obj.shiftKey) caretCell.current = { ...obj.cell }
+      if (!obj.shiftKey) {
+        caretCell.current = { ...obj.cell }
+        onCaretCellChanged(caretCell.current)
+      }
       setContainsRowHeader(false)
       onActiveRowChanged?.({ rowIndex: obj.cell.rowIndex, getRow: () => api.getCoreRowModel().flatRows[obj.cell.rowIndex].original })
     }
@@ -62,12 +67,14 @@ export const useSelection = <T,>(
         selectionStart.current = selected
         setContainsRowHeader(false)
         onActiveRowChanged?.({ rowIndex: 0, getRow: () => api.getCoreRowModel().flatRows[0].original })
+        onCaretCellChanged(selected)
 
       } else {
         caretCell.current = undefined
         selectionStart.current = undefined
         setContainsRowHeader(false)
         onActiveRowChanged?.(undefined)
+        onCaretCellChanged(undefined)
       }
 
     }
@@ -79,19 +86,21 @@ export const useSelection = <T,>(
         selectionStart.current = { rowIndex: rowCount - 1, colIndex: columns.length - 1 }
         setContainsRowHeader(true)
         onActiveRowChanged?.({ rowIndex: 0, getRow: () => api.getCoreRowModel().flatRows[rowCount - 1].original })
+        onCaretCellChanged(caretCell.current)
 
       } else {
         caretCell.current = undefined
         selectionStart.current = undefined
         setContainsRowHeader(false)
         onActiveRowChanged?.(undefined)
+        onCaretCellChanged(undefined)
       }
     }
     // tdへの参照を最新の値に更新
     updateTdRef(caretCell.current, selectionStart.current)
     // クイック編集のために常にCellEditorにフォーカスを当てる
     cellEditorRef.current?.focus()
-  }, [caretCell, selectionStart, updateTdRef, api, onActiveRowChanged, rowCount, colCount])
+  })
 
   const handleSelectionKeyDown: React.KeyboardEventHandler<HTMLElement> = useCallback(e => {
     if (e.ctrlKey && e.key === 'a') {
@@ -152,7 +161,6 @@ export const useSelection = <T,>(
   }, [api, caretCell, selectionStart])
 
   return {
-    caretCell,
     caretTdRef,
     selectObject,
     handleSelectionKeyDown,

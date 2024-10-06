@@ -1,5 +1,5 @@
 import React from 'react'
-import { AsyncComboProps, SyncComboProps } from '..'
+import { ComboProps } from '..'
 
 export type DataTableRef<T> = {
   focus: () => void
@@ -53,11 +53,11 @@ type SyncComboColumnEditSetting<TRow, TOption = unknown> = {
   type: 'combo'
   onStartEditing: (row: TRow) => TOption | undefined
   onEndEditing: (row: TRow, value: TOption | undefined, rowIndex: number) => void
-  comboProps: SyncComboProps<TOption, TOption>
+  comboProps: ComboProps<TOption, TOption>
 }
 type AsyncComboColumnEditSetting<TRow, TOption = unknown> = {
   type: 'async-combo'
   onStartEditing: (row: TRow) => TOption | undefined
   onEndEditing: (row: TRow, value: TOption | undefined, rowIndex: number) => void
-  comboProps: AsyncComboProps<TOption, TOption>
+  comboProps: ComboProps<TOption, TOption>
 }

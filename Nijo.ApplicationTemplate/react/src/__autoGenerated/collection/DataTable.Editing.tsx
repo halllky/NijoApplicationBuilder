@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import React, { useEffect, useImperativeHandle, useRef, useState } from 'react'
+import useEvent from 'react-use-event-hook'
 import * as RT from '@tanstack/react-table'
 import { DataTableProps, ColumnEditSetting } from './DataTable.Public'
 import { CellEditorRef, CellPosition, RTColumnDefEx, TABLE_ZINDEX } from './DataTable.Parts'
@@ -7,7 +8,7 @@ import * as Util from '../util'
 
 export type CellEditorProps<T> = {
   api: RT.Table<T>
-  caretCell: React.RefObject<CellPosition | undefined>
+  caretCell: CellPosition | undefined
   caretTdRef: React.RefObject<HTMLTableCellElement | undefined>
   onChangeEditing: (editing: boolean) => void
   onChangeRow: DataTableProps<T>['onChangeRow']
@@ -39,10 +40,10 @@ export const CellEditor = Util.forwardRefEx(<T,>({
   // エディタ設定。caretセルが移動するたびに更新される。
   const [caretCellEditingInfo, setCaretCellEditingInfo] = useState<ColumnEditSetting<T>>()
   const containerRef = useRef<HTMLLabelElement>(null)
-  const editorRef = useRef<Input.CustomComponentRef<string | unknown>>(null)
+  const editorRef = useRef<Input.CustomComponentRef<string | unknown> & Input.ComboAdditionalRef>(null)
   useEffect(() => {
-    if (caretCell.current) {
-      const columnDef = api.getAllLeafColumns()[caretCell.current.colIndex]?.columnDef as RTColumnDefEx<T> | undefined
+    if (caretCell) {
+      const columnDef = api.getAllLeafColumns()[caretCell.colIndex]?.columnDef as RTColumnDefEx<T> | undefined
       setCaretCellEditingInfo(columnDef?.ex.editSetting)
 
       // エディタを編集対象セルの位置に移動させる
@@ -57,13 +58,13 @@ export const CellEditor = Util.forwardRefEx(<T,>({
     } else {
       setCaretCellEditingInfo(undefined)
     }
-  }, [caretCell.current, api, caretTdRef, containerRef])
+  }, [caretCell, api, caretTdRef, containerRef])
   useEffect(() => {
     if (caretCellEditingInfo) editorRef.current?.focus()
   }, [caretCellEditingInfo])
 
   /** 編集開始 */
-  const startEditing = useCallback((cell: RT.Cell<T, unknown>) => {
+  const startEditing = useEvent((cell: RT.Cell<T, unknown>) => {
     const columnDef = cell.column.columnDef as RTColumnDefEx<T>
 
     if (!onChangeRow) return // 値が編集されてもコミットできないので編集開始しない
@@ -91,10 +92,10 @@ export const CellEditor = Util.forwardRefEx(<T,>({
       block: 'nearest',
       inline: 'nearest',
     })
-  }, [setEditingCellInfo, onChangeEditing, onChangeRow, containerRef])
+  })
 
   /** 編集確定 */
-  const commitEditing = useCallback((value?: string | unknown | undefined) => {
+  const commitEditing = useEvent((value?: string | unknown | undefined) => {
     if (editingCellInfo === undefined) return
     if (caretCellEditingInfo === undefined) return
 
@@ -106,27 +107,38 @@ export const CellEditor = Util.forwardRefEx(<T,>({
 
     onChangeRow?.(editingCellInfo.rowIndex, editingCellInfo.row)
     setEditingCellInfo(undefined)
+    setComboSelectedItem(undefined)
     onChangeEditing(false)
-  }, [editingCellInfo, caretCellEditingInfo, onChangeRow, onChangeEditing])
+    editorRef.current?.closeDropdown?.()
+  })
 
   /** 編集キャンセル */
-  const cancelEditing = useCallback(() => {
+  const cancelEditing = useEvent(() => {
     setEditingCellInfo(undefined)
+    setComboSelectedItem(undefined)
     onChangeEditing(false)
-  }, [setEditingCellInfo, onChangeEditing])
+    editorRef.current?.closeDropdown?.()
+  })
 
   // ----------------------------------
   // イベント
-  const handleChangeCombobox = useCallback((selectedItem: unknown | undefined) => {
+  const handleDropdownOpening = useEvent(() => {
+    // セル上下移動の矢印キーでドロップダウンが開いてしまうのを防ぐ
+    if (editingCellInfo === undefined) return false
+  })
+
+  const handleChangeCombobox = useEvent((selectedItem: unknown | undefined) => {
     setComboSelectedItem(selectedItem)
     commitEditing(selectedItem)
-  }, [setComboSelectedItem, commitEditing])
+  })
 
   const [{ isImeOpen }] = Util.useIMEOpened()
-  const handleKeyDown: React.KeyboardEventHandler<HTMLLabelElement> = useCallback(e => {
+  const handleKeyDown: React.KeyboardEventHandler<HTMLLabelElement> = useEvent(e => {
     if (editingCellInfo) {
       // 編集を終わらせる
-      if (e.key === 'Enter' || e.key === 'Tab') {
+      if ((caretCellEditingInfo?.type === 'text' || caretCellEditingInfo?.type === 'multiline-text')
+        && (e.key === 'Enter' || e.key === 'Tab')) {
+
         if (isImeOpen) return // IMEが開いているときのEnterやTabでは編集終了しないようにする
         if (caretCellEditingInfo?.type === 'multiline-text' && !e.ctrlKey && !e.metaKey) return // セル内改行のため普通のEnterでは編集終了しないようにする
         commitEditing()
@@ -139,7 +151,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
       }
     } else {
       // 編集を始める
-      if (caretCell.current && (
+      if (caretCell && (
         e.key === 'F2'
 
         // クイック編集（編集モードでない状態でいきなり文字入力して編集を開始する）
@@ -152,8 +164,8 @@ export const CellEditor = Util.forwardRefEx(<T,>({
         && e.altKey
         && e.key === 'ArrowDown'
       )) {
-        const row = api.getCoreRowModel().flatRows[caretCell.current.rowIndex]
-        const cell = row.getAllCells()[caretCell.current.colIndex]
+        const row = api.getCoreRowModel().flatRows[caretCell.rowIndex]
+        const cell = row.getAllCells()[caretCell.colIndex]
         if (cell) startEditing(cell)
         return
       }
@@ -164,11 +176,13 @@ export const CellEditor = Util.forwardRefEx(<T,>({
         if (e.defaultPrevented) return
       }
     }
-  }, [isImeOpen, caretCellEditingInfo, editingCellInfo, startEditing, commitEditing, cancelEditing, onKeyDown, api, caretCell])
+  })
 
   Util.useOutsideClick(containerRef, () => {
-    commitEditing()
-  }, [commitEditing])
+    if (caretCellEditingInfo?.type === 'text' || caretCellEditingInfo?.type === 'multiline-text') {
+      commitEditing()
+    }
+  }, [commitEditing, caretCellEditingInfo])
 
   useImperativeHandle(ref, () => ({
     focus: () => editorRef.current?.focus({ preventScroll: true }),
@@ -212,20 +226,20 @@ export const CellEditor = Util.forwardRefEx(<T,>({
       )}
       {caretCellEditingInfo?.type === 'combo' && (
         <Input.ComboBox
-          dropdownAutoOpen={editingCellInfo !== undefined}
           ref={editorRef}
           value={comboSelectedItem}
           onChange={handleChangeCombobox}
+          onDropdownOpening={handleDropdownOpening}
           {...caretCellEditingInfo.comboProps}
           className="flex-1"
         />
       )}
       {caretCellEditingInfo?.type === 'async-combo' && (
         <Input.AsyncComboBox
-          dropdownAutoOpen={editingCellInfo !== undefined}
           ref={editorRef}
           value={comboSelectedItem}
           onChange={handleChangeCombobox}
+          onDropdownOpening={handleDropdownOpening}
           {...caretCellEditingInfo.comboProps}
           className="flex-1"
         />
