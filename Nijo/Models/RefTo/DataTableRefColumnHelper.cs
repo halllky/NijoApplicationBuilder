@@ -40,14 +40,35 @@ namespace Nijo.Models.RefTo {
 
             // フォーカス離脱時の検索
             var keysForSearchOnBlur = keys.Select(vm => {
-                // 右辺
-                Func<string, string> Right = vm.Options.MemberType is SchalarMemberType
-                    ? ((string v) => $"{{ {FromTo.FROM_TS}: {v}, {FromTo.TO_TS}: {v} }}")
-                    : ((string v) => v);
+                var leftFullPath = vm.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript);
+
+                // セルの値を検索条件オブジェクトに代入する処理
+                Func<string, string> AssignExpression;
+                if (vm is AggregateMember.Variation variation) {
+                    AssignExpression = value => $$"""
+                        {{variation.GetGroupItems().SelectTextTemplate((variationItem, i) => $$"""
+                        {{(i == 0 ? "" : "else ")}}if ({{value}} === '{{variationItem.Relation.RelationName}}') cond.{{leftFullPath.Join(".")}} = { {{variationItem.Relation.RelationName}}: true }
+                        """)}}
+                        """;
+                } else if (vm.Options.MemberType is Core.AggregateMemberTypes.EnumList enumList) {
+                    AssignExpression = value => $$"""
+                        {{enumList.Definition.Items.SelectTextTemplate((option, i) => $$"""
+                        {{(i == 0 ? "" : "else ")}}if ({{value}} === '{{option.PhysicalName}}') cond.{{leftFullPath.Join(".")}} = { {{option.PhysicalName}}: true }
+                        """)}}
+                        """;
+                } else if (vm.Options.MemberType is SchalarMemberType) {
+                    AssignExpression = value => $$"""
+                        cond.{{leftFullPath.Join(".")}} = { {{FromTo.FROM_TS}}: {{value}}, {{FromTo.TO_TS}}: {{value}} }
+                        """;
+                } else {
+                    AssignExpression = value => $$"""
+                        cond.{{leftFullPath.Join(".")}} = {{value}}
+                        """;
+                }
+
                 return new {
                     vm.Declared,
-                    LeftFullPath = vm.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript),
-                    Right,
+                    AssignExpression,
                 };
             });
 
@@ -103,11 +124,14 @@ namespace Nijo.Models.RefTo {
                 {{If(vm.IsKey, () => $$"""
                       // 変更されたキーで再検索をかける
                       const cond = AggregateType.{{refSearchCondition.CreateNewObjectFnName}}()
+
                 {{keysForSearchOnBlur.SelectTextTemplate(k => $$"""
                 {{If(k.Declared == vm.Declared, () => $$"""
-                      cond.{{k.LeftFullPath.Join(".")}} = {{k.Right("value")}}
+                      {{WithIndent(k.AssignExpression("value"), "      ")}}
+
                 """).Else(() => $$"""
-                      cond.{{k.LeftFullPath.Join(".")}} = {{k.Right($"getValue(row)?.{k.Declared.GetFullPathAsDataClassForRefTarget().Join("?.")}")}}
+                      {{WithIndent(k.AssignExpression($"getValue(row)?.{k.Declared.GetFullPathAsDataClassForRefTarget().Join("?.")}"), "      ")}}
+
                 """)}}
                 """)}}
                       cond.take = 2 // 検索で1件だけヒットしたときのみ値変更
