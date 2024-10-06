@@ -109,7 +109,7 @@ namespace Nijo.Models.WriteModel2Features {
                   {{DataClassForSaveBase.ADD_MOD_DEL_TS}}: 'ADD',
                   {{DataClassForSaveBase.VALUES_TS}}: data,
                 })), { noMessage: true, ignoreConfirm: true })
-                if (!{{response}}) return false
+                if (!{{response}}.ok) return false
 
                 """;
 
