@@ -138,7 +138,7 @@ namespace Nijo.Models.ReadModel2Features {
                 if (member is AggregateMember.ValueMember vm) {
                     var readOnlyStatement = GetReadOnlyStatement(vm);
                     var fullpath = formContext.GetReactHookFormFieldPath(vm);
-                    var label = vm.IsRequired
+                    var label = vm.IsRequired && vm.Owner.IsInEntryTree()
                         ? $$"""
                             <VForm2.LabelText>
                               {{member.DisplayName}}
@@ -146,7 +146,7 @@ namespace Nijo.Models.ReadModel2Features {
                             </VForm2.LabelText>
                             """
                         : member.DisplayName;
-                    var labelType = vm.IsRequired
+                    var labelType = vm.IsRequired && vm.Owner.IsInEntryTree()
                         ? E_VForm2LabelType.JsxElement
                         : E_VForm2LabelType.String;
                     var body = vm.Options.SingleViewCustomUiComponentName == null
@@ -168,7 +168,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                         var readOnlyStatement = GetReadOnlyStatement(@ref);
                         var fullpath = @ref.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, GetArgumentsAndLoopVar());
-                        var label = @ref.Relation.IsRequired()
+                        var label = @ref.Relation.IsRequired() && @ref.Owner.IsInEntryTree()
                             ? $$"""
                                 <VForm2.LabelText>
                                   {{member.DisplayName}}
@@ -176,7 +176,7 @@ namespace Nijo.Models.ReadModel2Features {
                                 </VForm2.LabelText>
                                 """
                             : @ref.DisplayName;
-                        var labelType = @ref.Relation.IsRequired()
+                        var labelType = @ref.Relation.IsRequired() && @ref.Owner.IsInEntryTree()
                             ? E_VForm2LabelType.JsxElement
                             : E_VForm2LabelType.String;
                         var body = $$"""
@@ -440,7 +440,7 @@ namespace Nijo.Models.ReadModel2Features {
                       <div className="inline-flex items-center py-1 gap-2">
                         <VForm2.LabelText>
                           {{_ref.DisplayName}}
-                    {{If(_ref.Relation.IsRequired(), () => $$"""
+                    {{If(_ref.Relation.IsRequired() && _ref.Owner.IsInEntryTree(), () => $$"""
                           <Input.RequiredChip />
                     """)}}
                         </VForm2.LabelText>
@@ -608,7 +608,7 @@ namespace Nijo.Models.ReadModel2Features {
                           <div className="inline-flex gap-2 py-px justify-start items-center">
                             <VForm2.LabelText>
                               {{_aggregate.GetParent()?.GetDisplayName() ?? _aggregate.GetParent()?.RelationName}}
-                    {{If(_children.Relation.IsRequired(), () => $$"""
+                    {{If(_children.Relation.IsRequired() && _children.Owner.IsInEntryTree(), () => $$"""
                               <Input.RequiredChip />
                     """)}}
                             </VForm2.LabelText>
@@ -708,7 +708,7 @@ namespace Nijo.Models.ReadModel2Features {
                           label={<>
                             <div className="flex items-center gap-2">
                               <VForm2.LabelText>{{_aggregate.GetParent()?.GetDisplayName() ?? _aggregate.GetParent()?.RelationName}}</VForm2.LabelText>
-                    {{If(_children.Relation.IsRequired(), () => $$"""
+                    {{If(_children.Relation.IsRequired() && _children.Owner.IsInEntryTree(), () => $$"""
                               <Input.RequiredChip />
                     """)}}
                     {{If(editable, () => $$"""

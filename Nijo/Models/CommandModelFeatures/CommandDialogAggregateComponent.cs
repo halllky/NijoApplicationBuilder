@@ -147,7 +147,7 @@ namespace Nijo.Models.CommandModelFeatures {
             };
             foreach (var member in EnumerateRenderedMemberes().OrderBy(m => m.Order)) {
                 if (member is AggregateMember.ValueMember vm) {
-                    var label = vm.IsRequired
+                    var label = vm.IsRequired && vm.Owner.IsInEntryTree()
                         ? $$"""
                             <VForm2.LabelText>
                               {{member.DisplayName}}
@@ -155,7 +155,7 @@ namespace Nijo.Models.CommandModelFeatures {
                             </VForm2.LabelText>
                             """
                         : member.DisplayName;
-                    var labelType = vm.IsRequired
+                    var labelType = vm.IsRequired && vm.Owner.IsInEntryTree()
                         ? E_VForm2LabelType.JsxElement
                         : E_VForm2LabelType.String;
 
@@ -410,7 +410,7 @@ namespace Nijo.Models.CommandModelFeatures {
                       <div className="inline-flex items-center py-1 gap-2">
                         <VForm2.LabelText>
                           {{_ref.DisplayName}}
-                    {{If(_ref.Relation.IsRequired(), () => $$"""
+                    {{If(_ref.Relation.IsRequired() && _ref.Owner.IsInEntryTree(), () => $$"""
                           <Input.RequiredChip />
                     """)}}
                         </VForm2.LabelText>
@@ -509,7 +509,7 @@ namespace Nijo.Models.CommandModelFeatures {
                       <div className="inline-flex gap-2 py-px justify-start items-center">
                         <VForm2.LabelText>
                           {{{loopVar}}}
-                    {{If(_children.Relation.IsRequired(), () => $$"""
+                    {{If(_children.Relation.IsRequired() && _children.Owner.IsInEntryTree(), () => $$"""
                           <Input.RequiredChip />
                     """)}}
                         </VForm2.LabelText>
@@ -656,7 +656,7 @@ namespace Nijo.Models.CommandModelFeatures {
                             <div className="flex items-center gap-2">
                               <VForm2.LabelText>
                                 {{_aggregate.GetParent()?.RelationName}}
-                    {{If(_children.Relation.IsRequired(), () => $$"""
+                    {{If(_children.Relation.IsRequired() && _children.Owner.IsInEntryTree(), () => $$"""
                                 <Input.RequiredChip />
                     """)}}
                               </VForm2.LabelText>
