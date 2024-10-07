@@ -30,7 +30,7 @@ export const TextInputBase = defineCustomComponent<
     value,
     readOnly,
     placeholder,
-    className,
+    className: propsClassName,
     onChange: onChangeFormattedText,
     onOneCharChanged,
     onFocus,
@@ -47,9 +47,6 @@ export const TextInputBase = defineCustomComponent<
   const [unFormatText, setUnFormatText] = useState(value ?? '')
   const [formatError, setFormatError] = useState(false)
   const { data: { darkMode } } = useUserSetting()
-  const bgColor = formatError
-    ? (darkMode ? 'bg-rose-900' : 'bg-rose-200')
-    : 'bg-color-base'
 
   useEffect(() => {
     if (formatError && value === '') return // 不正なテキストが入力されたことによる値変更の場合
@@ -127,12 +124,27 @@ export const TextInputBase = defineCustomComponent<
     },
   }), [getValidationResult, unFormatText, inputRef])
 
+  let className = `inline-flex relative min-w-0 border`
+  if (readOnly) {
+    className += ' border-transparent'
+  } else {
+    className += ' border-color-5 text-color-12'
+    className += formatError
+      ? (darkMode ? ' bg-rose-900' : ' bg-rose-200') :
+      ' bg-color-base'
+  }
+  if (propsClassName?.indexOf('max-w-') === -1) {
+    // propsで max-width が指定されている場合でもfullが勝ってしまうのでfullを設定するかどうかは慎重にする
+    className += ' max-w-full'
+  }
+  if (propsClassName) {
+    className += ' ' + propsClassName
+  }
+
   return (
     <div
       ref={divRef}
-      className={readOnly
-        ? `inline-flex relative min-w-0 max-w-full ${className} border border-transparent`
-        : `inline-flex relative min-w-0 max-w-full ${className} border border-color-5 text-color-12 ${bgColor}`}
+      className={className}
       onBlur={handleBlur}
     >
       {AtStart}
