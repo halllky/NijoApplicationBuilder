@@ -149,7 +149,9 @@ export const ComboBoxBase = defineCustomComponent(<TOption, TValue = TOption>(
       onOneCharChanged={handleKeywordChange}
       onKeyDown={handleKeyDown}
       onBlur={handleBlur}
-      AtEnd={<DropdownButton onClick={handleSideButtonClick} />}
+      AtEnd={props.readOnly
+        ? undefined
+        : <DropdownButton onClick={handleSideButtonClick} />}
     />
   )
 })
