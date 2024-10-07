@@ -27,28 +27,44 @@ export const IconButton = (args: {
   }
 
   if (args.fill) {
-    // 普通に text-color-8 などとするとTailwind既定のスタイルリセットに優先度で負けるので背景色は独自クラスを指定
     className += args.loading
-      ? ` text-color-0 bg-color-button-loading`
-      : ` text-color-0 bg-color-button`
+      ? ' button-style-fill-loading'
+      : ' button-style-fill'
+
+    // 普通に text-color-8 などとするとTailwind既定のスタイルリセットに優先度で負けるので背景色は独自クラスを指定
+    // className += args.loading
+    //   ? ` text-color-0 bg-color-button-loading`
+    //   : ` text-color-0 bg-color-button`
   } else if (args.outline) {
     className += args.loading
-      ? ` border border-color-5 text-color-5`
-      : ` border border-color-7`
+      ? ' button-style-outline-loading'
+      : ' button-style-outline'
+
+    // className += args.loading
+    //   ? ` border border-color-5 text-color-5`
+    //   : ` border border-color-7`
   } else if (args.underline) {
     className += args.loading
-      ? ` pr-1 text-sky-300 border-b border-sky-300`
-      : ` pr-1 text-sky-600 border-b border-sky-600`
+      ? ' button-style-link-loading'
+      : ' button-style-link'
+
+    // className += args.loading
+    //   ? ` pr-1 text-sky-300 border-b border-sky-300`
+    //   : ` pr-1 text-sky-600 border-b border-sky-600`
+  } else {
+    className += args.loading
+      ? ' button-style-text-loading'
+      : ' button-style-text'
   }
 
   // 読み込み中のくるくる
   let nowLoadingStyle = `animate-spin h-4 w-4 border-2 rounded-full border-t-transparent`
   if (args.fill) {
-    nowLoadingStyle += ' border-color-0'
+    nowLoadingStyle += ' border-sky-50'
   } else if (args.underline) {
     nowLoadingStyle += ' border-sky-300'
   } else {
-    nowLoadingStyle += ' border-color-5'
+    nowLoadingStyle += ' border-sky-500'
   }
 
   return (

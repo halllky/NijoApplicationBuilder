@@ -205,18 +205,60 @@ textarea:read-only {
 }
 
 /* 単にクラス名で指定していないのは、index.cssで指定されているTailwind既定のスタイルリセットの優先度に負けてしまうから。 */
-.bg-color-button,
-button[type="button"].bg-color-button,
-button[type="submit"].bg-color-button,
-button[type="reset"].bg-color-button {
-  @apply bg-neutral-700 dark:bg-neutral-300;
+.button-style-fill,
+button[type="button"].button-style-fill,
+button[type="submit"].button-style-fill,
+button[type="reset"].button-style-fill {
+  @apply bg-cyan-700 dark:bg-cyan-300 text-cyan-50 dark:text-cyan-950;
 }
 
-.bg-color-button-loading,
-button[type="button"].bg-color-button-loading,
-button[type="submit"].bg-color-button-loading,
-button[type="reset"].bg-color-button-loading {
-  @apply bg-neutral-300 dark:bg-neutral-700;
+.button-style-fill-loading,
+button[type="button"].button-style-fill-loading,
+button[type="submit"].button-style-fill-loading,
+button[type="reset"].button-style-fill-loading {
+  @apply bg-cyan-200 dark:bg-cyan-700 text-cyan-50 dark:text-cyan-950;
+}
+
+.button-style-outline,
+button[type="button"].button-style-outline,
+button[type="submit"].button-style-outline,
+button[type="reset"].button-style-outline {
+  @apply border text-cyan-600 dark:text-cyan-300 border-cyan-600 dark:border-cyan-300;
+}
+
+.button-style-outline-loading,
+button[type="button"].button-style-outline-loading,
+button[type="submit"].button-style-outline-loading,
+button[type="reset"].button-style-outline-loading {
+  @apply border text-cyan-200 dark:text-cyan-300 border-cyan-200 dark:border-cyan-300;
+}
+
+.button-style-link,
+button[type="button"].button-style-link,
+button[type="submit"].button-style-link,
+button[type="reset"].button-style-link {
+  @apply border-b text-cyan-600 border-cyan-600;
+}
+
+.button-style-link-loading,
+button[type="button"].button-style-link-loading,
+button[type="submit"].button-style-link-loading,
+button[type="reset"].button-style-link-loading {
+  @apply border-b text-cyan-300 border-cyan-300;
+}
+
+.button-style-text,
+button[type="button"].button-style-link,
+button[type="submit"].button-style-link,
+button[type="reset"].button-style-link {
+  @apply text-cyan-600 dark:text-cyan-300;
+}
+
+.button-style-text-loading,
+button[type="button"].button-style-link-loading,
+button[type="submit"].button-style-link-loading,
+button[type="reset"].button-style-link-loading {
+  @apply text-cyan-300 dark:text-cyan-300;
 }
 
 .text-color-link {
