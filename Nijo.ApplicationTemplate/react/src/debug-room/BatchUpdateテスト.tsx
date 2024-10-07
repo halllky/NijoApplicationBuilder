@@ -137,8 +137,8 @@
 //     >
 //       <Panel defaultSize={21} className="flex flex-col">
 //         <div className="flex gap-2 justify-start">
-//           <Input.Button onClick={handleCommit}>コミット</Input.Button>
-//           <Input.Button onClick={handleReset}>リセット</Input.Button>
+//           <Input.IconButton onClick={handleCommit}>コミット</Input.IconButton>
+//           <Input.IconButton onClick={handleReset}>リセット</Input.IconButton>
 //           <div className="flex-1"></div>
 //         </div>
 //         <Collection.DataTable
@@ -155,9 +155,9 @@
 //           <Panel className="flex flex-col">
 //             <div className="flex gap-2 justify-start">
 //               <span className="font-bold">LOCAL</span>
-//               <Input.Button onClick={handleAdd}>追加</Input.Button>
-//               <Input.Button onClick={handleRemove}>削除</Input.Button>
-//               <Input.Button onClick={handleCreateDummy}>ダミー</Input.Button>
+//               <Input.IconButton onClick={handleAdd}>追加</Input.IconButton>
+//               <Input.IconButton onClick={handleRemove}>削除</Input.IconButton>
+//               <Input.IconButton onClick={handleCreateDummy}>ダミー</Input.IconButton>
 //               <div className="flex-1"></div>
 //             </div>
 //             <Collection.DataTable

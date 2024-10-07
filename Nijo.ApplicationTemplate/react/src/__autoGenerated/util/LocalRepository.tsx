@@ -214,8 +214,8 @@ export const LocalReposChangeListPage = () => {
         <SideMenuCollapseButton />
         <span className="font-bold">一時保存</span>
         <div className="flex-1"></div>
-        <Input.Button onClick={handleCommit}>確定</Input.Button>
-        <Input.Button onClick={handleReset}>取り消し</Input.Button>
+        <Input.IconButton onClick={handleCommit}>確定</Input.IconButton>
+        <Input.IconButton onClick={handleReset}>取り消し</Input.IconButton>
       </div>
       <Collection.DataTable
         ref={dtRef}
