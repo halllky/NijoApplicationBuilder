@@ -152,6 +152,7 @@ export const ComboBoxBase = defineCustomComponent(<TOption, TValue = TOption>(
       AtEnd={props.readOnly
         ? undefined
         : <DropdownButton onClick={handleSideButtonClick} />}
+      className={props.className}
     />
   )
 })
@@ -164,7 +165,7 @@ const DropdownButton = ({ onClick }: {
 }) => {
   return (
     <ChevronUpDownIcon
-      className="w-6 text-color-5 border-l border-color-5 cursor-pointer"
+      className="w-6 text-color-5 border-l border-color-5 cursor-pointer outline-none"
       onClick={onClick}
 
       // TextInputBaseのblurイベントでフォーカス移動先がTextInputBaseの外か中かの判定をしているので

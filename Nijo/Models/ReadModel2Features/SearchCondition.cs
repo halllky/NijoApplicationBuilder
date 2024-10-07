@@ -282,21 +282,27 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>
         /// フォームのUIをレンダリングします。
         /// </summary>
-        internal string RenderVForm2(FormUIRenderingContext context, bool useSortComboBox) {
+        internal string RenderVForm2(FormUIRenderingContext context, bool usePageSizeAndSortComboBox) {
             var builder = new Parts.WebClient.VerticalFormBuilder();
             BuildVForm2(context, builder);
 
-            // 表示件数
-            builder.AddItem(true, "表示件数", Parts.WebClient.E_VForm2LabelType.String, $$"""
-                <Input.Num {...{{context.Register}}(`{{TAKE_TS}}`)} />
-                """);
-            // ソート
-            if (useSortComboBox) {
+            if (usePageSizeAndSortComboBox) {
+                // 表示件数
+                builder.AddItem(true, "表示件数", Parts.WebClient.E_VForm2LabelType.String, $$"""
+                    <Input.ComboBox
+                      {...{{context.Register}}(`{{TAKE_TS}}`)}
+                      {...{{MultiView.PAGE_SIZE_COMBO_SETTING}}}
+                      className="max-w-[5.5rem]"
+                    />
+                    """);
+
+                // ソート
                 builder.AddItem(true, "検索時並び順", Parts.WebClient.E_VForm2LabelType.String, $$"""
                     <Input.MultiSelect
                       {...{{context.Register}}(`{{SORT_TS}}`)}
                       {...{{MultiView.SORT_COMBO_SETTING}}}
                       onFilter={{{MultiView.SORT_COMBO_FILTERING}}}
+                      className="items-start"
                     />
                     """);
             }
@@ -376,6 +382,7 @@ namespace Nijo.Models.ReadModel2Features {
                 """)}}
                   },
                   {{SORT_TS}}: [],
+                  {{TAKE_TS}}: 20,
                 })
                 """;
         }

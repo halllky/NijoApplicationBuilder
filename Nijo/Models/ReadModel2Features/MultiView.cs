@@ -25,6 +25,7 @@ namespace Nijo.Models.ReadModel2Features {
         public bool ShowMenu => true;
         public string? LabelInMenu => _aggregate.Item.DisplayName;
 
+        internal const string PAGE_SIZE_COMBO_SETTING = "pageSizeComboSetting";
         internal const string SORT_COMBO_SETTING = "sortComboSetting";
         internal const string SORT_COMBO_FILTERING = "onFilterSortCombo";
 
@@ -245,6 +246,15 @@ namespace Nijo.Models.ReadModel2Features {
                       )
                     }
 
+                    /** ページ件数のコンボボックスの設定 */
+                    const {{PAGE_SIZE_COMBO_SETTING}} = {
+                      onFilter: (keyword: string | undefined) => Promise.resolve([20, 50, 100]),
+                      getOptionText: (opt: number) => `${opt}件`,
+                      getValueText: (value: number) => `${value}件`,
+                      getValueFromOption: (opt: number) => opt,
+                    }
+
+                    /** 初期並び順のコンボボックスの設定 */
                     const {{SORT_COMBO_SETTING}} = {
                       getOptionText: (opt: typeof SORT_COMBO_SOURCE[0]) => opt,
                       getValueText: (value: typeof SORT_COMBO_SOURCE[0]) => value,

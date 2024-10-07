@@ -114,12 +114,14 @@ export const MultiSelect = defineCustomComponent(<TOption,>(
   }, [value, onChange])
 
   return (
-    <div className="flex flex-col gap-1">
-      {value?.map((option, i) => (
-        <MultiSelectItem key={i} option={option} onRemove={handleOptionRemove}>
-          {props.getOptionText(option)}
-        </MultiSelectItem>
-      ))}
+    <div className={`flex flex-col gap-1 ${props.className ?? ''}`}>
+      <div className="flex flex-wrap gap-1">
+        {value?.map((option, i) => (
+          <MultiSelectItem key={i} option={option} onRemove={handleOptionRemove}>
+            {props.getOptionText(option)}
+          </MultiSelectItem>
+        ))}
+      </div>
       <ComboBoxBase
         ref={comboRef}
         {...rest}
@@ -135,7 +137,7 @@ const MultiSelectItem = <TOption,>({ option, children, onRemove }: {
   children?: React.ReactNode
 }) => {
   return (
-    <div className="inline-flex items-center p-px gap-2">
+    <div className="inline-flex items-center text-sm text-color-7 px-1 py-px gap-1 border border-color-5 rounded-md">
       <span className="whitespace-nowrap select-none">
         {children}
       </span>
