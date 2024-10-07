@@ -72,7 +72,7 @@ export const ServerSidePager = React.memo(({ className, ...state }: PagerReturns
       <IconButton onClick={state.toFirstPage} icon={Icon.ChevronDoubleLeftIcon} outline hideText>最初のページへ</IconButton>
       <IconButton onClick={state.toPreviousPage} icon={Icon.ChevronLeftIcon} outline hideText>前のページへ</IconButton>
 
-      <span className="select-none">
+      <span className="select-none whitespace-nowrap">
         {state.currentPageIndex + 1} / {state.maxPageIndex + 1} ページ
       </span>
 
