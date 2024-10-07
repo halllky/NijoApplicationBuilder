@@ -112,7 +112,7 @@ namespace Nijo.Parts.WebClient {
                               </VForm2.Indent>
                               <VForm2.Indent label="バックエンドAPIエンドポイント">
                                 <VForm2.Item>
-                                  <a href={`${import.meta.env.VITE_BACKEND_API}swagger`} target="_blank" className="text-link">Swaggerを開く</a>
+                                  <a href={`${import.meta.env.VITE_BACKEND_API}swagger`} target="_blank" className="text-color-link">Swaggerを開く</a>
                                 </VForm2.Item>
                               </VForm2.Indent>
                             </VForm2.Root>

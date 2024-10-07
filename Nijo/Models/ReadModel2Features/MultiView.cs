@@ -57,7 +57,7 @@ namespace Nijo.Models.ReadModel2Features {
                         EnableResizing = false,
                         CellContents = (ctx, arg, argRowObject) => $$"""
                         {{arg}} => (
-                          <button type="button" onClick={() => {{TO_DETAIL_VIEW}}({{argRowObject}}, 'readonly')} className="text-link whitespace-nowrap px-1">詳細</button>
+                          <button type="button" onClick={() => {{TO_DETAIL_VIEW}}({{argRowObject}}, 'readonly')} className="text-color-link whitespace-nowrap px-1">詳細</button>
                         )
                         """,
                     })

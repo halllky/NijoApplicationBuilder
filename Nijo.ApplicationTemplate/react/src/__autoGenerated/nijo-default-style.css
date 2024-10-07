@@ -219,11 +219,11 @@ button[type="reset"].bg-color-button-loading {
   @apply bg-neutral-300 dark:bg-neutral-700;
 }
 
-.text-link {
+.text-color-link {
   @apply text-sky-600 dark:text-sky-300 underline;
 }
 
-.text-error {
+.text-color-error {
   @apply text-rose-600 dark:text-rose-300;
 }
 
