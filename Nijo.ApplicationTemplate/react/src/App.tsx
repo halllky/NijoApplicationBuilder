@@ -39,7 +39,7 @@ function App() {
         <Route path="*" element={(
           <div className="flex flex-col p-2 gap-2">
             {debugRooms.map(debugRoom => (
-              <a key={debugRoom.path} href={debugRoom.path} className="underline text-sky-700">
+              <a key={debugRoom.path} href={debugRoom.path} className="text-color-link">
                 {debugRoom.label}
               </a>
             ))}
