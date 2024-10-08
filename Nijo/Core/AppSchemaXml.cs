@@ -311,6 +311,14 @@ namespace Nijo.Core {
             parser.IfExists("search-condition-ui")
                 .SetMemberOption(opt => opt.SearchConditionCustomUiComponentName, componentName => componentName, E_Priority.Force);
 
+            // 列挙体のUI
+            parser.IfExists("combo")
+                .SetAggregateOption(opt => opt.IsCombo, true, E_Priority.Force) // バリエーション用
+                .SetMemberOption(opt => opt.IsCombo, true, E_Priority.Force); // EnumList用
+            parser.IfExists("radio")
+                .SetAggregateOption(opt => opt.IsRadio, true, E_Priority.Force) // バリエーション用
+                .SetMemberOption(opt => opt.IsRadio, true, E_Priority.Force); // EnumList用
+
             // レイアウト
             parser.IfExists("width")
                 .SetMemberOption(opt => opt.UiWidthRem, value => {

@@ -82,12 +82,15 @@ namespace Nijo.Core {
                         { DirectedEdgeExtensions.REL_ATTR_MULTIPLE, aggregate.Options.IsArray == true },
                         { DirectedEdgeExtensions.REL_ATTR_VARIATIONSWITCH, aggregate.Options.IsVariationGroupMember?.Key ?? string.Empty },
                         { DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, aggregate.Options.IsVariationGroupMember?.GroupName ?? string.Empty },
+                        { DirectedEdgeExtensions.REL_ATTR_IS_COMBO, aggregate.Options.IsCombo == true },
+                        { DirectedEdgeExtensions.REL_ATTR_IS_RADIO, aggregate.Options.IsRadio == true },
                         { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, aggregate.Options.IsPrimary == true },
                         { DirectedEdgeExtensions.REL_ATTR_IS_REQUIRED, aggregate.Options.IsRequiredArray == true },
                         { DirectedEdgeExtensions.REL_ATTR_INVISIBLE_IN_GUI, aggregate.Options.InvisibleInGui == true },
                         { DirectedEdgeExtensions.REL_ATTR_DISPLAY_NAME, aggregate.Options.DisplayName },
                         { DirectedEdgeExtensions.REL_ATTR_DB_NAME, aggregate.Options.DbName },
                         { DirectedEdgeExtensions.REL_ATTR_MEMBER_ORDER, aggregate.Order },
+
                     },
                 });
             var refs = aggregateDefs
@@ -233,6 +236,8 @@ namespace Nijo.Core {
                         SearchConditionCustomUiComponentName = member.Options.SearchConditionCustomUiComponentName,
                         UiWidth = member.Options.UiWidthRem,
                         WideInVForm = member.Options.WideInVForm == true,
+                        IsCombo = member.Options.IsCombo == true,
+                        IsRadio = member.Options.IsRadio == true,
                         DisplayName = member.Options.DisplayName,
                         DbName = member.Options.DbName,
                     });
@@ -354,6 +359,15 @@ namespace Nijo.Core {
         }
 
         /// <summary>
+        /// バリデーションの詳細画面のUIを強制的にコンボボックスにする
+        /// </summary>
+        public bool? IsCombo { get; init; }
+        /// <summary>
+        /// バリデーションの詳細画面のUIを強制的にラジオボタンにする
+        /// </summary>
+        public bool? IsRadio { get; init; }
+
+        /// <summary>
         /// 画面表示名
         /// </summary>
         public string? DisplayName { get; set; }
@@ -383,6 +397,11 @@ namespace Nijo.Core {
         public TextBoxWidth? UiWidthRem { get; set; }
         /// <summary>フォームのUIで横幅いっぱい占有するかどうか</summary>
         public bool? WideInVForm { get; set; }
+
+        /// <summary>列挙体の詳細画面のUIを強制的にコンボボックスにする</summary>
+        public bool? IsCombo { get; set; }
+        /// <summary>列挙体の詳細画面のUIを強制的にラジオボタンにする</summary>
+        public bool? IsRadio { get; set; }
 
         /// <summary>
         /// 画面表示名
@@ -441,6 +460,8 @@ namespace Nijo.Core {
         internal const string REL_ATTR_DISPLAY_NAME = "display-name";
         internal const string REL_ATTR_DB_NAME = "ref-db-name";
         internal const string REL_ATTR_MEMBER_ORDER = "relation-aggregate-order";
+        internal const string REL_ATTR_IS_COMBO = "is-combo";
+        internal const string REL_ATTR_IS_RADIO = "is-radio";
 
 
         // ----------------------------- GraphEdge extensions -----------------------------
@@ -489,6 +510,8 @@ namespace Nijo.Core {
         internal required string? DisplayName { get; init; }
         internal required string? DbName { get; init; }
         internal required int MemberOrder { get; init; }
+        internal required bool IsCombo { get; init; }
+        internal required bool IsRadio { get; init; }
         internal bool IsPrimary => VariationAggregates.First().Value.IsPrimary();
         internal bool IsInstanceName => VariationAggregates.First().Value.IsInstanceName();
         internal bool IsNameLike => VariationAggregates.First().Value.IsNameLike();

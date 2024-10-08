@@ -22,6 +22,8 @@ namespace Nijo.Core {
         public required string? SearchConditionCustomUiComponentName { get; init; }
         public required TextBoxWidth? UiWidth { get; init; }
         public required bool WideInVForm { get; init; }
+        public required bool IsCombo { get; init; }
+        public required bool IsRadio { get; init; }
         public required string? DisplayName { get; init; }
         public required string? DbName { get; init; }
 
@@ -88,6 +90,8 @@ namespace Nijo.Core {
                         ? (string)dbName!
                         : null,
                     MemberOrder = group.First().GetMemberOrder(),
+                    IsCombo = group.First().Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_IS_COMBO, out var isCombo) && (bool?)isCombo == true,
+                    IsRadio = group.First().Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_IS_RADIO, out var isRadio) && (bool?)isRadio == true,
                 });
             foreach (var group in variationGroups) {
                 var variationGroup = new Variation(group);
@@ -403,6 +407,8 @@ namespace Nijo.Core {
                     SearchConditionCustomUiComponentName = null,
                     UiWidth = null,
                     WideInVForm = false,
+                    IsCombo = group.IsCombo,
+                    IsRadio = group.IsRadio,
                     DbName = group.DbName,
                     DisplayName = group.DisplayName,
                 };

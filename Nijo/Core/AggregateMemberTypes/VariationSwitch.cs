@@ -117,6 +117,13 @@ namespace Nijo.Core.AggregateMemberTypes {
                 $"{ctx.RenderReadOnlyStatement(vm.Declared)} ", // readonly
             };
 
+            // ラジオボタンまたはコンボボックスどちらか決め打ちの場合
+            if (vm.Options.IsCombo) {
+                attrs.Add("combo");
+            } else if (vm.Options.IsRadio) {
+                attrs.Add("radio");
+            }
+
             return $$"""
                 <Input.Selection {...{{ctx.Register}}(`{{fullpath}}`)} {{attrs.Join("")}}/>
                 {{ctx.RenderErrorMessage(vm)}}
