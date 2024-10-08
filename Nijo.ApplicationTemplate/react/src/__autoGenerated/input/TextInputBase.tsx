@@ -133,7 +133,7 @@ export const TextInputBase = defineCustomComponent<
       ? (darkMode ? ' bg-rose-900' : ' bg-rose-200') :
       ' bg-color-base'
   }
-  if (propsClassName?.indexOf('max-w-') === -1) {
+  if (propsClassName === undefined || propsClassName?.indexOf('max-w-') === -1) {
     // propsで max-width が指定されている場合でもfullが勝ってしまうのでfullを設定するかどうかは慎重にする
     className += ' max-w-full'
   }
