@@ -8,9 +8,7 @@ using System.Xml.Linq;
 
 namespace Nijo.Core {
     public class Config {
-        public required string ApplicationName { get; init; }
-
-        public string RootNamespace => ApplicationName.ToCSharpSafe();
+        public required string RootNamespace { get; init; }
 
         public string EntityNamespace => RootNamespace;
         public string DbContextNamespace => RootNamespace;
@@ -44,7 +42,7 @@ namespace Nijo.Core {
         private const string DISCARD_SEARCH_LIMIT = "DiscardSearchLimit";
 
         public XElement ToXmlWithRoot() {
-            var root = new XElement(ApplicationName);
+            var root = new XElement(RootNamespace);
 
             var configElement = new XElement(XML_CONFIG_SECTION_NAME);
             root.Add(configElement);
@@ -81,7 +79,7 @@ namespace Nijo.Core {
             var configSection = xDocument.Root.Element(XML_CONFIG_SECTION_NAME);
 
             return new Config {
-                ApplicationName = xDocument.Root.Name.LocalName,
+                RootNamespace = xDocument.Root.Name.LocalName.ToCSharpSafe(),
                 DisableLocalRepository = xDocument.Root.Attribute(DISABLE_LOCAL_REPOSITORY) != null,
                 DisableBatchUpdate = xDocument.Root.Attribute(DISABLE_BATCH_UPDATE) != null,
                 DiscardSearchLimit = xDocument.Root.Attribute(DISCARD_SEARCH_LIMIT) != null,

@@ -49,7 +49,7 @@ namespace Nijo.Parts {
 
             // ファイル名変更
             var beforeCsproj = Path.Combine(ProjectRoot, "NIJO_APPLICATION_TEMPLATE_Cli.csproj");
-            var afterCsproj = Path.Combine(ProjectRoot, $"{config.ApplicationName}_Cli.csproj");
+            var afterCsproj = Path.Combine(ProjectRoot, $"{config.RootNamespace}_Cli.csproj");
             File.Move(beforeCsproj, afterCsproj);
 
             // ソースコード中にあるテンプレートプロジェクトの文字列を置換

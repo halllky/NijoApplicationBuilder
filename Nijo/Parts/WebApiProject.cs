@@ -50,7 +50,7 @@ namespace Nijo.Parts {
 
             // ファイル名変更
             var beforeCsproj = Path.Combine(ProjectRoot, "NIJO_APPLICATION_TEMPLATE_WebApi.csproj");
-            var afterCsproj = Path.Combine(ProjectRoot, $"{config.ApplicationName}_WebApi.csproj");
+            var afterCsproj = Path.Combine(ProjectRoot, $"{config.RootNamespace}_WebApi.csproj");
             File.Move(beforeCsproj, afterCsproj);
 
             // ソースコード中にあるテンプレートプロジェクトの文字列を置換

@@ -51,7 +51,7 @@ namespace Nijo.Parts {
 
             // ファイル名変更
             var beforeCsproj = Path.Combine(ProjectRoot, "NIJO_APPLICATION_TEMPLATE.csproj");
-            var afterCsproj = Path.Combine(ProjectRoot, $"{config.ApplicationName}.csproj");
+            var afterCsproj = Path.Combine(ProjectRoot, $"{config.RootNamespace}.csproj");
             File.Move(beforeCsproj, afterCsproj);
 
             // オーバーライド用のアプリケーションサービス具象クラスのファイルを作成

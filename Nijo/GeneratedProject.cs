@@ -74,7 +74,7 @@ namespace Nijo {
                 }
 
                 var config = new Config {
-                    ApplicationName = applicationName,
+                    RootNamespace = applicationName.ToCSharpSafe(),
                     DbContextName = "MyDbContext",
                     DiscardSearchLimit = false,
                     DisableLocalRepository = false,
@@ -118,7 +118,7 @@ namespace Nijo {
 
                 using (var _ = log?.BeginScope("テンプレート中に登場するプロジェクト名を作成されるプロジェクト名に置換")) {
                     var beforeSln = Path.Combine(tempProject.SolutionRoot, "NIJO_APPLICATION_TEMPLATE.sln");
-                    var afterSln = Path.Combine(tempProject.SolutionRoot, $"{config.ApplicationName}.sln");
+                    var afterSln = Path.Combine(tempProject.SolutionRoot, $"{config.RootNamespace}.sln");
                     File.Move(beforeSln, afterSln);
 
                     // テンプレート中に名前がハードコードされているファイル
