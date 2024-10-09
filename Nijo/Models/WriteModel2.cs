@@ -101,6 +101,7 @@ namespace Nijo.Models {
                     context.ReactProject.Types.Add(rootAggregate, refSearchCondition.RenderCreateNewObjectFn(context));
                     context.ReactProject.Types.Add(rootAggregate, refTargetKeys.RenderTypeScriptDeclaringRecursively(context));
                     context.ReactProject.Types.Add(rootAggregate, refDisplayData.RenderTypeScript(context));
+                    context.ReactProject.Types.Add(rootAggregate, refDisplayData.RenderTsNewObjectFunction(context));
 
                     // UI: コンボボックス
                     // UI: 検索ダイアログ

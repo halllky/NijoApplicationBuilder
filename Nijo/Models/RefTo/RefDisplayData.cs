@@ -120,7 +120,7 @@ namespace Nijo.Models.RefTo {
                 /** {{rt._refEntry.Item.DisplayName}}が他の集約から参照されたときの{{rt._aggregate.Item.DisplayName}}の画面表示用データ型 */
                 export type {{rt.TsTypeName}} = {
                 {{rt.GetOwnMembers().SelectTextTemplate(m => $$"""
-                  {{GetMemberName(m)}}: {{GetTypeScriptMemberType(m)}} | undefined
+                  {{GetMemberName(m)}}: {{GetTypeScriptMemberType(m)}}
                 """)}}
                 }
                 """);
@@ -298,6 +298,41 @@ namespace Nijo.Models.RefTo {
             }
         }
 
+        #region TypeScript側オブジェクト新規作成関数
+        internal string TsNewObjectFunction => $"createNew{TsTypeName}";
+        internal string RenderTsNewObjectFunction(CodeRenderingContext ctx) {
+            return $$"""
+                /* {{TsTypeName}} の新しいインスタンスを作成して返します。 */
+                export const {{TsNewObjectFunction}} = (): {{TsTypeName}} => ({{RenderAggregate(this)}})
+                """;
+
+            string RenderAggregate(RefDisplayData refDisplayData) {
+                return $$"""
+                    {
+                    {{refDisplayData.GetOwnMembers().SelectTextTemplate(m => $$"""
+                      {{GetMemberName(m)}}: {{WithIndent(RenderMember(m), "  ")}},
+                    """)}}
+                    }
+                    """;
+            }
+
+            string RenderMember(AggregateMember.AggregateMemberBase member) {
+                if (member is AggregateMember.ValueMember || member is AggregateMember.Ref) {
+                    return "undefined";
+
+                } else if (member is AggregateMember.Children) {
+                    return "[]";
+
+                } else if (member is AggregateMember.RelationMember rm) {
+                    return RenderAggregate(new RefDisplayDataDescendant(rm, _refEntry));
+
+                } else {
+                    throw new NotImplementedException();
+                }
+            }
+        }
+        #endregion TypeScript側オブジェクト新規作成関数
+
         #region メンバー用staticメソッド
         internal const string PARENT = "PARENT";
         /// <summary>
@@ -334,7 +369,11 @@ namespace Nijo.Models.RefTo {
         /// </summary>
         private string GetTypeScriptMemberType(AggregateMember.AggregateMemberBase member) {
             if (member is AggregateMember.ValueMember vm) {
-                return vm.Options.MemberType.GetTypeScriptTypeName();
+                return $"{vm.Options.MemberType.GetTypeScriptTypeName()} | undefined";
+
+            } else if (member   is AggregateMember.Ref @ref) {
+                var refTo = new RefDisplayData(@ref.RefTo, _refEntry);
+                return $"{refTo.CsClassName} | undefined";
 
             } else if (member is AggregateMember.Children children) {
                 var refTo = new RefDisplayData(children.ChildrenAggregate, _refEntry);
