@@ -180,7 +180,7 @@ namespace Nijo.Models.CommandModelFeatures {
                 """);
         }
 
-        internal string TsNewObjectFunction => $"createEmpty{TsTypeName}";
+        internal string TsNewObjectFunction => $"createNew{TsTypeName}";
         internal string RenderTsNewObjectFunction(CodeRenderingContext context) {
             var aggregates = _aggregate
                 .EnumerateThisAndDescendants()

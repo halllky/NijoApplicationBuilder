@@ -62,7 +62,7 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>
         /// TypeScriptの新規オブジェクト作成関数の名前
         /// </summary>
-        internal string CreateNewObjectFnName => $"createEmpty{TsTypeName}";
+        internal string CreateNewObjectFnName => $"createNew{TsTypeName}";
 
         /// <summary>
         /// この集約自身がもつ検索条件を列挙します。
