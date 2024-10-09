@@ -230,7 +230,9 @@ namespace Nijo.Models.CommandModelFeatures {
                 AggregateMember.Children children => $"{DisplayMessageContainer.CONCRETE_CLASS_LIST}<{new CommandParameter(children.ChildrenAggregate).MessageDataCsClassName}>",
                 AggregateMember.Child child => new CommandParameter(child.ChildAggregate).MessageDataCsClassName,
                 AggregateMember.VariationItem variation => new CommandParameter(variation.VariationAggregate).MessageDataCsClassName,
-                AggregateMember.Ref => DisplayMessageContainer.CONCRETE_CLASS,
+                AggregateMember.Ref => IsInGrid(MemberInfo.Owner)
+                    ? DisplayMessageContainer.CONCRETE_CLASS_IN_GRID
+                    : DisplayMessageContainer.CONCRETE_CLASS,
                 _ => throw new NotImplementedException(),
             };
 
