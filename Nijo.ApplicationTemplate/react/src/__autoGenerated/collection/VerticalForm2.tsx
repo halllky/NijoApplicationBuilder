@@ -73,20 +73,24 @@ const Indent = ({ label, children, className }: {
   )
 }
 
-const Item = ({ label, wideLabelValue, wideValue, children }: {
+const Item = ({ label, wideLabelValue, wideValue, noLabel, children }: {
   label?: React.ReactNode
   /** trueの場合はラベルと値の両方が横幅いっぱいまで拡張される */
   wideLabelValue?: boolean
   /** trueの場合は値が横幅いっぱいまで拡張される */
   wideValue?: boolean
+  /** childrenのみでラベルと値の2つのエリアを占有するようになります。 */
+  noLabel?: boolean
   children?: React.ReactNode
 }) => {
   // 要素がグリッドの横幅いっぱい確保される場合のレイアウト
   if (wideLabelValue) return (
     <>
-      <div className="px-1 pt-1 col-span-full">
-        {renderLabel(label)}
-      </div>
+      {!noLabel && (
+        <div className="px-1 pt-1 col-span-full">
+          {renderLabel(label)}
+        </div>
+      )}
       <div className="col-span-full border-vform bg-color-0">
         {children}
       </div>
@@ -95,23 +99,37 @@ const Item = ({ label, wideLabelValue, wideValue, children }: {
   // 値だけ横幅いっぱいの場合のレイアウト
   if (wideValue) return (
     <div className="grid grid-flow-row grid-cols-[subgrid] col-span-full">
-      <div className="p-px col-[1/1] text-right pr-2">
-        {renderLabel(label)}
-      </div>
-      <div className="p-px col-[2/-1] overflow-x-auto">
-        {children}
-      </div>
-    </div>
+      {noLabel ? (
+        <div className="p-px col-[1/-1] overflow-x-auto">
+          {children}
+        </div>
+
+      ) : <>
+        <div className="p-px col-[1/1] text-right pr-2">
+          {renderLabel(label)}
+        </div>
+        <div className="p-px col-[2/-1] overflow-x-auto">
+          {children}
+        </div>
+      </>}
+    </div >
   )
   // 上記以外（通常のレイアウト）
   return (
     <div className="grid grid-flow-row grid-cols-[subgrid] col-span-2">
-      <div className="p-px text-right pr-2">
-        {renderLabel(label)}
-      </div>
-      <div className="p-px overflow-x-auto">
-        {children}
-      </div>
+      {noLabel ? (
+        <div className="p-px col-[1/-1] overflow-x-auto">
+          {children}
+        </div>
+
+      ) : <>
+        <div className="p-px text-right pr-2">
+          {renderLabel(label)}
+        </div>
+        <div className="p-px overflow-x-auto">
+          {children}
+        </div>
+      </>}
     </div>
   )
 }
