@@ -398,6 +398,7 @@ namespace Nijo.Models.ReadModel2Features {
                 var args = GetArguments().ToArray();
                 var vForm = BuildVerticalForm(context);
                 var dialog = new SearchDialog(_ref.RefTo, _ref.RefTo);
+                var refTarget = new RefDisplayData(_ref.RefTo, _ref.RefTo);
                 var fullpath = _ref.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, GetArgumentsAndLoopVar());
                 var existsCustomUi = _aggregate
                     .GetMembers()
@@ -419,7 +420,7 @@ namespace Nijo.Models.ReadModel2Features {
                       const {{OPEN}} = AggregateComponent.{{dialog.HookName}}()
                       const handleClickSearch = useEvent(() => {
                         {{OPEN}}({
-                          onSelect: item => setValue(`{{fullpath.Join(".")}}`, item)
+                          onSelect: item => setValue(`{{fullpath.Join(".")}}`, item ?? AggregateType.{{refTarget.TsNewObjectFunction}}())
                         })
                       })
 

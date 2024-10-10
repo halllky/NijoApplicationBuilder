@@ -443,6 +443,7 @@ namespace Nijo.Models.ReadModel2Features {
                 var args = GetArguments().ToArray();
                 var vForm = BuildVerticalForm(context);
                 var dialog = new SearchDialog(_ref.RefTo, _ref.RefTo);
+                var refTarget = new RefDisplayData(_ref.RefTo, _ref.RefTo);
                 var path1 = new[] { "data", $"${{{FIRST_ARG_NAME}}}" };
                 var path2 = _ref.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, GetArgumentsAndLoopVar());
                 var fullpath = path1.Concat(path2);
@@ -465,7 +466,7 @@ namespace Nijo.Models.ReadModel2Features {
                       const {{OPEN}} = AggregateComponent.{{dialog.HookName}}()
                       const handleClickSearch = useEvent(() => {
                         {{OPEN}}({
-                          onSelect: item => setValue(`{{fullpath.Join(".")}}`, item)
+                          onSelect: item => setValue(`{{fullpath.Join(".")}}`, item ?? AggregateType.{{refTarget.TsNewObjectFunction}}())
                         })
                       })
 

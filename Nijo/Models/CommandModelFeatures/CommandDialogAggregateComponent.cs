@@ -378,6 +378,7 @@ namespace Nijo.Models.CommandModelFeatures {
                 var args = GetArguments().ToArray();
                 var vForm = BuildVerticalForm(context, isReadOnly);
                 var dialog = new SearchDialog(_ref.RefTo, _ref.RefTo);
+                var refTarget = new RefDisplayData(_ref.RefTo, _ref.RefTo);
                 var fullpath = _ref.GetFullPathAsCommandParameterRHFRegisterName(GetArgumentsAndLoopVar());
 
                 return $$"""
@@ -391,7 +392,7 @@ namespace Nijo.Models.CommandModelFeatures {
                       const {{OPEN}} = {{dialog.HookName}}()
                       const handleClickSearch = useEvent(() => {
                         {{OPEN}}({
-                          onSelect: item => setValue(`{{fullpath.Join(".")}}`, item)
+                          onSelect: item => setValue(`{{fullpath.Join(".")}}`, item ?? Types.{{refTarget.TsNewObjectFunction}}())
                         })
                       })
                     """)}}

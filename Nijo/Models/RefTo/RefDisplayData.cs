@@ -317,7 +317,7 @@ namespace Nijo.Models.RefTo {
             }
 
             string RenderMember(AggregateMember.AggregateMemberBase member) {
-                if (member is AggregateMember.ValueMember || member is AggregateMember.Ref) {
+                if (member is AggregateMember.ValueMember) {
                     return "undefined";
 
                 } else if (member is AggregateMember.Children) {
@@ -370,10 +370,6 @@ namespace Nijo.Models.RefTo {
         private string GetTypeScriptMemberType(AggregateMember.AggregateMemberBase member) {
             if (member is AggregateMember.ValueMember vm) {
                 return $"{vm.Options.MemberType.GetTypeScriptTypeName()} | undefined";
-
-            } else if (member   is AggregateMember.Ref @ref) {
-                var refTo = new RefDisplayData(@ref.RefTo, _refEntry);
-                return $"{refTo.CsClassName} | undefined";
 
             } else if (member is AggregateMember.Children children) {
                 var refTo = new RefDisplayData(children.ChildrenAggregate, _refEntry);
