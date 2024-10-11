@@ -109,6 +109,8 @@
     <EmbeddedResource Include="$(ProjectDir)..\Nijo.ApplicationTemplate\webapi\Properties\**\*.*" LinkBase="テンプレ\webapi\Properties\" />
 
     <EmbeddedResource Include="$(ProjectDir)..\Nijo.IntegrationTest\DataPatterns\012_スカラメンバー網羅.xml" LinkBase="NewProjectDefaultXml" />
+
+    <EmbeddedResource Include="$(ProjectDir)..\Xml設定GUI\dist\index.html" LinkBase="GuiWebAppHtml" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
@@ -123,4 +125,7 @@
       </Properties>
     </MonoDevelop>
   </ProjectExtensions>
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Exec Command="call &quot;$(ProjectDir)pre-build.bat&quot;" />
+  </Target>
 </Project>
