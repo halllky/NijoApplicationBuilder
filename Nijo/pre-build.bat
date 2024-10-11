@@ -16,8 +16,14 @@ if not %errorlevel% lss 8 goto END_ERROR
  
 @rem GUIプロジェクトをビルド 
 pushd %~dp0..\Xml設定GUI 
-call npm run build 
  
+call npm ci 
+if not "%ERRORLEVEL%" == "0" ( 
+    popd 
+    goto END_ERROR 
+) 
+ 
+call npm run build 
 if not "%ERRORLEVEL%" == "0" ( 
     popd 
     goto END_ERROR 

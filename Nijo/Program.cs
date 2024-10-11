@@ -18,6 +18,7 @@ using Microsoft.Build.Evaluation;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Nijo.Parts.WebServer;
+using Nijo.Runtime;
 
 [assembly: InternalsVisibleTo("Nijo.IntegrationTest")]
 
@@ -178,6 +179,20 @@ namespace Nijo {
                 }
             }, verbose, path, mermaid);
             rootCommand.AddCommand(dump);
+
+            var ui = new Command(
+                name: "ui",
+                description: $"スキーマ定義をGUIで編集します。")
+                { path };
+            ui.SetHandler(async path => {
+                var projectRoot = path == null
+                    ? Directory.GetCurrentDirectory()
+                    : Path.Combine(Directory.GetCurrentDirectory(), path);
+                var schema = new AppSchemaXml(projectRoot);
+                var editor = new NijoUi(schema);
+                await editor.LaunchAsync();
+            }, path);
+            rootCommand.AddCommand(ui);
 
             return rootCommand;
         }
