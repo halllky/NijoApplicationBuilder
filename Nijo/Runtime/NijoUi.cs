@@ -21,9 +21,9 @@ namespace Nijo.Runtime {
         private readonly AppSchemaXml _appSchemaXml;
 
         /// <summary>
-        /// Webアプリケーションを起動します。
+        /// Webアプリケーションを定義して返します。
         /// </summary>
-        internal async Task LaunchAsync() {
+        internal WebApplication CreateApp() {
             var builder = WebApplication.CreateBuilder();
             var app = builder.Build();
 
@@ -59,7 +59,7 @@ namespace Nijo.Runtime {
             //    }
             //});
 
-            await app.RunAsync();
+            return app;
         }
     }
 }
