@@ -193,8 +193,7 @@ namespace Nijo {
                 var projectRoot = path == null
                     ? Directory.GetCurrentDirectory()
                     : Path.Combine(Directory.GetCurrentDirectory(), path);
-                var schema = new AppSchemaXml(projectRoot);
-                var editor = new NijoUi(schema);
+                var editor = new NijoUi(projectRoot);
                 var app = editor.CreateApp();
 
                 var url = $"https://localhost:{port ?? 5000}";
