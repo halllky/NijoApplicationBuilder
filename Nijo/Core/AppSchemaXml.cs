@@ -458,22 +458,30 @@ namespace Nijo.Core {
                 return false;
             }
 
-            public OptionValueSetterFactory IfExists(string key) {
+            public IOptionValueHandler IfExists(string key) {
                 if (_xmlKeyValues.TryGetValue(key.ToLower(), out var value)) {
                     _notHandledKeys.Remove(key);
                     return new WhenKeyExists(this, value);
                 } else {
-                    return new OptionValueSetterFactory();
+                    return new WhenKeyNotExists();
                 }
             }
-            public class OptionValueSetterFactory {
-                public virtual OptionValueSetterFactory ElementTypeIs(E_XElementType elementType, E_Priority priority) => this;
-                public virtual OptionValueSetterFactory SetAggregateOption<T>(Expression<Func<AggregateBuildOption, T>> memberSelector, Func<string, T> getValue, E_Priority priority) => this;
-                public virtual OptionValueSetterFactory SetAggregateOption<T>(Expression<Func<AggregateBuildOption, T>> memberSelector, T value, E_Priority priority) => SetAggregateOption(memberSelector, _ => value, priority);
-                public virtual OptionValueSetterFactory SetMemberOption<T>(Expression<Func<AggregateMemberBuildOption, T>> memberSelector, Func<string, T> getValue, E_Priority priority) => this;
-                public virtual OptionValueSetterFactory SetMemberOption<T>(Expression<Func<AggregateMemberBuildOption, T>> memberSelector, T value, E_Priority priority) => SetMemberOption(memberSelector, _ => value, priority);
+
+            public interface IOptionValueHandler {
+                IOptionValueHandler ElementTypeIs(E_XElementType elementType, E_Priority priority);
+                IOptionValueHandler SetAggregateOption<T>(Expression<Func<AggregateBuildOption, T>> memberSelector, Func<string, T> getValue, E_Priority priority);
+                IOptionValueHandler SetAggregateOption<T>(Expression<Func<AggregateBuildOption, T>> memberSelector, T value, E_Priority priority) => SetAggregateOption(memberSelector, _ => value, priority);
+                IOptionValueHandler SetMemberOption<T>(Expression<Func<AggregateMemberBuildOption, T>> memberSelector, Func<string, T> getValue, E_Priority priority);
+                IOptionValueHandler SetMemberOption<T>(Expression<Func<AggregateMemberBuildOption, T>> memberSelector, T value, E_Priority priority) => SetMemberOption(memberSelector, _ => value, priority);
             }
-            public class WhenKeyExists : OptionValueSetterFactory {
+            public class WhenKeyNotExists : IOptionValueHandler {
+                public virtual IOptionValueHandler ElementTypeIs(E_XElementType elementType, E_Priority priority) => this;
+                public virtual IOptionValueHandler SetAggregateOption<T>(Expression<Func<AggregateBuildOption, T>> memberSelector, Func<string, T> getValue, E_Priority priority) => this;
+                public virtual IOptionValueHandler SetAggregateOption<T>(Expression<Func<AggregateBuildOption, T>> memberSelector, T value, E_Priority priority) => SetAggregateOption(memberSelector, _ => value, priority);
+                public virtual IOptionValueHandler SetMemberOption<T>(Expression<Func<AggregateMemberBuildOption, T>> memberSelector, Func<string, T> getValue, E_Priority priority) => this;
+                public virtual IOptionValueHandler SetMemberOption<T>(Expression<Func<AggregateMemberBuildOption, T>> memberSelector, T value, E_Priority priority) => SetMemberOption(memberSelector, _ => value, priority);
+            }
+            public class WhenKeyExists : IOptionValueHandler {
                 public WhenKeyExists(XElementOptionCollection collection, string xmlIsAttributeValue) {
                     _collection = collection;
                     _xmlIsAttributeValue = xmlIsAttributeValue;
@@ -481,11 +489,11 @@ namespace Nijo.Core {
                 private readonly XElementOptionCollection _collection;
                 private readonly string _xmlIsAttributeValue;
 
-                public override OptionValueSetterFactory ElementTypeIs(E_XElementType elementType, E_Priority priority) {
+                public IOptionValueHandler ElementTypeIs(E_XElementType elementType, E_Priority priority) {
                     _collection._elementTypeCandidates.Add((elementType, priority));
                     return this;
                 }
-                public override OptionValueSetterFactory SetAggregateOption<T>(Expression<Func<AggregateBuildOption, T>> memberSelector, Func<string, T> getValue, E_Priority priority) {
+                public IOptionValueHandler SetAggregateOption<T>(Expression<Func<AggregateBuildOption, T>> memberSelector, Func<string, T> getValue, E_Priority priority) {
                     if (memberSelector.Body is not MemberExpression memberExpression
                      || memberExpression.Member is not PropertyInfo propertyInfo
                      || propertyInfo.DeclaringType != typeof(AggregateBuildOption))
@@ -498,7 +506,7 @@ namespace Nijo.Core {
                     });
                     return this;
                 }
-                public override OptionValueSetterFactory SetMemberOption<T>(Expression<Func<AggregateMemberBuildOption, T>> memberSelector, Func<string, T> getValue, E_Priority priority) {
+                public IOptionValueHandler SetMemberOption<T>(Expression<Func<AggregateMemberBuildOption, T>> memberSelector, Func<string, T> getValue, E_Priority priority) {
                     if (memberSelector.Body is not MemberExpression memberExpression
                      || memberExpression.Member is not PropertyInfo propertyInfo
                      || propertyInfo.DeclaringType != typeof(AggregateMemberBuildOption))
