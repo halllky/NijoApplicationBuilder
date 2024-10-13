@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
 using System.Xml.Linq;
 using System.Xml.XPath;
@@ -71,19 +70,78 @@ namespace Nijo.Runtime {
                 var rootAggregates = rootElements.Select(x => x.ToAbstract(typeDefs, optionDefs.ToDictionary(d => d.Key)));
 
                 context.Response.ContentType = "application/json";
-                await context.Response.WriteAsync(new {
+                await context.Response.WriteAsync(new PageState {
                     // このプロパティ名やデータの内容はGUIアプリ側の PageStateFromServer の型と合わせる必要がある
-                    projectRoot = _project.SolutionRoot,
-                    editingXmlFilePath = _project.SchemaXml.GetPath(),
-                    aggregates = rootAggregates.ToList(),
-                    aggregateOrMemberTypes = typeDefs,
-                    optionalAttributes = optionDefs,
-                }.ToJson());
+                    ProjectRoot = _project.SolutionRoot,
+                    EditingXmlFilePath = _project.SchemaXml.GetPath(),
+                    Aggregates = rootAggregates.ToList(),
+                    AggregateOrMemberTypes = typeDefs,
+                    OptionalAttributes = optionDefs,
+                }.ConvertToJson());
+            });
+
+            // 編集中のバリデーション
+            app.MapPost("/validate", async context => {
+                using var sr = new StreamReader(context.Request.Body);
+                var json = await sr.ReadToEndAsync();
+                var obj = json.ParseAsJson<ClientRequest>();
+
+                // `ref-to:x120943871a23fsr1321` のようなユニークキー表記を `ref-to:親集約/子集約/孫集約` に変換する
+                string? FindRefToPath(string uniqueId) {
+                    string? Find(AggregateOrMember aggregateOrMember) {
+                        if (aggregateOrMember.UniqueId == uniqueId) {
+                            return aggregateOrMember.GetPhysicalName();
+                        }
+                        foreach (var child in aggregateOrMember.Children ?? []) {
+                            var path = Find(child);
+                            if (path != null) return $"{aggregateOrMember.GetPhysicalName()}/{path}";
+                        }
+                        return null;
+                    }
+                    return (obj.Aggregates ?? [])
+                        .Select(Find)
+                        .FirstOrDefault(path => path != null);
+                }
+
+                // `enum:x120943871a23fsr1321` のようなユニークキー表記を `列挙体名` に変換する
+                string? FindEnumName(string uniqueId) {
+                    return (obj.Aggregates ?? [])
+                        .FirstOrDefault(agg => agg.UniqueId == uniqueId
+                                            && agg.Type == "enum")
+                        ?.GetPhysicalName();
+                }
+
+                var xml = (obj.Aggregates ?? [])
+                    .Select(a => NijoXmlElement.FromAbstract(a, FindRefToPath, FindEnumName).ToString())
+                    .Join(Environment.NewLine);
             });
 
             return app;
         }
 
+
+        /// <summary>
+        /// サーバーからクライアントへ送るデータ
+        /// </summary>
+        private class PageState {
+            [JsonPropertyName("projectRoot")]
+            public string? ProjectRoot { get; set; }
+            [JsonPropertyName("editingXmlFilePath")]
+            public string? EditingXmlFilePath { get; set; }
+            [JsonPropertyName("aggregates")]
+            public List<AggregateOrMember>? Aggregates { get; set; }
+            [JsonPropertyName("aggregateOrMemberTypes")]
+            public List<AggregateOrMemberTypeDef>? AggregateOrMemberTypes { get; set; }
+            [JsonPropertyName("optionalAttributes")]
+            public List<OptionalAttributeDef>? OptionalAttributes { get; set; }
+        }
+        /// <summary>
+        /// クライアントからサーバーへ送るデータ
+        /// </summary>
+        private class ClientRequest {
+            [JsonPropertyName("aggregates")]
+            public List<AggregateOrMember>? Aggregates { get; set; }
+        }
 
         private class AggregateOrMember {
             [JsonPropertyName("uniqueId")]
@@ -100,6 +158,17 @@ namespace Nijo.Runtime {
             public List<AggregateOrMember>? Children { get; set; }
             [JsonPropertyName("comment")]
             public string? Comment { get; set; }
+
+            public string GetPhysicalName() {
+                return AttrValues
+                    ?.FirstOrDefault(attr => attr.Key == OptionalAttributeDef.PHYSICAL_NAME)
+                    ?.Value
+                    ?? DisplayName?.ToCSharpSafe()
+                    ?? string.Empty;
+            }
+            public override string ToString() {
+                return DisplayName ?? $"ID::{UniqueId}";
+            }
         }
         private class OptionalAttributeValue {
             [JsonPropertyName("key")]
@@ -151,7 +220,7 @@ namespace Nijo.Runtime {
 
             // ルート集約に設定できる種類
             yield return new AggregateOrMemberTypeDef {
-                Key = "w", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
+                Key = "write-model-2", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "WriteModel",
                 HelpText = $$"""
                     このルート要素がDB保存されるべきデータであることを表します。
@@ -163,7 +232,7 @@ namespace Nijo.Runtime {
                                              && el.Is.TryGetValue("write-model-2", out var isAttribute) ? isAttribute : null,
             };
             yield return new AggregateOrMemberTypeDef {
-                Key = "r", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
+                Key = "read-model-2", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "ReadModel",
                 HelpText = $$"""
                     このルート要素が人間が閲覧するデータであることを表します。
@@ -174,7 +243,7 @@ namespace Nijo.Runtime {
                                              && el.Is.TryGetValue("read-model-2", out var isAttribute) ? isAttribute : null,
             };
             yield return new AggregateOrMemberTypeDef {
-                Key = "wr", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
+                Key = "write-model-2 generate-default-read-model", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "Write & Read",
                 HelpText = $$"""
                     ReadModel から生成されるコードと WriteModel から生成されるコードの両方が生成されます。
@@ -185,7 +254,7 @@ namespace Nijo.Runtime {
                                              && el.Is.TryGetValue("write-model-2", out var isAttribute) ? isAttribute : null,
             };
             yield return new AggregateOrMemberTypeDef {
-                Key = "e", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
+                Key = "enum", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "Enum",
                 HelpText = $$"""
                     このルート要素が列挙体であることを表します。
@@ -194,7 +263,7 @@ namespace Nijo.Runtime {
                                              && el.Is.TryGetValue("enum", out var isAttribute) ? isAttribute : null,
             };
             yield return new AggregateOrMemberTypeDef {
-                Key = "c",
+                Key = "command",
                 DisplayName = "Command",
                 HelpText = $$"""
                     このルート要素が、人間や外部システムが起動する処理のパラメータであることを表します。
@@ -271,7 +340,7 @@ namespace Nijo.Runtime {
             var resolver = MemberTypeResolver.Default();
             foreach (var (key, memberType) in resolver.EnumerateAll()) {
                 yield return new AggregateOrMemberTypeDef {
-                    Key = $"memberType:{key}",
+                    Key = key,
                     DisplayName = memberType.GetUiDisplayName(),
                     HelpText = memberType.GetHelpText(),
                     FindMatchingIsAttribute = el => el.Depth > 0 && el.Is.TryGetValue(key, out var isAttribute) ? isAttribute : null,
@@ -553,12 +622,71 @@ namespace Nijo.Runtime {
             /// <summary>
             /// nijo ui の画面上で編集されるデータをXML要素に変換する
             /// </summary>
-            public static NijoXmlElement FromAbstract(AggregateOrMember aggregateOrMember) {
-                var csSafe = aggregateOrMember.DisplayName?.ToCSharpSafe() ?? string.Empty;
-                var physicalName = aggregateOrMember.AttrValues
-                    ?.SingleOrDefault(x => x.Key == OptionalAttributeDef.PHYSICAL_NAME)
-                    ?.Value ?? csSafe;
+            /// <param name="aggregateOrMember">変換元</param>
+            /// <param name="findRefToPath">`ref-to:x120943871a23fsr1321` のようなユニークキー表記を `ref-to:親集約/子集約/孫集約` に変換する</param>
+            /// <param name="findEnumName">`enum:x120943871a23fsr1321` のようなユニークキー表記を `列挙体名` に変換する</param>
+            public static NijoXmlElement FromAbstract(
+                AggregateOrMember aggregateOrMember,
+                Func<string, string?> findRefToPath,
+                Func<string, string?> findEnumName) {
+
+                var physicalName = aggregateOrMember.GetPhysicalName();
                 var el = new XElement(physicalName);
+
+                // ---------------------------------
+                // is属性
+                var isAttrs = new List<string>();
+
+                // 型
+                if (!string.IsNullOrWhiteSpace(aggregateOrMember.Type)) {
+                    if (aggregateOrMember.Type.StartsWith(REFTO_PREFIX)) {
+                        // ref-to
+                        var refToPath = findRefToPath(aggregateOrMember.Type.Substring(REFTO_PREFIX.Length));
+                        if (refToPath == null) {
+                            isAttrs.Add(REFTO_PREFIX);
+                        } else {
+                            isAttrs.Add($"{REFTO_PREFIX}{refToPath}");
+                        }
+
+                    } else if (aggregateOrMember.Type.StartsWith(ENUM_PREFIX)) {
+                        // enum
+                        var enumName = findEnumName(aggregateOrMember.Type.Substring(ENUM_PREFIX.Length));
+                        if (enumName != null) {
+                            isAttrs.Add(enumName);
+                        }
+
+                    } else if (!string.IsNullOrWhiteSpace(aggregateOrMember.TypeDetail)) {
+                        isAttrs.Add($"{aggregateOrMember.Type}:{aggregateOrMember.TypeDetail}");
+
+                    } else {
+                        isAttrs.Add(aggregateOrMember.Type);
+                    }
+                }
+
+                // 型以外のis属性
+                foreach (var attr in aggregateOrMember.AttrValues ?? []) {
+                    // これらは後の処理で考慮済みなので除外
+                    if (attr.Key == OptionalAttributeDef.PHYSICAL_NAME
+                        || attr.Key == OptionalAttributeDef.DB_NAME
+                        || attr.Key == OptionalAttributeDef.LATIN) continue;
+
+                    if (string.IsNullOrWhiteSpace(attr.Key)) {
+                        continue;
+
+                    } else if (string.IsNullOrWhiteSpace(attr.Value)) {
+                        isAttrs.Add(attr.Key);
+
+                    } else {
+                        isAttrs.Add($"{attr.Key.Trim()}:{attr.Value.Trim()}");
+                    }
+                }
+
+                if (isAttrs.Count > 0) {
+                    el.SetAttributeValue(IS, isAttrs.Join(" "));
+                }
+
+                // ---------------------------------
+                // is以外の属性
 
                 if (aggregateOrMember.DisplayName != physicalName) {
                     el.SetAttributeValue(DISPLAY_NAME, aggregateOrMember.DisplayName);
@@ -578,22 +706,11 @@ namespace Nijo.Runtime {
                     el.SetAttributeValue(LATIN, latinName);
                 }
 
-                var isAttrs = aggregateOrMember.AttrValues
-                    ?.Where(attr => attr.Key != DISPLAY_NAME
-                                 && attr.Key != DB_NAME
-                                 && attr.Key != LATIN)
-                    .Select(attr => {
-                        if (string.IsNullOrWhiteSpace(attr.Key)) {
-                            return string.Empty;
-                        } else if (string.IsNullOrWhiteSpace(attr.Value)) {
-                            return attr.Key;
-                        } else {
-                            return $"{attr.Key.Trim()}:{attr.Value.Trim()}";
-                        }
-                    })
-                    .Join(" ");
-                if (!string.IsNullOrWhiteSpace(isAttrs)) {
-                    el.SetAttributeValue(IS, isAttrs);
+                // ---------------------------------
+                // 子要素
+                foreach (var child in aggregateOrMember.Children ?? []) {
+                    if (!string.IsNullOrWhiteSpace(child.Comment)) el.Add(new XComment(child.Comment));
+                    el.Add(FromAbstract(child, findRefToPath, findEnumName)._xElement);
                 }
 
                 return new NijoXmlElement(el);
@@ -630,7 +747,7 @@ namespace Nijo.Runtime {
                     var refToElement = _xElement.Document?.XPathSelectElement($"/{_xElement.Document.Root?.Name.LocalName}/{refTo.Value}");
                     if (refToElement != null) {
                         // ここの記法はTypeScript側の型選択コンボボックスのルールと合わせる必要あり
-                        type = $"ref-to:{GetXElementUniqueId(refToElement)}";
+                        type = $"{REFTO_PREFIX}{GetXElementUniqueId(refToElement)}";
                     }
                 }
 
@@ -643,7 +760,7 @@ namespace Nijo.Runtime {
                                            && isAttr.Contains(el.Name.LocalName));
                     if (matchedEnum != null) {
                         // ここの記法はTypeScript側の型選択コンボボックスのルールと合わせる必要あり
-                        type = $"enum:{GetXElementUniqueId(matchedEnum)}";
+                        type = $"{ENUM_PREFIX}{GetXElementUniqueId(matchedEnum)}";
                     }
                 }
 
@@ -692,10 +809,17 @@ namespace Nijo.Runtime {
             }
             #endregion nijo ui の画面表示用データとの変換
 
+            public override string ToString() {
+                return _xElement.ToString();
+            }
+
             public const string IS = "is";
             public const string DISPLAY_NAME = "DisplayName";
             public const string DB_NAME = "DbName";
             public const string LATIN = "Latin";
+
+            public const string REFTO_PREFIX = "ref-to:";
+            public const string ENUM_PREFIX = "enum:";
         }
     }
 }

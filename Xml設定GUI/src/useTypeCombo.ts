@@ -27,9 +27,9 @@ export const useTypeCombo = (
     const referencableRootNodes = flattenGridRows
       .filter(agg => agg.depth === 0
         // この値はC#側と統一させる必要があるのでルールを変える時は注意
-        && (agg.item.type === 'w' // Write Model
-          || agg.item.type === 'r' // Read Model
-          || agg.item.type === 'wr')) // Write & Read Model
+        && (agg.item.type === 'write-model-2'
+          || agg.item.type === 'read-model-2'
+          || agg.item.type === 'write-model-2 generate-default-read-model'))
 
     // ルート集約以外にも、子孫のうち child, children, variation-item は参照可能
     for (const rootNode of referencableRootNodes) {
@@ -51,7 +51,7 @@ export const useTypeCombo = (
     const enums = flattenGridRows
       .filter(agg => agg.depth === 0
         // この値はC#側と統一させる必要があるのでルールを変える時は注意
-        && agg.item.type === 'e')
+        && agg.item.type === 'enum')
     source.push(...enums.map<EnumComboOption>(en => ({
       key: `enum:${en.item.uniqueId}`,
       displayName: en.item.displayName,

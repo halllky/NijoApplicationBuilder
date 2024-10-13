@@ -21,7 +21,7 @@ export const useColumnDef = (
         row => row.item.displayName ?? '',
         (row, value) => { row.item.displayName = value },
       ),
-      defaultWidthPx: 320,
+      defaultWidthPx: 240,
       render: row => (
         <div className="flex overflow-x-hidden">
           <div style={{ flexBasis: row.depth * 24 }}></div>
@@ -193,11 +193,32 @@ export const useColumnDef = (
         })
       }
     }
+    // -------------------------------------
+    // コメント
+    const commentColumn: Layout.DataTableColumn<GridRow> = {
+      id: 'col-comment',
+      header: '備考',
+      defaultWidthPx: 240,
+      onClipboardCopy: row => row.item.comment ?? '',
+      render: row => (
+        <CellText className="px-1">
+          {row.item.comment}
+        </CellText>
+      ),
+      editSetting: {
+        type: 'multiline-text',
+        onStartEditing: row => row.item.comment,
+        onClipboardPaste: (row, text) => row.item.comment = text,
+        onEndEditing: (row, value) => row.item.comment = value,
+      },
+    }
 
+    // -------------------------------------
     return [
       displayNameColumn,
       typeColumns,
       ...optionColumns,
+      commentColumn,
     ]
   }, [typeComboSource, typeComboProps, optionalAttributes])
 }

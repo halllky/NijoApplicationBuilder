@@ -63,19 +63,31 @@ namespace Nijo.Util.DotnetEx {
         }
 
         /// <summary>
+        /// この文字列をJSONとして解釈し、型引数のインスタンスとして返します。
+        /// </summary>
+        public static T ParseAsJson<T>(this string str) {
+            return JsonSerializer.Deserialize<T>(str, JsonSerializerOptions)
+                ?? throw new InvalidOperationException("JSONパースに失敗しました。");
+        }
+        /// <summary>
         /// このオブジェクトをJSONシリアライズします。
         /// 日本語のエンコーディングをきちんとするなどの頻出するオプションの設定込み。
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="obj"></param>
         /// <returns></returns>
-        public static string ToJson<T>(this T obj) {
-            if (_cachedOptions == null) {
-                _cachedOptions = new JsonSerializerOptions();
-                _cachedOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
-                _cachedOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All);
+        public static string ConvertToJson<T>(this T obj) {
+            return JsonSerializer.Serialize(obj, JsonSerializerOptions);
+        }
+        private static JsonSerializerOptions JsonSerializerOptions {
+            get {
+                if (_cachedOptions == null) {
+                    _cachedOptions = new JsonSerializerOptions();
+                    _cachedOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+                    _cachedOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All);
+                }
+                return _cachedOptions;
             }
-            return JsonSerializer.Serialize(obj, _cachedOptions);
         }
         private static JsonSerializerOptions? _cachedOptions;
     }

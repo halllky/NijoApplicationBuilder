@@ -13,6 +13,19 @@ export type PageState = {
   /** オプショナル属性定義 */
   optionalAttributes: OptionalAttributeDef[] | undefined
 }
+export const getEmptyPageState = (): PageState => ({
+  aggregateOrMemberTypes: undefined,
+  aggregates: undefined,
+  editingXmlFilePath: undefined,
+  optionalAttributes: undefined,
+  projectRoot: undefined,
+})
+
+/** クライアントからサーバーへ送るデータ（バリデーション時や保存時） */
+export type ClientRequest = {
+  /** 集約など */
+  aggregates: AggregateOrMember[] | undefined
+}
 
 /** 集約またはメンバー。グリッド行表示に特化した形 */
 export type GridRow = Util.TreeNode<AggregateOrMember>
