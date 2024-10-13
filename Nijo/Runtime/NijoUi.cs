@@ -86,34 +86,49 @@ namespace Nijo.Runtime {
                 var json = await sr.ReadToEndAsync();
                 var obj = json.ParseAsJson<ClientRequest>();
 
-                // `ref-to:x120943871a23fsr1321` のようなユニークキー表記を `ref-to:親集約/子集約/孫集約` に変換する
-                string? FindRefToPath(string uniqueId) {
-                    string? Find(AggregateOrMember aggregateOrMember) {
-                        if (aggregateOrMember.UniqueId == uniqueId) {
-                            return aggregateOrMember.GetPhysicalName();
+                try {
+                    // `ref-to:x120943871a23fsr1321` のようなユニークキー表記を `ref-to:親集約/子集約/孫集約` に変換する
+                    string? FindRefToPath(string uniqueId) {
+                        string? Find(AggregateOrMember aggregateOrMember) {
+                            if (aggregateOrMember.UniqueId == uniqueId) {
+                                return aggregateOrMember.GetPhysicalName();
+                            }
+                            foreach (var child in aggregateOrMember.Children ?? []) {
+                                var path = Find(child);
+                                if (path != null) return $"{aggregateOrMember.GetPhysicalName()}/{path}";
+                            }
+                            return null;
                         }
-                        foreach (var child in aggregateOrMember.Children ?? []) {
-                            var path = Find(child);
-                            if (path != null) return $"{aggregateOrMember.GetPhysicalName()}/{path}";
-                        }
-                        return null;
+                        return (obj.Aggregates ?? [])
+                            .Select(Find)
+                            .FirstOrDefault(path => path != null);
                     }
-                    return (obj.Aggregates ?? [])
-                        .Select(Find)
-                        .FirstOrDefault(path => path != null);
-                }
 
-                // `enum:x120943871a23fsr1321` のようなユニークキー表記を `列挙体名` に変換する
-                string? FindEnumName(string uniqueId) {
-                    return (obj.Aggregates ?? [])
-                        .FirstOrDefault(agg => agg.UniqueId == uniqueId
-                                            && agg.Type == "enum")
-                        ?.GetPhysicalName();
-                }
+                    // `enum:x120943871a23fsr1321` のようなユニークキー表記を `列挙体名` に変換する
+                    string? FindEnumName(string uniqueId) {
+                        return (obj.Aggregates ?? [])
+                            .FirstOrDefault(agg => agg.UniqueId == uniqueId
+                                                && agg.Type == "enum")
+                            ?.GetPhysicalName();
+                    }
 
-                var xml = (obj.Aggregates ?? [])
-                    .Select(a => NijoXmlElement.FromAbstract(a, FindRefToPath, FindEnumName).ToString())
-                    .Join(Environment.NewLine);
+                    // ビルドしてエラーを収集してクライアント側に返却
+                    var elements = (obj.Aggregates ?? []).Select(a => NijoXmlElement.FromAbstract(a, FindRefToPath, FindEnumName));
+                    var document = NijoXmlElement.ToXDocument(elements, "Root");
+                    var schema = new AppSchemaXml(document);
+                    var builder = new AppSchemaBuilder();
+                    if (schema.ConfigureBuilder(builder, out var errors)) {
+                        builder.TryBuild(out var _, out errors);
+                    }
+
+                    context.Response.ContentType = "application/json";
+                    var errorsJson = errors.ConvertToJson();
+                    await context.Response.WriteAsync(errorsJson);
+
+                } catch (Exception ex) {
+                    context.Response.ContentType = "application/json";
+                    await context.Response.WriteAsync(new[] { ex.Message }.ConvertToJson());
+                }
             });
 
             return app;
@@ -808,6 +823,16 @@ namespace Nijo.Runtime {
                 return xElement.GetHashCode().ToString().ToHashedString();
             }
             #endregion nijo ui の画面表示用データとの変換
+
+            public static XDocument ToXDocument(IEnumerable<NijoXmlElement> nijoXmlElements, string rootNodeName) {
+                var doc = new XDocument();
+                var root = new XElement(rootNodeName);
+                foreach (var el in nijoXmlElements) {
+                    root.Add(el._xElement);
+                }
+                doc.Add(root);
+                return doc;
+            }
 
             public override string ToString() {
                 return _xElement.ToString();

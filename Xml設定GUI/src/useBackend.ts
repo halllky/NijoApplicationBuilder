@@ -55,6 +55,10 @@ export const useBackend = () => {
       method: 'POST',
       body: JSON.stringify({ aggregates })
     })
+    const validationErrors = await response.json() as string[]
+    if (validationErrors.length > 0) {
+      msg(m => m.warn(...validationErrors))
+    }
   })
 
   return {
