@@ -9,7 +9,11 @@ export const getColumnResizeOption = <T,>(): Partial<RT.TableOptions<T>> => ({
   columnResizeMode: 'onChange',
 })
 
-export const useColumnResizing = <T,>(api: RT.Table<T>) => {
+export const useColumnResizing = <T,>(
+  api: RT.Table<T>,
+  /** 列定義が動的に変わるとき、変わったタイミングで列幅再計算させるためのもの */
+  columns: unknown
+) => {
 
   const columnSizeVars = useMemo(() => {
     const headers = api.getFlatHeaders()
@@ -24,7 +28,7 @@ export const useColumnResizing = <T,>(api: RT.Table<T>) => {
     // @tanstack/react-table の仕様上、
     // columnSizingInfoオブジェクトの参照が変わったタイミングでの列幅再計算が妥当
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [api.getState().columnSizingInfo])
+  }, [api.getState().columnSizingInfo, columns])
 
   const getColWidth = useCallback((column: RT.Column<T, unknown>) => {
     return `calc(var(--header-${column.id}-size) * 1px)`
