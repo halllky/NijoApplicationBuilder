@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Nijo.Core.AggregateMemberTypes {
     internal class YearMonthDayTime : SchalarMemberType {
+        public override string GetUiDisplayName() => "日付時刻";
+        public override string GetHelpText() => $"日付時刻。";
+
         public override string GetCSharpTypeName() => "DateTime";
         public override string GetTypeScriptTypeName() => "string";
 

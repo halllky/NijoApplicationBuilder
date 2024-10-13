@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 
 namespace Nijo.Core.AggregateMemberTypes {
     internal class YearMonth : SchalarMemberType {
+        public override string GetUiDisplayName() => "年月";
+        public override string GetHelpText() => $"年月。";
 
         public override void GenerateCode(CodeRenderingContext context) {
             // クラス定義

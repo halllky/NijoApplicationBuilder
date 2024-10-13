@@ -53,5 +53,12 @@ namespace Nijo.Core {
                 return false;
             }
         }
+
+        /// <summary>
+        /// 登録されているメンバー型を列挙します。
+        /// </summary>
+        internal IEnumerable<(string Key, IAggregateMemberType MemberType)> EnumerateAll() {
+            return _registered.Select(kv => (kv.Key, kv.Value));
+        }
     }
 }

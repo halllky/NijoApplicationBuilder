@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using System.Text.Json;
+using Newtonsoft.Json.Converters;
+using System.Text.Json.Serialization;
 
 namespace Nijo.Util.DotnetEx {
     public static class StringExtension {
@@ -58,6 +61,23 @@ namespace Nijo.Util.DotnetEx {
 
             return totalWidth;
         }
+
+        /// <summary>
+        /// このオブジェクトをJSONシリアライズします。
+        /// 日本語のエンコーディングをきちんとするなどの頻出するオプションの設定込み。
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public static string ToJson<T>(this T obj) {
+            if (_cachedOptions == null) {
+                _cachedOptions = new JsonSerializerOptions();
+                _cachedOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+                _cachedOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All);
+            }
+            return JsonSerializer.Serialize(obj, _cachedOptions);
+        }
+        private static JsonSerializerOptions? _cachedOptions;
     }
 }
 

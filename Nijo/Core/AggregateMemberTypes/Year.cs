@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace Nijo.Core.AggregateMemberTypes {
     internal class Year : SchalarMemberType {
+        public override string GetUiDisplayName() => "年";
+        public override string GetHelpText() => $"年。西暦で登録されます。";
+
         public override string GetCSharpTypeName() => "int";
         public override string GetTypeScriptTypeName() => "number";
 

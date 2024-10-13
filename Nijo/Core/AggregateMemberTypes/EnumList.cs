@@ -12,6 +12,9 @@ using System.Threading.Tasks;
 
 namespace Nijo.Core.AggregateMemberTypes {
     public class EnumList : IAggregateMemberType {
+        public string GetUiDisplayName() => "列挙体";
+        public string GetHelpText() => $"列挙体。";
+
         public EnumList(EnumDefinition definition) {
             Definition = definition;
         }
