@@ -170,7 +170,10 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
                     colSpan={header.colSpan}
                     className="relative bg-color-2 text-color-7 border-b border-color-3"
                     style={getThStyle(false, thX, thY)}>
-                    <div className="absolute inset-0 p-px text-sm text-start whitespace-nowrap text-ellipsis overflow-hidden">
+                    <div
+                      className="absolute inset-0 p-px text-sm text-start whitespace-nowrap text-ellipsis overflow-hidden"
+                      title={typeof header.column.columnDef.header === 'string' ? header.column.columnDef.header : undefined}
+                    >
                       {!header.isPlaceholder && RT.flexRender(
                         header.column.columnDef.header,
                         header.getContext())}
