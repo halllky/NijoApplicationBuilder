@@ -65,7 +65,7 @@ namespace Nijo.Runtime {
                 var typeDefs = EnumerateAggregateOrMemberTypes().ToList();
                 var optionDefs = EnumerateOptionalAttributes().ToList();
 
-                var rootXmlElements = _project.SchemaXml.Load().Root?.Elements() ?? [];
+                var rootXmlElements = _project.LoadSchemaXml().Root?.Elements() ?? [];
                 var rootElements = rootXmlElements.Select(el => new NijoXmlElement(el));
                 var rootAggregates = rootElements.Select(x => x.ToAbstract(typeDefs, optionDefs.ToDictionary(d => d.Key)));
 
@@ -73,7 +73,7 @@ namespace Nijo.Runtime {
                 await context.Response.WriteAsync(new PageState {
                     // このプロパティ名やデータの内容はGUIアプリ側の PageStateFromServer の型と合わせる必要がある
                     ProjectRoot = _project.SolutionRoot,
-                    EditingXmlFilePath = _project.SchemaXml.GetPath(),
+                    EditingXmlFilePath = _project.SchemaXmlPath,
                     Aggregates = rootAggregates.ToList(),
                     AggregateOrMemberTypes = typeDefs,
                     OptionalAttributes = optionDefs,

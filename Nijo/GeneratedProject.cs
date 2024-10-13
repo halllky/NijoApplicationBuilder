@@ -82,7 +82,7 @@ namespace Nijo {
                 };
 
                 using (var _ = log?.BeginScope("nijo.xmlの作成")) {
-                    var xmlPath = tempProject.SchemaXml.GetPath();
+                    var xmlPath = tempProject.SchemaXmlPath;
                     log?.LogInformation("XML Path: {0}", xmlPath);
 
                     // TODO: PJ間の依存関係の向きがぐちゃぐちゃなので直す
@@ -230,7 +230,6 @@ namespace Nijo {
             _log = log ?? ILoggerExtension.CreateConsoleLogger();
 
             CodeGenerator = new NijoCodeGenerator(this, log);
-            SchemaXml = new AppSchemaXml(SolutionRoot);
 
             ServiceProvider = serviceProvider;
 
@@ -253,19 +252,27 @@ namespace Nijo {
         internal Parts.CliProject CliProject { get; }
 
         public NijoCodeGenerator CodeGenerator { get; }
-        public AppSchemaXml SchemaXml { get; }
+
+        public string SchemaXmlPath => Path.Combine(SolutionRoot, "nijo.xml");
+
+        public XDocument LoadSchemaXml() {
+            using var stream = File.Open(SchemaXmlPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var reader = new StreamReader(stream);
+            var xmlContent = reader.ReadToEnd();
+            return XDocument.Parse(xmlContent);
+        }
 
         public Config ReadConfig() {
-            var xDocument = SchemaXml.Load();
-            return Config.FromXml(xDocument);
+            return Config.FromXml(LoadSchemaXml());
         }
         /// <summary>
         /// アプリケーションスキーマを生成します。
         /// </summary>
         /// <exception cref="InvalidOperationException">アプリケーションスキーマが不正な場合</exception>
         internal AppSchema BuildSchema() {
+            var schemaXml = new AppSchemaXml(LoadSchemaXml());
             var builder = new AppSchemaBuilder();
-            if (!SchemaXml.ConfigureBuilder(builder, out var errors)) {
+            if (!schemaXml.ConfigureBuilder(builder, out var errors)) {
                 throw new InvalidOperationException(errors.Join(Environment.NewLine));
             }
 
@@ -284,8 +291,9 @@ namespace Nijo {
             var errorList = new List<string>();
             errors = errorList;
 
+            var schemaXml = new AppSchemaXml(LoadSchemaXml());
             var builder = new AppSchemaBuilder();
-            var builderOk = SchemaXml.ConfigureBuilder(builder, out var errors1);
+            var builderOk = schemaXml.ConfigureBuilder(builder, out var errors1);
             errorList.AddRange(errors1);
 
             if (builderOk) {

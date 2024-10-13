@@ -12,53 +12,23 @@ using System.Xml;
 
 namespace Nijo.Core {
     public class AppSchemaXml {
-        internal AppSchemaXml(string projectRoot) {
-            _projectRoot = projectRoot;
+        internal AppSchemaXml(XDocument xDocument) {
+            _xDocument = xDocument;
         }
 
-        private readonly string _projectRoot;
-
-        public string GetPath() {
-            return Path.Combine(_projectRoot, "nijo.xml");
-        }
-
-        public XDocument Load() {
-            if (TryLoad(out var xDocument, out var error)) {
-                return xDocument;
-            } else {
-                throw new XmlException(error);
-            }
-        }
-        public bool TryLoad(out XDocument xDocument, out string error) {
-            using var stream = File.Open(GetPath(), FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            using var reader = new StreamReader(stream);
-            var xmlContent = reader.ReadToEnd();
-            try {
-                xDocument = XDocument.Parse(xmlContent);
-                error = string.Empty;
-                return true;
-            } catch (XmlException ex) {
-                xDocument = new XDocument();
-                error = ex.Message;
-                return false;
-            }
-        }
+        private readonly XDocument _xDocument;
 
         internal bool ConfigureBuilder(AppSchemaBuilder builder, out ICollection<string> errors) {
-            if (!TryLoad(out var xDocument, out var xmlError)) {
-                errors = new[] { xmlError };
-                return false;
-            }
-            if (xDocument.Root == null) {
+            if (_xDocument.Root == null) {
                 errors = new List<string> { "XMLが空です。" };
                 return false;
             }
 
             var errorList = new List<string>();
 
-            builder.SetApplicationName(xDocument.Root.Name.LocalName);
+            builder.SetApplicationName(_xDocument.Root.Name.LocalName);
 
-            foreach (var xElement in xDocument.Root.Elements()) {
+            foreach (var xElement in _xDocument.Root.Elements()) {
                 // コンフィグ
                 if (xElement.Name.LocalName == Config.XML_CONFIG_SECTION_NAME) continue;
 
