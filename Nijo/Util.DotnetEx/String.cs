@@ -79,7 +79,7 @@ namespace Nijo.Util.DotnetEx {
         public static string ConvertToJson<T>(this T obj) {
             return JsonSerializer.Serialize(obj, JsonSerializerOptions);
         }
-        private static JsonSerializerOptions JsonSerializerOptions {
+        public static JsonSerializerOptions JsonSerializerOptions {
             get {
                 if (_cachedOptions == null) {
                     _cachedOptions = new JsonSerializerOptions();

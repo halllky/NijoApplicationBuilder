@@ -114,3 +114,21 @@ export type EnumOption = {
   /** "画面上の表示名" */
   displayName: string | undefined
 }
+
+/** 列ID。C#側のエラーメッセージ処理と合わせる必要あり */
+export const GRID_COL = {
+  DISPLAY_NAME: '-' as const,
+  TYPE: 'type' as const,
+  TYPE_DETAIL: 'typeDetail' as const,
+  COMMENT: 'comment' as const,
+}
+
+/** バリデーションエラー */
+export type ValidationError = {
+  [uniqueId: string]: {
+    [key in keyof typeof GRID_COL | OptionalAttributeKey]: string[]
+  }
+}
+
+/** バリデーションエラーの項目のキー */
+export type ValidationErrorKey = typeof GRID_COL[keyof typeof GRID_COL] | OptionalAttributeKey

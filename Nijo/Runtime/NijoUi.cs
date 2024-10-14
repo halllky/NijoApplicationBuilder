@@ -11,6 +11,7 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Text;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Xml;
@@ -89,11 +90,10 @@ namespace Nijo.Runtime {
             app.MapPost("/validate", async context => {
                 try {
                     var collection = await ToAggregateOrMemberList(context.Request.Body);
-                    var errors = collection.CollectVaridationErrors().ToArray();
+                    var errors = ValidationError.ToErrorObjectJson(collection.CollectVaridationErrors());
 
                     context.Response.ContentType = "application/json";
-                    var errorsJson = errors.ConvertToJson();
-                    await context.Response.WriteAsync(errorsJson);
+                    await context.Response.WriteAsync(errors);
 
                 } catch (Exception ex) {
                     context.Response.ContentType = "application/json";
@@ -107,7 +107,7 @@ namespace Nijo.Runtime {
                     var errors = collection.CollectVaridationErrors().ToArray();
                     if (errors.Length > 0) {
                         context.Response.ContentType = "application/json";
-                        var errorsJson = errors.ConvertToJson();
+                        var errorsJson = ValidationError.ToErrorObjectJson(errors);
                         await context.Response.WriteAsync(errorsJson);
                         return;
                     }
@@ -269,6 +269,14 @@ namespace Nijo.Runtime {
                             };
                         }
 
+                        foreach (var attrValue in node.AttrValues ?? []) {
+                            yield return new ValidationError {
+                                Node = node,
+                                Key = attrValue.Key!,
+                                Message = "列挙体の要素にこの属性を指定することはできません。",
+                            };
+                        }
+
                         // enumの要素はこれ以外のバリデーション不要
                         continue;
                     }
@@ -330,7 +338,7 @@ namespace Nijo.Runtime {
                         if (optionDef == null) {
                             yield return new ValidationError {
                                 Node = node,
-                                Key = attrValue.Key,
+                                Key = attrValue.Key!,
                                 Message = $"オプショナル属性の型 '{attrValue.Key}' が不正です。",
                             };
                         } else {
@@ -339,7 +347,7 @@ namespace Nijo.Runtime {
                             foreach (var error in errorList) {
                                 yield return new ValidationError {
                                     Node = node,
-                                    Key = attrValue.Key,
+                                    Key = attrValue.Key!,
                                     Message = error,
                                 };
                             }
@@ -377,7 +385,7 @@ namespace Nijo.Runtime {
             /// <see cref="ERR_TO_TYPE"/>, <see cref="ERR_TO_TYPE_DETAIL"/>, <see cref="ERR_TO_COMMENT"/> の場合、それぞれの項目に対するエラー。
             /// オプショナル属性に対するエラーは <see cref="OptionalAttributeDef.Key"/> と同じ文字列。
             /// </summary>
-            public required string? Key { get; init; }
+            public required string Key { get; init; }
             /// <summary>エラーメッセージ</summary>
             public required string Message { get; init; }
 
@@ -386,6 +394,41 @@ namespace Nijo.Runtime {
             public const string ERR_TO_TYPE = "type";
             public const string ERR_TO_TYPE_DETAIL = "typeDetail";
             public const string ERR_TO_COMMENT = "comment";
+
+            /// <summary>
+            /// バリデーションエラーの配列をTypeScript側で処理しやすい形に変換する
+            /// </summary>
+            public static string ToErrorObjectJson(IEnumerable<ValidationError> errors) {
+                /*
+                 * 戻り値のJSONオブジェクトの例（※ルートオブジェクトのキーはn行目のデータのユニークIDの想定）
+                 *
+                 * {
+                 *   "x34jrlfst": {
+                 *     "type": ["タイプを指定してください。"],
+                 *     "dbName": ["DB名に記号は使えません。", "DB名が長すぎます。"]
+                 *   },
+                 *   "xh6h5jlhd": {
+                 *     "-": ["キーを指定してください。"]
+                 *   }
+                 * }
+                 */
+                var rootObject = new JsonObject();
+                foreach (var group in errors.GroupBy(err => err.Node.UniqueId)) {
+                    var uniqueId = group.Key;
+                    var errorObjectByUniqueId = new JsonObject();
+
+                    foreach (var errorsByKey in group.GroupBy(g => g.Key)) {
+                        var errorArray = new JsonArray();
+                        foreach (var error in errorsByKey) {
+                            errorArray.Add(error.Message);
+                        }
+                        errorObjectByUniqueId[errorsByKey.Key] = errorArray;
+                    }
+
+                    rootObject[uniqueId] = errorObjectByUniqueId;
+                }
+                return rootObject.ToJsonString(StringExtension.JsonSerializerOptions);
+            }
         }
 
 
@@ -469,7 +512,8 @@ namespace Nijo.Runtime {
                 // 主キー必須
                 var children = schema.GetChildren(this).ToArray();
                 var nodeType = GetNodeType();
-                if (children.All(c => c.AttrValues == null || !c.AttrValues.Any(a => a.Key == "key"))
+                if (Depth == 0
+                    && children.All(c => c.AttrValues == null || !c.AttrValues.Any(a => a.Key == "key"))
                     && (IsWriteModel(schema) || IsReadModel(schema))
                     && (nodeType == E_NodeType.RootAggregate || Type == "children")) {
                     errors.Add("ルート集約とChildrenではキー指定が必須です。");
