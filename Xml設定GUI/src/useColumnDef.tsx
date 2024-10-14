@@ -16,7 +16,7 @@ export const useColumnDef = (
     // -------------------------------------
     // 集約名（階層構造）
     const displayNameColumn: Layout.DataTableColumn<GridRow> = {
-      id: 'col-A',
+      id: '-' as const,
       ...textCell(
         row => row.displayName ?? '',
         (row, value) => { row.displayName = value },
@@ -42,7 +42,7 @@ export const useColumnDef = (
       }
     }
     const typeColumns: Layout.DataTableColumn<GridRow> = {
-      id: 'col-B',
+      id: 'type' as const,
       header: '種類',
       onClipboardCopy: row => row.type ?? '',
       render: row => (
@@ -59,6 +59,19 @@ export const useColumnDef = (
 
     // -------------------------------------
     // 集約またはメンバーの型の詳細情報（step や variation-item の数値指定）
+    const typeDetailColumn: Layout.DataTableColumn<GridRow> = {
+      id: 'typeDetail' as const,
+      ...textCell(
+        row => row.typeDetail ?? '',
+        (row, value) => { row.typeDetail = value },
+      ),
+      defaultWidthPx: 40,
+      render: row => (
+        <CellText className="flex-1">
+          {row.typeDetail}
+        </CellText>
+      ),
+    }
 
     // -------------------------------------
     // オプション列
@@ -111,7 +124,7 @@ export const useColumnDef = (
           }
         }
         optionColumns.push({
-          id: `col-${i + 2}`,
+          id: def.key,
           header: def.displayName,
           defaultWidthPx: 60,
           onClipboardCopy: row => row.attrValues?.some(v => v.key === def.key) ? 'true' : '',
@@ -146,7 +159,7 @@ export const useColumnDef = (
 
       if (def.type === 'number') {
         optionColumns.push({
-          id: `col-${i + 2}`,
+          id: def.key,
           header: def.displayName,
           defaultWidthPx: 60,
           onClipboardCopy: row => row.attrValues?.find(v => v.key === def.key)?.value ?? '',
@@ -171,7 +184,7 @@ export const useColumnDef = (
 
       } else {
         optionColumns.push({
-          id: `col-${i + 2}`,
+          id: def.key,
           header: def.displayName,
           defaultWidthPx: 60,
           onClipboardCopy: row => row.attrValues?.find(v => v.key === def.key)?.value ?? '',
@@ -196,7 +209,7 @@ export const useColumnDef = (
     // -------------------------------------
     // コメント
     const commentColumn: Layout.DataTableColumn<GridRow> = {
-      id: 'col-comment',
+      id: 'comment' as const,
       header: '備考',
       defaultWidthPx: 240,
       onClipboardCopy: row => row.comment ?? '',
@@ -217,6 +230,7 @@ export const useColumnDef = (
     return [
       displayNameColumn,
       typeColumns,
+      typeDetailColumn,
       ...optionColumns,
       commentColumn,
     ]

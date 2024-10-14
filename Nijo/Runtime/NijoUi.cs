@@ -88,12 +88,9 @@ namespace Nijo.Runtime {
             // 編集中のバリデーション
             app.MapPost("/validate", async context => {
                 try {
-                    var document = await ToXDocumentAsync(context.Request.Body);
-                    var schema = new AppSchemaXml(document);
-                    var builder = new AppSchemaBuilder();
-                    if (schema.ConfigureBuilder(builder, out var errors)) {
-                        builder.TryBuild(out var _, out errors);
-                    }
+                    var collection = await ToAggregateOrMemberList(context.Request.Body);
+                    var errors = collection.CollectVaridationErrors().ToArray();
+
                     context.Response.ContentType = "application/json";
                     var errorsJson = errors.ConvertToJson();
                     await context.Response.WriteAsync(errorsJson);
@@ -106,16 +103,9 @@ namespace Nijo.Runtime {
 
             app.MapPost("/save", async context => {
                 try {
-                    var document = await ToXDocumentAsync(context.Request.Body);
-                    var schema = new AppSchemaXml(document);
-                    var builder = new AppSchemaBuilder();
-                    if (!schema.ConfigureBuilder(builder, out var errors)) {
-                        context.Response.ContentType = "application/json";
-                        var errorsJson = errors.ConvertToJson();
-                        await context.Response.WriteAsync(errorsJson);
-                        return;
-                    }
-                    if (!builder.TryBuild(out var appSchema, out errors)) {
+                    var collection = await ToAggregateOrMemberList(context.Request.Body);
+                    var errors = collection.CollectVaridationErrors().ToArray();
+                    if (errors.Length > 0) {
                         context.Response.ContentType = "application/json";
                         var errorsJson = errors.ConvertToJson();
                         await context.Response.WriteAsync(errorsJson);
@@ -126,6 +116,7 @@ namespace Nijo.Runtime {
                         Encoding = new UTF8Encoding(false, false),
                         NewLineChars = "\n",
                     });
+                    var document = collection.ToXDocument(_project.BuildSchema().ApplicationName);
                     document.Save(writer);
                     context.Response.StatusCode = (int)HttpStatusCode.OK;
 
@@ -139,21 +130,17 @@ namespace Nijo.Runtime {
             return app;
         }
 
+
         /// <summary>
-        /// HTTPリクエストボディをXDocumentに
+        /// HTTPリクエストボディから <see cref="AggregateOrMemberList"/> のインスタンスを作成
         /// </summary>
         /// <returns></returns>
-        private async Task<XDocument> ToXDocumentAsync(Stream httpRequestBody) {
+        private async Task<AggregateOrMemberList> ToAggregateOrMemberList(Stream httpRequestBody) {
             using var sr = new StreamReader(httpRequestBody);
             var json = await sr.ReadToEndAsync();
             var obj = json.ParseAsJson<ClientRequest>();
 
-            var collection = new AggregateOrMemberList(obj.Aggregates ?? []);
-            var elements = collection
-                .RootAggregates()
-                .Select(a => NijoXmlElement.FromAbstract(a, collection));
-            var document = NijoXmlElement.ToXDocument(elements, _project.BuildSchema().ApplicationName);
-            return document;
+            return new AggregateOrMemberList(obj.Aggregates ?? []);
         }
 
         /// <summary>
@@ -174,6 +161,7 @@ namespace Nijo.Runtime {
                     if (item.Depth == 0) yield return item;
                 }
             }
+
             /// <summary>
             /// 直近の親を返す
             /// </summary>
@@ -187,6 +175,12 @@ namespace Nijo.Runtime {
                     var maybeParent = _list[currentIndex];
                     if (maybeParent.Depth < agg.Depth) return maybeParent;
                 }
+            }
+            /// <summary>
+            /// ルート要素を返す
+            /// </summary>
+            public AggregateOrMember GetRoot(AggregateOrMember agg) {
+                return GetAncestors(agg).FirstOrDefault() ?? agg;
             }
             /// <summary>
             /// 祖先を返す。より階層が浅いほうが先。
@@ -246,6 +240,123 @@ namespace Nijo.Runtime {
                 }
             }
 
+            /// <summary>
+            /// エラーを収集します。
+            /// </summary>
+            public IEnumerable<ValidationError> CollectVaridationErrors() {
+                var errorList = new List<string>();
+                foreach (var node in _list) {
+                    // 行全体に対するエラー
+                    errorList.Clear();
+                    node.Validate(this, errorList);
+                    foreach (var error in errorList) {
+                        yield return new ValidationError {
+                            Node = node,
+                            Key = ValidationError.ERR_TO_ROW,
+                            Message = error,
+                        };
+                    }
+
+                    // enumの要素のバリデーション（いろいろ特殊）
+                    var root = GetRoot(node);
+                    if (node.Depth > 0 && root.Type == "enum") {
+                        // enumの要素なのに型が指定されている
+                        if (!string.IsNullOrWhiteSpace(node.Type)) {
+                            yield return new ValidationError {
+                                Node = node,
+                                Key = ValidationError.ERR_TO_TYPE,
+                                Message = "列挙体の要素に型を指定することはできません。",
+                            };
+                        }
+
+                        // enumの要素はこれ以外のバリデーション不要
+                        continue;
+                    }
+
+                    // 型と型詳細に対するエラー
+                    if (string.IsNullOrWhiteSpace(node.Type)) {
+                        // 型未指定
+                        yield return new ValidationError {
+                            Node = node,
+                            Key = ValidationError.ERR_TO_TYPE,
+                            Message = "型を指定してください。",
+                        };
+                    } else if (node.Type.StartsWith(NijoXmlElement.REFTO_PREFIX)) {
+                        // ref-to
+                        var uniqueId = node.Type.Substring(NijoXmlElement.REFTO_PREFIX.Length);
+                        if (!_list.Any(n => n.UniqueId == uniqueId)) {
+                            yield return new ValidationError {
+                                Node = node,
+                                Key = ValidationError.ERR_TO_TYPE,
+                                Message = "参照先に指定されている項目が見つかりません。",
+                            };
+                        }
+                    } else if (node.Type.StartsWith(NijoXmlElement.ENUM_PREFIX)) {
+                        // 列挙体
+                        var uniqueId = node.Type.Substring(NijoXmlElement.ENUM_PREFIX.Length);
+                        if (!RootAggregates().Any(n => n.UniqueId == uniqueId
+                                                    && n.Type == "enum")) {
+                            yield return new ValidationError {
+                                Node = node,
+                                Key = ValidationError.ERR_TO_TYPE,
+                                Message = "指定された列挙体定義が見つかりません。",
+                            };
+                        }
+                    } else {
+                        // 上記以外
+                        var typeDef = EnumerateAggregateOrMemberTypes().SingleOrDefault(d => d.Key == node.Type);
+                        if (typeDef == null) {
+                            yield return new ValidationError {
+                                Node = node,
+                                Key = ValidationError.ERR_TO_TYPE,
+                                Message = $"型 '{node.Type}' が不正です。",
+                            };
+                        } else {
+                            errorList.Clear();
+                            typeDef.Validate(node, this, errorList);
+                            foreach (var error in errorList) {
+                                yield return new ValidationError {
+                                    Node = node,
+                                    Key = ValidationError.ERR_TO_TYPE,
+                                    Message = error,
+                                };
+                            }
+                        }
+                    }
+
+                    // オプショナル属性に関するエラー
+                    foreach (var attrValue in node.AttrValues ?? []) {
+                        var optionDef = EnumerateOptionalAttributes().SingleOrDefault(d => d.Key == attrValue.Key);
+                        if (optionDef == null) {
+                            yield return new ValidationError {
+                                Node = node,
+                                Key = attrValue.Key,
+                                Message = $"オプショナル属性の型 '{attrValue.Key}' が不正です。",
+                            };
+                        } else {
+                            errorList.Clear();
+                            optionDef.Validate(attrValue.Value, node, this, errorList);
+                            foreach (var error in errorList) {
+                                yield return new ValidationError {
+                                    Node = node,
+                                    Key = attrValue.Key,
+                                    Message = error,
+                                };
+                            }
+                        }
+                    }
+                }
+            }
+
+            /// <summary>
+            /// このスキーマをXDocumentに変換します。
+            /// </summary>
+            public XDocument ToXDocument(string applicationName) {
+                var elements = RootAggregates().Select(a => NijoXmlElement.FromAbstract(a, this));
+                var document = NijoXmlElement.ToXDocument(elements, applicationName);
+                return document;
+            }
+
             #region IReadOnlyListの実装
             public AggregateOrMember this[int index] => _list[index];
             public int Count => _list.Count;
@@ -256,6 +367,25 @@ namespace Nijo.Runtime {
                 return GetEnumerator();
             }
             #endregion IReadOnlyListの実装
+        }
+        private class ValidationError {
+            /// <summary>どの集約またはメンバーでエラーが発生したか</summary>
+            public required AggregateOrMember Node { get; init; }
+            /// <summary>
+            /// どの項目でエラーが発生したか。
+            /// <see cref="ERR_TO_ROW"/> の場合、メンバー全体に対するエラー。
+            /// <see cref="ERR_TO_TYPE"/>, <see cref="ERR_TO_TYPE_DETAIL"/>, <see cref="ERR_TO_COMMENT"/> の場合、それぞれの項目に対するエラー。
+            /// オプショナル属性に対するエラーは <see cref="OptionalAttributeDef.Key"/> と同じ文字列。
+            /// </summary>
+            public required string? Key { get; init; }
+            /// <summary>エラーメッセージ</summary>
+            public required string Message { get; init; }
+
+            // ここの定義は TypeScript の useColumnDef と合わせる必要あり
+            public const string ERR_TO_ROW = "-";
+            public const string ERR_TO_TYPE = "type";
+            public const string ERR_TO_TYPE_DETAIL = "typeDetail";
+            public const string ERR_TO_COMMENT = "comment";
         }
 
 
@@ -312,9 +442,60 @@ namespace Nijo.Runtime {
                     .Select(agg => agg.GetPhysicalName())
                     .Join("/");
             }
+            public E_NodeType? GetNodeType() {
+                if (string.IsNullOrWhiteSpace(Type)) return null;
+                if (Type.StartsWith(NijoXmlElement.REFTO_PREFIX)) return E_NodeType.Ref;
+                if (Type.StartsWith(NijoXmlElement.ENUM_PREFIX)) return E_NodeType.Enum;
+                return EnumerateAggregateOrMemberTypes().SingleOrDefault(t => t.Key == Type)?.NodeType;
+            }
+            public bool IsWriteModel(AggregateOrMemberList schema) {
+                var root = schema.GetRoot(this);
+                return root.Type?.Contains("write-model-2") == true;
+            }
+            public bool IsReadModel(AggregateOrMemberList schema) {
+                var root = schema.GetRoot(this);
+                return root.Type?.Contains("read-model-2") == true
+                    || root.Type?.Contains("generate-default-read-model") == true;
+            }
+            /// <summary>
+            /// エラーチェック
+            /// </summary>
+            public void Validate(AggregateOrMemberList schema, ICollection<string> errors) {
+                // 名前必須
+                if (string.IsNullOrWhiteSpace(DisplayName)) {
+                    errors.Add("項目名を指定してください。");
+                }
+
+                // 主キー必須
+                var children = schema.GetChildren(this).ToArray();
+                var nodeType = GetNodeType();
+                if (children.All(c => c.AttrValues == null || !c.AttrValues.Any(a => a.Key == "key"))
+                    && (IsWriteModel(schema) || IsReadModel(schema))
+                    && (nodeType == E_NodeType.RootAggregate || Type == "children")) {
+                    errors.Add("ルート集約とChildrenではキー指定が必須です。");
+                }
+            }
+
             public override string ToString() {
                 return DisplayName ?? $"ID::{UniqueId}";
             }
+        }
+        /// <summary>
+        /// <see cref="AggregateOrMember.Type"/> の種類
+        /// </summary>
+        private enum E_NodeType {
+            /// <summary>ルート集約</summary>
+            RootAggregate,
+            /// <summary>Child, Children, VariationItem</summary>
+            DescendantAggregate,
+            /// <summary>ref-to</summary>
+            Ref,
+            /// <summary>列挙体</summary>
+            Enum,
+            /// <summary>バリエーションのコンテナの方（VariationItemでない方）</summary>
+            Variation,
+            /// <summary>上記以外</summary>
+            SchalarMember,
         }
         private class OptionalAttributeValue {
             [JsonPropertyName("key")]
@@ -338,6 +519,16 @@ namespace Nijo.Runtime {
             /// </summary>
             [JsonIgnore]
             public Func<NijoXmlElement, NijoXmlElement.IsAttribute?> FindMatchingIsAttribute { get; set; } = (_ => null);
+            /// <summary>
+            /// バリデーション
+            /// </summary>
+            [JsonIgnore]
+            public Action<AggregateOrMember, AggregateOrMemberList, ICollection<string>> Validate { get; set; } = ((_, _, _) => { });
+            /// <summary>
+            /// この種別に属するノードの種類
+            /// </summary>
+            [JsonIgnore]
+            public E_NodeType NodeType { get; set; }
         }
         private class OptionalAttributeDef {
             [JsonPropertyName("key")]
@@ -352,6 +543,12 @@ namespace Nijo.Runtime {
             public const string PHYSICAL_NAME = "physical-name";
             public const string DB_NAME = "db-name";
             public const string LATIN = "latin";
+
+            /// <summary>
+            /// バリデーション
+            /// </summary>
+            [JsonIgnore]
+            public Action<string?, AggregateOrMember, AggregateOrMemberList, ICollection<string>> Validate { get; set; } = ((_, _, _, _) => { });
         }
         private enum E_OptionalAttributeType {
             String,
@@ -366,6 +563,7 @@ namespace Nijo.Runtime {
 
             // ルート集約に設定できる種類
             yield return new AggregateOrMemberTypeDef {
+                NodeType = E_NodeType.RootAggregate,
                 Key = "write-model-2", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "WriteModel",
                 HelpText = $$"""
@@ -376,8 +574,12 @@ namespace Nijo.Runtime {
                 FindMatchingIsAttribute = el => el.Depth == 0
                                              && !el.Is.ContainsKey("generate-default-read-model")
                                              && el.Is.TryGetValue("write-model-2", out var isAttribute) ? isAttribute : null,
+                Validate = (node, schema, errors) => {
+                    if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
+                },
             };
             yield return new AggregateOrMemberTypeDef {
+                NodeType = E_NodeType.RootAggregate,
                 Key = "read-model-2", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "ReadModel",
                 HelpText = $$"""
@@ -387,8 +589,13 @@ namespace Nijo.Runtime {
                     """,
                 FindMatchingIsAttribute = el => el.Depth == 0
                                              && el.Is.TryGetValue("read-model-2", out var isAttribute) ? isAttribute : null,
+                Validate = (node, schema, errors) => {
+                    if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
+
+                },
             };
             yield return new AggregateOrMemberTypeDef {
+                NodeType = E_NodeType.RootAggregate,
                 Key = "write-model-2 generate-default-read-model", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "Write & Read",
                 HelpText = $$"""
@@ -398,8 +605,13 @@ namespace Nijo.Runtime {
                 FindMatchingIsAttribute = el => el.Depth == 0
                                              && el.Is.ContainsKey("generate-default-read-model")
                                              && el.Is.TryGetValue("write-model-2", out var isAttribute) ? isAttribute : null,
+                Validate = (node, schema, errors) => {
+                    if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
+
+                },
             };
             yield return new AggregateOrMemberTypeDef {
+                NodeType = E_NodeType.RootAggregate,
                 Key = "enum", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "Enum",
                 HelpText = $$"""
@@ -407,8 +619,13 @@ namespace Nijo.Runtime {
                     """,
                 FindMatchingIsAttribute = el => el.Depth == 0
                                              && el.Is.TryGetValue("enum", out var isAttribute) ? isAttribute : null,
+                Validate = (node, schema, errors) => {
+                    if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
+
+                },
             };
             yield return new AggregateOrMemberTypeDef {
+                NodeType = E_NodeType.RootAggregate,
                 Key = "command",
                 DisplayName = "Command",
                 HelpText = $$"""
@@ -417,11 +634,20 @@ namespace Nijo.Runtime {
                     """,
                 FindMatchingIsAttribute = el => el.Depth == 0
                                              && el.Is.TryGetValue("command", out var isAttribute) ? isAttribute : null,
+                Validate = (node, schema, errors) => {
+                    if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
+
+                    var children = schema.GetChildren(node).ToArray();
+                    if (children.Any(x => x.Type == "step") && children.Any(x => x.Type != "step")) {
+                        errors.Add("ステップ属性を定義する場合は全てステップにする必要があります。");
+                    }
+                },
             };
 
             // ルート以外に設定できる種類
             // ※ ref-toと列挙体は集約定義に依存するのでクライアント側で計算する
             yield return new AggregateOrMemberTypeDef {
+                NodeType = E_NodeType.DescendantAggregate,
                 Key = "child", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "Child",
                 HelpText = $$"""
@@ -433,8 +659,13 @@ namespace Nijo.Runtime {
                     if (el.Is.TryGetValue("section", out var isAttribute2)) return isAttribute2; // section属性は廃止予定
                     return null;
                 },
+                Validate = (node, schema, errors) => {
+                    if (node.Depth == 0) errors.Add("この型は子孫要素にしか設定できません。");
+
+                },
             };
             yield return new AggregateOrMemberTypeDef {
+                NodeType = E_NodeType.DescendantAggregate,
                 Key = "children", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "Children",
                 HelpText = $$"""
@@ -446,8 +677,13 @@ namespace Nijo.Runtime {
                     if (el.Is.TryGetValue("array", out var isAttribute2)) return isAttribute2; // array属性は廃止予定
                     return null;
                 },
+                Validate = (node, schema, errors) => {
+                    if (node.Depth == 0) errors.Add("この型は子孫要素にしか設定できません。");
+
+                },
             };
             yield return new AggregateOrMemberTypeDef {
+                NodeType = E_NodeType.Variation,
                 Key = "variation",
                 DisplayName = "Variation",
                 HelpText = $$"""
@@ -455,8 +691,19 @@ namespace Nijo.Runtime {
                     """,
                 FindMatchingIsAttribute = el => el.Depth > 0
                                              && el.Is.TryGetValue("variation", out var isAttribute) ? isAttribute : null,
+                Validate = (node, schema, errors) => {
+                    if (node.Depth == 0) errors.Add("この型は子孫要素にしか設定できません。");
+
+                    var children = schema.GetChildren(node).ToArray();
+                    if (children.Length == 0) {
+                        errors.Add("バリエーションには1つ以上の種類を定義する必要があります。");
+                    } else if (children.Any(x => x.Type != "variation-item")) {
+                        errors.Add("Variationの直下に定義できるのはVariationItemのみです。");
+                    }
+                },
             };
             yield return new AggregateOrMemberTypeDef {
+                NodeType = E_NodeType.DescendantAggregate,
                 Key = "variation-item", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "VariationItem",
                 RequiredNumberValue = true,
@@ -469,9 +716,20 @@ namespace Nijo.Runtime {
                     if (el.Is.TryGetValue("variation-key", out var isAttribute2)) return isAttribute2; // variation-key属性は廃止予定
                     return null;
                 },
+                Validate = (node, schema, errors) => {
+                    if (schema.GetParent(node)?.Type != "variation") {
+                        errors.Add("VariationItemはVariationの直下にのみ定義できます。");
+                    }
+                    if (string.IsNullOrWhiteSpace(node.TypeDetail)) {
+                        errors.Add("VariationItemには種類を識別するための整数を定義する必要があります。");
+                    } else if (!int.TryParse(node.TypeDetail, out var _)) {
+                        errors.Add($"区分値 '{node.TypeDetail}' を整数として解釈できません。");
+                    }
+                },
             };
 
             yield return new AggregateOrMemberTypeDef {
+                NodeType = E_NodeType.DescendantAggregate,
                 Key = "step",
                 DisplayName = "ステップ",
                 RequiredNumberValue = true,
@@ -481,15 +739,29 @@ namespace Nijo.Runtime {
                     """,
                 FindMatchingIsAttribute = el => el.Depth > 0
                                              && el.Is.TryGetValue("step", out var isAttribute) ? isAttribute : null,
+                Validate = (node, schema, errors) => {
+                    if (node.Depth != 1 || schema.GetRoot(node).Type != "command") {
+                        errors.Add("ステップ属性はコマンドの直下にのみ定義できます。");
+                    }
+                    if (string.IsNullOrWhiteSpace(node.TypeDetail)) {
+                        errors.Add("ステップ番号を識別するための整数を定義する必要があります。");
+                    } else if (!int.TryParse(node.TypeDetail, out var _)) {
+                        errors.Add($"ステップ番号 '{node.TypeDetail}' を整数として解釈できません。");
+                    }
+                },
             };
 
             var resolver = MemberTypeResolver.Default();
             foreach (var (key, memberType) in resolver.EnumerateAll()) {
                 yield return new AggregateOrMemberTypeDef {
+                    NodeType = E_NodeType.SchalarMember,
                     Key = key,
                     DisplayName = memberType.GetUiDisplayName(),
                     HelpText = memberType.GetHelpText(),
                     FindMatchingIsAttribute = el => el.Depth > 0 && el.Is.TryGetValue(key, out var isAttribute) ? isAttribute : null,
+                    Validate = (node, schema, errors) => {
+
+                    },
                 };
             }
         }
@@ -506,6 +778,23 @@ namespace Nijo.Runtime {
                     物理名を明示的に指定したい場合に設定してください。
                     既定では論理名のうちソースコードに使用できない文字が置換されたものが物理名になります。
                     """,
+                Validate = (value, node, schema, errors) => {
+                    if (string.IsNullOrEmpty(value)) return; // 未指定の場合はチェックしない
+
+                    if (!value.All(c =>
+                        char.IsLetterOrDigit(c) // 英数字
+                        || c == '_'             // アンダースコア
+                        || (c >= 0x3040 && c <= 0x309F)     // ひらがな
+                        || (c >= 0x30A0 && c <= 0x30FF)     // カタカナ
+                        || (c >= 0x4E00 && c <= 0x9FAF))) { // 漢字
+                        errors.Add("物理名には、英数字、アンダースコア、ひらがな、カタカナ、Unicodeの範囲での漢字のみが使えます。");
+
+                    } else if (char.IsDigit(value[0])) {
+                        errors.Add("物理名を数字から始めることはできません。");
+                    } else if (char.IsLower(value[0])) {
+                        errors.Add("Reactのコンポーネント名が小文字始まりだとエラーになるので大文字から始めてください。");
+                    }
+                },
             };
 
             yield return new OptionalAttributeDef {
@@ -516,6 +805,20 @@ namespace Nijo.Runtime {
                     データベースのテーブル名またはカラム名を明示的に指定したい場合に設定してください。
                     既定では物理名がそのままテーブル名やカラム名になります。
                     """,
+                Validate = (value, node, schema, errors) => {
+                    if (string.IsNullOrEmpty(value)) return; // 未指定の場合はチェックしない
+                    if (!value.All(c =>
+                        char.IsLetterOrDigit(c) // 英数字
+                        || c == '_'             // アンダースコア
+                        || (c >= 0x3040 && c <= 0x309F)     // ひらがな
+                        || (c >= 0x30A0 && c <= 0x30FF)     // カタカナ
+                        || (c >= 0x4E00 && c <= 0x9FAF))) { // 漢字
+                        errors.Add("DBの名称には、英数字、アンダースコア、ひらがな、カタカナ、Unicodeの範囲での漢字のみが使えます。");
+
+                    } else if (char.IsDigit(value[0])) {
+                        errors.Add("DB名を数字から始めることはできません。");
+                    }
+                },
             };
 
             yield return new OptionalAttributeDef {
@@ -526,6 +829,17 @@ namespace Nijo.Runtime {
                     ラテン語名しか用いることができない部分の名称を明示的に指定したい場合に設定してください（ver-0.4.0.0000 時点ではURLを定義する処理のみが該当）。
                     既定では集約を表す一意な文字列から生成されたハッシュ値が用いられます。
                     """,
+                Validate = (value, node, schema, errors) => {
+                    if (string.IsNullOrEmpty(value)) return; // 未指定の場合はチェックしない
+
+                    // ラテン語名は英字、数字、ハイフン(-)、アンダースコア(_)を許可
+                    if (!value.All(c => char.IsLetterOrDigit(c) || c == '-' || c == '_' || c == ' ')) {
+                        errors.Add("ラテン語名には英数字、ハイフン、アンダースコア、半角スペースのみが使用できます。");
+
+                    } else if (char.IsDigit(value[0])) {
+                        errors.Add("ラテン語名を数字から始めることはできません。");
+                    }
+                },
             };
 
             // --------------------------------------------
@@ -539,6 +853,23 @@ namespace Nijo.Runtime {
                     ルート集約またはChildrenの場合、指定必須。
                     ChildやVariationには指定不可。Commandの要素にも指定不可。
                     """,
+                Validate = (value, node, schema, errors) => {
+                    var root = schema.GetRoot(node);
+                    if (root.Type == "command") {
+                        errors.Add("コマンドにキーを指定することはできません。");
+                    } else if (root.Type == "enum") {
+                        errors.Add("列挙体定義にキーを指定することはできません。");
+                    }
+
+                    var parent = schema.GetParent(node);
+                    if (parent == null) {
+                        errors.Add("ルート集約にキーを指定することはできません。");
+                    } else if (parent.Type == "child") {
+                        errors.Add("Childにキーを指定することはできません。");
+                    } else if (parent.Type == "variation" || parent.Type == "variation-item") {
+                        errors.Add("バリエーションにキーを指定することはできません。");
+                    }
+                },
             };
 
             yield return new OptionalAttributeDef {
@@ -550,6 +881,9 @@ namespace Nijo.Runtime {
                     詳細画面のタイトルやコンボボックスの表示テキストにどの項目が使われるかで参照されます。
                     未指定の場合はキーが表示名称として使われます。
                     """,
+                Validate = (value, node, schema, errors) => {
+
+                },
             };
 
             yield return new OptionalAttributeDef {
@@ -560,6 +894,14 @@ namespace Nijo.Runtime {
                     必須項目であることを表します。
                     画面上に必須項目であることを示すUIがついたり、新規登録処理や更新処理での必須入力チェック処理が自動生成されます。
                     """,
+                Validate = (value, node, schema, errors) => {
+                    if (node.Depth == 0
+                        || node.Type == "child"
+                        || node.Type == "variation"
+                        || node.Type == "variation-item") {
+                        errors.Add("この項目に必須指定をすることはできません。");
+                    }
+                },
             };
 
             // --------------------------------------------
@@ -572,6 +914,11 @@ namespace Nijo.Runtime {
                     VForm2のラベル列の横幅。数値で定義してください（小数使用可能）。単位はCSSのrem。
                     ReadModelのルート集約にのみ設定可能。
                     """,
+                Validate = (value, node, schema, errors) => {
+                    if (node.Depth != 0 || !node.IsReadModel(schema)) {
+                        errors.Add("この属性はReadModelのルート集約にのみ設定可能です。");
+                    }
+                },
             };
 
             yield return new OptionalAttributeDef {
@@ -581,6 +928,11 @@ namespace Nijo.Runtime {
                 HelpText = $$"""
                     ReadModelの中にあるChildのうち、そのChildが追加削除できるものであることを表します。
                     """,
+                Validate = (value, node, schema, errors) => {
+                    if (!node.IsReadModel(schema) || node.Type != "child") {
+                        errors.Add("この属性はReadModelのChildにのみ設定可能です。");
+                    }
+                },
             };
 
             yield return new OptionalAttributeDef {
@@ -591,6 +943,11 @@ namespace Nijo.Runtime {
                     閲覧専用の集約であることを表します。新規作成画面などが生成されなくなります。
                     ReadModelのルート集約にのみ設定可能。
                     """,
+                Validate = (value, node, schema, errors) => {
+                    if (node.Depth != 0 || !node.IsReadModel(schema)) {
+                        errors.Add("この属性はReadModelのルート集約にのみ設定可能です。");
+                    }
+                },
             };
 
             // --------------------------------------------
@@ -602,6 +959,11 @@ namespace Nijo.Runtime {
                 HelpText = $$"""
                     この項目が画面上で常に非表示になります。
                     """,
+                Validate = (value, node, schema, errors) => {
+                    if (node.Depth == 0) {
+                        errors.Add("ルート集約を隠し項目にすることはできません。");
+                    }
+                },
             };
 
             yield return new OptionalAttributeDef {
@@ -611,6 +973,12 @@ namespace Nijo.Runtime {
                 HelpText = $$"""
                     VForm2上でこの項目のスペースが横幅いっぱい確保されます。
                     """,
+                Validate = (value, node, schema, errors) => {
+                    var nodeType = node.GetNodeType();
+                    if (nodeType != E_NodeType.Ref && nodeType != E_NodeType.Enum && nodeType != E_NodeType.SchalarMember) {
+                        errors.Add("この属性は入力フォームをもつ項目にのみ指定できます。");
+                    }
+                },
             };
 
             yield return new OptionalAttributeDef {
@@ -620,6 +988,11 @@ namespace Nijo.Runtime {
                 HelpText = $$"""
                     詳細画面における当該項目の横幅を変更できます。全角10文字の場合は "z10"、半角6文字の場合は "h6" など、zかhのあとに整数を続けてください。
                     """,
+                Validate = (value, node, schema, errors) => {
+                    if (node.GetNodeType() != E_NodeType.SchalarMember) { 
+                        errors.Add("この属性はテキストボックスをもつ項目にのみ指定できます。");
+                    }
+                },
             };
 
             yield return new OptionalAttributeDef {
@@ -630,6 +1003,12 @@ namespace Nijo.Runtime {
                     詳細画面におけるこの項目の入力フォームが、自動生成されるものではなくここで指定した名前のコンポーネントになります。
                     コンポーネントは自前で実装する必要があります。
                     """,
+                Validate = (value, node, schema, errors) => {
+                    var nodeType = node.GetNodeType();
+                    if (nodeType != E_NodeType.Ref && nodeType != E_NodeType.Enum && nodeType != E_NodeType.SchalarMember) {
+                        errors.Add("この属性は入力フォームをもつ項目にのみ指定できます。");
+                    }
+                },
             };
 
             yield return new OptionalAttributeDef {
@@ -640,6 +1019,12 @@ namespace Nijo.Runtime {
                     詳細画面におけるこの項目の入力フォームが、自動生成されるものではなくここで指定した名前のコンポーネントになります。
                     コンポーネントは自前で実装する必要があります。
                     """,
+                Validate = (value, node, schema, errors) => {
+                    var nodeType = node.GetNodeType();
+                    if (nodeType != E_NodeType.Ref && nodeType != E_NodeType.Enum && nodeType != E_NodeType.SchalarMember) {
+                        errors.Add("この属性は入力フォームをもつ項目にのみ指定できます。");
+                    }
+                },
             };
 
             // -------------------------------
@@ -654,6 +1039,11 @@ namespace Nijo.Runtime {
                     詳細画面の入力フォームがコンボボックスに固定されます。
                     指定しない場合は動的に決まります（選択肢の数が多ければコンボボックス、少なければラジオボタン）。
                     """,
+                Validate = (value, node, schema, errors) => {
+                    if (node.GetNodeType() != E_NodeType.Enum) {
+                        errors.Add("この属性は列挙体の項目にのみ指定できます。");
+                    }
+                },
             };
 
             yield return new OptionalAttributeDef {
@@ -665,6 +1055,11 @@ namespace Nijo.Runtime {
                     詳細画面の入力フォームがラジオボタンに固定されます。
                     指定しない場合は動的に決まります（選択肢の数が多ければコンボボックス、少なければラジオボタン）。
                     """,
+                Validate = (value, node, schema, errors) => {
+                    if (node.GetNodeType() != E_NodeType.Enum) {
+                        errors.Add("この属性は列挙体の項目にのみ指定できます。");
+                    }
+                },
             };
         }
 
