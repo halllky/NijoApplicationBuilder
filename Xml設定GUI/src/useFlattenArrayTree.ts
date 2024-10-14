@@ -72,7 +72,7 @@ export const useFlattenArrayTree = (listRef: React.MutableRefObject<PageState['a
       if (currentIndex >= listRef.current.length) break
 
       const maybeDescendant = listRef.current[currentIndex]
-      if (maybeDescendant.depth >= gridRow.depth) break
+      if (maybeDescendant.depth <= gridRow.depth) break
 
       descendants.push(maybeDescendant)
     }
@@ -90,44 +90,3 @@ export const useFlattenArrayTree = (listRef: React.MutableRefObject<PageState['a
     getDescendants,
   }
 }
-
-// /** サーバー側データとクライアント側データの構造変換 */
-// export const FlattenTreeConverter = {
-//   /** サーバー側データからクライアント側データへ変換 */
-//   toClientData: (serverData: AggregateOrMember[]): GridRow[] => {
-
-//   },
-
-//   /** クライアント側データからサーバー側データへ変換 */
-//   toServerData: (allGridRows: GridRow[]): AggregateOrMember[] => {
-//     // depthを正として親を決める。
-//     // 並び順でより上の方にある行のうち、直近のdepthが浅い行が親。
-//     const rootAggregates: AggregateOrMember[] = []
-//     const rowAndChildren = new Map(allGridRows.map(row => [row.item, [] as AggregateOrMember[]]))
-//     for (let rowIndex = allGridRows.length - 1; rowIndex >= 0; rowIndex--) {
-//       const row = allGridRows[rowIndex]
-//       let currentIndex = rowIndex - 1
-//       while (true) {
-//         if (currentIndex < 0) {
-//           rootAggregates.push(row.item)
-//           break
-//         }
-//         const maybeParent = allGridRows[currentIndex]
-//         if (maybeParent.depth < row.depth) {
-//           rowAndChildren.get(maybeParent.item)?.push(row.item)
-//           break
-//         }
-//         currentIndex--
-//       }
-//     }
-
-//     // 決まった親子関係をもとにオブジェクトを組み立てる
-//     const set = (row: AggregateOrMember): AggregateOrMember => {
-//       const children = rowAndChildren.get(row)?.reverse().map(child => set(child))
-//       return { ...row, children }
-//     }
-//     return rootAggregates
-//       .reverse()
-//       .map(row => set(row))
-//   },
-// }

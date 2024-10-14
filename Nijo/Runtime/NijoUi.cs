@@ -197,7 +197,7 @@ namespace Nijo.Runtime {
                     if (currentIndex >= _list.Count) yield break;
 
                     var maybeDescendant = _list[currentIndex];
-                    if (maybeDescendant.Depth >= agg.Depth) yield break;
+                    if (maybeDescendant.Depth <= agg.Depth) yield break;
 
                     yield return maybeDescendant;
                 }
