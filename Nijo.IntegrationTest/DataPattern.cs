@@ -60,7 +60,7 @@ namespace Nijo.IntegrationTest {
             var testProjectRoot = Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", "..");
             var xmlFullPath = Path.Combine(testProjectRoot, "DataPatterns", _xmlFileName);
             var xml = File.ReadAllText(xmlFullPath).Trim();
-            File.WriteAllText(project.SchemaXml.GetPath(), xml);
+            File.WriteAllText(project.SchemaXmlPath, xml);
             project.CodeGenerator.GenerateCode(new NijoCodeGenerator.CodeGenerateOptions {
                 OnEndGenerating = ctx => {
 

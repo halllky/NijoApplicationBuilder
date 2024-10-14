@@ -9,6 +9,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.10" />
     <PackageReference Include="Microsoft.Build" Version="17.11.4" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.8" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
@@ -109,6 +110,8 @@
     <EmbeddedResource Include="$(ProjectDir)..\Nijo.ApplicationTemplate\webapi\Properties\**\*.*" LinkBase="テンプレ\webapi\Properties\" />
 
     <EmbeddedResource Include="$(ProjectDir)..\Nijo.IntegrationTest\DataPatterns\012_スカラメンバー網羅.xml" LinkBase="NewProjectDefaultXml" />
+
+    <EmbeddedResource Include="$(ProjectDir)..\Xml設定GUI\dist\index.html" LinkBase="GuiWebAppHtml" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />

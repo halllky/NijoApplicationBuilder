@@ -18,6 +18,8 @@ using Microsoft.Build.Evaluation;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Nijo.Parts.WebServer;
+using Nijo.Runtime;
+using System.Security.Policy;
 
 [assembly: InternalsVisibleTo("Nijo.IntegrationTest")]
 
@@ -87,6 +89,14 @@ namespace Nijo {
             var noBuild = new Option<bool>(
                 ["-n", "--no-build"],
                 description: "デバッグ開始時にコード自動生成をせず、アプリケーションの起動のみ行います。");
+
+            var port = new Option<int?>(
+                ["-p", "--port"],
+                description: "スキーマ定義編集アプリケーションが実行されるポートを明示的に指定します。");
+
+            var noBrowser = new Option<bool>(
+                ["-n", "--no-browser"],
+                description: "スキーマ定義編集アプリケーションの開始時に自動的にブラウザを開くのを防ぎます。");
 
             // コマンド定義
             var create = new Command(name: "create", description: "新しいプロジェクトを作成します。") { verbose, applicationName, keepTempIferror };
@@ -178,6 +188,31 @@ namespace Nijo {
                 }
             }, verbose, path, mermaid);
             rootCommand.AddCommand(dump);
+
+            var ui = new Command(
+                name: "ui",
+                description: $"スキーマ定義をGUIで編集します。")
+                { path, port, noBrowser };
+            ui.SetHandler(async (path, port, noBrowser) => {
+                var project = GeneratedProject.Open(path, serviceProvider);
+                var editor = new NijoUi(project);
+                var app = editor.CreateApp();
+
+                var url = $"https://localhost:{port ?? 5000}";
+
+                // ブラウザを開く
+                if (!noBrowser) {
+                    Process.Start(new ProcessStartInfo {
+                        FileName = url,
+                        UseShellExecute = true,
+                    });
+                }
+
+                // アプリケーション起動
+                await app.RunAsync(url);
+
+            }, path, port, noBrowser);
+            rootCommand.AddCommand(ui);
 
             return rootCommand;
         }

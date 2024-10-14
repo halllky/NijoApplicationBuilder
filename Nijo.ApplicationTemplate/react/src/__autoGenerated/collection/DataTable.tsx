@@ -81,7 +81,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     columnSizeVars,
     getColWidth,
     ResizeHandler,
-  } = useColumnResizing(api)
+  } = useColumnResizing(api, columns)
 
   const {
     onCopy,
@@ -168,11 +168,16 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
                 {headerGroup.headers.map((header, thX) => (
                   <th key={header.id}
                     colSpan={header.colSpan}
-                    className="relative overflow-hidden whitespace-nowrap px-1 py-0 text-start bg-color-2 text-color-7 text-sm border-b border-color-3"
+                    className="relative bg-color-2 text-color-7 border-b border-color-3"
                     style={getThStyle(false, thX, thY)}>
-                    {!header.isPlaceholder && RT.flexRender(
-                      header.column.columnDef.header,
-                      header.getContext())}
+                    <div
+                      className="absolute inset-0 p-px text-sm text-start whitespace-nowrap text-ellipsis overflow-hidden"
+                      title={typeof header.column.columnDef.header === 'string' ? header.column.columnDef.header : undefined}
+                    >
+                      {!header.isPlaceholder && RT.flexRender(
+                        header.column.columnDef.header,
+                        header.getContext())}
+                    </div>
                     {tableWidth !== 'fit' && (
                       <ResizeHandler header={header} />
                     )}

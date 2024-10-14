@@ -11,6 +11,9 @@ using System.Threading.Tasks;
 
 namespace Nijo.Core.AggregateMemberTypes {
     internal class Boolean : IAggregateMemberType {
+        public string GetUiDisplayName() => "真偽値";
+        public string GetHelpText() => $"真偽値。";
+
         public string GetCSharpTypeName() => "bool";
         public string GetTypeScriptTypeName() => "boolean";
 

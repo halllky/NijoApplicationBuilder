@@ -3,6 +3,12 @@
     "Nijo": {
       "commandName": "Project",
       "hotReloadEnabled": true
+    },
+    "nijo ui": {
+      "commandName": "Project",
+      "commandLineArgs": "ui --port 8081 --no-browser",
+      "workingDirectory": "..\\自動テストで作成されたプロジェクト",
+      "hotReloadEnabled": true
     }
   }
 }

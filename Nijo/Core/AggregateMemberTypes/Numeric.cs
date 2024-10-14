@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Nijo.Core.AggregateMemberTypes {
     internal class Numeric : SchalarMemberType {
+        public override string GetUiDisplayName() => "実数";
+        public override string GetHelpText() => $"実数。";
+
         public override string GetCSharpTypeName() => "decimal";
         public override string GetTypeScriptTypeName() => "number";
 

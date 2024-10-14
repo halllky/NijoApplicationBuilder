@@ -11,6 +11,14 @@ using System.Threading.Tasks;
 
 namespace Nijo.Core.AggregateMemberTypes {
     internal class VariationSwitch : IAggregateMemberType {
+        public string GetUiDisplayName() => "VariationSwitch";
+        public string GetHelpText() {
+            return $"ある親集約がその子要素にバリエーションを持つとき、親集約側に定義される属性。" +
+                $"そのデータがどのバリエーションなのかを表す整数属性。" +
+                $"例えば「1:正規雇用」「2:非正規雇用」のようなバリエーションがあるとき、" +
+                $"データベースの親集約のテーブルには'1'または'2'の数値が登録されますが、これのことです。";
+        }
+
         internal VariationSwitch(VariationGroup<Aggregate> variationGroup) {
             _variationGroup = variationGroup;
         }

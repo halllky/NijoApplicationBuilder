@@ -12,6 +12,16 @@ using System.Threading.Tasks;
 
 namespace Nijo.Core {
     internal interface IAggregateMemberType {
+        /// <summary>
+        /// nijo ui の画面上に表示される名前
+        /// </summary>
+        string GetUiDisplayName();
+        /// <summary>
+        /// 説明文。このメンバー型がどういった種類のデータを表すのか、
+        /// 代表的な挙動や特徴的な挙動はどういったものなのかを記載してください。
+        /// </summary>
+        string GetHelpText();
+
         string GetCSharpTypeName();
         string GetTypeScriptTypeName();
 
@@ -89,6 +99,8 @@ namespace Nijo.Core {
     /// 文字列系メンバー型
     /// </summary>
     public abstract class StringMemberType : IAggregateMemberType {
+        public abstract string GetUiDisplayName();
+        public abstract string GetHelpText();
 
         /// <summary>
         /// 検索時の挙動。
@@ -225,6 +237,8 @@ namespace Nijo.Core {
     /// 数値や日付など連続した量をもつ値
     /// </summary>
     public abstract class SchalarMemberType : IAggregateMemberType {
+        public abstract string GetUiDisplayName();
+        public abstract string GetHelpText();
 
         public virtual void GenerateCode(CodeRenderingContext context) { }
 
