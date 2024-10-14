@@ -66,8 +66,7 @@ export const useBackend = () => {
       body: JSON.stringify({ aggregates })
     })
     if (!response.ok) {
-      const validationErrors = await response.json() as string[]
-      msg(m => m.warn(...validationErrors))
+      toast(m => m.warn('保存できませんでした。'))
       return false
     }
     toast(m => m.info('保存しました。'))

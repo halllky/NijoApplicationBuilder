@@ -134,6 +134,8 @@ function App() {
   const handleSave = useEvent(async () => {
     if (await save(fields)) {
       await reload()
+    } else {
+      executeValidate()
     }
   })
 

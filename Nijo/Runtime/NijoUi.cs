@@ -106,17 +106,18 @@ namespace Nijo.Runtime {
                     var collection = await ToAggregateOrMemberList(context.Request.Body);
                     var errors = collection.CollectVaridationErrors().ToArray();
                     if (errors.Length > 0) {
+                        context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                         context.Response.ContentType = "application/json";
                         var errorsJson = ValidationError.ToErrorObjectJson(errors);
                         await context.Response.WriteAsync(errorsJson);
                         return;
                     }
+                    var document = collection.ToXDocument(_project.BuildSchema().ApplicationName);
                     using var writer = XmlWriter.Create(_project.SchemaXmlPath, new() {
                         Indent = true,
                         Encoding = new UTF8Encoding(false, false),
                         NewLineChars = "\n",
                     });
-                    var document = collection.ToXDocument(_project.BuildSchema().ApplicationName);
                     document.Save(writer);
                     context.Response.StatusCode = (int)HttpStatusCode.OK;
 
