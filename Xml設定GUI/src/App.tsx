@@ -11,7 +11,7 @@ import { useColumnDef } from './useColumnDef'
 import { useTypeCombo } from './useTypeCombo'
 import { useFlattenArrayTree } from './useFlattenArrayTree'
 import { useAppSetting } from './useAppSetting'
-import { ValidationErrorContextProvider } from './useValidationError'
+import { useValidationErrorContext, ValidationErrorContextProvider } from './useValidationError'
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 
 function App() {
@@ -39,7 +39,7 @@ function App() {
   const gridRef = React.useRef<Layout.DataTableRef<GridRow>>(null)
 
   // 選択中の行の情報
-  const [activeRowIndex, setActiveRowIndex] = React.useState<number>()
+  const [activeRowUniqueId, setActiveRowUniqueId] = React.useState<GridRow['uniqueId']>()
   const [activeRowTreeInfo, setActiveRowTreeInfo] = React.useState<{ member: string, type: string }[]>([])
   const handleActiveRowChanged = useEvent((activeRow?: { getRow: () => GridRow, rowIndex: number }) => {
     if (activeRow) {
@@ -49,10 +49,10 @@ function App() {
         const type = typeCombo.typeComboSource.find(t => t.key === row.type)?.displayName ?? row.type
         return { member: row.displayName ?? '', type: type ? `（${type}）` : '' }
       }))
-      setActiveRowIndex(activeRow.rowIndex)
+      setActiveRowUniqueId(row.uniqueId)
     } else {
       setActiveRowTreeInfo([])
-      setActiveRowIndex(undefined)
+      setActiveRowUniqueId(undefined)
     }
   })
 
@@ -185,11 +185,30 @@ function App() {
             columns={columns}
             onChangeRow={handleUpdate}
             onActiveRowChanged={handleActiveRowChanged}
+            showActiveCellBorderAlways
             className="flex-1"
           />
         </Panel>
+
+        <PanelResizeHandle className="h-2" />
+
+        <Panel defaultSize={10} collapsible>
+          <ActiveRowErrors activeRowUniqueId={activeRowUniqueId} />
+        </Panel>
       </PanelGroup>
     </ValidationErrorContextProvider >
+  )
+}
+
+const ActiveRowErrors = ({ activeRowUniqueId }: { activeRowUniqueId: GridRow['uniqueId'] | undefined }) => {
+  const errors = useValidationErrorContext(activeRowUniqueId)
+
+  return (
+    <ul className="h-full w-full flex flex-col overflow-y-auto bg-color-gutter">
+      {errors?.map((err, ix) => (
+        <li key={ix} className="text-sm text-orange-600">{err}</li>
+      ))}
+    </ul>
   )
 }
 

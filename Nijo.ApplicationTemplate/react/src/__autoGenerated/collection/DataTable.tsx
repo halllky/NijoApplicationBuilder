@@ -18,6 +18,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     onChangeRow,
     className,
     hideHeader,
+    showActiveCellBorderAlways,
     tableWidth,
   } = props
 
@@ -216,7 +217,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
       {/* 4remは ヘッダ2行 + ボディ1行 + スクロールバー の縦幅のおおよその合計。 */}
       <div className="h-[calc(100%-4rem)]"></div>
 
-      <ActiveCellBorder hidden={!isActive || editing} {...activeCellBorderProps} />
+      <ActiveCellBorder hidden={!showActiveCellBorderAlways && (!isActive || editing)} {...activeCellBorderProps} />
 
       <CellEditor
         ref={cellEditorRef}

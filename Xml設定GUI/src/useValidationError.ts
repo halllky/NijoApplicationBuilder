@@ -7,6 +7,7 @@ export const ValidationErrorContextProvider = ValidationErrorContext.Provider
 
 /** エラーメッセージを undefind または string[] のいずれかで取得できるフック */
 export const useValidationErrorContext = (
+  /** 未指定の場合、戻り値は常にundefined */
   uniqueId: string | undefined,
   /** 未指定の場合は該当のユニークIDに対するエラーすべてを列挙する */
   key?: ValidationErrorKey

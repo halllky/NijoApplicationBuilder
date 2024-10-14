@@ -293,11 +293,18 @@ namespace Nijo.Runtime {
                     } else if (node.Type.StartsWith(NijoXmlElement.REFTO_PREFIX)) {
                         // ref-to
                         var uniqueId = node.Type.Substring(NijoXmlElement.REFTO_PREFIX.Length);
-                        if (!_list.Any(n => n.UniqueId == uniqueId)) {
+                        var refTo = _list.SingleOrDefault(n => n.UniqueId == uniqueId);
+                        if (refTo == null) {
                             yield return new ValidationError {
                                 Node = node,
                                 Key = ValidationError.ERR_TO_TYPE,
                                 Message = "参照先に指定されている項目が見つかりません。",
+                            };
+                        } else if (refTo.GetNodeType()?.HasFlag(E_NodeType.Aggregate) != true) {
+                            yield return new ValidationError {
+                                Node = node,
+                                Key = ValidationError.ERR_TO_TYPE,
+                                Message = "参照先に指定されている項目はref-toの参照先として使えません。",
                             };
                         }
                     } else if (node.Type.StartsWith(NijoXmlElement.ENUM_PREFIX)) {
@@ -405,14 +412,19 @@ namespace Nijo.Runtime {
                  *
                  * {
                  *   "x34jrlfst": {
-                 *     "type": ["タイプを指定してください。"],
-                 *     "dbName": ["DB名に記号は使えません。", "DB名が長すぎます。"]
+                 *     "type": ["【種類】タイプを指定してください。"],
+                 *     "dbName": ["【DB名】DB名に記号は使えません。", "【DB名】DB名が長すぎます。"]
                  *   },
                  *   "xh6h5jlhd": {
                  *     "-": ["キーを指定してください。"]
                  *   }
                  * }
                  */
+                var keyNameDict = EnumerateOptionalAttributes().ToDictionary(x => x.Key, x => x.DisplayName);
+                keyNameDict[ERR_TO_TYPE] = "種類";
+                keyNameDict[ERR_TO_TYPE_DETAIL] = "種類";
+                keyNameDict[ERR_TO_COMMENT] = "コメント";
+
                 var rootObject = new JsonObject();
                 foreach (var group in errors.GroupBy(err => err.Node.UniqueId)) {
                     var uniqueId = group.Key;
@@ -421,7 +433,10 @@ namespace Nijo.Runtime {
                     foreach (var errorsByKey in group.GroupBy(g => g.Key)) {
                         var errorArray = new JsonArray();
                         foreach (var error in errorsByKey) {
-                            errorArray.Add(error.Message);
+                            var message = errorsByKey.Key == ERR_TO_ROW
+                                ? error.Message
+                                : $"【{keyNameDict[error.Key]}】{error.Message}";
+                            errorArray.Add(message);
                         }
                         errorObjectByUniqueId[errorsByKey.Key] = errorArray;
                     }
@@ -528,19 +543,28 @@ namespace Nijo.Runtime {
         /// <summary>
         /// <see cref="AggregateOrMember.Type"/> の種類
         /// </summary>
+        [Flags]
         private enum E_NodeType {
+            /// <summary>集約</summary>
+            Aggregate = 0b0001,
+            /// <summary>集約メンバー</summary>
+            AggregateMember = 0b0010,
+
+            // ------------------------------------------
+
             /// <summary>ルート集約</summary>
-            RootAggregate,
+            RootAggregate = 0b01001,
             /// <summary>Child, Children, VariationItem</summary>
-            DescendantAggregate,
+            DescendantAggregate = 0b00101,
+
             /// <summary>ref-to</summary>
-            Ref,
+            Ref = 0b0000110,
             /// <summary>列挙体</summary>
-            Enum,
+            Enum = 0b0001010,
             /// <summary>バリエーションのコンテナの方（VariationItemでない方）</summary>
-            Variation,
+            Variation = 0b0010010,
             /// <summary>上記以外</summary>
-            SchalarMember,
+            SchalarMember = 0b0100010,
         }
         private class OptionalAttributeValue {
             [JsonPropertyName("key")]

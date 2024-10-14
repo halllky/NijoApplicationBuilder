@@ -14,6 +14,7 @@ export type DataTableProps<T> = {
   onActiveRowChanged?: (activeRow: { getRow: () => T, rowIndex: number } | undefined) => void
   columns?: DataTableColumn<T>[]
   hideHeader?: boolean
+  showActiveCellBorderAlways?: boolean
   tableWidth?: 'fit' | 'dyanmic'
   className?: string
 }
