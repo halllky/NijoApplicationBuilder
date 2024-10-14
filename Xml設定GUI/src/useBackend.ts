@@ -6,6 +6,7 @@ import { AggregateOrMember, getEmptyPageState, GridRow, PageState } from './type
 /** nijo.exe 側との通信を行います。 */
 export const useBackend = () => {
   const [, msg] = Util.useMsgContext()
+  const [, toast] = Util.useToastContext()
 
   // 画面表示直後の一瞬のみfalse。通信準備完了したらtrue
   const [ready, setReady] = React.useState(false)
@@ -60,6 +61,21 @@ export const useBackend = () => {
     }
   })
 
+  // 保存
+  const save = useEvent(async (aggregates: GridRow[]): Promise<boolean> => {
+    const response = await fetch(`${backendDomain ?? ''}/save`, {
+      method: 'POST',
+      body: JSON.stringify({ aggregates })
+    })
+    if (!response.ok) {
+      const validationErrors = await response.json() as string[]
+      msg(m => m.warn(...validationErrors))
+      return false
+    }
+    toast(m => m.info('保存しました。'))
+    return true
+  })
+
   return {
     /** 画面初期表示時のみfalse。通信準備完了したらtrue */
     ready,
@@ -71,6 +87,8 @@ export const useBackend = () => {
     load,
     /** 入力検証 */
     validate,
+    /** 保存 */
+    save,
   }
 }
 

@@ -8,8 +8,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
+using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
+using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
 
@@ -83,23 +87,13 @@ namespace Nijo.Runtime {
 
             // 編集中のバリデーション
             app.MapPost("/validate", async context => {
-                using var sr = new StreamReader(context.Request.Body);
-                var json = await sr.ReadToEndAsync();
-                var obj = json.ParseAsJson<ClientRequest>();
-
                 try {
-                    // ビルドしてエラーを収集してクライアント側に返却
-                    var collection = new AggregateOrMemberList(obj.Aggregates ?? []);
-                    var elements = collection
-                        .RootAggregates()
-                        .Select(a => NijoXmlElement.FromAbstract(a, collection));
-                    var document = NijoXmlElement.ToXDocument(elements, "Root");
+                    var document = await ToXDocumentAsync(context.Request.Body);
                     var schema = new AppSchemaXml(document);
                     var builder = new AppSchemaBuilder();
                     if (schema.ConfigureBuilder(builder, out var errors)) {
                         builder.TryBuild(out var _, out errors);
                     }
-
                     context.Response.ContentType = "application/json";
                     var errorsJson = errors.ConvertToJson();
                     await context.Response.WriteAsync(errorsJson);
@@ -110,7 +104,56 @@ namespace Nijo.Runtime {
                 }
             });
 
+            app.MapPost("/save", async context => {
+                try {
+                    var document = await ToXDocumentAsync(context.Request.Body);
+                    var schema = new AppSchemaXml(document);
+                    var builder = new AppSchemaBuilder();
+                    if (!schema.ConfigureBuilder(builder, out var errors)) {
+                        context.Response.ContentType = "application/json";
+                        var errorsJson = errors.ConvertToJson();
+                        await context.Response.WriteAsync(errorsJson);
+                        return;
+                    }
+                    if (!builder.TryBuild(out var appSchema, out errors)) {
+                        context.Response.ContentType = "application/json";
+                        var errorsJson = errors.ConvertToJson();
+                        await context.Response.WriteAsync(errorsJson);
+                        return;
+                    }
+                    using var writer = XmlWriter.Create(_project.SchemaXmlPath, new() {
+                        Indent = true,
+                        Encoding = new UTF8Encoding(false, false),
+                        NewLineChars = "\n",
+                    });
+                    document.Save(writer);
+                    context.Response.StatusCode = (int)HttpStatusCode.OK;
+
+                } catch (Exception ex) {
+                    context.Response.ContentType = "application/json";
+                    context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                    await context.Response.WriteAsync(new[] { ex.Message }.ConvertToJson());
+                }
+            });
+
             return app;
+        }
+
+        /// <summary>
+        /// HTTPリクエストボディをXDocumentに
+        /// </summary>
+        /// <returns></returns>
+        private async Task<XDocument> ToXDocumentAsync(Stream httpRequestBody) {
+            using var sr = new StreamReader(httpRequestBody);
+            var json = await sr.ReadToEndAsync();
+            var obj = json.ParseAsJson<ClientRequest>();
+
+            var collection = new AggregateOrMemberList(obj.Aggregates ?? []);
+            var elements = collection
+                .RootAggregates()
+                .Select(a => NijoXmlElement.FromAbstract(a, collection));
+            var document = NijoXmlElement.ToXDocument(elements, _project.BuildSchema().ApplicationName);
+            return document;
         }
 
         /// <summary>
@@ -899,9 +942,16 @@ namespace Nijo.Runtime {
                 attrs.RemoveAll(a => a.Key == null || !optionDefs.ContainsKey(a.Key));
 
                 // -------------------------------------
-                var comment = _xElement.PreviousNode is XComment xComment
-                    ? xComment.Value
-                    : string.Empty;
+                // コメント
+                var comment = new StringBuilder();
+                var currentElement = (XNode?)_xElement;
+                while (currentElement?.PreviousNode is XComment xComment) {
+                    var value = comment.Length == 0
+                        ? xComment.Value
+                        : (xComment.Value + Environment.NewLine);
+                    comment.Insert(0, value);
+                    currentElement = currentElement.PreviousNode;
+                }
 
                 yield return new AggregateOrMember {
                     Depth = depth,
@@ -910,10 +960,11 @@ namespace Nijo.Runtime {
                     Type = type,
                     TypeDetail = typeDetail,
                     AttrValues = attrs,
-                    Comment = comment,
+                    Comment = comment.ToString(),
                 };
 
                 // -------------------------------------
+                // コメント
                 var descendants = _xElement
                     .Elements()
                     .Where(el => el.NodeType != System.Xml.XmlNodeType.Comment)
@@ -930,6 +981,8 @@ namespace Nijo.Runtime {
 
             public static XDocument ToXDocument(IEnumerable<NijoXmlElement> nijoXmlElements, string rootNodeName) {
                 var doc = new XDocument();
+                doc.Declaration = new XDeclaration("1.0", "utf-8", null);
+
                 var root = new XElement(rootNodeName);
                 foreach (var el in nijoXmlElements) {
                     root.Add(el._xElement);
