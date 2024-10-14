@@ -85,6 +85,28 @@ function App() {
     if (selectedRows !== undefined) remove(selectedRows)
   })
 
+  // インデント上げ下げ
+  const handleIncreaseIndent = useEvent(() => {
+    const selectedRows = gridRef.current?.getSelectedRows()
+    if (!selectedRows) return
+    for (const { rowIndex, row } of selectedRows) {
+      update(rowIndex, { ...row, depth: Math.max(0, row.depth - 1) })
+    }
+    setTimeout(() => {
+      executeValidate()
+    }, 100)
+  })
+  const handleDecreaseIndent = useEvent(() => {
+    const selectedRows = gridRef.current?.getSelectedRows()
+    if (!selectedRows) return
+    for (const { rowIndex, row } of selectedRows) {
+      update(rowIndex, { ...row, depth: row.depth + 1 })
+    }
+    setTimeout(() => {
+      executeValidate()
+    }, 100)
+  })
+
   // 行編集
   const handleUpdate = useEvent((rowIndex: number, row: GridRow) => {
     update(rowIndex, row)
@@ -128,6 +150,9 @@ function App() {
             <Input.IconButton onClick={insertRows} outline mini>挿入</Input.IconButton>
             <Input.IconButton onClick={insertRowsBelow} outline mini>下挿入</Input.IconButton>
             <Input.IconButton onClick={removeRows} outline mini>行削除</Input.IconButton>
+            <div className="basis-4"></div>
+            <Input.IconButton onClick={handleIncreaseIndent} outline mini>&lt;&lt;インデント上げ</Input.IconButton>
+            <Input.IconButton onClick={handleDecreaseIndent} outline mini>インデント下げ&gt;&gt;</Input.IconButton>
             <div className="flex-1"></div>
             <Input.IconButton onClick={reload} icon={Icon.ArrowPathIcon} outline mini>再読み込み</Input.IconButton>
             <Input.IconButton onClick={executeValidate} icon={Icon.CheckIcon} outline mini>CHECK</Input.IconButton>
