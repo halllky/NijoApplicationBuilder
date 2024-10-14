@@ -126,7 +126,4 @@
       </Properties>
     </MonoDevelop>
   </ProjectExtensions>
-  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-    <Exec Command="call &quot;$(ProjectDir)pre-build.bat&quot;" />
-  </Target>
 </Project>
