@@ -8,6 +8,7 @@ import { AggregateOrMember, GridRow, PageState } from './types'
 import { useBackend } from './useBackend'
 import { useColumnDef } from './useColumnDef'
 import { useTypeCombo } from './useTypeCombo'
+import { useFlattenArrayTree } from './useFlattenArrayTree'
 
 function App() {
 
@@ -15,22 +16,14 @@ function App() {
   const { ready, load, validate, backendDomain, onChangBackendDomain } = useBackend()
   const { registerEx, getValues, reset, control } = Util.useFormEx<PageState>({})
   const { fields, update } = useFieldArray({ name: 'aggregates', control })
-
-  // データ構造の変換を行う。
-  // 集約データは、サーバー上では入れ子のツリー構造。
-  // クライアント側ではグリッドで取り回ししやすいように深さのプロパティをもったフラットな配列。
-  const flattenGridRows = React.useMemo((): GridRow[] => {
-    const rootNodes = Util.toTree(fields as PageState['aggregates'] ?? [], {
-      getId: agg => agg.uniqueId,
-      getChildren: agg => agg.children,
-    })
-    return Util.flatten(rootNodes)
-  }, [fields])
+  const fieldsRef = React.useRef<AggregateOrMember[]>()
+  fieldsRef.current = fields
+  const tree = useFlattenArrayTree(fieldsRef)
 
   // データ型の種類
   const editingXmlFilePath = useWatch({ name: 'editingXmlFilePath', control })
   const aggregateOrMemberTypes = useWatch({ name: 'aggregateOrMemberTypes', control })
-  const typeCombo = useTypeCombo(aggregateOrMemberTypes, flattenGridRows)
+  const typeCombo = useTypeCombo(aggregateOrMemberTypes, fields, tree)
 
   // 列定義
   const optionalAttributes = useWatch({ name: 'optionalAttributes', control })
@@ -43,13 +36,10 @@ function App() {
   const handleActiveRowChanged = useEvent((activeRow?: { getRow: () => GridRow, rowIndex: number }) => {
     if (activeRow) {
       const row = activeRow.getRow()
-      const ancestorsAndRow = [...Util.getAncestors(row), row]
+      const ancestorsAndRow = [...tree.getAncestors(row), row]
       setActiveRowInfo(ancestorsAndRow.map(row => {
-        const type = typeCombo.typeComboSource.find(t => t.key === row.item.type)?.displayName ?? row.item.type
-        return {
-          member: row.item.displayName ?? '',
-          type: type ? `（${type}）` : '',
-        }
+        const type = typeCombo.typeComboSource.find(t => t.key === row.type)?.displayName ?? row.type
+        return { member: row.displayName ?? '', type: type ? `（${type}）` : '' }
       }))
     } else {
       setActiveRowInfo([])
@@ -65,23 +55,7 @@ function App() {
   })
 
   const executeValidate = useEvent(async () => {
-    const aggregates = restoreFlattenTree(flattenGridRows)
-    await validate(aggregates)
-  })
-
-  const handleUpdate = useEvent((rowIndex: number, row: GridRow) => {
-    let rootNode: GridRow
-    if (row.parent) {
-      // 更新されたのが子孫要素の場合
-      const indexInSiblings = row.parent.children.indexOf(row)
-      row.parent.children.splice(indexInSiblings, 1, row)
-      rootNode = Util.getAncestors(row)[0]
-    } else {
-      // 更新されたのがルート要素の場合
-      rootNode = row
-    }
-    const rootNodeIndex = (fields as PageState['aggregates'] ?? []).indexOf(rootNode.item)
-    update(rootNodeIndex, { ...rootNode.item })
+    await validate(fields)
   })
 
   React.useEffect(() => {
@@ -122,9 +96,9 @@ function App() {
       {/* グリッド */}
       <Layout.DataTable
         ref={gridRef}
-        data={flattenGridRows}
+        data={fields}
         columns={columns}
-        onChangeRow={handleUpdate}
+        onChangeRow={update}
         onActiveRowChanged={handleActiveRowChanged}
         className="flex-1"
       />
@@ -147,37 +121,3 @@ const AppAndContextProviders = () => {
 }
 
 export default AppAndContextProviders
-
-
-/** Util.toTree の逆の操作 */
-const restoreFlattenTree = (flattenGridRows: GridRow[]): AggregateOrMember[] => {
-  // depthを正として親を決める。
-  // 並び順でより上の方にある行のうち、直近のdepthが浅い行が親。
-  const rootAggregates: AggregateOrMember[] = []
-  const rowAndChildren = new Map(flattenGridRows.map(row => [row.item, [] as AggregateOrMember[]]))
-  for (let rowIndex = flattenGridRows.length - 1; rowIndex >= 0; rowIndex--) {
-    const row = flattenGridRows[rowIndex]
-    let currentIndex = rowIndex - 1
-    while (true) {
-      if (currentIndex < 0) {
-        rootAggregates.push(row.item)
-        break
-      }
-      const maybeParent = flattenGridRows[currentIndex]
-      if (maybeParent.depth < row.depth) {
-        rowAndChildren.get(maybeParent.item)?.push(row.item)
-        break
-      }
-      currentIndex--
-    }
-  }
-
-  // 決まった親子関係をもとにオブジェクトを組み立てる
-  const set = (row: AggregateOrMember): AggregateOrMember => {
-    const children = rowAndChildren.get(row)?.reverse().map(child => set(child))
-    return { ...row, children }
-  }
-  return rootAggregates
-    .reverse()
-    .map(row => set(row))
-}

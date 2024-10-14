@@ -13,9 +13,10 @@ export type PageState = {
   /** オプショナル属性定義 */
   optionalAttributes: OptionalAttributeDef[] | undefined
 }
+
 export const getEmptyPageState = (): PageState => ({
   aggregateOrMemberTypes: undefined,
-  aggregates: undefined,
+  aggregates: [],
   editingXmlFilePath: undefined,
   optionalAttributes: undefined,
   projectRoot: undefined,
@@ -28,10 +29,12 @@ export type ClientRequest = {
 }
 
 /** 集約またはメンバー。グリッド行表示に特化した形 */
-export type GridRow = Util.TreeNode<AggregateOrMember>
+export type GridRow = AggregateOrMember
 
 /** 集約または集約メンバー */
 export type AggregateOrMember = {
+  /** ツリー構造上での深さ */
+  depth: number
   /** UI上で取りまわすための一時的に付与されるID。既存データはサーバー上で、新規データはクライアント側で発番される。 */
   uniqueId: string
   /** 集約または集約メンバーの画面表示名 */
@@ -42,8 +45,6 @@ export type AggregateOrMember = {
   typeDetail: string | undefined
   /** オプショナル属性の値 */
   attrValues: OptionalAttributeValue[] | undefined
-  /** 直近の子要素。計算コストの都合で画面表示時と保存時のみ更新される想定 */
-  children: AggregateOrMember[] | undefined
   /** 備考 */
   comment: string | undefined
 }

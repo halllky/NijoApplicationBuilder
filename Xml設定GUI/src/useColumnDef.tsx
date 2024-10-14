@@ -18,15 +18,15 @@ export const useColumnDef = (
     const displayNameColumn: Layout.DataTableColumn<GridRow> = {
       id: 'col-A',
       ...textCell(
-        row => row.item.displayName ?? '',
-        (row, value) => { row.item.displayName = value },
+        row => row.displayName ?? '',
+        (row, value) => { row.displayName = value },
       ),
       defaultWidthPx: 240,
       render: row => (
         <div className="flex overflow-x-hidden">
           <div style={{ flexBasis: row.depth * 24 }}></div>
           <CellText className="flex-1">
-            {row.item.displayName}
+            {row.displayName}
           </CellText>
         </div>
       ),
@@ -36,22 +36,22 @@ export const useColumnDef = (
     // 集約またはメンバーの型
     const setValueTypeCell = (row: GridRow, value: unknown) => {
       if (typeComboSource?.some(t => t.key === value)) {
-        row.item.type = value as AggregateOrMemberTypeKey
+        row.type = value as AggregateOrMemberTypeKey
       } else {
-        row.item.type = undefined
+        row.type = undefined
       }
     }
     const typeColumns: Layout.DataTableColumn<GridRow> = {
       id: 'col-B',
       header: '種類',
-      onClipboardCopy: row => row.item.type ?? '',
+      onClipboardCopy: row => row.type ?? '',
       render: row => (
-        <CellText>{typeComboSource?.find(t => t.key === row.item.type)?.displayName ?? row.item.type}</CellText>
+        <CellText>{typeComboSource?.find(t => t.key === row.type)?.displayName ?? row.type}</CellText>
       ),
       editSetting: {
         type: 'combo',
         comboProps: typeComboProps,
-        onStartEditing: row => row.item.type,
+        onStartEditing: row => row.type,
         onEndEditing: setValueTypeCell,
         onClipboardPaste: setValueTypeCell,
       },
@@ -69,11 +69,11 @@ export const useColumnDef = (
         // 真偽値型のオプション
         const setBooleanValue = (row: GridRow, key: OptionalAttributeKey, value: boolean) => {
           const objValue = { key: key, value: '' }
-          if (!row.item.attrValues) {
-            row.item.attrValues = value ? [objValue] : []
+          if (!row.attrValues) {
+            row.attrValues = value ? [objValue] : []
           } else {
-            const ix = row.item.attrValues?.findIndex(v => v.key === key)
-            const arr = [...row.item.attrValues]
+            const ix = row.attrValues?.findIndex(v => v.key === key)
+            const arr = [...row.attrValues]
             if (value) {
               if (ix === -1) {
                 arr.push(objValue)
@@ -83,12 +83,12 @@ export const useColumnDef = (
             } else if (!value && ix !== -1) {
               arr.splice(ix, 1)
             }
-            row.item.attrValues = arr
+            row.attrValues = arr
           }
         }
         const editSetting: Layout.ColumnEditSetting<GridRow, { key: 'T' | 'F', text: string }> = {
           type: 'combo',
-          onStartEditing: row => row.item.attrValues?.some(v => v.key === def.key)
+          onStartEditing: row => row.attrValues?.some(v => v.key === def.key)
             ? { key: 'T', text: '✓' }
             : { key: 'F', text: '' },
           onEndEditing: (row, value) => {
@@ -114,10 +114,10 @@ export const useColumnDef = (
           id: `col-${i + 2}`,
           header: def.displayName,
           defaultWidthPx: 60,
-          onClipboardCopy: row => row.item.attrValues?.some(v => v.key === def.key) ? 'true' : '',
+          onClipboardCopy: row => row.attrValues?.some(v => v.key === def.key) ? 'true' : '',
           render: row => (
             <CellText className="px-1">
-              {row.item.attrValues?.some(v => v.key === def.key) ? '✓' : ''}
+              {row.attrValues?.some(v => v.key === def.key) ? '✓' : ''}
             </CellText>
           ),
           editSetting: editSetting as Layout.ColumnEditSetting<GridRow, unknown>,
@@ -126,11 +126,11 @@ export const useColumnDef = (
       }
 
       const setStringValue = (row: GridRow, key: OptionalAttributeKey, value: string) => {
-        if (!row.item.attrValues) {
-          row.item.attrValues = value ? [{ key, value }] : []
+        if (!row.attrValues) {
+          row.attrValues = value ? [{ key, value }] : []
         } else {
-          const ix = row.item.attrValues?.findIndex(v => v.key === key)
-          const arr = [...row.item.attrValues]
+          const ix = row.attrValues?.findIndex(v => v.key === key)
+          const arr = [...row.attrValues]
           if (value) {
             if (ix === -1) {
               arr.push({ key, value })
@@ -140,7 +140,7 @@ export const useColumnDef = (
           } else if (!value && ix !== -1) {
             arr.splice(ix, 1)
           }
-          row.item.attrValues = arr
+          row.attrValues = arr
         }
       }
 
@@ -149,15 +149,15 @@ export const useColumnDef = (
           id: `col-${i + 2}`,
           header: def.displayName,
           defaultWidthPx: 60,
-          onClipboardCopy: row => row.item.attrValues?.find(v => v.key === def.key)?.value ?? '',
+          onClipboardCopy: row => row.attrValues?.find(v => v.key === def.key)?.value ?? '',
           render: row => (
             <CellText className="px-1">
-              {row.item.attrValues?.find(v => v.key === def.key)?.value}
+              {row.attrValues?.find(v => v.key === def.key)?.value}
             </CellText>
           ),
           editSetting: {
             type: 'text',
-            onStartEditing: row => row.item.attrValues?.find(v => v.key === def.key)?.value,
+            onStartEditing: row => row.attrValues?.find(v => v.key === def.key)?.value,
             onEndEditing: (row, value) => {
               const num = value ? Number(Util.normalize(value)) : NaN
               setStringValue(row, def.key, isNaN(num) ? '' : num.toString())
@@ -174,15 +174,15 @@ export const useColumnDef = (
           id: `col-${i + 2}`,
           header: def.displayName,
           defaultWidthPx: 60,
-          onClipboardCopy: row => row.item.attrValues?.find(v => v.key === def.key)?.value ?? '',
+          onClipboardCopy: row => row.attrValues?.find(v => v.key === def.key)?.value ?? '',
           render: row => (
             <CellText className="px-1">
-              {row.item.attrValues?.find(v => v.key === def.key)?.value}
+              {row.attrValues?.find(v => v.key === def.key)?.value}
             </CellText>
           ),
           editSetting: {
             type: 'text',
-            onStartEditing: row => row.item.attrValues?.find(v => v.key === def.key)?.value,
+            onStartEditing: row => row.attrValues?.find(v => v.key === def.key)?.value,
             onEndEditing: (row, value) => {
               setStringValue(row, def.key, value ?? '')
             },
@@ -199,17 +199,17 @@ export const useColumnDef = (
       id: 'col-comment',
       header: '備考',
       defaultWidthPx: 240,
-      onClipboardCopy: row => row.item.comment ?? '',
+      onClipboardCopy: row => row.comment ?? '',
       render: row => (
         <CellText className="px-1">
-          {row.item.comment}
+          {row.comment}
         </CellText>
       ),
       editSetting: {
         type: 'multiline-text',
-        onStartEditing: row => row.item.comment,
-        onClipboardPaste: (row, text) => row.item.comment = text,
-        onEndEditing: (row, value) => row.item.comment = value,
+        onStartEditing: row => row.comment,
+        onClipboardPaste: (row, text) => row.comment = text,
+        onEndEditing: (row, value) => row.comment = value,
       },
     }
 

@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Nijo.Core;
 using Nijo.Util.DotnetEx;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -67,11 +68,11 @@ namespace Nijo.Runtime {
 
                 var rootXmlElements = _project.LoadSchemaXml().Root?.Elements() ?? [];
                 var rootElements = rootXmlElements.Select(el => new NijoXmlElement(el));
-                var rootAggregates = rootElements.Select(x => x.ToAbstract(typeDefs, optionDefs.ToDictionary(d => d.Key)));
+                var rootAggregates = rootElements.SelectMany(x => x.ToAbstract(typeDefs, optionDefs.ToDictionary(d => d.Key)));
 
                 context.Response.ContentType = "application/json";
-                await context.Response.WriteAsync(new PageState {
-                    // このプロパティ名やデータの内容はGUIアプリ側の PageStateFromServer の型と合わせる必要がある
+                await context.Response.WriteAsync(new InitialLoadData {
+                    // このプロパティ名やデータの内容はGUIアプリ側の InitialLoadData の型と合わせる必要がある
                     ProjectRoot = _project.SolutionRoot,
                     EditingXmlFilePath = _project.SchemaXmlPath,
                     Aggregates = rootAggregates.ToList(),
@@ -87,33 +88,11 @@ namespace Nijo.Runtime {
                 var obj = json.ParseAsJson<ClientRequest>();
 
                 try {
-                    // `ref-to:x120943871a23fsr1321` のようなユニークキー表記を `ref-to:親集約/子集約/孫集約` に変換する
-                    string? FindRefToPath(string uniqueId) {
-                        string? Find(AggregateOrMember aggregateOrMember) {
-                            if (aggregateOrMember.UniqueId == uniqueId) {
-                                return aggregateOrMember.GetPhysicalName();
-                            }
-                            foreach (var child in aggregateOrMember.Children ?? []) {
-                                var path = Find(child);
-                                if (path != null) return $"{aggregateOrMember.GetPhysicalName()}/{path}";
-                            }
-                            return null;
-                        }
-                        return (obj.Aggregates ?? [])
-                            .Select(Find)
-                            .FirstOrDefault(path => path != null);
-                    }
-
-                    // `enum:x120943871a23fsr1321` のようなユニークキー表記を `列挙体名` に変換する
-                    string? FindEnumName(string uniqueId) {
-                        return (obj.Aggregates ?? [])
-                            .FirstOrDefault(agg => agg.UniqueId == uniqueId
-                                                && agg.Type == "enum")
-                            ?.GetPhysicalName();
-                    }
-
                     // ビルドしてエラーを収集してクライアント側に返却
-                    var elements = (obj.Aggregates ?? []).Select(a => NijoXmlElement.FromAbstract(a, FindRefToPath, FindEnumName));
+                    var collection = new AggregateOrMemberList(obj.Aggregates ?? []);
+                    var elements = collection
+                        .RootAggregates()
+                        .Select(a => NijoXmlElement.FromAbstract(a, collection));
                     var document = NijoXmlElement.ToXDocument(elements, "Root");
                     var schema = new AppSchemaXml(document);
                     var builder = new AppSchemaBuilder();
@@ -134,11 +113,113 @@ namespace Nijo.Runtime {
             return app;
         }
 
+        /// <summary>
+        /// 深さの情報だけを持っている <see cref="AggregateOrMember"/> の一覧に対して、
+        /// 祖先や子孫を取得するといったツリー構造データに対する操作を提供します。
+        /// </summary>
+        private class AggregateOrMemberList : IReadOnlyList<AggregateOrMember> {
+            public AggregateOrMemberList(IList<AggregateOrMember> list) {
+                _list = list;
+            }
+            private readonly IList<AggregateOrMember> _list;
+
+            /// <summary>
+            /// ルート集約のみ列挙する
+            /// </summary>
+            public IEnumerable<AggregateOrMember> RootAggregates() {
+                foreach (var item in _list) {
+                    if (item.Depth == 0) yield return item;
+                }
+            }
+            /// <summary>
+            /// 直近の親を返す
+            /// </summary>
+            public AggregateOrMember? GetParent(AggregateOrMember agg) {
+                var currentIndex = _list.IndexOf(agg);
+                if (currentIndex == -1) throw new InvalidOperationException($"{agg}はこの一覧に属していません。");
+                while (true) {
+                    currentIndex--;
+                    if (currentIndex < 0) return null;
+
+                    var maybeParent = _list[currentIndex];
+                    if (maybeParent.Depth < agg.Depth) return maybeParent;
+                }
+            }
+            /// <summary>
+            /// 祖先を返す。より階層が浅いほうが先。
+            /// </summary>
+            public IEnumerable<AggregateOrMember> GetAncestors(AggregateOrMember agg) {
+                var ancestors = new List<AggregateOrMember>();
+                var currentDepth = agg.Depth;
+                var currentIndex = _list.IndexOf(agg);
+                if (currentIndex == -1) throw new InvalidOperationException($"{agg}はこの一覧に属していません。");
+                while (true) {
+                    if (currentDepth == 0) break;
+
+                    currentIndex--;
+                    if (currentIndex < 0) break;
+
+                    var maybeAncestor = _list[currentIndex];
+                    if (maybeAncestor.Depth < currentDepth) {
+                        ancestors.Add(maybeAncestor);
+                        currentDepth = maybeAncestor.Depth;
+                    }
+                }
+                ancestors.Reverse();
+                return ancestors;
+            }
+            /// <summary>
+            /// 直近の子を返す
+            /// </summary>
+            /// <param name="agg"></param>
+            /// <returns></returns>
+            public IEnumerable<AggregateOrMember> GetChildren(AggregateOrMember agg) {
+                var currentIndex = _list.IndexOf(agg);
+                if (currentIndex == -1) throw new InvalidOperationException($"{agg}はこの一覧に属していません。");
+                while (true) {
+                    currentIndex++;
+                    if (currentIndex >= _list.Count) yield break;
+
+                    var maybeChild = _list[currentIndex];
+                    if (maybeChild.Depth <= agg.Depth) yield break;
+
+                    if (GetParent(maybeChild) == agg) yield return maybeChild;
+                }
+            }
+            /// <summary>
+            /// 子孫を返す
+            /// </summary>
+            public IEnumerable<AggregateOrMember> GetDescendants(AggregateOrMember agg) {
+                var currentIndex = _list.IndexOf(agg);
+                if (currentIndex == -1) throw new InvalidOperationException($"{agg}はこの一覧に属していません。");
+                while (true) {
+                    currentIndex++;
+                    if (currentIndex >= _list.Count) yield break;
+
+                    var maybeDescendant = _list[currentIndex];
+                    if (maybeDescendant.Depth >= agg.Depth) yield break;
+
+                    yield return maybeDescendant;
+                }
+            }
+
+            #region IReadOnlyListの実装
+            public AggregateOrMember this[int index] => _list[index];
+            public int Count => _list.Count;
+            public IEnumerator<AggregateOrMember> GetEnumerator() {
+                return _list.GetEnumerator();
+            }
+            IEnumerator IEnumerable.GetEnumerator() {
+                return GetEnumerator();
+            }
+            #endregion IReadOnlyListの実装
+        }
+
 
         /// <summary>
         /// サーバーからクライアントへ送るデータ
         /// </summary>
-        private class PageState {
+        private class InitialLoadData {
             [JsonPropertyName("projectRoot")]
             public string? ProjectRoot { get; set; }
             [JsonPropertyName("editingXmlFilePath")]
@@ -159,6 +240,8 @@ namespace Nijo.Runtime {
         }
 
         private class AggregateOrMember {
+            [JsonPropertyName("depth")]
+            public required int Depth { get; set; }
             [JsonPropertyName("uniqueId")]
             public required string UniqueId { get; set; }
             [JsonPropertyName("displayName")]
@@ -169,8 +252,6 @@ namespace Nijo.Runtime {
             public string? TypeDetail { get; set; }
             [JsonPropertyName("attrValues")]
             public List<OptionalAttributeValue>? AttrValues { get; set; }
-            [JsonPropertyName("children")]
-            public List<AggregateOrMember>? Children { get; set; }
             [JsonPropertyName("comment")]
             public string? Comment { get; set; }
 
@@ -180,6 +261,13 @@ namespace Nijo.Runtime {
                     ?.Value
                     ?? DisplayName?.ToCSharpSafe()
                     ?? string.Empty;
+            }
+            public string GetRefToPath(AggregateOrMemberList collection) {
+                return collection
+                    .GetAncestors(this)
+                    .Concat([this])
+                    .Select(agg => agg.GetPhysicalName())
+                    .Join("/");
             }
             public override string ToString() {
                 return DisplayName ?? $"ID::{UniqueId}";
@@ -638,12 +726,10 @@ namespace Nijo.Runtime {
             /// nijo ui の画面上で編集されるデータをXML要素に変換する
             /// </summary>
             /// <param name="aggregateOrMember">変換元</param>
-            /// <param name="findRefToPath">`ref-to:x120943871a23fsr1321` のようなユニークキー表記を `ref-to:親集約/子集約/孫集約` に変換する</param>
-            /// <param name="findEnumName">`enum:x120943871a23fsr1321` のようなユニークキー表記を `列挙体名` に変換する</param>
+            /// <param name="collection">全ての集約が入ったコレクション</param>
             public static NijoXmlElement FromAbstract(
                 AggregateOrMember aggregateOrMember,
-                Func<string, string?> findRefToPath,
-                Func<string, string?> findEnumName) {
+                AggregateOrMemberList collection) {
 
                 var physicalName = aggregateOrMember.GetPhysicalName();
                 var el = new XElement(physicalName);
@@ -656,7 +742,10 @@ namespace Nijo.Runtime {
                 if (!string.IsNullOrWhiteSpace(aggregateOrMember.Type)) {
                     if (aggregateOrMember.Type.StartsWith(REFTO_PREFIX)) {
                         // ref-to
-                        var refToPath = findRefToPath(aggregateOrMember.Type.Substring(REFTO_PREFIX.Length));
+                        var uniqueId = aggregateOrMember.Type.Substring(REFTO_PREFIX.Length);
+                        var refToPath = collection
+                            .FirstOrDefault(agg => agg.UniqueId == uniqueId)
+                            ?.GetRefToPath(collection);
                         if (refToPath == null) {
                             isAttrs.Add(REFTO_PREFIX);
                         } else {
@@ -665,7 +754,12 @@ namespace Nijo.Runtime {
 
                     } else if (aggregateOrMember.Type.StartsWith(ENUM_PREFIX)) {
                         // enum
-                        var enumName = findEnumName(aggregateOrMember.Type.Substring(ENUM_PREFIX.Length));
+                        var uniqueId = aggregateOrMember.Type.Substring(ENUM_PREFIX.Length);
+                        var enumName = collection
+                            .RootAggregates()
+                            .FirstOrDefault(agg => agg.UniqueId == uniqueId
+                                                && agg.Type == "enum")
+                            ?.GetPhysicalName();
                         if (enumName != null) {
                             isAttrs.Add(enumName);
                         }
@@ -723,9 +817,9 @@ namespace Nijo.Runtime {
 
                 // ---------------------------------
                 // 子要素
-                foreach (var child in aggregateOrMember.Children ?? []) {
+                foreach (var child in collection.GetChildren(aggregateOrMember)) {
                     if (!string.IsNullOrWhiteSpace(child.Comment)) el.Add(new XComment(child.Comment));
-                    el.Add(FromAbstract(child, findRefToPath, findEnumName)._xElement);
+                    el.Add(FromAbstract(child, collection)._xElement);
                 }
 
                 return new NijoXmlElement(el);
@@ -733,9 +827,15 @@ namespace Nijo.Runtime {
             /// <summary>
             /// XML要素を nijo ui の画面上で編集されるデータに変換する
             /// </summary>
-            public AggregateOrMember ToAbstract(
+            public IEnumerable<AggregateOrMember> ToAbstract(
                 IEnumerable<AggregateOrMemberTypeDef> typeDefs,
                 IReadOnlyDictionary<string, OptionalAttributeDef> optionDefs) {
+                return ToAbstractPrivate(typeDefs, optionDefs, 0);
+            }
+            private IEnumerable<AggregateOrMember> ToAbstractPrivate(
+                IEnumerable<AggregateOrMemberTypeDef> typeDefs,
+                IReadOnlyDictionary<string, OptionalAttributeDef> optionDefs,
+                int depth) {
 
                 // XMLと nijo ui では DisplayName と PhysicalName の扱いが逆
                 var displayName = _xElement
@@ -803,20 +903,24 @@ namespace Nijo.Runtime {
                     ? xComment.Value
                     : string.Empty;
 
-                var children = _xElement
-                    .Elements()
-                    .Where(el => el.NodeType != System.Xml.XmlNodeType.Comment)
-                    .Select(el => new NijoXmlElement(el).ToAbstract(typeDefs, optionDefs));
-
-                return new AggregateOrMember {
+                yield return new AggregateOrMember {
+                    Depth = depth,
                     UniqueId = GetXElementUniqueId(_xElement),
                     DisplayName = displayName,
                     Type = type,
                     TypeDetail = typeDetail,
                     AttrValues = attrs,
                     Comment = comment,
-                    Children = children.ToList(),
                 };
+
+                // -------------------------------------
+                var descendants = _xElement
+                    .Elements()
+                    .Where(el => el.NodeType != System.Xml.XmlNodeType.Comment)
+                    .SelectMany(el => new NijoXmlElement(el).ToAbstractPrivate(typeDefs, optionDefs, depth + 1));
+                foreach (var descendant in descendants) {
+                    yield return descendant;
+                }
             }
 
             private static string GetXElementUniqueId(XElement xElement) {
