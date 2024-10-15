@@ -73,7 +73,12 @@ export const useTypeCombo = (
         return Promise.resolve(comboSource)
       }
     },
-    getOptionText: opt => opt.displayName ?? '',
+    getOptionText: opt => (
+      <div className="flex flex-col">
+        <span>{opt.displayName}</span>
+        <span className="text-color-6 text-xs max-w-min min-w-full">{opt.helpText}</span>
+      </div>
+    ),
     getValueFromOption: opt => opt.key,
     getValueText: value => comboSource.find(t => t.key === value)?.displayName ?? value ?? '',
   }), [comboSource])

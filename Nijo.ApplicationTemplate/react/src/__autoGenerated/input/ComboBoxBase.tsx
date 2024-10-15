@@ -190,7 +190,7 @@ const createDropdownList = <TOption,>(
   /** 選択肢 */
   options: TOption[],
   /** 画面に表示する文字列を取得する関数 */
-  getOptionText: (opt: TOption) => string,
+  getOptionText: (opt: TOption) => React.ReactNode,
   /** カーソルが当たっているインデックスが変わったタイミングのイベント */
   onHighlightIndexChanged: (i: number) => void,
   /** 選択確定 */
@@ -261,7 +261,7 @@ const createDropdownList = <TOption,>(
 /** ドロップダウンのリストの要素 */
 const ListItem = React.memo(({ index, text, onClick, highlight, className, liRef }: {
   index?: number
-  text: string
+  text: React.ReactNode
   onClick?: (index: number) => void
   highlight?: boolean
   className?: string
@@ -277,7 +277,8 @@ const ListItem = React.memo(({ index, text, onClick, highlight, className, liRef
       {/* ホバー時の背景色 */}
       <div className="bg-color-4 absolute inset-0 opacity-0 hover:opacity-25"></div>
 
-      {text}&nbsp;
+      {/* 空文字やundefinedのときは選択肢の縦幅がつぶれるのを防ぐためにnbspを表示する */}
+      {text}{!text && <>&nbsp;</>}
     </li>
   )
 })

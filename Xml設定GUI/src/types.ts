@@ -105,6 +105,8 @@ export type RefToAggregateOption = {
   key: `ref-to:${string}`
   /** "ref-to:画面上の表示名" */
   displayName: `ref-to:${string}` | undefined
+  /** 種類コンボボックスの説明文。ref-toの説明文は無いのでnever。 */
+  helpText?: never
 }
 
 /** enumの参照先候補 */
@@ -113,6 +115,8 @@ export type EnumOption = {
   key: `enum:${string}`
   /** "画面上の表示名" */
   displayName: string | undefined
+  /** 種類コンボボックスの説明文。Enumの説明文は無いのでnever。 */
+  helpText?: never
 }
 
 /** 列ID。C#側のエラーメッセージ処理と合わせる必要あり */

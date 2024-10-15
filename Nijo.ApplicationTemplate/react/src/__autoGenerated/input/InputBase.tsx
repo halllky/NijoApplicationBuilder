@@ -69,7 +69,7 @@ export type ComboProps<TOption, TValue = TOption> = {
   /** ドロップダウンの選択肢からvalueを抜き出す */
   getValueFromOption: (opt: TOption) => TValue
   /** ドロップダウンの選択肢から画面上に表示されるテキストを抜き出す */
-  getOptionText: (opt: TOption) => string
+  getOptionText: (opt: TOption) => React.ReactNode
   /** valueから画面上に表示されるテキストを抜き出す */
   getValueText: (value: TValue) => string
 }
