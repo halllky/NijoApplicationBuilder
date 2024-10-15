@@ -71,9 +71,19 @@ namespace Nijo.Runtime {
                 var typeDefs = EnumerateAggregateOrMemberTypes().ToList();
                 var optionDefs = EnumerateOptionalAttributes().ToList();
 
-                var rootXmlElements = _project.LoadSchemaXml().Root?.Elements() ?? [];
-                var rootElements = rootXmlElements.Select(el => new NijoXmlElement(el));
-                var rootAggregates = rootElements.SelectMany(x => x.ToAbstract(typeDefs, optionDefs.ToDictionary(d => d.Key)));
+                var rootNodes = _project.LoadSchemaXml().Root?.Nodes()?.ToArray() ?? [];
+                var nijoXmlElements = new List<NijoXmlElement>();
+                var comments = new List<XComment>();
+                for (int i = 0; i < rootNodes.Length; i++) {
+                    var node = rootNodes[i];
+                    if (node is XComment xComment) {
+                        comments.Add(xComment);
+                    } else if (node is XElement xElement) {
+                        nijoXmlElements.Add(new NijoXmlElement(xElement, comments.ToArray()));
+                        comments.Clear();
+                    }
+                }
+                var rootAggregates = nijoXmlElements.SelectMany(x => x.ToAbstract(typeDefs, optionDefs.ToDictionary(d => d.Key)));
 
                 context.Response.ContentType = "application/json";
                 await context.Response.WriteAsync(new InitialLoadData {
@@ -1138,10 +1148,17 @@ namespace Nijo.Runtime {
         /// </summary>
         private class NijoXmlElement {
 
-            public NijoXmlElement(XElement xElement) {
+            /// <summary>
+            /// XMLのノード1個の抽象を作成します。
+            /// </summary>
+            /// <param name="xElement">XML要素</param>
+            /// <param name="comments">XML要素の前（ <see cref="XNode.PreviousNode"/> ）にあるコメント</param>
+            public NijoXmlElement(XElement xElement, IEnumerable<XComment> comments) {
                 _xElement = xElement;
+                _comments = comments;
             }
             private readonly XElement _xElement;
+            private readonly IEnumerable<XComment> _comments;
 
             #region 深さ
             /// <summary>
@@ -1329,7 +1346,11 @@ namespace Nijo.Runtime {
                     el.Add(FromAbstract(child, collection)._xElement);
                 }
 
-                return new NijoXmlElement(el);
+                var comment = string.IsNullOrWhiteSpace(aggregateOrMember.Comment)
+                    ? Array.Empty<XComment>()
+                    : [new XComment(aggregateOrMember.Comment)];
+
+                return new NijoXmlElement(el, comment);
             }
             /// <summary>
             /// XML要素を nijo ui の画面上で編集されるデータに変換する
@@ -1406,7 +1427,7 @@ namespace Nijo.Runtime {
                 attrs.RemoveAll(a => a.Key == null || !optionDefs.ContainsKey(a.Key));
 
                 // -------------------------------------
-                // コメント
+                // コメント。PreviousNodeを使って取得する都合上、XMLを下から順番に辿る形になる。
                 var comment = new StringBuilder();
                 var currentElement = (XNode?)_xElement;
                 while (currentElement?.PreviousNode is XComment xComment) {
@@ -1429,10 +1450,19 @@ namespace Nijo.Runtime {
 
                 // -------------------------------------
                 // コメント
-                var descendants = _xElement
-                    .Elements()
-                    .Where(el => el.NodeType != System.Xml.XmlNodeType.Comment)
-                    .SelectMany(el => new NijoXmlElement(el).ToAbstractPrivate(typeDefs, optionDefs, depth + 1));
+                var nodes = _xElement.Nodes().ToArray();
+                var descendants = new List<AggregateOrMember>();
+                var comments = new List<XComment>();
+                for (int i = 0; i < nodes.Length; i++) {
+                    var node = nodes[i];
+                    if (node is XComment xComment) {
+                        comments.Add(xComment);
+                    } else if (node is XElement xElement) {
+                        var nijoXmlElement = new NijoXmlElement(xElement, comments.ToArray());
+                        descendants.AddRange(nijoXmlElement.ToAbstractPrivate(typeDefs, optionDefs, depth + 1));
+                        comments.Clear();
+                    }
+                }
                 foreach (var descendant in descendants) {
                     yield return descendant;
                 }
@@ -1449,6 +1479,9 @@ namespace Nijo.Runtime {
 
                 var root = new XElement(rootNodeName);
                 foreach (var el in nijoXmlElements) {
+                    foreach (var comment in el._comments) {
+                        root.Add(comment);
+                    }
                     root.Add(el._xElement);
                 }
                 doc.Add(root);
