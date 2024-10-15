@@ -75,6 +75,15 @@ namespace Nijo.IntegrationTest {
                         call npm run tsc
                         pause
                         """, new UTF8Encoding(false, false));
+
+                    File.WriteAllText(Path.Combine(dir, "EDITOR.cmd"), $$"""
+                        @echo off
+                        chcp 65001
+                        cd %~dp0
+                        dotnet build ..\Nijo
+                        ..\Nijo\bin\Debug\net8.0\nijo.exe ui . %* 
+                        pause
+                        """, new UTF8Encoding(false, false));
                 }
 
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
@@ -94,6 +103,12 @@ namespace Nijo.IntegrationTest {
                         cd `dirname $0`
                         cd react
                         npm run tsc
+                        """.Replace("\r\n", "\n"), new UTF8Encoding(false, false));
+
+                    File.WriteAllText(Path.Combine(dir, "EDITOR.command"), $$"""
+                        cd `dirname $0`
+                        dotnet build ../Nijo
+                        ../Nijo/bin/Debug/net8.0/nijo ui . 
                         """.Replace("\r\n", "\n"), new UTF8Encoding(false, false));
                 }
 
