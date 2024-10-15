@@ -983,6 +983,18 @@ namespace Nijo.Runtime {
                 },
             };
 
+            yield return new OptionalAttributeDef {
+                Key = "max",
+                DisplayName = "Max",
+                Type = E_OptionalAttributeType.Number,
+                HelpText = $$"""
+                    文字列項目の最大長。整数で指定してください。
+                    """,
+                Validate = (value, node, schema, errors) => {
+                    // TODO: チェック処理未実装
+                },
+            };
+
             // --------------------------------------------
 
             yield return new OptionalAttributeDef {
