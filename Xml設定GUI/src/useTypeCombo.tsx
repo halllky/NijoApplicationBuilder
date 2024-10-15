@@ -14,7 +14,7 @@ export type TypeComboReturns = ReturnType<typeof useTypeCombo>
 export const useTypeCombo = (
   aggregateOrMemberTypes: PageState['aggregateOrMemberTypes'],
   flattenGridRows: GridRow[],
-  { getDescendants }: UseFlattenArrayTreeReturns
+  getDescendants: UseFlattenArrayTreeReturns['getDescendants']
 ) => {
 
   // コンボボックスのデータソース

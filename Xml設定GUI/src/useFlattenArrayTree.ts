@@ -1,15 +1,19 @@
-
+import React from "react";
 import useEvent from "react-use-event-hook";
 import { AggregateOrMember, GridRow, PageState } from "./types";
 
 export type UseFlattenArrayTreeReturns = ReturnType<typeof useFlattenArrayTree>
+type GridRowId = Exclude<PageState['aggregates'], undefined>[0]['uniqueId']
 
 /**
- * 平たい配列ツリーへの操作を提供する。
+ * ツリー構造に関連する状態と操作を提供する。
  * 通常のツリー構造は parent と children で親子が互いに参照を持つが、
  * UI上でインデントがころころ変わる都合で、depthのみを正としつつ、祖先・子孫の関係は動的に計算するほうが使いやすい。
  */
-export const useFlattenArrayTree = (listRef: React.MutableRefObject<PageState['aggregates']>) => {
+export const useFlattenArrayTree = (allRows: PageState['aggregates'], listRef: React.MutableRefObject<PageState['aggregates']>) => {
+
+  // ------------------------------------------
+  // 祖先・子孫の取得
 
   const getParent = useEvent((gridRow: GridRow): GridRow | undefined => {
     if (listRef.current === undefined) return undefined
@@ -79,6 +83,57 @@ export const useFlattenArrayTree = (listRef: React.MutableRefObject<PageState['a
     return descendants
   })
 
+  // ------------------------------------------
+  // 折り畳み
+  const [collapsedRowIds, setCollapsedRowIds] = React.useState(new Set<GridRowId>())
+  const expandAll = useEvent(() => {
+    setCollapsedRowIds(new Set())
+  })
+  const collapseAll = useEvent(() => {
+    const rootRows = allRows?.filter(row => row.depth === 0)
+    setCollapsedRowIds(new Set(rootRows?.map(row => row.uniqueId)))
+  })
+  const toggleCollapsing = useEvent((uniqueId: GridRowId) => {
+    const set = new Set(collapsedRowIds)
+    if (collapsedRowIds.has(uniqueId)) {
+      set.delete(uniqueId)
+    } else {
+      set.add(uniqueId)
+    }
+    setCollapsedRowIds(set)
+  })
+
+  const expandableRows = React.useMemo(() => {
+    const result = new Set<GridRowId>()
+    if (allRows) {
+      for (let i = 0; i < allRows.length; i++) {
+        const row = allRows[i]
+        const nextRow = allRows[i + 1]
+        if (nextRow === undefined) continue
+        if (nextRow.depth <= row.depth) continue
+        result.add(row.uniqueId)
+      }
+    }
+    return result
+  }, [allRows])
+
+  const expandedRows = React.useMemo(() => {
+    if (!allRows) return []
+    const expanded: GridRow[] = []
+    for (let i = 0; i < allRows.length; i++) {
+      const row = allRows[i]
+      expanded.push(row)
+
+      // その行が折りたたまれているとき、その行の子孫はexpandedの配列に加えない
+      if (collapsedRowIds.has(row.uniqueId)) {
+        i += getDescendants(row).length
+      }
+    }
+    return expanded
+  }, [allRows, collapsedRowIds, getDescendants])
+
+  // ------------------------------------------
+
   return {
     /** 直近の親を取得 */
     getParent,
@@ -88,5 +143,18 @@ export const useFlattenArrayTree = (listRef: React.MutableRefObject<PageState['a
     getChildren,
     /** 子孫を列挙 */
     getDescendants,
+
+    /** 折りたたまれた行のID */
+    collapsedRowIds,
+    /** 折りたたみ可能な行 */
+    expandableRows,
+    /** 折りたたまれていない行 */
+    expandedRows,
+    /** 特定の行の折りたたみ状態を切り替えます。 */
+    toggleCollapsing,
+    /** すべての行を折りたたみます。 */
+    collapseAll,
+    /** すべての行の折りたたみ状態を解除します。 */
+    expandAll,
   }
 }
