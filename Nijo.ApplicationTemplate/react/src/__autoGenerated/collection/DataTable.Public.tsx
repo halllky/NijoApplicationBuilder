@@ -24,6 +24,8 @@ export type DataTableProps<T> = {
 export type DataTableColumn<TRow> = {
   id: string
   header?: string
+  /** ツールチップに表示される方 */
+  headerTitle?: string
   render: (row: TRow, rowIndex: number) => React.ReactNode
   onClipboardCopy: (row: TRow, rowIndex: number) => string
   headerGroupName?: string

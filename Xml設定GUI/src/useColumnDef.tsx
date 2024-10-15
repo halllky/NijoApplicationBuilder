@@ -136,6 +136,7 @@ export const useColumnDef = (
         optionColumns.push({
           id: def.key,
           header: def.displayName,
+          headerTitle: `${def.displayName ?? ''}\n${def.helpText ?? ''}`,
           defaultWidthPx: 60,
           onClipboardCopy: row => row.attrValues?.some(v => v.key === def.key) ? 'true' : '',
           render: row => {
@@ -174,6 +175,7 @@ export const useColumnDef = (
         optionColumns.push({
           id: def.key,
           header: def.displayName,
+          headerTitle: `${def.displayName ?? ''}\n${def.helpText ?? ''}`,
           defaultWidthPx: 60,
           onClipboardCopy: row => row.attrValues?.find(v => v.key === def.key)?.value ?? '',
           render: row => {
@@ -202,6 +204,7 @@ export const useColumnDef = (
         optionColumns.push({
           id: def.key,
           header: def.displayName,
+          headerTitle: `${def.displayName ?? ''}\n${def.helpText ?? ''}`,
           defaultWidthPx: 60,
           onClipboardCopy: row => row.attrValues?.find(v => v.key === def.key)?.value ?? '',
           render: row => {

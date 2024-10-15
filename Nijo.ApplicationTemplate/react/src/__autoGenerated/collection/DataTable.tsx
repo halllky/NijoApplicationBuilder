@@ -31,6 +31,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
       size: c.defaultWidthPx,
       enableResizing: !c.fixedWidth,
       header: c.header ?? '',
+      headerTitle: c.headerTitle, // React table には無い属性
       cell: cellProps => c.render(cellProps.row.original, cellProps.row.index),
       ex: c,
     })) ?? []
@@ -173,7 +174,10 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
                     style={getThStyle(false, thX, thY)}>
                     <div
                       className="absolute inset-0 p-px text-sm text-start whitespace-nowrap text-ellipsis overflow-hidden"
-                      title={typeof header.column.columnDef.header === 'string' ? header.column.columnDef.header : undefined}
+                      title={(header.column.columnDef as { headerTitle?: string })?.headerTitle
+                        ?? (typeof header.column.columnDef.header === 'string'
+                          ? header.column.columnDef.header
+                          : undefined)}
                     >
                       {!header.isPlaceholder && RT.flexRender(
                         header.column.columnDef.header,
