@@ -115,11 +115,20 @@ function App() {
     }, 100)
   })
 
-  // CHECK
+  // CHECK。短時間で連続してクエリが発行されるのを防ぐため、一定時間経過後にリクエストを投げる。
+  const timeoutHandle = React.useRef<NodeJS.Timeout | undefined>(undefined)
   const [validationErrors, setValidationErrors] = React.useState<ValidationError>({})
   const executeValidate = useEvent(async () => {
-    const validationErrors = await validate(fields)
-    setValidationErrors(validationErrors)
+    // 直前に処理の予約がある場合はそれをキャンセルする
+    if (timeoutHandle.current !== undefined) clearTimeout(timeoutHandle.current)
+    // 処理の実行予約を行う
+    return new Promise<void>(() => {
+      timeoutHandle.current = setTimeout(async () => {
+        // 一定時間内に処理がキャンセルされなかった場合のみここの処理が実行される
+        const aggregates = getValues('aggregates')
+        if (aggregates) setValidationErrors(await validate(aggregates))
+      }, 300)
+    })
   })
 
   // 再読み込み
