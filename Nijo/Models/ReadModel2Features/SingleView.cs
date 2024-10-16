@@ -216,10 +216,17 @@ namespace Nijo.Models.ReadModel2Features {
                         setError(name as ReactHookForm.FieldPath<Types.{{dataClass.TsTypeName}}> | `root.${string}` | 'root', error)
                       }
                     }
+                {{If(context.Config.MultiViewDetailLinkBehavior == Config.E_MultiViewDetailLinkBehavior.NavigateToReadOnlyMode, () => $$"""
                     // 処理成功の場合、詳細画面（読み取り専用）へ遷移
                     if (result.ok) {
                       navigateToDetailPage(currentValues, 'readonly')
                     }
+                """).Else(() => $$"""
+                    // 処理成功の場合はリロード
+                    if (result.ok) {
+                      reload()
+                    }
+                """)}}
                   })
 
                   // ページの外枠

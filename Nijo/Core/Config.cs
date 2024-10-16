@@ -19,6 +19,20 @@ namespace Nijo.Core {
         /// </summary>
         public required bool DisableLocalRepository { get; init; }
 
+        /// <summary>
+        /// 一覧画面の詳細リンクの挙動
+        /// </summary>
+        public required E_MultiViewDetailLinkBehavior MultiViewDetailLinkBehavior { get; init; } = E_MultiViewDetailLinkBehavior.NavigateToEditMode;
+        /// <summary>
+        /// 一覧画面の詳細リンクの挙動
+        /// </summary>
+        public enum E_MultiViewDetailLinkBehavior {
+            /// <summary>「詳細」リンクで読み取り専用モードの詳細画面に遷移する</summary>
+            NavigateToReadOnlyMode,
+            /// <summary>「詳細」リンクで編集モードの詳細画面に遷移する（既定値）</summary>
+            NavigateToEditMode,
+        }
+
         internal const string XML_CONFIG_SECTION_NAME = "_Config";
 
         private const string SECTION_RELATIVE_PATHS = "OutDirRelativePath";
@@ -31,14 +45,19 @@ namespace Nijo.Core {
 
         private const string DISABLE_LOCAL_REPOSITORY = "DisableLocalRepository";
 
+        private const string MULTI_VIEW_DETAIL_LINK_BEHAVIOR = "MultiViewDetailLinkBehavior";
+
         public XElement ToXmlWithRoot() {
             var root = new XElement(RootNamespace);
 
             var configElement = new XElement(XML_CONFIG_SECTION_NAME);
             root.Add(configElement);
 
-            // 各種機能の有効無効
+            // 各種機能の有効無効など
             if (DisableLocalRepository) root.SetAttributeValue(DISABLE_LOCAL_REPOSITORY, "True");
+
+            if (MultiViewDetailLinkBehavior == E_MultiViewDetailLinkBehavior.NavigateToReadOnlyMode)
+                root.SetAttributeValue(MULTI_VIEW_DETAIL_LINK_BEHAVIOR, E_MultiViewDetailLinkBehavior.NavigateToReadOnlyMode.ToString());
 
             // セクション: 相対パス
             var outDirRelativePathElement = new XElement(SECTION_RELATIVE_PATHS);
@@ -70,6 +89,9 @@ namespace Nijo.Core {
                 RootNamespace = xDocument.Root.Name.LocalName.ToCSharpSafe(),
                 DisableLocalRepository = xDocument.Root.Attribute(DISABLE_LOCAL_REPOSITORY) != null,
                 DbContextName = configSection?.Element(DBCONTEXT_NAME)?.Value ?? "MyDbContext",
+                MultiViewDetailLinkBehavior = xDocument.Root.Attribute(MULTI_VIEW_DETAIL_LINK_BEHAVIOR)?.Value == E_MultiViewDetailLinkBehavior.NavigateToReadOnlyMode.ToString()
+                    ? E_MultiViewDetailLinkBehavior.NavigateToReadOnlyMode
+                    : E_MultiViewDetailLinkBehavior.NavigateToEditMode,
             };
         }
     }

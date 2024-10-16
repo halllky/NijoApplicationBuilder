@@ -77,6 +77,7 @@ namespace Nijo {
                     RootNamespace = applicationName.ToCSharpSafe(),
                     DbContextName = "MyDbContext",
                     DisableLocalRepository = false,
+                    MultiViewDetailLinkBehavior = Config.E_MultiViewDetailLinkBehavior.NavigateToEditMode,
                 };
 
                 using (var _ = log?.BeginScope("nijo.xmlの作成")) {
