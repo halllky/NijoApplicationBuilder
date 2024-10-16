@@ -305,7 +305,7 @@ namespace Nijo.Core {
         /// <summary>レンダリングされるコンポーネントの属性をレンダリングします</summary>
         protected abstract IEnumerable<string> RenderAttributes();
 
-        string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
+        private protected virtual string RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
             var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
 
             return $$"""
@@ -316,6 +316,7 @@ namespace Nijo.Core {
                 </div>
                 """;
         }
+        string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) => RenderSearchConditionVFormBody(vm, ctx);
 
         string IAggregateMemberType.RenderSingleViewVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
             var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");

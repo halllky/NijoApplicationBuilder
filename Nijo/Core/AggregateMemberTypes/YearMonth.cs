@@ -18,7 +18,7 @@ namespace Nijo.Core.AggregateMemberTypes {
 
             // JavaScriptとC#の間の変換
             var util = context.UseSummarizedFile<Parts.Utility.UtilityClass>();
-            util.AddJsonConverter(Parts.Utility.RuntimeYearMonthClass.GetCustomJsonConverter());
+            util.AddJsonConverter(Parts.Utility.RuntimeYearMonthClass.GetCustomJsonConverter(context));
 
             // C#とDBの間の変換
             var dbContext = context.UseSummarizedFile<Parts.WebServer.DbContextClass>();

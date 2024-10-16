@@ -54,7 +54,7 @@ namespace Nijo.Models.WriteModel2Features {
                       return useCallback(async () => {
 
                     {{ordered.SelectTextTemplate(x => $$"""
-                        {{WithIndent(RenderAggregate(x, random), "    ")}}
+                        {{WithIndent(RenderAggregate(x, random, ctx), "    ")}}
 
                     """)}}
                         return true
@@ -70,7 +70,7 @@ namespace Nijo.Models.WriteModel2Features {
             },
         };
 
-        private static string RenderAggregate(GraphNode<Aggregate> rootAggregate, Random random) {
+        private static string RenderAggregate(GraphNode<Aggregate> rootAggregate, Random random, CodeRenderingContext ctx) {
             var descendants = rootAggregate.EnumerateDescendants();
             var instanceList = Enumerable
                 .Range(0, DATA_COUNT)

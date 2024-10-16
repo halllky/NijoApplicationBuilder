@@ -109,7 +109,7 @@ namespace Nijo.Parts.Utility {
             },
         };
 
-        internal static UtilityClass.CustomJsonConverter GetCustomJsonConverter() => new() {
+        internal static UtilityClass.CustomJsonConverter GetCustomJsonConverter(CodeRenderingContext ctx) => new() {
             ConverterClassName = "YearMonthJsonValueConverter",
             ConverterClassDeclaring = $$"""
                 class YearMonthJsonValueConverter : JsonConverter<{{CLASS_NAME}}?> {
