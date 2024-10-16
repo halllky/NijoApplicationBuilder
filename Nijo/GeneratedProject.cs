@@ -270,7 +270,7 @@ namespace Nijo {
         /// </summary>
         /// <exception cref="InvalidOperationException">アプリケーションスキーマが不正な場合</exception>
         internal AppSchema BuildSchema() {
-            var schemaXml = new AppSchemaXml(LoadSchemaXml());
+            var schemaXml = new AppSchemaXml(LoadSchemaXml(), SolutionRoot);
             var builder = new AppSchemaBuilder();
             if (!schemaXml.ConfigureBuilder(builder, out var errors)) {
                 throw new InvalidOperationException(errors.Join(Environment.NewLine));
@@ -291,7 +291,7 @@ namespace Nijo {
             var errorList = new List<string>();
             errors = errorList;
 
-            var schemaXml = new AppSchemaXml(LoadSchemaXml());
+            var schemaXml = new AppSchemaXml(LoadSchemaXml(), SolutionRoot);
             var builder = new AppSchemaBuilder();
             var builderOk = schemaXml.ConfigureBuilder(builder, out var errors1);
             errorList.AddRange(errors1);

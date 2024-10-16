@@ -12,10 +12,12 @@ using System.Xml;
 
 namespace Nijo.Core {
     public class AppSchemaXml {
-        internal AppSchemaXml(XDocument xDocument) {
+        internal AppSchemaXml(XDocument xDocument, string projectRoot) {
+            _projectRoot = projectRoot;
             _xDocument = xDocument;
         }
 
+        private readonly string _projectRoot;
         private readonly XDocument _xDocument;
 
         internal bool ConfigureBuilder(AppSchemaBuilder builder, out ICollection<string> errors) {
@@ -28,74 +30,107 @@ namespace Nijo.Core {
 
             builder.SetApplicationName(_xDocument.Root.Name.LocalName);
 
-            foreach (var xElement in _xDocument.Root.Elements()) {
-                // コンフィグ
-                if (xElement.Name.LocalName == Config.XML_CONFIG_SECTION_NAME) continue;
+            void RegisterXmlElement(XDocument xDocument, string documentPath) {
+                if (xDocument.Root == null) return;
 
-                // 列挙体
-                const string ENUM = "enum";
-                var isAttr = ToKeyValues(xElement, new List<string>());
-                if (isAttr.ContainsKey(ENUM)) {
-                    foreach (var kv in isAttr) {
-                        if (kv.Key != ENUM) errorList.Add($"列挙体定義に属性 '{kv.Key}' を指定できません。");
-                    }
+                foreach (var xElement in xDocument.Root.Elements()) {
+                    // コンフィグ
+                    if (xElement.Name.LocalName == Config.XML_CONFIG_SECTION_NAME) continue;
 
-                    var enumValues = new List<EnumValueOption>();
-                    foreach (var innerElement in xElement.Elements()) {
-                        var enumName = innerElement.Name.LocalName;
-                        var strValue = innerElement.Attribute("key")?.Value;
-
-                        int? intValue;
-                        if (strValue == null) {
-                            intValue = null;
-                        } else if (int.TryParse(strValue, out var i)) {
-                            intValue = i;
-                        } else {
-                            errorList.Add($"'{xElement.Name.LocalName}' の '{enumName}' の値 '{strValue}' を整数に変換できません。");
+                    // Include Path="ファイルパス"で指定された.xmlを読み込む
+                    const string INCLUDE = "Include";
+                    const string ATTRIBUTE = "Path";
+                    if (xElement.Name.LocalName == INCLUDE) {
+                        var schemaFilePath = xElement.Attribute(XName.Get(ATTRIBUTE))?.Value;
+                        if (schemaFilePath == null) {
+                            errorList.Add($"{ATTRIBUTE}属性が設定されておりません。");
                             continue;
                         }
-
-                        enumValues.Add(new EnumValueOption {
-                            PhysicalName = enumName,
-                            Value = intValue,
-                            DisplayName = innerElement.Attribute("DisplayName")?.Value,
-                        });
+                        var path = Path.GetFullPath(Path.Combine(documentPath, schemaFilePath));
+                        if (!File.Exists(path)) {
+                            errorList.Add($"ファイルが存在しません: {path}");
+                            continue;
+                        }
+                        using var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        using var reader = new StreamReader(stream);
+                        var xmlContent = reader.ReadToEnd();
+                        XDocument wDocument;
+                        try {
+                            wDocument = XDocument.Parse(xmlContent);
+                        } catch (XmlException ex) {
+                            errorList.Add($"XMLの内容が不正です: {ex.Message}");
+                            continue;
+                        }
+                        RegisterXmlElement(wDocument, path);
+                        continue;
                     }
 
-                    builder.AddEnum(xElement.Name.LocalName, enumValues);
-                    continue;
+                    // 列挙体
+                    const string ENUM = "enum";
+                    var isAttr = ToKeyValues(xElement, new List<string>());
+                    if (isAttr.ContainsKey(ENUM)) {
+                        foreach (var kv in isAttr) {
+                            if (kv.Key != ENUM) errorList.Add($"列挙体定義に属性 '{kv.Key}' を指定できません。");
+                        }
+
+                        var enumValues = new List<EnumValueOption>();
+                        foreach (var innerElement in xElement.Elements()) {
+                            var enumName = innerElement.Name.LocalName;
+                            var strValue = innerElement.Attribute("key")?.Value;
+
+                            int? intValue;
+                            if (strValue == null) {
+                                intValue = null;
+                            } else if (int.TryParse(strValue, out var i)) {
+                                intValue = i;
+                            } else {
+                                errorList.Add($"'{xElement.Name.LocalName}' の '{enumName}' の値 '{strValue}' を整数に変換できません。");
+                                continue;
+                            }
+
+                            enumValues.Add(new EnumValueOption {
+                                PhysicalName = enumName,
+                                Value = intValue,
+                                DisplayName = innerElement.Attribute("DisplayName")?.Value,
+                            });
+                        }
+
+                        builder.AddEnum(xElement.Name.LocalName, enumValues);
+                        continue;
+                    }
+
+                    // 集約定義
+                    void HandleAggregateElementRecursively(XElement el, IEnumerable<string> parent) {
+                        var path = parent.Concat(new[] { el.Name.LocalName }).ToArray();
+                        var parsed = ParseAggregateXElement(el, errorList);
+                        switch (parsed.ElementType) {
+                            case E_XElementType.RootAggregate:
+                            case E_XElementType.ChildAggregate:
+                            case E_XElementType.VariationValue:
+                                builder.AddAggregate(path, parsed.AggregateOption);
+                                break;
+
+                            case E_XElementType.Schalar:
+                            case E_XElementType.Ref:
+                                builder.AddAggregateMember(path, parsed.MemberOption);
+                                break;
+
+                            case E_XElementType.VariationContainer:
+                                // variation container は集約グラフ上は存在しないものとして扱う
+                                path = parent.ToArray();
+                                break;
+
+                            default:
+                                break;
+                        }
+                        foreach (var innerElement in el.Elements()) {
+                            HandleAggregateElementRecursively(innerElement, path);
+                        }
+                    }
+                    HandleAggregateElementRecursively(xElement, Enumerable.Empty<string>());
                 }
-
-                // 集約定義
-                void HandleAggregateElementRecursively(XElement el, IEnumerable<string> parent) {
-                    var path = parent.Concat(new[] { el.Name.LocalName }).ToArray();
-                    var parsed = ParseAggregateXElement(el, errorList);
-                    switch (parsed.ElementType) {
-                        case E_XElementType.RootAggregate:
-                        case E_XElementType.ChildAggregate:
-                        case E_XElementType.VariationValue:
-                            builder.AddAggregate(path, parsed.AggregateOption);
-                            break;
-
-                        case E_XElementType.Schalar:
-                        case E_XElementType.Ref:
-                            builder.AddAggregateMember(path, parsed.MemberOption);
-                            break;
-
-                        case E_XElementType.VariationContainer:
-                            // variation container は集約グラフ上は存在しないものとして扱う
-                            path = parent.ToArray();
-                            break;
-
-                        default:
-                            break;
-                    }
-                    foreach (var innerElement in el.Elements()) {
-                        HandleAggregateElementRecursively(innerElement, path);
-                    }
-                }
-                HandleAggregateElementRecursively(xElement, Enumerable.Empty<string>());
             }
+            RegisterXmlElement(_xDocument, _projectRoot);
             errors = errorList;
             return errors.Count == 0;
         }
