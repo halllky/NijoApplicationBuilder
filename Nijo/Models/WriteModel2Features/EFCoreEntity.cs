@@ -25,7 +25,7 @@ namespace Nijo.Models.WriteModel2Features {
         internal const string VERSION = "Version";
 
         /// <summary>データが新規作成された日時</summary>
-        internal const string CREATED_AT = "CteatedAt";
+        internal const string CREATED_AT = "CreatedAt";
         /// <summary>データが更新された日時</summary>
         internal const string UPDATED_AT = "UpdatedAt";
 
