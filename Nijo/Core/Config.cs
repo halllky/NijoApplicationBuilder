@@ -18,14 +18,6 @@ namespace Nijo.Core {
         /// 一時保存を使用しない
         /// </summary>
         public required bool DisableLocalRepository { get; init; }
-        /// <summary>
-        /// 一括登録APIを使用しない
-        /// </summary>
-        public required bool DisableBatchUpdate {  get; init; }
-        /// <summary>
-        /// <see cref="Features.Storing.FindManyFeature"/> で検索上限件数が指定されなかった場合に自動的に件数を絞る制限を外す
-        /// </summary>
-        public required bool DiscardSearchLimit { get; init; }
 
         internal const string XML_CONFIG_SECTION_NAME = "_Config";
 
@@ -38,8 +30,6 @@ namespace Nijo.Core {
         private const string DBCONTEXT_NAME = "DbContextName";
 
         private const string DISABLE_LOCAL_REPOSITORY = "DisableLocalRepository";
-        private const string DISABLE_BATCH_UPDATE = "DisableBatchUpdate";
-        private const string DISCARD_SEARCH_LIMIT = "DiscardSearchLimit";
 
         public XElement ToXmlWithRoot() {
             var root = new XElement(RootNamespace);
@@ -49,8 +39,6 @@ namespace Nijo.Core {
 
             // 各種機能の有効無効
             if (DisableLocalRepository) root.SetAttributeValue(DISABLE_LOCAL_REPOSITORY, "True");
-            if (DisableBatchUpdate) root.SetAttributeValue(DISABLE_BATCH_UPDATE, "True");
-            if (DiscardSearchLimit) root.SetAttributeValue(DISCARD_SEARCH_LIMIT, "True");
 
             // セクション: 相対パス
             var outDirRelativePathElement = new XElement(SECTION_RELATIVE_PATHS);
@@ -81,8 +69,6 @@ namespace Nijo.Core {
             return new Config {
                 RootNamespace = xDocument.Root.Name.LocalName.ToCSharpSafe(),
                 DisableLocalRepository = xDocument.Root.Attribute(DISABLE_LOCAL_REPOSITORY) != null,
-                DisableBatchUpdate = xDocument.Root.Attribute(DISABLE_BATCH_UPDATE) != null,
-                DiscardSearchLimit = xDocument.Root.Attribute(DISCARD_SEARCH_LIMIT) != null,
                 DbContextName = configSection?.Element(DBCONTEXT_NAME)?.Value ?? "MyDbContext",
             };
         }

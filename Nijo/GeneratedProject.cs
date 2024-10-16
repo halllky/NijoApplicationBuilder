@@ -76,9 +76,7 @@ namespace Nijo {
                 var config = new Config {
                     RootNamespace = applicationName.ToCSharpSafe(),
                     DbContextName = "MyDbContext",
-                    DiscardSearchLimit = false,
                     DisableLocalRepository = false,
-                    DisableBatchUpdate = false,
                 };
 
                 using (var _ = log?.BeginScope("nijo.xmlの作成")) {
