@@ -39,6 +39,7 @@ export const createNewGridRow = (depth: number): GridRow => ({
   displayName: '',
   type: undefined,
   typeDetail: undefined,
+  xmlFileFullPath: undefined,
 })
 
 /** 集約または集約メンバー */
@@ -57,6 +58,12 @@ export type AggregateOrMember = {
   attrValues: OptionalAttributeValue[] | undefined
   /** 備考 */
   comment: string | undefined
+  /**
+   * このルート集約が記載されているXMLファイルのフルパス。
+   * 子孫集約の場合、値が設定されていても無視される。
+   * undefinedの場合は大元のnijo.xmlに記載されているものとみなす。
+   */
+  xmlFileFullPath: string | undefined
 }
 
 /** 集約または集約メンバーのオプショナル属性の値 */

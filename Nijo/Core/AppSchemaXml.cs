@@ -20,6 +20,9 @@ namespace Nijo.Core {
         private readonly string _projectRoot;
         private readonly XDocument _xDocument;
 
+        public const string INCLUDE = "Include";
+        public const string PATH = "Path";
+
         internal bool ConfigureBuilder(AppSchemaBuilder builder, out ICollection<string> errors) {
             if (_xDocument.Root == null) {
                 errors = new List<string> { "XMLが空です。" };
@@ -30,7 +33,7 @@ namespace Nijo.Core {
 
             builder.SetApplicationName(_xDocument.Root.Name.LocalName);
 
-            void RegisterXmlElement(XDocument xDocument, string documentPath) {
+            void RegisterXmlElement(XDocument xDocument, string documentDirectory) {
                 if (xDocument.Root == null) return;
 
                 foreach (var xElement in xDocument.Root.Elements()) {
@@ -38,15 +41,13 @@ namespace Nijo.Core {
                     if (xElement.Name.LocalName == Config.XML_CONFIG_SECTION_NAME) continue;
 
                     // Include Path="ファイルパス"で指定された.xmlを読み込む
-                    const string INCLUDE = "Include";
-                    const string ATTRIBUTE = "Path";
                     if (xElement.Name.LocalName == INCLUDE) {
-                        var schemaFilePath = xElement.Attribute(XName.Get(ATTRIBUTE))?.Value;
+                        var schemaFilePath = xElement.Attribute(XName.Get(PATH))?.Value;
                         if (schemaFilePath == null) {
-                            errorList.Add($"{ATTRIBUTE}属性が設定されておりません。");
+                            errorList.Add($"{PATH}属性が設定されておりません。");
                             continue;
                         }
-                        var path = Path.GetFullPath(Path.Combine(documentPath, schemaFilePath));
+                        var path = Path.GetFullPath(Path.Combine(documentDirectory, schemaFilePath));
                         if (!File.Exists(path)) {
                             errorList.Add($"ファイルが存在しません: {path}");
                             continue;
@@ -61,7 +62,7 @@ namespace Nijo.Core {
                             errorList.Add($"XMLの内容が不正です: {ex.Message}");
                             continue;
                         }
-                        RegisterXmlElement(wDocument, path);
+                        RegisterXmlElement(wDocument, Path.GetDirectoryName(path) ?? path);
                         continue;
                     }
 

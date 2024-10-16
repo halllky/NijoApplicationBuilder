@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -71,19 +72,9 @@ namespace Nijo.Runtime {
                 var typeDefs = EnumerateAggregateOrMemberTypes().ToList();
                 var optionDefs = EnumerateOptionalAttributes().ToList();
 
-                var rootNodes = _project.LoadSchemaXml().Root?.Nodes()?.ToArray() ?? [];
-                var nijoXmlElements = new List<NijoXmlElement>();
-                var comments = new List<XComment>();
-                for (int i = 0; i < rootNodes.Length; i++) {
-                    var node = rootNodes[i];
-                    if (node is XComment xComment) {
-                        comments.Add(xComment);
-                    } else if (node is XElement xElement) {
-                        nijoXmlElements.Add(new NijoXmlElement(xElement, comments.ToArray()));
-                        comments.Clear();
-                    }
-                }
-                var rootAggregates = nijoXmlElements.SelectMany(x => x.ToAbstract(typeDefs, optionDefs.ToDictionary(d => d.Key)));
+                var rootAggregates = new NijoXmlFile(_project.SchemaXmlPath)
+                    .GetRootAggregatesRecursively()
+                    .SelectMany(x => x.ToAbstract(typeDefs, optionDefs.ToDictionary(d => d.Key)));
 
                 context.Response.ContentType = "application/json";
                 await context.Response.WriteAsync(new InitialLoadData {
@@ -113,6 +104,7 @@ namespace Nijo.Runtime {
 
             app.MapPost("/save", async context => {
                 try {
+                    // バリデーション
                     var collection = await ToAggregateOrMemberList(context.Request.Body);
                     var errors = collection.CollectVaridationErrors().ToArray();
                     if (errors.Length > 0) {
@@ -122,13 +114,19 @@ namespace Nijo.Runtime {
                         await context.Response.WriteAsync(errorsJson);
                         return;
                     }
-                    var document = collection.ToXDocument(_project.BuildSchema().ApplicationName);
-                    using var writer = XmlWriter.Create(_project.SchemaXmlPath, new() {
-                        Indent = true,
-                        Encoding = new UTF8Encoding(false, false),
-                        NewLineChars = "\n",
-                    });
-                    document.Save(writer);
+
+                    // 保存
+                    var nijoXml = new NijoXmlFile(_project.SchemaXmlPath);
+                    nijoXml.ClearRecursively();
+
+                    var allElements = collection
+                        .RootAggregates()
+                        .Select(a => NijoXmlElement.FromAbstract(a, collection));
+                    foreach (var el in allElements) {
+                        nijoXml.Add(el);
+                    }
+                    nijoXml.SaveRecursively(_project.BuildSchema().ApplicationName);
+
                     context.Response.StatusCode = (int)HttpStatusCode.OK;
 
                 } catch (Exception ex) {
@@ -374,15 +372,6 @@ namespace Nijo.Runtime {
                 }
             }
 
-            /// <summary>
-            /// このスキーマをXDocumentに変換します。
-            /// </summary>
-            public XDocument ToXDocument(string applicationName) {
-                var elements = RootAggregates().Select(a => NijoXmlElement.FromAbstract(a, this));
-                var document = NijoXmlElement.ToXDocument(elements, applicationName);
-                return document;
-            }
-
             #region IReadOnlyListの実装
             public AggregateOrMember this[int index] => _list[index];
             public int Count => _list.Count;
@@ -496,6 +485,8 @@ namespace Nijo.Runtime {
             public List<OptionalAttributeValue>? AttrValues { get; set; }
             [JsonPropertyName("comment")]
             public string? Comment { get; set; }
+            [JsonPropertyName("xmlFileFullPath")]
+            public string? XmlFileFullPath { get; set; }
 
             public string GetPhysicalName() {
                 return AttrValues
@@ -1156,6 +1147,139 @@ namespace Nijo.Runtime {
 
 
         /// <summary>
+        /// 仕様上、XMLは複数ファイルに分けて記載することができるところ、
+        /// ほかのXMLファイルの参照情報を含んだ情報
+        /// </summary>
+        private class NijoXmlFile {
+            public NijoXmlFile(string fullpath) {
+                FullPath = fullpath;
+            }
+            /// <summary>
+            /// このXMLファイルのフルパス
+            /// </summary>
+            public string FullPath { get; }
+            private readonly List<NijoXmlElement> _rootAggregates = new();
+            private readonly List<NijoXmlFile> _included = new();
+
+            /// <summary>
+            /// XMLに書かれているルート集約、またはこのオブジェクトが持っている未保存のルート集約を再帰的に列挙する
+            /// </summary>
+            public IEnumerable<NijoXmlElement> GetRootAggregatesRecursively() {
+                LoadIfNotInitialized();
+                foreach (var el in _rootAggregates) {
+                    yield return el;
+                }
+                foreach (var el in _included.SelectMany(xml => xml.GetRootAggregatesRecursively())) {
+                    yield return el;
+                }
+            }
+            /// <summary>
+            /// このオブジェクトまたはIncludeされたオブジェクトが保持している集約をクリアする
+            /// </summary>
+            public void ClearRecursively() {
+                LoadIfNotInitialized();
+                _rootAggregates.Clear();
+                foreach (var xml in _included) {
+                    xml.ClearRecursively();
+                }
+            }
+            /// <summary>
+            /// このオブジェクトまたはIncludeされたオブジェクトにルート集約を加える。
+            /// <see cref="NijoXmlElement.XmlFileFullpath"/> を参照し、可能な限りそのXMLファイルが元々保存されていたファイルに戻す。
+            /// </summary>
+            public void Add(NijoXmlElement element) {
+                LoadIfNotInitialized();
+                if (TryAddRecursivelyIfFileNameEquals(element)) {
+                    return;
+                }
+                // どのInclude先XMLファイルにもAddできなかった場合は仕方なくこのオブジェクトにAddする
+                _rootAggregates.Add(element);
+            }
+            private bool TryAddRecursivelyIfFileNameEquals(NijoXmlElement element) {
+                LoadIfNotInitialized();
+                if (element.XmlFileFullpath == FullPath) {
+                    _rootAggregates.Add(element);
+                    return true;
+                }
+                foreach (var xml in _included) {
+                    if (xml.TryAddRecursivelyIfFileNameEquals(element)) return true;
+                }
+                return false;
+            }
+            /// <summary>
+            /// XMLファイルへの保存
+            /// </summary>
+            public void SaveRecursively(string rootNodeName) {
+                LoadIfNotInitialized();
+                var doc = new XDocument();
+                doc.Declaration = new XDeclaration("1.0", "utf-8", null);
+
+                var rootNode = new XElement(rootNodeName);
+                var dirName = Path.GetDirectoryName(FullPath);
+                foreach (var xml in _included) {
+                    var include = new XElement(XName.Get(AppSchemaXml.INCLUDE));
+                    var relativePath = dirName == null
+                        ? xml.FullPath
+                        : Path.GetRelativePath(dirName, xml.FullPath);
+                    include.SetAttributeValue(AppSchemaXml.PATH, relativePath);
+                    rootNode.Add(include);
+                }
+                foreach (var el in _rootAggregates.SelectMany(x => x.ToXNodes())) {
+                    rootNode.Add(el);
+                }
+                doc.Add(rootNode);
+
+                using (var writer = XmlWriter.Create(FullPath, new() {
+                    Indent = true,
+                    Encoding = new UTF8Encoding(false, false),
+                    NewLineChars = "\n",
+                })) {
+                    doc.Save(writer);
+                }
+
+                foreach (var xml in _included) {
+                    xml.SaveRecursively(rootNodeName);
+                }
+            }
+
+            private bool _initialized = false;
+            private void LoadIfNotInitialized() {
+                if (_initialized) return;
+                _initialized = true;
+
+                using var stream = File.Open(FullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                using var reader = new StreamReader(stream);
+                var xmlContent = reader.ReadToEnd();
+                var xDocument = XDocument.Parse(xmlContent);
+                var rootNodes = xDocument.Root?.Nodes().ToArray() ?? [];
+                var comments = new List<XComment>();
+                for (int i = 0; i < rootNodes.Length; i++) {
+                    var node = rootNodes[i];
+                    if (node is XComment xComment) {
+                        comments.Add(xComment);
+
+                    } else if (node is XElement xElement) {
+                        if (xElement.Name.LocalName == AppSchemaXml.INCLUDE) {
+                            // <Include Path="..." /> で他のXMLファイルを読み込む
+                            var relativePath = xElement.Attribute(AppSchemaXml.PATH)?.Value;
+                            if (relativePath != null) {
+                                var dirName = Path.GetDirectoryName(FullPath);
+                                var fullpath = dirName == null
+                                    ? Path.GetFullPath(relativePath)
+                                    : Path.GetFullPath(Path.Combine(dirName, relativePath));
+                                var includeded = new NijoXmlFile(fullpath);
+                                _included.Add(includeded);
+                            }
+                        } else {
+                            // ルート集約
+                            _rootAggregates.Add(new NijoXmlElement(xElement, FullPath, comments.ToArray()));
+                            comments.Clear();
+                        }
+                    }
+                }
+            }
+        }
+        /// <summary>
         /// XMLのノード1個の抽象。
         /// </summary>
         private class NijoXmlElement {
@@ -1164,13 +1288,19 @@ namespace Nijo.Runtime {
             /// XMLのノード1個の抽象を作成します。
             /// </summary>
             /// <param name="xElement">XML要素</param>
+            /// <param name="xmlFilePath">この要素が記載されていたXMLファイルの名前</param>
             /// <param name="comments">XML要素の前（ <see cref="XNode.PreviousNode"/> ）にあるコメント</param>
-            public NijoXmlElement(XElement xElement, IEnumerable<XComment> comments) {
+            public NijoXmlElement(XElement xElement, string? xmlFilePath, IEnumerable<XComment> comments) {
                 _xElement = xElement;
                 _comments = comments;
+                XmlFileFullpath = xmlFilePath;
             }
             private readonly XElement _xElement;
             private readonly IEnumerable<XComment> _comments;
+            /// <summary>
+            /// このエレメントがもともと保存されていたXMLファイルの名前。このエレメントが子孫要素の場合はnull
+            /// </summary>
+            public string? XmlFileFullpath { get; }
 
             #region 深さ
             /// <summary>
@@ -1362,7 +1492,7 @@ namespace Nijo.Runtime {
                     ? Array.Empty<XComment>()
                     : [new XComment(aggregateOrMember.Comment)];
 
-                return new NijoXmlElement(el, comment);
+                return new NijoXmlElement(el, aggregateOrMember.XmlFileFullPath, comment);
             }
             /// <summary>
             /// XML要素を nijo ui の画面上で編集されるデータに変換する
@@ -1458,6 +1588,7 @@ namespace Nijo.Runtime {
                     TypeDetail = typeDetail,
                     AttrValues = attrs,
                     Comment = comment.ToString(),
+                    XmlFileFullPath = XmlFileFullpath,
                 };
 
                 // -------------------------------------
@@ -1470,7 +1601,7 @@ namespace Nijo.Runtime {
                     if (node is XComment xComment) {
                         comments.Add(xComment);
                     } else if (node is XElement xElement) {
-                        var nijoXmlElement = new NijoXmlElement(xElement, comments.ToArray());
+                        var nijoXmlElement = new NijoXmlElement(xElement, null, comments.ToArray());
                         descendants.AddRange(nijoXmlElement.ToAbstractPrivate(typeDefs, optionDefs, depth + 1));
                         comments.Clear();
                     }
@@ -1485,19 +1616,11 @@ namespace Nijo.Runtime {
             }
             #endregion nijo ui の画面表示用データとの変換
 
-            public static XDocument ToXDocument(IEnumerable<NijoXmlElement> nijoXmlElements, string rootNodeName) {
-                var doc = new XDocument();
-                doc.Declaration = new XDeclaration("1.0", "utf-8", null);
-
-                var root = new XElement(rootNodeName);
-                foreach (var el in nijoXmlElements) {
-                    foreach (var comment in el._comments) {
-                        root.Add(comment);
-                    }
-                    root.Add(el._xElement);
+            public IEnumerable<XNode> ToXNodes() {
+                foreach (var comment in _comments) {
+                    yield return comment;
                 }
-                doc.Add(root);
-                return doc;
+                yield return _xElement;
             }
 
             public override string ToString() {
