@@ -33,7 +33,6 @@ namespace Nijo.Models.ReadModel2Features {
                 var dataClass = new DataClassForDisplay(_rootAggregate);
                 var searchCondition = new SearchCondition(_rootAggregate);
                 var loadMethod = new LoadMethod(_rootAggregate);
-                var multiView = new MultiView(_rootAggregate);
                 var rootAggregateComponent = new MultiViewEditableAggregateComponent(_rootAggregate);
 
                 string OnValueChange(AggregateMember.AggregateMemberBase m) {
@@ -100,18 +99,23 @@ namespace Nijo.Models.ReadModel2Features {
                       const { {{LoadMethod.LOAD}} } = AggregateHook.{{loadMethod.ReactHookName}}(true)
                       const reactHookFormMethods = Util.useFormEx<{ data: AggregateType.{{dataClass.TsTypeName}}[] }>({})
                       const { reset, setError, clearErrors } = reactHookFormMethods
-                      React.useEffect(() => {
+                      const reload = useCallback(async () => {
                         if (!locationSerach) return
-                        const condition = AggregateType.{{searchCondition.ParseQueryParameter}}(locationSerach)
-                        {{LoadMethod.LOAD}}(condition).then(data => {
+                        try {
+                          setLoaded(false)
+                          const condition = AggregateType.{{searchCondition.ParseQueryParameter}}(locationSerach)
+                          const data = await {{LoadMethod.LOAD}}(condition)
                           reset({ data })
+                        } finally {
                           setLoaded(true)
-                        })
+                        }
                       }, [locationSerach])
+                      React.useEffect(() => {
+                        reload()
+                      }, [reload])
 
                       // 保存時
                       const { batchUpdateReadModels, nowSaving } = AggregateHook.{{BatchUpdateReadModel.HOOK_NAME}}()
-                      const navigateToMultiView = AggregateHook.{{multiView.NavigationHookName}}()
                       const handleSave = useEvent(async (updatedData: AggregateType.{{dataClass.TsTypeName}}[]) => {
                         clearErrors()
                         const batchUpdateArgs = updatedData.map(values => ({ dataType: '{{DataClassForSaveBase.GetEnumValueOf(_rootAggregate)}}' as const, values }))
@@ -127,9 +131,8 @@ namespace Nijo.Models.ReadModel2Features {
                           }
                           return
                         }
-                        // 更新成功時は一覧検索画面に遷移
-                        const condition = AggregateType.{{searchCondition.ParseQueryParameter}}(locationSerach)
-                        navigateToMultiView(condition)
+                        // 更新成功時は画面リロード
+                        reload()
                       })
 
                       return loaded ? (
