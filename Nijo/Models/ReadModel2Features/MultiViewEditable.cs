@@ -13,7 +13,7 @@ namespace Nijo.Models.ReadModel2Features {
     /// <summary>
     /// 一括編集画面
     /// </summary>
-    internal class MultiViewEditable : IReactPage {
+    internal class MultiViewEditable {
         internal MultiViewEditable(GraphNode<Aggregate> rootAggregate) {
             _rootAggregate = rootAggregate;
         }

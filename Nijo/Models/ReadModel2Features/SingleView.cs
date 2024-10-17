@@ -14,7 +14,7 @@ namespace Nijo.Models.ReadModel2Features {
     /// <summary>
     /// 詳細画面。新規モード・閲覧モード・編集モードの3種類をもつ。
     /// </summary>
-    internal class SingleView : IReactPage {
+    internal class SingleView {
         /// <summary>
         /// 新規モード・閲覧モード・編集モードのうちいずれか
         /// </summary>
@@ -29,7 +29,7 @@ namespace Nijo.Models.ReadModel2Features {
         }
         private readonly GraphNode<Aggregate> _aggregate;
 
-        string IReactPage.Url {
+        public string Url {
             get {
                 // React Router は全角文字非対応なので key0, key1, ... をURLに使う。
                 // 新規作成モードでは key0, key1, ... は無視されるため、オプショナルとして定義する。

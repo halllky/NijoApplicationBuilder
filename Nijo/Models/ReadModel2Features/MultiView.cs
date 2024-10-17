@@ -13,7 +13,7 @@ namespace Nijo.Models.ReadModel2Features {
     /// <summary>
     /// 一覧画面
     /// </summary>
-    internal class MultiView : IReactPage {
+    internal class MultiView {
         internal MultiView(GraphNode<Aggregate> agg) {
             _aggregate = agg;
         }
