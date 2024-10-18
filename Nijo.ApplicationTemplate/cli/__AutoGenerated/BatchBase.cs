@@ -17,7 +17,7 @@ namespace NIJO_APPLICATION_TEMPLATE_Cli;
 /// <see cref="CommandLine.OptionAttribute"/> や <see cref="CommandLine.ValueAttribute"/> をつける。
 /// いずれも詳細なルールはライブラリ "CommandLineParser" のドキュメントを参照のこと。
 /// </summary>
-public abstract class BatchBase {
+public abstract partial class BatchBase {
 
     /// <summary>
     /// 指定のアセンブリの中から実行可能なバッチの一覧を検索し、その型情報を返します。
