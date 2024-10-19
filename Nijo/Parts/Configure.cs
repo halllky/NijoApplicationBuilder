@@ -112,9 +112,10 @@ namespace Nijo.Parts {
 
                                     builder.Services.AddCors(options => {
                                         options.AddDefaultPolicy(builder => {
-                                            builder.AllowAnyOrigin()
+                                            builder.WithOrigins("{{_ctx.GeneratedProject.ReactProject.GetDebuggingClientUrl().ToString().TrimEnd('/')}}")
                                                 .AllowAnyMethod()
-                                                .AllowAnyHeader();
+                                                .AllowAnyHeader()
+                                                .AllowCredentials();
                                         });
                                     });
 
