@@ -153,7 +153,7 @@ namespace NIJO_APPLICATION_TEMPLATE_WebApi {
         /// </summary>
         /// <param name="confirm">確認メッセージ内容</param>
         /// <param name="detail">画面内の各項目の脇に表示するメッセージ。React hook form のsetErrorで使われるオブジェクトのルールに合わせる必要がある。</param>
-        public static IActionResult ShowConfirmUsingReactHook(this ControllerBase controller, IEnumerable<string> confirm, JsonObject? detail = null) {
+        public static IActionResult ShowConfirmUsingReactHook(this ControllerBase controller, IEnumerable<string> confirm, JsonNode? detail = null) {
             // このHTTPステータスコードと戻り値のオブジェクトの型は React hook 側と合わせる必要がある
             return controller.Accepted(new { confirm, detail });
         }
@@ -162,7 +162,7 @@ namespace NIJO_APPLICATION_TEMPLATE_WebApi {
         /// 画面上の各項目にバリデーションエラーを表示します。
         /// </summary>
         /// <param name="detail">画面内の各項目の脇に表示するメッセージ。React hook form のsetErrorで使われるオブジェクトのルールに合わせる必要がある。</param>
-        public static IActionResult ShowErrorsUsingReactHook(this ControllerBase controller, JsonObject? detail = null) {
+        public static IActionResult ShowErrorsUsingReactHook(this ControllerBase controller, JsonNode? detail = null) {
             // このHTTPステータスコードと戻り値のオブジェクトの型は React hook 側と合わせる必要がある
             return controller.UnprocessableEntity(new { detail });
         }
@@ -203,7 +203,7 @@ namespace NIJO_APPLICATION_TEMPLATE_WebApi {
         /// <param name="text">メッセージ。未指定の場合は既定のメッセージが表示されます。</param>
         public static IActionResult ShowSuccessMessageReactHook(this ControllerBase controller, string? text = null) {
             // このHTTPステータスコードと戻り値のオブジェクトの型は React hook 側と合わせる必要がある
-            return controller.Content(Util.ToJson(new { type = "toast", text }), "application/json");
+            return controller.Content(Util.ToJson(new { type = "message", text }), "application/json");
         }
     }
 }

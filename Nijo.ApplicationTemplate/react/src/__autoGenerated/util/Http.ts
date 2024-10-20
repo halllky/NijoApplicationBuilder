@@ -332,7 +332,7 @@ export const useHttpRequest = () => {
       type ResponseJsonType
         = { type: 'data', data: TResult } // 処理結果データ
         | { type: 'redirect', url: string } // 特定画面にリダイレクト
-        | { type: 'toast', text?: string } // トーストでメッセージ表示
+        | { type: 'message', text?: string } // トーストでメッセージ表示
 
       const responseJson = await response.json() as ResponseJsonType
 
@@ -346,6 +346,13 @@ export const useHttpRequest = () => {
       // リダイレクト
       if (responseJson.type === 'redirect') {
         navigate(responseJson.url)
+        return { ok: true, data: undefined as TResult }
+      }
+
+      // ---------------------------------------------------
+      // メッセージ
+      if (responseJson.type === 'message') {
+        if (responseJson.text) navigate(responseJson.text)
         return { ok: true, data: undefined as TResult }
       }
 
