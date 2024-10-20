@@ -98,7 +98,7 @@ namespace Nijo.Models.ReadModel2Features {
                         if (response.status === 422 && setError) {
                           const errors = await response.json() as { {{Parts.Utility.ComplexPost.RESPONSE_DETAIL}}: ErrorDetailType[] }
                           for (const error of errors.detail) setError(...error)
-                          return { handled: true }
+                          return { handled: true, ok: false }
 
                         } else if (reshandle) {
                           return await reshandle(response)

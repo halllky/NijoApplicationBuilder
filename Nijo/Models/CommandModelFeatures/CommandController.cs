@@ -30,6 +30,9 @@ namespace Nijo.Models.CommandModelFeatures {
                             using System;
                             using System.Linq;
                             using Microsoft.AspNetCore.Mvc;
+                            using System.Text.Json;
+                            using System.Text.Json.Nodes;
+                            using System.Text.Json.Serialization;
 
                             namespace {{ctx.Config.RootNamespace}};
 

@@ -80,22 +80,8 @@ namespace Nijo.Models.CommandModelFeatures {
                         /// <summary>
                         /// 処理が成功した旨のみをユーザーに伝えます。
                         /// </summary>
-                        {{RESULT_INTERFACE_NAME}} Ok() {
-                            return this.Ok<object?>(null, null);
-                        }
-                        /// <summary>
-                        /// 処理が成功した旨のみをユーザーに伝えます。
-                        /// </summary>
-                        /// <param name="detail">詳細情報</param>
-                        {{RESULT_INTERFACE_NAME}} Ok<T>(T detail) {
-                            return this.Ok(null, detail);
-                        }
-                        /// <summary>
-                        /// 処理が成功した旨のみをユーザーに伝えます。
-                        /// </summary>
                         /// <param name="text">メッセージ</param>
-                        /// <param name="detail">詳細情報</param>
-                        {{RESULT_INTERFACE_NAME}} Ok<T>(string? text, T detail);
+                        {{RESULT_INTERFACE_NAME}} Ok(string? text);
 
                     {{_redirectableList.SelectTextTemplate(x => $$"""
                         /// <summary>
@@ -154,6 +140,7 @@ namespace Nijo.Models.CommandModelFeatures {
 
                 return $$"""
                     using Microsoft.AspNetCore.Mvc;
+                    using System.Text.Json.Nodes;
 
                     namespace {{ctx.Config.RootNamespace}};
 
@@ -170,23 +157,23 @@ namespace Nijo.Models.CommandModelFeatures {
                         private readonly ControllerBase _controller;
                         private readonly {{appSrv.ConcreteClassName}} _applicationService;
 
-                        public {{RESULT_INTERFACE_NAME}} Ok<T>(string? text, T detail) {
+                        public {{RESULT_INTERFACE_NAME}} Ok(string? text) {
                             return new {{ACTION_RESULT_CONTAINER}} {
-                                ActionResult = _controller.Ok(new { type = "{{TYPE_MESSAGE}}", text, detail }),
+                                ActionResult = _controller.ShowSuccessMessageReactHook(text),
                             };
                         }
 
                     {{_redirectableList.SelectTextTemplate(x => $$"""
                         public {{RESULT_INTERFACE_NAME}} Redirect({{x.DisplayData.CsClassName}} displayData, {{ReadModel2Features.SingleView.E_SINGLE_VIEW_TYPE}} mode, {{ReadModel2Features.SingleView.E_REFETCH_TYPE}} refetchType) {
                             return new {{ACTION_RESULT_CONTAINER}} {
-                                ActionResult = _controller.Ok(new { type = "{{TYPE_REDIRECT}}", url = _applicationService.{{ReadModel2Features.SingleView.GET_URL_FROM_DISPLAY_DATA}}(displayData, mode, refetchType) }),
+                                ActionResult = _controller.RedirectUsingReactHook(_applicationService.{{ReadModel2Features.SingleView.GET_URL_FROM_DISPLAY_DATA}}(displayData, mode, refetchType)),
                             };
                         }
                     """)}}
 
                         public {{RESULT_INTERFACE_NAME}} File(byte[] bytes, string contentType) {
                             return new {{ACTION_RESULT_CONTAINER}} {
-                                ActionResult = _controller.File(bytes, contentType),
+                                ActionResult = _controller.DownloadFileUsingReactHook(bytes, contentType),
                             };
                         }
 
@@ -197,7 +184,7 @@ namespace Nijo.Models.CommandModelFeatures {
                         }
                         public {{RESULT_INTERFACE_NAME}} Error(TErrors errors) {
                             return new {{ACTION_RESULT_CONTAINER}} {
-                                ActionResult = _controller.UnprocessableEntity(new { {{HTTP_MESSAGE_DETAIL}} = errors.ToReactHookFormErrors().ToArray() }),
+                                ActionResult = _controller.ShowErrorsUsingReactHook(new JsonArray(errors.ToReactHookFormErrors().ToArray())),
                             };
                         }
                         public {{RESULT_INTERFACE_NAME}} Confirm(string confirm) {
@@ -205,7 +192,7 @@ namespace Nijo.Models.CommandModelFeatures {
                         }
                         public {{RESULT_INTERFACE_NAME}} Confirm(IEnumerable<string> confirms) {
                             return new {{ACTION_RESULT_CONTAINER}} {
-                                ActionResult = _controller.Accepted(new { {{HTTP_CONFIRM}} = confirms.ToArray() }),
+                                ActionResult = _controller.ShowConfirmUsingReactHook(confirms.ToArray()),
                             };
                         }
 
@@ -228,7 +215,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     /// </summary>
                     public sealed partial class {{GENERATOR_CLI_CLASS_NAME}}<TErrors> : {{GENERATOR_INTERFACE_NAME}}<TErrors>
                         where TErrors : {{DisplayMessageContainer.ABSTRACT_CLASS}} {
-                        public {{RESULT_INTERFACE_NAME}} Ok<T>(string? text, T detail) {
+                        public {{RESULT_INTERFACE_NAME}} Ok(string? text) {
                             throw new NotImplementedException("TODO #3 未実装");
                         }
                     {{_redirectableList.SelectTextTemplate(x => $$"""

@@ -24,7 +24,12 @@ export type ComplexPostOptions<TParam extends object> = {
 }
 type ResponseHandlerReturns = {
   /** 処理結果がハンドリング済みか否かを表します。falseの場合、結果未処理として共通処理側でのハンドリングを試みます。 */
-  handled: boolean
+  handled: false
+  /** complexPost処理自体が正常終了したか異常終了したかを表します。 */
+  ok?: never
+} | {
+  handled: true
+  ok: boolean
 }
 
 export const useHttpRequest = () => {
@@ -240,8 +245,8 @@ export const useHttpRequest = () => {
 
       // 任意のハンドリング処理
       if (options?.responseHandler) {
-        const { handled } = await options.responseHandler(response)
-        if (handled) return { ok: false }
+        const customResult = await options.responseHandler(response)
+        if (customResult.handled) return { ok: customResult.ok, data: undefined as TResult }
         if (response.bodyUsed) response = response.clone()
       }
 

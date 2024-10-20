@@ -1,4 +1,5 @@
 using Nijo.Core;
+using Nijo.Parts.Utility;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
@@ -27,7 +28,6 @@ namespace Nijo.Models.CommandModelFeatures {
         private string StepEnumName => $"E_{_rootAggregate.Item.PhysicalName}Steps";
 
         private const string USE_COMMAND_RESULT_PARSER = "useCommandResultParser";
-        private const string HTTP_PARAM_IGNORECONFIRM = "ignoreConfirm";
 
         private const string USE_STEP_CHAGNE_HOOK = "useCommandStepChanges";
         private const string CONTROLLER_CHAGNE_STEPS = "change-step";
@@ -38,7 +38,6 @@ namespace Nijo.Models.CommandModelFeatures {
         private const string BEFORE_STEP_TS = "beforeStep";
         private const string AFTER_STEP_TS = "afterStep";
         private const string VISITED_STEPS_TS = "visitedSteps";
-        private const string IGNORE_CONFIRM_TS = "ignoreConfirm";
 
         internal string RenderHook(CodeRenderingContext context) {
             var param = new CommandParameter(_rootAggregate);
@@ -131,54 +130,45 @@ namespace Nijo.Models.CommandModelFeatures {
                   setError: ReactHookForm.UseFormSetError<T>,
                   clearErrors: ReactHookForm.UseFormClearErrors<T>,
                   setVisitedSteps: ((v: number[]) => void)) => {
-                  const { postWithHandler } = Util.useHttpRequest()
+                  const { complexPost } = Util.useHttpRequest()
                   const [, dispatchMsg] = Util.useMsgContext()
 
-                  const callStepChangeEvent = useEvent(async (url: string, {{DATA_TS}}: T, {{BEFORE_STEP_TS}}: number | undefined, {{AFTER_STEP_TS}}: number, {{VISITED_STEPS_TS}}: number[], {{IGNORE_CONFIRM_TS}}?: boolean): Promise<boolean> => {
+                  const callStepChangeEvent = useEvent(async (url: string, {{DATA_TS}}: T, {{BEFORE_STEP_TS}}: number | undefined, {{AFTER_STEP_TS}}: number, {{VISITED_STEPS_TS}}: number[]): Promise<boolean> => {
                     clearErrors()
-                    return await postWithHandler(url, { {{DATA_TS}}, {{BEFORE_STEP_TS}}, {{AFTER_STEP_TS}}, {{VISITED_STEPS_TS}}, {{IGNORE_CONFIRM_TS}} }, async response => {
-                      if (response.status === 200 /* 成功 */) {
-                        // サーバー側で編集された値を画面に反映する
-                        const resData = (await response.json()) as { {{DATA_TS}}: T, {{VISITED_STEPS_TS}}: number[] }
-                        resetData(resData.{{DATA_TS}}, { keepDefaultValues: true })
-                        setVisitedSteps(resData.{{VISITED_STEPS_TS}})
-                        return { success: true }
-
-                      } else if (response.status === 202 /* Accepted. このリクエストにおいては「～してもよいですか？」の確認メッセージ表示を意味する */) {
-                        // 「～してもよいですか？」の確認メッセージ表示
-                        const resData = (await response.json()) as { {{CommandResult.HTTP_CONFIRM}}: string[], {{CommandResult.HTTP_MESSAGE_DETAIL}}: [ReactHookForm.FieldPath<T>, { types: { [key: string]: string } }][] }
-                        for (const [name, error] of resData.{{CommandResult.HTTP_MESSAGE_DETAIL}}) {
-                          setError(name, error)
-                        }
-                        for (const msg of resData.{{CommandResult.HTTP_CONFIRM}}) {
-                          if (!window.confirm(msg)) {
-                            return { success: false } // "OK"が選択されなかった場合は処理実行APIを呼ばずに処理中断
+                    const result = await complexPost(url, { {{DATA_TS}}, {{BEFORE_STEP_TS}}, {{AFTER_STEP_TS}}, {{VISITED_STEPS_TS}} }, {
+                      responseHandler: async response => {
+                        // エラー発生時、エラー内容を画面にマッピングする
+                        if (response.status === 422 /* Unprocessable Content. エラー */) {
+                          const resData = (await response.json()) as { {{ComplexPost.RESPONSE_DETAIL}}: [ReactHookForm.FieldPath<T>, { types: { [key: string]: string } }][] }
+                          if (setError) {
+                            for (const [name, error] of resData.{{ComplexPost.RESPONSE_DETAIL}}) {
+                              setError(name, error)
+                            }
+                          } else {
+                            dispatchMsg(msg => msg.error(`入力内容が不正です: ${JSON.stringify(resData.{{ComplexPost.RESPONSE_DETAIL}})}`))
                           }
+                          return { handled: true, ok: false }
                         }
-                        // すべての確認メッセージで"OK"が選ばれた場合は再度処理実行APIを呼ぶ。確認メッセージを表示しない旨のオプションをつけたうえで呼ぶ。
-                        const success = await callStepChangeEvent(url, {{DATA_TS}}, {{BEFORE_STEP_TS}}, {{AFTER_STEP_TS}}, {{VISITED_STEPS_TS}}, true)
-                        return { success }
 
-                      } else if (response.status === 422 /* Unprocessable Content. エラー */) {
-                        // 入力内容エラー
-                        const resData = (await response.json()) as { {{CommandResult.HTTP_MESSAGE_DETAIL}}: [ReactHookForm.FieldPath<T>, { types: { [key: string]: string } }][] }
-                        if (setError) {
-                          for (const [name, error] of resData.{{CommandResult.HTTP_MESSAGE_DETAIL}}) {
-                            setError(name, error)
-                          }
-                        } else {
-                          dispatchMsg(msg => msg.error(`入力内容が不正です: ${JSON.stringify(resData.{{CommandResult.HTTP_MESSAGE_DETAIL}})}`))
+                        // 正常終了時、サーバー側で編集された値を画面に反映する
+                        if (response.status === 200 /* 成功 */) {
+                          const resData = (await response.json()) as { {{DATA_TS}}: T, {{VISITED_STEPS_TS}}: number[] }
+                          resetData(resData.{{DATA_TS}}, { keepDefaultValues: true })
+                          setVisitedSteps(resData.{{VISITED_STEPS_TS}})
+                          return { handled: true, ok: true }
                         }
-                        return { success: false }
-                      }
+
+                        return { handled: false }
+                      },
                     })
+                    return result.ok
                   })
                   return callStepChangeEvent
                 }
                 /** コマンドを呼び出し、その処理結果を解釈して画面遷移したりファイルダウンロードを開始したりする */
                 export const {{USE_COMMAND_RESULT_PARSER}} = <T extends object>(setError: ReactHookForm.UseFormSetError<T>, clearErrors: ReactHookForm.UseFormClearErrors<T>) => {
                   const navigate = ReactRouter.useNavigate()
-                  const { postWithHandler } = Util.useHttpRequest()
+                  const { complexPost } = Util.useHttpRequest()
                   const [, dispatchToast] = Util.useToastContext()
                   const [, dispatchMsg] = Util.useMsgContext()
                   const [resultDetail, setResultDetail] = React.useState<unknown>()
@@ -191,83 +181,20 @@ namespace Nijo.Models.CommandModelFeatures {
                     defaultFileName?: string
                   }): Promise<boolean> => {
                     clearErrors()
-                    return await postWithHandler(url, param, async response => {
-                      if (response.status === 202 /* Accepted. このリクエストにおいては「～してもよいですか？」の確認メッセージ表示を意味する */) {
-                        // 「～してもよいですか？」の確認メッセージ表示
-                        const data = (await response.json()) as { {{CommandResult.HTTP_CONFIRM}}: string[], {{CommandResult.HTTP_MESSAGE_DETAIL}}: [ReactHookForm.FieldPath<T>, { types: { [key: string]: string } }][] }
-                        for (const [name, error] of data.{{CommandResult.HTTP_MESSAGE_DETAIL}}) {
-                          setError(name, error)
-                        }
-                        for (const msg of data.{{CommandResult.HTTP_CONFIRM}}) {
-                          if (!window.confirm(msg)) {
-                            return { success: false } // "OK"が選択されなかった場合は処理実行APIを呼ばずに処理中断
+                    const result = await complexPost(url, param, {
+                      responseHandler: async response => {
+                        // エラー発生時、エラー内容を画面にマッピングする
+                        if (response.status === 422 /* Unprocessable Content. エラー */) {
+                          const data = (await response.json()) as { {{ComplexPost.RESPONSE_DETAIL}}: [ReactHookForm.FieldPath<T>, { types: { [key: string]: string } }][] }
+                          for (const [name, error] of data.{{ComplexPost.RESPONSE_DETAIL}}) {
+                            setError(name, error)
                           }
+                          return { handled: true, ok: false }
                         }
-                        // すべての確認メッセージで"OK"が選ばれた場合は再度処理実行APIを呼ぶ。確認メッセージを表示しない旨のオプションをつけたうえで呼ぶ。
-                        const success = await executeCommandApi({
-                          url: `${url}?{{HTTP_PARAM_IGNORECONFIRM}}=true`,
-                          param,
-                          defaultSuccessMessage,
-                        })
-                        return { success }
-
-                      } else if (response.ok) {
-                        const contentType = response.headers.get('Content-Type')?.toLowerCase()
-                        if (contentType?.includes('application/json')) {
-                          const data = await response.json() as Types.{{CommandResult.TS_TYPE_NAME}}
-
-                          // 特定の画面に遷移。初期値はクエリパラメータに付される。
-                          if (data.type === '{{CommandResult.TYPE_REDIRECT}}') {
-                            navigate(data.url)
-                            return { success: true }
-                          }
-
-                          // 処理結果表示
-                          if (data.type === '{{CommandResult.TYPE_MESSAGE}}') {
-                            // トーストで処理成功の旨を表示
-                            dispatchToast(msg => msg.info(data.text ?? defaultSuccessMessage ?? '処理が成功しました。'))
-
-                            if (data.detail) {
-                              // 処理結果の詳細情報がある場合、画面上で結果を表示。
-                              // 具体的な表示方法はUIを伴うのでこのフックを呼ぶ側に任せる。
-                              setResultDetail(data.detail)
-                              return { success: false } // ここの値がtrueだと呼び元のダイアログが閉じてしまうのでfalseにしている
-                            } else {
-                              return { success: true } // トーストでの表示のみの場合はダイアログを閉じる
-                            }
-                          }
-                          dispatchToast(msg => msg.warn(`処理結果を解釈できません。(type: ${data.type})`))
-                          return { success: true }
-
-                        } else {
-                          // 処理結果ファイルダウンロード
-                          const a = document.createElement('a')
-                          let blobUrl: string | undefined = undefined
-                          try {
-                            const blob = await response.blob()
-                            const blobUrl = window.URL.createObjectURL(blob)
-                            a.href = blobUrl
-                            a.download = defaultFileName ?? ''
-                            document.body.appendChild(a)
-                            a.click()
-                          } catch (error) {
-                            dispatchMsg(msg => msg.error(`ファイルダウンロードに失敗しました: ${error}`))
-                          } finally {
-                            if (blobUrl !== undefined) window.URL.revokeObjectURL(blobUrl)
-                            document.body.removeChild(a)
-                            return { success: true }
-                          }
-                        }
-
-                      } else if (response.status === 422 /* Unprocessable Content. エラー */) {
-                        // 入力内容エラー
-                        const data = (await response.json()) as { {{CommandResult.HTTP_MESSAGE_DETAIL}}: [ReactHookForm.FieldPath<T>, { types: { [key: string]: string } }][] }
-                        for (const [name, error] of data.{{CommandResult.HTTP_MESSAGE_DETAIL}}) {
-                          setError(name, error)
-                        }
-                        return { success: false }
-                      }
+                        return { handled: false }
+                      },
                     })
+                    return result.ok
                   })
                   return { executeCommandApi, resultDetail }
                 }
@@ -287,19 +214,14 @@ namespace Nijo.Models.CommandModelFeatures {
                 /// {{_rootAggregate.Item.DisplayName}}のステップ変更時イベント
                 /// </summary>
                 [HttpPost("{{(_rootAggregate.Item.Options.LatinName ?? _rootAggregate.Item.UniqueId).ToKebabCase()}}/{{CONTROLLER_CHAGNE_STEPS}}")]
-                public virtual IActionResult {{_rootAggregate.Item.PhysicalName}}ChgngeStep([FromBody] {{STEP_CHANGING_EVENT_ARGS}}<{{param.CsClassName}}, {{StepEnumName}}, {{param.MessageDataCsClassName}}> e) {
-                    _applicationService.{{AppSrvOnStepChangingMethod}}(e);
-                    if (e.Messages.HasError()) {
-                        return UnprocessableEntity(new {
-                            {{CommandResult.HTTP_MESSAGE_DETAIL}} = e.Messages.ToReactHookFormErrors().ToArray(),
-                        });
-                    } else if (!e.IgnoreConfirm && e.HasConfirm()) {
-                        return Accepted(new {
-                            {{CommandResult.HTTP_CONFIRM}} = e.GetConfirms().ToArray(),
-                            {{CommandResult.HTTP_MESSAGE_DETAIL}} = e.Messages.ToReactHookFormErrors().ToArray(),
-                        });
+                public virtual IActionResult {{_rootAggregate.Item.PhysicalName}}ChgngeStep(ComplexPostRequest<{{STEP_CHANGING_EVENT_ARGS}}<{{param.CsClassName}}, {{StepEnumName}}, {{param.MessageDataCsClassName}}>> e) {
+                    _applicationService.{{AppSrvOnStepChangingMethod}}(e.Data);
+                    if (e.Data.Messages.HasError()) {
+                        return this.ShowErrorsUsingReactHook(new JsonArray(e.Data.Messages.ToReactHookFormErrors().ToArray()));
+                    } else if (!e.IgnoreConfirm && e.Data.HasConfirm()) {
+                        return this.ShowConfirmUsingReactHook(e.Data.GetConfirms().ToArray(), new JsonArray(e.Data.Messages.ToReactHookFormErrors().ToArray()));
                     } else {
-                        return Ok(e);
+                        return this.JsonContent(e.Data);
                     }
                 }
                 """)}}
@@ -307,9 +229,9 @@ namespace Nijo.Models.CommandModelFeatures {
                 /// {{_rootAggregate.Item.DisplayName}}処理をWebAPI経由で実行するためのエンドポイント
                 /// </summary>
                 [HttpPost("{{(_rootAggregate.Item.Options.LatinName ?? _rootAggregate.Item.UniqueId).ToKebabCase()}}")]
-                public virtual IActionResult {{_rootAggregate.Item.PhysicalName}}([FromBody] {{param.CsClassName}} param, [FromQuery] bool {{HTTP_PARAM_IGNORECONFIRM}}) {
+                public virtual IActionResult {{_rootAggregate.Item.PhysicalName}}(ComplexPostRequest<{{param.CsClassName}}> param) {
                     var resultGenerator = new {{CommandResult.GENERATOR_WEB_CLASS_NAME}}<{{param.MessageDataCsClassName}}>(this, _applicationService);
-                    var commandResult = _applicationService.{{AppSrvExecuteMethod}}(param, resultGenerator, {{HTTP_PARAM_IGNORECONFIRM}});
+                    var commandResult = _applicationService.{{AppSrvExecuteMethod}}(param.Data, resultGenerator);
                     return (({{CommandResult.GENERATOR_WEB_CLASS_NAME}}<{{param.MessageDataCsClassName}}>.{{CommandResult.ACTION_RESULT_CONTAINER}})commandResult).ActionResult;
                 }
                 """;
@@ -341,8 +263,7 @@ namespace Nijo.Models.CommandModelFeatures {
                 /// </summary>
                 /// <param name="param">処理パラメータ</param>
                 /// <param name="result">処理結果。return result.XXXXX(); のような形で記述してください。</param>
-                /// <param name="ignoreConfirm">「～しますがよいですか？」のメッセージを無視する場合（画面側で「はい」が選択された後）はtrue</param>
-                public virtual {{CommandResult.RESULT_INTERFACE_NAME}} {{AppSrvExecuteMethod}}({{param.CsClassName}} param, {{CommandResult.GENERATOR_INTERFACE_NAME}}<{{param.MessageDataCsClassName}}> result, bool ignoreConfirm) {
+                public virtual {{CommandResult.RESULT_INTERFACE_NAME}} {{AppSrvExecuteMethod}}({{param.CsClassName}} param, {{CommandResult.GENERATOR_INTERFACE_NAME}}<{{param.MessageDataCsClassName}}> result) {
                     throw new NotImplementedException("{{_rootAggregate.Item.DisplayName}}処理は実装されていません。");
                 }
                 """;
@@ -407,11 +328,6 @@ namespace Nijo.Models.CommandModelFeatures {
                         /// </summary>
                         [JsonPropertyName("{{VISITED_STEPS_TS}}")]
                         public List<TStep> VisitedSteps { get; set; }
-                        /// <summary>
-                        /// 「～ですが処理実行してよいですか？」を無視するかどうか
-                        /// </summary>
-                        [JsonPropertyName("{{IGNORE_CONFIRM_TS}}")]
-                        public bool IgnoreConfirm { get; init; }
                     #pragma warning restore CS8618 // null 非許容のフィールドには、コンストラクターの終了時に null 以外の値が入っていなければなりません。Null 許容として宣言することをご検討ください。
 
                         /// <summary>

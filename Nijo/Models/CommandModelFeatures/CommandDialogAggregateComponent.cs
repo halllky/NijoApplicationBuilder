@@ -629,7 +629,7 @@ namespace Nijo.Models.CommandModelFeatures {
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const { get } = Util.useHttpRequest()
+                      const { complexPost } = Util.useHttpRequest()
                       const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
                       const { fields, append, remove, update } = useFieldArray({ control, name: `{{registerNameArray.Join(".")}}` })
                       const dtRef = useRef<Layout.DataTableRef<{{rowType}}>>(null)
@@ -649,7 +649,7 @@ namespace Nijo.Models.CommandModelFeatures {
                       const cellType = Layout.{{Parts.WebClient.DataTable.CellType.USE_HELPER}}<{{rowType}}>()
                       const columns = useMemo((): Layout.DataTableColumn<{{rowType}}>[] => [
                         {{WithIndent(tableBuilder.RenderColumnDef(context), "    ")}}
-                      ], [get, update, setValue{{args.Select(a => $", {a}").Join("")}}, cellType])
+                      ], [complexPost, update, setValue{{args.Select(a => $", {a}").Join("")}}, cellType])
 
                       return (
                         <VForm2.Item wideLabelValue
