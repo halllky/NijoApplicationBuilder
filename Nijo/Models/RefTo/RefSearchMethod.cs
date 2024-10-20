@@ -53,12 +53,12 @@ namespace Nijo.Models.RefTo {
                   const [{{CURRENT_PAGE_ITEMS}}, setCurrentPageItems] = React.useState<Types.{{searchResult.TsTypeName}}[]>(() => [])
                   const [{{NOW_LOADING}}, setNowLoading] = React.useState(false)
                   const [, dispatchMsg] = Util.useMsgContext()
-                  const { post } = Util.useHttpRequest()
+                  const { complexPost } = Util.useHttpRequest()
 
                   const {{LOAD}} = React.useCallback(async (searchCondition: Types.{{searchCondition.TsTypeName}}): Promise<Types.{{searchResult.TsTypeName}}[]> => {
                     setNowLoading(true)
                     try {
-                      const res = await post<Types.{{searchResult.TsTypeName}}[]>(`/{{controller.SubDomain}}/{{ControllerLoadAction}}`, searchCondition)
+                      const res = await complexPost<Types.{{searchResult.TsTypeName}}[]>(`/{{controller.SubDomain}}/{{ControllerLoadAction}}`, searchCondition)
                       if (!res.ok) {
                         dispatchMsg(msg => msg.error('データ読み込みに失敗しました。'))
                         return []
@@ -68,16 +68,16 @@ namespace Nijo.Models.RefTo {
                     } finally {
                       setNowLoading(false)
                     }
-                  }, [post, dispatchMsg])
+                  }, [complexPost, dispatchMsg])
 
                   const {{COUNT}} = React.useCallback(async (searchConditionFilter: Types.{{searchCondition.TsFilterTypeName}}): Promise<number> => {
                     try {
-                      const res = await post<number>(`/{{controller.SubDomain}}/{{ControllerCountAction}}`, searchConditionFilter)
+                      const res = await complexPost<number>(`/{{controller.SubDomain}}/{{ControllerCountAction}}`, searchConditionFilter)
                       return res.ok ? res.data : 0
                     } catch {
                       return 0
                     }
-                  }, [post])
+                  }, [complexPost])
 
                   React.useEffect(() => {
                     if (!{{NOW_LOADING}} && !disableAutoLoad) {
@@ -109,14 +109,14 @@ namespace Nijo.Models.RefTo {
 
             return $$"""
                 [HttpPost("{{ControllerLoadAction}}")]
-                public virtual IActionResult Load{{_aggregate.Item.PhysicalName}}([FromBody] {{searchCondition.CsClassName}} searchCondition) {
-                    var searchResult = _applicationService.{{AppSrvLoadMethod}}(searchCondition);
-                    return this.JsonContent(searchResult.ToArray());
+                public virtual IActionResult Load{{_aggregate.Item.PhysicalName}}(ComplexPostRequest<{{searchCondition.CsClassName}}> request) {
+                    var searchResult = _applicationService.{{AppSrvLoadMethod}}(request.Data);
+                    return this.ReturnsDataUsingReactHook(searchResult.ToArray());
                 }
                 [HttpPost("{{ControllerCountAction}}")]
-                public virtual IActionResult Count{{_aggregate.Item.PhysicalName}}([FromBody] {{searchCondition.CsFilterClassName}} searchConditionFilter) {
-                    var count = _applicationService.{{AppSrvCountMethod}}(searchConditionFilter);
-                    return this.JsonContent(count);
+                public virtual IActionResult Count{{_aggregate.Item.PhysicalName}}(ComplexPostRequest<{{searchCondition.CsFilterClassName}}> request) {
+                    var count = _applicationService.{{AppSrvCountMethod}}(request.Data);
+                    return this.ReturnsDataUsingReactHook(count);
                 }
                 """;
         }
