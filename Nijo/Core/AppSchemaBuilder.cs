@@ -191,6 +191,16 @@ namespace Nijo.Core {
                 builtEnums.Add(enumDef);
             }
 
+            // ValueObjectの登録
+            var voList = aggregateDefs.Where(x => x.Options.Handler == NijoCodeGenerator.Models.ValueObjectModel.Key);
+            foreach (var vo in voList) {
+                var voMember = new ValueObjectMember(
+                    vo.TreePath.BaseName,
+                    Models.ValueObjectModel.PRIMITIVE_TYPE,
+                    StringMemberType.E_SearchBehavior.PartialMatch); // 当面文字列型の部分一致しか使わないので決め打ち
+                memberTypeResolver.Register(vo.TreePath.BaseName, voMember);
+            }
+
             // GraphNodeの組み立て
             var aggregates = new Dictionary<NodeId, Aggregate>();
             var aggregateMembers = new HashSet<AggregateMemberNode>();

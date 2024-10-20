@@ -33,11 +33,13 @@ namespace Nijo {
             internal static KeyValuePair<string, Func<IModel>> WriteModel2 => KeyValuePair.Create("write-model-2", () => (IModel)new WriteModel2());
             internal static KeyValuePair<string, Func<IModel>> ReadModel2 => KeyValuePair.Create("read-model-2", () => (IModel)new ReadModel2());
             internal static KeyValuePair<string, Func<IModel>> CommandModel => KeyValuePair.Create("command", () => (IModel)new CommandModel());
+            internal static KeyValuePair<string, Func<IModel>> ValueObjectModel => KeyValuePair.Create("value-object", () => (IModel)new ValueObjectModel());
 
             internal static IEnumerable<KeyValuePair<string, Func<IModel>>> GetAll() {
                 yield return WriteModel2;
                 yield return ReadModel2;
                 yield return CommandModel;
+                yield return ValueObjectModel;
             }
         }
 

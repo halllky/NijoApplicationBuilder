@@ -121,7 +121,7 @@ namespace Nijo.Models.ReadModel2Features {
         }
 
         private Parts.Utility.UtilityClass.CustomJsonConverter RenderJsonConverter() => new() {
-            ConverterClassName = "DisplayDataBatchUpdateCommandConverter",
+            ConverterClassName = $"{Parts.Utility.UtilityClass.CUSTOM_CONVERTER_NAMESPACE}.DisplayDataBatchUpdateCommandConverter",
             ConverterClassDeclaring = $$"""
                 class DisplayDataBatchUpdateCommandConverter : JsonConverter<{{DataClassForDisplay.BASE_CLASS_NAME}}> {
                     public override {{DataClassForDisplay.BASE_CLASS_NAME}}? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {

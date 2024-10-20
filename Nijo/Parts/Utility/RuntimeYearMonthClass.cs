@@ -110,7 +110,7 @@ namespace Nijo.Parts.Utility {
         };
 
         internal static UtilityClass.CustomJsonConverter GetCustomJsonConverter(CodeRenderingContext ctx) => new() {
-            ConverterClassName = "YearMonthJsonValueConverter",
+            ConverterClassName = $"{Parts.Utility.UtilityClass.CUSTOM_CONVERTER_NAMESPACE}.YearMonthJsonValueConverter",
             ConverterClassDeclaring = $$"""
                 class YearMonthJsonValueConverter : JsonConverter<{{CLASS_NAME}}?> {
                     public override {{CLASS_NAME}}? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {

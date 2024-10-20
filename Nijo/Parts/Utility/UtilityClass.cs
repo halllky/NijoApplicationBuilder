@@ -19,7 +19,7 @@ namespace Nijo.Parts.Utility {
         internal const string TRY_PARSE_AS_OBJECT_TYPE = "TryParseAsObjectType";
         internal const string PARSE_JSON_AS_OBJARR = "ParseJsonAsObjectArray";
 
-        private const string CUSTOM_CONVERTER_NAMESPACE = "CustomJsonConverters";
+        internal const string CUSTOM_CONVERTER_NAMESPACE = "CustomJsonConverters";
         private const string INT_CONVERTER = "IntegerValueConverter";
         private const string DATETIME_CONVERTER = "DateTimeValueConverter";
 
@@ -57,7 +57,7 @@ namespace Nijo.Parts.Utility {
                                 option.Converters.Add(new {{CUSTOM_CONVERTER_NAMESPACE}}.{{DATETIME_CONVERTER}}());
 
                     {{_jsonConverters.SelectTextTemplate(converter => $$"""
-                                option.Converters.Add(new {{CUSTOM_CONVERTER_NAMESPACE}}.{{converter.ConverterClassName}}());
+                                option.Converters.Add(new {{converter.ConverterClassName}}());
                     """)}}
                             }
                             public static JsonSerializerOptions {{GET_JSONOPTION}}() {

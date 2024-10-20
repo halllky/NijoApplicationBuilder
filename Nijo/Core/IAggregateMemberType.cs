@@ -124,7 +124,7 @@ namespace Nijo.Core {
         public virtual string GetSearchConditionCSharpType() => "string";
         public virtual string GetSearchConditionTypeScriptType() => "string";
 
-        string IAggregateMemberType.RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition, E_SearchConditionObject searchConditionObject, E_SearchQueryObject searchQueryObject) {
+        private protected virtual string RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition, E_SearchConditionObject searchConditionObject, E_SearchQueryObject searchQueryObject) {
             var pathFromSearchCondition = searchConditionObject == E_SearchConditionObject.SearchCondition
                 ? member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.CSharp)
                 : member.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.CSharp);
@@ -150,6 +150,9 @@ namespace Nijo.Core {
                 """)}}
                 }
                 """;
+        }
+        string IAggregateMemberType.RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition, E_SearchConditionObject searchConditionObject, E_SearchQueryObject searchQueryObject) {
+            return RenderFilteringStatement(member, query, searchCondition, searchConditionObject, searchQueryObject);
         }
 
         string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {

@@ -189,7 +189,7 @@ namespace Nijo.Models.WriteModel2Features {
         /// クライアント側からTypeScriptの型定義で送られてきたJSONをC#側のクラスに変換する
         /// </summary>
         private Parts.Utility.UtilityClass.CustomJsonConverter RenderJsonDeserialization() => new Parts.Utility.UtilityClass.CustomJsonConverter {
-            ConverterClassName = "SaveCommandBaseConverter",
+            ConverterClassName = $"{Parts.Utility.UtilityClass.CUSTOM_CONVERTER_NAMESPACE}.SaveCommandBaseConverter",
             ConverterClassDeclaring = $$"""
                 class SaveCommandBaseConverter : JsonConverter<{{SAVE_COMMAND_BASE}}> {
                     public override {{SAVE_COMMAND_BASE}}? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {

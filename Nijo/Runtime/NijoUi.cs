@@ -713,6 +713,21 @@ namespace Nijo.Runtime {
                     }
                 },
             };
+            yield return new AggregateOrMemberTypeDef {
+                NodeType = E_NodeType.RootAggregate,
+                Key = "value-object",
+                DisplayName = "値オブジェクト(ValueObject)",
+                HelpText = $$"""
+                    値オブジェクト。主として「○○コード」などの識別子の型として使われる。
+                    同値比較がそのインスタンスの参照ではなく値によって行われる。不変（immutable）である。
+                    """,
+                FindMatchingIsAttribute = el => el.Depth == 0
+                                             && el.Is.TryGetValue("value-object", out var isAttribute) ? isAttribute : null,
+                Validate = (node, schema, errors) => {
+                    if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
+                    if (schema.GetChildren(node).Any()) errors.Add("この型に子要素を設定することはできません。");
+                },
+            };
 
             // ルート以外に設定できる種類
             // ※ ref-toと列挙体は集約定義に依存するのでクライアント側で計算する

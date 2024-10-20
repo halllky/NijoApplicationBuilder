@@ -25,8 +25,8 @@
     <列挙体 is="MyEnum" />
 
     <Children is="children">
-      <!--ID-->
-      <ID is="uuid" />
+      <!--値オブジェクト-->
+      <ChildrenId is="ChildrenID key" />
 
       <!--文字列系-->
       <単語 is="word" />
@@ -59,4 +59,6 @@
     <参照先ID is="word key" />
     <Name is="name" />
   </参照先>
+
+  <ChildrenID is="value-object" />
 </自動テストで作成されたプロジェクト>

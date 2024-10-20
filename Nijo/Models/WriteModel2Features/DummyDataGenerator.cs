@@ -167,6 +167,7 @@ namespace Nijo.Models.WriteModel2Features {
                         Word => schalar.IsKey
                             ? $"'W-{random.Next(99999999)}'"
                             : $"'{RandomAlphabet(random, 10)}'",
+                        ValueObjectMember vo => vo.RenderDummyDataValue(random), 
                         _ => null, // 未定義
                     };
                     return dummyValue == null
