@@ -332,7 +332,7 @@ namespace Nijo.Models.ReadModel2Features {
                         var x = depth <= 1 ? "x" : $"x{depth}";
                         var child = new DataClassForSave(children.ChildrenAggregate, forSave.Type);
                         return $$"""
-                            {{instance}}.{{pathToArray.Join("?.")}}.Select({{x}} => {{RenderValues(child, x, children.ChildrenAggregate, true)}}).ToList() ?? []
+                            {{instance}}.{{pathToArray.Join("?.")}}?.Select({{x}} => {{RenderValues(child, x, children.ChildrenAggregate, true)}}).ToList() ?? []
                             """;
 
                     } else {

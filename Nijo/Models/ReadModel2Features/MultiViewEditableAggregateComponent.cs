@@ -287,7 +287,9 @@ namespace Nijo.Models.ReadModel2Features {
                 .ToList();
 
             // アクティブ行が変わったタイミングでコンポーネントごと破棄され再レンダリングされるようにする
-            parameters.Add($"key={{{args?.First()}}} ");
+            if (_aggregate.IsRoot()) {
+                parameters.Add($"key={{{args?.First()}}} ");
+            }
 
             // 詳細欄からフォーカスが外れたタイミングでそのデータの変更有無チェックを行うので
             if (_aggregate.GetEntry().As<Aggregate>() == _aggregate) {
