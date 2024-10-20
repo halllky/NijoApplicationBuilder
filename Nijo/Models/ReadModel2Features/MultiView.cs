@@ -83,7 +83,6 @@ namespace Nijo.Models.ReadModel2Features {
                     export default function () {
                       const [, dispatchMsg] = Util.useMsgContext()
                       const [, dispatchToast] = Util.useToastContext()
-                      const { get, post } = Util.useHttpRequest()
 
                       // 検索条件
                       const rhfSearchMethods = Util.useFormEx<AggregateType.{{searchCondition.TsTypeName}}>({ defaultValues: AggregateType.{{searchCondition.CreateNewObjectFnName}}() })
@@ -188,7 +187,7 @@ namespace Nijo.Models.ReadModel2Features {
                           {{WithIndent(tableBuilder.RenderColumnDef(context), "      ")}}
                         ]
                         return columnCustomizer?.(defs) ?? defs
-                      }, [get, post, {{TO_DETAIL_VIEW}}, columnCustomizer, cellType])
+                      }, [{{TO_DETAIL_VIEW}}, columnCustomizer, cellType])
 
                       return (
                         <Layout.PageFrame
