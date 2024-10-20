@@ -19,7 +19,8 @@ namespace Nijo.Core {
                 .Register(TYPE_YEAR, new Year())
                 .Register(TYPE_YEARMONTH, new YearMonth())
                 .Register(TYPE_DATE, new YearMonthDay())
-                .Register(TYPE_DATETIME, new YearMonthDayTime());
+                .Register(TYPE_DATETIME, new YearMonthDayTime())
+                .Register(TYPE_FILE, new FileAttachment());
             return resolver;
         }
         internal const string TYPE_UUID = "uuid";
@@ -33,6 +34,7 @@ namespace Nijo.Core {
         internal const string TYPE_YEARMONTH = "year-month";
         internal const string TYPE_DATE = "date";
         internal const string TYPE_DATETIME = "datetime";
+        internal const string TYPE_FILE = "file";
 
         private MemberTypeResolver() { }
         private readonly Dictionary<string, IAggregateMemberType> _registered = new();

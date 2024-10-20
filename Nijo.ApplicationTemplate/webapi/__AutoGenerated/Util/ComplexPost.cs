@@ -83,22 +83,73 @@ namespace NIJO_APPLICATION_TEMPLATE_WebApi {
             /// 元の入力フォームでは当該別パートのNameだけを保持している。
             /// このコンバータは、別々のパートに分離されたファイルのオブジェクトを、入力フォームのJSONの元々そのファイルが添付されていた位置に復元する役割を持つ。
             /// </summary>
-            private class MultipartFormDataFileConevrter : JsonConverter<IFormFile> {
+            private class MultipartFormDataFileConevrter : JsonConverter<FileAttachment> {
                 public MultipartFormDataFileConevrter(HttpContext httpContext) {
                     _httpContext = httpContext;
                 }
                 private readonly HttpContext _httpContext;
 
-                public override IFormFile? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
-                    // クライアント側のReactフック内でHTTPリクエストボディを組み立てる際に発行される一意なUUIDを使って該当のファイルを探す
-                    var fileId = reader.GetString();
-                    if (fileId == null) return null;
-                    return _httpContext.Request.Form.Files.GetFile(fileId);
+                public override FileAttachment? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
+                    var jsonNode = JsonNode.Parse(ref reader);
+                    if (jsonNode is not JsonObject jsonObject) return null;
+
+                    // HttpContextから、HTTPリクエストでクライアント側から送られてきたファイルの情報を探す。
+                    // クライアント側のReactフック内でHTTPリクエストボディを組み立てる際に発行される一意なUUIDを使って探す。
+                    IFormFile? formFile = null;
+                    var fileId = jsonNode[C_FILE]?.GetValue<string?>();
+                    if (fileId != null) {
+                        formFile = _httpContext.Request.Form.Files.GetFile(fileId);
+                    }
+
+                    // メタデータ部分はJSONをそのままデシリアライズする
+                    var metadata = jsonNode[C_METADATA]?.AsObject();
+                    var instance = new FileAttachment {
+                        GetUploadingFile = formFile == null
+                            ? null
+                            : formFile.OpenReadStream,
+                        Metadata = new() {
+                            DisplayFileName = metadata?[C_DISPLAY_FILE_NAME]?.GetValue<string?>(),
+                            Download = metadata?[C_DOWNLOAD]?.GetValue<bool?>() ?? false,
+                            Href = metadata?[C_HREF]?.GetValue<string?>(),
+                            OtherProps = metadata?[C_OTHER_PROPS]
+                                ?.AsObject()
+                                .AsEnumerable()
+                                .ToDictionary(kv => kv.Key, kv => kv.Value?.GetValue<string?>() ?? string.Empty)
+                                ?? [],
+                        },
+                        WillDetach = jsonNode[C_WILL_DETACH]?.GetValue<bool?>() ?? false,
+                    };
+                    return instance;
                 }
 
-                public override void Write(Utf8JsonWriter writer, IFormFile value, JsonSerializerOptions options) {
-                    // サーバー側からクライアント側へJSONの一部としてファイルを送ることはない。
+                public override void Write(Utf8JsonWriter writer, FileAttachment? value, JsonSerializerOptions options) {
+                    if (value == null) {
+                        writer.WriteNullValue();
+                    } else {
+                        var otherProps = new JsonObject();
+                        foreach (var kv in value.Metadata?.OtherProps ?? []) {
+                            otherProps[kv.Key] = kv.Value;
+                        }
+                        var obj = new JsonObject {
+                            [C_METADATA] = new JsonObject {
+                                [C_DISPLAY_FILE_NAME] = value.Metadata?.DisplayFileName,
+                                [C_DOWNLOAD] = value.Metadata?.Download,
+                                [C_HREF] = value.Metadata?.Href,
+                                [C_OTHER_PROPS] = otherProps,
+                            },
+                            [C_WILL_DETACH] = value.WillDetach,
+                        };
+                        obj.WriteTo(writer, options);
+                    }
                 }
+
+                private const string C_FILE = "file";
+                private const string C_METADATA = "metadata";
+                private const string C_WILL_DETACH = "willDetach";
+                private const string C_DISPLAY_FILE_NAME = "displayFileName";
+                private const string C_HREF = "href";
+                private const string C_DOWNLOAD = "download";
+                private const string C_OTHER_PROPS = "othreProps";
             }
         }
 
