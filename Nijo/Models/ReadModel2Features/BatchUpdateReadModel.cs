@@ -71,48 +71,43 @@ namespace Nijo.Models.ReadModel2Features {
 
         private string RenderFunction(CodeRenderingContext context) {
             return $$"""
+                export type BatchUpdateOptions = Omit<Util.ComplexPostOptions<never>, 'setError'> & {
+                  setError?: (itemIndex: number, name: string, errors: { types: { [key: string]: string } }) => void
+                }
+
                 /** 画面表示用データの一括更新を即時実行します。更新するデータの量によっては長い待ち時間が発生する可能性があります。 */
                 export const {{HOOK_NAME}} = () => {
-                  const { post2, handleUnknownResponse } = Util.useHttpRequest()
+                  const { complexPost } = Util.useHttpRequest()
                   const [, dispatchToast] = Util.useToastContext()
                   const [nowSaving, setNowSaving] = React.useState(false)
 
-                  type ReturnType = { ok: true } | { ok: false, errors?: ErrorDetailType } 
-                  type ErrorDetailType = { [index: string]: [ReactHookForm.FieldPath<ReactHookForm.FieldValues>, { types: { [key: string]: string } }][] }
+                  type ErrorDetailType = [
+                    itemIndex: number,
+                    name: ReactHookForm.FieldPath<ReactHookForm.FieldValues>,
+                    error: { types: { [key: string]: string } },
+                  ]
 
-                  const callBatchUpdateApi = useEvent(async ({{HOOK_PARAM_ITEMS}}: Types.{{HOOK_PARA_TYPE}}[], ignoreConfirm: boolean): Promise<ReturnType> => {
-                    const response = await post2(`/{{Controller.SUBDOMAIN}}/{{BatchUpdateWriteModel.CONTROLLER_SUBDOMAIN}}/{{CONTROLLER_ACTION}}?ignoreConfirm=${ignoreConfirm}`, { {{HOOK_PARAM_ITEMS}} })
-                    if (!response) {
-                      return { ok: false }
-
-                    } else if (response.status === 200 /* 成功 */) {
-                      dispatchToast(msg => msg.info('保存しました。'))
-                      return { ok: true }
-
-                    } else if (response.status === 202 /* Accepted. このリクエストにおいては「～してもよいですか？」の確認メッセージ表示を意味する */) {
-                      // 「～してもよいですか？」の確認メッセージ表示
-                      const resData = (await response.json()) as { {{HTTP_RESULT_CONFIRM}}: string[], {{HTTP_RESULT_DETAIL}}: ErrorDetailType }
-                      for (const msg of resData.{{HTTP_RESULT_CONFIRM}}) {
-                        if (!window.confirm(msg)) return { ok: false, errors: resData.{{HTTP_RESULT_DETAIL}} } // "OK"が選択されなかった場合は処理実行APIを呼ばずに処理中断
-                      }
-                      // すべての確認メッセージで"OK"が選ばれた場合は再度処理実行APIを呼ぶ。確認メッセージを表示しない旨のオプションをつけたうえで呼ぶ。
-                      return await callBatchUpdateApi({{HOOK_PARAM_ITEMS}}, true)
-
-                    } else if (response.status === 422 /* Unprocessable Content. エラー */) {
-                      // 入力内容エラー
-                      const resData = (await response.json()) as { {{HTTP_RESULT_DETAIL}}: ErrorDetailType }
-                      return { ok: false, errors: resData.{{HTTP_RESULT_DETAIL}} }
-
-                    } else {
-                      handleUnknownResponse(response)
-                      return { ok: false }
-                    }
-                  })
-                  const batchUpdateReadModels = useEvent(async (items: Types.{{HOOK_PARA_TYPE}}[]): Promise<ReturnType> => {
+                  const batchUpdateReadModels = useEvent(async (items: Types.{{HOOK_PARA_TYPE}}[], options?: BatchUpdateOptions): Promise<{ ok: boolean }> => {
                     if (nowSaving) return { ok: false }
                     setNowSaving(true)
                     try {
-                      return await callBatchUpdateApi(items, false)
+                      // 一括更新の戻り値のエラー情報は通常のcomplexPostのものと異なる（何番目のデータでエラーが発生したかの情報を持っている）ため、独自のハンドリングを行う
+                      const { setError, responseHandler: reshandle, ...rest } = (options ?? {})
+                      const responseHandler: Util.ComplexPostOptions<never>['responseHandler'] = async response => {
+                        // Unprocessable Content. 入力内容エラー
+                        if (response.status === 422 && setError) {
+                          const errors = await response.json() as { {{Parts.Utility.ComplexPost.RESPONSE_DETAIL}}: ErrorDetailType[] }
+                          for (const error of errors.detail) setError(...error)
+                          return { handled: true }
+
+                        } else if (reshandle) {
+                          return await reshandle(response)
+                        } else {
+                          return { handled: false }
+                        }
+                      }
+
+                      return await complexPost(`/{{Controller.SUBDOMAIN}}/{{BatchUpdateWriteModel.CONTROLLER_SUBDOMAIN}}/{{CONTROLLER_ACTION}}`,{ {{HOOK_PARAM_ITEMS}}: items }, { ...rest, responseHandler })
                     } finally {
                       setNowSaving(false)
                     }
@@ -157,22 +152,21 @@ namespace Nijo.Models.ReadModel2Features {
                 /// <summary>
                 /// 画面表示用データの一括更新処理を実行します。
                 /// </summary>
-                /// <param name="parameter">一括更新内容</param>
-                /// <param name="ignoreConfirm">「○○ですがよろしいですか？」などのコンファームを無視します。</param>
+                /// <param name="request">一括更新内容</param>
                 [HttpPost("{{CONTROLLER_ACTION}}")]
-                public virtual IActionResult BatchUpdateReadModels([FromBody] ReadModelsBatchUpdateParameter parameter, [FromQuery] bool ignoreConfirm) {
+                public virtual IActionResult BatchUpdateReadModels(ComplexPostRequest<ReadModelsBatchUpdateParameter> request) {
                     try {
                         var options = new {{SaveContext.SAVE_OPTIONS}} {
-                            IgnoreConfirm = ignoreConfirm,
+                            IgnoreConfirm = request.IgnoreConfirm,
                         };
-                        var result = _applicationService.{{APPSRV_BATCH_UPDATE}}(parameter.{{HOOK_PARAM_ITEMS}}, options);
+                        var result = _applicationService.{{APPSRV_BATCH_UPDATE}}(request.Data.{{HOOK_PARAM_ITEMS}}, options);
 
                         if (result.HasError()) {
                             return UnprocessableEntity(new {
                                 {{HTTP_RESULT_DETAIL}} = result.GetErrorDataJson(),
                             });
                         }
-                        if (!ignoreConfirm && result.HasConfirm()) {
+                        if (!request.IgnoreConfirm && result.HasConfirm()) {
                             return Accepted(new {
                                 {{HTTP_RESULT_CONFIRM}} = result.GetConfirms().ToArray(),
                                 {{HTTP_RESULT_DETAIL}} = result.GetErrorDataJson(),

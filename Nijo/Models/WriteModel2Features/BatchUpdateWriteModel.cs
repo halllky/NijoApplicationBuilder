@@ -183,7 +183,7 @@ namespace Nijo.Models.WriteModel2Features {
                 {{sortedAggregates.SelectTextTemplate(x => $$"""
                                 {{x.CreateCommand}} or
                                 {{x.UpdateCommand}} or
-                                {{x.DeleteCommand}} => new {{x.DisplayMessageClass}}([i.ToString()]),
+                                {{x.DeleteCommand}} => new {{x.DisplayMessageClass}}([]),
                 """)}}
                                 _ => throw new InvalidOperationException(),
                             };

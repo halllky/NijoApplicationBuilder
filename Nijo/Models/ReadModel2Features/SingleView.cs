@@ -208,14 +208,12 @@ namespace Nijo.Models.ReadModel2Features {
                     const result = await batchUpdateReadModels([{
                       dataType: '{{BatchUpdateReadModel.GetDataTypeLiteral(_aggregate)}}',
                       values: currentValues,
-                    }])
-                    // 処理失敗の場合、入力エラーを画面に表示
-                    if (!result.ok && result.errors) {
-                      // 一括更新だがデータの数は1件しか無いのでインデックスは '0' 決め打ち
-                      for (const [name, error] of result.errors['0']) {
+                    }], {
+                      // 処理失敗の場合、入力エラーを画面に表示
+                      setError: (_, name, error) => {
                         setError(name as ReactHookForm.FieldPath<Types.{{dataClass.TsTypeName}}> | `root.${string}` | 'root', error)
-                      }
-                    }
+                      },
+                    })
                 {{If(context.Config.MultiViewDetailLinkBehavior == Config.E_MultiViewDetailLinkBehavior.NavigateToReadOnlyMode, () => $$"""
                     // 処理成功の場合、詳細画面（読み取り専用）へ遷移
                     if (result.ok) {

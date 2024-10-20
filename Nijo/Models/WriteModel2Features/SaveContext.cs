@@ -111,15 +111,14 @@ namespace Nijo.Models.WriteModel2Features {
                             return _errors.Values.Any(e => e.HasError());
                         }
                         public JsonNode GetErrorDataJson() {
-                            var obj = new JsonObject();
-                            foreach (var kv in _errors.OrderBy(kv => kv.Key)) {
-                                var pathAndMessages = new JsonArray();
-                                foreach (var x in kv.Value.ToReactHookFormErrors()) {
-                                    pathAndMessages.Add(x);
+                            var arr = new JsonArray();
+                            foreach (var kv in _errors) {
+                                foreach (var pathAndMessages in kv.Value.ToReactHookFormErrors()) {
+                                    pathAndMessages.Insert(0, kv.Key); // 何番目のデータでエラーが発生したかの情報を加える
+                                    arr.Add(pathAndMessages);
                                 }
-                                obj.Add(kv.Key.ToString(), pathAndMessages);
                             }
-                            return obj;
+                            return arr;
                         }
                         #endregion メッセージ
 

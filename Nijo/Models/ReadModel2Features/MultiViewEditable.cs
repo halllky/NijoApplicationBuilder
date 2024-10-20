@@ -116,22 +116,21 @@ namespace Nijo.Models.ReadModel2Features {
 
                       // 保存時
                       const { batchUpdateReadModels, nowSaving } = AggregateHook.{{BatchUpdateReadModel.HOOK_NAME}}()
+                      const [, dispatchToast] = Util.useToastContext()
                       const handleSave = useEvent(async (updatedData: AggregateType.{{dataClass.TsTypeName}}[]) => {
                         clearErrors()
                         const batchUpdateArgs = updatedData.map(values => ({ dataType: '{{DataClassForSaveBase.GetEnumValueOf(_rootAggregate)}}' as const, values }))
-                        const result = await batchUpdateReadModels(batchUpdateArgs)
+                        const result = await batchUpdateReadModels(batchUpdateArgs, {
+                          setError: (itemIndex, name, error) => {
+                            setError(`data.${itemIndex}.${name}` as FieldPath<{ data: AggregateType.{{dataClass.TsTypeName}}[] }>, error)
+                          },
+                        })
                         if (!result.ok) {
-                          if (result.errors) {
-                            setError('root', { types: { 'ERROR-0': 'エラーがあります。' } })
-                            for (const [index, errors] of Object.entries(result.errors)) {
-                              for (const [name, error] of errors) {
-                                setError(`data.${index}.${name}` as FieldPath<{ data: AggregateType.{{dataClass.TsTypeName}}[] }>, error)
-                              }
-                            }
-                          }
+                          setError('root', { types: { 'ERROR-0': 'エラーがあります。' } })
                           return
                         }
                         // 更新成功時は画面リロード
+                        dispatchToast(msg => msg.info('更新しました。'))
                         reload()
                       })
 
@@ -175,7 +174,7 @@ namespace Nijo.Models.ReadModel2Features {
                       })
 
                       // 列定義
-                      const { post } = Util.useHttpRequest()
+                      const { complexPost } = Util.useHttpRequest()
                       const cellType = Layout.{{Parts.WebClient.DataTable.CellType.USE_HELPER}}<AggregateType.{{dataClass.TsTypeName}}>()
                       const handleChangeRow = useEvent((rowIndex: number, row: AggregateType.{{dataClass.TsTypeName}}) => {
                         const defaultValue = defaultValuesDict.get(getItemKeyAsString(row))
@@ -188,7 +187,7 @@ namespace Nijo.Models.ReadModel2Features {
                       })
                       const columnDefs = React.useMemo((): Layout.DataTableColumn<AggregateType.{{dataClass.TsTypeName}}>[] => [
                         {{WithIndent(tableBuilder.RenderColumnDef(ctx), "    ")}}
-                      ], [post, cellType])
+                      ], [complexPost, cellType])
 
                       // 選択されている行
                       const [activeRowIndex, setActiveRowIndex] = useState<number | undefined>(undefined)
