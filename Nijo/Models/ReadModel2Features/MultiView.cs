@@ -307,11 +307,15 @@ namespace Nijo.Models.ReadModel2Features {
         internal string RenderCustomizersDeclaring() {
             var searchResult = new DataClassForDisplay(_aggregate);
             return $$"""
+                /** {{_aggregate.Item.DisplayName.Replace("*/", "")}} の一覧検索画面をカスタマイズします。 */
                 {{ComponentPhysicalName}}?: {
+                  /** ヘッダ部分（画面タイトルや検索ボタンがあるあたり）に追加されます。 */
                   {{HEADER_CUSTOMIZER}}?: (props: {
                     getSelectedItems: (() => AggregateType.{{searchResult.TsTypeName}}[])
                   }) => React.ReactNode
+                  /** 検索条件欄。これが指定されている場合、自動生成された検索条件欄は使用されません。 */
                   {{SEARCH_CONDITION_CUSTOMIZER}}?: () => React.ReactNode
+                  /** 検索結果欄のグリッドの列定義を編集するReactフックを返してください。 */
                   {{SEARCH_RESULT_CUSTOMIZER}}?: () => ((defaultColumns: Layout.DataTableColumn<AggregateType.{{searchResult.TsTypeName}}>[]) => Layout.DataTableColumn<AggregateType.{{searchResult.TsTypeName}}>[])
                 }
                 """;

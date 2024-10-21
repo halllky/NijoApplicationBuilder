@@ -196,8 +196,11 @@ namespace Nijo.Models.RefTo {
         internal string RenderCustomizersDeclaring() {
             var displayData = new RefDisplayData(_aggregate, _refEntry);
             return $$"""
+                /** {{_aggregate.Item.DisplayName.Replace("*/", "")}} の検索ダイアログをカスタマイズします。 */
                 {{Customizer}}?: {
+                  /** 検索条件欄。これが指定されている場合、自動生成された検索条件欄は使用されません。 */
                   {{SEARCH_CONDITION_CUSTOMIZER}}?: () => React.ReactNode
+                  /** 検索結果欄のグリッドの列定義を編集するReactフックを返してください。 */
                   {{SEARCH_RESULT_CUSTOMIZER}}?: () => ((defaultColumns: Layout.DataTableColumn<AggregateType.{{displayData.TsTypeName}}>[]) => Layout.DataTableColumn<AggregateType.{{displayData.TsTypeName}}>[])
                 }
                 """;
