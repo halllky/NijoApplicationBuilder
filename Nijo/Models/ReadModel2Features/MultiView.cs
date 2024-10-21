@@ -180,6 +180,11 @@ namespace Nijo.Models.ReadModel2Features {
                       })
                       const columnCustomizer = Customizers?.{{SEARCH_RESULT_CUSTOMIZER}}?.()
 
+                      // ブラウザのタイトル
+                      const browserTitle = React.useMemo(() => {
+                        return Customizers?.{{SET_BROWSER_TITLE}}?.() ?? '{{_aggregate.Item.DisplayName.Replace("'", "\\'")}}'
+                      }, [Customizers?.{{SET_BROWSER_TITLE}}])
+
                       // 列定義
                       const cellType = Layout.{{CellType.USE_HELPER}}<AggregateType.{{searchResult.TsTypeName}}>()
                       const columnDefs: Layout.DataTableColumn<AggregateType.{{searchResult.TsTypeName}}>[] = useMemo(() => {
@@ -191,6 +196,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                       return (
                         <Layout.PageFrame
+                          browserTitle={browserTitle}
                           header={<>
                             <Layout.PageTitle className="self-center">
                               {{_aggregate.Item.DisplayName}}
@@ -300,6 +306,7 @@ namespace Nijo.Models.ReadModel2Features {
         }
 
         #region カスタマイズ部分
+        private const string SET_BROWSER_TITLE = "setBrowserTitle";
         private const string HEADER_CUSTOMIZER = "HeaderComponent";
         private const string SEARCH_CONDITION_CUSTOMIZER = "SearchConditionComponent";
         private const string SEARCH_RESULT_CUSTOMIZER = "useGridColumnCustomizer";
@@ -309,6 +316,8 @@ namespace Nijo.Models.ReadModel2Features {
             return $$"""
                 /** {{_aggregate.Item.DisplayName.Replace("*/", "")}} の一覧検索画面をカスタマイズします。 */
                 {{ComponentPhysicalName}}?: {
+                  /** この画面を表示したときのブラウザのタイトルを編集します。 */
+                  {{SET_BROWSER_TITLE}}?: () => string
                   /** ヘッダ部分（画面タイトルや検索ボタンがあるあたり）に追加されます。 */
                   {{HEADER_CUSTOMIZER}}?: (props: {
                     getSelectedItems: (() => AggregateType.{{searchResult.TsTypeName}}[])

@@ -39,6 +39,7 @@ export const ServerSettingScreen = () => {
 
   return (
     <PageFrame
+      browserTitle="設定"
       header={<>
         <PageTitle>設定</PageTitle>
         <div className="flex-1"></div>

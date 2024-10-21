@@ -5,12 +5,17 @@ import { NowLoading } from '../input/NowLoading'
 /**
  * ページコンテンツの枠
  */
-export const PageFrame = ({ header, footer, children, className, nowLoading, ...rest }: HTMLAttributes<HTMLDivElement> & {
+export const PageFrame = ({ browserTitle, header, footer, children, className, nowLoading, ...rest }: HTMLAttributes<HTMLDivElement> & {
+  browserTitle: string
   header?: React.ReactNode
   footer?: React.ReactNode
   children?: React.ReactNode
   nowLoading?: boolean
 }) => {
+  React.useEffect(() => {
+    document.title = browserTitle
+  }, [browserTitle])
+
   return (
     <div {...rest} className={`flex flex-col justify-start h-full overflow-auto ${className ?? ''}`}>
       <header className="flex justify-start items-center basis-10 p-1 gap-4">

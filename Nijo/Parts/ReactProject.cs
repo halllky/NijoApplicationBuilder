@@ -12,6 +12,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace Nijo.Parts {
     /// <summary>
@@ -84,6 +85,12 @@ namespace Nijo.Parts {
 
                 export default App
                 """, new UTF8Encoding(false));
+
+            // index.html 内のtitleを書き換える
+            var indexHtml = Path.Combine(ProjectRoot, "index.html");
+            var beforeReplaceIndexHtml = File.ReadAllText(indexHtml, new UTF8Encoding(false, false));
+            var afterReplaceIndexHtml = beforeReplaceIndexHtml.Replace("このタイトルはプロジェクト新規作成時に上書きされます", HttpUtility.HtmlEncode(config.RootNamespace));
+            File.WriteAllText(indexHtml, afterReplaceIndexHtml, new UTF8Encoding(false, false));
         }
 
         /// <summary>

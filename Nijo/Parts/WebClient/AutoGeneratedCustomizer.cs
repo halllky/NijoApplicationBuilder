@@ -56,6 +56,7 @@ namespace Nijo.Parts.WebClient {
 
                         return $$"""
                             import React from 'react'
+                            import * as ReactHookForm from 'react-hook-form'
                             import { RouteObject } from 'react-router-dom'
                             import * as Util from './util'
                             import * as Input from './input'

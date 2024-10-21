@@ -134,6 +134,7 @@ const AfterLoaded = ({ data }: {
   return (
     <FormProvider {...reactHookFormMethods}>
       <Layout.PageFrame
+        browserTitle="一括編集画面試作"
         header={<>
           <Layout.PageTitle>一括編集画面試作</Layout.PageTitle>
           <Input.IconButton onClick={handleInsert} outline mini>追加</Input.IconButton>
