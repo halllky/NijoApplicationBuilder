@@ -213,9 +213,9 @@ namespace Nijo.Models.ReadModel2Features {
                         if (item is {{x.DisplayData.CsClassName}} item{{j}}) {
                             // ReadModelからWriteModelへ変換
                             var readModelErrorMessageContainer = new {{x.DisplayData.MessageDataCsClassName}}([]);
-                            var writeModels = {{APPSRV_CONVERT_DISP_TO_SAVE}}(item{{j}}, readModelErrorMessageContainer, batchUpdateState).ToArray();
-
                             batchUpdateState.RegisterErrorDataWithIndex(i, readModelErrorMessageContainer);
+
+                            var writeModels = {{APPSRV_CONVERT_DISP_TO_SAVE}}(item{{j}}, readModelErrorMessageContainer, batchUpdateState).ToArray();
                             converted.AddRange(writeModels);
                             continue;
                         }
