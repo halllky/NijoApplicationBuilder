@@ -109,7 +109,6 @@ namespace Nijo.Parts {
                                     });
 
                                     // npm start で実行されるポートがASP.NETのそれと別なので
-
                                     builder.Services.AddCors(options => {
                                         options.AddDefaultPolicy(builder => {
                                             builder.WithOrigins("{{_ctx.GeneratedProject.ReactProject.GetDebuggingClientUrl().ToString().TrimEnd('/')}}")
@@ -123,10 +122,16 @@ namespace Nijo.Parts {
                                         // エラーハンドリング
                                         option.Filters.Add<{{_ctx.Config.RootNamespace}}.HttpResponseExceptionFilter>();
 
+                                        // クライアント側からアップロードされたファイルをサーバー側ストレージに保存する処理がHTTPリクエスト処理の最初で実行されるようにする
+                                        option.Filters.Add<SavingUploadedFilesFilter>();
+
                                     }).AddJsonOptions(option => {
                                         // JSON日本語設定
                                         {{Utility.UtilityClass.CLASSNAME}}.{{Utility.UtilityClass.MODIFY_JSONOPTION}}(option.JsonSerializerOptions);
                                     });
+
+                                    // クライアント側からアップロードされたファイルをサーバー側ストレージに保存する処理
+                                    builder.Services.AddScoped<IFileAttachmentRepository, AttachmentFileRepositoryWeb>();
 
                                     {{WithIndent(_ctx.WebApiProject.ConfigureServices.SelectTextTemplate(fn => fn.Invoke("builder.Services")), "           ")}}
                                 }

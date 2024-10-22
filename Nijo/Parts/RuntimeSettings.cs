@@ -45,6 +45,11 @@ namespace Nijo.Parts {
                             [JsonPropertyName("log")]
                             public string? LogDirectory { get; set; }
                             /// <summary>
+                            /// アップロードファイル保存先ディレクトリ
+                            /// </summary>
+                            [JsonPropertyName("uploadedFileDir")]
+                            public string? UploadedFileDir { get; set; }
+                            /// <summary>
                             /// バッチ実行結果出力先ディレクトリ
                             /// </summary>
                             [JsonPropertyName("job")]
@@ -108,6 +113,7 @@ namespace Nijo.Parts {
 
                                 return new {{SERVER}} {
                                     LogDirectory = "log",
+                                    UploadedFileDir = "uploaded-files",
                                     JobDirectory = "job",
                                     CurrentDb = "SQLITE",
                                     DbProfiles = new List<DbProfile> {

@@ -5,7 +5,8 @@ import * as ReactHookForm from "react-hook-form"
 import { UUID } from "uuidjs"
 import { useUserSetting } from "./UserSetting"
 import { useMsgContext, useToastContext } from "./Notification"
-import { FileAttachment } from "../input/FileAttachment"
+import { FileAttachmentMetadata } from "../input/FileAttachment"
+import dayjs from "dayjs"
 
 type HttpSendResult<T>
   = { ok: true, data: T }
@@ -220,10 +221,11 @@ export const useHttpRequest = () => {
       if (value.file.length === 0) return null // ファイルが1件も添付されていない場合はnull
 
       // 項目がファイルの場合、 multipart/form-data の別のパートに分けて送信する。
-      // サーバー側では、ここで発番したUUIDを使って、別パートに分かれたファイルを1つのオブジェクトに組み立てる。
-      const fileId = UUID.generate()
-      formData.append(fileId, value.file[0])
-      return { ...value, file: fileId }
+      // サーバー側では、ActionFilterの仕組みを使ってファイル保存し、
+      // アプリケーションサービス内のオブジェクトはここで発番したIDでやり取りする。
+      const fileAttachmentId = `${dayjs().format('YYYYMMDD_HHmmss')}_${UUID.generate()}`
+      formData.append(fileAttachmentId, value.file[0])
+      return { ...value, file: fileAttachmentId }
     })
     formData.append('data', bodyJson) // 項目のキーはサーバー側と合わせる必要あり
     if (options?.ignoreConfirm) formData.set('ignoreConfirm', 'true') // 項目のキーはサーバー側と合わせる必要あり
@@ -387,8 +389,8 @@ export const useHttpRequest = () => {
 }
 
 /** 添付ファイルの場合は特殊なHTTPリクエストになるので、その判定用関数 */
-export const isFileAttachment = (value: unknown): value is (FileAttachment & { file: FileList }) => {
-  const attachment = value as FileAttachment | undefined
+export const isFileAttachment = (value: unknown): value is (FileAttachmentMetadata & { file: FileList }) => {
+  const attachment = value as FileAttachmentMetadata | undefined
   return attachment?.file instanceof FileList
 }
 

@@ -26,8 +26,8 @@ namespace Nijo.Core.AggregateMemberTypes {
         private const string C_OTHER_PROPS = "othreProps";
 
 
-        public string GetCSharpTypeName() => "FileAttachment";
-        public string GetTypeScriptTypeName() => "Input.FileAttachment";
+        public string GetCSharpTypeName() => "FileAttachmentMetadata";
+        public string GetTypeScriptTypeName() => "Input.FileAttachmentMetadata";
 
         public string GetUiDisplayName() => "ファイル";
         public string GetHelpText() => $$"""

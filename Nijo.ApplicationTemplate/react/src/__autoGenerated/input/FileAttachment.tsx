@@ -5,26 +5,23 @@ import { defineCustomComponent } from "./InputBase"
 import { IconButton } from "./IconButton"
 
 /** 添付ファイルを表す型 */
-export type FileAttachment = {
+export type FileAttachmentMetadata = {
+  /**
+   * 永続化された添付ファイルにアクセスするためのID。
+   * サーバー側で発番される。この項目に値がある場合はアップロード済みであることを表す。
+   */
+  fileAttachmentId?: string
+  /** 画面上に表示するファイル名 */
+  displayFileName?: string
+  /** IDと名前以外の属性 */
+  otherProps?: { [key: string]: string | undefined }
+
   /** 新しくファイルを添付しようとしているときはここにファイルが入る */
   file?: FileList
-  /** 永続化されたファイルのメタデータ。ファイルが永続化されていない場合はundefined */
-  metadata?: FileAttachmentMetadata
-  /** 永続化されたファイルを削除しようとしている場合はtrue */
-  willDetach?: boolean
-}
-/** 永続化されたファイルのメタデータ */
-export type FileAttachmentMetadata = {
-  /** 画面上に表示するファイル名 */
-  displayFileName: string
-  /** aタグのリンク */
-  href: string
-  /** リンククリック時にダウンロードするかどうか */
-  download?: boolean
 }
 
 /** 添付ファイル追加UI。または永続化された添付ファイルへのリンク。 */
-export const FileAttachmentView = defineCustomComponent<FileAttachment>((props, ref) => {
+export const FileAttachmentView = defineCustomComponent<FileAttachmentMetadata>((props, ref) => {
 
   const {
     value,
@@ -38,7 +35,7 @@ export const FileAttachmentView = defineCustomComponent<FileAttachment>((props, 
     onChange?.({ ...value, file: e.target.files! })
   })
   const handleDetach = useEvent(() => {
-    onChange?.({ ...value, willDetach: true })
+    onChange?.(undefined)
   })
 
   const divRef = React.useRef<HTMLDivElement>(null)
@@ -49,20 +46,13 @@ export const FileAttachmentView = defineCustomComponent<FileAttachment>((props, 
 
   return (
     <div {...rest} className={`inline-flex gap-1 items-center ${className ?? ''}`}>
-      {!readOnly && (!value?.metadata || value.willDetach) && (
+      {!readOnly && !value?.fileAttachmentId && (
         <input type="file" className="flex-1" onChange={handleChange} />
       )}
-      {value?.metadata && !value.willDetach && (
-        <a
-          href={value.metadata.href}
-          download={value.metadata.download}
-          target="_blank"
-          className="text-color-link"
-        >
-          {value.metadata.displayFileName}
-        </a>
+      {value?.fileAttachmentId && (
+        <span>{value.displayFileName}</span>
       )}
-      {!readOnly && value?.metadata && !value.willDetach && (
+      {!readOnly && value?.fileAttachmentId && (
         <IconButton icon={XMarkIcon} onClick={handleDetach} hideText>解除</IconButton>
       )}
     </div>

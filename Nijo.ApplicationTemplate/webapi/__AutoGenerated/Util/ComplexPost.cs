@@ -1,11 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using NIJO_APPLICATION_TEMPLATE;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Text.Json.Serialization;
 
-namespace NIJO_APPLICATION_TEMPLATE_WebApi {
+namespace NIJO_APPLICATION_TEMPLATE {
 
     /// <summary>
     /// Reactフック側の処理と組み合わせて複雑な挙動を実現するPOSTリクエスト。
@@ -48,14 +46,10 @@ namespace NIJO_APPLICATION_TEMPLATE_WebApi {
 
             public Task BindModelAsync(ModelBindingContext bindingContext) {
                 try {
-                    var options = new JsonSerializerOptions();
-                    NIJO_APPLICATION_TEMPLATE.Util.ModifyJsonSrializerOptions(options);
-                    options.Converters.Add(new MultipartFormDataFileConevrter(bindingContext.HttpContext));
-
                     // data
                     var dataJson = bindingContext.HttpContext.Request.Form[PARAM_DATA];
                     var dataType = bindingContext.ModelType.GenericTypeArguments[0];
-                    var parsedData = JsonSerializer.Deserialize(dataJson!, dataType, options);
+                    var parsedData = JsonSerializer.Deserialize(dataJson!, dataType, Util.GetJsonSrializerOptions());
 
                     // ignoreConfirm
                     var ignoreConfirm = bindingContext.HttpContext.Request.Form.TryGetValue(PARAM_IGNORE_CONFIRM, out var strIgnoreConfirm)
@@ -74,82 +68,6 @@ namespace NIJO_APPLICATION_TEMPLATE_WebApi {
                     bindingContext.Result = ModelBindingResult.Failed();
                     return Task.CompletedTask;
                 }
-            }
-
-            /// <summary>
-            /// <see cref="ComplexPostRequest{T}"/> の仕組みでは、
-            /// HTTPリクエストで入力フォームの内容とファイル送信が同時に行われるとき、
-            /// ファイル内容のバイナリは Content-Type: multipart/form-data の別パートとして分離して送信されるようにし、
-            /// 元の入力フォームでは当該別パートのNameだけを保持している。
-            /// このコンバータは、別々のパートに分離されたファイルのオブジェクトを、入力フォームのJSONの元々そのファイルが添付されていた位置に復元する役割を持つ。
-            /// </summary>
-            private class MultipartFormDataFileConevrter : JsonConverter<FileAttachment> {
-                public MultipartFormDataFileConevrter(HttpContext httpContext) {
-                    _httpContext = httpContext;
-                }
-                private readonly HttpContext _httpContext;
-
-                public override FileAttachment? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
-                    var jsonNode = JsonNode.Parse(ref reader);
-                    if (jsonNode is not JsonObject jsonObject) return null;
-
-                    // HttpContextから、HTTPリクエストでクライアント側から送られてきたファイルの情報を探す。
-                    // クライアント側のReactフック内でHTTPリクエストボディを組み立てる際に発行される一意なUUIDを使って探す。
-                    IFormFile? formFile = null;
-                    var fileId = jsonNode[C_FILE]?.GetValue<string?>();
-                    if (fileId != null) {
-                        formFile = _httpContext.Request.Form.Files.GetFile(fileId);
-                    }
-
-                    // メタデータ部分はJSONをそのままデシリアライズする
-                    var metadata = jsonNode[C_METADATA]?.AsObject();
-                    var instance = new FileAttachment {
-                        GetUploadingFile = formFile == null
-                            ? null
-                            : formFile.OpenReadStream,
-                        Metadata = new() {
-                            DisplayFileName = metadata?[C_DISPLAY_FILE_NAME]?.GetValue<string?>(),
-                            Download = metadata?[C_DOWNLOAD]?.GetValue<bool?>() ?? false,
-                            Href = metadata?[C_HREF]?.GetValue<string?>(),
-                            OtherProps = metadata?[C_OTHER_PROPS]
-                                ?.AsObject()
-                                .AsEnumerable()
-                                .ToDictionary(kv => kv.Key, kv => kv.Value?.GetValue<string?>() ?? string.Empty)
-                                ?? [],
-                        },
-                        WillDetach = jsonNode[C_WILL_DETACH]?.GetValue<bool?>() ?? false,
-                    };
-                    return instance;
-                }
-
-                public override void Write(Utf8JsonWriter writer, FileAttachment? value, JsonSerializerOptions options) {
-                    if (value == null) {
-                        writer.WriteNullValue();
-                    } else {
-                        var otherProps = new JsonObject();
-                        foreach (var kv in value.Metadata?.OtherProps ?? []) {
-                            otherProps[kv.Key] = kv.Value;
-                        }
-                        var obj = new JsonObject {
-                            [C_METADATA] = new JsonObject {
-                                [C_DISPLAY_FILE_NAME] = value.Metadata?.DisplayFileName,
-                                [C_DOWNLOAD] = value.Metadata?.Download,
-                                [C_HREF] = value.Metadata?.Href,
-                                [C_OTHER_PROPS] = otherProps,
-                            },
-                            [C_WILL_DETACH] = value.WillDetach,
-                        };
-                        obj.WriteTo(writer, options);
-                    }
-                }
-
-                private const string C_FILE = "file";
-                private const string C_METADATA = "metadata";
-                private const string C_WILL_DETACH = "willDetach";
-                private const string C_DISPLAY_FILE_NAME = "displayFileName";
-                private const string C_HREF = "href";
-                private const string C_DOWNLOAD = "download";
-                private const string C_OTHER_PROPS = "othreProps";
             }
         }
 

@@ -12,9 +12,9 @@ namespace NIJO_APPLICATION_TEMPLATE {
     /// <see cref="FileAttachment"/> 型のプロパティと、DBのカラムの型変換。
     /// DBには添付ファイルのメタデータのJSONのみが保存される。
     /// </summary>
-    internal class EFCoreFileAttachmentConverter : ValueConverter<FileAttachment, string> {
+    internal class EFCoreFileAttachmentConverter : ValueConverter<FileAttachmentMetadata, string> {
         public EFCoreFileAttachmentConverter() : base(
             csValue => csValue.ToJson(),
-            dbValue => Util.ParseJson<FileAttachment>(dbValue)) { }
+            dbValue => Util.ParseJson<FileAttachmentMetadata>(dbValue)) { }
     }
 }
