@@ -69,20 +69,20 @@ namespace Nijo.Runtime {
 
             // 画面初期表示時データ読み込み処理
             app.MapGet("/load", async context => {
-                var typeDefs = EnumerateAggregateOrMemberTypes().ToList();
+                var typeDefs = EnumerateGridRowTypes().ToList();
                 var optionDefs = EnumerateOptionalAttributes().ToList();
 
                 var rootAggregates = new NijoXmlFile(_project.SchemaXmlPath)
                     .GetRootAggregatesRecursively()
-                    .SelectMany(x => x.ToAbstract(typeDefs, optionDefs.ToDictionary(d => d.Key)));
+                    .SelectMany(x => x.ToGridRow(typeDefs, optionDefs.ToDictionary(d => d.Key)));
 
                 context.Response.ContentType = "application/json";
                 await context.Response.WriteAsync(new InitialLoadData {
                     // このプロパティ名やデータの内容はGUIアプリ側の InitialLoadData の型と合わせる必要がある
                     ProjectRoot = _project.SolutionRoot,
                     EditingXmlFilePath = _project.SchemaXmlPath,
-                    Aggregates = rootAggregates.ToList(),
-                    AggregateOrMemberTypes = typeDefs,
+                    GridRows = rootAggregates.ToList(),
+                    GridRowTypes = typeDefs,
                     OptionalAttributes = optionDefs,
                 }.ConvertToJson());
             });
@@ -90,7 +90,7 @@ namespace Nijo.Runtime {
             // 編集中のバリデーション
             app.MapPost("/validate", async context => {
                 try {
-                    var collection = await ToAggregateOrMemberList(context.Request.Body);
+                    var collection = await ToGridRowList(context.Request.Body);
                     var errors = ValidationError.ToErrorObjectJson(collection.CollectVaridationErrors());
 
                     context.Response.ContentType = "application/json";
@@ -105,7 +105,7 @@ namespace Nijo.Runtime {
             app.MapPost("/save", async context => {
                 try {
                     // バリデーション
-                    var collection = await ToAggregateOrMemberList(context.Request.Body);
+                    var collection = await ToGridRowList(context.Request.Body);
                     var errors = collection.CollectVaridationErrors().ToArray();
                     if (errors.Length > 0) {
                         context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
@@ -121,7 +121,7 @@ namespace Nijo.Runtime {
 
                     var allElements = collection
                         .RootAggregates()
-                        .Select(a => NijoXmlElement.FromAbstract(a, collection));
+                        .Select(a => NijoXmlElement.FromGridRow(a, collection));
                     foreach (var el in allElements) {
                         nijoXml.Add(el);
                     }
@@ -141,31 +141,31 @@ namespace Nijo.Runtime {
 
 
         /// <summary>
-        /// HTTPリクエストボディから <see cref="AggregateOrMemberList"/> のインスタンスを作成
+        /// HTTPリクエストボディから <see cref="NijoUiGridRowList"/> のインスタンスを作成
         /// </summary>
         /// <returns></returns>
-        private async Task<AggregateOrMemberList> ToAggregateOrMemberList(Stream httpRequestBody) {
+        private async Task<NijoUiGridRowList> ToGridRowList(Stream httpRequestBody) {
             using var sr = new StreamReader(httpRequestBody);
             var json = await sr.ReadToEndAsync();
             var obj = json.ParseAsJson<ClientRequest>();
 
-            return new AggregateOrMemberList(obj.Aggregates ?? []);
+            return new NijoUiGridRowList(obj.Aggregates ?? []);
         }
 
         /// <summary>
-        /// 深さの情報だけを持っている <see cref="AggregateOrMember"/> の一覧に対して、
+        /// 深さの情報だけを持っている <see cref="NijoUiGridRow"/> の一覧に対して、
         /// 祖先や子孫を取得するといったツリー構造データに対する操作を提供します。
         /// </summary>
-        private class AggregateOrMemberList : IReadOnlyList<AggregateOrMember> {
-            public AggregateOrMemberList(IList<AggregateOrMember> list) {
+        private class NijoUiGridRowList : IReadOnlyList<NijoUiGridRow> {
+            public NijoUiGridRowList(IList<NijoUiGridRow> list) {
                 _list = list;
             }
-            private readonly IList<AggregateOrMember> _list;
+            private readonly IList<NijoUiGridRow> _list;
 
             /// <summary>
             /// ルート集約のみ列挙する
             /// </summary>
-            public IEnumerable<AggregateOrMember> RootAggregates() {
+            public IEnumerable<NijoUiGridRow> RootAggregates() {
                 foreach (var item in _list) {
                     if (item.Depth == 0) yield return item;
                 }
@@ -174,7 +174,7 @@ namespace Nijo.Runtime {
             /// <summary>
             /// 直近の親を返す
             /// </summary>
-            public AggregateOrMember? GetParent(AggregateOrMember agg) {
+            public NijoUiGridRow? GetParent(NijoUiGridRow agg) {
                 var currentIndex = _list.IndexOf(agg);
                 if (currentIndex == -1) throw new InvalidOperationException($"{agg}はこの一覧に属していません。");
                 while (true) {
@@ -188,14 +188,14 @@ namespace Nijo.Runtime {
             /// <summary>
             /// ルート要素を返す
             /// </summary>
-            public AggregateOrMember GetRoot(AggregateOrMember agg) {
+            public NijoUiGridRow GetRoot(NijoUiGridRow agg) {
                 return GetAncestors(agg).FirstOrDefault() ?? agg;
             }
             /// <summary>
             /// 祖先を返す。より階層が浅いほうが先。
             /// </summary>
-            public IEnumerable<AggregateOrMember> GetAncestors(AggregateOrMember agg) {
-                var ancestors = new List<AggregateOrMember>();
+            public IEnumerable<NijoUiGridRow> GetAncestors(NijoUiGridRow agg) {
+                var ancestors = new List<NijoUiGridRow>();
                 var currentDepth = agg.Depth;
                 var currentIndex = _list.IndexOf(agg);
                 if (currentIndex == -1) throw new InvalidOperationException($"{agg}はこの一覧に属していません。");
@@ -219,7 +219,7 @@ namespace Nijo.Runtime {
             /// </summary>
             /// <param name="agg"></param>
             /// <returns></returns>
-            public IEnumerable<AggregateOrMember> GetChildren(AggregateOrMember agg) {
+            public IEnumerable<NijoUiGridRow> GetChildren(NijoUiGridRow agg) {
                 var currentIndex = _list.IndexOf(agg);
                 if (currentIndex == -1) throw new InvalidOperationException($"{agg}はこの一覧に属していません。");
                 while (true) {
@@ -235,7 +235,7 @@ namespace Nijo.Runtime {
             /// <summary>
             /// 子孫を返す
             /// </summary>
-            public IEnumerable<AggregateOrMember> GetDescendants(AggregateOrMember agg) {
+            public IEnumerable<NijoUiGridRow> GetDescendants(NijoUiGridRow agg) {
                 var currentIndex = _list.IndexOf(agg);
                 if (currentIndex == -1) throw new InvalidOperationException($"{agg}はこの一覧に属していません。");
                 while (true) {
@@ -328,7 +328,7 @@ namespace Nijo.Runtime {
                         }
                     } else {
                         // 上記以外
-                        var typeDef = EnumerateAggregateOrMemberTypes().SingleOrDefault(d => d.Key == node.Type);
+                        var typeDef = EnumerateGridRowTypes().SingleOrDefault(d => d.Key == node.Type);
                         if (typeDef == null) {
                             yield return new ValidationError {
                                 Node = node,
@@ -373,9 +373,9 @@ namespace Nijo.Runtime {
             }
 
             #region IReadOnlyListの実装
-            public AggregateOrMember this[int index] => _list[index];
+            public NijoUiGridRow this[int index] => _list[index];
             public int Count => _list.Count;
-            public IEnumerator<AggregateOrMember> GetEnumerator() {
+            public IEnumerator<NijoUiGridRow> GetEnumerator() {
                 return _list.GetEnumerator();
             }
             IEnumerator IEnumerable.GetEnumerator() {
@@ -385,7 +385,7 @@ namespace Nijo.Runtime {
         }
         private class ValidationError {
             /// <summary>どの集約またはメンバーでエラーが発生したか</summary>
-            public required AggregateOrMember Node { get; init; }
+            public required NijoUiGridRow Node { get; init; }
             /// <summary>
             /// どの項目でエラーが発生したか。
             /// <see cref="ERR_TO_ROW"/> の場合、メンバー全体に対するエラー。
@@ -456,9 +456,9 @@ namespace Nijo.Runtime {
             [JsonPropertyName("editingXmlFilePath")]
             public string? EditingXmlFilePath { get; set; }
             [JsonPropertyName("aggregates")]
-            public List<AggregateOrMember>? Aggregates { get; set; }
+            public List<NijoUiGridRow>? GridRows { get; set; }
             [JsonPropertyName("aggregateOrMemberTypes")]
-            public List<AggregateOrMemberTypeDef>? AggregateOrMemberTypes { get; set; }
+            public List<GridRowTypeDef>? GridRowTypes { get; set; }
             [JsonPropertyName("optionalAttributes")]
             public List<OptionalAttributeDef>? OptionalAttributes { get; set; }
         }
@@ -467,10 +467,10 @@ namespace Nijo.Runtime {
         /// </summary>
         private class ClientRequest {
             [JsonPropertyName("aggregates")]
-            public List<AggregateOrMember>? Aggregates { get; set; }
+            public List<NijoUiGridRow>? Aggregates { get; set; }
         }
 
-        private class AggregateOrMember {
+        private class NijoUiGridRow {
             [JsonPropertyName("depth")]
             public required int Depth { get; set; }
             [JsonPropertyName("uniqueId")]
@@ -495,7 +495,7 @@ namespace Nijo.Runtime {
                     ?? DisplayName?.ToCSharpSafe()
                     ?? string.Empty;
             }
-            public string GetRefToPath(AggregateOrMemberList collection) {
+            public string GetRefToPath(NijoUiGridRowList collection) {
                 return collection
                     .GetAncestors(this)
                     .Concat([this])
@@ -506,13 +506,13 @@ namespace Nijo.Runtime {
                 if (string.IsNullOrWhiteSpace(Type)) return null;
                 if (Type.StartsWith(NijoXmlElement.REFTO_PREFIX)) return E_NodeType.Ref;
                 if (Type.StartsWith(NijoXmlElement.ENUM_PREFIX)) return E_NodeType.Enum;
-                return EnumerateAggregateOrMemberTypes().SingleOrDefault(t => t.Key == Type)?.NodeType;
+                return EnumerateGridRowTypes().SingleOrDefault(t => t.Key == Type)?.NodeType;
             }
-            public bool IsWriteModel(AggregateOrMemberList schema) {
+            public bool IsWriteModel(NijoUiGridRowList schema) {
                 var root = schema.GetRoot(this);
                 return root.Type?.Contains("write-model-2") == true;
             }
-            public bool IsReadModel(AggregateOrMemberList schema) {
+            public bool IsReadModel(NijoUiGridRowList schema) {
                 var root = schema.GetRoot(this);
                 return root.Type?.Contains("read-model-2") == true
                     || root.Type?.Contains("generate-default-read-model") == true;
@@ -520,7 +520,7 @@ namespace Nijo.Runtime {
             /// <summary>
             /// エラーチェック
             /// </summary>
-            public void Validate(AggregateOrMemberList schema, ICollection<string> errors) {
+            public void Validate(NijoUiGridRowList schema, ICollection<string> errors) {
                 // 名前必須
                 if (string.IsNullOrWhiteSpace(DisplayName)) {
                     errors.Add("項目名を指定してください。");
@@ -542,7 +542,7 @@ namespace Nijo.Runtime {
             }
         }
         /// <summary>
-        /// <see cref="AggregateOrMember.Type"/> の種類
+        /// <see cref="NijoUiGridRow.Type"/> の種類
         /// </summary>
         [Flags]
         private enum E_NodeType {
@@ -573,7 +573,7 @@ namespace Nijo.Runtime {
             [JsonPropertyName("value")]
             public string? Value { get; set; }
         }
-        private class AggregateOrMemberTypeDef {
+        private class GridRowTypeDef {
             [JsonPropertyName("key")]
             public string? Key { get; set; }
             [JsonPropertyName("displayName")]
@@ -593,7 +593,7 @@ namespace Nijo.Runtime {
             /// バリデーション
             /// </summary>
             [JsonIgnore]
-            public Action<AggregateOrMember, AggregateOrMemberList, ICollection<string>> Validate { get; set; } = ((_, _, _) => { });
+            public Action<NijoUiGridRow, NijoUiGridRowList, ICollection<string>> Validate { get; set; } = ((_, _, _) => { });
             /// <summary>
             /// この種別に属するノードの種類
             /// </summary>
@@ -618,7 +618,7 @@ namespace Nijo.Runtime {
             /// バリデーション
             /// </summary>
             [JsonIgnore]
-            public Action<string?, AggregateOrMember, AggregateOrMemberList, ICollection<string>> Validate { get; set; } = ((_, _, _, _) => { });
+            public Action<string?, NijoUiGridRow, NijoUiGridRowList, ICollection<string>> Validate { get; set; } = ((_, _, _, _) => { });
         }
         private enum E_OptionalAttributeType {
             String,
@@ -629,10 +629,10 @@ namespace Nijo.Runtime {
         /// <summary>
         /// 集約やメンバーの種類として指定することができる属性を列挙します。
         /// </summary>
-        private static IEnumerable<AggregateOrMemberTypeDef> EnumerateAggregateOrMemberTypes() {
+        private static IEnumerable<GridRowTypeDef> EnumerateGridRowTypes() {
 
             // ルート集約に設定できる種類
-            yield return new AggregateOrMemberTypeDef {
+            yield return new GridRowTypeDef {
                 NodeType = E_NodeType.RootAggregate,
                 Key = "write-model-2", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "WriteModel",
@@ -648,7 +648,7 @@ namespace Nijo.Runtime {
                     if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
                 },
             };
-            yield return new AggregateOrMemberTypeDef {
+            yield return new GridRowTypeDef {
                 NodeType = E_NodeType.RootAggregate,
                 Key = "read-model-2", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "ReadModel",
@@ -664,7 +664,7 @@ namespace Nijo.Runtime {
 
                 },
             };
-            yield return new AggregateOrMemberTypeDef {
+            yield return new GridRowTypeDef {
                 NodeType = E_NodeType.RootAggregate,
                 Key = "write-model-2 generate-default-read-model", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "Write & Read",
@@ -680,7 +680,7 @@ namespace Nijo.Runtime {
 
                 },
             };
-            yield return new AggregateOrMemberTypeDef {
+            yield return new GridRowTypeDef {
                 NodeType = E_NodeType.RootAggregate,
                 Key = "enum", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "Enum",
@@ -694,7 +694,7 @@ namespace Nijo.Runtime {
 
                 },
             };
-            yield return new AggregateOrMemberTypeDef {
+            yield return new GridRowTypeDef {
                 NodeType = E_NodeType.RootAggregate,
                 Key = "command",
                 DisplayName = "Command",
@@ -713,7 +713,7 @@ namespace Nijo.Runtime {
                     }
                 },
             };
-            yield return new AggregateOrMemberTypeDef {
+            yield return new GridRowTypeDef {
                 NodeType = E_NodeType.RootAggregate,
                 Key = "value-object",
                 DisplayName = "値オブジェクト(ValueObject)",
@@ -731,7 +731,7 @@ namespace Nijo.Runtime {
 
             // ルート以外に設定できる種類
             // ※ ref-toと列挙体は集約定義に依存するのでクライアント側で計算する
-            yield return new AggregateOrMemberTypeDef {
+            yield return new GridRowTypeDef {
                 NodeType = E_NodeType.DescendantAggregate,
                 Key = "child", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "Child",
@@ -749,7 +749,7 @@ namespace Nijo.Runtime {
 
                 },
             };
-            yield return new AggregateOrMemberTypeDef {
+            yield return new GridRowTypeDef {
                 NodeType = E_NodeType.DescendantAggregate,
                 Key = "children", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "Children",
@@ -767,7 +767,7 @@ namespace Nijo.Runtime {
 
                 },
             };
-            yield return new AggregateOrMemberTypeDef {
+            yield return new GridRowTypeDef {
                 NodeType = E_NodeType.Variation,
                 Key = "variation",
                 DisplayName = "Variation",
@@ -787,7 +787,7 @@ namespace Nijo.Runtime {
                     }
                 },
             };
-            yield return new AggregateOrMemberTypeDef {
+            yield return new GridRowTypeDef {
                 NodeType = E_NodeType.DescendantAggregate,
                 Key = "variation-item", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "VariationItem",
@@ -813,7 +813,7 @@ namespace Nijo.Runtime {
                 },
             };
 
-            yield return new AggregateOrMemberTypeDef {
+            yield return new GridRowTypeDef {
                 NodeType = E_NodeType.DescendantAggregate,
                 Key = "step",
                 DisplayName = "ステップ",
@@ -838,7 +838,7 @@ namespace Nijo.Runtime {
 
             var resolver = MemberTypeResolver.Default();
             foreach (var (key, memberType) in resolver.EnumerateAll()) {
-                yield return new AggregateOrMemberTypeDef {
+                yield return new GridRowTypeDef {
                     NodeType = E_NodeType.SchalarMember,
                     Key = key,
                     DisplayName = memberType.GetUiDisplayName(),
@@ -1406,13 +1406,13 @@ namespace Nijo.Runtime {
             /// <summary>
             /// nijo ui の画面上で編集されるデータをXML要素に変換する
             /// </summary>
-            /// <param name="aggregateOrMember">変換元</param>
+            /// <param name="gridRow">変換元</param>
             /// <param name="collection">全ての集約が入ったコレクション</param>
-            public static NijoXmlElement FromAbstract(
-                AggregateOrMember aggregateOrMember,
-                AggregateOrMemberList collection) {
+            public static NijoXmlElement FromGridRow(
+                NijoUiGridRow gridRow,
+                NijoUiGridRowList collection) {
 
-                var physicalName = aggregateOrMember.GetPhysicalName();
+                var physicalName = gridRow.GetPhysicalName();
                 var el = new XElement(physicalName);
 
                 // ---------------------------------
@@ -1420,10 +1420,10 @@ namespace Nijo.Runtime {
                 var isAttrs = new List<string>();
 
                 // 型
-                if (!string.IsNullOrWhiteSpace(aggregateOrMember.Type)) {
-                    if (aggregateOrMember.Type.StartsWith(REFTO_PREFIX)) {
+                if (!string.IsNullOrWhiteSpace(gridRow.Type)) {
+                    if (gridRow.Type.StartsWith(REFTO_PREFIX)) {
                         // ref-to
-                        var uniqueId = aggregateOrMember.Type.Substring(REFTO_PREFIX.Length);
+                        var uniqueId = gridRow.Type.Substring(REFTO_PREFIX.Length);
                         var refToPath = collection
                             .FirstOrDefault(agg => agg.UniqueId == uniqueId)
                             ?.GetRefToPath(collection);
@@ -1433,9 +1433,9 @@ namespace Nijo.Runtime {
                             isAttrs.Add($"{REFTO_PREFIX}{refToPath}");
                         }
 
-                    } else if (aggregateOrMember.Type.StartsWith(ENUM_PREFIX)) {
+                    } else if (gridRow.Type.StartsWith(ENUM_PREFIX)) {
                         // enum
-                        var uniqueId = aggregateOrMember.Type.Substring(ENUM_PREFIX.Length);
+                        var uniqueId = gridRow.Type.Substring(ENUM_PREFIX.Length);
                         var enumName = collection
                             .RootAggregates()
                             .FirstOrDefault(agg => agg.UniqueId == uniqueId
@@ -1445,16 +1445,16 @@ namespace Nijo.Runtime {
                             isAttrs.Add(enumName);
                         }
 
-                    } else if (!string.IsNullOrWhiteSpace(aggregateOrMember.TypeDetail)) {
-                        isAttrs.Add($"{aggregateOrMember.Type}:{aggregateOrMember.TypeDetail}");
+                    } else if (!string.IsNullOrWhiteSpace(gridRow.TypeDetail)) {
+                        isAttrs.Add($"{gridRow.Type}:{gridRow.TypeDetail}");
 
                     } else {
-                        isAttrs.Add(aggregateOrMember.Type);
+                        isAttrs.Add(gridRow.Type);
                     }
                 }
 
                 // 型以外のis属性
-                foreach (var attr in aggregateOrMember.AttrValues ?? []) {
+                foreach (var attr in gridRow.AttrValues ?? []) {
                     // これらは後の処理で考慮済みなので除外
                     if (attr.Key == OptionalAttributeDef.PHYSICAL_NAME
                         || attr.Key == OptionalAttributeDef.DB_NAME
@@ -1478,18 +1478,18 @@ namespace Nijo.Runtime {
                 // ---------------------------------
                 // is以外の属性
 
-                if (aggregateOrMember.DisplayName != physicalName) {
-                    el.SetAttributeValue(DISPLAY_NAME, aggregateOrMember.DisplayName);
+                if (gridRow.DisplayName != physicalName) {
+                    el.SetAttributeValue(DISPLAY_NAME, gridRow.DisplayName);
                 }
 
-                var dbName = aggregateOrMember.AttrValues
+                var dbName = gridRow.AttrValues
                     ?.SingleOrDefault(x => x.Key == OptionalAttributeDef.DB_NAME)
                     ?.Value;
                 if (!string.IsNullOrWhiteSpace(dbName)) {
                     el.SetAttributeValue(DB_NAME, dbName);
                 }
 
-                var latinName = aggregateOrMember.AttrValues
+                var latinName = gridRow.AttrValues
                     ?.SingleOrDefault(x => x.Key == OptionalAttributeDef.LATIN)
                     ?.Value;
                 if (!string.IsNullOrWhiteSpace(latinName)) {
@@ -1498,27 +1498,27 @@ namespace Nijo.Runtime {
 
                 // ---------------------------------
                 // 子要素
-                foreach (var child in collection.GetChildren(aggregateOrMember)) {
+                foreach (var child in collection.GetChildren(gridRow)) {
                     if (!string.IsNullOrWhiteSpace(child.Comment)) el.Add(new XComment(child.Comment));
-                    el.Add(FromAbstract(child, collection)._xElement);
+                    el.Add(FromGridRow(child, collection)._xElement);
                 }
 
-                var comment = string.IsNullOrWhiteSpace(aggregateOrMember.Comment)
+                var comment = string.IsNullOrWhiteSpace(gridRow.Comment)
                     ? Array.Empty<XComment>()
-                    : [new XComment(aggregateOrMember.Comment)];
+                    : [new XComment(gridRow.Comment)];
 
-                return new NijoXmlElement(el, aggregateOrMember.XmlFileFullPath, comment);
+                return new NijoXmlElement(el, gridRow.XmlFileFullPath, comment);
             }
             /// <summary>
             /// XML要素を nijo ui の画面上で編集されるデータに変換する
             /// </summary>
-            public IEnumerable<AggregateOrMember> ToAbstract(
-                IEnumerable<AggregateOrMemberTypeDef> typeDefs,
+            public IEnumerable<NijoUiGridRow> ToGridRow(
+                IEnumerable<GridRowTypeDef> typeDefs,
                 IReadOnlyDictionary<string, OptionalAttributeDef> optionDefs) {
-                return ToAbstractPrivate(typeDefs, optionDefs, 0);
+                return ToGridRowPrivate(typeDefs, optionDefs, 0);
             }
-            private IEnumerable<AggregateOrMember> ToAbstractPrivate(
-                IEnumerable<AggregateOrMemberTypeDef> typeDefs,
+            private IEnumerable<NijoUiGridRow> ToGridRowPrivate(
+                IEnumerable<GridRowTypeDef> typeDefs,
                 IReadOnlyDictionary<string, OptionalAttributeDef> optionDefs,
                 int depth) {
 
@@ -1595,7 +1595,7 @@ namespace Nijo.Runtime {
                     currentElement = currentElement.PreviousNode;
                 }
 
-                yield return new AggregateOrMember {
+                yield return new NijoUiGridRow {
                     Depth = depth,
                     UniqueId = GetXElementUniqueId(_xElement),
                     DisplayName = displayName,
@@ -1609,7 +1609,7 @@ namespace Nijo.Runtime {
                 // -------------------------------------
                 // コメント
                 var nodes = _xElement.Nodes().ToArray();
-                var descendants = new List<AggregateOrMember>();
+                var descendants = new List<NijoUiGridRow>();
                 var comments = new List<XComment>();
                 for (int i = 0; i < nodes.Length; i++) {
                     var node = nodes[i];
@@ -1617,7 +1617,7 @@ namespace Nijo.Runtime {
                         comments.Add(xComment);
                     } else if (node is XElement xElement) {
                         var nijoXmlElement = new NijoXmlElement(xElement, null, comments.ToArray());
-                        descendants.AddRange(nijoXmlElement.ToAbstractPrivate(typeDefs, optionDefs, depth + 1));
+                        descendants.AddRange(nijoXmlElement.ToGridRowPrivate(typeDefs, optionDefs, depth + 1));
                         comments.Clear();
                     }
                 }
