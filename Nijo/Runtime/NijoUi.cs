@@ -72,9 +72,28 @@ namespace Nijo.Runtime {
                 var typeDefs = EnumerateGridRowTypes().ToList();
                 var optionDefs = EnumerateOptionalAttributes().ToList();
 
-                var rootAggregates = new NijoXmlFile(_project.SchemaXmlPath)
+                var rootXml = new NijoXmlFile(_project.SchemaXmlPath);
+
+                XElement? FindRefToElement(string uniqueId) {
+                    foreach (var item in rootXml.EnumerateThisAndIncluded()) {
+                        var found = item.XDocument?.XPathSelectElement($"/{item.XDocument.Root?.Name.LocalName}/{uniqueId}");
+                        if (found != null) return found;
+                    }
+                    return null;
+                }
+                XElement? FindEnumElement(string[] isAttributeKeys) {
+                    foreach (var item in rootXml.EnumerateThisAndIncluded()) {
+                        var found = item.XDocument?.Root?.Elements()
+                            .FirstOrDefault(el => el.Attribute(NijoXmlElement.IS)?.Value.Contains("enum") == true
+                                               && isAttributeKeys.Contains(el.Name.LocalName));
+                        if (found != null) return found;
+                    }
+                    return null;
+                }
+
+                var rootAggregates = rootXml
                     .GetRootAggregatesRecursively()
-                    .SelectMany(x => x.ToGridRow(typeDefs, optionDefs.ToDictionary(d => d.Key)));
+                    .SelectMany(x => x.ToGridRow(typeDefs, optionDefs.ToDictionary(d => d.Key), FindRefToElement, FindEnumElement));
 
                 context.Response.ContentType = "application/json";
                 await context.Response.WriteAsync(new InitialLoadData {
@@ -1176,6 +1195,24 @@ namespace Nijo.Runtime {
             private readonly List<NijoXmlElement> _rootAggregates = new();
             private readonly List<NijoXmlFile> _included = new();
 
+            private XDocument? _xDocument;
+            public XDocument XDocument {
+                get {
+                    LoadIfNotInitialized();
+                    return _xDocument!;
+                }
+            }
+
+            public IEnumerable<NijoXmlFile> EnumerateThisAndIncluded() {
+                LoadIfNotInitialized();
+
+                yield return this;
+
+                foreach (var item in _included.SelectMany(x => x.EnumerateThisAndIncluded())) {
+                    yield return item;
+                }
+            }
+
             /// <summary>
             /// XMLに書かれているルート集約、またはこのオブジェクトが持っている未保存のルート集約を再帰的に列挙する
             /// </summary>
@@ -1265,8 +1302,9 @@ namespace Nijo.Runtime {
                 using var stream = File.Open(FullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 using var reader = new StreamReader(stream);
                 var xmlContent = reader.ReadToEnd();
-                var xDocument = XDocument.Parse(xmlContent);
-                var rootNodes = xDocument.Root?.Nodes().ToArray() ?? [];
+
+                _xDocument = XDocument.Parse(xmlContent);
+                var rootNodes = _xDocument.Root?.Nodes().ToArray() ?? [];
                 var comments = new List<XComment>();
                 for (int i = 0; i < rootNodes.Length; i++) {
                     var node = rootNodes[i];
@@ -1514,13 +1552,17 @@ namespace Nijo.Runtime {
             /// </summary>
             public IEnumerable<NijoUiGridRow> ToGridRow(
                 IEnumerable<GridRowTypeDef> typeDefs,
-                IReadOnlyDictionary<string, OptionalAttributeDef> optionDefs) {
-                return ToGridRowPrivate(typeDefs, optionDefs, 0);
+                IReadOnlyDictionary<string, OptionalAttributeDef> optionDefs,
+                Func<string, XElement?> findRefToElement,
+                Func<string[], XElement?> findEnumElement) {
+                return ToGridRowPrivate(typeDefs, optionDefs, 0, findRefToElement, findEnumElement);
             }
             private IEnumerable<NijoUiGridRow> ToGridRowPrivate(
                 IEnumerable<GridRowTypeDef> typeDefs,
                 IReadOnlyDictionary<string, OptionalAttributeDef> optionDefs,
-                int depth) {
+                int depth,
+                Func<string, XElement?> findRefToElement,
+                Func<string[], XElement?> findEnumElement) {
 
                 // XMLと nijo ui では DisplayName と PhysicalName の扱いが逆
                 var displayName = _xElement
@@ -1544,7 +1586,7 @@ namespace Nijo.Runtime {
 
                 // ref-to
                 if (type == null && Is.TryGetValue("ref-to", out var refTo)) {
-                    var refToElement = _xElement.Document?.XPathSelectElement($"/{_xElement.Document.Root?.Name.LocalName}/{refTo.Value}");
+                    var refToElement = findRefToElement(refTo.Value);
                     if (refToElement != null) {
                         // ここの記法はTypeScript側の型選択コンボボックスのルールと合わせる必要あり
                         type = $"{REFTO_PREFIX}{GetXElementUniqueId(refToElement)}";
@@ -1554,10 +1596,7 @@ namespace Nijo.Runtime {
                 // enum
                 if (type == null) {
                     var isAttr = Is.Keys.OrderBy(k => k).ToArray();
-                    var matchedEnum = _xElement.Document?.Root
-                        ?.Elements()
-                        .FirstOrDefault(el => el.Attribute(IS)?.Value.Contains("enum") == true
-                                           && isAttr.Contains(el.Name.LocalName));
+                    var matchedEnum = findEnumElement(isAttr);
                     if (matchedEnum != null) {
                         // ここの記法はTypeScript側の型選択コンボボックスのルールと合わせる必要あり
                         type = $"{ENUM_PREFIX}{GetXElementUniqueId(matchedEnum)}";
@@ -1617,7 +1656,7 @@ namespace Nijo.Runtime {
                         comments.Add(xComment);
                     } else if (node is XElement xElement) {
                         var nijoXmlElement = new NijoXmlElement(xElement, null, comments.ToArray());
-                        descendants.AddRange(nijoXmlElement.ToGridRowPrivate(typeDefs, optionDefs, depth + 1));
+                        descendants.AddRange(nijoXmlElement.ToGridRowPrivate(typeDefs, optionDefs, depth + 1, findRefToElement, findEnumElement));
                         comments.Clear();
                     }
                 }
