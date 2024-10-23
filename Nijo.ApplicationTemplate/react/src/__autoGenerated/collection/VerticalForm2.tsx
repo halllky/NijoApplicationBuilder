@@ -1,4 +1,8 @@
 import React, { useMemo } from 'react'
+import { useToggle } from '../util'
+import useEvent from 'react-use-event-hook'
+import { IconButton } from '../input'
+import { ChevronUpDownIcon } from '@heroicons/react/24/solid'
 
 const DEFAULT_LABEL_WIDTH = '8rem'
 
@@ -61,14 +65,22 @@ const Indent = ({ label, children, className }: {
   children?: React.ReactNode
   className?: string
 }) => {
+  const [opened, setOpened] = useToggle(true)
+  const handleCollapse = useEvent(() => {
+    setOpened(x => x.toggle())
+  })
+
   return (
     <div className={`grid grid-cols-[subgrid] col-span-full border-vform m-1 ${className ?? ''}`}>
-      <div className="px-1 col-span-full select-none">
-        {renderLabel(label)}&nbsp;
+      <div className="flex justify-between px-1 col-span-full select-none">
+        {renderLabel(label)}
+        <IconButton icon={ChevronUpDownIcon} onClick={handleCollapse} hideText>折りたたみ</IconButton>
       </div>
-      <div className="grid gap-px grid-cols-[subgrid] col-span-full">
-        {children}
-      </div>
+      {opened && (
+        <div className="grid gap-px grid-cols-[subgrid] col-span-full">
+          {children}
+        </div>
+      )}
     </div>
   )
 }
@@ -83,17 +95,25 @@ const Item = ({ label, wideLabelValue, wideValue, noLabel, children }: {
   noLabel?: boolean
   children?: React.ReactNode
 }) => {
+  const [opened, setOpened] = useToggle(true)
+  const handleCollapse = useEvent(() => {
+    setOpened(x => x.toggle())
+  })
+
   // 要素がグリッドの横幅いっぱい確保される場合のレイアウト
   if (wideLabelValue) return (
     <>
       {!noLabel && (
-        <div className="px-1 pt-1 col-span-full">
+        <div className="flex justify-between px-1 pt-1 col-span-full">
           {renderLabel(label)}
+          <IconButton icon={ChevronUpDownIcon} onClick={handleCollapse} hideText>折りたたみ</IconButton>
         </div>
       )}
-      <div className="col-span-full border-vform bg-color-0">
-        {children}
-      </div>
+      {opened && (
+        <div className="col-span-full border-vform bg-color-0">
+          {children}
+        </div>
+      )}
     </>
   )
   // 値だけ横幅いっぱいの場合のレイアウト
