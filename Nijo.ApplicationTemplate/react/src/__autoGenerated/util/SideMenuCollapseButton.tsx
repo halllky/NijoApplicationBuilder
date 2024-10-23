@@ -1,5 +1,5 @@
 import { useCallback } from "react"
-import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid"
+import { Bars3Icon } from "@heroicons/react/24/solid"
 import { IconButton } from "../input/IconButton"
 import { defineContext } from "."
 
@@ -13,7 +13,7 @@ const [SideMenuContextProvider, useSideMenuContext] = defineContext(() => ({
 const SideMenuCollapseButton = ({ className }: {
   className?: string
 }) => {
-  const [{ collapsed }, dispatch] = useSideMenuContext()
+  const [, dispatch] = useSideMenuContext()
   const toggle = useCallback(() => {
     dispatch(state => state.toggle())
   }, [dispatch])
@@ -22,7 +22,7 @@ const SideMenuCollapseButton = ({ className }: {
     <IconButton
       onClick={toggle}
       hideText
-      icon={collapsed ? ChevronRightIcon : ChevronLeftIcon}
+      icon={Bars3Icon}
       className={`p-1 ${className}`}
     >
       サイドメニューを開閉する
