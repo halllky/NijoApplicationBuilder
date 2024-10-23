@@ -227,7 +227,7 @@ namespace Nijo.Models.RefTo {
                     #pragma warning disable CS8603 // Null 参照戻り値である可能性があります。
                     #pragma warning disable CS8604 // Null 参照引数の可能性があります。
                 {{filterMembers.SelectTextTemplate(m => $$"""
-                    // フィルタリング: {{m.MemberName}}
+                    // フィルタリング: {{m.DisplayName}}
                     {{WithIndent(m.Member.Options.MemberType.RenderFilteringStatement(m.Member, "query", "searchCondition", E_SearchConditionObject.RefSearchCondition, E_SearchQueryObject.EFCoreEntity), "    ")}}
 
                 """)}}
@@ -331,10 +331,10 @@ namespace Nijo.Models.RefTo {
                 return $$"""
                     new() {
                     {{sc.GetOwnMembers().SelectTextTemplate(member => $$"""
-                        {{member.MemberName}} = refSearchCondition.{{member.Member.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.CSharp).Join(".")}},
+                        {{member.PhysicalName}} = refSearchCondition.{{member.Member.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.CSharp).Join(".")}},
                     """)}}
                     {{sc.GetChildMembers().SelectTextTemplate(child => $$"""
-                        {{child.MemberName}} = {{WithIndent(RenderFilterConverting(child), "    ")}},
+                        {{child.PhysicalName}} = {{WithIndent(RenderFilterConverting(child), "    ")}},
                     """)}}
                     }
                     """;

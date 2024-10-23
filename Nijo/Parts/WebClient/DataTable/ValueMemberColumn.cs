@@ -23,7 +23,7 @@ namespace Nijo.Parts.WebClient.DataTable {
         internal readonly IEnumerable<string> _pathFromRowObject;
         private readonly DataTableBuilder _tableContext;
 
-        public string Header => _vm.MemberName;
+        public string Header => _vm.DisplayName;
         public string? HeaderGroupName => _vm.Owner == _tableContext.TableOwner ? null : _vm.Owner.Item.DisplayName;
 
         public int? DefaultWidth => null;

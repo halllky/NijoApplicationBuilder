@@ -204,10 +204,10 @@ namespace Nijo.Models.ReadModel2Features {
                 /// </summary>
                 public partial class {{CsFilterClassName}} {
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
-                    public virtual {{m.CsTypeName}}? {{m.MemberName}} { get; set; }
+                    public virtual {{m.CsTypeName}}? {{m.PhysicalName}} { get; set; }
                 """)}}
                 {{GetChildMembers().SelectTextTemplate(m => $$"""
-                    public virtual {{m.CsFilterClassName}} {{m.MemberName}} { get; set; } = new();
+                    public virtual {{m.CsFilterClassName}} {{m.PhysicalName}} { get; set; } = new();
                 """)}}
                 }
                 """;
@@ -270,10 +270,10 @@ namespace Nijo.Models.ReadModel2Features {
                 /** {{_aggregate.Item.DisplayName}}の一覧検索条件のうち絞り込み条件を指定する部分 */
                 export type {{TsFilterTypeName}} = {
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
-                  {{m.MemberName}}?: {{m.TsTypeName}}
+                  {{m.PhysicalName}}?: {{m.TsTypeName}}
                 """)}}
                 {{GetChildMembers().SelectTextTemplate(m => $$"""
-                  {{m.MemberName}}: {{m.TsFilterTypeName}}
+                  {{m.PhysicalName}}: {{m.TsFilterTypeName}}
                 """)}}
                 }
                 """;
@@ -317,11 +317,11 @@ namespace Nijo.Models.ReadModel2Features {
 
             var renderedMembers = GetOwnMembers().Select(m => new {
                 MemberInfo = (AggregateMember.AggregateMemberBase)m.Member,
-                DisplayMemberName = m.MemberName,
+                m.DisplayName,
                 Descendant = (DescendantSearchCondition?)null,
             }).Concat(GetChildMembers().Select(m => new {
                 MemberInfo = (AggregateMember.AggregateMemberBase)m.MemberInfo,
-                m.DisplayMemberName,
+                m.DisplayName,
                 Descendant = (DescendantSearchCondition?)m,
             }));
 
@@ -337,7 +337,7 @@ namespace Nijo.Models.ReadModel2Features {
                         """;
                     section.AddItem(
                         false,
-                        m.DisplayMemberName,
+                        m.DisplayName,
                         Parts.WebClient.E_VForm2LabelType.String,
                         body);
 
@@ -351,14 +351,14 @@ namespace Nijo.Models.ReadModel2Features {
                         """;
                     section.AddItem(
                         false,
-                        m.DisplayMemberName,
+                        m.DisplayName,
                         Parts.WebClient.E_VForm2LabelType.String,
                         body);
 
                 } else {
                     // 入れ子コンポーネントをレンダリングする
                     var childSection = section.AddSection(
-                        m.DisplayMemberName,
+                        m.DisplayName,
                         Parts.WebClient.E_VForm2LabelType.String);
                     m.Descendant!.BuildVForm2(context, childSection);
                 }
@@ -378,7 +378,7 @@ namespace Nijo.Models.ReadModel2Features {
                 export const {{CreateNewObjectFnName}} = (): {{TsTypeName}} => ({
                   {{FILTER_TS}}: {
                 {{GetChildMembers().SelectTextTemplate(m => $$"""
-                    {{m.MemberName}}: {{WithIndent(m.RenderCreateNewObjectFn(context), "    ")}},
+                    {{m.PhysicalName}}: {{WithIndent(m.RenderCreateNewObjectFn(context), "    ")}},
                 """)}}
                   },
                   {{SORT_TS}}: [],
@@ -433,18 +433,18 @@ namespace Nijo.Models.ReadModel2Features {
         }
 
         internal AggregateMember.RelationMember MemberInfo { get; }
-        internal string MemberName => MemberInfo is AggregateMember.Parent
+        internal string PhysicalName => MemberInfo is AggregateMember.Parent
             ? RefTo.RefSearchCondition.PARENT
             : MemberInfo.MemberName;
-        internal string DisplayMemberName => MemberInfo is AggregateMember.Parent
+        internal string DisplayName => MemberInfo is AggregateMember.Parent
             ? MemberInfo.MemberAggregate.Item.DisplayName
-            : MemberInfo.MemberName;
+            : MemberInfo.DisplayName;
 
         internal override string RenderCreateNewObjectFn(CodeRenderingContext context) {
             return $$"""
                 {
                 {{GetChildMembers().SelectTextTemplate(m => $$"""
-                  {{m.MemberName}}: {{WithIndent(m.RenderCreateNewObjectFn(context), "  ")}},
+                  {{m.PhysicalName}}: {{WithIndent(m.RenderCreateNewObjectFn(context), "  ")}},
                 """)}}
                 }
                 """;
@@ -458,7 +458,8 @@ namespace Nijo.Models.ReadModel2Features {
         }
         internal AggregateMember.ValueMember Member { get; }
 
-        internal string MemberName => Member.MemberName;
+        internal string PhysicalName => Member.MemberName;
+        internal string DisplayName => Member.DisplayName;
         internal string CsTypeName => Member.Options.MemberType.GetSearchConditionCSharpType();
         internal string TsTypeName => Member.Options.MemberType.GetSearchConditionTypeScriptType();
     }
