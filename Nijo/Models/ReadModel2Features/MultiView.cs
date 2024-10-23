@@ -147,9 +147,10 @@ namespace Nijo.Models.ReadModel2Features {
 
                       // 再読み込み時処理
                       const navigateToThis = AggregateHook.{{NavigationHookName}}()
-                      const handleReload = useCallback(() => {
-                        navigateToThis(getConditionValues()) // 画面まるごと再表示
-                      }, [{{LoadMethod.LOAD}}, getConditionValues, resetSearchCondition, searchConditionPanelRef])
+                      const handleReload = useEvent(() => {
+                        navigateToThis(getConditionValues())
+                        executeLoading() // 前回検索時と全く同じ検索条件で実行されたときのために強制的にリロードを実行する
+                      })
 
                       // クリア時処理
                       const clearSearchCondition = useEvent(() => {
