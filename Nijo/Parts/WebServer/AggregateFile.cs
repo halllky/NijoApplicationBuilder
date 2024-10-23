@@ -30,7 +30,7 @@ namespace Nijo.Parts.WebServer {
 
         private SourceFile RenderWebApi() {
             return new SourceFile {
-                FileName = $"{_aggregate.Item.DisplayName.ToFileNameSafe()}.cs",
+                FileName = $"{_aggregate.Item.PhysicalName.ToFileNameSafe()}.cs",
                 RenderContent = context => {
                     var appSrv = new ApplicationService();
                     var controller = new Controller(_aggregate.Item);
@@ -73,7 +73,7 @@ namespace Nijo.Parts.WebServer {
             var appSrv = new ApplicationService();
 
             return new SourceFile {
-                FileName = $"{_aggregate.Item.DisplayName.ToFileNameSafe()}.cs",
+                FileName = $"{_aggregate.Item.PhysicalName.ToFileNameSafe()}.cs",
                 RenderContent = context => $$"""
                     namespace {{context.Config.RootNamespace}} {
                         using System;
