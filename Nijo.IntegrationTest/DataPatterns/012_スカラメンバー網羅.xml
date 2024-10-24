@@ -23,6 +23,7 @@
     <参照 is="ref-to:参照先" />
     <真偽値 is="bool" />
     <列挙体 is="MyEnum" />
+    <バイト配列 is="bytearray hidden" />
 
     <Children is="children">
       <!--値オブジェクト-->
@@ -46,6 +47,7 @@
       <参照 is="ref-to:参照先" />
       <真偽値 is="bool" />
       <列挙体 is="MyEnum" />
+      <バイト配列 is="bytearray hidden" />
     </Children>
   </親集約>
 
