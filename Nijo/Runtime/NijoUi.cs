@@ -84,7 +84,7 @@ namespace Nijo.Runtime {
                 XElement? FindEnumElement(string[] isAttributeKeys) {
                     foreach (var item in rootXml.EnumerateThisAndIncluded()) {
                         var found = item.XDocument?.Root?.Elements()
-                            .FirstOrDefault(el => el.Attribute(NijoXmlElement.IS)?.Value.Contains("enum") == true
+                            .FirstOrDefault(el => el.Attribute(MutableSchemaNode.IS)?.Value.Contains("enum") == true
                                                && isAttributeKeys.Contains(el.Name.LocalName));
                         if (found != null) return found;
                     }
@@ -140,7 +140,7 @@ namespace Nijo.Runtime {
 
                     var allElements = collection
                         .RootAggregates()
-                        .Select(a => NijoXmlElement.FromSchemaNode(a, collection));
+                        .Select(a => MutableSchemaNode.ToXmlElement(a, collection));
                     foreach (var el in allElements) {
                         nijoXml.Add(el);
                     }
@@ -317,9 +317,9 @@ namespace Nijo.Runtime {
                             Key = ValidationError.ERR_TO_TYPE,
                             Message = "型を指定してください。",
                         };
-                    } else if (node.Type.StartsWith(NijoXmlElement.REFTO_PREFIX)) {
+                    } else if (node.Type.StartsWith(MutableSchemaNode.REFTO_PREFIX)) {
                         // ref-to
-                        var uniqueId = node.Type.Substring(NijoXmlElement.REFTO_PREFIX.Length);
+                        var uniqueId = node.Type.Substring(MutableSchemaNode.REFTO_PREFIX.Length);
                         var refTo = _list.SingleOrDefault(n => n.UniqueId == uniqueId);
                         if (refTo == null) {
                             yield return new ValidationError {
@@ -334,9 +334,9 @@ namespace Nijo.Runtime {
                                 Message = "参照先に指定されている項目はref-toの参照先として使えません。",
                             };
                         }
-                    } else if (node.Type.StartsWith(NijoXmlElement.ENUM_PREFIX)) {
+                    } else if (node.Type.StartsWith(MutableSchemaNode.ENUM_PREFIX)) {
                         // 列挙体
-                        var uniqueId = node.Type.Substring(NijoXmlElement.ENUM_PREFIX.Length);
+                        var uniqueId = node.Type.Substring(MutableSchemaNode.ENUM_PREFIX.Length);
                         if (!RootAggregates().Any(n => n.UniqueId == uniqueId
                                                     && n.Type == "enum")) {
                             yield return new ValidationError {
@@ -530,8 +530,8 @@ namespace Nijo.Runtime {
             }
             public E_NodeType? GetNodeType() {
                 if (string.IsNullOrWhiteSpace(Type)) return null;
-                if (Type.StartsWith(NijoXmlElement.REFTO_PREFIX)) return E_NodeType.Ref;
-                if (Type.StartsWith(NijoXmlElement.ENUM_PREFIX)) return E_NodeType.Enum;
+                if (Type.StartsWith(MutableSchemaNode.REFTO_PREFIX)) return E_NodeType.Ref;
+                if (Type.StartsWith(MutableSchemaNode.ENUM_PREFIX)) return E_NodeType.Enum;
                 return EnumerateSchemaNodeTypes().SingleOrDefault(t => t.Key == Type)?.NodeType;
             }
             public bool IsWriteModel(MutableSchema schema) {
@@ -566,6 +566,121 @@ namespace Nijo.Runtime {
             public override string ToString() {
                 return DisplayName ?? $"ID::{UniqueId}";
             }
+
+            /// <summary>
+            /// nijo ui の画面上で編集されるデータをXML要素に変換する
+            /// </summary>
+            /// <param name="node">変換元</param>
+            /// <param name="collection">全ての集約が入ったコレクション</param>
+            public static NijoXmlElement ToXmlElement(
+                MutableSchemaNode node,
+                MutableSchema collection) {
+
+                var physicalName = node.GetPhysicalName();
+                var el = new XElement(physicalName);
+
+                // ---------------------------------
+                // is属性
+                var isAttrs = new List<string>();
+
+                // 型
+                if (!string.IsNullOrWhiteSpace(node.Type)) {
+                    if (node.Type.StartsWith(REFTO_PREFIX)) {
+                        // ref-to
+                        var uniqueId = node.Type.Substring(REFTO_PREFIX.Length);
+                        var refToPath = collection
+                            .FirstOrDefault(agg => agg.UniqueId == uniqueId)
+                            ?.GetRefToPath(collection);
+                        if (refToPath == null) {
+                            isAttrs.Add(REFTO_PREFIX);
+                        } else {
+                            isAttrs.Add($"{REFTO_PREFIX}{refToPath}");
+                        }
+
+                    } else if (node.Type.StartsWith(ENUM_PREFIX)) {
+                        // enum
+                        var uniqueId = node.Type.Substring(ENUM_PREFIX.Length);
+                        var enumName = collection
+                            .RootAggregates()
+                            .FirstOrDefault(agg => agg.UniqueId == uniqueId
+                                                && agg.Type == "enum")
+                            ?.GetPhysicalName();
+                        if (enumName != null) {
+                            isAttrs.Add(enumName);
+                        }
+
+                    } else if (!string.IsNullOrWhiteSpace(node.TypeDetail)) {
+                        isAttrs.Add($"{node.Type}:{node.TypeDetail}");
+
+                    } else {
+                        isAttrs.Add(node.Type);
+                    }
+                }
+
+                // 型以外のis属性
+                foreach (var attr in node.AttrValues ?? []) {
+                    // これらは後の処理で考慮済みなので除外
+                    if (attr.Key == OptionalAttributeDef.PHYSICAL_NAME
+                        || attr.Key == OptionalAttributeDef.DB_NAME
+                        || attr.Key == OptionalAttributeDef.LATIN) continue;
+
+                    if (string.IsNullOrWhiteSpace(attr.Key)) {
+                        continue;
+
+                    } else if (string.IsNullOrWhiteSpace(attr.Value)) {
+                        isAttrs.Add(attr.Key);
+
+                    } else {
+                        isAttrs.Add($"{attr.Key.Trim()}:{attr.Value.Trim()}");
+                    }
+                }
+
+                if (isAttrs.Count > 0) {
+                    el.SetAttributeValue(IS, isAttrs.Join(" "));
+                }
+
+                // ---------------------------------
+                // is以外の属性
+
+                if (node.DisplayName != physicalName) {
+                    el.SetAttributeValue(DISPLAY_NAME, node.DisplayName);
+                }
+
+                var dbName = node.AttrValues
+                    ?.SingleOrDefault(x => x.Key == OptionalAttributeDef.DB_NAME)
+                    ?.Value;
+                if (!string.IsNullOrWhiteSpace(dbName)) {
+                    el.SetAttributeValue(DB_NAME, dbName);
+                }
+
+                var latinName = node.AttrValues
+                    ?.SingleOrDefault(x => x.Key == OptionalAttributeDef.LATIN)
+                    ?.Value;
+                if (!string.IsNullOrWhiteSpace(latinName)) {
+                    el.SetAttributeValue(LATIN, latinName);
+                }
+
+                // ---------------------------------
+                // 子要素
+                foreach (var child in collection.GetChildren(node)) {
+                    if (!string.IsNullOrWhiteSpace(child.Comment)) el.Add(new XComment(child.Comment));
+                    el.Add(ToXmlElement(child, collection)._xElement);
+                }
+
+                var comment = string.IsNullOrWhiteSpace(node.Comment)
+                    ? Array.Empty<XComment>()
+                    : [new XComment(node.Comment)];
+
+                return new NijoXmlElement(el, node.XmlFileFullPath, comment);
+            }
+
+            public const string IS = "is";
+            public const string DISPLAY_NAME = "DisplayName";
+            public const string DB_NAME = "DbName";
+            public const string LATIN = "Latin";
+
+            public const string REFTO_PREFIX = "ref-to:";
+            public const string ENUM_PREFIX = "enum:";
         }
         /// <summary>
         /// <see cref="MutableSchemaNode.Type"/> の種類
@@ -1355,7 +1470,7 @@ namespace Nijo.Runtime {
                 _comments = comments;
                 XmlFileFullpath = xmlFilePath;
             }
-            private readonly XElement _xElement;
+            public readonly XElement _xElement;
             private readonly IEnumerable<XComment> _comments;
             /// <summary>
             /// このエレメントがもともと保存されていたXMLファイルの名前。このエレメントが子孫要素の場合はnull
@@ -1386,7 +1501,7 @@ namespace Nijo.Runtime {
             public IReadOnlyDictionary<string, IsAttribute> Is => _isAttrCache ??= ParseIsAttribute().ToDictionary(x => x.Key);
             private IReadOnlyDictionary<string, IsAttribute>? _isAttrCache;
             private IEnumerable<IsAttribute> ParseIsAttribute() {
-                var isAttributeValue = _xElement.Attribute(IS)?.Value;
+                var isAttributeValue = _xElement.Attribute(MutableSchemaNode.IS)?.Value;
                 if (string.IsNullOrWhiteSpace(isAttributeValue)) yield break;
 
                 var parsingKey = false;
@@ -1449,112 +1564,6 @@ namespace Nijo.Runtime {
 
             #region nijo ui の画面表示用データとの変換
             /// <summary>
-            /// nijo ui の画面上で編集されるデータをXML要素に変換する
-            /// </summary>
-            /// <param name="node">変換元</param>
-            /// <param name="collection">全ての集約が入ったコレクション</param>
-            public static NijoXmlElement FromSchemaNode(
-                MutableSchemaNode node,
-                MutableSchema collection) {
-
-                var physicalName = node.GetPhysicalName();
-                var el = new XElement(physicalName);
-
-                // ---------------------------------
-                // is属性
-                var isAttrs = new List<string>();
-
-                // 型
-                if (!string.IsNullOrWhiteSpace(node.Type)) {
-                    if (node.Type.StartsWith(REFTO_PREFIX)) {
-                        // ref-to
-                        var uniqueId = node.Type.Substring(REFTO_PREFIX.Length);
-                        var refToPath = collection
-                            .FirstOrDefault(agg => agg.UniqueId == uniqueId)
-                            ?.GetRefToPath(collection);
-                        if (refToPath == null) {
-                            isAttrs.Add(REFTO_PREFIX);
-                        } else {
-                            isAttrs.Add($"{REFTO_PREFIX}{refToPath}");
-                        }
-
-                    } else if (node.Type.StartsWith(ENUM_PREFIX)) {
-                        // enum
-                        var uniqueId = node.Type.Substring(ENUM_PREFIX.Length);
-                        var enumName = collection
-                            .RootAggregates()
-                            .FirstOrDefault(agg => agg.UniqueId == uniqueId
-                                                && agg.Type == "enum")
-                            ?.GetPhysicalName();
-                        if (enumName != null) {
-                            isAttrs.Add(enumName);
-                        }
-
-                    } else if (!string.IsNullOrWhiteSpace(node.TypeDetail)) {
-                        isAttrs.Add($"{node.Type}:{node.TypeDetail}");
-
-                    } else {
-                        isAttrs.Add(node.Type);
-                    }
-                }
-
-                // 型以外のis属性
-                foreach (var attr in node.AttrValues ?? []) {
-                    // これらは後の処理で考慮済みなので除外
-                    if (attr.Key == OptionalAttributeDef.PHYSICAL_NAME
-                        || attr.Key == OptionalAttributeDef.DB_NAME
-                        || attr.Key == OptionalAttributeDef.LATIN) continue;
-
-                    if (string.IsNullOrWhiteSpace(attr.Key)) {
-                        continue;
-
-                    } else if (string.IsNullOrWhiteSpace(attr.Value)) {
-                        isAttrs.Add(attr.Key);
-
-                    } else {
-                        isAttrs.Add($"{attr.Key.Trim()}:{attr.Value.Trim()}");
-                    }
-                }
-
-                if (isAttrs.Count > 0) {
-                    el.SetAttributeValue(IS, isAttrs.Join(" "));
-                }
-
-                // ---------------------------------
-                // is以外の属性
-
-                if (node.DisplayName != physicalName) {
-                    el.SetAttributeValue(DISPLAY_NAME, node.DisplayName);
-                }
-
-                var dbName = node.AttrValues
-                    ?.SingleOrDefault(x => x.Key == OptionalAttributeDef.DB_NAME)
-                    ?.Value;
-                if (!string.IsNullOrWhiteSpace(dbName)) {
-                    el.SetAttributeValue(DB_NAME, dbName);
-                }
-
-                var latinName = node.AttrValues
-                    ?.SingleOrDefault(x => x.Key == OptionalAttributeDef.LATIN)
-                    ?.Value;
-                if (!string.IsNullOrWhiteSpace(latinName)) {
-                    el.SetAttributeValue(LATIN, latinName);
-                }
-
-                // ---------------------------------
-                // 子要素
-                foreach (var child in collection.GetChildren(node)) {
-                    if (!string.IsNullOrWhiteSpace(child.Comment)) el.Add(new XComment(child.Comment));
-                    el.Add(FromSchemaNode(child, collection)._xElement);
-                }
-
-                var comment = string.IsNullOrWhiteSpace(node.Comment)
-                    ? Array.Empty<XComment>()
-                    : [new XComment(node.Comment)];
-
-                return new NijoXmlElement(el, node.XmlFileFullPath, comment);
-            }
-            /// <summary>
             /// XML要素を nijo ui の画面上で編集されるデータに変換する
             /// </summary>
             public IEnumerable<MutableSchemaNode> ToSchemaNode(
@@ -1573,7 +1582,7 @@ namespace Nijo.Runtime {
 
                 // XMLと nijo ui では DisplayName と PhysicalName の扱いが逆
                 var displayName = _xElement
-                    .Attribute(DISPLAY_NAME)?.Value
+                    .Attribute(MutableSchemaNode.DISPLAY_NAME)?.Value
                     ?? _xElement.Name.LocalName;
 
                 // -------------------------------------
@@ -1596,7 +1605,7 @@ namespace Nijo.Runtime {
                     var refToElement = findRefToElement(refTo.Value);
                     if (refToElement != null) {
                         // ここの記法はTypeScript側の型選択コンボボックスのルールと合わせる必要あり
-                        type = $"{REFTO_PREFIX}{GetXElementUniqueId(refToElement)}";
+                        type = $"{MutableSchemaNode.REFTO_PREFIX}{GetXElementUniqueId(refToElement)}";
                     }
                 }
 
@@ -1606,7 +1615,7 @@ namespace Nijo.Runtime {
                     var matchedEnum = findEnumElement(isAttr);
                     if (matchedEnum != null) {
                         // ここの記法はTypeScript側の型選択コンボボックスのルールと合わせる必要あり
-                        type = $"{ENUM_PREFIX}{GetXElementUniqueId(matchedEnum)}";
+                        type = $"{MutableSchemaNode.ENUM_PREFIX}{GetXElementUniqueId(matchedEnum)}";
                     }
                 }
 
@@ -1615,15 +1624,15 @@ namespace Nijo.Runtime {
                 var attrs = Is.Values
                     .Select(a => new OptionalAttributeValue { Key = a.Key, Value = a.Value })
                     .ToList();
-                if (_xElement.Attribute(DISPLAY_NAME) != null) {
+                if (_xElement.Attribute(MutableSchemaNode.DISPLAY_NAME) != null) {
                     // XMLと nijo ui では DisplayName と PhysicalName の扱いが逆
                     attrs.Add(new OptionalAttributeValue { Key = OptionalAttributeDef.PHYSICAL_NAME, Value = _xElement.Name.LocalName });
                 }
-                if (_xElement.Attribute(DB_NAME) != null) {
-                    attrs.Add(new OptionalAttributeValue { Key = OptionalAttributeDef.DB_NAME, Value = _xElement.Attribute(DB_NAME)?.Value });
+                if (_xElement.Attribute(MutableSchemaNode.DB_NAME) != null) {
+                    attrs.Add(new OptionalAttributeValue { Key = OptionalAttributeDef.DB_NAME, Value = _xElement.Attribute(MutableSchemaNode.DB_NAME)?.Value });
                 }
-                if (_xElement.Attribute(LATIN) != null) {
-                    attrs.Add(new OptionalAttributeValue { Key = OptionalAttributeDef.LATIN, Value = _xElement.Attribute(LATIN)?.Value });
+                if (_xElement.Attribute(MutableSchemaNode.LATIN) != null) {
+                    attrs.Add(new OptionalAttributeValue { Key = OptionalAttributeDef.LATIN, Value = _xElement.Attribute(MutableSchemaNode.LATIN)?.Value });
                 }
 
                 // is属性のうちtypeの方で既にハンドリング済みのものは除外
@@ -1687,14 +1696,6 @@ namespace Nijo.Runtime {
             public override string ToString() {
                 return _xElement.ToString();
             }
-
-            public const string IS = "is";
-            public const string DISPLAY_NAME = "DisplayName";
-            public const string DB_NAME = "DbName";
-            public const string LATIN = "Latin";
-
-            public const string REFTO_PREFIX = "ref-to:";
-            public const string ENUM_PREFIX = "enum:";
         }
     }
 }
