@@ -69,7 +69,7 @@ namespace Nijo.Runtime {
 
             // 画面初期表示時データ読み込み処理
             app.MapGet("/load", async context => {
-                var typeDefs = EnumerateGridRowTypes().ToList();
+                var typeDefs = EnumerateSchemaNodeTypes().ToList();
                 var optionDefs = EnumerateOptionalAttributes().ToList();
 
                 var rootXml = new NijoXmlFile(_project.SchemaXmlPath);
@@ -93,15 +93,15 @@ namespace Nijo.Runtime {
 
                 var rootAggregates = rootXml
                     .GetRootAggregatesRecursively()
-                    .SelectMany(x => x.ToGridRow(typeDefs, optionDefs.ToDictionary(d => d.Key), FindRefToElement, FindEnumElement));
+                    .SelectMany(x => x.ToSchemaNode(typeDefs, optionDefs.ToDictionary(d => d.Key), FindRefToElement, FindEnumElement));
 
                 context.Response.ContentType = "application/json";
                 await context.Response.WriteAsync(new InitialLoadData {
                     // このプロパティ名やデータの内容はGUIアプリ側の InitialLoadData の型と合わせる必要がある
                     ProjectRoot = _project.SolutionRoot,
                     EditingXmlFilePath = _project.SchemaXmlPath,
-                    GridRows = rootAggregates.ToList(),
-                    GridRowTypes = typeDefs,
+                    Nodes = rootAggregates.ToList(),
+                    SchemaNodeTypes = typeDefs,
                     OptionalAttributes = optionDefs,
                 }.ConvertToJson());
             });
@@ -109,7 +109,7 @@ namespace Nijo.Runtime {
             // 編集中のバリデーション
             app.MapPost("/validate", async context => {
                 try {
-                    var collection = await ToGridRowList(context.Request.Body);
+                    var collection = await ToSchema(context.Request.Body);
                     var errors = ValidationError.ToErrorObjectJson(collection.CollectVaridationErrors());
 
                     context.Response.ContentType = "application/json";
@@ -124,7 +124,7 @@ namespace Nijo.Runtime {
             app.MapPost("/save", async context => {
                 try {
                     // バリデーション
-                    var collection = await ToGridRowList(context.Request.Body);
+                    var collection = await ToSchema(context.Request.Body);
                     var errors = collection.CollectVaridationErrors().ToArray();
                     if (errors.Length > 0) {
                         context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
@@ -140,7 +140,7 @@ namespace Nijo.Runtime {
 
                     var allElements = collection
                         .RootAggregates()
-                        .Select(a => NijoXmlElement.FromGridRow(a, collection));
+                        .Select(a => NijoXmlElement.FromSchemaNode(a, collection));
                     foreach (var el in allElements) {
                         nijoXml.Add(el);
                     }
@@ -160,31 +160,31 @@ namespace Nijo.Runtime {
 
 
         /// <summary>
-        /// HTTPリクエストボディから <see cref="NijoUiGridRowList"/> のインスタンスを作成
+        /// HTTPリクエストボディから <see cref="MutableSchema"/> のインスタンスを作成
         /// </summary>
         /// <returns></returns>
-        private async Task<NijoUiGridRowList> ToGridRowList(Stream httpRequestBody) {
+        private async Task<MutableSchema> ToSchema(Stream httpRequestBody) {
             using var sr = new StreamReader(httpRequestBody);
             var json = await sr.ReadToEndAsync();
             var obj = json.ParseAsJson<ClientRequest>();
 
-            return new NijoUiGridRowList(obj.Aggregates ?? []);
+            return new MutableSchema(obj.Nodes ?? []);
         }
 
         /// <summary>
-        /// 深さの情報だけを持っている <see cref="NijoUiGridRow"/> の一覧に対して、
+        /// 深さの情報だけを持っている <see cref="MutableSchemaNode"/> の一覧に対して、
         /// 祖先や子孫を取得するといったツリー構造データに対する操作を提供します。
         /// </summary>
-        private class NijoUiGridRowList : IReadOnlyList<NijoUiGridRow> {
-            public NijoUiGridRowList(IList<NijoUiGridRow> list) {
+        private class MutableSchema : IReadOnlyList<MutableSchemaNode> {
+            public MutableSchema(IList<MutableSchemaNode> list) {
                 _list = list;
             }
-            private readonly IList<NijoUiGridRow> _list;
+            private readonly IList<MutableSchemaNode> _list;
 
             /// <summary>
             /// ルート集約のみ列挙する
             /// </summary>
-            public IEnumerable<NijoUiGridRow> RootAggregates() {
+            public IEnumerable<MutableSchemaNode> RootAggregates() {
                 foreach (var item in _list) {
                     if (item.Depth == 0) yield return item;
                 }
@@ -193,31 +193,31 @@ namespace Nijo.Runtime {
             /// <summary>
             /// 直近の親を返す
             /// </summary>
-            public NijoUiGridRow? GetParent(NijoUiGridRow agg) {
-                var currentIndex = _list.IndexOf(agg);
-                if (currentIndex == -1) throw new InvalidOperationException($"{agg}はこの一覧に属していません。");
+            public MutableSchemaNode? GetParent(MutableSchemaNode node) {
+                var currentIndex = _list.IndexOf(node);
+                if (currentIndex == -1) throw new InvalidOperationException($"{node}はこの一覧に属していません。");
                 while (true) {
                     currentIndex--;
                     if (currentIndex < 0) return null;
 
                     var maybeParent = _list[currentIndex];
-                    if (maybeParent.Depth < agg.Depth) return maybeParent;
+                    if (maybeParent.Depth < node.Depth) return maybeParent;
                 }
             }
             /// <summary>
             /// ルート要素を返す
             /// </summary>
-            public NijoUiGridRow GetRoot(NijoUiGridRow agg) {
-                return GetAncestors(agg).FirstOrDefault() ?? agg;
+            public MutableSchemaNode GetRoot(MutableSchemaNode node) {
+                return GetAncestors(node).FirstOrDefault() ?? node;
             }
             /// <summary>
             /// 祖先を返す。より階層が浅いほうが先。
             /// </summary>
-            public IEnumerable<NijoUiGridRow> GetAncestors(NijoUiGridRow agg) {
-                var ancestors = new List<NijoUiGridRow>();
-                var currentDepth = agg.Depth;
-                var currentIndex = _list.IndexOf(agg);
-                if (currentIndex == -1) throw new InvalidOperationException($"{agg}はこの一覧に属していません。");
+            public IEnumerable<MutableSchemaNode> GetAncestors(MutableSchemaNode node) {
+                var ancestors = new List<MutableSchemaNode>();
+                var currentDepth = node.Depth;
+                var currentIndex = _list.IndexOf(node);
+                if (currentIndex == -1) throw new InvalidOperationException($"{node}はこの一覧に属していません。");
                 while (true) {
                     if (currentDepth == 0) break;
 
@@ -236,33 +236,33 @@ namespace Nijo.Runtime {
             /// <summary>
             /// 直近の子を返す
             /// </summary>
-            /// <param name="agg"></param>
+            /// <param name="node"></param>
             /// <returns></returns>
-            public IEnumerable<NijoUiGridRow> GetChildren(NijoUiGridRow agg) {
-                var currentIndex = _list.IndexOf(agg);
-                if (currentIndex == -1) throw new InvalidOperationException($"{agg}はこの一覧に属していません。");
+            public IEnumerable<MutableSchemaNode> GetChildren(MutableSchemaNode node) {
+                var currentIndex = _list.IndexOf(node);
+                if (currentIndex == -1) throw new InvalidOperationException($"{node}はこの一覧に属していません。");
                 while (true) {
                     currentIndex++;
                     if (currentIndex >= _list.Count) yield break;
 
                     var maybeChild = _list[currentIndex];
-                    if (maybeChild.Depth <= agg.Depth) yield break;
+                    if (maybeChild.Depth <= node.Depth) yield break;
 
-                    if (GetParent(maybeChild) == agg) yield return maybeChild;
+                    if (GetParent(maybeChild) == node) yield return maybeChild;
                 }
             }
             /// <summary>
             /// 子孫を返す
             /// </summary>
-            public IEnumerable<NijoUiGridRow> GetDescendants(NijoUiGridRow agg) {
-                var currentIndex = _list.IndexOf(agg);
-                if (currentIndex == -1) throw new InvalidOperationException($"{agg}はこの一覧に属していません。");
+            public IEnumerable<MutableSchemaNode> GetDescendants(MutableSchemaNode node) {
+                var currentIndex = _list.IndexOf(node);
+                if (currentIndex == -1) throw new InvalidOperationException($"{node}はこの一覧に属していません。");
                 while (true) {
                     currentIndex++;
                     if (currentIndex >= _list.Count) yield break;
 
                     var maybeDescendant = _list[currentIndex];
-                    if (maybeDescendant.Depth <= agg.Depth) yield break;
+                    if (maybeDescendant.Depth <= node.Depth) yield break;
 
                     yield return maybeDescendant;
                 }
@@ -347,7 +347,7 @@ namespace Nijo.Runtime {
                         }
                     } else {
                         // 上記以外
-                        var typeDef = EnumerateGridRowTypes().SingleOrDefault(d => d.Key == node.Type);
+                        var typeDef = EnumerateSchemaNodeTypes().SingleOrDefault(d => d.Key == node.Type);
                         if (typeDef == null) {
                             yield return new ValidationError {
                                 Node = node,
@@ -392,9 +392,9 @@ namespace Nijo.Runtime {
             }
 
             #region IReadOnlyListの実装
-            public NijoUiGridRow this[int index] => _list[index];
+            public MutableSchemaNode this[int index] => _list[index];
             public int Count => _list.Count;
-            public IEnumerator<NijoUiGridRow> GetEnumerator() {
+            public IEnumerator<MutableSchemaNode> GetEnumerator() {
                 return _list.GetEnumerator();
             }
             IEnumerator IEnumerable.GetEnumerator() {
@@ -404,7 +404,7 @@ namespace Nijo.Runtime {
         }
         private class ValidationError {
             /// <summary>どの集約またはメンバーでエラーが発生したか</summary>
-            public required NijoUiGridRow Node { get; init; }
+            public required MutableSchemaNode Node { get; init; }
             /// <summary>
             /// どの項目でエラーが発生したか。
             /// <see cref="ERR_TO_ROW"/> の場合、メンバー全体に対するエラー。
@@ -475,9 +475,9 @@ namespace Nijo.Runtime {
             [JsonPropertyName("editingXmlFilePath")]
             public string? EditingXmlFilePath { get; set; }
             [JsonPropertyName("aggregates")]
-            public List<NijoUiGridRow>? GridRows { get; set; }
+            public List<MutableSchemaNode>? Nodes { get; set; }
             [JsonPropertyName("aggregateOrMemberTypes")]
-            public List<GridRowTypeDef>? GridRowTypes { get; set; }
+            public List<SchemaNodeTypeDef>? SchemaNodeTypes { get; set; }
             [JsonPropertyName("optionalAttributes")]
             public List<OptionalAttributeDef>? OptionalAttributes { get; set; }
         }
@@ -486,10 +486,17 @@ namespace Nijo.Runtime {
         /// </summary>
         private class ClientRequest {
             [JsonPropertyName("aggregates")]
-            public List<NijoUiGridRow>? Aggregates { get; set; }
+            public List<MutableSchemaNode>? Nodes { get; set; }
         }
 
-        private class NijoUiGridRow {
+        /// <summary>
+        /// NijoApplicationBuilderのスキーマのノード。
+        /// XMLのノードと1対1対応する。
+        /// 不変ではない（つまりインスタンス作成後に状態を変更することができる）。
+        /// UI上で編集される対象となるため、集約定義や集約メンバー定義として不正な状態であったとしても許容する。
+        /// 親ノードや子ノードへの参照を持たない（親子関係は <see cref="MutableSchema"/> 経由で参照する）。
+        /// </summary>
+        private class MutableSchemaNode {
             [JsonPropertyName("depth")]
             public required int Depth { get; set; }
             [JsonPropertyName("uniqueId")]
@@ -514,7 +521,7 @@ namespace Nijo.Runtime {
                     ?? DisplayName?.ToCSharpSafe()
                     ?? string.Empty;
             }
-            public string GetRefToPath(NijoUiGridRowList collection) {
+            public string GetRefToPath(MutableSchema collection) {
                 return collection
                     .GetAncestors(this)
                     .Concat([this])
@@ -525,13 +532,13 @@ namespace Nijo.Runtime {
                 if (string.IsNullOrWhiteSpace(Type)) return null;
                 if (Type.StartsWith(NijoXmlElement.REFTO_PREFIX)) return E_NodeType.Ref;
                 if (Type.StartsWith(NijoXmlElement.ENUM_PREFIX)) return E_NodeType.Enum;
-                return EnumerateGridRowTypes().SingleOrDefault(t => t.Key == Type)?.NodeType;
+                return EnumerateSchemaNodeTypes().SingleOrDefault(t => t.Key == Type)?.NodeType;
             }
-            public bool IsWriteModel(NijoUiGridRowList schema) {
+            public bool IsWriteModel(MutableSchema schema) {
                 var root = schema.GetRoot(this);
                 return root.Type?.Contains("write-model-2") == true;
             }
-            public bool IsReadModel(NijoUiGridRowList schema) {
+            public bool IsReadModel(MutableSchema schema) {
                 var root = schema.GetRoot(this);
                 return root.Type?.Contains("read-model-2") == true
                     || root.Type?.Contains("generate-default-read-model") == true;
@@ -539,7 +546,7 @@ namespace Nijo.Runtime {
             /// <summary>
             /// エラーチェック
             /// </summary>
-            public void Validate(NijoUiGridRowList schema, ICollection<string> errors) {
+            public void Validate(MutableSchema schema, ICollection<string> errors) {
                 // 名前必須
                 if (string.IsNullOrWhiteSpace(DisplayName)) {
                     errors.Add("項目名を指定してください。");
@@ -561,7 +568,7 @@ namespace Nijo.Runtime {
             }
         }
         /// <summary>
-        /// <see cref="NijoUiGridRow.Type"/> の種類
+        /// <see cref="MutableSchemaNode.Type"/> の種類
         /// </summary>
         [Flags]
         private enum E_NodeType {
@@ -592,7 +599,7 @@ namespace Nijo.Runtime {
             [JsonPropertyName("value")]
             public string? Value { get; set; }
         }
-        private class GridRowTypeDef {
+        private class SchemaNodeTypeDef {
             [JsonPropertyName("key")]
             public string? Key { get; set; }
             [JsonPropertyName("displayName")]
@@ -612,7 +619,7 @@ namespace Nijo.Runtime {
             /// バリデーション
             /// </summary>
             [JsonIgnore]
-            public Action<NijoUiGridRow, NijoUiGridRowList, ICollection<string>> Validate { get; set; } = ((_, _, _) => { });
+            public Action<MutableSchemaNode, MutableSchema, ICollection<string>> Validate { get; set; } = ((_, _, _) => { });
             /// <summary>
             /// この種別に属するノードの種類
             /// </summary>
@@ -637,7 +644,7 @@ namespace Nijo.Runtime {
             /// バリデーション
             /// </summary>
             [JsonIgnore]
-            public Action<string?, NijoUiGridRow, NijoUiGridRowList, ICollection<string>> Validate { get; set; } = ((_, _, _, _) => { });
+            public Action<string?, MutableSchemaNode, MutableSchema, ICollection<string>> Validate { get; set; } = ((_, _, _, _) => { });
         }
         private enum E_OptionalAttributeType {
             String,
@@ -648,10 +655,10 @@ namespace Nijo.Runtime {
         /// <summary>
         /// 集約やメンバーの種類として指定することができる属性を列挙します。
         /// </summary>
-        private static IEnumerable<GridRowTypeDef> EnumerateGridRowTypes() {
+        private static IEnumerable<SchemaNodeTypeDef> EnumerateSchemaNodeTypes() {
 
             // ルート集約に設定できる種類
-            yield return new GridRowTypeDef {
+            yield return new SchemaNodeTypeDef {
                 NodeType = E_NodeType.RootAggregate,
                 Key = "write-model-2", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "WriteModel",
@@ -667,7 +674,7 @@ namespace Nijo.Runtime {
                     if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
                 },
             };
-            yield return new GridRowTypeDef {
+            yield return new SchemaNodeTypeDef {
                 NodeType = E_NodeType.RootAggregate,
                 Key = "read-model-2", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "ReadModel",
@@ -683,7 +690,7 @@ namespace Nijo.Runtime {
 
                 },
             };
-            yield return new GridRowTypeDef {
+            yield return new SchemaNodeTypeDef {
                 NodeType = E_NodeType.RootAggregate,
                 Key = "write-model-2 generate-default-read-model", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "Write & Read",
@@ -699,7 +706,7 @@ namespace Nijo.Runtime {
 
                 },
             };
-            yield return new GridRowTypeDef {
+            yield return new SchemaNodeTypeDef {
                 NodeType = E_NodeType.RootAggregate,
                 Key = "enum", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "Enum",
@@ -713,7 +720,7 @@ namespace Nijo.Runtime {
 
                 },
             };
-            yield return new GridRowTypeDef {
+            yield return new SchemaNodeTypeDef {
                 NodeType = E_NodeType.RootAggregate,
                 Key = "command",
                 DisplayName = "Command",
@@ -732,7 +739,7 @@ namespace Nijo.Runtime {
                     }
                 },
             };
-            yield return new GridRowTypeDef {
+            yield return new SchemaNodeTypeDef {
                 NodeType = E_NodeType.RootAggregate,
                 Key = "value-object",
                 DisplayName = "値オブジェクト(ValueObject)",
@@ -750,7 +757,7 @@ namespace Nijo.Runtime {
 
             // ルート以外に設定できる種類
             // ※ ref-toと列挙体は集約定義に依存するのでクライアント側で計算する
-            yield return new GridRowTypeDef {
+            yield return new SchemaNodeTypeDef {
                 NodeType = E_NodeType.DescendantAggregate,
                 Key = "child", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "Child",
@@ -768,7 +775,7 @@ namespace Nijo.Runtime {
 
                 },
             };
-            yield return new GridRowTypeDef {
+            yield return new SchemaNodeTypeDef {
                 NodeType = E_NodeType.DescendantAggregate,
                 Key = "children", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "Children",
@@ -786,7 +793,7 @@ namespace Nijo.Runtime {
 
                 },
             };
-            yield return new GridRowTypeDef {
+            yield return new SchemaNodeTypeDef {
                 NodeType = E_NodeType.Variation,
                 Key = "variation",
                 DisplayName = "Variation",
@@ -806,7 +813,7 @@ namespace Nijo.Runtime {
                     }
                 },
             };
-            yield return new GridRowTypeDef {
+            yield return new SchemaNodeTypeDef {
                 NodeType = E_NodeType.DescendantAggregate,
                 Key = "variation-item", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
                 DisplayName = "VariationItem",
@@ -832,7 +839,7 @@ namespace Nijo.Runtime {
                 },
             };
 
-            yield return new GridRowTypeDef {
+            yield return new SchemaNodeTypeDef {
                 NodeType = E_NodeType.DescendantAggregate,
                 Key = "step",
                 DisplayName = "ステップ",
@@ -857,7 +864,7 @@ namespace Nijo.Runtime {
 
             var resolver = MemberTypeResolver.Default();
             foreach (var (key, memberType) in resolver.EnumerateAll()) {
-                yield return new GridRowTypeDef {
+                yield return new SchemaNodeTypeDef {
                     NodeType = E_NodeType.SchalarMember,
                     Key = key,
                     DisplayName = memberType.GetUiDisplayName(),
@@ -1444,13 +1451,13 @@ namespace Nijo.Runtime {
             /// <summary>
             /// nijo ui の画面上で編集されるデータをXML要素に変換する
             /// </summary>
-            /// <param name="gridRow">変換元</param>
+            /// <param name="node">変換元</param>
             /// <param name="collection">全ての集約が入ったコレクション</param>
-            public static NijoXmlElement FromGridRow(
-                NijoUiGridRow gridRow,
-                NijoUiGridRowList collection) {
+            public static NijoXmlElement FromSchemaNode(
+                MutableSchemaNode node,
+                MutableSchema collection) {
 
-                var physicalName = gridRow.GetPhysicalName();
+                var physicalName = node.GetPhysicalName();
                 var el = new XElement(physicalName);
 
                 // ---------------------------------
@@ -1458,10 +1465,10 @@ namespace Nijo.Runtime {
                 var isAttrs = new List<string>();
 
                 // 型
-                if (!string.IsNullOrWhiteSpace(gridRow.Type)) {
-                    if (gridRow.Type.StartsWith(REFTO_PREFIX)) {
+                if (!string.IsNullOrWhiteSpace(node.Type)) {
+                    if (node.Type.StartsWith(REFTO_PREFIX)) {
                         // ref-to
-                        var uniqueId = gridRow.Type.Substring(REFTO_PREFIX.Length);
+                        var uniqueId = node.Type.Substring(REFTO_PREFIX.Length);
                         var refToPath = collection
                             .FirstOrDefault(agg => agg.UniqueId == uniqueId)
                             ?.GetRefToPath(collection);
@@ -1471,9 +1478,9 @@ namespace Nijo.Runtime {
                             isAttrs.Add($"{REFTO_PREFIX}{refToPath}");
                         }
 
-                    } else if (gridRow.Type.StartsWith(ENUM_PREFIX)) {
+                    } else if (node.Type.StartsWith(ENUM_PREFIX)) {
                         // enum
-                        var uniqueId = gridRow.Type.Substring(ENUM_PREFIX.Length);
+                        var uniqueId = node.Type.Substring(ENUM_PREFIX.Length);
                         var enumName = collection
                             .RootAggregates()
                             .FirstOrDefault(agg => agg.UniqueId == uniqueId
@@ -1483,16 +1490,16 @@ namespace Nijo.Runtime {
                             isAttrs.Add(enumName);
                         }
 
-                    } else if (!string.IsNullOrWhiteSpace(gridRow.TypeDetail)) {
-                        isAttrs.Add($"{gridRow.Type}:{gridRow.TypeDetail}");
+                    } else if (!string.IsNullOrWhiteSpace(node.TypeDetail)) {
+                        isAttrs.Add($"{node.Type}:{node.TypeDetail}");
 
                     } else {
-                        isAttrs.Add(gridRow.Type);
+                        isAttrs.Add(node.Type);
                     }
                 }
 
                 // 型以外のis属性
-                foreach (var attr in gridRow.AttrValues ?? []) {
+                foreach (var attr in node.AttrValues ?? []) {
                     // これらは後の処理で考慮済みなので除外
                     if (attr.Key == OptionalAttributeDef.PHYSICAL_NAME
                         || attr.Key == OptionalAttributeDef.DB_NAME
@@ -1516,18 +1523,18 @@ namespace Nijo.Runtime {
                 // ---------------------------------
                 // is以外の属性
 
-                if (gridRow.DisplayName != physicalName) {
-                    el.SetAttributeValue(DISPLAY_NAME, gridRow.DisplayName);
+                if (node.DisplayName != physicalName) {
+                    el.SetAttributeValue(DISPLAY_NAME, node.DisplayName);
                 }
 
-                var dbName = gridRow.AttrValues
+                var dbName = node.AttrValues
                     ?.SingleOrDefault(x => x.Key == OptionalAttributeDef.DB_NAME)
                     ?.Value;
                 if (!string.IsNullOrWhiteSpace(dbName)) {
                     el.SetAttributeValue(DB_NAME, dbName);
                 }
 
-                var latinName = gridRow.AttrValues
+                var latinName = node.AttrValues
                     ?.SingleOrDefault(x => x.Key == OptionalAttributeDef.LATIN)
                     ?.Value;
                 if (!string.IsNullOrWhiteSpace(latinName)) {
@@ -1536,29 +1543,29 @@ namespace Nijo.Runtime {
 
                 // ---------------------------------
                 // 子要素
-                foreach (var child in collection.GetChildren(gridRow)) {
+                foreach (var child in collection.GetChildren(node)) {
                     if (!string.IsNullOrWhiteSpace(child.Comment)) el.Add(new XComment(child.Comment));
-                    el.Add(FromGridRow(child, collection)._xElement);
+                    el.Add(FromSchemaNode(child, collection)._xElement);
                 }
 
-                var comment = string.IsNullOrWhiteSpace(gridRow.Comment)
+                var comment = string.IsNullOrWhiteSpace(node.Comment)
                     ? Array.Empty<XComment>()
-                    : [new XComment(gridRow.Comment)];
+                    : [new XComment(node.Comment)];
 
-                return new NijoXmlElement(el, gridRow.XmlFileFullPath, comment);
+                return new NijoXmlElement(el, node.XmlFileFullPath, comment);
             }
             /// <summary>
             /// XML要素を nijo ui の画面上で編集されるデータに変換する
             /// </summary>
-            public IEnumerable<NijoUiGridRow> ToGridRow(
-                IEnumerable<GridRowTypeDef> typeDefs,
+            public IEnumerable<MutableSchemaNode> ToSchemaNode(
+                IEnumerable<SchemaNodeTypeDef> typeDefs,
                 IReadOnlyDictionary<string, OptionalAttributeDef> optionDefs,
                 Func<string, XElement?> findRefToElement,
                 Func<string[], XElement?> findEnumElement) {
-                return ToGridRowPrivate(typeDefs, optionDefs, 0, findRefToElement, findEnumElement);
+                return ToSchemaNodePrivate(typeDefs, optionDefs, 0, findRefToElement, findEnumElement);
             }
-            private IEnumerable<NijoUiGridRow> ToGridRowPrivate(
-                IEnumerable<GridRowTypeDef> typeDefs,
+            private IEnumerable<MutableSchemaNode> ToSchemaNodePrivate(
+                IEnumerable<SchemaNodeTypeDef> typeDefs,
                 IReadOnlyDictionary<string, OptionalAttributeDef> optionDefs,
                 int depth,
                 Func<string, XElement?> findRefToElement,
@@ -1634,7 +1641,7 @@ namespace Nijo.Runtime {
                     currentElement = currentElement.PreviousNode;
                 }
 
-                yield return new NijoUiGridRow {
+                yield return new MutableSchemaNode {
                     Depth = depth,
                     UniqueId = GetXElementUniqueId(_xElement),
                     DisplayName = displayName,
@@ -1648,7 +1655,7 @@ namespace Nijo.Runtime {
                 // -------------------------------------
                 // コメント
                 var nodes = _xElement.Nodes().ToArray();
-                var descendants = new List<NijoUiGridRow>();
+                var descendants = new List<MutableSchemaNode>();
                 var comments = new List<XComment>();
                 for (int i = 0; i < nodes.Length; i++) {
                     var node = nodes[i];
@@ -1656,7 +1663,7 @@ namespace Nijo.Runtime {
                         comments.Add(xComment);
                     } else if (node is XElement xElement) {
                         var nijoXmlElement = new NijoXmlElement(xElement, null, comments.ToArray());
-                        descendants.AddRange(nijoXmlElement.ToGridRowPrivate(typeDefs, optionDefs, depth + 1, findRefToElement, findEnumElement));
+                        descendants.AddRange(nijoXmlElement.ToSchemaNodePrivate(typeDefs, optionDefs, depth + 1, findRefToElement, findEnumElement));
                         comments.Clear();
                     }
                 }
