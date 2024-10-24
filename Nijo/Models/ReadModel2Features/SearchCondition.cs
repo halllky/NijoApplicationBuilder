@@ -126,7 +126,12 @@ namespace Nijo.Models.ReadModel2Features {
         /// 並び順に指定することができるメンバーを列挙します。
         /// </summary>
         private IEnumerable<SearchConditionMember> EnumerateSortMembers() {
-            return GetOwnMembers();
+            foreach (var scMember in GetOwnMembers()) {
+                // 非表示項目ではソート不可
+                if (scMember.Member.Options.InvisibleInGui) continue;
+
+                yield return scMember;
+            }
         }
         /// <summary>
         /// '子要素.孫要素.プロパティ名（昇順）' のような並び順候補の文字列の一覧を返します。
