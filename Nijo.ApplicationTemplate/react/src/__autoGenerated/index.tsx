@@ -49,7 +49,14 @@ export function DefaultNijoApp({ customizer }: {
 
     return createBrowserRouter([{
       path: '/',
-      element: <ApplicationRootInContext />,
+      element: customizer?.LoginPage
+        // ログイン画面がある場合はログイン画面を通す。
+        // アプリケーション本体を表示するかどうかはログイン画面の制御に任せる。
+        ? <customizer.LoginPage LoggedInContents={<ApplicationRootInContext />} />
+
+        // ログイン画面が無い場合はコンテンツをそのまま表示
+        : <ApplicationRootInContext />,
+
       children: modifyRoutes?.(defaultRoutes) ?? defaultRoutes,
     },
     ])
@@ -64,14 +71,7 @@ export function DefaultNijoApp({ customizer }: {
               <DialogContextProvider>
                 <Util.SideMenuContextProvider>
                   <CustomizerContextProvider value={customizerContextValue}>
-                    {customizer?.LoginPage ? (
-                      // ログイン画面がある場合はログイン画面を通す。
-                      // アプリケーション本体を表示するかどうかはログイン画面の制御に任せる。
-                      <customizer.LoginPage LoggedInContents={<ApplicationRootInContext />} />
-                    ) : (
-                      // ログイン画面が無い場合はコンテンツをそのまま表示
-                      <RouterProvider router={router} />
-                    )}
+                    <RouterProvider router={router} />
                   </CustomizerContextProvider>
                   <Util.EnvNameRibbon />
                   <Util.Toast />
