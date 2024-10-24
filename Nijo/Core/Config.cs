@@ -14,6 +14,17 @@ namespace Nijo.Core {
         public string DbContextNamespace => RootNamespace;
         public required string DbContextName { get; init; }
 
+        /// <summary>DBカラム名（作成者）</summary>
+        public required string? CreateUserDbColumnName { get; init; }
+        /// <summary>DBカラム名（更新者）</summary>
+        public required string? UpdateUserDbColumnName { get; init; }
+        /// <summary>DBカラム名（作成時刻）</summary>
+        public required string? CreatedAtDbColumnName { get; init; }
+        /// <summary>DBカラム名（更新時刻）</summary>
+        public required string? UpdatedAtDbColumnName { get; init; }
+        /// <summary>DBカラム名（楽観排他用バージョン）</summary>
+        public required string? VersionDbColumnName { get; init; }
+
         /// <summary>
         /// 一時保存を使用しない
         /// </summary>
@@ -42,6 +53,12 @@ namespace Nijo.Core {
         private const string NAMESPACE_DBCONTEXT = "DbContextNamespace";
 
         private const string DBCONTEXT_NAME = "DbContextName";
+
+        private const string CREATE_USER_DB_COLUMN_NAME = "CreateUserDbColumnName";
+        private const string UPDATE_USER_DB_COLUMN_NAME = "UpdateUserDbColumnName";
+        private const string CREATED_AT_DB_COLUMN_NAME = "CreatedAtDbColumnName";
+        private const string UPDATED_AT_DB_COLUMN_NAME = "UpdatedAtDbColumnName";
+        private const string VERSION_DB_COLUMN_NAME = "VersionDbColumnName";
 
         private const string DISABLE_LOCAL_REPOSITORY = "DisableLocalRepository";
 
@@ -89,6 +106,11 @@ namespace Nijo.Core {
                 RootNamespace = xDocument.Root.Name.LocalName.ToCSharpSafe(),
                 DisableLocalRepository = xDocument.Root.Attribute(DISABLE_LOCAL_REPOSITORY) != null,
                 DbContextName = configSection?.Element(DBCONTEXT_NAME)?.Value ?? "MyDbContext",
+                CreateUserDbColumnName = xDocument.Root.Attribute(CREATE_USER_DB_COLUMN_NAME)?.Value,
+                UpdateUserDbColumnName = xDocument.Root.Attribute(UPDATE_USER_DB_COLUMN_NAME)?.Value,
+                CreatedAtDbColumnName = xDocument.Root.Attribute(CREATED_AT_DB_COLUMN_NAME)?.Value,
+                UpdatedAtDbColumnName = xDocument.Root.Attribute(UPDATED_AT_DB_COLUMN_NAME)?.Value,
+                VersionDbColumnName = xDocument.Root.Attribute(VERSION_DB_COLUMN_NAME)?.Value,
                 MultiViewDetailLinkBehavior = xDocument.Root.Attribute(MULTI_VIEW_DETAIL_LINK_BEHAVIOR)?.Value == E_MultiViewDetailLinkBehavior.NavigateToReadOnlyMode.ToString()
                     ? E_MultiViewDetailLinkBehavior.NavigateToReadOnlyMode
                     : E_MultiViewDetailLinkBehavior.NavigateToEditMode,

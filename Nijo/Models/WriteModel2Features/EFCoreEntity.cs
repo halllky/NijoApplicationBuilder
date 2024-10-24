@@ -133,8 +133,27 @@ namespace Nijo.Models.WriteModel2Features {
                                 .HasColumnName("{{col.DbColumnName}}")
                                 .IsRequired({{(col.IsRequired ? "true" : "false")}});
                 """)}}
+                {{If(_aggregate.IsRoot() && context.Config.CreateUserDbColumnName != null, () => $$"""
+                            entity.Property(e => e.{{CREATE_USER}})
+                                .HasColumnName("{{context.Config.CreateUserDbColumnName?.Replace("\"", "\\\"")}}");
+                """)}}
+                {{If(_aggregate.IsRoot() && context.Config.UpdateUserDbColumnName != null, () => $$"""
+                            entity.Property(e => e.{{UPDATE_USER}})
+                                .HasColumnName("{{context.Config.UpdateUserDbColumnName?.Replace("\"", "\\\"")}}");
+                """)}}
+                {{If(_aggregate.IsRoot() && context.Config.CreatedAtDbColumnName != null, () => $$"""
+                            entity.Property(e => e.{{CREATED_AT}})
+                                .HasColumnName("{{context.Config.CreatedAtDbColumnName?.Replace("\"", "\\\"")}}");
+                """)}}
+                {{If(_aggregate.IsRoot() && context.Config.UpdatedAtDbColumnName != null, () => $$"""
+                            entity.Property(e => e.{{UPDATED_AT}})
+                                .HasColumnName("{{context.Config.UpdatedAtDbColumnName?.Replace("\"", "\\\"")}}");
+                """)}}
                 {{If(_aggregate.IsRoot(), () => $$"""
                             entity.Property(e => e.{{VERSION}})
+                {{If(context.Config.VersionDbColumnName != null, () => $$"""
+                                .HasColumnName("{{context.Config.VersionDbColumnName?.Replace("\"", "\\\"")}}")
+                """)}}
                                 .IsRequired(true)
                                 .IsConcurrencyToken(true);
                 """)}}

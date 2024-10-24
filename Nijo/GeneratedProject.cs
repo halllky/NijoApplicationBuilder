@@ -76,6 +76,11 @@ namespace Nijo {
                 var config = new Config {
                     RootNamespace = applicationName.ToCSharpSafe(),
                     DbContextName = "MyDbContext",
+                    CreateUserDbColumnName = null,
+                    UpdateUserDbColumnName = null,
+                    CreatedAtDbColumnName  = null,
+                    UpdatedAtDbColumnName  = null,
+                    VersionDbColumnName = null,
                     DisableLocalRepository = false,
                     MultiViewDetailLinkBehavior = Config.E_MultiViewDetailLinkBehavior.NavigateToEditMode,
                 };
