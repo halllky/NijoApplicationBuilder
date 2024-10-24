@@ -93,7 +93,7 @@ namespace Nijo.Runtime {
 
                 var rootAggregates = rootXml
                     .GetRootAggregatesRecursively()
-                    .SelectMany(x => x.ToSchemaNode(typeDefs, optionDefs.ToDictionary(d => d.Key), FindRefToElement, FindEnumElement));
+                    .SelectMany(x => MutableSchemaNode.XmlElemntToSchemaNode(x, typeDefs, optionDefs.ToDictionary(d => d.Key), FindRefToElement, FindEnumElement));
 
                 context.Response.ContentType = "application/json";
                 await context.Response.WriteAsync(new InitialLoadData {
@@ -672,6 +672,126 @@ namespace Nijo.Runtime {
                     : [new XComment(node.Comment)];
 
                 return new NijoXmlElement(el, node.XmlFileFullPath, comment);
+            }
+
+            /// <summary>
+            /// XML要素を nijo ui の画面上で編集されるデータに変換する
+            /// </summary>
+            public static IEnumerable<MutableSchemaNode> XmlElemntToSchemaNode(
+                NijoXmlElement nijoXmlElement,
+                IEnumerable<SchemaNodeTypeDef> typeDefs,
+                IReadOnlyDictionary<string, OptionalAttributeDef> optionDefs,
+                Func<string, XElement?> findRefToElement,
+                Func<string[], XElement?> findEnumElement) {
+                return ToSchemaNodePrivate(nijoXmlElement, typeDefs, optionDefs, 0, findRefToElement, findEnumElement);
+            }
+            private static IEnumerable<MutableSchemaNode> ToSchemaNodePrivate(
+                NijoXmlElement nijoXmlElement,
+                IEnumerable<SchemaNodeTypeDef> typeDefs,
+                IReadOnlyDictionary<string, OptionalAttributeDef> optionDefs,
+                int depth,
+                Func<string, XElement?> findRefToElement,
+                Func<string[], XElement?> findEnumElement) {
+
+                // XMLと nijo ui では DisplayName と PhysicalName の扱いが逆
+                var displayName = nijoXmlElement._xElement
+                    .Attribute(DISPLAY_NAME)?.Value
+                    ?? nijoXmlElement._xElement.Name.LocalName;
+
+                // -------------------------------------
+                // 型
+
+                // ref-toとenum以外の型
+                string? type = null;
+                string? typeDetail = null;
+                foreach (var def in typeDefs.OrderBy(d => d.Key)) {
+                    var isAttr = def.FindMatchingIsAttribute(nijoXmlElement);
+                    if (isAttr != null) {
+                        type = def.Key;
+                        typeDetail = isAttr.Value;
+                        break;
+                    }
+                }
+
+                // ref-to
+                if (type == null && nijoXmlElement.Is.TryGetValue("ref-to", out var refTo)) {
+                    var refToElement = findRefToElement(refTo.Value);
+                    if (refToElement != null) {
+                        // ここの記法はTypeScript側の型選択コンボボックスのルールと合わせる必要あり
+                        type = $"{REFTO_PREFIX}{NijoXmlElement.GetXElementUniqueId(refToElement)}";
+                    }
+                }
+
+                // enum
+                if (type == null) {
+                    var isAttr = nijoXmlElement.Is.Keys.OrderBy(k => k).ToArray();
+                    var matchedEnum = findEnumElement(isAttr);
+                    if (matchedEnum != null) {
+                        // ここの記法はTypeScript側の型選択コンボボックスのルールと合わせる必要あり
+                        type = $"{ENUM_PREFIX}{NijoXmlElement.GetXElementUniqueId(matchedEnum)}";
+                    }
+                }
+
+                // -------------------------------------
+                // オプショナル属性
+                var attrs = nijoXmlElement.Is.Values
+                    .Select(a => new OptionalAttributeValue { Key = a.Key, Value = a.Value })
+                    .ToList();
+                if (nijoXmlElement._xElement.Attribute(DISPLAY_NAME) != null) {
+                    // XMLと nijo ui では DisplayName と PhysicalName の扱いが逆
+                    attrs.Add(new OptionalAttributeValue { Key = OptionalAttributeDef.PHYSICAL_NAME, Value = nijoXmlElement._xElement.Name.LocalName });
+                }
+                if (nijoXmlElement._xElement.Attribute(DB_NAME) != null) {
+                    attrs.Add(new OptionalAttributeValue { Key = OptionalAttributeDef.DB_NAME, Value = nijoXmlElement._xElement.Attribute(DB_NAME)?.Value });
+                }
+                if (nijoXmlElement._xElement.Attribute(LATIN) != null) {
+                    attrs.Add(new OptionalAttributeValue { Key = OptionalAttributeDef.LATIN, Value = nijoXmlElement._xElement.Attribute(LATIN)?.Value });
+                }
+
+                // is属性のうちtypeの方で既にハンドリング済みのものは除外
+                attrs.RemoveAll(a => a.Key == null || !optionDefs.ContainsKey(a.Key));
+
+                // -------------------------------------
+                // コメント。PreviousNodeを使って取得する都合上、XMLを下から順番に辿る形になる。
+                var comment = new StringBuilder();
+                var currentElement = (XNode?)nijoXmlElement._xElement;
+                while (currentElement?.PreviousNode is XComment xComment) {
+                    var value = comment.Length == 0
+                        ? xComment.Value
+                        : (xComment.Value + Environment.NewLine);
+                    comment.Insert(0, value);
+                    currentElement = currentElement.PreviousNode;
+                }
+
+                yield return new MutableSchemaNode {
+                    Depth = depth,
+                    UniqueId = NijoXmlElement.GetXElementUniqueId(nijoXmlElement._xElement),
+                    DisplayName = displayName,
+                    Type = type,
+                    TypeDetail = typeDetail,
+                    AttrValues = attrs,
+                    Comment = comment.ToString(),
+                    XmlFileFullPath = nijoXmlElement.XmlFileFullpath,
+                };
+
+                // -------------------------------------
+                // コメント
+                var nodes = nijoXmlElement._xElement.Nodes().ToArray();
+                var descendants = new List<MutableSchemaNode>();
+                var comments = new List<XComment>();
+                for (int i = 0; i < nodes.Length; i++) {
+                    var node = nodes[i];
+                    if (node is XComment xComment) {
+                        comments.Add(xComment);
+                    } else if (node is XElement xElement) {
+                        var childNijoXmlElement = new NijoXmlElement(xElement, null, comments.ToArray());
+                        descendants.AddRange(ToSchemaNodePrivate(childNijoXmlElement, typeDefs, optionDefs, depth + 1, findRefToElement, findEnumElement));
+                        comments.Clear();
+                    }
+                }
+                foreach (var descendant in descendants) {
+                    yield return descendant;
+                }
             }
 
             public const string IS = "is";
@@ -1563,125 +1683,7 @@ namespace Nijo.Runtime {
             #endregion is属性
 
             #region nijo ui の画面表示用データとの変換
-            /// <summary>
-            /// XML要素を nijo ui の画面上で編集されるデータに変換する
-            /// </summary>
-            public IEnumerable<MutableSchemaNode> ToSchemaNode(
-                IEnumerable<SchemaNodeTypeDef> typeDefs,
-                IReadOnlyDictionary<string, OptionalAttributeDef> optionDefs,
-                Func<string, XElement?> findRefToElement,
-                Func<string[], XElement?> findEnumElement) {
-                return ToSchemaNodePrivate(typeDefs, optionDefs, 0, findRefToElement, findEnumElement);
-            }
-            private IEnumerable<MutableSchemaNode> ToSchemaNodePrivate(
-                IEnumerable<SchemaNodeTypeDef> typeDefs,
-                IReadOnlyDictionary<string, OptionalAttributeDef> optionDefs,
-                int depth,
-                Func<string, XElement?> findRefToElement,
-                Func<string[], XElement?> findEnumElement) {
-
-                // XMLと nijo ui では DisplayName と PhysicalName の扱いが逆
-                var displayName = _xElement
-                    .Attribute(MutableSchemaNode.DISPLAY_NAME)?.Value
-                    ?? _xElement.Name.LocalName;
-
-                // -------------------------------------
-                // 型
-
-                // ref-toとenum以外の型
-                string? type = null;
-                string? typeDetail = null;
-                foreach (var def in typeDefs.OrderBy(d => d.Key)) {
-                    var isAttr = def.FindMatchingIsAttribute(this);
-                    if (isAttr != null) {
-                        type = def.Key;
-                        typeDetail = isAttr.Value;
-                        break;
-                    }
-                }
-
-                // ref-to
-                if (type == null && Is.TryGetValue("ref-to", out var refTo)) {
-                    var refToElement = findRefToElement(refTo.Value);
-                    if (refToElement != null) {
-                        // ここの記法はTypeScript側の型選択コンボボックスのルールと合わせる必要あり
-                        type = $"{MutableSchemaNode.REFTO_PREFIX}{GetXElementUniqueId(refToElement)}";
-                    }
-                }
-
-                // enum
-                if (type == null) {
-                    var isAttr = Is.Keys.OrderBy(k => k).ToArray();
-                    var matchedEnum = findEnumElement(isAttr);
-                    if (matchedEnum != null) {
-                        // ここの記法はTypeScript側の型選択コンボボックスのルールと合わせる必要あり
-                        type = $"{MutableSchemaNode.ENUM_PREFIX}{GetXElementUniqueId(matchedEnum)}";
-                    }
-                }
-
-                // -------------------------------------
-                // オプショナル属性
-                var attrs = Is.Values
-                    .Select(a => new OptionalAttributeValue { Key = a.Key, Value = a.Value })
-                    .ToList();
-                if (_xElement.Attribute(MutableSchemaNode.DISPLAY_NAME) != null) {
-                    // XMLと nijo ui では DisplayName と PhysicalName の扱いが逆
-                    attrs.Add(new OptionalAttributeValue { Key = OptionalAttributeDef.PHYSICAL_NAME, Value = _xElement.Name.LocalName });
-                }
-                if (_xElement.Attribute(MutableSchemaNode.DB_NAME) != null) {
-                    attrs.Add(new OptionalAttributeValue { Key = OptionalAttributeDef.DB_NAME, Value = _xElement.Attribute(MutableSchemaNode.DB_NAME)?.Value });
-                }
-                if (_xElement.Attribute(MutableSchemaNode.LATIN) != null) {
-                    attrs.Add(new OptionalAttributeValue { Key = OptionalAttributeDef.LATIN, Value = _xElement.Attribute(MutableSchemaNode.LATIN)?.Value });
-                }
-
-                // is属性のうちtypeの方で既にハンドリング済みのものは除外
-                attrs.RemoveAll(a => a.Key == null || !optionDefs.ContainsKey(a.Key));
-
-                // -------------------------------------
-                // コメント。PreviousNodeを使って取得する都合上、XMLを下から順番に辿る形になる。
-                var comment = new StringBuilder();
-                var currentElement = (XNode?)_xElement;
-                while (currentElement?.PreviousNode is XComment xComment) {
-                    var value = comment.Length == 0
-                        ? xComment.Value
-                        : (xComment.Value + Environment.NewLine);
-                    comment.Insert(0, value);
-                    currentElement = currentElement.PreviousNode;
-                }
-
-                yield return new MutableSchemaNode {
-                    Depth = depth,
-                    UniqueId = GetXElementUniqueId(_xElement),
-                    DisplayName = displayName,
-                    Type = type,
-                    TypeDetail = typeDetail,
-                    AttrValues = attrs,
-                    Comment = comment.ToString(),
-                    XmlFileFullPath = XmlFileFullpath,
-                };
-
-                // -------------------------------------
-                // コメント
-                var nodes = _xElement.Nodes().ToArray();
-                var descendants = new List<MutableSchemaNode>();
-                var comments = new List<XComment>();
-                for (int i = 0; i < nodes.Length; i++) {
-                    var node = nodes[i];
-                    if (node is XComment xComment) {
-                        comments.Add(xComment);
-                    } else if (node is XElement xElement) {
-                        var nijoXmlElement = new NijoXmlElement(xElement, null, comments.ToArray());
-                        descendants.AddRange(nijoXmlElement.ToSchemaNodePrivate(typeDefs, optionDefs, depth + 1, findRefToElement, findEnumElement));
-                        comments.Clear();
-                    }
-                }
-                foreach (var descendant in descendants) {
-                    yield return descendant;
-                }
-            }
-
-            private static string GetXElementUniqueId(XElement xElement) {
+            public static string GetXElementUniqueId(XElement xElement) {
                 return xElement.GetHashCode().ToString().ToHashedString();
             }
             #endregion nijo ui の画面表示用データとの変換
