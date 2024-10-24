@@ -891,540 +891,6 @@ namespace Nijo.Runtime {
             Boolean,
         }
 
-        /// <summary>
-        /// 集約やメンバーの種類として指定することができる属性を列挙します。
-        /// </summary>
-        private static IEnumerable<SchemaNodeTypeDef> EnumerateSchemaNodeTypes() {
-
-            // ルート集約に設定できる種類
-            yield return new SchemaNodeTypeDef {
-                NodeType = E_NodeType.RootAggregate,
-                Key = "write-model-2", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
-                DisplayName = "WriteModel",
-                HelpText = $$"""
-                    このルート要素がDB保存されるべきデータであることを表します。
-                    Entity Framework Core のエンティティ定義や、作成・更新・削除のWeb API エンドポイントなどが生成されます。
-                    切り分けの目安は、データベースの排他制御やトランザクションの粒度です。
-                    """,
-                FindMatchingIsAttribute = el => el.Depth == 0
-                                             && !el.Is.ContainsKey("generate-default-read-model")
-                                             && el.Is.TryGetValue("write-model-2", out var isAttribute) ? isAttribute : null,
-                Validate = (node, schema, errors) => {
-                    if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
-                },
-            };
-            yield return new SchemaNodeTypeDef {
-                NodeType = E_NodeType.RootAggregate,
-                Key = "read-model-2", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
-                DisplayName = "ReadModel",
-                HelpText = $$"""
-                    このルート要素が人間が閲覧するデータであることを表します。
-                    一覧検索画面、詳細画面、一括編集画面などが生成されます。
-                    切り分けの目安は詳細画面1個の粒度です。
-                    """,
-                FindMatchingIsAttribute = el => el.Depth == 0
-                                             && el.Is.TryGetValue("read-model-2", out var isAttribute) ? isAttribute : null,
-                Validate = (node, schema, errors) => {
-                    if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
-
-                },
-            };
-            yield return new SchemaNodeTypeDef {
-                NodeType = E_NodeType.RootAggregate,
-                Key = "write-model-2 generate-default-read-model", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
-                DisplayName = "Write & Read",
-                HelpText = $$"""
-                    ReadModel から生成されるコードと WriteModel から生成されるコードの両方が生成されます。
-                    画面のデータ項目とDBのデータ構造が寸分違わず完全に一致する場合にのみ使えます。
-                    """,
-                FindMatchingIsAttribute = el => el.Depth == 0
-                                             && el.Is.ContainsKey("generate-default-read-model")
-                                             && el.Is.TryGetValue("write-model-2", out var isAttribute) ? isAttribute : null,
-                Validate = (node, schema, errors) => {
-                    if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
-
-                },
-            };
-            yield return new SchemaNodeTypeDef {
-                NodeType = E_NodeType.RootAggregate,
-                Key = "enum", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
-                DisplayName = "Enum",
-                HelpText = $$"""
-                    このルート要素が列挙体であることを表します。
-                    """,
-                FindMatchingIsAttribute = el => el.Depth == 0
-                                             && el.Is.TryGetValue("enum", out var isAttribute) ? isAttribute : null,
-                Validate = (node, schema, errors) => {
-                    if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
-
-                },
-            };
-            yield return new SchemaNodeTypeDef {
-                NodeType = E_NodeType.RootAggregate,
-                Key = "command",
-                DisplayName = "Command",
-                HelpText = $$"""
-                    このルート要素が、人間や外部システムが起動する処理のパラメータであることを表します。
-                    この処理を実行するWebAPIエンドポイントや、パラメータを入力するためのダイアログのUIコンポーネントなどが生成されます。
-                    """,
-                FindMatchingIsAttribute = el => el.Depth == 0
-                                             && el.Is.TryGetValue("command", out var isAttribute) ? isAttribute : null,
-                Validate = (node, schema, errors) => {
-                    if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
-
-                    var children = schema.GetChildren(node).ToArray();
-                    if (children.Any(x => x.Type == "step") && children.Any(x => x.Type != "step")) {
-                        errors.Add("ステップ属性を定義する場合は全てステップにする必要があります。");
-                    }
-                },
-            };
-            yield return new SchemaNodeTypeDef {
-                NodeType = E_NodeType.RootAggregate,
-                Key = "value-object",
-                DisplayName = "値オブジェクト(ValueObject)",
-                HelpText = $$"""
-                    値オブジェクト。主として「○○コード」などの識別子の型として使われる。
-                    同値比較がそのインスタンスの参照ではなく値によって行われる。不変（immutable）である。
-                    """,
-                FindMatchingIsAttribute = el => el.Depth == 0
-                                             && el.Is.TryGetValue("value-object", out var isAttribute) ? isAttribute : null,
-                Validate = (node, schema, errors) => {
-                    if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
-                    if (schema.GetChildren(node).Any()) errors.Add("この型に子要素を設定することはできません。");
-                },
-            };
-
-            // ルート以外に設定できる種類
-            // ※ ref-toと列挙体は集約定義に依存するのでクライアント側で計算する
-            yield return new SchemaNodeTypeDef {
-                NodeType = E_NodeType.DescendantAggregate,
-                Key = "child", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
-                DisplayName = "Child",
-                HelpText = $$"""
-                    親1件に対する1件の子要素。
-                    """,
-                FindMatchingIsAttribute = el => {
-                    if (el.Depth == 0) return null;
-                    if (el.Is.TryGetValue("child", out var isAttribute1)) return isAttribute1;
-                    if (el.Is.TryGetValue("section", out var isAttribute2)) return isAttribute2; // section属性は廃止予定
-                    return null;
-                },
-                Validate = (node, schema, errors) => {
-                    if (node.Depth == 0) errors.Add("この型は子孫要素にしか設定できません。");
-
-                },
-            };
-            yield return new SchemaNodeTypeDef {
-                NodeType = E_NodeType.DescendantAggregate,
-                Key = "children", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
-                DisplayName = "Children",
-                HelpText = $$"""
-                    親1件に対する複数件の子要素。 
-                    """,
-                FindMatchingIsAttribute = el => {
-                    if (el.Depth == 0) return null;
-                    if (el.Is.TryGetValue("children", out var isAttribute1)) return isAttribute1;
-                    if (el.Is.TryGetValue("array", out var isAttribute2)) return isAttribute2; // array属性は廃止予定
-                    return null;
-                },
-                Validate = (node, schema, errors) => {
-                    if (node.Depth == 0) errors.Add("この型は子孫要素にしか設定できません。");
-
-                },
-            };
-            yield return new SchemaNodeTypeDef {
-                NodeType = E_NodeType.Variation,
-                Key = "variation",
-                DisplayName = "Variation",
-                HelpText = $$"""
-                    親1件に対し、異なるデータ構造をもつ複数の子要素から1種類を選択するもの。
-                    """,
-                FindMatchingIsAttribute = el => el.Depth > 0
-                                             && el.Is.TryGetValue("variation", out var isAttribute) ? isAttribute : null,
-                Validate = (node, schema, errors) => {
-                    if (node.Depth == 0) errors.Add("この型は子孫要素にしか設定できません。");
-
-                    var children = schema.GetChildren(node).ToArray();
-                    if (children.Length == 0) {
-                        errors.Add("バリエーションには1つ以上の種類を定義する必要があります。");
-                    } else if (children.Any(x => x.Type != "variation-item")) {
-                        errors.Add("Variationの直下に定義できるのはVariationItemのみです。");
-                    }
-                },
-            };
-            yield return new SchemaNodeTypeDef {
-                NodeType = E_NodeType.DescendantAggregate,
-                Key = "variation-item", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
-                DisplayName = "VariationItem",
-                RequiredNumberValue = true,
-                HelpText = $$"""
-                    バリエーションの1種類を表します。
-                    """,
-                FindMatchingIsAttribute = el => {
-                    if (el.Depth == 0) return null;
-                    if (el.Is.TryGetValue("variation-item", out var isAttribute1)) return isAttribute1;
-                    if (el.Is.TryGetValue("variation-key", out var isAttribute2)) return isAttribute2; // variation-key属性は廃止予定
-                    return null;
-                },
-                Validate = (node, schema, errors) => {
-                    if (schema.GetParent(node)?.Type != "variation") {
-                        errors.Add("VariationItemはVariationの直下にのみ定義できます。");
-                    }
-                    if (string.IsNullOrWhiteSpace(node.TypeDetail)) {
-                        errors.Add("VariationItemには種類を識別するための整数を定義する必要があります。");
-                    } else if (!int.TryParse(node.TypeDetail, out var _)) {
-                        errors.Add($"区分値 '{node.TypeDetail}' を整数として解釈できません。");
-                    }
-                },
-            };
-
-            yield return new SchemaNodeTypeDef {
-                NodeType = E_NodeType.DescendantAggregate,
-                Key = "step",
-                DisplayName = "ステップ",
-                RequiredNumberValue = true,
-                HelpText = $$"""
-                    ほぼChildと同じですが、ルート集約がCommandの場合、かつルート集約の直下にのみ設定可能です。
-                    そのコマンドの子要素がステップの場合、コマンドのUIがウィザード形式になります。
-                    """,
-                FindMatchingIsAttribute = el => el.Depth > 0
-                                             && el.Is.TryGetValue("step", out var isAttribute) ? isAttribute : null,
-                Validate = (node, schema, errors) => {
-                    if (node.Depth != 1 || schema.GetRoot(node).Type != "command") {
-                        errors.Add("ステップ属性はコマンドの直下にのみ定義できます。");
-                    }
-                    if (string.IsNullOrWhiteSpace(node.TypeDetail)) {
-                        errors.Add("ステップ番号を識別するための整数を定義する必要があります。");
-                    } else if (!int.TryParse(node.TypeDetail, out var _)) {
-                        errors.Add($"ステップ番号 '{node.TypeDetail}' を整数として解釈できません。");
-                    }
-                },
-            };
-
-            var resolver = MemberTypeResolver.Default();
-            foreach (var (key, memberType) in resolver.EnumerateAll()) {
-                yield return new SchemaNodeTypeDef {
-                    NodeType = E_NodeType.SchalarMember,
-                    Key = key,
-                    DisplayName = memberType.GetUiDisplayName(),
-                    HelpText = memberType.GetHelpText(),
-                    FindMatchingIsAttribute = el => el.Depth > 0 && el.Is.TryGetValue(key, out var isAttribute) ? isAttribute : null,
-                    Validate = (node, schema, errors) => {
-
-                    },
-                };
-            }
-        }
-        /// <summary>
-        /// 集約やメンバーのオプショナル属性として指定することができる属性を列挙します。
-        /// </summary>
-        private static IEnumerable<OptionalAttributeDef> EnumerateOptionalAttributes() {
-
-            yield return new OptionalAttributeDef {
-                Key = OptionalAttributeDef.PHYSICAL_NAME,
-                DisplayName = "物理名",
-                Type = E_OptionalAttributeType.String,
-                HelpText = $$"""
-                    物理名を明示的に指定したい場合に設定してください。
-                    既定では論理名のうちソースコードに使用できない文字が置換されたものが物理名になります。
-                    """,
-                Validate = (value, node, schema, errors) => {
-                    if (string.IsNullOrEmpty(value)) return; // 未指定の場合はチェックしない
-
-                    if (!value.All(c =>
-                        char.IsLetterOrDigit(c) // 英数字
-                        || c == '_'             // アンダースコア
-                        || (c >= 0x3040 && c <= 0x309F)     // ひらがな
-                        || (c >= 0x30A0 && c <= 0x30FF)     // カタカナ
-                        || (c >= 0x4E00 && c <= 0x9FAF))) { // 漢字
-                        errors.Add("物理名には、英数字、アンダースコア、ひらがな、カタカナ、Unicodeの範囲での漢字のみが使えます。");
-
-                    } else if (char.IsDigit(value[0])) {
-                        errors.Add("物理名を数字から始めることはできません。");
-                    } else if (char.IsLower(value[0])) {
-                        errors.Add("Reactのコンポーネント名が小文字始まりだとエラーになるので大文字から始めてください。");
-                    }
-                },
-            };
-
-            yield return new OptionalAttributeDef {
-                Key = OptionalAttributeDef.DB_NAME,
-                DisplayName = "DB名",
-                Type = E_OptionalAttributeType.String,
-                HelpText = $$"""
-                    データベースのテーブル名またはカラム名を明示的に指定したい場合に設定してください。
-                    既定では物理名がそのままテーブル名やカラム名になります。
-                    """,
-                Validate = (value, node, schema, errors) => {
-                    if (string.IsNullOrEmpty(value)) return; // 未指定の場合はチェックしない
-                    if (!value.All(c =>
-                        char.IsLetterOrDigit(c) // 英数字
-                        || c == '_'             // アンダースコア
-                        || (c >= 0x3040 && c <= 0x309F)     // ひらがな
-                        || (c >= 0x30A0 && c <= 0x30FF)     // カタカナ
-                        || (c >= 0x4E00 && c <= 0x9FAF))) { // 漢字
-                        errors.Add("DBの名称には、英数字、アンダースコア、ひらがな、カタカナ、Unicodeの範囲での漢字のみが使えます。");
-
-                    } else if (char.IsDigit(value[0])) {
-                        errors.Add("DB名を数字から始めることはできません。");
-                    }
-                },
-            };
-
-            yield return new OptionalAttributeDef {
-                Key = OptionalAttributeDef.LATIN,
-                DisplayName = "ラテン語名",
-                Type = E_OptionalAttributeType.String,
-                HelpText = $$"""
-                    ラテン語名しか用いることができない部分の名称を明示的に指定したい場合に設定してください（ver-0.4.0.0000 時点ではURLを定義する処理のみが該当）。
-                    既定では集約を表す一意な文字列から生成されたハッシュ値が用いられます。
-                    """,
-                Validate = (value, node, schema, errors) => {
-                    if (string.IsNullOrEmpty(value)) return; // 未指定の場合はチェックしない
-
-                    // ラテン語名は英字、数字、ハイフン(-)、アンダースコア(_)を許可
-                    if (!value.All(c => char.IsLetterOrDigit(c) || c == '-' || c == '_' || c == ' ')) {
-                        errors.Add("ラテン語名には英数字、ハイフン、アンダースコア、半角スペースのみが使用できます。");
-
-                    } else if (char.IsDigit(value[0])) {
-                        errors.Add("ラテン語名を数字から始めることはできません。");
-                    }
-                },
-            };
-
-            // --------------------------------------------
-
-            yield return new OptionalAttributeDef {
-                Key = "key",
-                DisplayName = "Key",
-                Type = E_OptionalAttributeType.Boolean,
-                HelpText = $$"""
-                    この項目がその集約のキーであることを表します。
-                    ルート集約またはChildrenの場合、指定必須。
-                    ChildやVariationには指定不可。Commandの要素にも指定不可。
-                    """,
-                Validate = (value, node, schema, errors) => {
-                    var root = schema.GetRoot(node);
-                    if (root.Type == "command") {
-                        errors.Add("コマンドにキーを指定することはできません。");
-                    } else if (root.Type == "enum") {
-                        errors.Add("列挙体定義にキーを指定することはできません。");
-                    }
-
-                    var parent = schema.GetParent(node);
-                    if (parent == null) {
-                        errors.Add("ルート集約にキーを指定することはできません。");
-                    } else if (parent.Type == "child") {
-                        errors.Add("Childにキーを指定することはできません。");
-                    } else if (parent.Type == "variation" || parent.Type == "variation-item") {
-                        errors.Add("バリエーションにキーを指定することはできません。");
-                    }
-                },
-            };
-
-            yield return new OptionalAttributeDef {
-                Key = "name",
-                DisplayName = "Name",
-                Type = E_OptionalAttributeType.Boolean,
-                HelpText = $$"""
-                    この項目がその集約の名前項目であることを表します。
-                    詳細画面のタイトルやコンボボックスの表示テキストにどの項目が使われるかで参照されます。
-                    未指定の場合はキーが表示名称として使われます。
-                    """,
-                Validate = (value, node, schema, errors) => {
-
-                },
-            };
-
-            yield return new OptionalAttributeDef {
-                Key = "required",
-                DisplayName = "必須",
-                Type = E_OptionalAttributeType.Boolean,
-                HelpText = $$"""
-                    必須項目であることを表します。
-                    画面上に必須項目であることを示すUIがついたり、新規登録処理や更新処理での必須入力チェック処理が自動生成されます。
-                    """,
-                Validate = (value, node, schema, errors) => {
-                    if (node.Depth == 0
-                        || node.Type == "child"
-                        || node.Type == "variation"
-                        || node.Type == "variation-item") {
-                        errors.Add("この項目に必須指定をすることはできません。");
-                    }
-                },
-            };
-
-            yield return new OptionalAttributeDef {
-                Key = "max",
-                DisplayName = "Max",
-                Type = E_OptionalAttributeType.Number,
-                HelpText = $$"""
-                    文字列項目の最大長。整数で指定してください。
-                    """,
-                Validate = (value, node, schema, errors) => {
-                    // TODO: チェック処理未実装
-                },
-            };
-
-            // --------------------------------------------
-
-            yield return new OptionalAttributeDef {
-                Key = "form-label-width",
-                DisplayName = "フォームのラベルの横幅",
-                Type = E_OptionalAttributeType.Number,
-                HelpText = $$"""
-                    VForm2のラベル列の横幅。数値で定義してください（小数使用可能）。単位はCSSのrem。
-                    ReadModelのルート集約にのみ設定可能。
-                    """,
-                Validate = (value, node, schema, errors) => {
-                    if (node.Depth != 0 || !node.IsReadModel(schema)) {
-                        errors.Add("この属性はReadModelのルート集約にのみ設定可能です。");
-                    }
-                },
-            };
-
-            yield return new OptionalAttributeDef {
-                Key = "has-lifecycle",
-                DisplayName = "独立ライフサイクル",
-                Type = E_OptionalAttributeType.Boolean,
-                HelpText = $$"""
-                    ReadModelの中にあるChildのうち、そのChildが追加削除できるものであることを表します。
-                    """,
-                Validate = (value, node, schema, errors) => {
-                    if (!node.IsReadModel(schema) || node.Type != "child") {
-                        errors.Add("この属性はReadModelのChildにのみ設定可能です。");
-                    }
-                },
-            };
-
-            yield return new OptionalAttributeDef {
-                Key = "readonly",
-                DisplayName = "読み取り専用集約",
-                Type = E_OptionalAttributeType.Boolean,
-                HelpText = $$"""
-                    閲覧専用の集約であることを表します。新規作成画面などが生成されなくなります。
-                    ReadModelのルート集約にのみ設定可能。
-                    """,
-                Validate = (value, node, schema, errors) => {
-                    if (node.Depth != 0 || !node.IsReadModel(schema)) {
-                        errors.Add("この属性はReadModelのルート集約にのみ設定可能です。");
-                    }
-                },
-            };
-
-            // --------------------------------------------
-
-            yield return new OptionalAttributeDef {
-                Key = "hidden",
-                DisplayName = "隠し項目",
-                Type = E_OptionalAttributeType.Boolean,
-                HelpText = $$"""
-                    この項目が画面上で常に非表示になります。
-                    """,
-                Validate = (value, node, schema, errors) => {
-                    if (node.Depth == 0) {
-                        errors.Add("ルート集約を隠し項目にすることはできません。");
-                    }
-                },
-            };
-
-            yield return new OptionalAttributeDef {
-                Key = "wide",
-                DisplayName = "Wide",
-                Type = E_OptionalAttributeType.Boolean,
-                HelpText = $$"""
-                    VForm2上でこの項目のスペースが横幅いっぱい確保されます。
-                    """,
-                Validate = (value, node, schema, errors) => {
-                    var nodeType = node.GetNodeType();
-                    if (nodeType != E_NodeType.Ref && nodeType != E_NodeType.Enum && nodeType != E_NodeType.SchalarMember) {
-                        errors.Add("この属性は入力フォームをもつ項目にのみ指定できます。");
-                    }
-                },
-            };
-
-            yield return new OptionalAttributeDef {
-                Key = "width",
-                DisplayName = "横幅",
-                Type = E_OptionalAttributeType.String,
-                HelpText = $$"""
-                    詳細画面における当該項目の横幅を変更できます。全角10文字の場合は "z10"、半角6文字の場合は "h6" など、zかhのあとに整数を続けてください。
-                    """,
-                Validate = (value, node, schema, errors) => {
-                    if (node.GetNodeType() != E_NodeType.SchalarMember) { 
-                        errors.Add("この属性はテキストボックスをもつ項目にのみ指定できます。");
-                    }
-                },
-            };
-
-            yield return new OptionalAttributeDef {
-                Key = "single-view-ui",
-                DisplayName = "詳細画面UI",
-                Type = E_OptionalAttributeType.String,
-                HelpText = $$"""
-                    詳細画面におけるこの項目の入力フォームが、自動生成されるものではなくここで指定した名前のコンポーネントになります。
-                    コンポーネントは自前で実装する必要があります。
-                    """,
-                Validate = (value, node, schema, errors) => {
-                    var nodeType = node.GetNodeType();
-                    if (nodeType != E_NodeType.Ref && nodeType != E_NodeType.Enum && nodeType != E_NodeType.SchalarMember) {
-                        errors.Add("この属性は入力フォームをもつ項目にのみ指定できます。");
-                    }
-                },
-            };
-
-            yield return new OptionalAttributeDef {
-                Key = "search-condition-ui",
-                DisplayName = "検索条件欄UI",
-                Type = E_OptionalAttributeType.String,
-                HelpText = $$"""
-                    詳細画面におけるこの項目の入力フォームが、自動生成されるものではなくここで指定した名前のコンポーネントになります。
-                    コンポーネントは自前で実装する必要があります。
-                    """,
-                Validate = (value, node, schema, errors) => {
-                    var nodeType = node.GetNodeType();
-                    if (nodeType != E_NodeType.Ref && nodeType != E_NodeType.Enum && nodeType != E_NodeType.SchalarMember) {
-                        errors.Add("この属性は入力フォームをもつ項目にのみ指定できます。");
-                    }
-                },
-            };
-
-            // -------------------------------
-            // 将来的に修正される予定の属性
-
-            yield return new OptionalAttributeDef {
-                Key = "combo",
-                DisplayName = "コンボボックス",
-                Type = E_OptionalAttributeType.Boolean,
-                HelpText = $$"""
-                    列挙体のメンバーまたはバリエーションにのみ使用可能。
-                    詳細画面の入力フォームがコンボボックスに固定されます。
-                    指定しない場合は動的に決まります（選択肢の数が多ければコンボボックス、少なければラジオボタン）。
-                    """,
-                Validate = (value, node, schema, errors) => {
-                    if (node.GetNodeType() != E_NodeType.Enum) {
-                        errors.Add("この属性は列挙体の項目にのみ指定できます。");
-                    }
-                },
-            };
-
-            yield return new OptionalAttributeDef {
-                Key = "radio",
-                DisplayName = "ラジオボタン",
-                Type = E_OptionalAttributeType.Boolean,
-                HelpText = $$"""
-                    列挙体のメンバーまたはバリエーションにのみ使用可能。
-                    詳細画面の入力フォームがラジオボタンに固定されます。
-                    指定しない場合は動的に決まります（選択肢の数が多ければコンボボックス、少なければラジオボタン）。
-                    """,
-                Validate = (value, node, schema, errors) => {
-                    if (node.GetNodeType() != E_NodeType.Enum) {
-                        errors.Add("この属性は列挙体の項目にのみ指定できます。");
-                    }
-                },
-            };
-        }
-
 
         /// <summary>
         /// 仕様上、XMLは複数ファイルに分けて記載することができるところ、
@@ -1697,5 +1163,555 @@ namespace Nijo.Runtime {
                 return _xElement.ToString();
             }
         }
+
+        /// <summary>
+        /// 集約やメンバーの種類として指定することができる属性を列挙します。
+        /// </summary>
+        private static IEnumerable<SchemaNodeTypeDef> EnumerateSchemaNodeTypes() {
+            // ルート集約に設定できる種類
+            yield return WriteModel;
+            yield return ReadModel;
+            yield return WriteRead;
+            yield return EnumDef;
+            yield return Command;
+            yield return ValueObjectDef;
+
+            // 子孫集約に設定できる種類
+            yield return Child;
+            yield return Children;
+            yield return Variation;
+            yield return VariationItem;
+            yield return Step;
+
+            var resolver = MemberTypeResolver.Default();
+            foreach (var (key, memberType) in resolver.EnumerateAll()) {
+                yield return new SchemaNodeTypeDef {
+                    NodeType = E_NodeType.SchalarMember,
+                    Key = key,
+                    DisplayName = memberType.GetUiDisplayName(),
+                    HelpText = memberType.GetHelpText(),
+                    FindMatchingIsAttribute = el => el.Depth > 0 && el.Is.TryGetValue(key, out var isAttribute) ? isAttribute : null,
+                    Validate = (node, schema, errors) => {
+
+                    },
+                };
+            }
+        }
+        /// <summary>
+        /// 集約やメンバーのオプショナル属性として指定することができる属性を列挙します。
+        /// </summary>
+        private static IEnumerable<OptionalAttributeDef> EnumerateOptionalAttributes() {
+            yield return PhysicalName;
+            yield return DbName;
+            yield return LatinName;
+
+            yield return Key;
+            yield return Name;
+            yield return Required;
+
+            yield return Max;
+            yield return FormLabelWidth;
+            yield return HasLifeCycle;
+            yield return ReadOnly;
+            yield return Hidden;
+            yield return Wide;
+            yield return Width;
+
+            yield return SingleViewUi;
+            yield return SearchConditionUi;
+
+            yield return Combo;
+            yield return Radio;
+        }
+
+        #region ルート集約に設定できる種類
+        private static SchemaNodeTypeDef WriteModel => new SchemaNodeTypeDef {
+            NodeType = E_NodeType.RootAggregate,
+            Key = "write-model-2", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
+            DisplayName = "WriteModel",
+            HelpText = $$"""
+                このルート要素がDB保存されるべきデータであることを表します。
+                Entity Framework Core のエンティティ定義や、作成・更新・削除のWeb API エンドポイントなどが生成されます。
+                切り分けの目安は、データベースの排他制御やトランザクションの粒度です。
+                """,
+            FindMatchingIsAttribute = el => el.Depth == 0
+                                         && !el.Is.ContainsKey("generate-default-read-model")
+                                         && el.Is.TryGetValue("write-model-2", out var isAttribute) ? isAttribute : null,
+            Validate = (node, schema, errors) => {
+                if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
+            },
+        };
+        private static SchemaNodeTypeDef ReadModel => new SchemaNodeTypeDef {
+            NodeType = E_NodeType.RootAggregate,
+            Key = "read-model-2", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
+            DisplayName = "ReadModel",
+            HelpText = $$"""
+                このルート要素が人間が閲覧するデータであることを表します。
+                一覧検索画面、詳細画面、一括編集画面などが生成されます。
+                切り分けの目安は詳細画面1個の粒度です。
+                """,
+            FindMatchingIsAttribute = el => el.Depth == 0
+                                         && el.Is.TryGetValue("read-model-2", out var isAttribute) ? isAttribute : null,
+            Validate = (node, schema, errors) => {
+                if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
+
+            },
+        };
+        private static SchemaNodeTypeDef WriteRead => new SchemaNodeTypeDef {
+            NodeType = E_NodeType.RootAggregate,
+            Key = "write-model-2 generate-default-read-model", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
+            DisplayName = "Write & Read",
+            HelpText = $$"""
+                ReadModel から生成されるコードと WriteModel から生成されるコードの両方が生成されます。
+                画面のデータ項目とDBのデータ構造が寸分違わず完全に一致する場合にのみ使えます。
+                """,
+            FindMatchingIsAttribute = el => el.Depth == 0
+                                         && el.Is.ContainsKey("generate-default-read-model")
+                                         && el.Is.TryGetValue("write-model-2", out var isAttribute) ? isAttribute : null,
+            Validate = (node, schema, errors) => {
+                if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
+
+            },
+        };
+        private static SchemaNodeTypeDef EnumDef => new SchemaNodeTypeDef {
+            NodeType = E_NodeType.RootAggregate,
+            Key = "enum", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
+            DisplayName = "Enum",
+            HelpText = $$"""
+                このルート要素が列挙体であることを表します。
+                """,
+            FindMatchingIsAttribute = el => el.Depth == 0
+                                         && el.Is.TryGetValue("enum", out var isAttribute) ? isAttribute : null,
+            Validate = (node, schema, errors) => {
+                if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
+
+            },
+        };
+        private static SchemaNodeTypeDef Command => new SchemaNodeTypeDef {
+            NodeType = E_NodeType.RootAggregate,
+            Key = "command",
+            DisplayName = "Command",
+            HelpText = $$"""
+                このルート要素が、人間や外部システムが起動する処理のパラメータであることを表します。
+                この処理を実行するWebAPIエンドポイントや、パラメータを入力するためのダイアログのUIコンポーネントなどが生成されます。
+                """,
+            FindMatchingIsAttribute = el => el.Depth == 0
+                                         && el.Is.TryGetValue("command", out var isAttribute) ? isAttribute : null,
+            Validate = (node, schema, errors) => {
+                if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
+
+                var children = schema.GetChildren(node).ToArray();
+                if (children.Any(x => x.Type == "step") && children.Any(x => x.Type != "step")) {
+                    errors.Add("ステップ属性を定義する場合は全てステップにする必要があります。");
+                }
+            },
+        };
+        private static SchemaNodeTypeDef ValueObjectDef => new SchemaNodeTypeDef {
+            NodeType = E_NodeType.RootAggregate,
+            Key = "value-object",
+            DisplayName = "値オブジェクト(ValueObject)",
+            HelpText = $$"""
+                値オブジェクト。主として「○○コード」などの識別子の型として使われる。
+                同値比較がそのインスタンスの参照ではなく値によって行われる。不変（immutable）である。
+                """,
+            FindMatchingIsAttribute = el => el.Depth == 0
+                                         && el.Is.TryGetValue("value-object", out var isAttribute) ? isAttribute : null,
+            Validate = (node, schema, errors) => {
+                if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
+                if (schema.GetChildren(node).Any()) errors.Add("この型に子要素を設定することはできません。");
+            },
+        };
+        #endregion ルート集約に設定できる種類
+
+        #region ルート以外に設定できる種類 ※ ref-toと列挙体は集約定義に依存するのでクライアント側で計算する
+        private static SchemaNodeTypeDef Child => new SchemaNodeTypeDef {
+            NodeType = E_NodeType.DescendantAggregate,
+            Key = "child", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
+            DisplayName = "Child",
+            HelpText = $$"""
+                親1件に対する1件の子要素。
+                """,
+            FindMatchingIsAttribute = el => {
+                if (el.Depth == 0) return null;
+                if (el.Is.TryGetValue("child", out var isAttribute1)) return isAttribute1;
+                if (el.Is.TryGetValue("section", out var isAttribute2)) return isAttribute2; // section属性は廃止予定
+                return null;
+            },
+            Validate = (node, schema, errors) => {
+                if (node.Depth == 0) errors.Add("この型は子孫要素にしか設定できません。");
+
+            },
+        };
+        private static SchemaNodeTypeDef Children => new SchemaNodeTypeDef {
+            NodeType = E_NodeType.DescendantAggregate,
+            Key = "children", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
+            DisplayName = "Children",
+            HelpText = $$"""
+                親1件に対する複数件の子要素。 
+                """,
+            FindMatchingIsAttribute = el => {
+                if (el.Depth == 0) return null;
+                if (el.Is.TryGetValue("children", out var isAttribute1)) return isAttribute1;
+                if (el.Is.TryGetValue("array", out var isAttribute2)) return isAttribute2; // array属性は廃止予定
+                return null;
+            },
+            Validate = (node, schema, errors) => {
+                if (node.Depth == 0) errors.Add("この型は子孫要素にしか設定できません。");
+
+            },
+        };
+        private static SchemaNodeTypeDef Variation => new SchemaNodeTypeDef {
+            NodeType = E_NodeType.Variation,
+            Key = "variation",
+            DisplayName = "Variation",
+            HelpText = $$"""
+                親1件に対し、異なるデータ構造をもつ複数の子要素から1種類を選択するもの。
+                """,
+            FindMatchingIsAttribute = el => el.Depth > 0
+                                         && el.Is.TryGetValue("variation", out var isAttribute) ? isAttribute : null,
+            Validate = (node, schema, errors) => {
+                if (node.Depth == 0) errors.Add("この型は子孫要素にしか設定できません。");
+
+                var children = schema.GetChildren(node).ToArray();
+                if (children.Length == 0) {
+                    errors.Add("バリエーションには1つ以上の種類を定義する必要があります。");
+                } else if (children.Any(x => x.Type != "variation-item")) {
+                    errors.Add("Variationの直下に定義できるのはVariationItemのみです。");
+                }
+            },
+        };
+        private static SchemaNodeTypeDef VariationItem => new SchemaNodeTypeDef {
+            NodeType = E_NodeType.DescendantAggregate,
+            Key = "variation-item", // <= この値はTypeScript側でref-toの参照先として使用可能な集約の判定に使っているので変更時は注意
+            DisplayName = "VariationItem",
+            RequiredNumberValue = true,
+            HelpText = $$"""
+                バリエーションの1種類を表します。
+                """,
+            FindMatchingIsAttribute = el => {
+                if (el.Depth == 0) return null;
+                if (el.Is.TryGetValue("variation-item", out var isAttribute1)) return isAttribute1;
+                if (el.Is.TryGetValue("variation-key", out var isAttribute2)) return isAttribute2; // variation-key属性は廃止予定
+                return null;
+            },
+            Validate = (node, schema, errors) => {
+                if (schema.GetParent(node)?.Type != "variation") {
+                    errors.Add("VariationItemはVariationの直下にのみ定義できます。");
+                }
+                if (string.IsNullOrWhiteSpace(node.TypeDetail)) {
+                    errors.Add("VariationItemには種類を識別するための整数を定義する必要があります。");
+                } else if (!int.TryParse(node.TypeDetail, out var _)) {
+                    errors.Add($"区分値 '{node.TypeDetail}' を整数として解釈できません。");
+                }
+            },
+        };
+        private static SchemaNodeTypeDef Step => new SchemaNodeTypeDef {
+            NodeType = E_NodeType.DescendantAggregate,
+            Key = "step",
+            DisplayName = "ステップ",
+            RequiredNumberValue = true,
+            HelpText = $$"""
+                ほぼChildと同じですが、ルート集約がCommandの場合、かつルート集約の直下にのみ設定可能です。
+                そのコマンドの子要素がステップの場合、コマンドのUIがウィザード形式になります。
+                """,
+            FindMatchingIsAttribute = el => el.Depth > 0
+                                         && el.Is.TryGetValue("step", out var isAttribute) ? isAttribute : null,
+            Validate = (node, schema, errors) => {
+                if (node.Depth != 1 || schema.GetRoot(node).Type != "command") {
+                    errors.Add("ステップ属性はコマンドの直下にのみ定義できます。");
+                }
+                if (string.IsNullOrWhiteSpace(node.TypeDetail)) {
+                    errors.Add("ステップ番号を識別するための整数を定義する必要があります。");
+                } else if (!int.TryParse(node.TypeDetail, out var _)) {
+                    errors.Add($"ステップ番号 '{node.TypeDetail}' を整数として解釈できません。");
+                }
+            },
+        };
+        #endregion ルート以外に設定できる種類 ※ ref-toと列挙体は集約定義に依存するのでクライアント側で計算する
+
+        #region オプショナル属性
+        private static OptionalAttributeDef PhysicalName => new OptionalAttributeDef {
+            Key = OptionalAttributeDef.PHYSICAL_NAME,
+            DisplayName = "物理名",
+            Type = E_OptionalAttributeType.String,
+            HelpText = $$"""
+                物理名を明示的に指定したい場合に設定してください。
+                既定では論理名のうちソースコードに使用できない文字が置換されたものが物理名になります。
+                """,
+            Validate = (value, node, schema, errors) => {
+                if (string.IsNullOrEmpty(value)) return; // 未指定の場合はチェックしない
+
+                if (!value.All(c =>
+                    char.IsLetterOrDigit(c) // 英数字
+                    || c == '_'             // アンダースコア
+                    || (c >= 0x3040 && c <= 0x309F)     // ひらがな
+                    || (c >= 0x30A0 && c <= 0x30FF)     // カタカナ
+                    || (c >= 0x4E00 && c <= 0x9FAF))) { // 漢字
+                    errors.Add("物理名には、英数字、アンダースコア、ひらがな、カタカナ、Unicodeの範囲での漢字のみが使えます。");
+
+                } else if (char.IsDigit(value[0])) {
+                    errors.Add("物理名を数字から始めることはできません。");
+                } else if (char.IsLower(value[0])) {
+                    errors.Add("Reactのコンポーネント名が小文字始まりだとエラーになるので大文字から始めてください。");
+                }
+            },
+        };
+        private static OptionalAttributeDef DbName => new OptionalAttributeDef {
+            Key = OptionalAttributeDef.DB_NAME,
+            DisplayName = "DB名",
+            Type = E_OptionalAttributeType.String,
+            HelpText = $$"""
+                データベースのテーブル名またはカラム名を明示的に指定したい場合に設定してください。
+                既定では物理名がそのままテーブル名やカラム名になります。
+                """,
+            Validate = (value, node, schema, errors) => {
+                if (string.IsNullOrEmpty(value)) return; // 未指定の場合はチェックしない
+                if (!value.All(c =>
+                    char.IsLetterOrDigit(c) // 英数字
+                    || c == '_'             // アンダースコア
+                    || (c >= 0x3040 && c <= 0x309F)     // ひらがな
+                    || (c >= 0x30A0 && c <= 0x30FF)     // カタカナ
+                    || (c >= 0x4E00 && c <= 0x9FAF))) { // 漢字
+                    errors.Add("DBの名称には、英数字、アンダースコア、ひらがな、カタカナ、Unicodeの範囲での漢字のみが使えます。");
+
+                } else if (char.IsDigit(value[0])) {
+                    errors.Add("DB名を数字から始めることはできません。");
+                }
+            },
+        };
+        private static OptionalAttributeDef LatinName => new OptionalAttributeDef {
+            Key = OptionalAttributeDef.LATIN,
+            DisplayName = "ラテン語名",
+            Type = E_OptionalAttributeType.String,
+            HelpText = $$"""
+                ラテン語名しか用いることができない部分の名称を明示的に指定したい場合に設定してください（ver-0.4.0.0000 時点ではURLを定義する処理のみが該当）。
+                既定では集約を表す一意な文字列から生成されたハッシュ値が用いられます。
+                """,
+            Validate = (value, node, schema, errors) => {
+                if (string.IsNullOrEmpty(value)) return; // 未指定の場合はチェックしない
+
+                // ラテン語名は英字、数字、ハイフン(-)、アンダースコア(_)を許可
+                if (!value.All(c => char.IsLetterOrDigit(c) || c == '-' || c == '_' || c == ' ')) {
+                    errors.Add("ラテン語名には英数字、ハイフン、アンダースコア、半角スペースのみが使用できます。");
+
+                } else if (char.IsDigit(value[0])) {
+                    errors.Add("ラテン語名を数字から始めることはできません。");
+                }
+            },
+        };
+
+        private static OptionalAttributeDef Key => new OptionalAttributeDef {
+            Key = "key",
+            DisplayName = "Key",
+            Type = E_OptionalAttributeType.Boolean,
+            HelpText = $$"""
+                この項目がその集約のキーであることを表します。
+                ルート集約またはChildrenの場合、指定必須。
+                ChildやVariationには指定不可。Commandの要素にも指定不可。
+                """,
+            Validate = (value, node, schema, errors) => {
+                var root = schema.GetRoot(node);
+                if (root.Type == "command") {
+                    errors.Add("コマンドにキーを指定することはできません。");
+                } else if (root.Type == "enum") {
+                    errors.Add("列挙体定義にキーを指定することはできません。");
+                }
+
+                var parent = schema.GetParent(node);
+                if (parent == null) {
+                    errors.Add("ルート集約にキーを指定することはできません。");
+                } else if (parent.Type == "child") {
+                    errors.Add("Childにキーを指定することはできません。");
+                } else if (parent.Type == "variation" || parent.Type == "variation-item") {
+                    errors.Add("バリエーションにキーを指定することはできません。");
+                }
+            },
+        };
+        private static OptionalAttributeDef Name => new OptionalAttributeDef {
+            Key = "name",
+            DisplayName = "Name",
+            Type = E_OptionalAttributeType.Boolean,
+            HelpText = $$"""
+                この項目がその集約の名前項目であることを表します。
+                詳細画面のタイトルやコンボボックスの表示テキストにどの項目が使われるかで参照されます。
+                未指定の場合はキーが表示名称として使われます。
+                """,
+            Validate = (value, node, schema, errors) => {
+
+            },
+        };
+        private static OptionalAttributeDef Required => new OptionalAttributeDef {
+            Key = "required",
+            DisplayName = "必須",
+            Type = E_OptionalAttributeType.Boolean,
+            HelpText = $$"""
+                必須項目であることを表します。
+                画面上に必須項目であることを示すUIがついたり、新規登録処理や更新処理での必須入力チェック処理が自動生成されます。
+                """,
+            Validate = (value, node, schema, errors) => {
+                if (node.Depth == 0
+                    || node.Type == "child"
+                    || node.Type == "variation"
+                    || node.Type == "variation-item") {
+                    errors.Add("この項目に必須指定をすることはできません。");
+                }
+            },
+        };
+
+        private static OptionalAttributeDef Max => new OptionalAttributeDef {
+            Key = "max",
+            DisplayName = "Max",
+            Type = E_OptionalAttributeType.Number,
+            HelpText = $$"""
+                文字列項目の最大長。整数で指定してください。
+                """,
+            Validate = (value, node, schema, errors) => {
+                // TODO: チェック処理未実装
+            },
+        };
+        private static OptionalAttributeDef FormLabelWidth => new OptionalAttributeDef {
+            Key = "form-label-width",
+            DisplayName = "フォームのラベルの横幅",
+            Type = E_OptionalAttributeType.Number,
+            HelpText = $$"""
+                VForm2のラベル列の横幅。数値で定義してください（小数使用可能）。単位はCSSのrem。
+                ReadModelのルート集約にのみ設定可能。
+                """,
+            Validate = (value, node, schema, errors) => {
+                if (node.Depth != 0 || !node.IsReadModel(schema)) {
+                    errors.Add("この属性はReadModelのルート集約にのみ設定可能です。");
+                }
+            },
+        };
+        private static OptionalAttributeDef HasLifeCycle => new OptionalAttributeDef {
+            Key = "has-lifecycle",
+            DisplayName = "独立ライフサイクル",
+            Type = E_OptionalAttributeType.Boolean,
+            HelpText = $$"""
+                ReadModelの中にあるChildのうち、そのChildが追加削除できるものであることを表します。
+                """,
+            Validate = (value, node, schema, errors) => {
+                if (!node.IsReadModel(schema) || node.Type != "child") {
+                    errors.Add("この属性はReadModelのChildにのみ設定可能です。");
+                }
+            },
+        };
+        private static OptionalAttributeDef ReadOnly => new OptionalAttributeDef {
+            Key = "readonly",
+            DisplayName = "読み取り専用集約",
+            Type = E_OptionalAttributeType.Boolean,
+            HelpText = $$"""
+                閲覧専用の集約であることを表します。新規作成画面などが生成されなくなります。
+                ReadModelのルート集約にのみ設定可能。
+                """,
+            Validate = (value, node, schema, errors) => {
+                if (node.Depth != 0 || !node.IsReadModel(schema)) {
+                    errors.Add("この属性はReadModelのルート集約にのみ設定可能です。");
+                }
+            },
+        };
+        private static OptionalAttributeDef Hidden => new OptionalAttributeDef {
+            Key = "hidden",
+            DisplayName = "隠し項目",
+            Type = E_OptionalAttributeType.Boolean,
+            HelpText = $$"""
+                この項目が画面上で常に非表示になります。
+                """,
+            Validate = (value, node, schema, errors) => {
+                if (node.Depth == 0) {
+                    errors.Add("ルート集約を隠し項目にすることはできません。");
+                }
+            },
+        };
+        private static OptionalAttributeDef Wide => new OptionalAttributeDef {
+            Key = "wide",
+            DisplayName = "Wide",
+            Type = E_OptionalAttributeType.Boolean,
+            HelpText = $$"""
+                VForm2上でこの項目のスペースが横幅いっぱい確保されます。
+                """,
+            Validate = (value, node, schema, errors) => {
+                var nodeType = node.GetNodeType();
+                if (nodeType != E_NodeType.Ref && nodeType != E_NodeType.Enum && nodeType != E_NodeType.SchalarMember) {
+                    errors.Add("この属性は入力フォームをもつ項目にのみ指定できます。");
+                }
+            },
+        };
+        private static OptionalAttributeDef Width => new OptionalAttributeDef {
+            Key = "width",
+            DisplayName = "横幅",
+            Type = E_OptionalAttributeType.String,
+            HelpText = $$"""
+                詳細画面における当該項目の横幅を変更できます。全角10文字の場合は "z10"、半角6文字の場合は "h6" など、zかhのあとに整数を続けてください。
+                """,
+            Validate = (value, node, schema, errors) => {
+                if (node.GetNodeType() != E_NodeType.SchalarMember) {
+                    errors.Add("この属性はテキストボックスをもつ項目にのみ指定できます。");
+                }
+            },
+        };
+
+        private static OptionalAttributeDef SingleViewUi => new OptionalAttributeDef {
+            Key = "single-view-ui",
+            DisplayName = "詳細画面UI",
+            Type = E_OptionalAttributeType.String,
+            HelpText = $$"""
+                詳細画面におけるこの項目の入力フォームが、自動生成されるものではなくここで指定した名前のコンポーネントになります。
+                コンポーネントは自前で実装する必要があります。
+                """,
+            Validate = (value, node, schema, errors) => {
+                var nodeType = node.GetNodeType();
+                if (nodeType != E_NodeType.Ref && nodeType != E_NodeType.Enum && nodeType != E_NodeType.SchalarMember) {
+                    errors.Add("この属性は入力フォームをもつ項目にのみ指定できます。");
+                }
+            },
+        };
+        private static OptionalAttributeDef SearchConditionUi => new OptionalAttributeDef {
+            Key = "search-condition-ui",
+            DisplayName = "検索条件欄UI",
+            Type = E_OptionalAttributeType.String,
+            HelpText = $$"""
+                詳細画面におけるこの項目の入力フォームが、自動生成されるものではなくここで指定した名前のコンポーネントになります。
+                コンポーネントは自前で実装する必要があります。
+                """,
+            Validate = (value, node, schema, errors) => {
+                var nodeType = node.GetNodeType();
+                if (nodeType != E_NodeType.Ref && nodeType != E_NodeType.Enum && nodeType != E_NodeType.SchalarMember) {
+                    errors.Add("この属性は入力フォームをもつ項目にのみ指定できます。");
+                }
+            },
+        };
+
+        private static OptionalAttributeDef Combo => new OptionalAttributeDef {
+            Key = "combo",
+            DisplayName = "コンボボックス",
+            Type = E_OptionalAttributeType.Boolean,
+            HelpText = $$"""
+                列挙体のメンバーまたはバリエーションにのみ使用可能。
+                詳細画面の入力フォームがコンボボックスに固定されます。
+                指定しない場合は動的に決まります（選択肢の数が多ければコンボボックス、少なければラジオボタン）。
+                """,
+            Validate = (value, node, schema, errors) => {
+                if (node.GetNodeType() != E_NodeType.Enum) {
+                    errors.Add("この属性は列挙体の項目にのみ指定できます。");
+                }
+            },
+        };
+        private static OptionalAttributeDef Radio => new OptionalAttributeDef {
+            Key = "radio",
+            DisplayName = "ラジオボタン",
+            Type = E_OptionalAttributeType.Boolean,
+            HelpText = $$"""
+                列挙体のメンバーまたはバリエーションにのみ使用可能。
+                詳細画面の入力フォームがラジオボタンに固定されます。
+                指定しない場合は動的に決まります（選択肢の数が多ければコンボボックス、少なければラジオボタン）。
+                """,
+            Validate = (value, node, schema, errors) => {
+                if (node.GetNodeType() != E_NodeType.Enum) {
+                    errors.Add("この属性は列挙体の項目にのみ指定できます。");
+                }
+            },
+        };
+        #endregion オプショナル属性
     }
 }
