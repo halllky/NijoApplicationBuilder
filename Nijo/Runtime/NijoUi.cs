@@ -718,7 +718,7 @@ namespace Nijo.Runtime {
                     var refToElement = findRefToElement(refTo.Value);
                     if (refToElement != null) {
                         // ここの記法はTypeScript側の型選択コンボボックスのルールと合わせる必要あり
-                        type = $"{REFTO_PREFIX}{NijoXmlElement.GetXElementUniqueId(refToElement)}";
+                        type = $"{REFTO_PREFIX}{GetXElementUniqueId(refToElement)}";
                     }
                 }
 
@@ -728,7 +728,7 @@ namespace Nijo.Runtime {
                     var matchedEnum = findEnumElement(isAttr);
                     if (matchedEnum != null) {
                         // ここの記法はTypeScript側の型選択コンボボックスのルールと合わせる必要あり
-                        type = $"{ENUM_PREFIX}{NijoXmlElement.GetXElementUniqueId(matchedEnum)}";
+                        type = $"{ENUM_PREFIX}{GetXElementUniqueId(matchedEnum)}";
                     }
                 }
 
@@ -765,7 +765,7 @@ namespace Nijo.Runtime {
 
                 yield return new MutableSchemaNode {
                     Depth = depth,
-                    UniqueId = NijoXmlElement.GetXElementUniqueId(nijoXmlElement._xElement),
+                    UniqueId = GetXElementUniqueId(nijoXmlElement._xElement),
                     DisplayName = displayName,
                     Type = type,
                     TypeDetail = typeDetail,
@@ -792,6 +792,10 @@ namespace Nijo.Runtime {
                 foreach (var descendant in descendants) {
                     yield return descendant;
                 }
+            }
+
+            private static string GetXElementUniqueId(XElement xElement) {
+                return xElement.GetHashCode().ToString().ToHashedString();
             }
 
             public const string IS = "is";
@@ -1681,12 +1685,6 @@ namespace Nijo.Runtime {
                 }
             }
             #endregion is属性
-
-            #region nijo ui の画面表示用データとの変換
-            public static string GetXElementUniqueId(XElement xElement) {
-                return xElement.GetHashCode().ToString().ToHashedString();
-            }
-            #endregion nijo ui の画面表示用データとの変換
 
             public IEnumerable<XNode> ToXNodes() {
                 foreach (var comment in _comments) {
