@@ -267,11 +267,15 @@ namespace Nijo.Models.ReadModel2Features {
                       getValueFromOption: (opt: typeof SORT_COMBO_SOURCE[0]) => opt,
                     }
                     /** 初期並び順のコンボボックスのデータソース */
+                    {{If(searchCondition.GetSortLiterals().Any(), () => $$"""
                     const SORT_COMBO_SOURCE = [
                     {{searchCondition.GetSortLiterals().SelectTextTemplate(sort => $$"""
                       '{{sort}}' as const,
                     """)}}
                     ]
+                    """).Else(() => $$"""
+                    const SORT_COMBO_SOURCE: string[] = []
+                    """)}}
                     """;
             },
         };

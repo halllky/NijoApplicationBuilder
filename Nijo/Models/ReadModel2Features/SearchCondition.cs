@@ -247,7 +247,7 @@ namespace Nijo.Models.ReadModel2Features {
                 .ToArray();
             var last = sortLiteral.Length - 1;
             var sortType = sortLiteral.Length == 0
-                ? "never[]"
+                ? "string[]"
                 : $$"""
                     (
                     {{sortLiteral.SelectTextTemplate((sortLiteral, i) => $$"""
