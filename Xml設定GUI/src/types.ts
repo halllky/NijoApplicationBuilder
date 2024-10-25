@@ -7,6 +7,8 @@ export type PageState = {
   projectRoot: string | undefined
   /** 編集対象XMLファイル名 */
   editingXmlFilePath: string | undefined
+  /** アプリケーション全体に対する設定 */
+  config: ConfigType
   /** 集約など */
   aggregates: AggregateOrMember[] | undefined
   /** 集約やメンバーの型定義 */
@@ -17,6 +19,7 @@ export type PageState = {
 
 export const getEmptyPageState = (): PageState => ({
   aggregateOrMemberTypes: undefined,
+  config: {},
   aggregates: [],
   editingXmlFilePath: undefined,
   optionalAttributes: undefined,
@@ -25,8 +28,15 @@ export const getEmptyPageState = (): PageState => ({
 
 /** クライアントからサーバーへ送るデータ（バリデーション時や保存時） */
 export type ClientRequest = {
+  /** アプリケーション全体の設定 */
+  config: ConfigType | undefined
   /** 集約など */
   aggregates: AggregateOrMember[] | undefined
+}
+
+/** アプリケーション全体の設定 */
+export type ConfigType = {
+  [key: string]: string | boolean | undefined
 }
 
 /** 集約またはメンバー。グリッド行表示に特化した形 */

@@ -8,32 +8,32 @@ using System.Xml.Linq;
 
 namespace Nijo.Core {
     public class Config {
-        public required string RootNamespace { get; init; }
+        public required string RootNamespace { get; set; }
 
         public string EntityNamespace => RootNamespace;
         public string DbContextNamespace => RootNamespace;
-        public required string DbContextName { get; init; }
+        public required string DbContextName { get; set; }
 
         /// <summary>DBカラム名（作成者）</summary>
-        public required string? CreateUserDbColumnName { get; init; }
+        public required string? CreateUserDbColumnName { get; set; }
         /// <summary>DBカラム名（更新者）</summary>
-        public required string? UpdateUserDbColumnName { get; init; }
+        public required string? UpdateUserDbColumnName { get; set; }
         /// <summary>DBカラム名（作成時刻）</summary>
-        public required string? CreatedAtDbColumnName { get; init; }
+        public required string? CreatedAtDbColumnName { get; set; }
         /// <summary>DBカラム名（更新時刻）</summary>
-        public required string? UpdatedAtDbColumnName { get; init; }
+        public required string? UpdatedAtDbColumnName { get; set; }
         /// <summary>DBカラム名（楽観排他用バージョン）</summary>
-        public required string? VersionDbColumnName { get; init; }
+        public required string? VersionDbColumnName { get; set; }
 
         /// <summary>
         /// 一時保存を使用しない
         /// </summary>
-        public required bool DisableLocalRepository { get; init; }
+        public required bool DisableLocalRepository { get; set; }
 
         /// <summary>
         /// 一覧画面の詳細リンクの挙動
         /// </summary>
-        public required E_MultiViewDetailLinkBehavior MultiViewDetailLinkBehavior { get; init; } = E_MultiViewDetailLinkBehavior.NavigateToEditMode;
+        public required E_MultiViewDetailLinkBehavior MultiViewDetailLinkBehavior { get; set; } = E_MultiViewDetailLinkBehavior.NavigateToEditMode;
         /// <summary>
         /// 一覧画面の詳細リンクの挙動
         /// </summary>
@@ -56,13 +56,7 @@ namespace Nijo.Core {
 
         private const string MULTI_VIEW_DETAIL_LINK_BEHAVIOR = "MultiViewDetailLinkBehavior";
 
-        public XElement ToXmlWithRoot() {
-            var root = new XElement(RootNamespace);
-
-            if (DisableLocalRepository) root.SetAttributeValue(DISABLE_LOCAL_REPOSITORY, "True");
-
-            if (MultiViewDetailLinkBehavior == E_MultiViewDetailLinkBehavior.NavigateToReadOnlyMode)
-                root.SetAttributeValue(MULTI_VIEW_DETAIL_LINK_BEHAVIOR, E_MultiViewDetailLinkBehavior.NavigateToReadOnlyMode.ToString());
+        public void ToXElement(XElement root) {
 
             root.Name = XName.Get(RootNamespace);
 
@@ -72,7 +66,47 @@ namespace Nijo.Core {
                 root.SetAttributeValue(DBCONTEXT_NAME, DbContextName);
             }
 
-            return root;
+            if (string.IsNullOrWhiteSpace(CreateUserDbColumnName)) {
+                root.Attribute(CREATE_USER_DB_COLUMN_NAME)?.Remove();
+            } else {
+                root.SetAttributeValue(CREATE_USER_DB_COLUMN_NAME, CreateUserDbColumnName);
+            }
+
+            if (string.IsNullOrWhiteSpace(UpdateUserDbColumnName)) {
+                root.Attribute(UPDATE_USER_DB_COLUMN_NAME)?.Remove();
+            } else {
+                root.SetAttributeValue(UPDATE_USER_DB_COLUMN_NAME, UpdateUserDbColumnName);
+            }
+
+            if (string.IsNullOrWhiteSpace(CreatedAtDbColumnName)) {
+                root.Attribute(CREATED_AT_DB_COLUMN_NAME)?.Remove();
+            } else {
+                root.SetAttributeValue(CREATED_AT_DB_COLUMN_NAME, CreatedAtDbColumnName);
+            }
+
+            if (string.IsNullOrWhiteSpace(UpdatedAtDbColumnName)) {
+                root.Attribute(UPDATED_AT_DB_COLUMN_NAME)?.Remove();
+            } else {
+                root.SetAttributeValue(UPDATED_AT_DB_COLUMN_NAME, UpdatedAtDbColumnName);
+            }
+
+            if (string.IsNullOrWhiteSpace(VersionDbColumnName)) {
+                root.Attribute(VERSION_DB_COLUMN_NAME)?.Remove();
+            } else {
+                root.SetAttributeValue(VERSION_DB_COLUMN_NAME, VersionDbColumnName);
+            }
+
+            if (DisableLocalRepository) {
+                root.SetAttributeValue(DISABLE_LOCAL_REPOSITORY, "True");
+            } else {
+                root.Attribute(DISABLE_LOCAL_REPOSITORY)?.Remove();
+            }
+
+            if (MultiViewDetailLinkBehavior == E_MultiViewDetailLinkBehavior.NavigateToReadOnlyMode) {
+                root.SetAttributeValue(MULTI_VIEW_DETAIL_LINK_BEHAVIOR, E_MultiViewDetailLinkBehavior.NavigateToReadOnlyMode.ToString());
+            } else {
+                root.Attribute(MULTI_VIEW_DETAIL_LINK_BEHAVIOR)?.Remove();
+            }
         }
 
         public static Config FromXml(XDocument xDocument) {

@@ -81,6 +81,7 @@ namespace Nijo.Runtime {
                     // このプロパティ名やデータの内容はGUIアプリ側の InitialLoadData の型と合わせる必要がある
                     ProjectRoot = _project.SolutionRoot,
                     EditingXmlFilePath = _project.SchemaXmlPath,
+                    Config = schema.Config,
                     Nodes = schema.ToList(),
                     SchemaNodeTypes = typeDefs,
                     OptionalAttributes = optionDefs,
@@ -145,7 +146,7 @@ namespace Nijo.Runtime {
                 var json = await sr.ReadToEndAsync();
                 var obj = json.ParseAsJson<ClientRequest>();
 
-                return new MutableSchema(obj.Nodes ?? []);
+                return new MutableSchema(obj.Config!, obj.Nodes ?? []);
             }
             /// <summary>
             /// XMLドキュメントから <see cref="MutableSchema"/> のインスタンスを作成
@@ -154,13 +155,15 @@ namespace Nijo.Runtime {
                 var typeDefs = EnumerateSchemaNodeTypes().ToArray();
                 var optionDefs = EnumerateOptionalAttributes().ToDictionary(x => x.Key);
 
+                XDocument? entry = null;
                 var xDocuments = GetXDocumentsRecursively(entryXmlFilePath).ToList();
-                var rootNameSpace = xDocuments.First().XDocument.Root?.Name.LocalName ?? string.Empty;
-                var allNodes = xDocuments.SelectMany(LoadRecursively).ToList();
-                return new MutableSchema(allNodes);
+                var rootNameSpace = entry!.Root?.Name.LocalName ?? string.Empty;
+                var allNodes = xDocuments.SelectMany(GetSchemaNodes).ToList();
+                return new MutableSchema(Config.FromXml(entry!), allNodes);
 
                 IEnumerable<XDocumentAndPath> GetXDocumentsRecursively(string xmlFilePath) {
                     var xDocument = XDocument.Load(xmlFilePath);
+                    if (xmlFilePath == entryXmlFilePath) entry = xDocument;
                     yield return new() { XDocument = xDocument, FilePath = xmlFilePath };
 
                     // <Include Path="(略)" /> で他のXMLファイルを読み込む
@@ -177,7 +180,7 @@ namespace Nijo.Runtime {
                     }
                 }
 
-                IEnumerable<MutableSchemaNode> LoadRecursively(XDocumentAndPath doc) {
+                IEnumerable<MutableSchemaNode> GetSchemaNodes(XDocumentAndPath doc) {
                     foreach (var el in doc.XDocument.Root?.Elements() ?? []) {
                         if (el.Name.LocalName == AppSchemaXml.INCLUDE) continue;
 
@@ -215,6 +218,10 @@ namespace Nijo.Runtime {
             public void Save(string entryFilePath) {
                 var entryDocument = XDocument.Load(entryFilePath);
                 var documents = new Dictionary<string, XDocument>() { [entryFilePath] = entryDocument };
+
+                // ルート要素を編集
+                if (entryDocument.Root == null) entryDocument.Add(new XElement(Config.RootNamespace));
+                Config.ToXElement(entryDocument.Root!);
 
                 // 既存のルート直下要素を削除
                 entryDocument.Root?.RemoveNodes();
@@ -258,11 +265,15 @@ namespace Nijo.Runtime {
             #endregion 入出力
 
 
-            private MutableSchema(IList<MutableSchemaNode> list) {
+            private MutableSchema(Config config, IList<MutableSchemaNode> list) {
+                Config = config;
                 _list = list;
             }
-            private readonly IList<MutableSchemaNode> _list;
 
+            /// <summary>アプリケーション全体に対する設定</summary>
+            public Config Config { get; }
+
+            private readonly IList<MutableSchemaNode> _list;
 
             #region ツリー構造
             /// <summary>
@@ -560,6 +571,8 @@ namespace Nijo.Runtime {
             public string? ProjectRoot { get; set; }
             [JsonPropertyName("editingXmlFilePath")]
             public string? EditingXmlFilePath { get; set; }
+            [JsonPropertyName("config")]
+            public Config? Config { get; set; }
             [JsonPropertyName("aggregates")]
             public List<MutableSchemaNode>? Nodes { get; set; }
             [JsonPropertyName("aggregateOrMemberTypes")]
@@ -571,6 +584,8 @@ namespace Nijo.Runtime {
         /// クライアントからサーバーへ送るデータ
         /// </summary>
         private class ClientRequest {
+            [JsonPropertyName("config")]
+            public Config? Config { get; set; }
             [JsonPropertyName("aggregates")]
             public List<MutableSchemaNode>? Nodes { get; set; }
         }
@@ -672,8 +687,8 @@ namespace Nijo.Runtime {
                     ?? DisplayName?.ToCSharpSafe()
                     ?? string.Empty;
             }
-            public string GetRefToPath(MutableSchema collection) {
-                return collection
+            public string GetRefToPath(MutableSchema schema) {
+                return schema
                     .GetAncestors(this)
                     .Concat([this])
                     .Select(agg => agg.GetPhysicalName())

@@ -18,7 +18,8 @@ function App() {
 
   // データ
   const { ready, load, validate, save, backendDomain, onChangBackendDomain } = useBackend()
-  const { getValues, reset, control } = Util.useFormEx<PageState>({})
+  const rhfMethods = Util.useFormEx<PageState>({})
+  const { getValues, reset, control } = rhfMethods
   const { fields, update, insert, remove } = useFieldArray({ name: 'aggregates', control })
 
   // ツリー構造関連の操作
@@ -42,7 +43,7 @@ function App() {
   // ----------------------
   // アプリ設定
   const editingXmlFilePath = useWatch({ name: 'editingXmlFilePath', control })
-  const { openAppSettingDialog } = useAppSetting(backendDomain, onChangBackendDomain, editingXmlFilePath)
+  const { openAppSettingDialog } = useAppSetting(rhfMethods, backendDomain, onChangBackendDomain, editingXmlFilePath)
 
   // ----------------------
   // 列定義
@@ -146,7 +147,7 @@ function App() {
       timeoutHandle.current = setTimeout(async () => {
         // 一定時間内に処理がキャンセルされなかった場合のみここの処理が実行される
         const aggregates = getValues('aggregates')
-        if (aggregates) setValidationErrors(await validate(aggregates))
+        if (aggregates) setValidationErrors(await validate(getValues('config'), aggregates))
       }, 300)
     })
   })
@@ -159,7 +160,7 @@ function App() {
 
   // 保存
   const handleSave = useEvent(async () => {
-    if (await save(fields)) {
+    if (await save(getValues('config'), fields)) {
       await reload()
     } else {
       executeValidate()
