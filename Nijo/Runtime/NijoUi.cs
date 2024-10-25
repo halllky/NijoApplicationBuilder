@@ -173,7 +173,10 @@ namespace Nijo.Runtime {
                         var path = el.Attribute(AppSchemaXml.PATH)?.Value;
                         if (string.IsNullOrWhiteSpace(path)) continue;
 
-                        var absolutePath = Path.GetFullPath(Path.Combine(xmlFilePath, path));
+                        var dirName = Path.GetDirectoryName(xmlFilePath);
+                        var absolutePath = dirName == null
+                            ? path
+                            : Path.GetFullPath(Path.Combine(dirName, path));
                         foreach (var includedXDocument in GetXDocumentsRecursively(absolutePath)) {
                             yield return includedXDocument;
                         }
@@ -245,7 +248,10 @@ namespace Nijo.Runtime {
                         xDocument.Root?.Add(xNodes);
 
                         // エントリーXMLのIncludeに登録
-                        var relativePath = Path.GetRelativePath(entryFilePath, rootNode.XmlFileFullPath);
+                        var dirName = Path.GetDirectoryName(entryFilePath);
+                        var relativePath = dirName == null
+                            ? rootNode.XmlFileFullPath
+                            : Path.GetRelativePath(dirName, rootNode.XmlFileFullPath);
                         var include = new XElement(AppSchemaXml.INCLUDE);
                         include.SetAttributeValue(AppSchemaXml.PATH, relativePath);
                         entryDocument.Root?.Add(include);
