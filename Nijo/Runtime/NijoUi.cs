@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
+using static Nijo.Core.EnumDefinition;
 
 namespace Nijo.Runtime {
     /// <summary>
@@ -72,35 +73,14 @@ namespace Nijo.Runtime {
                 var typeDefs = EnumerateSchemaNodeTypes().ToList();
                 var optionDefs = EnumerateOptionalAttributes().ToList();
 
-                var rootXml = new NijoXmlFile(_project.SchemaXmlPath);
-
-                XElement? FindRefToElement(string uniqueId) {
-                    foreach (var item in rootXml.EnumerateThisAndIncluded()) {
-                        var found = item.XDocument?.XPathSelectElement($"/{item.XDocument.Root?.Name.LocalName}/{uniqueId}");
-                        if (found != null) return found;
-                    }
-                    return null;
-                }
-                XElement? FindEnumElement(string[] isAttributeKeys) {
-                    foreach (var item in rootXml.EnumerateThisAndIncluded()) {
-                        var found = item.XDocument?.Root?.Elements()
-                            .FirstOrDefault(el => el.Attribute(MutableSchemaNode.IS)?.Value.Contains("enum") == true
-                                               && isAttributeKeys.Contains(el.Name.LocalName));
-                        if (found != null) return found;
-                    }
-                    return null;
-                }
-
-                var rootAggregates = rootXml
-                    .GetRootAggregatesRecursively()
-                    .SelectMany(x => MutableSchemaNode.XmlElemntToSchemaNode(x, typeDefs, optionDefs.ToDictionary(d => d.Key), FindRefToElement, FindEnumElement));
+                var schema = MutableSchema.FromXmlDocument(_project.SchemaXmlPath);
 
                 context.Response.ContentType = "application/json";
                 await context.Response.WriteAsync(new InitialLoadData {
                     // このプロパティ名やデータの内容はGUIアプリ側の InitialLoadData の型と合わせる必要がある
                     ProjectRoot = _project.SolutionRoot,
                     EditingXmlFilePath = _project.SchemaXmlPath,
-                    Nodes = rootAggregates.ToList(),
+                    Nodes = schema.ToList(),
                     SchemaNodeTypes = typeDefs,
                     OptionalAttributes = optionDefs,
                 }.ConvertToJson());
@@ -109,8 +89,8 @@ namespace Nijo.Runtime {
             // 編集中のバリデーション
             app.MapPost("/validate", async context => {
                 try {
-                    var collection = await ToSchema(context.Request.Body);
-                    var errors = ValidationError.ToErrorObjectJson(collection.CollectVaridationErrors());
+                    var schema = await MutableSchema.FromHttpRequest(context.Request.Body);
+                    var errors = ValidationError.ToErrorObjectJson(schema.CollectVaridationErrors());
 
                     context.Response.ContentType = "application/json";
                     await context.Response.WriteAsync(errors);
@@ -124,8 +104,8 @@ namespace Nijo.Runtime {
             app.MapPost("/save", async context => {
                 try {
                     // バリデーション
-                    var collection = await ToSchema(context.Request.Body);
-                    var errors = collection.CollectVaridationErrors().ToArray();
+                    var schema = await MutableSchema.FromHttpRequest(context.Request.Body);
+                    var errors = schema.CollectVaridationErrors().ToArray();
                     if (errors.Length > 0) {
                         context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                         context.Response.ContentType = "application/json";
@@ -135,16 +115,7 @@ namespace Nijo.Runtime {
                     }
 
                     // 保存
-                    var nijoXml = new NijoXmlFile(_project.SchemaXmlPath);
-                    nijoXml.ClearRecursively();
-
-                    var allElements = collection
-                        .RootAggregates()
-                        .Select(a => MutableSchemaNode.ToXmlElement(a, collection));
-                    foreach (var el in allElements) {
-                        nijoXml.Add(el);
-                    }
-                    nijoXml.SaveRecursively(_project.BuildSchema().ApplicationName);
+                    schema.Save(_project.BuildSchema().ApplicationName);
 
                     context.Response.StatusCode = (int)HttpStatusCode.OK;
 
@@ -158,38 +129,146 @@ namespace Nijo.Runtime {
             return app;
         }
 
-
-        /// <summary>
-        /// HTTPリクエストボディから <see cref="MutableSchema"/> のインスタンスを作成
-        /// </summary>
-        /// <returns></returns>
-        private async Task<MutableSchema> ToSchema(Stream httpRequestBody) {
-            using var sr = new StreamReader(httpRequestBody);
-            var json = await sr.ReadToEndAsync();
-            var obj = json.ParseAsJson<ClientRequest>();
-
-            return new MutableSchema(obj.Nodes ?? []);
-        }
-
         /// <summary>
         /// 深さの情報だけを持っている <see cref="MutableSchemaNode"/> の一覧に対して、
         /// 祖先や子孫を取得するといったツリー構造データに対する操作を提供します。
         /// </summary>
         private class MutableSchema : IReadOnlyList<MutableSchemaNode> {
-            public MutableSchema(IList<MutableSchemaNode> list) {
+
+            #region 入出力
+            /// <summary>
+            /// HTTPリクエストボディから <see cref="MutableSchema"/> のインスタンスを作成
+            /// </summary>
+            public static async Task<MutableSchema> FromHttpRequest(Stream httpRequestBody) {
+                using var sr = new StreamReader(httpRequestBody);
+                var json = await sr.ReadToEndAsync();
+                var obj = json.ParseAsJson<ClientRequest>();
+
+                return new MutableSchema(obj.Nodes ?? []);
+            }
+            /// <summary>
+            /// XMLドキュメントから <see cref="MutableSchema"/> のインスタンスを作成
+            /// </summary>
+            public static MutableSchema FromXmlDocument(string entryXmlFilePath) {
+                var typeDefs = EnumerateSchemaNodeTypes().ToArray();
+                var optionDefs = EnumerateOptionalAttributes().ToDictionary(x => x.Key);
+
+                var xDocuments = GetXDocumentsRecursively(entryXmlFilePath).ToList();
+                var rootNameSpace = xDocuments.First().XDocument.Root?.Name.LocalName ?? string.Empty;
+                var allNodes = xDocuments.SelectMany(LoadRecursively).ToList();
+                return new MutableSchema(allNodes);
+
+                IEnumerable<XDocumentAndPath> GetXDocumentsRecursively(string xmlFilePath) {
+                    var xDocument = XDocument.Load(xmlFilePath);
+                    yield return new() { XDocument = xDocument, FilePath = xmlFilePath };
+
+                    // <Include Path="(略)" /> で他のXMLファイルを読み込む
+                    foreach (var el in xDocument.Elements()) {
+                        if (el.Name.LocalName != AppSchemaXml.INCLUDE) continue;
+
+                        var path = el.Attribute(AppSchemaXml.PATH)?.Value;
+                        if (string.IsNullOrWhiteSpace(path)) continue;
+
+                        var dirName = Path.GetDirectoryName(xmlFilePath);
+                        var absolutePath = dirName == null ? path : Path.GetFullPath(Path.Combine(dirName, path));
+                        foreach (var includedXDocument in GetXDocumentsRecursively(absolutePath)) {
+                            yield return includedXDocument;
+                        }
+                    }
+                }
+
+                IEnumerable<MutableSchemaNode> LoadRecursively(XDocumentAndPath doc) {
+                    foreach (var el in doc.XDocument.Elements()) {
+                        if (el.Name.LocalName == AppSchemaXml.INCLUDE) continue;
+
+                        var nodes = MutableSchemaNode.XmlElemntToSchemaNode(
+                            el,
+                            doc.FilePath,
+                            typeDefs,
+                            optionDefs,
+                            refToPath => {
+                                var found = xDocuments
+                                    .Select(doc => doc.XDocument.XPathSelectElement($"/{rootNameSpace}/{refToPath}"))
+                                    .OfType<XElement>()
+                                    .FirstOrDefault();
+                                return found;
+                            },
+                            isAttributeKeys => {
+                                foreach (var el in xDocuments.SelectMany(doc => doc.XDocument.Root?.Elements() ?? [])) {
+                                    if (el.Attribute(MutableSchemaNode.IS)?.Value.Contains("enum") != true) continue;
+                                    if (!isAttributeKeys.Contains(el.Name.LocalName)) continue;
+                                    return el;
+                                }
+                                return null;
+                            });
+
+                        foreach (var node in nodes) {
+                            yield return node;
+                        }
+                    }
+                }
+            }
+            /// <summary>
+            /// XMLドキュメントに保存する。
+            /// ファイルパスは <see cref="MutableSchemaNode.XmlFileFullPath"/> が持っている。
+            /// </summary>
+            public void Save(string entryFilePath) {
+                var entryDocument = XDocument.Load(entryFilePath);
+                var documents = new Dictionary<string, XDocument>() { [entryFilePath] = entryDocument };
+
+                // 既存のルート直下要素を削除
+                entryDocument.Root?.RemoveNodes();
+
+                // 編集後ノードを各XMLのルート直下へ追加
+                foreach (var rootNode in RootNodes()) {
+                    var xElement = MutableSchemaNode.ToXmlElement(rootNode, this);
+
+                    if (string.IsNullOrWhiteSpace(rootNode.XmlFileFullPath)) {
+                        entryDocument.Root?.Add(xElement);
+
+                    } else if (documents.TryGetValue(rootNode.XmlFileFullPath, out var xDocument)) {
+                        xDocument.Root?.Add(xElement);
+
+                    } else {
+                        documents[rootNode.XmlFileFullPath] = XDocument.Load(rootNode.XmlFileFullPath);
+                        documents[rootNode.XmlFileFullPath].Root?.Add(xElement);
+
+                        // エントリーXMLのIncludeに登録
+                        var relativePath = Path.GetRelativePath(entryFilePath, rootNode.XmlFileFullPath);
+                        var include = new XElement(AppSchemaXml.INCLUDE);
+                        include.SetAttributeValue(AppSchemaXml.PATH, relativePath);
+                        entryDocument.Root?.Add(include);
+                    }
+                }
+
+                // 保存
+                foreach (var doc in documents) {
+                    using var writer = XmlWriter.Create(doc.Key, new() {
+                        Indent = true,
+                        Encoding = new UTF8Encoding(false, false),
+                        NewLineChars = "\n",
+                    });
+                    doc.Value.Save(writer);
+                }
+            }
+            #endregion 入出力
+
+
+            private MutableSchema(IList<MutableSchemaNode> list) {
                 _list = list;
             }
             private readonly IList<MutableSchemaNode> _list;
 
+
+            #region ツリー構造
             /// <summary>
             /// ルート集約のみ列挙する
             /// </summary>
-            public IEnumerable<MutableSchemaNode> RootAggregates() {
+            public IEnumerable<MutableSchemaNode> RootNodes() {
                 foreach (var item in _list) {
                     if (item.Depth == 0) yield return item;
                 }
             }
-
             /// <summary>
             /// 直近の親を返す
             /// </summary>
@@ -267,6 +346,8 @@ namespace Nijo.Runtime {
                     yield return maybeDescendant;
                 }
             }
+            #endregion ツリー構造
+
 
             /// <summary>
             /// エラーを収集します。
@@ -337,7 +418,7 @@ namespace Nijo.Runtime {
                     } else if (node.Type.StartsWith(MutableSchemaNode.ENUM_PREFIX)) {
                         // 列挙体
                         var uniqueId = node.Type.Substring(MutableSchemaNode.ENUM_PREFIX.Length);
-                        if (!RootAggregates().Any(n => n.UniqueId == uniqueId
+                        if (!RootNodes().Any(n => n.UniqueId == uniqueId
                                                     && n.Type == "enum")) {
                             yield return new ValidationError {
                                 Node = node,
@@ -390,6 +471,7 @@ namespace Nijo.Runtime {
                     }
                 }
             }
+
 
             #region IReadOnlyListの実装
             public MutableSchemaNode this[int index] => _list[index];
@@ -518,7 +600,7 @@ namespace Nijo.Runtime {
             /// <summary>
             /// is="" 属性の内容
             /// </summary>
-            public static IEnumerable<IsAttribute> ParseIsAttribute(string? isAttributeValue) {
+            private static IEnumerable<IsAttribute> ParseIsAttribute(string? isAttributeValue) {
                 if (string.IsNullOrWhiteSpace(isAttributeValue)) yield break;
 
                 var parsingKey = false;
@@ -595,8 +677,8 @@ namespace Nijo.Runtime {
             }
             public E_NodeType? GetNodeType() {
                 if (string.IsNullOrWhiteSpace(Type)) return null;
-                if (Type.StartsWith(MutableSchemaNode.REFTO_PREFIX)) return E_NodeType.Ref;
-                if (Type.StartsWith(MutableSchemaNode.ENUM_PREFIX)) return E_NodeType.Enum;
+                if (Type.StartsWith(REFTO_PREFIX)) return E_NodeType.Ref;
+                if (Type.StartsWith(ENUM_PREFIX)) return E_NodeType.Enum;
                 return EnumerateSchemaNodeTypes().SingleOrDefault(t => t.Key == Type)?.NodeType;
             }
             public bool IsWriteModel(MutableSchema schema) {
@@ -666,7 +748,7 @@ namespace Nijo.Runtime {
                         // enum
                         var uniqueId = node.Type.Substring(ENUM_PREFIX.Length);
                         var enumName = collection
-                            .RootAggregates()
+                            .RootNodes()
                             .FirstOrDefault(agg => agg.UniqueId == uniqueId
                                                 && agg.Type == "enum")
                             ?.GetPhysicalName();
@@ -743,15 +825,17 @@ namespace Nijo.Runtime {
             /// XML要素を nijo ui の画面上で編集されるデータに変換する
             /// </summary>
             public static IEnumerable<MutableSchemaNode> XmlElemntToSchemaNode(
-                NijoXmlElement nijoXmlElement,
+                XElement xElement,
+                string xmlDocumentFilePath,
                 IEnumerable<SchemaNodeTypeDef> typeDefs,
                 IReadOnlyDictionary<string, OptionalAttributeDef> optionDefs,
                 Func<string, XElement?> findRefToElement,
                 Func<string[], XElement?> findEnumElement) {
-                return XmlElemntToSchemaNodePrivate(nijoXmlElement, typeDefs, optionDefs, 0, findRefToElement, findEnumElement);
+                return XmlElemntToSchemaNodePrivate(xElement, xmlDocumentFilePath, typeDefs, optionDefs, 0, findRefToElement, findEnumElement);
             }
             private static IEnumerable<MutableSchemaNode> XmlElemntToSchemaNodePrivate(
-                NijoXmlElement nijoXmlElement,
+                XElement xElement,
+                string xmlDocumentFilePath,
                 IEnumerable<SchemaNodeTypeDef> typeDefs,
                 IReadOnlyDictionary<string, OptionalAttributeDef> optionDefs,
                 int depth,
@@ -759,13 +843,13 @@ namespace Nijo.Runtime {
                 Func<string[], XElement?> findEnumElement) {
 
                 // XMLと nijo ui では DisplayName と PhysicalName の扱いが逆
-                var displayName = nijoXmlElement._xElement
+                var displayName = xElement
                     .Attribute(DISPLAY_NAME)?.Value
-                    ?? nijoXmlElement._xElement.Name.LocalName;
+                    ?? xElement.Name.LocalName;
 
                 // -------------------------------------
                 // 型
-                var isAttrValues = ParseIsAttribute(nijoXmlElement._xElement.Attribute(IS)?.Value).ToDictionary(x => x.Key);
+                var isAttrValues = ParseIsAttribute(xElement.Attribute(IS)?.Value).ToDictionary(x => x.Key);
 
                 // ref-toとenum以外の型
                 string? type = null;
@@ -803,15 +887,15 @@ namespace Nijo.Runtime {
                 var attrs = isAttrValues.Values
                     .Select(a => new OptionalAttributeValue { Key = a.Key, Value = a.Value })
                     .ToList();
-                if (nijoXmlElement._xElement.Attribute(DISPLAY_NAME) != null) {
+                if (xElement.Attribute(DISPLAY_NAME) != null) {
                     // XMLと nijo ui では DisplayName と PhysicalName の扱いが逆
-                    attrs.Add(new OptionalAttributeValue { Key = OptionalAttributeDef.PHYSICAL_NAME, Value = nijoXmlElement._xElement.Name.LocalName });
+                    attrs.Add(new OptionalAttributeValue { Key = OptionalAttributeDef.PHYSICAL_NAME, Value = xElement.Name.LocalName });
                 }
-                if (nijoXmlElement._xElement.Attribute(DB_NAME) != null) {
-                    attrs.Add(new OptionalAttributeValue { Key = OptionalAttributeDef.DB_NAME, Value = nijoXmlElement._xElement.Attribute(DB_NAME)?.Value });
+                if (xElement.Attribute(DB_NAME) != null) {
+                    attrs.Add(new OptionalAttributeValue { Key = OptionalAttributeDef.DB_NAME, Value = xElement.Attribute(DB_NAME)?.Value });
                 }
-                if (nijoXmlElement._xElement.Attribute(LATIN) != null) {
-                    attrs.Add(new OptionalAttributeValue { Key = OptionalAttributeDef.LATIN, Value = nijoXmlElement._xElement.Attribute(LATIN)?.Value });
+                if (xElement.Attribute(LATIN) != null) {
+                    attrs.Add(new OptionalAttributeValue { Key = OptionalAttributeDef.LATIN, Value = xElement.Attribute(LATIN)?.Value });
                 }
 
                 // is属性のうちtypeの方で既にハンドリング済みのものは除外
@@ -820,7 +904,7 @@ namespace Nijo.Runtime {
                 // -------------------------------------
                 // コメント。PreviousNodeを使って取得する都合上、XMLを下から順番に辿る形になる。
                 var comment = new StringBuilder();
-                var currentElement = (XNode?)nijoXmlElement._xElement;
+                var currentElement = (XNode?)xElement;
                 while (currentElement?.PreviousNode is XComment xComment) {
                     var value = comment.Length == 0
                         ? xComment.Value
@@ -831,27 +915,26 @@ namespace Nijo.Runtime {
 
                 yield return new MutableSchemaNode {
                     Depth = depth,
-                    UniqueId = GetXElementUniqueId(nijoXmlElement._xElement),
+                    UniqueId = GetXElementUniqueId(xElement),
                     DisplayName = displayName,
                     Type = type,
                     TypeDetail = typeDetail,
                     AttrValues = attrs,
                     Comment = comment.ToString(),
-                    XmlFileFullPath = nijoXmlElement.XmlFileFullpath,
+                    XmlFileFullPath = xmlDocumentFilePath,
                 };
 
                 // -------------------------------------
                 // コメント
-                var nodes = nijoXmlElement._xElement.Nodes().ToArray();
+                var nodes = xElement.Nodes().ToArray();
                 var descendants = new List<MutableSchemaNode>();
                 var comments = new List<XComment>();
                 for (int i = 0; i < nodes.Length; i++) {
                     var node = nodes[i];
                     if (node is XComment xComment) {
                         comments.Add(xComment);
-                    } else if (node is XElement xElement) {
-                        var childNijoXmlElement = new NijoXmlElement(xElement, null, comments.ToArray());
-                        descendants.AddRange(XmlElemntToSchemaNodePrivate(childNijoXmlElement, typeDefs, optionDefs, depth + 1, findRefToElement, findEnumElement));
+                    } else if (node is XElement childXmlElement) {
+                        descendants.AddRange(XmlElemntToSchemaNodePrivate(childXmlElement, xmlDocumentFilePath, typeDefs, optionDefs, depth + 1, findRefToElement, findEnumElement));
                         comments.Clear();
                     }
                 }
@@ -872,6 +955,12 @@ namespace Nijo.Runtime {
             public const string REFTO_PREFIX = "ref-to:";
             public const string ENUM_PREFIX = "enum:";
         }
+
+        private class XDocumentAndPath {
+            public required XDocument XDocument { get; init; }
+            public required string FilePath { get; init; }
+        }
+
         /// <summary>
         /// <see cref="MutableSchemaNode.Type"/> の種類
         /// </summary>
