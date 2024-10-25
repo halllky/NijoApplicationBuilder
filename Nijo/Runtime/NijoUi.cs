@@ -514,6 +514,71 @@ namespace Nijo.Runtime {
             [JsonPropertyName("xmlFileFullPath")]
             public string? XmlFileFullPath { get; set; }
 
+            #region is属性
+            /// <summary>
+            /// is="" 属性の内容
+            /// </summary>
+            public static IEnumerable<IsAttribute> ParseIsAttribute(string? isAttributeValue) {
+                if (string.IsNullOrWhiteSpace(isAttributeValue)) yield break;
+
+                var parsingKey = false;
+                var parsingValue = false;
+                var key = new List<char>();
+                var value = new List<char>();
+                foreach (var character in isAttributeValue) {
+                    // 半角スペースが登場したら属性の区切り、コロンが登場したらキーと値の区切り、と解釈する。
+                    if (character == ' ') {
+                        if (parsingKey || parsingValue) {
+                            yield return new IsAttribute {
+                                Key = new string(key.ToArray()),
+                                Value = new string(value.ToArray()),
+                            };
+                            key.Clear();
+                            value.Clear();
+                            parsingKey = false;
+                            parsingValue = false;
+                        }
+
+                    } else if (character == ':') {
+                        if (!parsingValue) {
+                            parsingKey = false;
+                            parsingValue = true;
+                        }
+
+                    } else {
+                        if (parsingKey) {
+                            key.Add(character);
+                        } else if (parsingValue) {
+                            value.Add(character);
+                        } else {
+                            parsingKey = true;
+                            key.Add(character);
+                        }
+                    }
+                }
+                if (parsingKey || parsingValue) {
+                    yield return new IsAttribute {
+                        Key = new string(key.ToArray()),
+                        Value = new string(value.ToArray()),
+                    };
+                }
+            }
+
+            /// <summary>
+            /// is="" の中身。半角スペースで区切られる設定値1個分。
+            /// </summary>
+            public class IsAttribute {
+                public required string Key { get; init; }
+                public required string Value { get; init; }
+
+                public override string ToString() {
+                    return string.IsNullOrWhiteSpace(Value)
+                        ? Key
+                        : $"{Key}:{Value}";
+                }
+            }
+            #endregion is属性
+
             public string GetPhysicalName() {
                 return AttrValues
                     ?.FirstOrDefault(attr => attr.Key == OptionalAttributeDef.PHYSICAL_NAME)
@@ -683,9 +748,9 @@ namespace Nijo.Runtime {
                 IReadOnlyDictionary<string, OptionalAttributeDef> optionDefs,
                 Func<string, XElement?> findRefToElement,
                 Func<string[], XElement?> findEnumElement) {
-                return ToSchemaNodePrivate(nijoXmlElement, typeDefs, optionDefs, 0, findRefToElement, findEnumElement);
+                return XmlElemntToSchemaNodePrivate(nijoXmlElement, typeDefs, optionDefs, 0, findRefToElement, findEnumElement);
             }
-            private static IEnumerable<MutableSchemaNode> ToSchemaNodePrivate(
+            private static IEnumerable<MutableSchemaNode> XmlElemntToSchemaNodePrivate(
                 NijoXmlElement nijoXmlElement,
                 IEnumerable<SchemaNodeTypeDef> typeDefs,
                 IReadOnlyDictionary<string, OptionalAttributeDef> optionDefs,
@@ -700,12 +765,13 @@ namespace Nijo.Runtime {
 
                 // -------------------------------------
                 // 型
+                var isAttrValues = ParseIsAttribute(nijoXmlElement._xElement.Attribute(IS)?.Value).ToDictionary(x => x.Key);
 
                 // ref-toとenum以外の型
                 string? type = null;
                 string? typeDetail = null;
                 foreach (var def in typeDefs.OrderBy(d => d.Key)) {
-                    var isAttr = def.FindMatchingIsAttribute(nijoXmlElement);
+                    var isAttr = def.FindMatchingIsAttribute(depth, isAttrValues);
                     if (isAttr != null) {
                         type = def.Key;
                         typeDetail = isAttr.Value;
@@ -714,7 +780,7 @@ namespace Nijo.Runtime {
                 }
 
                 // ref-to
-                if (type == null && nijoXmlElement.Is.TryGetValue("ref-to", out var refTo)) {
+                if (type == null && isAttrValues.TryGetValue("ref-to", out var refTo)) {
                     var refToElement = findRefToElement(refTo.Value);
                     if (refToElement != null) {
                         // ここの記法はTypeScript側の型選択コンボボックスのルールと合わせる必要あり
@@ -724,7 +790,7 @@ namespace Nijo.Runtime {
 
                 // enum
                 if (type == null) {
-                    var isAttr = nijoXmlElement.Is.Keys.OrderBy(k => k).ToArray();
+                    var isAttr = isAttrValues.Keys.OrderBy(k => k).ToArray();
                     var matchedEnum = findEnumElement(isAttr);
                     if (matchedEnum != null) {
                         // ここの記法はTypeScript側の型選択コンボボックスのルールと合わせる必要あり
@@ -734,7 +800,7 @@ namespace Nijo.Runtime {
 
                 // -------------------------------------
                 // オプショナル属性
-                var attrs = nijoXmlElement.Is.Values
+                var attrs = isAttrValues.Values
                     .Select(a => new OptionalAttributeValue { Key = a.Key, Value = a.Value })
                     .ToList();
                 if (nijoXmlElement._xElement.Attribute(DISPLAY_NAME) != null) {
@@ -785,7 +851,7 @@ namespace Nijo.Runtime {
                         comments.Add(xComment);
                     } else if (node is XElement xElement) {
                         var childNijoXmlElement = new NijoXmlElement(xElement, null, comments.ToArray());
-                        descendants.AddRange(ToSchemaNodePrivate(childNijoXmlElement, typeDefs, optionDefs, depth + 1, findRefToElement, findEnumElement));
+                        descendants.AddRange(XmlElemntToSchemaNodePrivate(childNijoXmlElement, typeDefs, optionDefs, depth + 1, findRefToElement, findEnumElement));
                         comments.Clear();
                     }
                 }
@@ -850,10 +916,10 @@ namespace Nijo.Runtime {
 
             /// <summary>
             /// XML要素の内容を判断し、この型に属するかどうかを返します。
-            /// 属する場合、該当の <see cref="NijoXmlElement.IsAttribute"/> オブジェクトを返します。
+            /// 属する場合、該当の <see cref="MutableSchemaNode.IsAttribute"/> オブジェクトを返します。
             /// </summary>
             [JsonIgnore]
-            public Func<NijoXmlElement, NijoXmlElement.IsAttribute?> FindMatchingIsAttribute { get; set; } = (_ => null);
+            public Func<int, IReadOnlyDictionary<string, MutableSchemaNode.IsAttribute>, MutableSchemaNode.IsAttribute?> FindMatchingIsAttribute { get; set; } = ((_, _) => null);
             /// <summary>
             /// バリデーション
             /// </summary>
@@ -1067,91 +1133,6 @@ namespace Nijo.Runtime {
             /// </summary>
             public string? XmlFileFullpath { get; }
 
-            #region 深さ
-            /// <summary>
-            /// 要素の深さ。ルート集約ならば0。
-            /// </summary>
-            public int Depth => _depth ??= GetDepth();
-            private int? _depth;
-            private int GetDepth() {
-                var element = _xElement;
-                var depth = -1; // XDocumentのRootを-1とする
-                while (element.Parent != null) {
-                    depth++;
-                    element = element.Parent;
-                }
-                return depth;
-            }
-            #endregion 深さ
-
-            #region is属性
-            /// <summary>
-            /// is="" 属性の内容
-            /// </summary>
-            public IReadOnlyDictionary<string, IsAttribute> Is => _isAttrCache ??= ParseIsAttribute().ToDictionary(x => x.Key);
-            private IReadOnlyDictionary<string, IsAttribute>? _isAttrCache;
-            private IEnumerable<IsAttribute> ParseIsAttribute() {
-                var isAttributeValue = _xElement.Attribute(MutableSchemaNode.IS)?.Value;
-                if (string.IsNullOrWhiteSpace(isAttributeValue)) yield break;
-
-                var parsingKey = false;
-                var parsingValue = false;
-                var key = new List<char>();
-                var value = new List<char>();
-                foreach (var character in isAttributeValue) {
-                    // 半角スペースが登場したら属性の区切り、コロンが登場したらキーと値の区切り、と解釈する。
-                    if (character == ' ') {
-                        if (parsingKey || parsingValue) {
-                            yield return new IsAttribute {
-                                Key = new string(key.ToArray()),
-                                Value = new string(value.ToArray()),
-                            };
-                            key.Clear();
-                            value.Clear();
-                            parsingKey = false;
-                            parsingValue = false;
-                        }
-
-                    } else if (character == ':') {
-                        if (!parsingValue) {
-                            parsingKey = false;
-                            parsingValue = true;
-                        }
-
-                    } else {
-                        if (parsingKey) {
-                            key.Add(character);
-                        } else if (parsingValue) {
-                            value.Add(character);
-                        } else {
-                            parsingKey = true;
-                            key.Add(character);
-                        }
-                    }
-                }
-                if (parsingKey || parsingValue) {
-                    yield return new IsAttribute {
-                        Key = new string(key.ToArray()),
-                        Value = new string(value.ToArray()),
-                    };
-                }
-            }
-
-            /// <summary>
-            /// is="" の中身。半角スペースで区切られる設定値1個分。
-            /// </summary>
-            public class IsAttribute {
-                public required string Key { get; init; }
-                public required string Value { get; init; }
-
-                public override string ToString() {
-                    return string.IsNullOrWhiteSpace(Value)
-                        ? Key
-                        : $"{Key}:{Value}";
-                }
-            }
-            #endregion is属性
-
             public IEnumerable<XNode> ToXNodes() {
                 foreach (var comment in _comments) {
                     yield return comment;
@@ -1190,7 +1171,7 @@ namespace Nijo.Runtime {
                     Key = key,
                     DisplayName = memberType.GetUiDisplayName(),
                     HelpText = memberType.GetHelpText(),
-                    FindMatchingIsAttribute = el => el.Depth > 0 && el.Is.TryGetValue(key, out var isAttribute) ? isAttribute : null,
+                    FindMatchingIsAttribute = (depth, isAttr) => depth > 0 && isAttr.TryGetValue(key, out var isAttribute) ? isAttribute : null,
                     Validate = (node, schema, errors) => {
 
                     },
@@ -1234,9 +1215,9 @@ namespace Nijo.Runtime {
                 Entity Framework Core のエンティティ定義や、作成・更新・削除のWeb API エンドポイントなどが生成されます。
                 切り分けの目安は、データベースの排他制御やトランザクションの粒度です。
                 """,
-            FindMatchingIsAttribute = el => el.Depth == 0
-                                         && !el.Is.ContainsKey("generate-default-read-model")
-                                         && el.Is.TryGetValue("write-model-2", out var isAttribute) ? isAttribute : null,
+            FindMatchingIsAttribute = (depth, isAttr) => depth == 0
+                                         && !isAttr.ContainsKey("generate-default-read-model")
+                                         && isAttr.TryGetValue("write-model-2", out var isAttribute) ? isAttribute : null,
             Validate = (node, schema, errors) => {
                 if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
             },
@@ -1250,8 +1231,8 @@ namespace Nijo.Runtime {
                 一覧検索画面、詳細画面、一括編集画面などが生成されます。
                 切り分けの目安は詳細画面1個の粒度です。
                 """,
-            FindMatchingIsAttribute = el => el.Depth == 0
-                                         && el.Is.TryGetValue("read-model-2", out var isAttribute) ? isAttribute : null,
+            FindMatchingIsAttribute = (depth, isAttr) => depth == 0
+                                         && isAttr.TryGetValue("read-model-2", out var isAttribute) ? isAttribute : null,
             Validate = (node, schema, errors) => {
                 if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
 
@@ -1265,9 +1246,9 @@ namespace Nijo.Runtime {
                 ReadModel から生成されるコードと WriteModel から生成されるコードの両方が生成されます。
                 画面のデータ項目とDBのデータ構造が寸分違わず完全に一致する場合にのみ使えます。
                 """,
-            FindMatchingIsAttribute = el => el.Depth == 0
-                                         && el.Is.ContainsKey("generate-default-read-model")
-                                         && el.Is.TryGetValue("write-model-2", out var isAttribute) ? isAttribute : null,
+            FindMatchingIsAttribute = (depth, isAttr) => depth == 0
+                                         && isAttr.ContainsKey("generate-default-read-model")
+                                         && isAttr.TryGetValue("write-model-2", out var isAttribute) ? isAttribute : null,
             Validate = (node, schema, errors) => {
                 if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
 
@@ -1280,8 +1261,8 @@ namespace Nijo.Runtime {
             HelpText = $$"""
                 このルート要素が列挙体であることを表します。
                 """,
-            FindMatchingIsAttribute = el => el.Depth == 0
-                                         && el.Is.TryGetValue("enum", out var isAttribute) ? isAttribute : null,
+            FindMatchingIsAttribute = (depth, isAttr) => depth == 0
+                                         && isAttr.TryGetValue("enum", out var isAttribute) ? isAttribute : null,
             Validate = (node, schema, errors) => {
                 if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
 
@@ -1295,8 +1276,8 @@ namespace Nijo.Runtime {
                 このルート要素が、人間や外部システムが起動する処理のパラメータであることを表します。
                 この処理を実行するWebAPIエンドポイントや、パラメータを入力するためのダイアログのUIコンポーネントなどが生成されます。
                 """,
-            FindMatchingIsAttribute = el => el.Depth == 0
-                                         && el.Is.TryGetValue("command", out var isAttribute) ? isAttribute : null,
+            FindMatchingIsAttribute = (depth, isAttr) => depth == 0
+                                         && isAttr.TryGetValue("command", out var isAttribute) ? isAttribute : null,
             Validate = (node, schema, errors) => {
                 if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
 
@@ -1314,8 +1295,8 @@ namespace Nijo.Runtime {
                 値オブジェクト。主として「○○コード」などの識別子の型として使われる。
                 同値比較がそのインスタンスの参照ではなく値によって行われる。不変（immutable）である。
                 """,
-            FindMatchingIsAttribute = el => el.Depth == 0
-                                         && el.Is.TryGetValue("value-object", out var isAttribute) ? isAttribute : null,
+            FindMatchingIsAttribute = (depth, isAttr) => depth == 0
+                                         && isAttr.TryGetValue("value-object", out var isAttribute) ? isAttribute : null,
             Validate = (node, schema, errors) => {
                 if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
                 if (schema.GetChildren(node).Any()) errors.Add("この型に子要素を設定することはできません。");
@@ -1331,10 +1312,10 @@ namespace Nijo.Runtime {
             HelpText = $$"""
                 親1件に対する1件の子要素。
                 """,
-            FindMatchingIsAttribute = el => {
-                if (el.Depth == 0) return null;
-                if (el.Is.TryGetValue("child", out var isAttribute1)) return isAttribute1;
-                if (el.Is.TryGetValue("section", out var isAttribute2)) return isAttribute2; // section属性は廃止予定
+            FindMatchingIsAttribute = (depth, isAttr) => {
+                if (depth == 0) return null;
+                if (isAttr.TryGetValue("child", out var isAttribute1)) return isAttribute1;
+                if (isAttr.TryGetValue("section", out var isAttribute2)) return isAttribute2; // section属性は廃止予定
                 return null;
             },
             Validate = (node, schema, errors) => {
@@ -1349,10 +1330,10 @@ namespace Nijo.Runtime {
             HelpText = $$"""
                 親1件に対する複数件の子要素。 
                 """,
-            FindMatchingIsAttribute = el => {
-                if (el.Depth == 0) return null;
-                if (el.Is.TryGetValue("children", out var isAttribute1)) return isAttribute1;
-                if (el.Is.TryGetValue("array", out var isAttribute2)) return isAttribute2; // array属性は廃止予定
+            FindMatchingIsAttribute = (depth, isAttr) => {
+                if (depth == 0) return null;
+                if (isAttr.TryGetValue("children", out var isAttribute1)) return isAttribute1;
+                if (isAttr.TryGetValue("array", out var isAttribute2)) return isAttribute2; // array属性は廃止予定
                 return null;
             },
             Validate = (node, schema, errors) => {
@@ -1367,8 +1348,8 @@ namespace Nijo.Runtime {
             HelpText = $$"""
                 親1件に対し、異なるデータ構造をもつ複数の子要素から1種類を選択するもの。
                 """,
-            FindMatchingIsAttribute = el => el.Depth > 0
-                                         && el.Is.TryGetValue("variation", out var isAttribute) ? isAttribute : null,
+            FindMatchingIsAttribute = (depth, isAttr) => depth > 0
+                                         && isAttr.TryGetValue("variation", out var isAttribute) ? isAttribute : null,
             Validate = (node, schema, errors) => {
                 if (node.Depth == 0) errors.Add("この型は子孫要素にしか設定できません。");
 
@@ -1388,10 +1369,10 @@ namespace Nijo.Runtime {
             HelpText = $$"""
                 バリエーションの1種類を表します。
                 """,
-            FindMatchingIsAttribute = el => {
-                if (el.Depth == 0) return null;
-                if (el.Is.TryGetValue("variation-item", out var isAttribute1)) return isAttribute1;
-                if (el.Is.TryGetValue("variation-key", out var isAttribute2)) return isAttribute2; // variation-key属性は廃止予定
+            FindMatchingIsAttribute = (depth, isAttr) => {
+                if (depth == 0) return null;
+                if (isAttr.TryGetValue("variation-item", out var isAttribute1)) return isAttribute1;
+                if (isAttr.TryGetValue("variation-key", out var isAttribute2)) return isAttribute2; // variation-key属性は廃止予定
                 return null;
             },
             Validate = (node, schema, errors) => {
@@ -1414,8 +1395,8 @@ namespace Nijo.Runtime {
                 ほぼChildと同じですが、ルート集約がCommandの場合、かつルート集約の直下にのみ設定可能です。
                 そのコマンドの子要素がステップの場合、コマンドのUIがウィザード形式になります。
                 """,
-            FindMatchingIsAttribute = el => el.Depth > 0
-                                         && el.Is.TryGetValue("step", out var isAttribute) ? isAttribute : null,
+            FindMatchingIsAttribute = (depth, isAttr) => depth > 0
+                                         && isAttr.TryGetValue("step", out var isAttribute) ? isAttribute : null,
             Validate = (node, schema, errors) => {
                 if (node.Depth != 1 || schema.GetRoot(node).Type != "command") {
                     errors.Add("ステップ属性はコマンドの直下にのみ定義できます。");
