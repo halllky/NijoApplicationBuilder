@@ -37,8 +37,6 @@ namespace Nijo.Core {
                 if (xDocument.Root == null) return;
 
                 foreach (var xElement in xDocument.Root.Elements()) {
-                    // コンフィグ
-                    if (xElement.Name.LocalName == Config.XML_CONFIG_SECTION_NAME) continue;
 
                     // Include Path="ファイルパス"で指定された.xmlを読み込む
                     if (xElement.Name.LocalName == INCLUDE) {

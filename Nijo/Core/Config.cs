@@ -44,14 +44,6 @@ namespace Nijo.Core {
             NavigateToEditMode,
         }
 
-        internal const string XML_CONFIG_SECTION_NAME = "_Config";
-
-        private const string SECTION_RELATIVE_PATHS = "OutDirRelativePath";
-        private const string SECTION_NAMESPACES = "Namespace";
-
-        private const string NAMESPACE_EFCORE_ENTITY = "EntityNamespace";
-        private const string NAMESPACE_DBCONTEXT = "DbContextNamespace";
-
         private const string DBCONTEXT_NAME = "DbContextName";
 
         private const string CREATE_USER_DB_COLUMN_NAME = "CreateUserDbColumnName";
@@ -67,32 +59,18 @@ namespace Nijo.Core {
         public XElement ToXmlWithRoot() {
             var root = new XElement(RootNamespace);
 
-            var configElement = new XElement(XML_CONFIG_SECTION_NAME);
-            root.Add(configElement);
-
-            // 各種機能の有効無効など
             if (DisableLocalRepository) root.SetAttributeValue(DISABLE_LOCAL_REPOSITORY, "True");
 
             if (MultiViewDetailLinkBehavior == E_MultiViewDetailLinkBehavior.NavigateToReadOnlyMode)
                 root.SetAttributeValue(MULTI_VIEW_DETAIL_LINK_BEHAVIOR, E_MultiViewDetailLinkBehavior.NavigateToReadOnlyMode.ToString());
 
-            // セクション: 相対パス
-            var outDirRelativePathElement = new XElement(SECTION_RELATIVE_PATHS);
-            configElement.Add(outDirRelativePathElement);
+            root.Name = XName.Get(RootNamespace);
 
-            // セクション: 名前空間
-            var namespaceElement = new XElement(SECTION_NAMESPACES);
-            configElement.Add(namespaceElement);
-
-            var dbContextNamespaceElement = new XElement(NAMESPACE_DBCONTEXT, DbContextNamespace);
-            var entityNamespaceElement = new XElement(NAMESPACE_EFCORE_ENTITY, EntityNamespace);
-
-            namespaceElement.Add(dbContextNamespaceElement);
-            namespaceElement.Add(entityNamespaceElement);
-
-            // セクション: DBコンテキスト名
-            var dbContextNameElement = new XElement(DBCONTEXT_NAME, DbContextName);
-            configElement.Add(dbContextNameElement);
+            if (string.IsNullOrWhiteSpace(DbContextName)) {
+                root.Attribute(DBCONTEXT_NAME)?.Remove();
+            } else {
+                root.SetAttributeValue(DBCONTEXT_NAME, DbContextName);
+            }
 
             return root;
         }
@@ -100,12 +78,10 @@ namespace Nijo.Core {
         public static Config FromXml(XDocument xDocument) {
             if (xDocument.Root == null) throw new FormatException($"設定ファイルのXMLの形式が不正です。");
 
-            var configSection = xDocument.Root.Element(XML_CONFIG_SECTION_NAME);
-
             return new Config {
                 RootNamespace = xDocument.Root.Name.LocalName.ToCSharpSafe(),
                 DisableLocalRepository = xDocument.Root.Attribute(DISABLE_LOCAL_REPOSITORY) != null,
-                DbContextName = configSection?.Element(DBCONTEXT_NAME)?.Value ?? "MyDbContext",
+                DbContextName = xDocument.Root.Attribute(DBCONTEXT_NAME)?.Value ?? "MyDbContext",
                 CreateUserDbColumnName = xDocument.Root.Attribute(CREATE_USER_DB_COLUMN_NAME)?.Value,
                 UpdateUserDbColumnName = xDocument.Root.Attribute(UPDATE_USER_DB_COLUMN_NAME)?.Value,
                 CreatedAtDbColumnName = xDocument.Root.Attribute(CREATED_AT_DB_COLUMN_NAME)?.Value,
