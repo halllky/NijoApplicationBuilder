@@ -60,6 +60,17 @@ export const useBackend = () => {
     return validationErrors
   })
 
+  // mermaid.jsのグラフ描画
+  const mermaid = useEvent(async (config: ConfigType, aggregates: GridRow[]): Promise<string> => {
+    const body: ClientRequest = { config, aggregates }
+    const response = await fetch(`${backendDomain ?? ''}/mermaid`, {
+      method: 'POST',
+      body: JSON.stringify(body)
+    })
+    const mermaidJsText = await response.text()
+    return mermaidJsText
+  })
+
   // 保存
   const save = useEvent(async (config: ConfigType, aggregates: GridRow[]): Promise<boolean> => {
     const body: ClientRequest = { config, aggregates }
@@ -86,6 +97,8 @@ export const useBackend = () => {
     load,
     /** 入力検証 */
     validate,
+    /** Mermaid.js のグラフテキスト取得 */
+    mermaid,
     /** 保存 */
     save,
   }

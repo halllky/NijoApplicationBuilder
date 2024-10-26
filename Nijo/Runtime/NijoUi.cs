@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Nijo.Core;
+using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections;
@@ -86,6 +87,63 @@ namespace Nijo.Runtime {
                     SchemaNodeTypes = typeDefs,
                     OptionalAttributes = optionDefs,
                 }.ConvertToJson());
+            });
+
+            // mermaid.js によるグラフ表示
+            app.MapPost("/mermaid", async context => {
+                try {
+                    var NODE_TYPE_DICT = EnumerateSchemaNodeTypes().ToDictionary(x => x.Key!);
+                    var VIEW_AGGRTEGATE_TYPES = new[] { WriteModel.Key, ReadModel.Key, WriteRead.Key, Command.Key };
+
+                    var schema = await MutableSchema.FromHttpRequest(context.Request.Body);
+                    var rootNodes = schema
+                        .RootNodes()
+                        .Where(n => VIEW_AGGRTEGATE_TYPES.Contains(schema.GetRoot(n).Type))
+                        .ToArray();
+                    var references = schema
+                        .Where(n => n.GetNodeType()?.HasFlag(E_NodeType.Ref) == true)
+                        .Select(n => new { Initial = schema.GetParent(n)?.UniqueId, Terminal = n.Type?.Substring(MutableSchemaNode.REFTO_PREFIX.Length), Label = string.IsNullOrEmpty(n.DisplayName) ? "???(Ref)" : $"{n.DisplayName}(Ref)" });
+
+                    context.Response.ContentType = "text/plain; charset=utf-8";
+                    await context.Response.WriteAsync($$"""
+                        graph RL;
+                        {{rootNodes.SelectTextTemplate(node => $$"""
+                          {{WithIndent(RenderSubgraphRecursively(node), "  ")}}
+                        """)}}
+                        {{references.SelectTextTemplate(edge => $$"""
+                          {{edge.Initial}} --"{{edge.Label.Replace("\"", "”")}}"--> {{edge.Terminal}}
+                        """)}}
+                        """.Replace(SKIP_MARKER, string.Empty), new UTF8Encoding(false, false));
+
+                    string RenderSubgraphRecursively(MutableSchemaNode node) {
+                        var displayName = string.IsNullOrEmpty(node.DisplayName)
+                            ? "???"
+                            : node.DisplayName;
+                        displayName += node.Type != null && NODE_TYPE_DICT.TryGetValue(node.Type, out var type)
+                            ? $"({type.DisplayName})"
+                            : $"(???)";
+
+                        var childrenAggregates = new List<MutableSchemaNode>();
+                        foreach (var childNode in schema.GetChildren(node)) {
+                            var nodeType = childNode.GetNodeType();
+                            if (nodeType?.HasFlag(E_NodeType.Aggregate) == true || nodeType == E_NodeType.Variation) {
+                                childrenAggregates.Add(childNode);
+                            }
+                        }
+
+                        return $$"""
+                            subgraph {{node.UniqueId}}["{{displayName.Replace("\"", "”")}}"]
+                            {{childrenAggregates.SelectTextTemplate(childNode => $$"""
+                              {{WithIndent(RenderSubgraphRecursively(childNode), "  ")}}
+                            """)}}
+                            end
+                            """;
+                    }
+
+                } catch (Exception ex) {
+                    context.Response.ContentType = "application/json";
+                    await context.Response.WriteAsync(new[] { ex.Message }.ConvertToJson());
+                }
             });
 
             // 編集中のバリデーション
@@ -1319,7 +1377,7 @@ namespace Nijo.Runtime {
         private static SchemaNodeTypeDef Step => new SchemaNodeTypeDef {
             NodeType = E_NodeType.DescendantAggregate,
             Key = "step",
-            DisplayName = "ステップ",
+            DisplayName = "Step",
             RequiredNumberValue = true,
             HelpText = $$"""
                 ほぼChildと同じですが、ルート集約がCommandの場合、かつルート集約の直下にのみ設定可能です。
