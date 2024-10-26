@@ -23,6 +23,8 @@ namespace Nijo.Core {
         public const string INCLUDE = "Include";
         public const string PATH = "Path";
 
+        public const string ENUM_VALUE_KEY = "key";
+
         internal bool ConfigureBuilder(AppSchemaBuilder builder, out ICollection<string> errors) {
             if (_xDocument.Root == null) {
                 errors = new List<string> { "XMLが空です。" };
@@ -75,7 +77,7 @@ namespace Nijo.Core {
                         var enumValues = new List<EnumValueOption>();
                         foreach (var innerElement in xElement.Elements()) {
                             var enumName = innerElement.Name.LocalName;
-                            var strValue = innerElement.Attribute("key")?.Value;
+                            var strValue = innerElement.Attribute(ENUM_VALUE_KEY)?.Value;
 
                             int? intValue;
                             if (strValue == null) {

@@ -473,6 +473,35 @@ namespace Nijo.Runtime {
                             };
                         }
 
+                        if (!string.IsNullOrWhiteSpace(node.TypeDetail)) {
+                            if (!int.TryParse(node.TypeDetail, out var intEnumKey)) {
+                                // 列挙体の値のキーは整数のみ
+                                yield return new ValidationError {
+                                    Node = node,
+                                    Key = ValidationError.ERR_TO_TYPE_DETAIL,
+                                    Message = "整数のみ指定できます。",
+                                };
+
+                            } else {
+                                // 列挙体の値のキー重複チェック
+                                var parent = GetParent(node);
+                                var siblings = parent == null ? [] : GetChildren(parent);
+                                foreach (var sibling in siblings) {
+                                    if (sibling == node) continue;
+                                    if (string.IsNullOrWhiteSpace(sibling.TypeDetail)) continue;
+                                    if (!int.TryParse(sibling.TypeDetail, out var siblingKey)) continue;
+                                    if (siblingKey != intEnumKey) continue;
+
+                                    yield return new ValidationError {
+                                        Node = node,
+                                        Key = ValidationError.ERR_TO_TYPE_DETAIL,
+                                        Message = "キーが重複しています。",
+                                    };
+                                }
+                            }
+                        }
+
+
                         // enumの要素はこれ以外のバリデーション不要
                         continue;
                     }
@@ -824,10 +853,10 @@ namespace Nijo.Runtime {
             /// nijo ui の画面上で編集されるデータをXML要素に変換する
             /// </summary>
             /// <param name="node">変換元</param>
-            /// <param name="collection">全ての集約が入ったコレクション</param>
+            /// <param name="schema">全ての集約が入ったコレクション</param>
             public static IEnumerable<XNode> ToXmlNodes(
                 MutableSchemaNode node,
-                MutableSchema collection) {
+                MutableSchema schema) {
 
                 var physicalName = node.GetPhysicalName();
                 var el = new XElement(physicalName);
@@ -841,9 +870,9 @@ namespace Nijo.Runtime {
                     if (node.Type.StartsWith(REFTO_PREFIX)) {
                         // ref-to
                         var uniqueId = node.Type.Substring(REFTO_PREFIX.Length);
-                        var refToPath = collection
+                        var refToPath = schema
                             .FirstOrDefault(agg => agg.UniqueId == uniqueId)
-                            ?.GetRefToPath(collection);
+                            ?.GetRefToPath(schema);
                         if (refToPath == null) {
                             isAttrs.Add(REFTO_PREFIX);
                         } else {
@@ -853,7 +882,7 @@ namespace Nijo.Runtime {
                     } else if (node.Type.StartsWith(ENUM_PREFIX)) {
                         // enum
                         var uniqueId = node.Type.Substring(ENUM_PREFIX.Length);
-                        var enumName = collection
+                        var enumName = schema
                             .RootNodes()
                             .FirstOrDefault(agg => agg.UniqueId == uniqueId
                                                 && agg.Type == EnumDef.Key)
@@ -865,7 +894,7 @@ namespace Nijo.Runtime {
                     } else if (node.Type.StartsWith(VALUE_OBJECT_PREFIX)) {
                         // value-object
                         var uniqueId = node.Type.Substring(VALUE_OBJECT_PREFIX.Length);
-                        var enumName = collection
+                        var enumName = schema
                             .RootNodes()
                             .FirstOrDefault(agg => agg.UniqueId == uniqueId
                                                 && agg.Type == ValueObjectDef.Key)
@@ -880,6 +909,14 @@ namespace Nijo.Runtime {
                     } else {
                         isAttrs.Add(node.Type);
                     }
+                }
+
+                // enumの値
+                if (schema.GetParent(node)?.Type == EnumDef.Key
+                    && !string.IsNullOrWhiteSpace(node.TypeDetail)
+                    && int.TryParse(node.TypeDetail, out var intEnumValue)) {
+
+                    el.SetAttributeValue(AppSchemaXml.ENUM_VALUE_KEY, intEnumValue);
                 }
 
                 // 型以外のis属性
@@ -927,9 +964,9 @@ namespace Nijo.Runtime {
 
                 // ---------------------------------
                 // 子要素
-                var childNodes = collection
+                var childNodes = schema
                     .GetChildren(node)
-                    .SelectMany(c => ToXmlNodes(c, collection));
+                    .SelectMany(c => ToXmlNodes(c, schema));
                 el.Add(childNodes);
 
                 // ---------------------------------
@@ -971,7 +1008,7 @@ namespace Nijo.Runtime {
                 // 型
                 var isAttrValues = ParseIsAttribute(xElement.Attribute(IS)?.Value).ToDictionary(x => x.Key);
 
-                // ref-toとenum以外の型
+                // ref-toやenumなど以外の型
                 string? type = null;
                 string? typeDetail = null;
                 foreach (var def in typeDefs.OrderBy(d => d.Key)) {
@@ -1010,6 +1047,11 @@ namespace Nijo.Runtime {
                         // ここの記法はTypeScript側の型選択コンボボックスのルールと合わせる必要あり
                         type = $"{VALUE_OBJECT_PREFIX}{GetXElementUniqueId(matchedEnum)}";
                     }
+                }
+
+                // enumの値
+                if (typeDetail == null && xElement.Parent?.Attribute(IS)?.Value.Contains(EnumDef.Key) == true) {
+                    typeDetail = xElement.Attribute(AppSchemaXml.ENUM_VALUE_KEY)?.Value;
                 }
 
                 // -------------------------------------
