@@ -11,7 +11,6 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
-using System.Reflection.Metadata;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -19,8 +18,6 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
-using static Nijo.Core.AggregateMember;
-using static Nijo.Core.EnumDefinition;
 
 namespace Nijo.Runtime {
     /// <summary>
@@ -259,7 +256,7 @@ namespace Nijo.Runtime {
                             },
                             isAttributeKeys => {
                                 foreach (var el in xDocuments.SelectMany(doc => doc.XDocument.Root?.Elements() ?? [])) {
-                                    if (el.Attribute(MutableSchemaNode.IS)?.Value.Contains("enum") != true) continue;
+                                    if (el.Attribute(MutableSchemaNode.IS)?.Value.Contains(EnumDef.Key) != true) continue;
                                     if (!isAttributeKeys.Contains(el.Name.LocalName)) continue;
                                     return el;
                                 }
@@ -267,7 +264,7 @@ namespace Nijo.Runtime {
                             },
                             isAttributeKeys => {
                                 foreach (var el in xDocuments.SelectMany(doc => doc.XDocument.Root?.Elements() ?? [])) {
-                                    if (el.Attribute(MutableSchemaNode.IS)?.Value.Contains("value-object") != true) continue;
+                                    if (el.Attribute(MutableSchemaNode.IS)?.Value.Contains(ValueObjectDef.Key) != true) continue;
                                     if (!isAttributeKeys.Contains(el.Name.LocalName)) continue;
                                     return el;
                                 }
@@ -455,7 +452,7 @@ namespace Nijo.Runtime {
 
                     // enumの要素のバリデーション（いろいろ特殊）
                     var root = GetRoot(node);
-                    if (node.Depth > 0 && root.Type == "enum") {
+                    if (node.Depth > 0 && root.Type == EnumDef.Key) {
                         // enumの要素なのに型が指定されている
                         if (!string.IsNullOrWhiteSpace(node.Type)) {
                             yield return new ValidationError {
@@ -506,7 +503,7 @@ namespace Nijo.Runtime {
                         // 列挙体
                         var uniqueId = node.Type.Substring(MutableSchemaNode.ENUM_PREFIX.Length);
                         if (!RootNodes().Any(n => n.UniqueId == uniqueId
-                                                    && n.Type == "enum")) {
+                                                    && n.Type == EnumDef.Key)) {
                             yield return new ValidationError {
                                 Node = node,
                                 Key = ValidationError.ERR_TO_TYPE,
@@ -517,7 +514,7 @@ namespace Nijo.Runtime {
                         // 値オブジェクト
                         var uniqueId = node.Type.Substring(MutableSchemaNode.VALUE_OBJECT_PREFIX.Length);
                         if (!RootNodes().Any(n => n.UniqueId == uniqueId
-                                               && n.Type == "value-object")) {
+                                               && n.Type == ValueObjectDef.Key)) {
                             yield return new ValidationError {
                                 Node = node,
                                 Key = ValidationError.ERR_TO_TYPE,
@@ -786,12 +783,13 @@ namespace Nijo.Runtime {
             }
             public bool IsWriteModel(MutableSchema schema) {
                 var root = schema.GetRoot(this);
-                return root.Type?.Contains("write-model-2") == true;
+                return root.Type == WriteModel.Key
+                    || root.Type == WriteRead.Key;
             }
             public bool IsReadModel(MutableSchema schema) {
                 var root = schema.GetRoot(this);
-                return root.Type?.Contains("read-model-2") == true
-                    || root.Type?.Contains("generate-default-read-model") == true;
+                return root.Type == ReadModel.Key
+                    || root.Type == WriteRead.Key;
             }
             /// <summary>
             /// エラーチェック
@@ -806,9 +804,9 @@ namespace Nijo.Runtime {
                 var children = schema.GetChildren(this).ToArray();
                 var nodeType = GetNodeType();
                 if (Depth == 0
-                    && children.All(c => c.AttrValues == null || !c.AttrValues.Any(a => a.Key == "key"))
+                    && children.All(c => c.AttrValues == null || !c.AttrValues.Any(a => a.Key == KeyDef.Key))
                     && (IsWriteModel(schema) || IsReadModel(schema))
-                    && (nodeType == E_NodeType.RootAggregate || Type == "children")) {
+                    && (nodeType == E_NodeType.RootAggregate || Type == Children.Key)) {
                     errors.Add("ルート集約とChildrenではキー指定が必須です。");
                 }
             }
@@ -855,7 +853,7 @@ namespace Nijo.Runtime {
                         var enumName = collection
                             .RootNodes()
                             .FirstOrDefault(agg => agg.UniqueId == uniqueId
-                                                && agg.Type == "enum")
+                                                && agg.Type == EnumDef.Key)
                             ?.GetPhysicalName();
                         if (enumName != null) {
                             isAttrs.Add(enumName);
@@ -867,7 +865,7 @@ namespace Nijo.Runtime {
                         var enumName = collection
                             .RootNodes()
                             .FirstOrDefault(agg => agg.UniqueId == uniqueId
-                                                && agg.Type == "value-object")
+                                                && agg.Type == ValueObjectDef.Key)
                             ?.GetPhysicalName();
                         if (enumName != null) {
                             isAttrs.Add(enumName);
@@ -1129,7 +1127,7 @@ namespace Nijo.Runtime {
         }
         private class SchemaNodeTypeDef {
             [JsonPropertyName("key")]
-            public string? Key { get; set; }
+            public string Key { get; set; } = "";
             [JsonPropertyName("displayName")]
             public string? DisplayName { get; set; }
             [JsonPropertyName("helpText")]
@@ -1221,8 +1219,8 @@ namespace Nijo.Runtime {
             yield return DbName;
             yield return LatinName;
 
-            yield return Key;
-            yield return Name;
+            yield return KeyDef;
+            yield return NameDef;
             yield return Required;
 
             yield return Max;
@@ -1516,7 +1514,7 @@ namespace Nijo.Runtime {
             },
         };
 
-        private static OptionalAttributeDef Key => new OptionalAttributeDef {
+        private static OptionalAttributeDef KeyDef => new OptionalAttributeDef {
             Key = "key",
             DisplayName = "Key",
             Type = E_OptionalAttributeType.Boolean,
@@ -1529,7 +1527,7 @@ namespace Nijo.Runtime {
                 var root = schema.GetRoot(node);
                 if (root.Type == "command") {
                     errors.Add("コマンドにキーを指定することはできません。");
-                } else if (root.Type == "enum") {
+                } else if (root.Type == EnumDef.Key) {
                     errors.Add("列挙体定義にキーを指定することはできません。");
                 }
 
@@ -1543,7 +1541,7 @@ namespace Nijo.Runtime {
                 }
             },
         };
-        private static OptionalAttributeDef Name => new OptionalAttributeDef {
+        private static OptionalAttributeDef NameDef => new OptionalAttributeDef {
             Key = "name",
             DisplayName = "Name",
             Type = E_OptionalAttributeType.Boolean,
