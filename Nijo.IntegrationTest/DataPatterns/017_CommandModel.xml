@@ -10,9 +10,9 @@
   -->
 
   <従業員 is="write-model-2 generate-default-read-model">
-    <内部ID is="uuid key" />
+    <内部ID is="uuid hidden key" />
     <従業員コード is="word" />
-    <名前 is="name" />
+    <名前 is="word name" />
     <区分 is="従業員区分" />
   </従業員>
 

@@ -3,8 +3,8 @@
 <自動テストで作成されたプロジェクト>
 
   <アクター is="write-model-2 generate-default-read-model">
-    <アクターID is="uuid" />
-    <アクター名 is="name" />
+    <アクターID is="uuid hidden key" />
+    <アクター名 is="word name" />
     <種別 is="variation">
       <人 is="variation-item:1">
         <自社か社外か is="word" />
@@ -15,22 +15,22 @@
   </アクター>
 
   <ユースケース is="write-model-2 generate-default-read-model">
-    <ユースケースID is="uuid" />
+    <ユースケースID is="uuid hidden key" />
     <概要 is="sentence name" />
     <主体 is="ref-to:アクター" />
     <関連機能 is="children">
       <機能 is="ref-to:機能 key" />
-      <メモ is="sentence" />
+      <メモ is="sentence name" />
     </関連機能>
   </ユースケース>
 
   <機能 is="write-model-2 generate-default-read-model">
-    <機能ID is="uuid" />
-    <機能名 is="name" />
+    <機能ID is="uuid hidden key" />
+    <機能名 is="word name" />
     <参照更新の別 is="E_参照更新" />
     <非機能要件 is="child">
-      <レスポンス is="sentence" />
-      <セキュリティ is="sentence" />
+      <レスポンス is="sentence name" />
+      <セキュリティ is="sentence name" />
     </非機能要件>
   </機能>
 

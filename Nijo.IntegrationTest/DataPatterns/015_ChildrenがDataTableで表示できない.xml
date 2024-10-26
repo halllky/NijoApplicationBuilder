@@ -2,14 +2,14 @@
 
 <自動テストで作成されたプロジェクト>
   <ユースケース is="write-model-2 generate-default-read-model">
-    <ID is="uuid" />
+    <ID is="uuid hidden key" />
     <ステップ is="children">
-      <ID is="uuid" />
+      <ID is="uuid hidden key" />
       <正常系 is="sentence" />
       <異常系 is="children">
-        <ID is="uuid" />
-        <ケース is="sentence" />
-        <対応 is="sentence" />
+        <ID is="uuid hidden key" />
+        <ケース is="sentence name" />
+        <対応 is="sentence name" />
       </異常系>
     </ステップ>
   </ユースケース>

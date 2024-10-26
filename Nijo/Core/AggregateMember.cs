@@ -8,7 +8,6 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Core {
-
     internal class AggregateMemberNode : IGraphNode {
         public NodeId Id { get; set; } = NodeId.Empty;
         public string MemberName { get; set; } = string.Empty;

@@ -274,6 +274,9 @@ namespace Nijo {
         /// </summary>
         /// <exception cref="InvalidOperationException">アプリケーションスキーマが不正な場合</exception>
         internal AppSchema BuildSchema() {
+
+            return Runtime.NijoUi.BuildAppSchemaFromXml(SchemaXmlPath);
+
             var schemaXml = new AppSchemaXml(LoadSchemaXml(), SolutionRoot);
             var builder = new AppSchemaBuilder();
             if (!schemaXml.ConfigureBuilder(builder, out var errors)) {

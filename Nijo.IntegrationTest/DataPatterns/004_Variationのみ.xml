@@ -2,8 +2,8 @@
 
 <自動テストで作成されたプロジェクト>
   <親集約 is="write-model-2 generate-default-read-model">
-    <親集約ID is="uuid" />
-    <親集約名 is="name" />
+    <親集約ID is="uuid hidden key" />
+    <親集約名 is="word name" />
     <種別 is="variation">
       <種別A is="variation-item:1">
         <種別Aのみに存在する属性 is="word" />

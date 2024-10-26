@@ -3,11 +3,11 @@
 <自動テストで作成されたプロジェクト>
   <親集約 is="write-model-2 generate-default-read-model form-label-width:5.8 form-depth:0">
     <!--ID-->
-    <ID is="uuid" />
+    <ID is="uuid hidden key" />
 
     <!--文字列系-->
     <単語 is="word" />
-    <文章 is="sentence" />
+    <文章 is="sentence name" />
 
     <!--数値系-->
     <整数 is="int" />
@@ -31,7 +31,7 @@
 
       <!--文字列系-->
       <単語 is="word" />
-      <文章 is="sentence" />
+      <文章 is="sentence name" />
 
       <!--数値系-->
       <整数 is="int" />
@@ -59,7 +59,7 @@
 
   <参照先 is="write-model-2 generate-default-read-model">
     <参照先ID is="word key" />
-    <Name is="name" />
+    <Name is="word name" />
   </参照先>
 
   <ChildrenID is="value-object" />

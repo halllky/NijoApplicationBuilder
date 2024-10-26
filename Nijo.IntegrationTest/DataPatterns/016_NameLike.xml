@@ -2,8 +2,8 @@
 
 <自動テストで作成されたプロジェクト>
   <取引先 is="write-model-2 generate-default-read-model">
-    <取引先番号 is="uuid key" />
-    <会社名 is="name" />
+    <取引先番号 is="uuid hidden key" />
+    <会社名 is="word name" />
   </取引先>
 
   <取引先営業情報 is="write-model-2 generate-default-read-model">
@@ -12,17 +12,17 @@
   </取引先営業情報>
 
   <お届け先 is="write-model-2 generate-default-read-model">
-    <ID is="uuid" />
+    <ID is="uuid hidden key" />
     <取引先 is="ref-to:取引先 key name-like" />
     <郵便番号 is="word name-like" />
     <住所 is="word name-like" />
   </お届け先>
 
   <配送指示 is="write-model-2 generate-default-read-model">
-    <ID is="uuid" />
+    <ID is="uuid hidden key" />
     <荷物名 is="word" />
     <配送日 is="date" />
-    <備考 is="sentence" />
+    <備考 is="sentence name" />
     <配送先 is="ref-to:お届け先" />
   </配送指示>
 

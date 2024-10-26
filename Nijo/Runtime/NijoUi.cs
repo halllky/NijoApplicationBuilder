@@ -25,6 +25,12 @@ namespace Nijo.Runtime {
     /// nijo.xml を生XMLではなくブラウザ上のGUIで編集する機能
     /// </summary>
     internal class NijoUi {
+
+        internal static AppSchema BuildAppSchemaFromXml(string xmlFilePath) {
+            var schema = MutableSchema.FromXmlDocument(xmlFilePath);
+            return schema.BuildAppSchema();
+        }
+
         internal NijoUi(GeneratedProject project) {
             _project = project;
         }
@@ -174,10 +180,6 @@ namespace Nijo.Runtime {
 
                     // 保存
                     schema.Save(_project.SchemaXmlPath);
-
-                    // アプリケーションスキーマが妥当かテスト
-                    var appSchema = schema.BuildAppSchema();
-                    var str = appSchema.Graph.ToMermaidText();
 
                     context.Response.StatusCode = (int)HttpStatusCode.OK;
 
@@ -347,6 +349,8 @@ namespace Nijo.Runtime {
                 }
 
                 var memberTypeResolver = MemberTypeResolver.Default();
+                var graphNodes = new List<IGraphNode>();
+                var graphEdges = new List<GraphEdgeInfo>();
 
                 // -------------------------------------------
                 // 列挙体定義の登録
@@ -354,8 +358,11 @@ namespace Nijo.Runtime {
                 foreach (var node in RootNodes().Where(n => n.Type == EnumDef.Key)) {
                     var usedInt = GetChildren(node)
                         .Where(child => !string.IsNullOrWhiteSpace(child.TypeDetail))
-                        .Select(child => int.Parse(child.TypeDetail!));
-                    var unusedInt = usedInt.DefaultIfEmpty().Max() + 1;
+                        .Select(child => int.Parse(child.TypeDetail!))
+                        .ToArray();
+                    var unusedInt = usedInt.Length == 0
+                        ? 0
+                        : (usedInt.Max() + 1);
                     var items = new List<EnumDefinition.Item>();
                     foreach (var child in GetChildren(node)) {
                         int value;
@@ -403,17 +410,24 @@ namespace Nijo.Runtime {
                 // -------------------------------------------
                 // 値オブジェクト定義の登録
                 foreach (var node in RootNodes().Where(n => n.Type == ValueObjectDef.Key)) {
+                    // メンバー型解決
                     var voMember = new ValueObjectMember(
                         node.GetPhysicalName(),
                         Models.ValueObjectModel.PRIMITIVE_TYPE,
                         StringMemberType.E_SearchBehavior.PartialMatch); // 当面文字列型の部分一致しか使わないので決め打ち
                     memberTypeResolver.Register(MutableSchemaNode.VALUE_OBJECT_PREFIX + node.UniqueId, voMember);
+
+                    // 集約（有向グラフの頂点）を登録
+                    var nodeId = node.ToGraphNodeId(this);
+                    var aggregate = new Aggregate(
+                        nodeId,
+                        node.GetPhysicalName(),
+                        node.CreateAggregateOption(this));
+                    graphNodes.Add(aggregate);
                 }
 
                 // -------------------------------------------
                 // WriteModel, ReadModel, Command の登録
-                var graphNodes = new List<IGraphNode>();
-                var graphEdges = new List<GraphEdgeInfo>();
                 foreach (var node in this) {
                     var root = GetRoot(node);
                     if (root.Type != WriteModel.Key
@@ -432,11 +446,13 @@ namespace Nijo.Runtime {
                             node.CreateAggregateOption(this));
                         graphNodes.Add(aggregate);
 
+                        var displayName = aggregate.Options.DisplayName;
+
                         // 親との関係性（有向グラフの辺）を登録
                         var parent = GetParent(node);
                         if (parent?.Type == Variation.Key) {
-                            // variation switch のところはUI上では2段階の入れ子のため
-                            parent = GetParent(parent) ?? throw new InvalidOperationException();
+                            displayName = parent.DisplayName; // DisplayNameにはvariationのノードのそれを使う
+                            parent = GetParent(parent) ?? throw new InvalidOperationException(); // variation switch のところはUI上では2段階の入れ子のため
                         }
                         if (parent != null) {
                             graphEdges.Add(new GraphEdgeInfo {
@@ -453,7 +469,7 @@ namespace Nijo.Runtime {
                                     { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, aggregate.Options.IsPrimary == true },
                                     { DirectedEdgeExtensions.REL_ATTR_IS_REQUIRED, aggregate.Options.IsRequiredArray == true },
                                     { DirectedEdgeExtensions.REL_ATTR_INVISIBLE_IN_GUI, aggregate.Options.InvisibleInGui == true },
-                                    { DirectedEdgeExtensions.REL_ATTR_DISPLAY_NAME, aggregate.Options.DisplayName },
+                                    { DirectedEdgeExtensions.REL_ATTR_DISPLAY_NAME, displayName },
                                     { DirectedEdgeExtensions.REL_ATTR_DB_NAME, aggregate.Options.DbName },
                                     { DirectedEdgeExtensions.REL_ATTR_MEMBER_ORDER, _list.IndexOf(node) },
                                 },
@@ -1337,8 +1353,12 @@ namespace Nijo.Runtime {
                     if (type == null) continue;
                     type.EditAggregateOption(attrValue.Value, this, schema, options);
                 }
+
                 var nodeType = EnumerateSchemaNodeTypes().SingleOrDefault(x => x.Key == Type);
                 nodeType?.EditAggregateOption(this, schema, options);
+
+                options.DisplayName = DisplayName;
+
                 return options;
             }
             public AggregateMemberBuildOption CreateAggregateMemberOption(MutableSchema schema) {
@@ -1350,8 +1370,12 @@ namespace Nijo.Runtime {
                     if (type == null) continue;
                     type.EditAggregateMemberOption(attrValue.Value, this, schema, options);
                 }
+
                 var nodeType = EnumerateSchemaNodeTypes().SingleOrDefault(x => x.Key == Type);
                 nodeType?.EditAggregateMemberOption(this, schema, options);
+
+                options.DisplayName = DisplayName;
+
                 return options;
             }
             #endregion 入出力（有向グラフ）
@@ -1555,6 +1579,9 @@ namespace Nijo.Runtime {
             Validate = (node, schema, errors) => {
                 if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
             },
+            EditAggregateOption = (node, schema, opt) => {
+                opt.Handler = NijoCodeGenerator.Models.WriteModel2.Key;
+            },
         };
         private static SchemaNodeTypeDef ReadModel => new SchemaNodeTypeDef {
             NodeType = E_NodeType.RootAggregate,
@@ -1569,7 +1596,9 @@ namespace Nijo.Runtime {
                                          && isAttr.TryGetValue("read-model-2", out var isAttribute) ? isAttribute : null,
             Validate = (node, schema, errors) => {
                 if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
-
+            },
+            EditAggregateOption = (node, schema, opt) => {
+                opt.Handler = NijoCodeGenerator.Models.ReadModel2.Key;
             },
         };
         private static SchemaNodeTypeDef WriteRead => new SchemaNodeTypeDef {
@@ -1581,11 +1610,14 @@ namespace Nijo.Runtime {
                 画面のデータ項目とDBのデータ構造が寸分違わず完全に一致する場合にのみ使えます。
                 """,
             FindMatchingIsAttribute = (depth, isAttr) => depth == 0
-                                         && isAttr.ContainsKey("generate-default-read-model")
-                                         && isAttr.TryGetValue("write-model-2", out var isAttribute) ? isAttribute : null,
+                                                      && isAttr.ContainsKey("generate-default-read-model")
+                                                      && isAttr.TryGetValue("write-model-2", out var isAttribute) ? isAttribute : null,
             Validate = (node, schema, errors) => {
                 if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
-
+            },
+            EditAggregateOption = (node, schema, opt) => {
+                opt.Handler = NijoCodeGenerator.Models.WriteModel2.Key;
+                opt.GenerateDefaultReadModel = true;
             },
         };
         private static SchemaNodeTypeDef EnumDef => new SchemaNodeTypeDef {
@@ -1596,10 +1628,9 @@ namespace Nijo.Runtime {
                 このルート要素が列挙体であることを表します。
                 """,
             FindMatchingIsAttribute = (depth, isAttr) => depth == 0
-                                         && isAttr.TryGetValue("enum", out var isAttribute) ? isAttribute : null,
+                                                      && isAttr.TryGetValue("enum", out var isAttribute) ? isAttribute : null,
             Validate = (node, schema, errors) => {
                 if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
-
             },
         };
         private static SchemaNodeTypeDef Command => new SchemaNodeTypeDef {
@@ -1611,7 +1642,7 @@ namespace Nijo.Runtime {
                 この処理を実行するWebAPIエンドポイントや、パラメータを入力するためのダイアログのUIコンポーネントなどが生成されます。
                 """,
             FindMatchingIsAttribute = (depth, isAttr) => depth == 0
-                                         && isAttr.TryGetValue("command", out var isAttribute) ? isAttribute : null,
+                                                      && isAttr.TryGetValue("command", out var isAttribute) ? isAttribute : null,
             Validate = (node, schema, errors) => {
                 if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
 
@@ -1619,6 +1650,9 @@ namespace Nijo.Runtime {
                 if (children.Any(x => x.Type == "step") && children.Any(x => x.Type != "step")) {
                     errors.Add("ステップ属性を定義する場合は全てステップにする必要があります。");
                 }
+            },
+            EditAggregateOption = (node, schema, opt) => {
+                opt.Handler = NijoCodeGenerator.Models.CommandModel.Key;
             },
         };
         private static SchemaNodeTypeDef ValueObjectDef => new SchemaNodeTypeDef {
@@ -1630,10 +1664,13 @@ namespace Nijo.Runtime {
                 同値比較がそのインスタンスの参照ではなく値によって行われる。不変（immutable）である。
                 """,
             FindMatchingIsAttribute = (depth, isAttr) => depth == 0
-                                         && isAttr.TryGetValue("value-object", out var isAttribute) ? isAttribute : null,
+                                                      && isAttr.TryGetValue("value-object", out var isAttribute) ? isAttribute : null,
             Validate = (node, schema, errors) => {
                 if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
                 if (schema.GetChildren(node).Any()) errors.Add("この型に子要素を設定することはできません。");
+            },
+            EditAggregateOption = (node, schema, opt) => {
+                opt.Handler = NijoCodeGenerator.Models.ValueObjectModel.Key;
             },
         };
         #endregion ルート集約に設定できる種類
@@ -1654,7 +1691,6 @@ namespace Nijo.Runtime {
             },
             Validate = (node, schema, errors) => {
                 if (node.Depth == 0) errors.Add("この型は子孫要素にしか設定できません。");
-
             },
         };
         private static SchemaNodeTypeDef Children => new SchemaNodeTypeDef {
@@ -1672,7 +1708,9 @@ namespace Nijo.Runtime {
             },
             Validate = (node, schema, errors) => {
                 if (node.Depth == 0) errors.Add("この型は子孫要素にしか設定できません。");
-
+            },
+            EditAggregateOption = (node, schema, opt) => {
+                opt.IsArray = true;
             },
         };
         private static SchemaNodeTypeDef Variation => new SchemaNodeTypeDef {
@@ -1736,7 +1774,7 @@ namespace Nijo.Runtime {
                 そのコマンドの子要素がステップの場合、コマンドのUIがウィザード形式になります。
                 """,
             FindMatchingIsAttribute = (depth, isAttr) => depth > 0
-                                         && isAttr.TryGetValue("step", out var isAttribute) ? isAttribute : null,
+                                                      && isAttr.TryGetValue("step", out var isAttribute) ? isAttribute : null,
             Validate = (node, schema, errors) => {
                 if (node.Depth != 1 || schema.GetRoot(node).Type != "command") {
                     errors.Add("ステップ属性はコマンドの直下にのみ定義できます。");
@@ -1746,6 +1784,9 @@ namespace Nijo.Runtime {
                 } else if (!int.TryParse(node.TypeDetail, out var _)) {
                     errors.Add($"ステップ番号 '{node.TypeDetail}' を整数として解釈できません。");
                 }
+            },
+            EditAggregateOption = (node, schema, opt) => {
+                opt.Step = int.Parse(node.TypeDetail ?? throw new InvalidOperationException());
             },
         };
         #endregion ルート以外に設定できる種類 ※ ref-toと列挙体は集約定義に依存するのでクライアント側で計算する
@@ -1859,7 +1900,7 @@ namespace Nijo.Runtime {
                 var parent = schema.GetParent(node);
                 if (parent == null) {
                     errors.Add("ルート集約にキーを指定することはできません。");
-                } else if (parent.Type == "child") {
+                } else if (parent.Type == "child" && !(parent.AttrValues ?? []).Any(x => x.Key == HasLifeCycle.Key)) {
                     errors.Add("Childにキーを指定することはできません。");
                 } else if (parent.Type == "variation" || parent.Type == "variation-item") {
                     errors.Add("バリエーションにキーを指定することはできません。");
@@ -1870,6 +1911,7 @@ namespace Nijo.Runtime {
             },
             EditAggregateMemberOption = (value, node, schema, opt) => {
                 opt.IsPrimary = true;
+                opt.IsRequired = true;
             },
         };
         private static OptionalAttributeDef NameDef => new OptionalAttributeDef {
