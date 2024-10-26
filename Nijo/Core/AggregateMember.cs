@@ -82,7 +82,7 @@ namespace Nijo.Core {
                     VariationAggregates = group.ToDictionary(
                         edge => (string)edge.Attributes[DirectedEdgeExtensions.REL_ATTR_VARIATIONSWITCH]!,
                         edge => edge.As<Aggregate>()),
-                    DisplayName = group.First().GetDisplayName(),
+                    DisplayName = (string)group.First().Attributes[DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUP_DISPLAYNAME]!,
                     DbName = group.First().Attributes
                         .TryGetValue(DirectedEdgeExtensions.REL_ATTR_DB_NAME, out var dbName)
                         && !string.IsNullOrWhiteSpace((string?)dbName)

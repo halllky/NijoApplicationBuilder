@@ -5,7 +5,7 @@
     <ID is="uuid hidden key" />
     <ステップ is="children">
       <ID is="uuid hidden key" />
-      <正常系 is="sentence" />
+      <正常系 is="sentence name" />
       <異常系 is="children">
         <ID is="uuid hidden key" />
         <ケース is="sentence name" />

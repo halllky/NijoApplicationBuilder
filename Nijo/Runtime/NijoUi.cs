@@ -401,7 +401,7 @@ namespace Nijo.Runtime {
                             DisplayName = node.DisplayName,
                         });
                     }
-                    if (!EnumDefinition.TryCreate($"E_{variationGroup.Key}", enumValues, out var enumDef, out var errors)) {
+                    if (!EnumDefinition.TryCreate($"E_{variationGroup.Key.GetPhysicalName()}", enumValues, out var enumDef, out var errors)) {
                         throw new InvalidOperationException($"列挙体の構築時にエラーが発生しました。:{errors.Join(", ")}");
                     }
                     enums.Add(enumDef);
@@ -446,13 +446,11 @@ namespace Nijo.Runtime {
                             node.CreateAggregateOption(this));
                         graphNodes.Add(aggregate);
 
-                        var displayName = aggregate.Options.DisplayName;
-
                         // 親との関係性（有向グラフの辺）を登録
                         var parent = GetParent(node);
                         if (parent?.Type == Variation.Key) {
-                            displayName = parent.DisplayName; // DisplayNameにはvariationのノードのそれを使う
-                            parent = GetParent(parent) ?? throw new InvalidOperationException(); // variation switch のところはUI上では2段階の入れ子のため
+                            // variation switch のところはUI上では2段階の入れ子のため
+                            parent = GetParent(parent) ?? throw new InvalidOperationException();
                         }
                         if (parent != null) {
                             graphEdges.Add(new GraphEdgeInfo {
@@ -464,12 +462,13 @@ namespace Nijo.Runtime {
                                     { DirectedEdgeExtensions.REL_ATTR_MULTIPLE, aggregate.Options.IsArray == true },
                                     { DirectedEdgeExtensions.REL_ATTR_VARIATIONSWITCH, aggregate.Options.IsVariationGroupMember?.Key ?? string.Empty },
                                     { DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, aggregate.Options.IsVariationGroupMember?.GroupName ?? string.Empty },
+                                    { DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUP_DISPLAYNAME, aggregate.Options.IsVariationGroupMember?.GroupDisplayName ?? string.Empty },
                                     { DirectedEdgeExtensions.REL_ATTR_IS_COMBO, aggregate.Options.IsCombo == true },
                                     { DirectedEdgeExtensions.REL_ATTR_IS_RADIO, aggregate.Options.IsRadio == true },
                                     { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, aggregate.Options.IsPrimary == true },
                                     { DirectedEdgeExtensions.REL_ATTR_IS_REQUIRED, aggregate.Options.IsRequiredArray == true },
                                     { DirectedEdgeExtensions.REL_ATTR_INVISIBLE_IN_GUI, aggregate.Options.InvisibleInGui == true },
-                                    { DirectedEdgeExtensions.REL_ATTR_DISPLAY_NAME, displayName },
+                                    { DirectedEdgeExtensions.REL_ATTR_DISPLAY_NAME, aggregate.Options.DisplayName },
                                     { DirectedEdgeExtensions.REL_ATTR_DB_NAME, aggregate.Options.DbName },
                                     { DirectedEdgeExtensions.REL_ATTR_MEMBER_ORDER, _list.IndexOf(node) },
                                 },
@@ -1758,8 +1757,10 @@ namespace Nijo.Runtime {
                 }
             },
             EditAggregateOption = (node, schema, opt) => {
+                var parent = schema.GetParent(node);
                 opt.IsVariationGroupMember = new() {
-                    GroupName = schema.GetParent(node)?.GetPhysicalName() ?? "",
+                    GroupName = parent?.GetPhysicalName() ?? "",
+                    GroupDisplayName = parent?.DisplayName ?? "",
                     Key = node.TypeDetail ?? "",
                 };
             },

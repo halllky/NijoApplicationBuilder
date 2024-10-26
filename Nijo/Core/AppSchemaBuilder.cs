@@ -82,6 +82,7 @@ namespace Nijo.Core {
                         { DirectedEdgeExtensions.REL_ATTR_MULTIPLE, aggregate.Options.IsArray == true },
                         { DirectedEdgeExtensions.REL_ATTR_VARIATIONSWITCH, aggregate.Options.IsVariationGroupMember?.Key ?? string.Empty },
                         { DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, aggregate.Options.IsVariationGroupMember?.GroupName ?? string.Empty },
+                        { DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUP_DISPLAYNAME, aggregate.Options.IsVariationGroupMember?.GroupDisplayName ?? string.Empty },
                         { DirectedEdgeExtensions.REL_ATTR_IS_COMBO, aggregate.Options.IsCombo == true },
                         { DirectedEdgeExtensions.REL_ATTR_IS_RADIO, aggregate.Options.IsRadio == true },
                         { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, aggregate.Options.IsPrimary == true },
@@ -365,6 +366,7 @@ namespace Nijo.Core {
 
         public sealed class GroupOption {
             public required string GroupName { get; init; }
+            public required string GroupDisplayName { get; init; }
             public required string Key { get; init; }
         }
 
@@ -459,6 +461,7 @@ namespace Nijo.Core {
 
         internal const string REL_ATTR_MULTIPLE = "multiple";
         internal const string REL_ATTR_VARIATIONGROUPNAME = "variation-group-name";
+        internal const string REL_ATTR_VARIATIONGROUP_DISPLAYNAME = "variation-group-display-name";
         internal const string REL_ATTR_VARIATIONSWITCH = "switch";
         internal const string REL_ATTR_IS_PRIMARY = "is-primary";
         internal const string REL_ATTR_IS_INSTANCE_NAME = "is-instance-name";

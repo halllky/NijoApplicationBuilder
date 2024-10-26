@@ -243,7 +243,11 @@ namespace Nijo.Core {
                 .ElementTypeIs(E_XElementType.VariationContainer, E_Priority.Force);
             parser.IfExists("variation-item")
                 .ElementTypeIs(E_XElementType.ChildAggregate, E_Priority.Force)
-                .SetAggregateOption(opt => opt.IsVariationGroupMember, variationKey => new() { GroupName = element.Parent?.Name.LocalName ?? string.Empty, Key = variationKey }, E_Priority.Force);
+                .SetAggregateOption(opt => opt.IsVariationGroupMember, variationKey => new() {
+                    GroupName = element.Parent?.Name.LocalName ?? string.Empty,
+                    GroupDisplayName = element.Parent?.Attribute(XName.Get("DisplayName"))?.Value ?? string.Empty,
+                    Key = variationKey,
+                }, E_Priority.Force);
 
             // childと同じ。非推奨
             parser.IfExists("section")
@@ -256,7 +260,11 @@ namespace Nijo.Core {
             // variation-itemと同じ。非推奨
             parser.IfExists("variation-key")
                 .ElementTypeIs(E_XElementType.ChildAggregate, E_Priority.Force)
-                .SetAggregateOption(opt => opt.IsVariationGroupMember, variationKey => new() { GroupName = element.Parent?.Name.LocalName ?? string.Empty, Key = variationKey }, E_Priority.Force);
+                .SetAggregateOption(opt => opt.IsVariationGroupMember, variationKey => new() {
+                    GroupName = element.Parent?.Name.LocalName ?? string.Empty,
+                    GroupDisplayName = element.Parent?.Attribute(XName.Get("DisplayName"))?.Value ?? string.Empty,
+                    Key = variationKey,
+                }, E_Priority.Force);
 
             // コマンド用のステップ属性
             parser.IfExists("step")
