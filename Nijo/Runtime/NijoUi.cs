@@ -463,6 +463,9 @@ namespace Nijo.Runtime {
                         }
 
                         foreach (var attrValue in node.AttrValues ?? []) {
+                            // 列挙体の値であっても指定可能な属性の場合はcontinue
+                            if (attrValue.Key == PhysicalName.Key) continue;
+
                             yield return new ValidationError {
                                 Node = node,
                                 Key = attrValue.Key!,
