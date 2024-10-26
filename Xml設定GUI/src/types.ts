@@ -113,6 +113,7 @@ export type AggregateOrMemberTypeKey
   = string & { [s1]: never } // Write Model なら 'w' といったように決め打ちの文字列。サーバー側で定義。
   | `ref-to:${string}` // 参照先の場合はこちら。コロンの後ろは画面上でのみ使用される一時的なUUID
   | `enum:${string}` // enumの場合はこちら。コロンの後ろは画面上でのみ使用される一時的なUUID
+  | `value-object:${string}` // 値オブジェクトの場合はこちら。コロンの後ろは画面上でのみ使用される一時的なUUID
 /** オプショナル属性のキー */
 export type OptionalAttributeKey = string & { [s2]: never }
 
@@ -127,9 +128,19 @@ export type RefToAggregateOption = {
 }
 
 /** enumの参照先候補 */
-export type EnumOption = {
+export type EnumComboOption = {
   /** "enum:画面上でのみ使用される当該列挙体のUUID" */
   key: `enum:${string}`
+  /** "画面上の表示名" */
+  displayName: string | undefined
+  /** 種類コンボボックスの説明文。Enumの説明文は無いのでnever。 */
+  helpText?: never
+}
+
+/** 値オブジェクトの参照先候補 */
+export type ValueObjectComboOption = {
+  /** "enum:画面上でのみ使用される当該列挙体のUUID" */
+  key: `value-object:${string}`
   /** "画面上の表示名" */
   displayName: string | undefined
   /** 種類コンボボックスの説明文。Enumの説明文は無いのでnever。 */

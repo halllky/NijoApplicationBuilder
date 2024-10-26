@@ -264,6 +264,14 @@ namespace Nijo.Runtime {
                                     return el;
                                 }
                                 return null;
+                            },
+                            isAttributeKeys => {
+                                foreach (var el in xDocuments.SelectMany(doc => doc.XDocument.Root?.Elements() ?? [])) {
+                                    if (el.Attribute(MutableSchemaNode.IS)?.Value.Contains("value-object") != true) continue;
+                                    if (!isAttributeKeys.Contains(el.Name.LocalName)) continue;
+                                    return el;
+                                }
+                                return null;
                             });
 
                         foreach (var node in nodes) {
@@ -503,6 +511,17 @@ namespace Nijo.Runtime {
                                 Node = node,
                                 Key = ValidationError.ERR_TO_TYPE,
                                 Message = "指定された列挙体定義が見つかりません。",
+                            };
+                        }
+                    } else if (node.Type.StartsWith(MutableSchemaNode.VALUE_OBJECT_PREFIX)) {
+                        // 値オブジェクト
+                        var uniqueId = node.Type.Substring(MutableSchemaNode.VALUE_OBJECT_PREFIX.Length);
+                        if (!RootNodes().Any(n => n.UniqueId == uniqueId
+                                               && n.Type == "value-object")) {
+                            yield return new ValidationError {
+                                Node = node,
+                                Key = ValidationError.ERR_TO_TYPE,
+                                Message = "指定された値オブジェクト定義が見つかりません。",
                             };
                         }
                     } else {
@@ -762,6 +781,7 @@ namespace Nijo.Runtime {
                 if (string.IsNullOrWhiteSpace(Type)) return null;
                 if (Type.StartsWith(REFTO_PREFIX)) return E_NodeType.Ref;
                 if (Type.StartsWith(ENUM_PREFIX)) return E_NodeType.Enum;
+                if (Type.StartsWith(VALUE_OBJECT_PREFIX)) return E_NodeType.ValueObject;
                 return EnumerateSchemaNodeTypes().SingleOrDefault(t => t.Key == Type)?.NodeType;
             }
             public bool IsWriteModel(MutableSchema schema) {
@@ -841,6 +861,18 @@ namespace Nijo.Runtime {
                             isAttrs.Add(enumName);
                         }
 
+                    } else if (node.Type.StartsWith(VALUE_OBJECT_PREFIX)) {
+                        // value-object
+                        var uniqueId = node.Type.Substring(VALUE_OBJECT_PREFIX.Length);
+                        var enumName = collection
+                            .RootNodes()
+                            .FirstOrDefault(agg => agg.UniqueId == uniqueId
+                                                && agg.Type == "value-object")
+                            ?.GetPhysicalName();
+                        if (enumName != null) {
+                            isAttrs.Add(enumName);
+                        }
+
                     } else if (!string.IsNullOrWhiteSpace(node.TypeDetail)) {
                         isAttrs.Add($"{node.Type}:{node.TypeDetail}");
 
@@ -915,8 +947,9 @@ namespace Nijo.Runtime {
                 IEnumerable<SchemaNodeTypeDef> typeDefs,
                 IReadOnlyDictionary<string, OptionalAttributeDef> optionDefs,
                 Func<string, XElement?> findRefToElement,
-                Func<string[], XElement?> findEnumElement) {
-                return FromXElementPrivate(xElement, xmlDocumentFilePath, typeDefs, optionDefs, 0, findRefToElement, findEnumElement);
+                Func<string[], XElement?> findEnumElement,
+                Func<string[], XElement?> findValueObjectElement) {
+                return FromXElementPrivate(xElement, xmlDocumentFilePath, typeDefs, optionDefs, 0, findRefToElement, findEnumElement, findValueObjectElement);
             }
             private static IEnumerable<MutableSchemaNode> FromXElementPrivate(
                 XElement xElement,
@@ -925,7 +958,8 @@ namespace Nijo.Runtime {
                 IReadOnlyDictionary<string, OptionalAttributeDef> optionDefs,
                 int depth,
                 Func<string, XElement?> findRefToElement,
-                Func<string[], XElement?> findEnumElement) {
+                Func<string[], XElement?> findEnumElement,
+                Func<string[], XElement?> findValueObjectElement) {
 
                 // XMLと nijo ui では DisplayName と PhysicalName の扱いが逆
                 var displayName = xElement
@@ -964,6 +998,16 @@ namespace Nijo.Runtime {
                     if (matchedEnum != null) {
                         // ここの記法はTypeScript側の型選択コンボボックスのルールと合わせる必要あり
                         type = $"{ENUM_PREFIX}{GetXElementUniqueId(matchedEnum)}";
+                    }
+                }
+
+                // value-object
+                if (type == null) {
+                    var isAttr = isAttrValues.Keys.OrderBy(k => k).ToArray();
+                    var matchedEnum = findValueObjectElement(isAttr);
+                    if (matchedEnum != null) {
+                        // ここの記法はTypeScript側の型選択コンボボックスのルールと合わせる必要あり
+                        type = $"{VALUE_OBJECT_PREFIX}{GetXElementUniqueId(matchedEnum)}";
                     }
                 }
 
@@ -1019,7 +1063,7 @@ namespace Nijo.Runtime {
                     if (node is XComment xComment) {
                         comments.Add(xComment);
                     } else if (node is XElement childXmlElement) {
-                        descendants.AddRange(FromXElementPrivate(childXmlElement, xmlDocumentFilePath, typeDefs, optionDefs, depth + 1, findRefToElement, findEnumElement));
+                        descendants.AddRange(FromXElementPrivate(childXmlElement, xmlDocumentFilePath, typeDefs, optionDefs, depth + 1, findRefToElement, findEnumElement, findValueObjectElement));
                         comments.Clear();
                     }
                 }
@@ -1041,6 +1085,7 @@ namespace Nijo.Runtime {
 
             public const string REFTO_PREFIX = "ref-to:";
             public const string ENUM_PREFIX = "enum:";
+            public const string VALUE_OBJECT_PREFIX = "value-object:";
         }
 
         private class XDocumentAndPath {
@@ -1069,10 +1114,12 @@ namespace Nijo.Runtime {
             Ref = 0b0000110,
             /// <summary>列挙体</summary>
             Enum = 0b0001010,
+            /// <summary>値オブジェクト</summary>
+            ValueObject = 0b0010010,
             /// <summary>バリエーションのコンテナの方（VariationItemでない方）</summary>
-            Variation = 0b0010010,
+            Variation = 0b0100010,
             /// <summary>上記以外</summary>
-            SchalarMember = 0b0100010,
+            SchalarMember = 0b1000010,
         }
         private class OptionalAttributeValue {
             [JsonPropertyName("key")]
