@@ -9,10 +9,6 @@ using System.Threading.Tasks;
 
 namespace Nijo.Features.Logging {
     internal class LoggingFeature : IFeature {
-
-        public void BuildSchema(AppSchemaBuilder builder) {
-        }
-
         public void GenerateCode(CodeRenderingContext context) {
 
             context.CoreLibrary.UtilDir(utilDir => {

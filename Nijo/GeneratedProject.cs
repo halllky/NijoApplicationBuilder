@@ -274,42 +274,7 @@ namespace Nijo {
         /// </summary>
         /// <exception cref="InvalidOperationException">アプリケーションスキーマが不正な場合</exception>
         internal AppSchema BuildSchema() {
-
             return Runtime.NijoUi.BuildAppSchemaFromXml(SchemaXmlPath);
-
-            var schemaXml = new AppSchemaXml(LoadSchemaXml(), SolutionRoot);
-            var builder = new AppSchemaBuilder();
-            if (!schemaXml.ConfigureBuilder(builder, out var errors)) {
-                throw new InvalidOperationException(errors.Join(Environment.NewLine));
-            }
-
-            // Nijo標準機能
-            foreach (var feature in CodeGenerator.GetFeatures()) {
-                feature.BuildSchema(builder);
-            }
-
-            if (!builder.TryBuild(out var appSchema, out var errors1)) {
-                throw new InvalidOperationException(errors1.Join(Environment.NewLine));
-            }
-
-            return appSchema;
-        }
-        internal bool ValidateSchema(out IEnumerable<string> errors) {
-            var errorList = new List<string>();
-            errors = errorList;
-
-            var schemaXml = new AppSchemaXml(LoadSchemaXml(), SolutionRoot);
-            var builder = new AppSchemaBuilder();
-            var builderOk = schemaXml.ConfigureBuilder(builder, out var errors1);
-            errorList.AddRange(errors1);
-
-            if (builderOk) {
-                var schemaOk = builder.TryBuild(out var _, out var errors2);
-                errorList.AddRange(errors2);
-                return schemaOk;
-            } else {
-                return false;
-            }
         }
 
         /// <summary>

@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 
 namespace Nijo.Features {
     public interface IFeature {
-        void BuildSchema(AppSchemaBuilder builder);
         void GenerateCode(CodeRenderingContext context);
     }
 }

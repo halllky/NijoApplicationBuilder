@@ -9,9 +9,6 @@ using System.Threading.Tasks;
 
 namespace Nijo.Features.Debugging {
     internal class DebuggingFeature : IFeature {
-        public void BuildSchema(AppSchemaBuilder builder) {
-        }
-
         public void GenerateCode(CodeRenderingContext context) {
 
             context.WebApiProject.ControllerDir(controllerDir => {
