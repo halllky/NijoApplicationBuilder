@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Nijo.Core;
+using Nijo.Core.AggregateMemberTypes;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -330,6 +331,126 @@ namespace Nijo.Runtime {
                     });
                     doc.Value.Save(writer);
                 }
+            }
+
+            /// <summary>
+            /// NijoApplicationBuidlerのアプリケーションスキーマを構築します。
+            /// </summary>
+            public AppSchema ParseAppSchema() {
+                var validationErrors = CollectVaridationErrors().ToArray();
+                if (validationErrors.Length > 0) {
+                    throw new InvalidOperationException($"バリデーションエラーがある状態でスキーマを構築することはできません: {validationErrors.Select(e => e.Message).Join(", ")}");
+                }
+
+                var memberTypeResolver = MemberTypeResolver.Default();
+
+                // -------------------------------------------
+                // 列挙体定義の登録
+                var enums = new List<EnumDefinition>();
+                foreach (var node in RootNodes().Where(n => n.Type == EnumDef.Key)) {
+                    var usedInt = GetChildren(node)
+                        .Where(child => !string.IsNullOrWhiteSpace(child.TypeDetail))
+                        .Select(child => int.Parse(child.TypeDetail!));
+                    var unusedInt = usedInt.DefaultIfEmpty().Max() + 1;
+                    var items = new List<EnumDefinition.Item>();
+                    foreach (var child in GetChildren(node)) {
+                        int value;
+                        if (string.IsNullOrWhiteSpace(child.TypeDetail)) {
+                            value = unusedInt;
+                            unusedInt++;
+                        } else {
+                            value = int.Parse(child.TypeDetail!);
+                        }
+                        items.Add(new EnumDefinition.Item {
+                            DisplayName = child.DisplayName,
+                            PhysicalName = child.GetPhysicalName(),
+                            Value = value,
+                        });
+                    }
+                    if (!EnumDefinition.TryCreate(node.GetPhysicalName(), items, out var enumDef, out var errors)) {
+                        throw new InvalidOperationException($"列挙体の構築時にエラーが発生しました。:{errors.Join(", ")}");
+                    }
+                    enums.Add(enumDef);
+                    memberTypeResolver.Register(enumDef.Name, new EnumList(enumDef));
+                }
+
+                // -------------------------------------------
+                // 値オブジェクト定義の登録
+                foreach (var node in RootNodes().Where(n => n.Type == ValueObjectDef.Key)) {
+                    var voMember = new ValueObjectMember(
+                        node.GetPhysicalName(),
+                        Models.ValueObjectModel.PRIMITIVE_TYPE,
+                        StringMemberType.E_SearchBehavior.PartialMatch); // 当面文字列型の部分一致しか使わないので決め打ち
+                    memberTypeResolver.Register(node.GetPhysicalName(), voMember);
+                }
+
+                // -------------------------------------------
+                // WriteModel, ReadModel, Command の登録
+                var graphNodes = new List<IGraphNode>();
+                var graphEdges = new List<GraphEdgeInfo>();
+                foreach (var node in this) {
+                    var root = GetRoot(node);
+                    if (root.Type != WriteModel.Key
+                        && root.Type != ReadModel.Key
+                        && root.Type != WriteRead.Key
+                        && root.Type != Command.Key) continue;
+
+                    var nodeType = node.GetNodeType();
+                    if (nodeType == E_NodeType.Aggregate) {
+
+                        // 集約の登録
+                        var nodeId = node.ToGraphNodeId(this);
+                        graphNodes.Add(new Aggregate(
+                            nodeId,
+                            node.GetPhysicalName(),
+                            node.CreateAggregateOption(this)));
+
+                        var parent = GetParent(node);
+                        if (parent != null) {
+                            graphEdges.Add(new GraphEdgeInfo {
+                                Initial = parent.ToGraphNodeId(this),
+                                Terminal = nodeId,
+                                RelationName = node.GetPhysicalName(),
+                                //Attributes = TODO: バリエーションスイッチの値とバリエーショングループ名しか使われていない,
+                            });
+                        }
+
+                    } else if (nodeType == E_NodeType.AggregateMember) {
+
+                        // 集約メンバーの登録
+                        var nodeId = node.ToGraphNodeId(this);
+                        graphNodes.Add(new AggregateMemberNode {
+
+                        });
+
+                        var parent = GetParent(node)!;
+                        graphEdges.Add(new GraphEdgeInfo {
+                            Initial = parent.ToGraphNodeId(this),
+                            Terminal = nodeId,
+                            RelationName = node.GetPhysicalName(),
+                            //Attributes = TODO: バリエーションスイッチの値とバリエーショングループ名しか使われていない,
+                        });
+
+                        // 集約メンバーの登録（ref）
+                        if (nodeType == E_NodeType.Ref) {
+                            var refTo = /* TODO */;
+                            graphEdges.Add(new GraphEdgeInfo {
+                                Initial = nodeId,
+                                Terminal = refTo,
+                                RelationName = node.GetPhysicalName(),
+                                //Attributes = TODO: バリエーションスイッチの値とバリエーショングループ名しか使われていない,
+                            });
+                        }
+                    }
+                }
+
+                // -------------------------------------------
+                // グラフを作成してアプリケーションスキーマを構築して返す
+                if (!DirectedGraph.TryCreate(graphNodes, graphEdges, out var graph, out var errors1)) {
+                    throw new InvalidOperationException($"列挙体の構築時にエラーが発生しました。:{errors1.Join(", ")}");
+                }
+                var appSchema = new AppSchema(Config.RootNamespace, graph, enums);
+                return appSchema;
             }
             #endregion 入出力
 
@@ -715,7 +836,7 @@ namespace Nijo.Runtime {
             [JsonPropertyName("uniqueId")]
             public required string UniqueId { get; set; }
             [JsonPropertyName("displayName")]
-            public string? DisplayName { get; set; }
+            public required string DisplayName { get; set; }
             [JsonPropertyName("type")]
             public string? Type { get; set; }
             [JsonPropertyName("typeDetail")]
@@ -848,7 +969,7 @@ namespace Nijo.Runtime {
             }
 
 
-            #region 入出力
+            #region 入出力（XML）
             /// <summary>
             /// nijo ui の画面上で編集されるデータをXML要素に変換する
             /// </summary>
@@ -1114,7 +1235,20 @@ namespace Nijo.Runtime {
                     yield return descendant;
                 }
             }
-            #endregion 入出力
+            #endregion 入出力（XML）
+
+
+            #region 入出力（有向グラフ）
+            /// <summary><see cref="DirectedGraph"/> のグラフIDに変換</summary>
+            public NodeId ToGraphNodeId(MutableSchema schema) {
+                var ancestorsAndThis = schema.GetAncestors(this).Concat([this]);
+                return new NodeId(ancestorsAndThis.Select(x => "/" + x.GetPhysicalName()).Join(""));
+            }
+            public AggregateBuildOption CreateAggregateOption(MutableSchema schema) {
+            }
+            public AggregateMemberBuildOption CreateAggregateMemberOption(MutableSchema schema) {
+            }
+            #endregion 入出力（有向グラフ）
 
 
             private static string GetXElementUniqueId(XElement xElement) {
@@ -1216,6 +1350,16 @@ namespace Nijo.Runtime {
             /// </summary>
             [JsonIgnore]
             public Action<string?, MutableSchemaNode, MutableSchema, ICollection<string>> Validate { get; set; } = ((_, _, _, _) => { });
+            /// <summary>
+            /// このオプションが設定されているときの <see cref="AggregateBuildOption"/> の編集処理
+            /// </summary>
+            [JsonIgnore]
+            public Action<string?, MutableSchemaNode, MutableSchema, AggregateBuildOption> EditAggregateOption { get; set; } = ((_, _, _, _) => { });
+            /// <summary>
+            /// このオプションが設定されているときの <see cref="AggregateMemberBuildOption"/> の編集処理
+            /// </summary>
+            [JsonIgnore]
+            public Action<string?, MutableSchemaNode, MutableSchema, AggregateMemberNode> EditAggregateMemberOption { get; set; } = ((_, _, _, _) => { });
         }
         private enum E_OptionalAttributeType {
             String,
@@ -1514,6 +1658,12 @@ namespace Nijo.Runtime {
                     errors.Add("Reactのコンポーネント名が小文字始まりだとエラーになるので大文字から始めてください。");
                 }
             },
+            EditAggregateOption = (value, node, schema, opt) => {
+                // 特に処理なし
+            },
+            EditAggregateMemberOption = (value, node, schema, opt) => {
+                // 特に処理なし
+            },
         };
         private static OptionalAttributeDef DbName => new OptionalAttributeDef {
             Key = OptionalAttributeDef.DB_NAME,
@@ -1536,6 +1686,12 @@ namespace Nijo.Runtime {
                 } else if (char.IsDigit(value[0])) {
                     errors.Add("DB名を数字から始めることはできません。");
                 }
+            },
+            EditAggregateOption = (value, node, schema, opt) => {
+                opt.DbName = value;
+            },
+            EditAggregateMemberOption = (value, node, schema, opt) => {
+                opt.DbName = value;
             },
         };
         private static OptionalAttributeDef LatinName => new OptionalAttributeDef {
