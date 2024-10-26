@@ -9,23 +9,23 @@ using System.Threading.Tasks;
 
 namespace Nijo.Core {
 
-    internal class AggregateMemberNode : IReadOnlyMemberOptions, IGraphNode {
-        public required NodeId Id { get; init; }
-        public required string MemberName { get; init; }
-        public required IAggregateMemberType MemberType { get; init; }
-        public required bool IsKey { get; init; }
-        public required bool IsDisplayName { get; init; }
-        public required bool IsNameLike { get; init; }
-        public required bool IsRequired { get; init; }
-        public required bool InvisibleInGui { get; init; }
-        public required string? SingleViewCustomUiComponentName { get; init; }
-        public required string? SearchConditionCustomUiComponentName { get; init; }
-        public required TextBoxWidth? UiWidth { get; init; }
-        public required bool WideInVForm { get; init; }
-        public required bool IsCombo { get; init; }
-        public required bool IsRadio { get; init; }
-        public required string? DisplayName { get; init; }
-        public required string? DbName { get; init; }
+    internal class AggregateMemberNode : IGraphNode {
+        public NodeId Id { get; set; } = NodeId.Empty;
+        public string MemberName { get; set; } = string.Empty;
+        public required IAggregateMemberType MemberType { get; set; }
+        public bool IsKey { get; set; }
+        public bool IsDisplayName { get; set; }
+        public bool IsNameLike { get; set; }
+        public bool IsRequired { get; set; }
+        public bool InvisibleInGui { get; set; }
+        public string? SingleViewCustomUiComponentName { get; set; }
+        public string? SearchConditionCustomUiComponentName { get; set; }
+        public TextBoxWidth? UiWidth { get; set; }
+        public bool WideInVForm { get; set; }
+        public bool IsCombo { get; set; }
+        public bool IsRadio { get; set; }
+        public string? DisplayName { get; set; }
+        public string? DbName { get; set; }
 
         public override string ToString() => Id.Value;
     }
@@ -206,7 +206,7 @@ namespace Nijo.Core {
                 Inherits = inherits;
             }
 
-            internal abstract IReadOnlyMemberOptions Options { get; }
+            internal abstract AggregateMemberNode Options { get; }
 
             private string? _membername;
             internal sealed override string MemberName {
@@ -341,7 +341,7 @@ namespace Nijo.Core {
                 Owner = aggregateMemberNode.Source!.Initial.As<Aggregate>();
                 Options = GraphNode.Item;
             }
-            internal Schalar(GraphNode<Aggregate> owner, InheritInfo inherits, IReadOnlyMemberOptions options) : base(inherits) {
+            internal Schalar(GraphNode<Aggregate> owner, InheritInfo inherits, AggregateMemberNode options) : base(inherits) {
                 GraphNode = ((Schalar)inherits.Member).GraphNode;
                 Owner = owner;
                 Options = options;
@@ -349,7 +349,7 @@ namespace Nijo.Core {
             internal GraphNode<AggregateMemberNode> GraphNode { get; }
             internal override GraphNode<Aggregate> Owner { get; }
 
-            internal override IReadOnlyMemberOptions Options { get; }
+            internal override AggregateMemberNode Options { get; }
             internal override decimal Order => GraphNode.Source!.GetMemberOrder();
 
             protected override IEnumerable<object?> ValueObjectIdentifiers() {
@@ -395,7 +395,7 @@ namespace Nijo.Core {
         internal class Variation : ValueMember {
             internal Variation(VariationGroup<Aggregate> group) : base(null) {
                 VariationGroup = group;
-                Options = new MemberOptions {
+                Options = new AggregateMemberNode {
                     MemberName = group.GroupName,
                     MemberType = new AggregateMemberTypes.VariationSwitch(group),
                     IsKey = group.IsPrimary,
@@ -421,7 +421,7 @@ namespace Nijo.Core {
             }
 
             internal VariationGroup<Aggregate> VariationGroup { get; }
-            internal override IReadOnlyMemberOptions Options { get; }
+            internal override AggregateMemberNode Options { get; }
             internal override GraphNode<Aggregate> Owner { get; }
             internal override decimal Order => VariationGroup.MemberOrder;
 

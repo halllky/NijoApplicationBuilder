@@ -175,6 +175,10 @@ namespace Nijo.Runtime {
                     // 保存
                     schema.Save(_project.SchemaXmlPath);
 
+                    // アプリケーションスキーマが妥当かテスト
+                    var appSchema = schema.BuildAppSchema();
+                    var str = appSchema.Graph.ToMermaidText();
+
                     context.Response.StatusCode = (int)HttpStatusCode.OK;
 
                 } catch (Exception ex) {
@@ -336,7 +340,7 @@ namespace Nijo.Runtime {
             /// <summary>
             /// NijoApplicationBuidlerのアプリケーションスキーマを構築します。
             /// </summary>
-            public AppSchema ParseAppSchema() {
+            public AppSchema BuildAppSchema() {
                 var validationErrors = CollectVaridationErrors().ToArray();
                 if (validationErrors.Length > 0) {
                     throw new InvalidOperationException($"バリデーションエラーがある状態でスキーマを構築することはできません: {validationErrors.Select(e => e.Message).Join(", ")}");
@@ -371,7 +375,29 @@ namespace Nijo.Runtime {
                         throw new InvalidOperationException($"列挙体の構築時にエラーが発生しました。:{errors.Join(", ")}");
                     }
                     enums.Add(enumDef);
-                    memberTypeResolver.Register(enumDef.Name, new EnumList(enumDef));
+                    memberTypeResolver.Register(MutableSchemaNode.ENUM_PREFIX + node.UniqueId, new EnumList(enumDef));
+                }
+
+                // -------------------------------------------
+                // 列挙体定義の登録（variation switch）
+                var variationGroups = this
+                    .Where(node => node.Type == VariationItem.Key)
+                    .GroupBy(node => GetParent(node) ?? throw new InvalidOperationException());
+                foreach (var variationGroup in variationGroups) {
+                    var enumValues = new List<EnumDefinition.Item>();
+                    foreach (var node in variationGroup) {
+                        var strValue = node.TypeDetail;
+                        if (!int.TryParse(strValue, out var intValue)) throw new InvalidOperationException($"Variationのキー '{strValue}' が整数ではありません。");
+                        enumValues.Add(new EnumDefinition.Item {
+                            Value = intValue,
+                            PhysicalName = node.GetPhysicalName(),
+                            DisplayName = node.DisplayName,
+                        });
+                    }
+                    if (!EnumDefinition.TryCreate($"E_{variationGroup.Key}", enumValues, out var enumDef, out var errors)) {
+                        throw new InvalidOperationException($"列挙体の構築時にエラーが発生しました。:{errors.Join(", ")}");
+                    }
+                    enums.Add(enumDef);
                 }
 
                 // -------------------------------------------
@@ -381,7 +407,7 @@ namespace Nijo.Runtime {
                         node.GetPhysicalName(),
                         Models.ValueObjectModel.PRIMITIVE_TYPE,
                         StringMemberType.E_SearchBehavior.PartialMatch); // 当面文字列型の部分一致しか使わないので決め打ち
-                    memberTypeResolver.Register(node.GetPhysicalName(), voMember);
+                    memberTypeResolver.Register(MutableSchemaNode.VALUE_OBJECT_PREFIX + node.UniqueId, voMember);
                 }
 
                 // -------------------------------------------
@@ -396,51 +422,111 @@ namespace Nijo.Runtime {
                         && root.Type != Command.Key) continue;
 
                     var nodeType = node.GetNodeType();
-                    if (nodeType == E_NodeType.Aggregate) {
+                    if (nodeType?.HasFlag(E_NodeType.Aggregate) == true) {
 
-                        // 集約の登録
+                        // 集約（有向グラフの頂点）を登録
                         var nodeId = node.ToGraphNodeId(this);
-                        graphNodes.Add(new Aggregate(
+                        var aggregate = new Aggregate(
                             nodeId,
                             node.GetPhysicalName(),
-                            node.CreateAggregateOption(this)));
+                            node.CreateAggregateOption(this));
+                        graphNodes.Add(aggregate);
 
+                        // 親との関係性（有向グラフの辺）を登録
                         var parent = GetParent(node);
+                        if (parent?.Type == Variation.Key) {
+                            // variation switch のところはUI上では2段階の入れ子のため
+                            parent = GetParent(parent) ?? throw new InvalidOperationException();
+                        }
                         if (parent != null) {
                             graphEdges.Add(new GraphEdgeInfo {
                                 Initial = parent.ToGraphNodeId(this),
                                 Terminal = nodeId,
                                 RelationName = node.GetPhysicalName(),
-                                //Attributes = TODO: バリエーションスイッチの値とバリエーショングループ名しか使われていない,
+                                Attributes = new Dictionary<string, object?> {
+                                    { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD },
+                                    { DirectedEdgeExtensions.REL_ATTR_MULTIPLE, aggregate.Options.IsArray == true },
+                                    { DirectedEdgeExtensions.REL_ATTR_VARIATIONSWITCH, aggregate.Options.IsVariationGroupMember?.Key ?? string.Empty },
+                                    { DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, aggregate.Options.IsVariationGroupMember?.GroupName ?? string.Empty },
+                                    { DirectedEdgeExtensions.REL_ATTR_IS_COMBO, aggregate.Options.IsCombo == true },
+                                    { DirectedEdgeExtensions.REL_ATTR_IS_RADIO, aggregate.Options.IsRadio == true },
+                                    { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, aggregate.Options.IsPrimary == true },
+                                    { DirectedEdgeExtensions.REL_ATTR_IS_REQUIRED, aggregate.Options.IsRequiredArray == true },
+                                    { DirectedEdgeExtensions.REL_ATTR_INVISIBLE_IN_GUI, aggregate.Options.InvisibleInGui == true },
+                                    { DirectedEdgeExtensions.REL_ATTR_DISPLAY_NAME, aggregate.Options.DisplayName },
+                                    { DirectedEdgeExtensions.REL_ATTR_DB_NAME, aggregate.Options.DbName },
+                                    { DirectedEdgeExtensions.REL_ATTR_MEMBER_ORDER, _list.IndexOf(node) },
+                                },
                             });
                         }
 
-                    } else if (nodeType == E_NodeType.AggregateMember) {
+                    } else if (nodeType == E_NodeType.Variation) {
+                        // variation switch のノードと対応する有向グラフの辺や頂点は無い
 
-                        // 集約メンバーの登録
-                        var nodeId = node.ToGraphNodeId(this);
-                        graphNodes.Add(new AggregateMemberNode {
+                    } else if (nodeType == E_NodeType.Ref) {
+                        var parent = GetParent(node) ?? throw new InvalidOperationException();
+                        var refToUniqueId = node.Type?.Substring(MutableSchemaNode.REFTO_PREFIX.Length);
+                        var refTo = this.SingleOrDefault(n => n.UniqueId == refToUniqueId) ?? throw new InvalidOperationException($"参照先 '{refToUniqueId}' が見つかりません。");
+                        var options = node.CreateAggregateMemberOption(this);
 
+                        // ref-toはグラフの辺だけ登録
+                        graphEdges.Add(new GraphEdgeInfo {
+                            Initial = parent.ToGraphNodeId(this),
+                            Terminal = refTo.ToGraphNodeId(this),
+                            RelationName = node.GetPhysicalName(),
+                            Attributes = new Dictionary<string, object?> {
+                                { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_REFERENCE },
+                                { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, options.IsPrimary == true },
+                                { DirectedEdgeExtensions.REL_ATTR_IS_INSTANCE_NAME, options.IsDisplayName == true },
+                                { DirectedEdgeExtensions.REL_ATTR_IS_NAME_LIKE, options.IsNameLike == true },
+                                { DirectedEdgeExtensions.REL_ATTR_IS_REQUIRED, options.IsRequired == true },
+                                { DirectedEdgeExtensions.REL_ATTR_INVISIBLE_IN_GUI, options.InvisibleInGui == true },
+                                { DirectedEdgeExtensions.REL_ATTR_SINGLEVIEW_CUSTOM_UI_COMPONENT_NAME, options.SingleViewCustomUiComponentName },
+                                { DirectedEdgeExtensions.REL_ATTR_SEARCHCONDITION_CUSTOM_UI_COMPONENT_NAME, options.SearchConditionCustomUiComponentName },
+                                { DirectedEdgeExtensions.REL_ATTR_DISPLAY_NAME, options.DisplayName },
+                                { DirectedEdgeExtensions.REL_ATTR_DB_NAME, options.DbName },
+                                { DirectedEdgeExtensions.REL_ATTR_MEMBER_ORDER, _list.IndexOf(node) },
+                            },
                         });
 
-                        var parent = GetParent(node)!;
+                    } else if (nodeType?.HasFlag(E_NodeType.AggregateMember) == true) {
+
+                        // 集約メンバーの登録（グラフノード）
+                        if (node.Type == null || !memberTypeResolver.TryResolve(node.Type, out var memberType)) {
+                            throw new InvalidOperationException($"メンバーの型 '{node.Type}' の種類が定まりません。");
+                        }
+                        var nodeId = node.ToGraphNodeId(this);
+                        var options = node.CreateAggregateMemberOption(this);
+                        graphNodes.Add(new AggregateMemberNode {
+                            Id = nodeId,
+                            MemberName = node.GetPhysicalName(),
+                            MemberType = memberType,
+                            IsKey = options.IsPrimary == true,
+                            IsDisplayName = options.IsDisplayName == true,
+                            IsNameLike = options.IsNameLike == true,
+                            IsRequired = options.IsRequired == true,
+                            InvisibleInGui = options.InvisibleInGui == true,
+                            SingleViewCustomUiComponentName = options.SingleViewCustomUiComponentName,
+                            SearchConditionCustomUiComponentName = options.SearchConditionCustomUiComponentName,
+                            UiWidth = options.UiWidthRem,
+                            WideInVForm = options.WideInVForm == true,
+                            IsCombo = options.IsCombo == true,
+                            IsRadio = options.IsRadio == true,
+                            DisplayName = options.DisplayName,
+                            DbName = options.DbName,
+                        });
+
+                        // 集約メンバーの登録（親とこのメンバーの間のエッジ）
+                        var parent = GetParent(node) ?? throw new InvalidOperationException();
                         graphEdges.Add(new GraphEdgeInfo {
                             Initial = parent.ToGraphNodeId(this),
                             Terminal = nodeId,
                             RelationName = node.GetPhysicalName(),
-                            //Attributes = TODO: バリエーションスイッチの値とバリエーショングループ名しか使われていない,
+                            Attributes = new Dictionary<string, object?> {
+                                { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_HAVING },
+                                { DirectedEdgeExtensions.REL_ATTR_MEMBER_ORDER, _list.IndexOf(node) },
+                            },
                         });
-
-                        // 集約メンバーの登録（ref）
-                        if (nodeType == E_NodeType.Ref) {
-                            var refTo = /* TODO */;
-                            graphEdges.Add(new GraphEdgeInfo {
-                                Initial = nodeId,
-                                Terminal = refTo,
-                                RelationName = node.GetPhysicalName(),
-                                //Attributes = TODO: バリエーションスイッチの値とバリエーショングループ名しか使われていない,
-                            });
-                        }
                     }
                 }
 
@@ -1245,8 +1331,28 @@ namespace Nijo.Runtime {
                 return new NodeId(ancestorsAndThis.Select(x => "/" + x.GetPhysicalName()).Join(""));
             }
             public AggregateBuildOption CreateAggregateOption(MutableSchema schema) {
+                var options = new AggregateBuildOption();
+                foreach (var attrValue in AttrValues ?? []) {
+                    var type = EnumerateOptionalAttributes().SingleOrDefault(x => x.Key == attrValue.Key);
+                    if (type == null) continue;
+                    type.EditAggregateOption(attrValue.Value, this, schema, options);
+                }
+                var nodeType = EnumerateSchemaNodeTypes().SingleOrDefault(x => x.Key == Type);
+                nodeType?.EditAggregateOption(this, schema, options);
+                return options;
             }
             public AggregateMemberBuildOption CreateAggregateMemberOption(MutableSchema schema) {
+                var options = new AggregateMemberBuildOption {
+                    MemberType = Type,
+                };
+                foreach (var attrValue in AttrValues ?? []) {
+                    var type = EnumerateOptionalAttributes().SingleOrDefault(x => x.Key == attrValue.Key);
+                    if (type == null) continue;
+                    type.EditAggregateMemberOption(attrValue.Value, this, schema, options);
+                }
+                var nodeType = EnumerateSchemaNodeTypes().SingleOrDefault(x => x.Key == Type);
+                nodeType?.EditAggregateMemberOption(this, schema, options);
+                return options;
             }
             #endregion 入出力（有向グラフ）
 
@@ -1276,17 +1382,13 @@ namespace Nijo.Runtime {
         [Flags]
         private enum E_NodeType {
             /// <summary>集約</summary>
-            Aggregate = 0b0001,
+            Aggregate = 0b0000001,
             /// <summary>集約メンバー</summary>
-            AggregateMember = 0b0010,
-
-            // ------------------------------------------
-
+            AggregateMember = 0b0000010,
             /// <summary>ルート集約</summary>
-            RootAggregate = 0b01001,
+            RootAggregate = 0b0000101,
             /// <summary>Child, Children, VariationItem</summary>
-            DescendantAggregate = 0b00101,
-
+            DescendantAggregate = 0b0001001,
             /// <summary>ref-to</summary>
             Ref = 0b0000110,
             /// <summary>列挙体</summary>
@@ -1330,6 +1432,16 @@ namespace Nijo.Runtime {
             /// </summary>
             [JsonIgnore]
             public E_NodeType NodeType { get; set; }
+            /// <summary>
+            /// このオプションが設定されているときの <see cref="AggregateBuildOption"/> の編集処理
+            /// </summary>
+            [JsonIgnore]
+            public Action<MutableSchemaNode, MutableSchema, AggregateBuildOption> EditAggregateOption { get; set; } = ((_, _, _) => { });
+            /// <summary>
+            /// このオプションが設定されているときの <see cref="AggregateMemberBuildOption"/> の編集処理
+            /// </summary>
+            [JsonIgnore]
+            public Action<MutableSchemaNode, MutableSchema, AggregateMemberBuildOption> EditAggregateMemberOption { get; set; } = ((_, _, _) => { });
         }
         private class OptionalAttributeDef {
             [JsonPropertyName("key")]
@@ -1359,7 +1471,7 @@ namespace Nijo.Runtime {
             /// このオプションが設定されているときの <see cref="AggregateMemberBuildOption"/> の編集処理
             /// </summary>
             [JsonIgnore]
-            public Action<string?, MutableSchemaNode, MutableSchema, AggregateMemberNode> EditAggregateMemberOption { get; set; } = ((_, _, _, _) => { });
+            public Action<string?, MutableSchemaNode, MutableSchema, AggregateMemberBuildOption> EditAggregateMemberOption { get; set; } = ((_, _, _, _) => { });
         }
         private enum E_OptionalAttributeType {
             String,
@@ -1607,6 +1719,12 @@ namespace Nijo.Runtime {
                     errors.Add($"区分値 '{node.TypeDetail}' を整数として解釈できません。");
                 }
             },
+            EditAggregateOption = (node, schema, opt) => {
+                opt.IsVariationGroupMember = new() {
+                    GroupName = schema.GetParent(node)?.GetPhysicalName() ?? "",
+                    Key = node.TypeDetail ?? "",
+                };
+            },
         };
         private static SchemaNodeTypeDef Step => new SchemaNodeTypeDef {
             NodeType = E_NodeType.DescendantAggregate,
@@ -1713,6 +1831,12 @@ namespace Nijo.Runtime {
                     errors.Add("ラテン語名を数字から始めることはできません。");
                 }
             },
+            EditAggregateOption = (value, node, schema, opt) => {
+                opt.LatinName = value;
+            },
+            EditAggregateMemberOption = (value, node, schema, opt) => {
+                // 特に処理なし
+            },
         };
 
         private static OptionalAttributeDef KeyDef => new OptionalAttributeDef {
@@ -1741,6 +1865,12 @@ namespace Nijo.Runtime {
                     errors.Add("バリエーションにキーを指定することはできません。");
                 }
             },
+            EditAggregateOption = (value, node, schema, opt) => {
+                // 特に処理なし
+            },
+            EditAggregateMemberOption = (value, node, schema, opt) => {
+                opt.IsPrimary = true;
+            },
         };
         private static OptionalAttributeDef NameDef => new OptionalAttributeDef {
             Key = "name",
@@ -1752,7 +1882,13 @@ namespace Nijo.Runtime {
                 未指定の場合はキーが表示名称として使われます。
                 """,
             Validate = (value, node, schema, errors) => {
-
+                // 特に処理なし
+            },
+            EditAggregateOption = (value, node, schema, opt) => {
+                // 特に処理なし
+            },
+            EditAggregateMemberOption = (value, node, schema, opt) => {
+                opt.IsDisplayName = true;
             },
         };
         private static OptionalAttributeDef Required => new OptionalAttributeDef {
@@ -1771,6 +1907,12 @@ namespace Nijo.Runtime {
                     errors.Add("この項目に必須指定をすることはできません。");
                 }
             },
+            EditAggregateOption = (value, node, schema, opt) => {
+                if (node.Type == Children.Key) opt.IsRequiredArray = true;
+            },
+            EditAggregateMemberOption = (value, node, schema, opt) => {
+                opt.IsRequired = true;
+            },
         };
 
         private static OptionalAttributeDef Max => new OptionalAttributeDef {
@@ -1782,6 +1924,12 @@ namespace Nijo.Runtime {
                 """,
             Validate = (value, node, schema, errors) => {
                 // TODO: チェック処理未実装
+            },
+            EditAggregateOption = (value, node, schema, opt) => {
+                // 特に処理なし
+            },
+            EditAggregateMemberOption = (value, node, schema, opt) => {
+                // TODO: 未実装
             },
         };
         private static OptionalAttributeDef FormLabelWidth => new OptionalAttributeDef {
@@ -1795,7 +1943,17 @@ namespace Nijo.Runtime {
             Validate = (value, node, schema, errors) => {
                 if (node.Depth != 0 || !node.IsReadModel(schema)) {
                     errors.Add("この属性はReadModelのルート集約にのみ設定可能です。");
+                } else if (!decimal.TryParse(value, out var _)) {
+                    errors.Add("数値で指定してください。");
                 }
+            },
+            EditAggregateOption = (value, node, schema, opt) => {
+                if (!string.IsNullOrWhiteSpace(value)) {
+                    opt.EstimatedLabelWidth = decimal.Parse(value);
+                }
+            },
+            EditAggregateMemberOption = (value, node, schema, opt) => {
+                // 特に処理なし
             },
         };
         private static OptionalAttributeDef HasLifeCycle => new OptionalAttributeDef {
@@ -1809,6 +1967,12 @@ namespace Nijo.Runtime {
                 if (!node.IsReadModel(schema) || node.Type != "child") {
                     errors.Add("この属性はReadModelのChildにのみ設定可能です。");
                 }
+            },
+            EditAggregateOption = (value, node, schema, opt) => {
+                opt.HasLifeCycle = true;
+            },
+            EditAggregateMemberOption = (value, node, schema, opt) => {
+                // 特に処理なし
             },
         };
         private static OptionalAttributeDef ReadOnly => new OptionalAttributeDef {
@@ -1824,6 +1988,12 @@ namespace Nijo.Runtime {
                     errors.Add("この属性はReadModelのルート集約にのみ設定可能です。");
                 }
             },
+            EditAggregateOption = (value, node, schema, opt) => {
+                opt.IsReadOnlyAggregate = true;
+            },
+            EditAggregateMemberOption = (value, node, schema, opt) => {
+                // 特に処理なし
+            },
         };
         private static OptionalAttributeDef Hidden => new OptionalAttributeDef {
             Key = "hidden",
@@ -1836,6 +2006,12 @@ namespace Nijo.Runtime {
                 if (node.Depth == 0) {
                     errors.Add("ルート集約を隠し項目にすることはできません。");
                 }
+            },
+            EditAggregateOption = (value, node, schema, opt) => {
+                // 特に処理なし
+            },
+            EditAggregateMemberOption = (value, node, schema, opt) => {
+                opt.InvisibleInGui = true;
             },
         };
         private static OptionalAttributeDef Wide => new OptionalAttributeDef {
@@ -1851,6 +2027,12 @@ namespace Nijo.Runtime {
                     errors.Add("この属性は入力フォームをもつ項目にのみ指定できます。");
                 }
             },
+            EditAggregateOption = (value, node, schema, opt) => {
+                // 特に処理なし
+            },
+            EditAggregateMemberOption = (value, node, schema, opt) => {
+                opt.WideInVForm = true;
+            },
         };
         private static OptionalAttributeDef Width => new OptionalAttributeDef {
             Key = "width",
@@ -1862,7 +2044,30 @@ namespace Nijo.Runtime {
             Validate = (value, node, schema, errors) => {
                 if (node.GetNodeType() != E_NodeType.SchalarMember) {
                     errors.Add("この属性はテキストボックスをもつ項目にのみ指定できます。");
+
+                } else if (!string.IsNullOrWhiteSpace(value)) {
+                    var first = value.FirstOrDefault();
+                    if (first != 'z' && first != 'z') {
+                        errors.Add("全角10文字なら'z10', 半角10文字なら'h10'のようにzかhをつけて指定してください。");
+                    }
+                    if (!int.TryParse(value.AsSpan(1), out var _)) {
+                        errors.Add("2文字目以降を数値として解釈できません。");
+                    }
                 }
+            },
+            EditAggregateOption = (value, node, schema, opt) => {
+                // 特に処理なし
+            },
+            EditAggregateMemberOption = (value, node, schema, opt) => {
+                if (string.IsNullOrWhiteSpace(value)) return;
+                opt.UiWidthRem = new TextBoxWidth {
+                    ZenHan = value?.FirstOrDefault() switch {
+                        'z' => TextBoxWidth.E_ZenHan.Zenkaku,
+                        'h' => TextBoxWidth.E_ZenHan.Hankaku,
+                        _ => throw new InvalidOperationException(),
+                    },
+                    CharCount = int.Parse(value.AsSpan(1)),
+                };
             },
         };
 
@@ -1880,6 +2085,12 @@ namespace Nijo.Runtime {
                     errors.Add("この属性は入力フォームをもつ項目にのみ指定できます。");
                 }
             },
+            EditAggregateOption = (value, node, schema, opt) => {
+                // 特に処理なし
+            },
+            EditAggregateMemberOption = (value, node, schema, opt) => {
+                opt.SingleViewCustomUiComponentName = value;
+            },
         };
         private static OptionalAttributeDef SearchConditionUi => new OptionalAttributeDef {
             Key = "search-condition-ui",
@@ -1894,6 +2105,12 @@ namespace Nijo.Runtime {
                 if (nodeType != E_NodeType.Ref && nodeType != E_NodeType.Enum && nodeType != E_NodeType.SchalarMember) {
                     errors.Add("この属性は入力フォームをもつ項目にのみ指定できます。");
                 }
+            },
+            EditAggregateOption = (value, node, schema, opt) => {
+                // 特に処理なし
+            },
+            EditAggregateMemberOption = (value, node, schema, opt) => {
+                opt.SearchConditionCustomUiComponentName = value;
             },
         };
 
@@ -1911,6 +2128,12 @@ namespace Nijo.Runtime {
                     errors.Add("この属性は列挙体の項目にのみ指定できます。");
                 }
             },
+            EditAggregateOption = (value, node, schema, opt) => {
+                // 特に処理なし
+            },
+            EditAggregateMemberOption = (value, node, schema, opt) => {
+                opt.IsCombo = true;
+            },
         };
         private static OptionalAttributeDef Radio => new OptionalAttributeDef {
             Key = "radio",
@@ -1925,6 +2148,12 @@ namespace Nijo.Runtime {
                 if (node.GetNodeType() != E_NodeType.Enum) {
                     errors.Add("この属性は列挙体の項目にのみ指定できます。");
                 }
+            },
+            EditAggregateOption = (value, node, schema, opt) => {
+                // 特に処理なし
+            },
+            EditAggregateMemberOption = (value, node, schema, opt) => {
+                opt.IsRadio = true;
             },
         };
         #endregion オプショナル属性
