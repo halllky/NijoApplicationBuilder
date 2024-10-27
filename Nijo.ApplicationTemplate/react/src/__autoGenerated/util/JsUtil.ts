@@ -180,8 +180,13 @@ export function toTsvString(arr: string[][]): string {
   for (const row of arr) {
     const line: string[] = []
     for (const cell of row) {
-      const escaped = cell.replace(/"/g, '""')
-      line.push(`"${escaped}"`)
+      if (cell.includes('"') || cell.includes('\n')) {
+        // 文字列中にダブルクォーテーションや改行コードが出てくる場合はダブルクォーテーション囲み
+        const escaped = cell.replace(/"/g, '""')
+        line.push(`"${escaped}"`)
+      } else {
+        line.push(cell)
+      }
     }
     lines.push(line.join('\t'))
   }
