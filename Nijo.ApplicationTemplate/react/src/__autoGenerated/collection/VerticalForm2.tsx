@@ -69,6 +69,9 @@ const Indent = ({ label, children, className }: {
   const handleCollapse = useEvent(() => {
     setOpened(x => x.toggle())
   })
+  const style = React.useMemo((): React.CSSProperties => ({
+    display: opened ? undefined : 'none',
+  }), [opened])
 
   return (
     <div className={`grid grid-cols-[subgrid] col-span-full border-vform m-1 ${className ?? ''}`}>
@@ -76,11 +79,9 @@ const Indent = ({ label, children, className }: {
         {renderLabel(label)}
         <IconButton icon={ChevronUpDownIcon} onClick={handleCollapse} hideText>折りたたみ</IconButton>
       </div>
-      {opened && (
-        <div className="grid gap-px grid-cols-[subgrid] col-span-full">
-          {children}
-        </div>
-      )}
+      <div className="grid gap-px grid-cols-[subgrid] col-span-full" style={style}>
+        {children}
+      </div>
     </div>
   )
 }
@@ -99,6 +100,9 @@ const Item = ({ label, wideLabelValue, wideValue, noLabel, children }: {
   const handleCollapse = useEvent(() => {
     setOpened(x => x.toggle())
   })
+  const style = React.useMemo((): React.CSSProperties => ({
+    display: opened ? undefined : 'none',
+  }), [opened])
 
   // 要素がグリッドの横幅いっぱい確保される場合のレイアウト
   if (wideLabelValue) return (
@@ -109,11 +113,9 @@ const Item = ({ label, wideLabelValue, wideValue, noLabel, children }: {
           <IconButton icon={ChevronUpDownIcon} onClick={handleCollapse} hideText>折りたたみ</IconButton>
         </div>
       )}
-      {opened && (
-        <div className="col-span-full border-vform bg-color-0">
-          {children}
-        </div>
-      )}
+      <div className="col-span-full border-vform bg-color-0" style={style}>
+        {children}
+      </div>
     </>
   )
   // 値だけ横幅いっぱいの場合のレイアウト
