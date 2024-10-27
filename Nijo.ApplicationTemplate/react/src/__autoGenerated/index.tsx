@@ -136,9 +136,9 @@ const ApplicationRootOutOfContext = ({ customizer }: {
         <Util.ToastContextProvider>
           <Util.LocalRepositoryContextProvider>
             <Util.UserSettingContextProvider>
-              <DialogContextProvider>
-                <Util.SideMenuContextProvider>
-                  <CustomizerContextProvider value={customizerContextValue}>
+              <CustomizerContextProvider value={customizerContextValue}>
+                <DialogContextProvider>
+                  <Util.SideMenuContextProvider>
                     {customizer?.LoginPage ? (
                       // ログイン画面がある場合はログイン画面を通す。
                       // アプリケーション本体を表示するかどうかはログイン画面の制御に任せる。
@@ -147,11 +147,11 @@ const ApplicationRootOutOfContext = ({ customizer }: {
                       // ログイン画面が無い場合はコンテンツをそのまま表示
                       <ApplicationRootInContext />
                     )}
-                  </CustomizerContextProvider>
-                  <Util.EnvNameRibbon />
-                  <Util.Toast />
-                </Util.SideMenuContextProvider>
-              </DialogContextProvider>
+                    <Util.EnvNameRibbon />
+                    <Util.Toast />
+                  </Util.SideMenuContextProvider>
+                </DialogContextProvider>
+              </CustomizerContextProvider>
             </Util.UserSettingContextProvider>
           </Util.LocalRepositoryContextProvider>
         </Util.ToastContextProvider>
