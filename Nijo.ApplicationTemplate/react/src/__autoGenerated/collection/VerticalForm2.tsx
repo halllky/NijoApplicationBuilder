@@ -2,7 +2,7 @@ import React, { useMemo } from 'react'
 import { useToggle } from '../util'
 import useEvent from 'react-use-event-hook'
 import { IconButton } from '../input'
-import { ChevronUpDownIcon } from '@heroicons/react/24/solid'
+import { ChevronRightIcon, ChevronDownIcon } from '@heroicons/react/24/solid'
 
 const DEFAULT_LABEL_WIDTH = '8rem'
 
@@ -75,9 +75,9 @@ const Indent = ({ label, children, className }: {
 
   return (
     <div className={`grid grid-cols-[subgrid] col-span-full border-vform m-1 ${className ?? ''}`}>
-      <div className="flex justify-between px-1 col-span-full select-none">
+      <div className="flex justify-start gap-1 px-1 col-span-full select-none">
+        <IconButton icon={opened ? ChevronDownIcon : ChevronRightIcon} onClick={handleCollapse} hideText>折りたたみ</IconButton>
         {renderLabel(label)}
-        <IconButton icon={ChevronUpDownIcon} onClick={handleCollapse} hideText>折りたたみ</IconButton>
       </div>
       <div className="grid gap-px grid-cols-[subgrid] col-span-full" style={style}>
         {children}
@@ -108,9 +108,9 @@ const Item = ({ label, wideLabelValue, wideValue, noLabel, children }: {
   if (wideLabelValue) return (
     <>
       {!noLabel && (
-        <div className="flex justify-between px-1 pt-1 col-span-full">
+        <div className="flex justify-start gap-1 px-1 pt-1 col-span-full">
+          <IconButton icon={opened ? ChevronDownIcon : ChevronRightIcon} onClick={handleCollapse} hideText>折りたたみ</IconButton>
           {renderLabel(label)}
-          <IconButton icon={ChevronUpDownIcon} onClick={handleCollapse} hideText>折りたたみ</IconButton>
         </div>
       )}
       <div className="col-span-full border-vform bg-color-0" style={style}>
