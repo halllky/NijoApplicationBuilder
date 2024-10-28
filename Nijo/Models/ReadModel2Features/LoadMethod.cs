@@ -321,6 +321,12 @@ namespace Nijo.Models.ReadModel2Features {
 
                     // 読み取り専用項目の設定や、追加情報などを付すなど、任意のカスタマイズ処理
                     var returnValue = {{AppSrvAfterLoadedMethod}}(displayDataList);
+
+                    // 主キー項目を読み取り専用にする。主キーが変更されるとあらゆる処理がうまくいかなくなる
+                    foreach (var item in displayDataList) {
+                        {{DataClassForDisplay.SET_KEYS_READONLY}}(item);
+                    }
+
                     return returnValue;
 
                     #pragma warning restore CS8604 // Null 参照引数の可能性があります。

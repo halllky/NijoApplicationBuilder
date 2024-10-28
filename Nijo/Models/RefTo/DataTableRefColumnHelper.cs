@@ -104,7 +104,7 @@ namespace Nijo.Models.RefTo {
                           })
                         })
                         if (opt?.readOnly === true) return <></> // 非表示
-                        if (typeof opt?.readOnly === 'function' && opt.readOnly(row) === true) return <></> // 非表示
+                        if (typeof opt?.readOnly === 'function' && opt.readOnly(row, rowIndex) === true) return <></> // 非表示
                         return (
                           <Input.IconButton icon={Icon.MagnifyingGlassIcon} onClick={handleClick} className=" m-auto" outline mini hideText>
                             検索

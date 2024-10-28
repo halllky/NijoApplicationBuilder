@@ -35,7 +35,7 @@ export type DataTableColumn<TRow> = {
 }
 
 export type ColumnEditSetting<TRow, TOption = unknown> = {
-  readOnly?: ((row: TRow) => boolean)
+  readOnly?: ((row: TRow, rowIndex: number) => boolean)
   onClipboardPaste: (row: TRow, value: string, rowIndex: number) => void
 } & (TextColumnEditSetting<TRow>
   | TextareaColumndEditSetting<TRow>

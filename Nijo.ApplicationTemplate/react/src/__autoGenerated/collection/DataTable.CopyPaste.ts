@@ -76,7 +76,7 @@ export const useCopyPaste = <T>(
         const columnDef = column.columnDef as RTColumnDefEx<T>
 
         // 読み取り専用列なら中断
-        if (columnDef.ex.editSetting === undefined || columnDef.ex.editSetting.readOnly?.(row.original)) continue
+        if (columnDef.ex.editSetting === undefined || columnDef.ex.editSetting.readOnly?.(row.original, row.index)) continue
 
         // 列の定義に従って値を設定
         columnDef.ex.editSetting.onClipboardPaste(row.original, strValue, row.index)

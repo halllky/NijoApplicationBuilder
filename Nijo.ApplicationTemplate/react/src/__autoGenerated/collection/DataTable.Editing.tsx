@@ -69,7 +69,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
 
     if (!onChangeRow) return // 値が編集されてもコミットできないので編集開始しない
     if (!columnDef.ex.editSetting) return // 編集不可のセル
-    if (columnDef.ex.editSetting.readOnly?.(cell.row.original)) return // 編集不可のセル
+    if (columnDef.ex.editSetting.readOnly?.(cell.row.original, cell.row.index)) return // 編集不可のセル
 
     setEditingCellInfo({
       cellId: cell.id,

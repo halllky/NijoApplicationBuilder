@@ -47,7 +47,10 @@ namespace Nijo.Models.ReadModel2Features {
                         }
                         """;
                 }
-                var tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_rootAggregate, $"AggregateType.{dataClass.TsTypeName}", true, OnValueChange)
+                string ReadOnlyDynamic(AggregateMember.AggregateMemberBase member) {
+                    return $"(row, rowIndex) => Util.isReadOnlyField(`data.${{rowIndex}}.{member.GetFullPathAsReactHookFormRegisterName(E_PathType.ReadOnly, ["rowIndex"]).Join(".")}`, reactHookFormMethods.getValues)";
+                }
+                var tableBuilder = Parts.WebClient.DataTable.DataTableBuilder.EditableGrid(_rootAggregate, $"AggregateType.{dataClass.TsTypeName}", OnValueChange, ReadOnlyDynamic)
                     // 行ヘッダ（列の状態）
                     .Add(new Parts.WebClient.DataTable.AdhocColumn {
                         Header = string.Empty,

@@ -693,13 +693,13 @@ namespace Nijo.Models.ReadModel2Features {
                     var displayData = new RefDisplayData(_aggregate, refEntry);
                     rowType = $"AggregateType.{displayData.TsTypeName}";
                     createNewItem = string.Empty;
-                    tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_aggregate, rowType, false, _ => "() => {}");
+                    tableBuilder = Parts.WebClient.DataTable.DataTableBuilder.ReadOnlyGrid(_aggregate, rowType);
                     tableBuilder.AddMembers(displayData);
                 } else {
                     var displayData = new DataClassForDisplay(_aggregate);
                     rowType = $"AggregateType.{displayData.TsTypeName}";
                     createNewItem = $"AggregateType.{displayData.TsNewObjectFunction}()";
-                    tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_aggregate, rowType, true, OnValueChange);
+                    tableBuilder = Parts.WebClient.DataTable.DataTableBuilder.EditableGrid(_aggregate, rowType, OnValueChange, ReadOnlyDynamic);
                     tableBuilder.AddMembers(displayData);
 
                     string OnValueChange(AggregateMember.AggregateMemberBase m) {
@@ -712,6 +712,9 @@ namespace Nijo.Models.ReadModel2Features {
                               update(rowIndex, row)
                             }
                             """;
+                    }
+                    string ReadOnlyDynamic(AggregateMember.AggregateMemberBase member) {
+                        return $"(row, rowIndex) => Util.isReadOnlyField(`data.${{{FIRST_ARG_NAME}}}.{member.GetFullPathAsReactHookFormRegisterName(E_PathType.ReadOnly, [.. GetArguments().Skip(1), "rowIndex"]).Join(".")}`, getValues)";
                     }
                 }
 

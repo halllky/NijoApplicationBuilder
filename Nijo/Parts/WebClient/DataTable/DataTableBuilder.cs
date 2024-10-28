@@ -14,11 +14,46 @@ namespace Nijo.Parts.WebClient.DataTable {
     /// テーブル列定義ビルダー
     /// </summary>
     internal class DataTableBuilder {
-        internal DataTableBuilder(GraphNode<Aggregate> tableOwner, string rowTypeName, bool editable, Func<AggregateMember.AggregateMemberBase, string> onValueChange) {
+        /// <summary>
+        /// 読み取り専用のグリッドの列定義ビルダーを返します。
+        /// </summary>
+        internal static DataTableBuilder ReadOnlyGrid(GraphNode<Aggregate> tableOwner, string rowTypeName) {
+            return new DataTableBuilder(
+                tableOwner,
+                rowTypeName,
+                false,
+                _ => "() => { }",
+                null);
+        }
+        /// <summary>
+        /// 編集可能なグリッドの列定義ビルダーを返します。
+        /// </summary>
+        internal static DataTableBuilder EditableGrid(
+            GraphNode<Aggregate> tableOwner,
+            string rowTypeName,
+            Func<AggregateMember.AggregateMemberBase, string> onValueChange,
+            Func<AggregateMember.AggregateMemberBase, string>? renderDynamicReadOnly) {
+
+            return new DataTableBuilder(
+                tableOwner,
+                rowTypeName,
+                true,
+                onValueChange,
+                renderDynamicReadOnly);
+        }
+
+        private DataTableBuilder(
+            GraphNode<Aggregate> tableOwner,
+            string rowTypeName,
+            bool editable,
+            Func<AggregateMember.AggregateMemberBase, string> onValueChange,
+            Func<AggregateMember.AggregateMemberBase, string>? renderDynamicReadOnly) {
+
             TableOwner = tableOwner;
             _rowTypeName = rowTypeName;
             _editable = editable;
             _onValueChange = onValueChange;
+            _renderDynamicReadOnly = renderDynamicReadOnly;
         }
 
         /// <summary>
@@ -29,6 +64,7 @@ namespace Nijo.Parts.WebClient.DataTable {
         private readonly bool _editable;
         private readonly List<IDataTableColumn2> _columns = [];
         private readonly Func<AggregateMember.AggregateMemberBase, string> _onValueChange;
+        Func<AggregateMember.AggregateMemberBase, string>? _renderDynamicReadOnly;
 
         /// <summary>
         /// 列を追加します。
@@ -219,6 +255,8 @@ namespace Nijo.Parts.WebClient.DataTable {
                         """)}}
                         {{If(!_editable, () => $$"""
                           readOnly: true,
+                        """).ElseIf(_renderDynamicReadOnly != null, () => $$"""
+                          readOnly: {{_renderDynamicReadOnly!(vmColumn._vm)}},
                         """)}}
                         {{If(column.DefaultWidth != null, () => $$"""
                           defaultWidthPx: {{column.DefaultWidth}},
@@ -239,6 +277,8 @@ namespace Nijo.Parts.WebClient.DataTable {
                           {{_onValueChange(refColumn._ref)}}, {
                         {{If(!_editable, () => $$"""
                           readOnly: true,
+                        """).ElseIf(_renderDynamicReadOnly != null, () => $$"""
+                          readOnly: {{_renderDynamicReadOnly!(refColumn._ref)}},
                         """)}}
                         })
                         """;

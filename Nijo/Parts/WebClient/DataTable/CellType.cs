@@ -98,7 +98,7 @@ namespace Nijo.Parts.WebClient.DataTable {
                           defaultWidthPx?: number
                           fixedWidth?: boolean
                           headerGroupName?: string
-                          readOnly?: boolean | ((row: TRow) => boolean)
+                          readOnly?: boolean | ((row: TRow, rowIndex: number) => boolean)
                         }
 
                         /** 表示用のレイアウトを施したセル */

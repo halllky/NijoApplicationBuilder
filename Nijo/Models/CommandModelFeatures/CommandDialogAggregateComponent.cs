@@ -1,4 +1,5 @@
 using Nijo.Core;
+using Nijo.Models.ReadModel2Features;
 using Nijo.Models.RefTo;
 using Nijo.Parts.WebClient;
 using Nijo.Util.CodeGenerating;
@@ -596,12 +597,14 @@ namespace Nijo.Models.CommandModelFeatures {
                     var refDisplayData = new RefDisplayData(_aggregate, refEntry);
                     rowType = $"Types.{refDisplayData.TsTypeName}";
                     createNewItem = string.Empty;
-                    tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_aggregate, rowType, false, _ => "() => {}");
+                    tableBuilder = Parts.WebClient.DataTable.DataTableBuilder.ReadOnlyGrid(_aggregate, rowType);
                     tableBuilder.AddMembers(refDisplayData);
                 } else {
                     rowType = $"Types.{displayData.TsTypeName}";
                     createNewItem = $"Types.{displayData.TsNewObjectFunction}()";
-                    tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_aggregate, rowType, !isReadOnly, OnValueChange);
+                    tableBuilder = isReadOnly
+                        ? Parts.WebClient.DataTable.DataTableBuilder.ReadOnlyGrid(_aggregate, rowType)
+                        : Parts.WebClient.DataTable.DataTableBuilder.EditableGrid(_aggregate, rowType, OnValueChange, null);
                     tableBuilder.AddMembers(displayData);
 
                     string OnValueChange(AggregateMember.AggregateMemberBase m) {

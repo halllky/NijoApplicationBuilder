@@ -699,6 +699,60 @@ namespace Nijo.Models.ReadModel2Features {
         #endregion 変更確認
 
 
+        #region 主キーを読み取り専用にする
+        internal const string SET_KEYS_READONLY = "SetKeysReadOnly";
+        internal string RenderSetKeysReadOnly(CodeRenderingContext context) {
+            return $$"""
+                /// <summary>
+                /// {{Aggregate.Item.DisplayName}}の主キー項目を読み取り専用にします。
+                /// </summary>
+                private void {{SET_KEYS_READONLY}}({{CsClassName}} displayData) {
+                    {{WithIndent(RenderAggregate(this, "displayData", Aggregate), "    ")}}
+                }
+                """;
+
+            static IEnumerable<string> RenderAggregate(DataClassForDisplay dataClass, string instance, GraphNode<Aggregate> instanceAggregate) {
+
+                // 集約自身のキーの読み取り専用
+                foreach (var member in dataClass.GetOwnMembers()) {
+                    if (member is AggregateMember.ValueMember vm) {
+                        if (!vm.IsKey) continue;
+
+                        yield return $$"""
+                            {{instance}}.{{vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.CSharp, since: instanceAggregate, pathType: E_PathType.ReadOnly).Join(".")}} = true;
+                            """;
+
+                    } else if (member is AggregateMember.Ref @ref) {
+                        if (!@ref.Relation.IsPrimary()) continue;
+
+                        yield return $$"""
+                            {{instance}}.{{@ref.GetFullPathAsDataClassForDisplay(E_CsTs.CSharp, since: instanceAggregate, pathType: E_PathType.ReadOnly).Join(".")}} = true;
+                            """;
+                    }
+                }
+
+                // 子孫集約の読み取り専用
+                foreach (var child in dataClass.GetChildMembers()) {
+                     if (child.Aggregate.IsChildrenMember()) {
+                        var depth = child.Aggregate.EnumerateAncestors().Count();
+                        var x = depth == 1 ? "x" : $"x{depth - 1}";
+                        yield return $$"""
+                            foreach (var {{x}} in {{instance}}.{{child.Aggregate.GetFullPathAsDataClassForDisplay(E_CsTs.CSharp, since: instanceAggregate, pathType: E_PathType.ReadOnly).Join(".")}}) {
+                                {{WithIndent(RenderAggregate(child, x, child.Aggregate.AsChildRelationMember().MemberAggregate), "    ")}}
+                            }
+                            """;
+
+                    } else {
+                        yield return $$"""
+                            {{WithIndent(RenderAggregate(child, instance, instanceAggregate), "")}}
+                            """;
+                    }
+                }
+            }
+        }
+        #endregion 主キーを読み取り専用にする
+
+
         /// <summary>
         /// <see cref="SearchResult"/> からの変換処理をレンダリングします。
         /// </summary>
@@ -801,7 +855,13 @@ namespace Nijo.Models.ReadModel2Features {
         /// <see cref="RefDisplayData"/> の
         /// インスタンスの型のルールにあわせて返す。
         /// </summary>
-        internal static IEnumerable<string> GetFullPathAsDataClassForDisplay(this GraphNode<Aggregate> aggregate, E_CsTs csts, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+        internal static IEnumerable<string> GetFullPathAsDataClassForDisplay(
+            this GraphNode<Aggregate> aggregate,
+            E_CsTs csts,
+            GraphNode<Aggregate>? since = null,
+            GraphNode<Aggregate>? until = null,
+            E_PathType pathType = E_PathType.Value) {
+
             var path = aggregate.PathFromEntry();
             if (since != null) path = path.Since(since);
             if (until != null) path = path.Until(until);
@@ -816,9 +876,16 @@ namespace Nijo.Models.ReadModel2Features {
                     }
                 } else if (edge.IsRef()) {
                     if (!edge.Initial.As<Aggregate>().IsOutOfEntryTree()) {
-                        yield return csts == E_CsTs.CSharp
-                            ? DataClassForDisplay.VALUES_CS
-                            : DataClassForDisplay.VALUES_TS;
+
+                        if (csts == E_CsTs.CSharp) {
+                            yield return pathType == E_PathType.Value
+                                ? DataClassForDisplay.VALUES_CS
+                                : DataClassForDisplay.READONLY_CS;
+                        } else {
+                            yield return pathType == E_PathType.Value
+                                ? DataClassForDisplay.VALUES_TS
+                                : DataClassForDisplay.READONLY_TS;
+                        }
                     }
                     yield return edge.RelationName;
 
@@ -834,9 +901,15 @@ namespace Nijo.Models.ReadModel2Features {
         /// <see cref="RefDisplayData"/> の
         /// インスタンスの型のルールにあわせて返す。
         /// </summary>
-        internal static IEnumerable<string> GetFullPathAsDataClassForDisplay(this AggregateMember.AggregateMemberBase member, E_CsTs csts, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+        internal static IEnumerable<string> GetFullPathAsDataClassForDisplay(
+            this AggregateMember.AggregateMemberBase member,
+            E_CsTs csts,
+            GraphNode<Aggregate>? since = null,
+            GraphNode<Aggregate>? until = null,
+            E_PathType pathType = E_PathType.Value) {
+
             var fullpath = member.Owner
-                .GetFullPathAsDataClassForDisplay(csts, since, until)
+                .GetFullPathAsDataClassForDisplay(csts, since, until, pathType)
                 .ToArray();
             foreach (var path in fullpath) {
                 yield return path;
@@ -844,9 +917,16 @@ namespace Nijo.Models.ReadModel2Features {
 
             if ((member is AggregateMember.Ref || member is AggregateMember.ValueMember)
                 && !member.Owner.IsOutOfEntryTree()) {
-                yield return csts == E_CsTs.CSharp
-                    ? DataClassForDisplay.VALUES_CS
-                    : DataClassForDisplay.VALUES_TS;
+
+                if (csts == E_CsTs.CSharp) {
+                    yield return pathType == E_PathType.Value
+                        ? DataClassForDisplay.VALUES_CS
+                        : DataClassForDisplay.READONLY_CS;
+                } else {
+                    yield return pathType == E_PathType.Value
+                        ? DataClassForDisplay.VALUES_TS
+                        : DataClassForDisplay.READONLY_TS;
+                }
             }
 
             yield return member.MemberName;

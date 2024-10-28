@@ -36,7 +36,7 @@ namespace Nijo.Models.RefTo {
                 RenderReadOnlyStatement = vm => string.Empty, // 検索条件欄の項目が読み取り専用になることはない
                 RenderErrorMessage = vm => throw new InvalidOperationException("検索条件欄では項目ごとにエラーメッセージを表示するという概念が無い"),
             };
-            var tableBuilder = new DataTableBuilder(_aggregate, $"Types.{searchResult.TsTypeName}", false, _ => "() => {}")
+            var tableBuilder = DataTableBuilder.ReadOnlyGrid(_aggregate, $"Types.{searchResult.TsTypeName}")
                 // 行ヘッダ（選択チェックボックス or 選択ボタン）
                 .Add(new AdhocColumn {
                     Header = string.Empty,
