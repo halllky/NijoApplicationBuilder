@@ -77,7 +77,7 @@ namespace Nijo.Core {
         /// <summary>
         /// <see cref="DataTableColumnDefHelperName"/> のメソッド本体をレンダリングします。
         /// </summary>
-        Parts.WebClient.DataTable.CellType.Helper RenderDataTableColumnDefHelper();
+        Parts.WebClient.DataTable.CellType.Helper RenderDataTableColumnDefHelper(CodeRenderingContext ctx);
     }
 
     /// <summary>検索条件のオブジェクトの型</summary>
@@ -183,7 +183,7 @@ namespace Nijo.Core {
         public string DataTableColumnDefHelperName => MultiLine
             ? "multiLineText"
             : "text";
-        Parts.WebClient.DataTable.CellType.Helper IAggregateMemberType.RenderDataTableColumnDefHelper() {
+        Parts.WebClient.DataTable.CellType.Helper IAggregateMemberType.RenderDataTableColumnDefHelper(CodeRenderingContext ctx) {
             var body = $$"""
                 /** 文字列 */
                 const {{DataTableColumnDefHelperName}}: {{Parts.WebClient.DataTable.CellType.RETURNS_ONE_COLUMN}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => ({
@@ -337,6 +337,6 @@ namespace Nijo.Core {
         }
 
         public abstract string DataTableColumnDefHelperName { get; }
-        public abstract Parts.WebClient.DataTable.CellType.Helper RenderDataTableColumnDefHelper();
+        public abstract Parts.WebClient.DataTable.CellType.Helper RenderDataTableColumnDefHelper(CodeRenderingContext ctx);
     }
 }

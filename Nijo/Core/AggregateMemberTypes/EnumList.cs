@@ -114,7 +114,7 @@ namespace Nijo.Core.AggregateMemberTypes {
         }
 
         public string DataTableColumnDefHelperName => Definition.Name;
-        Parts.WebClient.DataTable.CellType.Helper IAggregateMemberType.RenderDataTableColumnDefHelper() {
+        Parts.WebClient.DataTable.CellType.Helper IAggregateMemberType.RenderDataTableColumnDefHelper(CodeRenderingContext ctx) {
             var body = $$"""
                 /** {{Definition.Name}} */
                 const {{Definition.Name}}: {{Parts.WebClient.DataTable.CellType.RETURNS_ONE_COLUMN}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => {

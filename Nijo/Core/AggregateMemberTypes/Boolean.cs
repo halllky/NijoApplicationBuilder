@@ -78,7 +78,7 @@ namespace Nijo.Core.AggregateMemberTypes {
         }
 
         public string DataTableColumnDefHelperName => "bool";
-        Parts.WebClient.DataTable.CellType.Helper IAggregateMemberType.RenderDataTableColumnDefHelper() {
+        Parts.WebClient.DataTable.CellType.Helper IAggregateMemberType.RenderDataTableColumnDefHelper(CodeRenderingContext ctx) {
             var body = $$"""
                 /** 真偽値 */
                 const bool: {{Parts.WebClient.DataTable.CellType.RETURNS_ONE_COLUMN}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => {

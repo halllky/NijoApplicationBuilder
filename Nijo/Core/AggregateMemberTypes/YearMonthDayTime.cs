@@ -1,3 +1,4 @@
+using Nijo.Util.CodeGenerating;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,7 +19,7 @@ namespace Nijo.Core.AggregateMemberTypes {
         }
 
         public override string DataTableColumnDefHelperName => "datetime";
-        public override Parts.WebClient.DataTable.CellType.Helper RenderDataTableColumnDefHelper() {
+        public override Parts.WebClient.DataTable.CellType.Helper RenderDataTableColumnDefHelper(CodeRenderingContext ctx) {
             var body = $$"""
                 /** 日付時刻 */
                 const datetime: {{Parts.WebClient.DataTable.CellType.RETURNS_ONE_COLUMN}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => ({

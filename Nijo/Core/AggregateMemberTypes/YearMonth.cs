@@ -34,7 +34,7 @@ namespace Nijo.Core.AggregateMemberTypes {
         }
 
         public override string DataTableColumnDefHelperName => "yearMonth";
-        public override Parts.WebClient.DataTable.CellType.Helper RenderDataTableColumnDefHelper() {
+        public override Parts.WebClient.DataTable.CellType.Helper RenderDataTableColumnDefHelper(CodeRenderingContext ctx) {
             var body = $$"""
                 /** 年月 */
                 const yearMonth: {{Parts.WebClient.DataTable.CellType.RETURNS_ONE_COLUMN}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => ({

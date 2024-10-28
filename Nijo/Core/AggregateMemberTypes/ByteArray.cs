@@ -29,7 +29,7 @@ namespace Nijo.Core.AggregateMemberTypes {
 
         #region データテーブル列定義
         public string DataTableColumnDefHelperName => "byteArray";
-        public CellType.Helper RenderDataTableColumnDefHelper() {
+        public CellType.Helper RenderDataTableColumnDefHelper(CodeRenderingContext ctx) {
             return new() {
                 FunctionName = DataTableColumnDefHelperName,
                 Body = $$"""

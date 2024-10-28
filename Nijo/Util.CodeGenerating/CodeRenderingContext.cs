@@ -191,7 +191,7 @@ namespace Nijo.Util.CodeGenerating {
                 .Distinct();
             foreach (var memberType in allMemberTypes) {
                 memberType.GenerateCode(this);
-                cellType.Add(memberType.RenderDataTableColumnDefHelper());
+                cellType.Add(memberType.RenderDataTableColumnDefHelper(this));
             }
 
             // モデルと関係するがルート集約1個と対応しないソースコードを生成する

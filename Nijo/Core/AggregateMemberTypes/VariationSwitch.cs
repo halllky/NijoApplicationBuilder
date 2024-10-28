@@ -139,7 +139,7 @@ namespace Nijo.Core.AggregateMemberTypes {
         }
 
         public string DataTableColumnDefHelperName => _variationGroup.GroupName;
-        Parts.WebClient.DataTable.CellType.Helper IAggregateMemberType.RenderDataTableColumnDefHelper() {
+        Parts.WebClient.DataTable.CellType.Helper IAggregateMemberType.RenderDataTableColumnDefHelper(CodeRenderingContext ctx) {
             var body = $$"""
                 /** {{_variationGroup.GroupName}} */
                 const {{_variationGroup.GroupName}}: {{Parts.WebClient.DataTable.CellType.RETURNS_ONE_COLUMN}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => {
