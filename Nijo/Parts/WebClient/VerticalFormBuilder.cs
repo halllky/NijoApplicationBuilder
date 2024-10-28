@@ -71,11 +71,11 @@ namespace Nijo.Parts.WebClient {
                 // COL: 1      2       3       4       5
                 // -------------------------------------------
                 // MIN: -    ,  800px, 1200px, 1600px, 2000px
-                // MAX: 799px, 1199px, 1599px, 1999px, -
+                // MAX: 800px, 1200px, 1600px, 2000px, -
 
                 var minmax = new List<string>();
                 if (col > 1) minmax.Add($"(min-width: {(col - 1) * THRESHOLD + THRESHOLD}px)");
-                if (col < MAX_COLUMN) minmax.Add($"(max-width: {col * THRESHOLD + THRESHOLD - 1}px)");
+                if (col < MAX_COLUMN) minmax.Add($"(max-width: {col * THRESHOLD + THRESHOLD}px)");
 
                 return $$"""
 
