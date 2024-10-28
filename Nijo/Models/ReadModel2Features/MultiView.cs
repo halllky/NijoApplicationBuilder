@@ -335,5 +335,24 @@ namespace Nijo.Models.ReadModel2Features {
                 """;
         }
         #endregion カスタマイズ部分
+
+        #region URL取得
+        internal const string GET_URL_FROM_DISPLAY_DATA = "GetMultiViewUrlFromDisplayData";
+        /// <summary>
+        /// 画面のURLを貰えるApplicationServiceのメソッド
+        /// </summary>
+        internal string RenderAppSrvGetUrlMethod() {
+
+            return $$"""
+                /// <summary>
+                /// 一覧検索画面を表示するためのURLを返します。
+                /// URLにドメイン部分は含まれません。
+                /// </summary>
+                public virtual string {{GET_URL_FROM_DISPLAY_DATA}}{{_aggregate.Item.PhysicalName}}() {
+                    return $"{{Url}}";
+                }
+                """;
+        }
+        #endregion
     }
 }
