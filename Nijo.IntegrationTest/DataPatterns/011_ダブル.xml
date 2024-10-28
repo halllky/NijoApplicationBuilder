@@ -2,7 +2,7 @@
 
 <自動テストで作成されたプロジェクト>
   <ルート is="write-model-2 generate-default-read-model" DisplayName="#ルート[(&quot;  &apos;)]" DbName="ROOT_TABLE" Latin="Root Object">
-    <ID1 is="uuid hidden key" />
+    <ID1 is="uuid key" />
     <名前1 is="word name" />
 
     <子 is="child">
@@ -14,7 +14,7 @@
         <名前3 is="word name" />
       </子の子>
       <子の子配列 is="children">
-        <ID4 is="uuid hidden key" />
+        <ID4 is="uuid key" />
         <名前4 is="word name" />
       </子の子配列>
       <子の子バリエーション is="variation" DisplayName="# 子の子バリエーション [(&quot;  &apos;)]" DbName="KONOKKKKKKVARIATTTTTTTTTTTTION">
@@ -30,7 +30,7 @@
     </子>
 
     <子配列 is="children">1
-      <ID7 is="uuid hidden key" />
+      <ID7 is="uuid key" />
       <名前7 is="word name" />
 
       <子配列の子 is="child">
@@ -38,7 +38,7 @@
         <名前8 is="word name" />
       </子配列の子>
       <子配列の子配列 is="children">
-        <ID9 is="uuid hidden key" />
+        <ID9 is="uuid key" />
         <名前9 is="word name" />
       </子配列の子配列>
       <子配列の子バリエーション is="variation">
@@ -63,7 +63,7 @@
           <名前13 is="word name" />
         </子バリエーション種別Aの子>
         <子バリエーション種別Aの子配列 is="children">
-          <ID14 is="uuid hidden key" />
+          <ID14 is="uuid key" />
           <名前14 is="word name" />
         </子バリエーション種別Aの子配列>
         <子バリエーション種別Aの子バリエーション is="variation">
@@ -87,7 +87,7 @@
           <名前18 is="word name" />
         </子バリエーション種別Bの子>
         <子バリエーション種別Bの子配列 is="children">
-          <ID19 is="uuid hidden key" />
+          <ID19 is="uuid key" />
           <名前19 is="word name" />
         </子バリエーション種別Bの子配列>
         <子バリエーション種別Bの子バリエーション is="variation">
@@ -116,10 +116,10 @@
     <名前201 is="word name" />
     <キーでない中継 is="ref-to:ルートを参照1" />
     <参照2の子配列 is="children">
-      <参照2子配列ID is="uuid hidden key" />
+      <参照2子配列ID is="uuid key" />
       <名前202 is="word name" />
       <参照2の子配列の子配列 is="children">
-        <参照2子配列子配列ID is="uuid hidden key" />
+        <参照2子配列子配列ID is="uuid key" />
         <名前203 is="word name" />
       </参照2の子配列の子配列>
     </参照2の子配列>

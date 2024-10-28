@@ -2,18 +2,18 @@
 
 <自動テストで作成されたプロジェクト>
   <参照先 is="write-model-2 generate-default-read-model">
-    <参照先集約ID is="uuid hidden key" />
+    <参照先集約ID is="uuid key" />
     <参照先集約名 is="word name" />
     <参照先の子配列 is="children">
-      <参照先の子配列のキー is="uuid hidden key" />
+      <参照先の子配列のキー is="uuid key" />
       <参照先の子配列の名前プロパティ is="word name" />
     </参照先の子配列>
   </参照先>
   <参照元 is="read-model-2">
-    <参照元集約ID is="uuid hidden key" />
+    <参照元集約ID is="uuid key" />
     <参照元集約名 is="word name" />
     <参照元の子配列 is="children">
-      <参照元の子配列のキー is="uuid hidden key" />
+      <参照元の子配列のキー is="uuid key" />
       <参照 is="ref-to:参照先/参照先の子配列" />
     </参照元の子配列>
   </参照元>

@@ -3,7 +3,7 @@
 <自動テストで作成されたプロジェクト>
   <親集約 is="write-model-2 generate-default-read-model form-label-width:5.8 form-depth:0">
     <!--ID-->
-    <ID is="uuid hidden key" />
+    <ID is="uuid key" />
 
     <!--文字列系-->
     <単語 is="word" />

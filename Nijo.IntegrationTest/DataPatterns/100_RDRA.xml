@@ -3,7 +3,7 @@
 <自動テストで作成されたプロジェクト>
 
   <アクター is="write-model-2 generate-default-read-model">
-    <アクターID is="uuid hidden key" />
+    <アクターID is="uuid key" />
     <アクター名 is="word name" />
     <種別 is="variation">
       <人 is="variation-item:1">
@@ -15,7 +15,7 @@
   </アクター>
 
   <ユースケース is="write-model-2 generate-default-read-model">
-    <ユースケースID is="uuid hidden key" />
+    <ユースケースID is="uuid key" />
     <概要 is="sentence name" />
     <主体 is="ref-to:アクター" />
     <関連機能 is="children">
@@ -25,7 +25,7 @@
   </ユースケース>
 
   <機能 is="write-model-2 generate-default-read-model">
-    <機能ID is="uuid hidden key" />
+    <機能ID is="uuid key" />
     <機能名 is="word name" />
     <参照更新の別 is="E_参照更新" />
     <非機能要件 is="child">

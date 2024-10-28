@@ -3,7 +3,7 @@
 <自動テストで作成されたプロジェクト>
 
   <受注 is="write-model-2 generate-default-read-model">
-    <ID is="uuid hidden key" />
+    <ID is="uuid key" />
     <表示名称 is="word name" />
     <受注日 is="date" />
     <明細 is="children">

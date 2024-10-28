@@ -2,17 +2,17 @@
 
 <自動テストで作成されたプロジェクト>
   <営業区 is="write-model-2 generate-default-read-model">
-    <営業区ID is="uuid hidden key" />
+    <営業区ID is="uuid key" />
     <営業区名 is="word name" />
 
     <部署 is="children">
-      <部署ID is="uuid hidden key" />
+      <部署ID is="uuid key" />
       <部署名 is="word name" />
     </部署>
   </営業区>
 
   <依頼 is="write-model-2 generate-default-read-model">
-    <依頼番号 is="uuid hidden key" />
+    <依頼番号 is="uuid key" />
     <発注部署 is="ref-to:営業区/部署 key" />
     <!-- TODO: #24 キーに同じ集約を複数設定できるようになったらコメントアウトを解除 -->
     <!-- <受注部署 is="ref-to:営業区/部署 key" /> -->
@@ -22,7 +22,7 @@
   </依頼>
 
   <従業員ステータス is="write-model-2 generate-default-read-model">
-    <従業員ID is="uuid hidden key" />
+    <従業員ID is="uuid key" />
     <担当中の作業 is="ref-to:依頼 key" />
     <!-- TODO: #24 キーに同じ集約を複数設定できるようになったらコメントアウトを解除 -->
     <!-- <直近の作業 is="ref-to:依頼 key" /> -->
