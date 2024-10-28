@@ -112,7 +112,7 @@ const PopupFrame = ({ target, onClose, elementRef, children }: {
   return (
     // ポップアップクリック時、コンボボックスのblurでフォーカス離脱先がポップアップか否かで分岐する必要がある。
     // tabIndexを設定しないとFocusEventのrelatedTargetにならない
-    <div ref={divRefCallback} tabIndex={0} className="fixed max-h-64 overflow-y-auto bg-color-ridge border border-color-5 outline-none">
+    <div ref={divRefCallback} tabIndex={0} className="z-10 fixed max-h-64 overflow-y-auto bg-color-ridge border border-color-5 outline-none">
       {children}
     </div>
   )
