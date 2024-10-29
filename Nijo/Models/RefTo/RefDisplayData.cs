@@ -126,6 +126,8 @@ namespace Nijo.Models.RefTo {
                 """);
         }
 
+
+        #region ほかのモデルとの変換
         /// <summary>
         /// WriteModelのDBエンティティから参照先検索結果への変換
         /// </summary>
@@ -219,6 +221,9 @@ namespace Nijo.Models.RefTo {
             return RenderRecursively(_aggregate, _aggregate, instance, true);
         }
 
+        /// <summary>
+        /// ReadModelの検索結果オブジェクトからRef表示用データへの変換
+        /// </summary>
         internal string RenderConvertFromRefSearchResult(string instance, GraphNode<Aggregate> instanceAggregate, bool renderNewClassName) {
             var pkDict = new Dictionary<AggregateMember.ValueMember, string>();
             return RenderConvertFromRefSearchResultPrivate(instance, instanceAggregate, renderNewClassName, pkDict);
@@ -297,6 +302,8 @@ namespace Nijo.Models.RefTo {
                     """;
             }
         }
+        #endregion ほかのモデルとの変換
+
 
         #region TypeScript側オブジェクト新規作成関数
         internal string TsNewObjectFunction => $"createNew{TsTypeName}";
@@ -332,6 +339,7 @@ namespace Nijo.Models.RefTo {
             }
         }
         #endregion TypeScript側オブジェクト新規作成関数
+
 
         #region メンバー用staticメソッド
         internal const string PARENT = "PARENT";
