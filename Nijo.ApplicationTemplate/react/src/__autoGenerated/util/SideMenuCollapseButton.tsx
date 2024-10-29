@@ -1,22 +1,21 @@
-import { useCallback } from "react"
+import React from "react"
 import { Bars3Icon } from "@heroicons/react/24/solid"
 import { IconButton } from "../input/IconButton"
-import { defineContext } from "."
 
-const [SideMenuContextProvider, useSideMenuContext] = defineContext(() => ({
-  collapsed: false,
-}), state => ({
-  toggle: () => ({ collapsed: !state.collapsed }),
-}))
+export type SideMenuContextType = {
+  toggle: () => void
+  setCollapsed: (collapsed: boolean) => void
+}
+export const SideMenuContext = React.createContext<SideMenuContextType>({
+  toggle: () => { },
+  setCollapsed: () => { },
+})
 
 /** サイドメニュー開閉ボタン */
-const SideMenuCollapseButton = ({ className }: {
+export const SideMenuCollapseButton = ({ className }: {
   className?: string
 }) => {
-  const [, dispatch] = useSideMenuContext()
-  const toggle = useCallback(() => {
-    dispatch(state => state.toggle())
-  }, [dispatch])
+  const { toggle } = React.useContext(SideMenuContext)
 
   return (
     <IconButton
@@ -28,10 +27,4 @@ const SideMenuCollapseButton = ({ className }: {
       サイドメニューを開閉する
     </IconButton>
   )
-}
-
-export {
-  SideMenuContextProvider,
-  SideMenuCollapseButton,
-  useSideMenuContext,
 }
