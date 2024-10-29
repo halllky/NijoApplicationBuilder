@@ -29,6 +29,10 @@ namespace Nijo.Core {
         /// 一時保存を使用しない
         /// </summary>
         public required bool DisableLocalRepository { get; set; }
+        /// <summary>
+        /// ボタンの色。既定では"cyan"。Tailwind CSS で定義されている色名のみ有効。
+        /// </summary>
+        public required string? ButtonColor { get; set; }
 
         /// <summary>
         /// 一覧画面の詳細リンクの挙動
@@ -53,6 +57,7 @@ namespace Nijo.Core {
         private const string VERSION_DB_COLUMN_NAME = "VersionDbColumnName";
 
         private const string DISABLE_LOCAL_REPOSITORY = "DisableLocalRepository";
+        private const string BUTTON_COLOR = "ButtonColor";
 
         private const string MULTI_VIEW_DETAIL_LINK_BEHAVIOR = "MultiViewDetailLinkBehavior";
 
@@ -102,6 +107,12 @@ namespace Nijo.Core {
                 root.Attribute(DISABLE_LOCAL_REPOSITORY)?.Remove();
             }
 
+            if (string.IsNullOrWhiteSpace(ButtonColor)) {
+                root.Attribute(BUTTON_COLOR)?.Remove();
+            } else {
+                root.SetAttributeValue(BUTTON_COLOR, ButtonColor.Trim().ToLower());
+            }
+
             if (MultiViewDetailLinkBehavior == E_MultiViewDetailLinkBehavior.NavigateToReadOnlyMode) {
                 root.SetAttributeValue(MULTI_VIEW_DETAIL_LINK_BEHAVIOR, E_MultiViewDetailLinkBehavior.NavigateToReadOnlyMode.ToString());
             } else {
@@ -115,6 +126,7 @@ namespace Nijo.Core {
             return new Config {
                 RootNamespace = xDocument.Root.Name.LocalName.ToCSharpSafe(),
                 DisableLocalRepository = xDocument.Root.Attribute(DISABLE_LOCAL_REPOSITORY) != null,
+                ButtonColor = xDocument.Root.Attribute(BUTTON_COLOR)?.Value.Trim().ToLower(),
                 DbContextName = xDocument.Root.Attribute(DBCONTEXT_NAME)?.Value ?? "MyDbContext",
                 CreateUserDbColumnName = xDocument.Root.Attribute(CREATE_USER_DB_COLUMN_NAME)?.Value,
                 UpdateUserDbColumnName = xDocument.Root.Attribute(UPDATE_USER_DB_COLUMN_NAME)?.Value,

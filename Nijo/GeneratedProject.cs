@@ -82,6 +82,7 @@ namespace Nijo {
                     UpdatedAtDbColumnName  = null,
                     VersionDbColumnName = null,
                     DisableLocalRepository = false,
+                    ButtonColor = null,
                     MultiViewDetailLinkBehavior = Config.E_MultiViewDetailLinkBehavior.NavigateToEditMode,
                 };
 

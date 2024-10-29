@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  このファイルはソース自動生成時に動的に変更が加えられます。
+  変更内容についての詳細は、このファイルのファイル名でgrepをかけ、変更処理を行っているソースを参照してください。
+*/
+
 html {
   width: 100%;
   height: 100%;
