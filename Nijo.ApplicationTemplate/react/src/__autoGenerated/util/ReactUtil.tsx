@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useReducer } from "react"
 import { useBeforeUnload } from "react-router-dom"
+import useEvent from "react-use-event-hook"
 
 // useReducerの簡略化
 type ReducerDef<S, M extends StateModifier<S>> = (state: S) => M
@@ -86,8 +87,20 @@ const toggleReducer = defineReducer((state: boolean) => ({
   toggle: () => !state,
   setValue: (v: boolean) => v,
 }))
+/**
+ * @deprecated APIが使いづらいため非推奨。より使いやすいuseToggle2を使用のこと。
+ */
 export const useToggle = (initialState?: boolean) => {
   return React.useReducer(toggleReducer, initialState ?? false)
+}
+
+/** 折り畳みができるUIの折りたたみ状態など、切り替え（トグル）を扱います。 */
+export const useToggle2 = (initialState?: boolean) => {
+  const [opened, setOpened] = React.useState(initialState ?? false)
+  const toggle = useEvent(() => {
+    setOpened(!opened)
+  })
+  return { opened, setOpened, toggle }
 }
 
 // --------------------------------------------------

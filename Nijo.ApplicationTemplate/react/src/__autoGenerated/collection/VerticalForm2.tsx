@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react'
-import { useToggle } from '../util'
-import useEvent from 'react-use-event-hook'
+import { useToggle2 } from '../util'
 import { IconButton } from '../input'
 import { ChevronRightIcon, ChevronDownIcon } from '@heroicons/react/24/solid'
 
@@ -65,10 +64,7 @@ const Indent = ({ label, children, className }: {
   children?: React.ReactNode
   className?: string
 }) => {
-  const [opened, setOpened] = useToggle(true)
-  const handleCollapse = useEvent(() => {
-    setOpened(x => x.toggle())
-  })
+  const { opened, toggle } = useToggle2(true)
   const style = React.useMemo((): React.CSSProperties => ({
     display: opened ? undefined : 'none',
   }), [opened])
@@ -76,7 +72,7 @@ const Indent = ({ label, children, className }: {
   return (
     <div className={`grid grid-cols-[subgrid] col-span-full border-vform m-1 ${className ?? ''}`}>
       <div className="flex justify-start gap-1 px-1 col-span-full select-none">
-        <IconButton icon={opened ? ChevronDownIcon : ChevronRightIcon} onClick={handleCollapse} hideText>折りたたみ</IconButton>
+        <IconButton icon={opened ? ChevronDownIcon : ChevronRightIcon} onClick={toggle} hideText>折りたたみ</IconButton>
         {renderLabel(label)}
       </div>
       <div className="grid gap-px grid-cols-[subgrid] col-span-full" style={style}>
@@ -96,10 +92,7 @@ const Item = ({ label, wideLabelValue, wideValue, noLabel, children }: {
   noLabel?: boolean
   children?: React.ReactNode
 }) => {
-  const [opened, setOpened] = useToggle(true)
-  const handleCollapse = useEvent(() => {
-    setOpened(x => x.toggle())
-  })
+  const { opened, toggle } = useToggle2(true)
   const style = React.useMemo((): React.CSSProperties => ({
     display: opened ? undefined : 'none',
   }), [opened])
@@ -109,7 +102,7 @@ const Item = ({ label, wideLabelValue, wideValue, noLabel, children }: {
     <>
       {!noLabel && (
         <div className="flex justify-start gap-1 px-1 pt-1 col-span-full">
-          <IconButton icon={opened ? ChevronDownIcon : ChevronRightIcon} onClick={handleCollapse} hideText>折りたたみ</IconButton>
+          <IconButton icon={opened ? ChevronDownIcon : ChevronRightIcon} onClick={toggle} hideText>折りたたみ</IconButton>
           {renderLabel(label)}
         </div>
       )}
