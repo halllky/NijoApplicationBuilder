@@ -222,7 +222,7 @@ namespace Nijo.Models.ReadModel2Features {
                           <PanelGroup direction="vertical">
 
                             {/* 検索条件欄 */}
-                            <Panel ref={searchConditionPanelRef} defaultSize={30} collapsible onCollapse={setCollapsed}>
+                            <Panel ref={searchConditionPanelRef} defaultSize={30} collapsible onCollapse={setCollapsed} className="max-h-max">
                               <div className="h-full overflow-y-scroll border border-color-4 bg-color-gutter">
                                 <FormProvider {...rhfSearchMethods}>
                                   {Customizers?.{{SEARCH_CONDITION_CUSTOMIZER}} ? (
