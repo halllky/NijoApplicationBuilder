@@ -341,6 +341,81 @@ namespace Nijo.Models.RefTo {
         #endregion TypeScript側オブジェクト新規作成関数
 
 
+        #region UI
+        /// <summary>
+        /// 詳細画面のフォームにおけるこの集約を参照するUI
+        /// </summary>
+        internal string UiComponentName => $"RefTo{_aggregate.Item.PhysicalName}";
+        internal string RenderSingleViewUiComponent(CodeRenderingContext ctx) {
+            var dialog = new SearchDialog(_aggregate, _aggregate);
+
+            return $$"""
+                /** 詳細画面のフォームで{{_aggregate.Item.DisplayName}}を参照する部分 */
+                export const {{UiComponentName}} = ({ label, value, onChange, readOnly, required, errors }: {
+                  label?: string
+                  value?: Types.{{TsTypeName}}
+                  onChange?: (value: Types.{{TsTypeName}} | undefined) => void
+                  readOnly?: boolean
+                  required?: boolean
+                  errors?: React.ReactNode
+                }) => {
+
+                  // 検索ダイアログ
+                  const openSearchDialog = {{dialog.HookName}}()
+                  const handleClickSearch = useEvent(() => {
+                    openSearchDialog({
+                      onSelect: item => onChange?.(item ?? Types.{{TsNewObjectFunction}}()),
+                    })
+                  })
+
+                  return (
+                    <VForm2.Item wideValue label={(
+                      <>
+                        <div className="inline-flex items-center py-1 gap-2">
+                          <VForm2.LabelText>{label}</VForm2.LabelText>
+                          {required && <Input.RequiredChip />}
+                          {!readOnly && <Input.IconButton underline mini icon={Icon.MagnifyingGlassIcon} onClick={handleClickSearch}>検索</Input.IconButton>}
+                        </div>
+                        {errors}
+                      </>
+                    )}>
+                      {{WithIndent(RenderAggregate(_aggregate, "value", _aggregate), "      ")}}
+                    </VForm2.Item>
+                  )
+                }
+                """;
+
+            IEnumerable<string> RenderAggregate(GraphNode<Aggregate> renderingAggregate, string instance, GraphNode<Aggregate> instanceAggregate) {
+                var displayData = new RefDisplayData(renderingAggregate, _refEntry);
+                foreach (var member in displayData.GetOwnMembers()) {
+                    if (member is AggregateMember.ValueMember vm) {
+                        yield return $$"""
+                            <VForm2.Item label="{{vm.DisplayName.Replace("\"", "&quot;")}}">
+                              {{{instance}}?.{{vm.Declared.GetFullPathAsDataClassForRefTarget(since: instanceAggregate).Join("?.")}}}
+                            </VForm2.Item>
+                            """;
+
+                    } else if (member is AggregateMember.Children children) {
+                        yield return $$"""
+                            {/* #57 参照先の{{children.DisplayName}}はここに表示される予定です。 */}
+                            """;
+
+                    } else if (member is AggregateMember.RelationMember rm) {
+                        yield return $$"""
+                            <VForm2.Indent label="{{rm.DisplayName.Replace("\"", "&quot;")}}">
+                              {{WithIndent(RenderAggregate(rm.MemberAggregate, instance, instanceAggregate), "  ")}}
+                            </VForm2.Indent>
+                            """;
+
+                    } else {
+                        throw new NotImplementedException();
+                    }
+                }
+            }
+        }
+        #endregion UI
+
+
         #region メンバー用staticメソッド
         internal const string PARENT = "PARENT";
         /// <summary>
