@@ -21,7 +21,10 @@ const getTestData = (count: number): TestData[] => {
     id: i.toString(),
     name: `Name ${i}`,
     age: Math.floor(Math.random() * 100),
-    details: [{ item: 'ITEM1', price: 100 }, { item: 'ITEM2', price: 200 }],
+    details: Array.from({ length: 20 }).map((_, i) => ({
+      item: `ITEM${i + 1}`,
+      price: i * 100,
+    })),
   }))
 }
 
@@ -199,7 +202,7 @@ const Root = ({ activeRowIndex }: {
   const { registerEx, control } = Util.useFormContextEx<{ data: TestData[] }>()
 
   // 詳細
-  const { update } = useFieldArray({ name: `data.${activeRowIndex}.details`, control })
+  const { update, move } = useFieldArray({ name: `data.${activeRowIndex}.details`, control })
   const detail = useWatch({ name: `data.${activeRowIndex}.details`, control })
   const columns = React.useMemo((): Layout.DataTableColumn<TestData['details'][0]>[] => [{
     id: 'col0',
@@ -233,6 +236,26 @@ const Root = ({ activeRowIndex }: {
     },
   }], [])
 
+  const tableRef = React.useRef<Layout.DataTableRef<TestData['details']['0']>>(null)
+  const moveAbove = useEvent(() => {
+    const selectedRowIndexes = tableRef.current?.getSelectedRows().map(x => x.rowIndex)
+    if (selectedRowIndexes === undefined) return
+    const min = Math.min(...selectedRowIndexes)
+    const max = Math.max(...selectedRowIndexes)
+    if (min === 0) return
+    move(min - 1, max)
+    tableRef.current?.selectRow(min - 1, max - 1)
+  })
+  const moveBelow = useEvent(() => {
+    const selectedRowIndexes = tableRef.current?.getSelectedRows().map(x => x.rowIndex)
+    if (selectedRowIndexes === undefined) return
+    const min = Math.min(...selectedRowIndexes)
+    const max = Math.max(...selectedRowIndexes)
+    if (max >= (detail.length - 1)) return
+    move(max + 1, min)
+    tableRef.current?.selectRow(min + 1, max + 1)
+  })
+
   return (
     <div className="grid grid-cols-[5rem,1fr] gap-px">
       <div className="text-right pr-2">
@@ -253,8 +276,13 @@ const Root = ({ activeRowIndex }: {
       <div>
         <Input.Num {...registerEx(`data.${activeRowIndex}.age`)} />
       </div>
+      <div className="col-span-full flex justify-end gap-1">
+        <Input.IconButton outline onClick={moveAbove}>↑&nbsp;上移動</Input.IconButton>
+        <Input.IconButton outline onClick={moveBelow}>↓&nbsp;下移動</Input.IconButton>
+      </div>
       <div className="col-span-2">
         <Layout.DataTable
+          ref={tableRef}
           data={detail}
           columns={columns}
           onChangeRow={update}

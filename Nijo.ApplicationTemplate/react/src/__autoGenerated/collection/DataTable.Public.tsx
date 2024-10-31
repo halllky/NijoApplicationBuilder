@@ -5,6 +5,7 @@ export type DataTableRef<T> = {
   focus: () => void
   startEditing: () => void
   getSelectedRows: () => { row: T, rowIndex: number }[]
+  selectRow: (startRowIndex: number, endRowIndex: number) => void
 }
 
 export type DataTableProps<T> = {

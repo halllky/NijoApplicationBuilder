@@ -7,6 +7,7 @@ import { DataTableProps } from '..'
 
 export type SelectTarget
   = { target: 'cell', cell: CellPosition, shiftKey: boolean }
+  | { target: 'row', startRowIndex: number, endRowIndex: number }
   | { target: 'any' }
   | { target: 'all' }
 
@@ -58,6 +59,14 @@ export const useSelection = <T,>(
       }
       setContainsRowHeader(false)
       onActiveRowChanged?.({ rowIndex: obj.cell.rowIndex, getRow: () => api.getCoreRowModel().flatRows[obj.cell.rowIndex].original })
+    }
+    // 行選択
+    else if (obj.target === 'row') {
+      selectionStart.current = { colIndex: 0, rowIndex: obj.endRowIndex }
+      caretCell.current = { colIndex: api.getAllLeafColumns().length - 1, rowIndex: obj.startRowIndex }
+      onCaretCellChanged(caretCell.current)
+      setContainsRowHeader(true)
+      onActiveRowChanged?.({ rowIndex: obj.startRowIndex, getRow: () => api.getCoreRowModel().flatRows[obj.startRowIndex].original })
     }
     // 何か選択
     else if (obj.target === 'any') {

@@ -132,7 +132,12 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
       rowIndex: row.index,
     })),
     startEditing,
-  }), [getSelectedRows, divRef, startEditing])
+    selectRow: (startRowIndex, endRowIndex) => selectObject({
+      target: 'row',
+      startRowIndex,
+      endRowIndex,
+    }),
+  }), [getSelectedRows, divRef, startEditing, selectObject])
 
   return (
     <div
