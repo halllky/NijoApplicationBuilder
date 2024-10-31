@@ -21,7 +21,7 @@ function App() {
   const { ready, load, validate, mermaid, save, backendDomain, onChangBackendDomain } = useBackend()
   const rhfMethods = Util.useFormEx<PageState>({})
   const { getValues, reset, control } = rhfMethods
-  const { fields, update, insert, remove } = useFieldArray({ name: 'aggregates', control })
+  const { fields, update, insert, remove, move } = useFieldArray({ name: 'aggregates', control })
 
   // ツリー構造関連の操作
   const fieldsRef = React.useRef<AggregateOrMember[]>()
@@ -127,6 +127,28 @@ function App() {
     executeValidate()
   })
 
+  // 列の上下移動
+  const handleMoveAbove = useEvent(() => {
+    const selectedRowIndexes = gridRef.current?.getSelectedRows().map(x => x.rowIndex)
+    if (selectedRowIndexes === undefined) return
+    const min = Math.min(...selectedRowIndexes)
+    const max = Math.max(...selectedRowIndexes)
+    if (min === 0) return
+    expandAll()
+    move(min - 1, max)
+    gridRef.current?.selectRow(min - 1, max - 1)
+  })
+  const handleMoveBelow = useEvent(() => {
+    const selectedRowIndexes = gridRef.current?.getSelectedRows().map(x => x.rowIndex)
+    if (selectedRowIndexes === undefined) return
+    const min = Math.min(...selectedRowIndexes)
+    const max = Math.max(...selectedRowIndexes)
+    if (max >= (fields.length - 1)) return
+    expandAll()
+    move(max + 1, min)
+    gridRef.current?.selectRow(min + 1, max + 1)
+  })
+
   // 行編集
   const handleUpdate = useEvent((rowIndex: number, row: GridRow) => {
     // 引数のrowIndexは折り畳みされた後のインデックスなので実際の更新に使うものは別
@@ -205,8 +227,11 @@ function App() {
             <Input.IconButton onClick={insertRowsBelow} outline mini>下挿入</Input.IconButton>
             <Input.IconButton onClick={removeRows} outline mini>行削除</Input.IconButton>
             <div className="basis-2"></div>
-            <Input.IconButton onClick={handleIncreaseIndent} outline mini>&lt;&lt;インデント上げ</Input.IconButton>
-            <Input.IconButton onClick={handleDecreaseIndent} outline mini>インデント下げ&gt;&gt;</Input.IconButton>
+            <Input.IconButton onClick={handleIncreaseIndent} icon={Icon.ChevronDoubleLeftIcon} outline mini>インデント上げ</Input.IconButton>
+            <Input.IconButton onClick={handleDecreaseIndent} icon={Icon.ChevronDoubleRightIcon} outline mini>インデント下げ</Input.IconButton>
+            <div className="basis-2"></div>
+            <Input.IconButton onClick={handleMoveAbove} icon={Icon.ChevronDoubleUpIcon} outline mini>上移動</Input.IconButton>
+            <Input.IconButton onClick={handleMoveBelow} icon={Icon.ChevronDoubleDownIcon} outline mini>下移動</Input.IconButton>
             <div className="flex-1"></div>
             <Input.IconButton onClick={reload} icon={Icon.ArrowPathIcon} outline mini>再読み込み</Input.IconButton>
             <Input.IconButton onClick={openAppSettingDialog} icon={Icon.Cog6ToothIcon} outline mini>設定</Input.IconButton>

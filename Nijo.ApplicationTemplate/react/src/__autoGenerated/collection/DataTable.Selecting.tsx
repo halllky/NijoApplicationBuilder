@@ -62,8 +62,8 @@ export const useSelection = <T,>(
     }
     // 行選択
     else if (obj.target === 'row') {
-      selectionStart.current = { colIndex: 0, rowIndex: obj.endRowIndex }
-      caretCell.current = { colIndex: api.getAllLeafColumns().length - 1, rowIndex: obj.startRowIndex }
+      selectionStart.current = { colIndex: api.getAllLeafColumns().length - 1, rowIndex: obj.endRowIndex }
+      caretCell.current = { colIndex: 0, rowIndex: obj.startRowIndex }
       onCaretCellChanged(caretCell.current)
       setContainsRowHeader(true)
       onActiveRowChanged?.({ rowIndex: obj.startRowIndex, getRow: () => api.getCoreRowModel().flatRows[obj.startRowIndex].original })
