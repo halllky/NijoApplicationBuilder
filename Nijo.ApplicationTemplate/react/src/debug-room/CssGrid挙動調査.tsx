@@ -1,4 +1,5 @@
 import React, { useState } from "react"
+import 色調整ツール from "./色調整ツール"
 
 export default function () {
 
@@ -75,6 +76,7 @@ export default function () {
         <button type="button" onClick={() => setItemCount(5)} className="px-1 border border-color-8">5個にする</button>
         <button type="button" onClick={() => setItemCount(13)} className="px-1 border border-color-8">13個にする</button>
       </div>
+      <色調整ツール />
       <VFromEx.Root>
         <VFromEx.Vertical count={itemCount}>
           {Array.from({ length: itemCount }).map((_, i) => (
