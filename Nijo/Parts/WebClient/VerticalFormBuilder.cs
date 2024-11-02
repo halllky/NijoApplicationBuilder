@@ -11,45 +11,244 @@ namespace Nijo.Parts.WebClient {
     /// VForm2のソースを組み立てる。
     /// VForm2.tsx と密接に関わっているのでそちらも併せて参照のこと
     /// </summary>
-    internal class VerticalFormBuilder : VerticalFormSection {
-        internal VerticalFormBuilder(string? label = null, E_VForm2LabelType? labelType = null, params string[] additionalAttributes) : base(label, labelType, additionalAttributes) {
+    internal abstract class VForm2 {
+
+        /// <summary>
+        /// VForm2.Root
+        /// </summary>
+        internal class RootNode : VForm2 {
+            internal RootNode(Label? label, int? maxDepth, decimal? estimatedLabelWidthRem, params string[] additionalAttributes) {
+                _label = label;
+                _maxDepth = maxDepth;
+                _estimatedLabelWidthRem = estimatedLabelWidthRem;
+                _additionalAttributes = additionalAttributes;
+            }
+            private readonly Label? _label;
+            private readonly int? _maxDepth;
+            private readonly decimal? _estimatedLabelWidthRem;
+            private readonly string[] _additionalAttributes;
+
+            protected override bool ShouldWrapAutoColumn => false;
+
+            internal override string Render(CodeRenderingContext ctx) {
+                var attrs = new List<string>();
+
+                if (_label != null) {
+                    attrs.Add(_label.Render(ctx));
+                }
+                if (_maxDepth != null) {
+                    attrs.Add($"maxDepth={{{_maxDepth}}}");
+                } else {
+                    attrs.Add($"maxDepth={{{GetMaxIndentDepth()}}}");
+                }
+                if (_estimatedLabelWidthRem != null) {
+                    attrs.Add($"estimatedLabelWidth=\"{_estimatedLabelWidthRem}rem\"");
+                }
+
+                attrs.AddRange(_additionalAttributes);
+
+                return $$"""
+                    <VForm2.Root{{attrs.Select(x => " " + x).Join("")}}>
+                      {{WithIndent(RenderChildren(ctx), "  ")}}
+                    </VForm2.Root>
+                    """;
+            }
         }
 
         /// <summary>
-        /// VForm2.Root としてレンダリングします。
-        /// VForm2.Indent としてレンダリングする場合は <see cref="VerticalFormSection.Render(CodeRenderingContext)"/> を使用のこと。
+        /// VForm2.Indent
         /// </summary>
-        /// <param name="context"></param>
-        /// <param name="label">ラベル</param>
-        /// <param name="maxDepth">インデントの最大の深さ。未指定の場合は自動計算される。</param>
-        /// <param name="estimatedLabelWidthRem">ラベル列の横幅。単位はCSSのrem。基本的にはそのフォーム中で登場する最も長い項目名の文字数</param>
-        /// <returns></returns>
-        public string RenderAsRoot(CodeRenderingContext context, string? label, int? maxDepth, decimal? estimatedLabelWidthRem) {
-            var attrs = new List<string>();
-
-            // ラベル
-            if (label != null) {
-                var escaped = label.Replace("\"", "&quot;");
-                attrs.Add($"label=\"{escaped}\"");
+        internal class IndentNode : VForm2 {
+            internal IndentNode(Label? label, params string[] additionalAttributes) {
+                _label = label;
+                _additionalAttributes = additionalAttributes;
             }
+            private readonly Label? _label;
+            private readonly string[] _additionalAttributes;
 
-            // 深さ未指定の場合は自動計算
-            maxDepth ??= _childItems
-                .DefaultIfEmpty()
-                .Max(x => x?.GetMaxDepth() ?? 0);
-            attrs.Add($"maxDepth={{{maxDepth}}}");
+            protected override bool ShouldWrapAutoColumn => false;
 
-            // ラベル列の横幅
-            if (estimatedLabelWidthRem.HasValue) attrs.Add($"estimatedLabelWidth=\"{estimatedLabelWidthRem}rem\"");
+            internal override string Render(CodeRenderingContext ctx) {
+                var attrs = new List<string>();
 
-            attrs.AddRange(_additionalAttributes);
+                if (_label != null) {
+                    attrs.Add(_label.Render(ctx));
+                }
+                attrs.AddRange(_additionalAttributes);
 
-            return $$"""
-                <VForm2.Root {{attrs.Join(" ")}}>
-                  {{WithIndent(RenderBody(context), "  ")}}
-                </VForm2.Root>
-                """;
+                // TODO refactor: 余計なスペース1個
+                return $$"""
+                    <VForm2.Indent {{attrs.Select(x => " " + x).Join("")}}>
+                      {{WithIndent(RenderChildren(ctx), "  ")}}
+                    </VForm2.Indent>
+                    """;
+            }
         }
+
+        /// <summary>
+        /// VForm2.Item
+        /// </summary>
+        internal class ItemNode : VForm2 {
+            internal ItemNode(Label? label, bool isWide, string contents, params string[] additionalAttributes) {
+                _label = label;
+                _isWide = isWide;
+                _contents = contents;
+                _additionalAttributes = additionalAttributes;
+            }
+            private readonly Label? _label;
+            private readonly bool _isWide;
+            private readonly string _contents;
+            private readonly string[] _additionalAttributes;
+
+            protected override bool ShouldWrapAutoColumn => !_isWide;
+
+            internal override VForm2 Append(VForm2 node) {
+                throw new InvalidOperationException($"{nameof(ItemNode)}には子要素を追加できない");
+            }
+            internal override string Render(CodeRenderingContext ctx) {
+                var attrs = new List<string>();
+
+                if (_isWide) {
+                    attrs.Add("wideValue");
+                }
+                if (_label != null) {
+                    attrs.Add(_label.Render(ctx));
+                }
+                attrs.AddRange(_additionalAttributes);
+
+                return $$"""
+                    <VForm2.Item{{attrs.Select(x => " " + x).Join("")}}>
+                      {{WithIndent(_contents, "  ")}}
+                    </VForm2.Item>
+                    """;
+            }
+        }
+
+        /// <summary>
+        /// 任意のReactNode
+        /// </summary>
+        internal class UnknownNode : VForm2 {
+            internal UnknownNode(string sourceCode, bool isWide) {
+                _sourceCode = sourceCode;
+                _isWide = isWide;
+            }
+            private readonly string _sourceCode;
+            private readonly bool _isWide;
+
+            protected override bool ShouldWrapAutoColumn => !_isWide;
+
+            internal override VForm2 Append(VForm2 node) {
+                throw new InvalidOperationException($"{nameof(UnknownNode)}には子要素を追加できない");
+            }
+            internal override string Render(CodeRenderingContext ctx) {
+                return _sourceCode;
+            }
+        }
+
+
+        private VForm2() { }
+        private readonly List<VForm2> _childNodes = new();
+
+        /// <summary>
+        /// このノードの子要素を追加します。
+        /// </summary>
+        /// <returns>このインスタンス自身を返します。</returns>
+        internal virtual VForm2 Append(VForm2 node) {
+            _childNodes.Add(node);
+            return this;
+        }
+
+        #region AutoColumn
+        /// <summary>
+        /// 適宜 VForm.AutoColumn でラッピングしながら子要素をレンダリングします。
+        /// </summary>
+        protected string RenderChildren(CodeRenderingContext ctx) {
+            var sourceCode = new StringBuilder();
+            bool isInAutoColumn = false;
+            foreach (var child in _childNodes) {
+                if (child.ShouldWrapAutoColumn) {
+                    if (!isInAutoColumn) {
+                        sourceCode.AppendLine("<VForm2.AutoColumn>");
+                        isInAutoColumn = true;
+                    }
+                    sourceCode.AppendLine($$"""
+                          {{WithIndent(child.Render(ctx), "  ")}}
+                        """);
+
+                } else {
+                    if (isInAutoColumn) {
+                        sourceCode.AppendLine("</VForm2.AutoColumn>");
+                        isInAutoColumn = false;
+                    }
+                    sourceCode.AppendLine($$"""
+                        {{child.Render(ctx)}}
+                        """);
+                }
+            }
+            if (isInAutoColumn) {
+                sourceCode.AppendLine("</VForm2.AutoColumn>");
+            }
+            return sourceCode.ToString().TrimEnd();
+        }
+        /// <summary>
+        /// このノードが VForm.AutoColumn でラッピングされるか否かを返します。
+        /// </summary>
+        protected abstract bool ShouldWrapAutoColumn { get; }
+        #endregion AutoColumn
+
+        #region 深さ計算
+        protected int GetMaxIndentDepth() {
+            var maxDepthChildren = _childNodes
+                .OfType<IndentNode>()
+                .ToArray();
+
+            if (maxDepthChildren.Length == 0) {
+                return 0;
+            } else {
+                return maxDepthChildren.Max(node => node.GetMaxIndentDepth()) + 1;
+            }
+        }
+        #endregion 深さ計算
+
+        /// <summary>
+        /// VForm2のソースコードをレンダリングします。
+        /// </summary>
+        internal abstract string Render(CodeRenderingContext ctx);
+
+
+        #region ラベル
+        internal abstract class Label {
+            internal abstract string Render(CodeRenderingContext ctx);
+        }
+        internal class StringLabel : Label {
+            internal StringLabel(string value) => _value = value;
+            private readonly string _value;
+            internal override string Render(CodeRenderingContext ctx) {
+                return $$"""
+                    label="{{_value.Replace("\"", "&quot;")}}"
+                    """;
+            }
+        }
+        internal class JSXElementLabel : Label {
+            internal JSXElementLabel(string value) => _value = value;
+            private readonly string _value;
+            internal override string Render(CodeRenderingContext ctx) {
+                if (_value.StartsWith("<>") && _value.EndsWith("</>")) {
+                    // React.Fragmentの場合は改行が冗長に感じられるので括弧で囲まない
+                    return $$"""
+                        label={{{WithIndent(_value, "")}}}
+                        """;
+
+                } else {
+                    return $$"""
+                        label={(
+                          {{WithIndent(_value, "  ")}}
+                        )}
+                        """;
+                }
+            }
+        }
+        #endregion ラベル
 
 
         /// <summary>
@@ -94,173 +293,5 @@ namespace Nijo.Parts.WebClient {
                     """;
             });
         }
-    }
-
-    internal interface IVerticalFormParts {
-        int GetMaxDepth();
-        IEnumerable<IVerticalFormParts> GetChildItems();
-        string Render(CodeRenderingContext context);
-    }
-
-    /// <summary>
-    /// VForm2 の入れ子セクション
-    /// </summary>
-    internal class VerticalFormSection : IVerticalFormParts {
-        internal VerticalFormSection(string? label, E_VForm2LabelType? labelType, params string[] additionalAttributes) {
-            _label = label;
-            _labelType = labelType;
-            _additionalAttributes = additionalAttributes;
-        }
-
-        protected readonly string[] _additionalAttributes;
-        protected readonly string? _label;
-        protected readonly E_VForm2LabelType? _labelType;
-        protected readonly List<IVerticalFormParts> _childItems = new();
-
-        /// <summary>このセクションに項目を追加します。</summary>
-        internal void AddItem(bool wide, string? label, E_VForm2LabelType? labelType, string contents) {
-            var item = new VerticalFormItem(wide, label, labelType, contents);
-            _childItems.Add(item);
-        }
-        /// <summary>このセクションに入れ子の子セクションを追加します。</summary>
-        internal VerticalFormSection AddSection(string? label, E_VForm2LabelType? labelType, params string[] additionalAttributes) {
-            var section = new VerticalFormSection(label, labelType, additionalAttributes);
-            _childItems.Add(section);
-            return section;
-        }
-        /// <summary>このセクションに任意の項目を追加します。</summary>
-        internal void AddUnknownParts(string sourceCode) {
-            _childItems.Add(new UnknownFormItem(sourceCode));
-        }
-
-        int IVerticalFormParts.GetMaxDepth() {
-            return _childItems.DefaultIfEmpty().Max(x => x?.GetMaxDepth() ?? 0) + 1;
-        }
-        IEnumerable<IVerticalFormParts> IVerticalFormParts.GetChildItems() {
-            return _childItems;
-        }
-
-        public string Render(CodeRenderingContext context) {
-            string label;
-            if (_label == null) {
-                label = string.Empty;
-            } else if (_labelType == E_VForm2LabelType.String) {
-                var escaped = _label.Replace("\"", "&quot;");
-                label = $$"""
-                     label="{{escaped}}"
-                    """;
-            } else {
-                label = $$"""
-                     label={{{_label}}}
-                    """;
-            }
-
-            return $$"""
-                <VForm2.Indent {{_additionalAttributes.Select(x => $"{x} ").Join(" ")}}{{label}}>
-                  {{WithIndent(RenderBody(context), "  ")}}
-                </VForm2.Indent>
-                """;
-        }
-        /// <summary>
-        /// 本体部分をレンダリングします。
-        /// wideでない要素の塊はAutoColumnでラッピングしなければならないというルールを隠蔽する役割を持ちます。
-        /// </summary>
-        protected IEnumerable<string> RenderBody(CodeRenderingContext context) {
-            var currentIsNoWideItem = false;
-            foreach (var item in _childItems) {
-                if (item is VerticalFormItem vItem && !vItem.IsWide) {
-                    if (currentIsNoWideItem == false) {
-                        yield return "<VForm2.AutoColumn>";
-                        currentIsNoWideItem = true;
-                    }
-                } else {
-                    if (currentIsNoWideItem == true) {
-                        yield return "</VForm2.AutoColumn>";
-                        currentIsNoWideItem = false;
-                    }
-                }
-                yield return currentIsNoWideItem
-                    ? $$"""
-                          {{WithIndent(item.Render(context), "  ")}}
-                        """
-                    : item.Render(context);
-            }
-            if (currentIsNoWideItem) {
-                yield return "</VForm2.AutoColumn>";
-            }
-        }
-    }
-
-    /// <summary>
-    /// VForm2の末端項目
-    /// </summary>
-    internal class VerticalFormItem : IVerticalFormParts {
-        internal VerticalFormItem(bool isWide, string? label, E_VForm2LabelType? labelType, string contents) {
-            IsWide = isWide;
-            _label = label;
-            _labelType = labelType;
-            _contents = contents;
-        }
-        /// <summary>この項目がフォームの横幅いっぱい占有する項目か否か</summary>
-        internal bool IsWide { get; }
-        private readonly string? _label;
-        private readonly E_VForm2LabelType? _labelType;
-        private readonly string _contents;
-
-        int IVerticalFormParts.GetMaxDepth() {
-            return 0;
-        }
-        IEnumerable<IVerticalFormParts> IVerticalFormParts.GetChildItems() {
-            yield break;
-        }
-        string IVerticalFormParts.Render(CodeRenderingContext context) {
-            string label;
-            if (_label == null) {
-                label = string.Empty;
-            } else if (_labelType == E_VForm2LabelType.String) {
-                var escaped = _label.Replace("\"", "&quot;");
-                label = $$"""
-                     label="{{escaped}}"
-                    """;
-            } else {
-                label = $$"""
-                     label={(
-                      {{WithIndent(_label, "  ")}}
-                    )}
-                    """;
-            }
-            return $$"""
-                <VForm2.Item{{(IsWide ? " wideValue" : "")}}{{label}}>
-                  {{WithIndent(_contents, "  ")}}
-                </VForm2.Item>
-                """;
-        }
-    }
-
-    /// <summary>
-    /// 任意の要素
-    /// </summary>
-    internal class UnknownFormItem : IVerticalFormParts {
-
-        internal UnknownFormItem(string sourceCode) {
-            _sourceCode = sourceCode;
-        }
-        private readonly string _sourceCode;
-
-        IEnumerable<IVerticalFormParts> IVerticalFormParts.GetChildItems() {
-            yield break;
-        }
-        int IVerticalFormParts.GetMaxDepth() {
-            return 0;
-        }
-        string IVerticalFormParts.Render(CodeRenderingContext context) {
-            return _sourceCode;
-        }
-    }
-
-    /// <summary>ラベルがただの文字列か JSX.Element か</summary>
-    internal enum E_VForm2LabelType {
-        String,
-        JsxElement,
     }
 }

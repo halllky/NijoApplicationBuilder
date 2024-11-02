@@ -150,7 +150,7 @@ namespace Nijo.Models.RefTo {
                                   {Customizers?.{{SEARCH_CONDITION_CUSTOMIZER}} ? (
                                     <Customizers.{{SEARCH_CONDITION_CUSTOMIZER}} />
                                   ) : (
-                                    {{WithIndent(searchCondition.RenderVForm2(pageRenderingContext, false), "                 ")}}
+                                    {{WithIndent(searchCondition.RenderVForm2(pageRenderingContext, false), "                 "/* TODO refactor: インデントの数が奇数 */)}}
                                   )}
                                 </ReactHookForm.FormProvider>
                               </div>

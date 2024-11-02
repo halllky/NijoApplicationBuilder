@@ -83,8 +83,9 @@ namespace Nijo.Models.CommandModelFeatures {
         /// <summary>
         /// コンポーネントのルート要素
         /// </summary>
-        protected virtual VerticalFormBuilder GetComponentRoot(bool isReadOnly) {
-            return new VerticalFormBuilder();
+        protected virtual VForm2 GetComponentRoot(bool isReadOnly) {
+            var maxDepth = _aggregate.Item.Options.FormDepth ?? EnumerateThisAndDescendantsRecursively().Max(component => component._depth);
+            return new VForm2.RootNode(null, maxDepth, _aggregate.Item.Options.EstimatedLabelWidth);
         }
 
         /// <summary>
@@ -119,9 +120,9 @@ namespace Nijo.Models.CommandModelFeatures {
         }
 
         /// <summary>
-        /// <see cref="VerticalFormBuilder"/> のインスタンスを組み立てます。
+        /// <see cref="VForm2"/> のインスタンスを組み立てます。
         /// </summary>
-        protected VerticalFormBuilder BuildVerticalForm(CodeRenderingContext context, bool isReadOnly) {
+        protected VForm2 BuildVerticalForm(CodeRenderingContext context, bool isReadOnly) {
             var formBuilder = GetComponentRoot(isReadOnly);
             var formContext = new FormUIRenderingContext {
                 CodeRenderingContext = context,
@@ -148,19 +149,19 @@ namespace Nijo.Models.CommandModelFeatures {
             };
             foreach (var member in EnumerateRenderedMemberes().OrderBy(m => m.Order)) {
                 if (member is AggregateMember.ValueMember vm) {
-                    var label = vm.IsRequired && vm.Owner.IsInEntryTree()
-                        ? $$"""
+                    VForm2.Label label = vm.IsRequired && vm.Owner.IsInEntryTree()
+                        ? new VForm2.JSXElementLabel($$"""
                             <VForm2.LabelText>
                               {{member.DisplayName}}
                               <Input.RequiredChip />
                             </VForm2.LabelText>
-                            """
-                        : member.DisplayName;
-                    var labelType = vm.IsRequired && vm.Owner.IsInEntryTree()
-                        ? E_VForm2LabelType.JsxElement
-                        : E_VForm2LabelType.String;
+                            """)
+                        : new VForm2.StringLabel(member.DisplayName);
 
-                    formBuilder.AddItem(vm.Options.WideInVForm, label, labelType, vm.Options.MemberType.RenderSingleViewVFormBody(vm, formContext));
+                    formBuilder.Append(new VForm2.ItemNode(
+                        label,
+                        vm.Options.WideInVForm,
+                        vm.Options.MemberType.RenderSingleViewVFormBody(vm, formContext)));
 
                 } else if (member is AggregateMember.RelationMember rel) {
                     var descendant = GetDescendantComponent(rel);
@@ -172,7 +173,7 @@ namespace Nijo.Models.CommandModelFeatures {
                         ? Enumerable.Empty<string>()
                         : [$"hidden={{{CURRENT_STEP} !== {step}}}"];
 
-                    formBuilder.AddUnknownParts(descendant.RenderCaller(GetArgumentsAndLoopVar(), hidden));
+                    formBuilder.Append(new VForm2.UnknownNode(descendant.RenderCaller(GetArgumentsAndLoopVar(), hidden), true));
 
                 } else {
                     throw new NotImplementedException();
@@ -217,7 +218,6 @@ namespace Nijo.Models.CommandModelFeatures {
         internal virtual string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
             // ルート要素のコンポーネントのレンダリング
             var vForm = BuildVerticalForm(context, isReadOnly);
-            var maxDepth = _aggregate.Item.Options.FormDepth ?? EnumerateThisAndDescendantsRecursively().Max(component => component._depth);
 
             var existsStep = _aggregate
                 .GetMembers()
@@ -237,7 +237,7 @@ namespace Nijo.Models.CommandModelFeatures {
                   return (
                     <div className="p-px">
                       <Input.FormItemMessage name="root" errors={errors} />
-                      {{WithIndent(vForm.RenderAsRoot(context, null, maxDepth, _aggregate.Item.Options.EstimatedLabelWidth), "      ")}}
+                      {{WithIndent(vForm.Render(context), "      ")}}
                     </div>
                   )
                 }
@@ -284,18 +284,18 @@ namespace Nijo.Models.CommandModelFeatures {
 
             private readonly AggregateMember.RelationMember _member;
 
-            protected override VerticalFormBuilder GetComponentRoot(bool isReadOnly) {
+            protected override VForm2 GetComponentRoot(bool isReadOnly) {
                 var fullpath = _member.GetFullPathAsCommandParameterRHFRegisterName(GetArgumentsAndLoopVar());
                 var sectionName = _member is AggregateMember.Parent parent
                     ? parent.ParentAggregate.Item.DisplayName
                     : _member.DisplayName;
-                var label = $$"""
+                var label = new VForm2.JSXElementLabel($$"""
                     <>
                       <VForm2.LabelText>{{sectionName}}</VForm2.LabelText>
                       <Input.FormItemMessage name={`{{fullpath.Join(".")}}`} errors={errors} />
                     </>
-                    """;
-                return new VerticalFormBuilder(label, E_VForm2LabelType.JsxElement);
+                    """);
+                return new VForm2.IndentNode(label);
             }
         }
 
@@ -335,11 +335,11 @@ namespace Nijo.Models.CommandModelFeatures {
 
             private bool HasStep => _aggregate.Item.Options.Step != null;
 
-            protected override VerticalFormBuilder GetComponentRoot(bool isReadOnly) {
+            protected override VForm2 GetComponentRoot(bool isReadOnly) {
                 var attributes = HasStep
                     ? new[] { $"className={{(hidden ? 'hidden' : '')}}" }
                     : [];
-                return new VerticalFormBuilder(_aggregate.Item.DisplayName, E_VForm2LabelType.String, attributes);
+                return new VForm2.IndentNode(new VForm2.StringLabel(_aggregate.Item.DisplayName), attributes);
             }
 
             internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
@@ -405,9 +405,9 @@ namespace Nijo.Models.CommandModelFeatures {
                     """;
             }
 
-            protected override VerticalFormBuilder GetComponentRoot(bool isReadOnly) {
+            protected override VForm2 GetComponentRoot(bool isReadOnly) {
                 var fullpath = _ref.GetFullPathAsCommandParameterRHFRegisterName(GetArgumentsAndLoopVar());
-                var label = $$"""
+                var label = new VForm2.JSXElementLabel($$"""
                     <>
                       <div className="inline-flex items-center py-1 gap-2">
                         <VForm2.LabelText>
@@ -422,8 +422,8 @@ namespace Nijo.Models.CommandModelFeatures {
                       </div>
                       <Input.FormItemMessage name={`{{fullpath.Join(".")}}`} errors={errors} />
                     </>
-                    """;
-                return new VerticalFormBuilder(label, E_VForm2LabelType.JsxElement);
+                    """);
+                return new VForm2.IndentNode(label);
             }
         }
 
@@ -501,12 +501,12 @@ namespace Nijo.Models.CommandModelFeatures {
         private class ChildrenFormComponent : ChildrenComponent {
             internal ChildrenFormComponent(AggregateMember.Children children, int depth) : base(children, depth) { }
 
-            protected override VerticalFormBuilder GetComponentRoot(bool isReadOnly) {
+            protected override VForm2 GetComponentRoot(bool isReadOnly) {
                 // ここでビルドされるフォームは配列全体ではなくループの中身の方
                 var loopVar = GetLoopVar();
                 var creatable = !isReadOnly && !_aggregate.IsOutOfEntryTree(); // 参照先の集約の子孫要素は追加削除不可
                 var fullpath = _children.GetFullPathAsCommandParameterRHFRegisterName(GetArgumentsAndLoopVar());
-                var label = $$"""
+                var label = new VForm2.JSXElementLabel($$"""
                     <>
                       <div className="inline-flex gap-2 py-px justify-start items-center">
                         <VForm2.LabelText>
@@ -521,8 +521,8 @@ namespace Nijo.Models.CommandModelFeatures {
                       </div>
                       <Input.FormItemMessage name={`{{fullpath.Join(".")}}.${{{loopVar}}}`} errors={errors} />
                     </>
-                    """;
-                return new VerticalFormBuilder(label, E_VForm2LabelType.JsxElement, $"key={{{loopVar}}}");
+                    """);
+                return new VForm2.IndentNode(label, $"key={{{loopVar}}}");
             }
 
             internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
