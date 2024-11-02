@@ -76,9 +76,8 @@ namespace Nijo.Parts.WebClient {
                 }
                 attrs.AddRange(_additionalAttributes);
 
-                // TODO refactor: 余計なスペース1個
                 return $$"""
-                    <VForm2.Indent {{attrs.Select(x => " " + x).Join("")}}>
+                    <VForm2.Indent{{attrs.Select(x => " " + x).Join("")}}>
                       {{WithIndent(RenderChildren(ctx), "  ")}}
                     </VForm2.Indent>
                     """;
