@@ -390,7 +390,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     }) => {
                       const { register, registerEx, getValues, setValue, formState: { errors } } = Util.useFormContextEx<{{UseFormType}}>()
                     {{If(!isReadOnly, () => $$"""
-                      const {{OPEN}} = {{dialog.HookName}}()
+                      const {{OPEN}} = RefTo.{{dialog.HookName}}()
                       const handleClickSearch = useEvent(() => {
                         {{OPEN}}({
                           onSelect: item => setValue(`{{fullpath.Join(".")}}`, item ?? Types.{{refTarget.TsNewObjectFunction}}())

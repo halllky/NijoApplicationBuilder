@@ -60,7 +60,7 @@ namespace Nijo.Models.RefTo {
             return $$"""
                 export const {{HookName}} = () => {
                   const [, dispatch] = Layout.useDialogContext()
-                  return useCallback(({ initialSearchCondition, multiSelect, onSelect }: {
+                  return React.useCallback(({ initialSearchCondition, multiSelect, onSelect }: {
                     /** ダイアログを開いた瞬間の検索条件 */
                     initialSearchCondition?: Types.{{searchCondition.TsTypeName}}
                   } & ({
@@ -89,7 +89,7 @@ namespace Nijo.Models.RefTo {
                       })
 
                       // 検索時処理
-                      const { {{RefSearchMethod.LOAD}}, {{RefSearchMethod.COUNT}}, {{RefSearchMethod.CURRENT_PAGE_ITEMS}} } = Hooks.{{search.ReactHookName}}()
+                      const { {{RefSearchMethod.LOAD}}, {{RefSearchMethod.COUNT}}, {{RefSearchMethod.CURRENT_PAGE_ITEMS}} } = {{search.ReactHookName}}()
                       const reload = useEvent((condition: Types.{{searchCondition.TsTypeName}}) => {
                         resetSearchCondition(condition)
                         {{RefSearchMethod.COUNT}}(condition.filter).then(setTotalItemCount)
@@ -100,7 +100,7 @@ namespace Nijo.Models.RefTo {
                       })
 
                       // ページング
-                      const [totalItemCount, setTotalItemCount] = useState(0)
+                      const [totalItemCount, setTotalItemCount] = React.useState(0)
                       const pagerState = Input.usePager(
                         defaultValues?.skip,
                         defaultValues?.take,
@@ -115,7 +115,7 @@ namespace Nijo.Models.RefTo {
                       }
 
                       // 複数選択
-                      const dataTableRef = useRef<Layout.DataTableRef<Types.{{searchResult.TsTypeName}}>>(null)
+                      const dataTableRef = React.useRef<Layout.DataTableRef<Types.{{searchResult.TsTypeName}}>>(null)
                       const handleSelectMultiple = useEvent(() => {
                         if (!multiSelect) throw new Error('1件選択モードの場合にこの関数が呼ばれることはあり得ない')
                         const selectedItems = dataTableRef.current?.getSelectedRows().map(x => x.row) ?? []
@@ -132,7 +132,7 @@ namespace Nijo.Models.RefTo {
                       // 検索結果欄の列定義
                       const cellType = Layout.{{CellType.USE_HELPER}}<Types.{{searchResult.TsTypeName}}>()
                       const gridCustomizer = Customizers?.{{SEARCH_RESULT_CUSTOMIZER}}?.()
-                      const columnDefs: Layout.DataTableColumn<Types.{{searchResult.TsTypeName}}>[] = useMemo(() => {
+                      const columnDefs: Layout.DataTableColumn<Types.{{searchResult.TsTypeName}}>[] = React.useMemo(() => {
                         const defs: Layout.DataTableColumn<Types.{{searchResult.TsTypeName}}>[] = [
                           {{WithIndent(tableBuilder.RenderColumnDef(context), "          ")}}
                         ]
@@ -146,13 +146,13 @@ namespace Nijo.Models.RefTo {
                             {/* 検索条件欄 */}
                             <Panel defaultSize={30} className="flex flex-col">
                               <div className="flex-1 overflow-y-scroll border border-color-4 bg-color-gutter">
-                                <FormProvider {...rhfSearchMethods}>
+                                <ReactHookForm.FormProvider {...rhfSearchMethods}>
                                   {Customizers?.{{SEARCH_CONDITION_CUSTOMIZER}} ? (
                                     <Customizers.{{SEARCH_CONDITION_CUSTOMIZER}} />
                                   ) : (
                                     {{WithIndent(searchCondition.RenderVForm2(pageRenderingContext, false), "                 ")}}
                                   )}
-                                </FormProvider>
+                                </ReactHookForm.FormProvider>
                               </div>
                               <div className="flex justify-end gap-2 pt-1">
                                 <Input.IconButton outline onClick={clearSearchCondition}>クリア</Input.IconButton>

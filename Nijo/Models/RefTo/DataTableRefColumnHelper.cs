@@ -82,7 +82,7 @@ namespace Nijo.Models.RefTo {
             var deps = new List<string>();
 
             uses.Add($$"""
-                const { {{RefSearchMethod.LOAD}}: load{{_refEntry.Item.PhysicalName}} } = AggregateHook.{{refSearch.ReactHookName}}(true)
+                const { {{RefSearchMethod.LOAD}}: load{{_refEntry.Item.PhysicalName}} } = RefTo.{{refSearch.ReactHookName}}(true)
                 """);
             deps.Add($"load{_refEntry.Item.PhysicalName}");
 
@@ -95,7 +95,7 @@ namespace Nijo.Models.RefTo {
                     cols.push({
                       id: `${header}::SEARCH-MAG`,
                       render: (row, rowIndex) => {
-                        const openDialog = AggregateComponent.{{searchDialog.HookName}}()
+                        const openDialog = RefTo.{{searchDialog.HookName}}()
                         const handleClick = useEvent(() => {
                           openDialog({
                             onSelect: selectedItem => {
