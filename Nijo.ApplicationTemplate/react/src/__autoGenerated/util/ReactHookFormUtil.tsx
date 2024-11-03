@@ -33,8 +33,8 @@ export const useFormContextEx = <T extends FieldValues = FieldValues>() => {
     name,
     // TODO: watchを使うとページ全体に再レンダリングが走ってしまう
     value: useFormContextReturns.watch(name),
-    onChange: (value: PathValue<T, TFieldName>) => {
-      useFormContextReturns.setValue(name, value)
+    onChange: (value: PathValue<T, TFieldName> | undefined) => {
+      useFormContextReturns.setValue(name, value as PathValue<T, TFieldName>)
     },
   })
 
@@ -60,7 +60,7 @@ export type RegisterExReturns<
 > = {
   name: TFieldName
   value: PathValue<TFieldValues, TFieldName>
-  onChange: (value: PathValue<TFieldValues, TFieldName>) => void
+  onChange: (value: PathValue<TFieldValues, TFieldName> | undefined) => void
 }
 
 // ---------------------------------------------

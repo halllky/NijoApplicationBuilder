@@ -1,6 +1,8 @@
 using Nijo.Core;
+using Nijo.Models.ReadModel2Features;
 using Nijo.Models.WriteModel2Features;
 using Nijo.Parts.Utility;
+using Nijo.Parts.WebClient;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -349,67 +351,147 @@ namespace Nijo.Models.RefTo {
         internal string RenderSingleViewUiComponent(CodeRenderingContext ctx) {
             var dialog = new SearchDialog(_aggregate, _aggregate);
 
+            var formContext = new FormUIRenderingContext {
+                CodeRenderingContext = ctx,
+                Register = "registerEx2",
+                GetReactHookFormFieldPath = vm => vm.GetFullPathAsDataClassForRefTarget(),
+                RenderReadOnlyStatement = member => {
+                    // エントリーのツリー内のキー項目の読み取り専用は実行時の画面表示用データに付随しているreadonlyオブジェクトの値に従う
+                    if (member.Owner.IsInEntryTree() && member.IsKey) {
+                        var fullpath = member.GetFullPathAsDataClassForRefTarget();
+                        return $"{FormUIRenderingContext.READONLY}={{isReadOnlyField2(`{fullpath.Join(".")}`)}}";
+                    }
+
+                    // 上記以外は常に読み取り専用
+                    return FormUIRenderingContext.READONLY;
+                },
+                RenderErrorMessage = vm => SKIP_MARKER, // 参照先のエラーメッセージは個別のValueMemberではなくRefMeber自体の脇に表示
+            };
+
+            var indentNode = new VForm2.IndentNode(new VForm2.JSXElementLabel($$"""
+                (<>
+                  <div className="inline-flex items-center py-1 gap-2">
+                    <VForm2.LabelText>{props.displayName}</VForm2.LabelText>
+                    {props.required && <Input.RequiredChip />}
+                    {!props.readOnly && <Input.IconButton underline mini icon={Icon.MagnifyingGlassIcon} onClick={handleClickSearch}>検索</Input.IconButton>}
+                  </div>
+                  <Input.FormItemMessage name={props.name} errors={errors} />
+                </>)
+                """));
+            BuildVForm(this, indentNode);
+
             return $$"""
                 /**
                  *  詳細画面のフォームで{{_aggregate.Item.DisplayName}}を参照する部分。
                  *  VFrom2のItemやIndentとしてレンダリングされます。
                  *  **【注意】このコンポーネントをAutoColumnに包むかどうかはnijo.xml側で制御する必要があります**
                  */
-                export const {{UiComponentName}} = ({ label, value, onChange, readOnly, required, errors }: {
-                  label?: string
-                  value?: Types.{{TsTypeName}}
-                  onChange?: (value: Types.{{TsTypeName}} | undefined) => void
-                  readOnly?: boolean
-                  required?: boolean
-                  errors?: React.ReactNode
+                export const {{UiComponentName}} = <
+                  /** react hook form が管理しているデータの型。このコンポーネント内部ではなく画面全体の型。 */
+                  TFieldValues extends ReactHookForm.FieldValues = ReactHookForm.FieldValues,
+                  /** react hook form が管理しているデータの型の各プロパティへの名前。 */
+                  TFieldName extends ReactHookForm.FieldPath<TFieldValues> = ReactHookForm.FieldPath<TFieldValues>
+                >(props: {
+                  displayName: string
+                  name: ReactHookForm.PathValue<TFieldValues, TFieldName> extends (Types.{{TsTypeName}} | undefined) ? TFieldName : never
+                  readOnly: boolean
+                  required: boolean
                 }) => {
+                  const { register, registerEx, getValues, setValue, formState: { errors } } = Util.useFormContextEx<TFieldValues>()
 
-                  // 検索ダイアログ
+                  // React hook form のメンバーパスがこのコンポーネントの外（呼ぶ側）とこのコンポーネント内部で分断されるが、
+                  // そのどちらでもTypeScriptの型検査が効くようにするために内外のパスをつなげる関数
+                  const getPath = (path: ReactHookForm.FieldPath<Types.{{TsTypeName}}>): TFieldName => `${props.name}.${path}` as TFieldName
+                  const registerEx2 = <P extends ReactHookForm.FieldPath<Types.{{TsTypeName}}>>(path: P) => {
+                    // onChangeの型がうまく推論されないので明示的にキャストしている
+                    return registerEx(getPath(path)) as unknown as Util.RegisterExReturns<Types.{{TsTypeName}}, P>
+                  }
+
+                  const isReadOnlyField2 = <P extends ReactHookForm.FieldPath<Types.{{TsTypeName}}>>(path: P): boolean => {
+                    return Util.isReadOnlyField(getPath(path), getValues)
+                  }
+
                   const openSearchDialog = {{dialog.HookName}}()
                   const handleClickSearch = useEvent(() => {
                     openSearchDialog({
-                      onSelect: item => onChange?.(item ?? Types.{{TsNewObjectFunction}}()),
+                      onSelect: item => setValue(props.name, item as ReactHookForm.PathValue<TFieldValues, TFieldName>)
                     })
                   })
 
+                  const { CustomUiComponent } = useCustomizerContext()
+
                   return (
-                    <VForm2.Item wideValue label={(
-                      <>
-                        <div className="inline-flex items-center py-1 gap-2">
-                          <VForm2.LabelText>{label}</VForm2.LabelText>
-                          {required && <Input.RequiredChip />}
-                          {!readOnly && <Input.IconButton underline mini icon={Icon.MagnifyingGlassIcon} onClick={handleClickSearch}>検索</Input.IconButton>}
-                        </div>
-                        {errors}
-                      </>
-                    )}>
-                      {{WithIndent(RenderAggregate(_aggregate, "value", _aggregate), "      ")}}
-                    </VForm2.Item>
+                    {{WithIndent(indentNode.Render(ctx), "    ")}}
                   )
                 }
                 """;
 
-            IEnumerable<string> RenderAggregate(GraphNode<Aggregate> renderingAggregate, string instance, GraphNode<Aggregate> instanceAggregate) {
-                var displayData = new RefDisplayData(renderingAggregate, _refEntry);
-                foreach (var member in displayData.GetOwnMembers()) {
+            void BuildVForm(RefDisplayData displayData, VForm2 formBuilder) {
+                var redneringMember = displayData
+                    .GetOwnMembers()
+                    .Where(m => m is not AggregateMember.ValueMember vm
+                             || !vm.Options.InvisibleInGui)
+                    .Concat(displayData.GetChildMembers().Select(x => x.MemberInfo))
+                    .OrderBy(m => m.Order);
+
+                foreach (var member in redneringMember) {
                     if (member is AggregateMember.ValueMember vm) {
-                        yield return $$"""
-                            <VForm2.Item label="{{vm.DisplayName.Replace("\"", "&quot;")}}">
-                              {{{instance}}?.{{vm.Declared.GetFullPathAsDataClassForRefTarget(since: instanceAggregate).Join("?.")}}}
-                            </VForm2.Item>
+                        VForm2.Label label = vm.IsRequired && vm.Owner.IsInEntryTree()
+                            ? new VForm2.JSXElementLabel($$"""
+                                (
+                                  <VForm2.LabelText>
+                                    {{member.DisplayName}}
+                                    <Input.RequiredChip />
+                                  </VForm2.LabelText>
+                                )
+                                """)
+                            : new VForm2.StringLabel(member.DisplayName);
+
+                        var fullpath = vm.GetFullPathAsDataClassForRefTarget();
+                        var mustReadOnly = vm.IsKey && vm.DeclaringAggregate == _refEntry;
+
+                        formBuilder.Append(new VForm2.ItemNode(label, vm.Options.WideInVForm, vm.Options.SingleViewCustomUiComponentName == null
+                            ? $$"""
+                                {{vm.Options.MemberType.RenderSingleViewVFormBody(vm, formContext)}}
+                                """
+                            : $$"""
+                                <{{AutoGeneratedCustomizer.CUSTOM_UI_COMPONENT}}.{{vm.Options.SingleViewCustomUiComponentName}} {...registerEx2(`{{fullpath.Join(".")}}`)} {{FormUIRenderingContext.READONLY}}={isReadOnlyField2(`{{fullpath.Join(".")}}`)} />
+                                """));
+
+                    } else if (member is AggregateMember.Ref @ref
+                        && (!@ref.Owner.IsOutOfEntryTree()
+                        || @ref.Relation == @ref.Owner.GetRefEntryEdge()) // ルート集約0が参照先1を見ており、参照先1がさらに別の参照先2を見ており、
+                                                                          // かつ1から2への参照でカスタムUIが指定されていた場合であっても、
+                                                                          // 1から2への参照ではカスタムコンポーネントは用いない
+                                                                          // （ルート集約0の画面で1がどの2を参照するかを変えることができてはいけないので）
+                        && @ref.SingleViewCustomUiComponentName != null) {
+
+                        VForm2.Label label = @ref.Relation.IsRequired() && @ref.Owner.IsInEntryTree()
+                            ? new VForm2.JSXElementLabel($$"""
+                                (
+                                  <VForm2.LabelText>
+                                    {{member.DisplayName}}
+                                    <Input.RequiredChip />
+                                  </VForm2.LabelText>
+                                )
+                                """)
+                            : new VForm2.StringLabel(@ref.DisplayName);
+
+                        var fullpath = @ref.GetFullPathAsDataClassForRefTarget();
+                        var body = $$"""
+                            <{{AutoGeneratedCustomizer.CUSTOM_UI_COMPONENT}}.{{@ref.SingleViewCustomUiComponentName}} {...registerEx2(`{{fullpath.Join(".")}}`)} {{FormUIRenderingContext.READONLY}}={isReadOnlyField2(`{{fullpath.Join(".")}}`)} />
                             """;
 
-                    } else if (member is AggregateMember.Children children) {
-                        yield return $$"""
-                            {/* #57 参照先の{{children.DisplayName}}はここに表示される予定です。 */}
-                            """;
+                        formBuilder.Append(new VForm2.ItemNode(label, false, body));
 
-                    } else if (member is AggregateMember.RelationMember rm) {
-                        yield return $$"""
-                            <VForm2.Indent label="{{rm.DisplayName.Replace("\"", "&quot;")}}">
-                              {{WithIndent(RenderAggregate(rm.MemberAggregate, instance, instanceAggregate), "  ")}}
-                            </VForm2.Indent>
-                            """;
+                    } else if (member is AggregateMember.Children) {
+                        formBuilder.Append(new VForm2.UnknownNode($"/* #57 参照先の子配列 '{member.DisplayName}' はここに表示されます */", false));
+
+                    } else if (member is AggregateMember.RelationMember rel) {
+                        var descendant = new RefDisplayDataDescendant(rel, _refEntry);
+                        var indentNode = new VForm2.IndentNode(new VForm2.StringLabel(rel.DisplayName));
+                        formBuilder.Append(indentNode);
+                        BuildVForm(descendant, indentNode);
 
                     } else {
                         throw new NotImplementedException();
