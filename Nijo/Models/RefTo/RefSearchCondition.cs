@@ -1,5 +1,6 @@
 using Nijo.Core;
 using Nijo.Models.ReadModel2Features;
+using Nijo.Parts.WebClient;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -7,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static Nijo.Models.CommandModelFeatures.CommandParameter;
 
 namespace Nijo.Models.RefTo {
     /// <summary>
@@ -65,6 +67,124 @@ namespace Nijo.Models.RefTo {
         protected override IEnumerable<string> GetFullPathForRefRHFRegisterName(AggregateMember.Ref @ref) {
             return @ref.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript);
         }
+
+
+        #region UIコンポーネント
+        internal string UiComponentName => $"RefTo{_aggregate.Item.PhysicalName}SearchCondition";
+        /// <summary>
+        /// 各画面の検索条件欄のこの集約へのref-to部分のコンポーネントをレンダリングします。
+        /// </summary>
+        internal string RenderUiComponent(CodeRenderingContext ctx) {
+
+            var formUiContext = new FormUIRenderingContext {
+                CodeRenderingContext = ctx,
+                GetReactHookFormFieldPath = vm => vm.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript, _refEntry).Skip(1), // 先頭の "filter." をはじくためにSkip(1)
+                Register = "registerEx2",
+                RenderReadOnlyStatement = vm => string.Empty, // 検索条件欄の項目が読み取り専用になることはない
+                RenderErrorMessage = vm => throw new InvalidOperationException("検索条件欄では項目ごとにエラーメッセージを表示するという概念が無い"),
+            };
+            var rootNode = new VForm2.IndentNode(new VForm2.JSXElementLabel("props.displayName"));
+            BuildVForm(this, rootNode);
+
+            return $$"""
+                /**
+                 * {{_aggregate.Item.DisplayName}}の検索条件のUIコンポーネント。
+                 * VFrom2のItemやIndentとしてレンダリングされます。
+                 * **【注意】このコンポーネントをAutoColumnに包むかどうかはnijo.xml側で制御する必要があります**
+                 */
+                export const {{UiComponentName}} = <
+                  /** react hook form が管理しているデータの型。このコンポーネント内部ではなく画面全体の型。 */
+                  TFieldValues extends ReactHookForm.FieldValues = ReactHookForm.FieldValues,
+                  /** react hook form が管理しているデータの型の各プロパティへの名前。 */
+                  TFieldName extends ReactHookForm.FieldPath<TFieldValues> = ReactHookForm.FieldPath<TFieldValues>
+                >(props: {
+                  displayName: string
+                  name: ReactHookForm.PathValue<TFieldValues, TFieldName> extends (Types.{{TsFilterTypeName}} | undefined) ? TFieldName : never
+                  registerEx: Util.UseFormExRegisterEx<TFieldValues>
+                }) => {
+                  // React hook form のメンバーパスがこのコンポーネントの外（呼ぶ側）とこのコンポーネント内部で分断されるが、
+                  // そのどちらでもTypeScriptの型検査が効くようにするために内外のパスをつなげる関数
+                  const getPath = (path: ReactHookForm.FieldPath<Types.{{TsFilterTypeName}}>): TFieldName => `${props.name}.${path}` as TFieldName
+                  const registerEx2 = <P extends ReactHookForm.FieldPath<Types.{{TsFilterTypeName}}>>(path: P) => {
+                    // onChangeの型がうまく推論されないので明示的にキャストしている
+                    return props.registerEx(getPath(path)) as unknown as Util.RegisterExReturns<Types.{{TsFilterTypeName}}, P>
+                  }
+
+                  return (
+                    {{WithIndent(rootNode.Render(ctx), "    ")}}
+                  )
+                }
+                """;
+
+            void BuildVForm(SearchCondition refSearchCondition, VForm2 section) {
+
+                /// <see cref="SearchCondition.RenderVForm2"/> とロジックを合わせる
+
+                var renderedMembers = refSearchCondition.GetOwnMembers().Select(m => new {
+                    MemberInfo = (AggregateMember.AggregateMemberBase)m.Member,
+                    m.DisplayName,
+                    Descendant = (DescendantSearchCondition?)null,
+                }).Concat(refSearchCondition.GetChildMembers().Select(m => new {
+                    MemberInfo = (AggregateMember.AggregateMemberBase)m.MemberInfo,
+                    m.DisplayName,
+                    Descendant = (DescendantSearchCondition?)m,
+                }));
+
+                foreach (var member in renderedMembers.OrderBy(m => m.MemberInfo.Order)) {
+                    if (member.MemberInfo is AggregateMember.ValueMember vm) {
+                        if (vm.Options.InvisibleInGui) continue; // 非表示項目
+
+                        if (vm.Options.SearchConditionCustomUiComponentName == null) {
+                            // 既定の検索条件コンポーネント
+                            var body = vm.Options.MemberType.RenderSearchConditionVFormBody(vm, formUiContext);
+                            section.Append(new VForm2.ItemNode(new VForm2.StringLabel(member.DisplayName), false, body));
+
+                        } else {
+                            // カスタマイズ検索条件コンポーネント
+                            var fullpath = formUiContext.GetReactHookFormFieldPath(vm);
+                            var body = $$"""
+                                <{{AutoGeneratedCustomizer.CUSTOM_UI_COMPONENT}}.{{vm.Options.SearchConditionCustomUiComponentName}} {...{{formUiContext.Register}}(`{{fullpath.Join(".")}}`)} readOnly={false} />
+                                """;
+                            section.Append(new VForm2.ItemNode(new VForm2.StringLabel(member.DisplayName), false, body));
+                        }
+
+                    } else if (member.MemberInfo is AggregateMember.Ref @ref) {
+                        var fullpath = GetFullPathForRefRHFRegisterName(@ref).Skip(1); // 先頭の "filter." をはじくためにSkip(1)
+
+                        if (@ref.SearchConditionCustomUiComponentName == null) {
+                            // 参照先ref-to既定の検索条件コンポーネント
+                            var sc = new RefSearchCondition(@ref.RefTo, _refEntry);
+                            var componentName = $"{RefToFile.GetImportAlias(@ref.RefTo)}.{sc.UiComponentName}";
+                            var body = $$"""
+                               <{{componentName}}
+                                 displayName="{{@ref.DisplayName.Replace("\"", "&quot;")}}"
+                                 name={getPath(`{{fullpath.Join(".")}}`) as Extract<Parameters<typeof {{componentName}}>['0']['name'], never>}
+                                 registerEx={props.registerEx}
+                               />
+                               """;
+                            section.Append(new VForm2.UnknownNode(body, true));
+
+                        } else {
+                            // 参照先ref-toカスタマイズ検索条件コンポーネント
+                            var body = $$"""
+                                <{{AutoGeneratedCustomizer.CUSTOM_UI_COMPONENT}}.{{@ref.SearchConditionCustomUiComponentName}} {...{{formUiContext.Register}}(`{{fullpath.Join(".")}}`)} readOnly={false} />
+                                """;
+                            section.Append(new VForm2.ItemNode(new VForm2.StringLabel(member.DisplayName), false, body));
+                        }
+
+                    } else if (member.MemberInfo is AggregateMember.RelationMember rm) {
+                        // 入れ子コンポーネント
+                        var childSection = new VForm2.IndentNode(new VForm2.StringLabel(member.DisplayName));
+                        section.Append(childSection);
+                        BuildVForm(member.Descendant!, childSection);
+
+                    } else {
+                        throw new NotImplementedException();
+                    }
+                }
+            }
+        }
+        #endregion UIコンポーネント
 
 
         internal const string PARENT = "PARENT";

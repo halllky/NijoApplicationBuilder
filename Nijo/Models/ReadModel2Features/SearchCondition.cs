@@ -321,6 +321,8 @@ namespace Nijo.Models.ReadModel2Features {
         }
         private void BuildVForm2(FormUIRenderingContext context, VForm2 section) {
 
+            /// <see cref="RefTo.RefSearchCondition.RenderUiComponent"/> とロジックを合わせる
+
             var renderedMembers = GetOwnMembers().Select(m => new {
                 MemberInfo = (AggregateMember.AggregateMemberBase)m.Member,
                 m.DisplayName,

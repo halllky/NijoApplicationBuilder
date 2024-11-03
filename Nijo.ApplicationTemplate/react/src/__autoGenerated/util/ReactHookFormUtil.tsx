@@ -28,18 +28,39 @@ export const useFormEx = <T extends FieldValues = FieldValues>(props: UseFormExP
 
 export const useFormContextEx = <T extends FieldValues = FieldValues>() => {
   const useFormContextReturns = useFormContext<T>()
+
+  const registerEx: UseFormExRegisterEx<T> = <TFieldName extends FieldPath<T>>(name: TFieldName) => ({
+    name,
+    // TODO: watchを使うとページ全体に再レンダリングが走ってしまう
+    value: useFormContextReturns.watch(name),
+    onChange: (value: PathValue<T, TFieldName>) => {
+      useFormContextReturns.setValue(name, value)
+    },
+  })
+
   return {
     ...useFormContextReturns,
-    registerEx: <TFieldName extends FieldPath<T>>(name: TFieldName) => ({
-      name,
-      // TODO: watchを使うとページ全体に再レンダリングが走ってしまう
-      value: useFormContextReturns.watch(name),
-      onChange: (value: PathValue<T, TFieldName>) => {
-        useFormContextReturns.setValue(name, value)
-      },
-    }),
+    /**
+     * react hook form の通常のregisterはonChangeの引数がhtmlのものそのままなので変更後の値以外も入ってくる。
+     * 値のみが入るようにしたものがこちら
+     */
+    registerEx,
     onAnyValueChange: (useFormContextReturns as { onAnyValueChange?: OnAnyValueChangeEvent }).onAnyValueChange,
   }
+}
+
+/** registerExの型 */
+export type UseFormExRegisterEx<TFieldValues extends FieldValues>
+  = <TFieldName extends FieldPath<TFieldValues>>(name: TFieldName) => RegisterExReturns<TFieldValues, TFieldName>
+
+/** registerExの戻り値の型 */
+export type RegisterExReturns<
+  TFieldValues extends FieldValues,
+  TFieldName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+> = {
+  name: TFieldName
+  value: PathValue<TFieldValues, TFieldName>
+  onChange: (value: PathValue<TFieldValues, TFieldName>) => void
 }
 
 // ---------------------------------------------

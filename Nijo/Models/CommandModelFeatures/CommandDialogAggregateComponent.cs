@@ -151,10 +151,12 @@ namespace Nijo.Models.CommandModelFeatures {
                 if (member is AggregateMember.ValueMember vm) {
                     VForm2.Label label = vm.IsRequired && vm.Owner.IsInEntryTree()
                         ? new VForm2.JSXElementLabel($$"""
-                            <VForm2.LabelText>
-                              {{member.DisplayName}}
-                              <Input.RequiredChip />
-                            </VForm2.LabelText>
+                            (
+                              <VForm2.LabelText>
+                                {{member.DisplayName}}
+                                <Input.RequiredChip />
+                              </VForm2.LabelText>
+                            )
                             """)
                         : new VForm2.StringLabel(member.DisplayName);
 

@@ -232,19 +232,9 @@ namespace Nijo.Parts.WebClient {
             internal JSXElementLabel(string value) => _value = value;
             private readonly string _value;
             internal override string Render(CodeRenderingContext ctx) {
-                if (_value.StartsWith("<>") && _value.EndsWith("</>")) {
-                    // React.Fragmentの場合は改行が冗長に感じられるので括弧で囲まない
-                    return $$"""
-                        label={{{WithIndent(_value, "")}}}
-                        """;
-
-                } else {
-                    return $$"""
-                        label={(
-                          {{WithIndent(_value, "  ")}}
-                        )}
-                        """;
-                }
+                return $$"""
+                    label={{{WithIndent(_value, "")}}}
+                    """;
             }
         }
         #endregion ラベル

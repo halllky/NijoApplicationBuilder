@@ -350,7 +350,11 @@ namespace Nijo.Models.RefTo {
             var dialog = new SearchDialog(_aggregate, _aggregate);
 
             return $$"""
-                /** 詳細画面のフォームで{{_aggregate.Item.DisplayName}}を参照する部分 */
+                /**
+                 *  詳細画面のフォームで{{_aggregate.Item.DisplayName}}を参照する部分。
+                 *  VFrom2のItemやIndentとしてレンダリングされます。
+                 *  **【注意】このコンポーネントをAutoColumnに包むかどうかはnijo.xml側で制御する必要があります**
+                 */
                 export const {{UiComponentName}} = ({ label, value, onChange, readOnly, required, errors }: {
                   label?: string
                   value?: Types.{{TsTypeName}}

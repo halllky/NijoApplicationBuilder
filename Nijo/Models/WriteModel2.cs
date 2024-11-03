@@ -104,6 +104,7 @@ namespace Nijo.Models {
                     context.ReactProject.Types.Add(rootAggregate, refDisplayData.RenderTsNewObjectFunction(context));
 
                     // UI: 詳細画面用のVFormの一部
+                    // UI: 検索条件欄のVFormの一部
                     // UI: コンボボックス
                     // UI: 検索ダイアログ
                     // UI: インライン検索ビュー
@@ -112,6 +113,7 @@ namespace Nijo.Models {
                     var searchDialog = new SearchDialog(asEntry, asEntry);
                     var inlineRef = new SearchInline(asEntry);
                     refToFile.Add(asEntry, refDisplayData.RenderSingleViewUiComponent(context));
+                    refToFile.Add(asEntry, refSearchCondition.RenderUiComponent(context));
                     refToFile.Add(asEntry, comboBox.Render(context));
                     refToFile.Add(asEntry, searchDialog.RenderHook(context));
                     refToFile.Add(asEntry, inlineRef.Render(context));

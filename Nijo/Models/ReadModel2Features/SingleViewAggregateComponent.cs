@@ -175,10 +175,12 @@ namespace Nijo.Models.ReadModel2Features {
 
                         VForm2.Label label = @ref.Relation.IsRequired() && @ref.Owner.IsInEntryTree()
                             ? new VForm2.JSXElementLabel($$"""
-                                <VForm2.LabelText>
-                                  {{member.DisplayName}}
-                                  <Input.RequiredChip />
-                                </VForm2.LabelText>
+                                (
+                                  <VForm2.LabelText>
+                                    {{member.DisplayName}}
+                                    <Input.RequiredChip />
+                                  </VForm2.LabelText>
+                                )
                                 """)
                             : new VForm2.StringLabel(@ref.DisplayName);
 
