@@ -50,8 +50,8 @@ namespace Nijo.Parts.WebClient {
                     RenderContent = ctx => {
 
                         // 参照先が別の参照先をもっているとき、このフォルダ内の別のファイルからimportする必要がある
-                        var refToList = kv.Key.EnumerateAncestorsAndThis()
-                            .Concat(kv.Key.EnumerateDescendants())
+                        var refToList = kv.Key.GetRoot()
+                            .EnumerateThisAndDescendants()
                             .SelectMany(agg => agg.GetMembers())
                             .OfType<AggregateMember.Ref>()
                             .Select(@ref => new {

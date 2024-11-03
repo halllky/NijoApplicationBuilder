@@ -110,6 +110,8 @@ namespace Nijo.Models.RefTo {
                     return props.registerEx(getPath(path)) as unknown as Util.RegisterExReturns<Types.{{TsFilterTypeName}}, P>
                   }
 
+                  const { CustomUiComponent } = useCustomizerContext()
+
                   return (
                     {{WithIndent(rootNode.Render(ctx), "    ")}}
                   )
