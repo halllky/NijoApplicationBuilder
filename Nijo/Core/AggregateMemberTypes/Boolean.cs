@@ -70,9 +70,13 @@ namespace Nijo.Core.AggregateMemberTypes {
 
         string IAggregateMemberType.RenderSingleViewVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
             var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
-            var readOnly = ctx.RenderReadOnlyStatement(vm.Declared);
+
+            var attrs = new List<string>();
+            attrs.Add(ctx.RenderReadOnlyStatement(vm.Declared));
+            ctx.EditComponentAttributes?.Invoke(vm, attrs);
+
             return $$"""
-                <Input.CheckBox {...{{ctx.Register}}(`{{fullpath}}`)} {{readOnly}}/>
+                <Input.CheckBox {...{{ctx.Register}}(`{{fullpath}}`)} {{attrs.Join(" ")}}/>
                 {{ctx.RenderErrorMessage(vm)}}
                 """;
         }

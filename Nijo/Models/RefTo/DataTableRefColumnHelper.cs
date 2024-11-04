@@ -38,7 +38,7 @@ namespace Nijo.Models.RefTo {
                 .OrderBy(vm => vm.Order)
                 .ToArray();
 
-            // フォーカス離脱時の検索
+            // フォーカス離脱時の検索 // #58 この処理が何度も出てくるのでリファクタリングする
             var keysForSearchOnBlur = keys.Select(vm => {
                 var leftFullPath = vm.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript);
 

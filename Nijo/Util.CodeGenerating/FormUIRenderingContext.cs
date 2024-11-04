@@ -41,5 +41,11 @@ namespace Nijo.Util.CodeGenerating {
         /// レンダリングするオブジェクト（検索条件のオブジェクトだったり詳細画面のオブジェクトだったりする）によってパスが変わるので。
         /// </summary>
         public required Func<AggregateMember.ValueMember, IEnumerable<string>> GetReactHookFormFieldPath { get; init; }
+
+        /// <summary>
+        /// 画面側ソースでReactコンポーネントに任意の属性を追加する。
+        /// この処理は <see cref="IAggregateMemberType.RenderSingleViewVFormBody"/> の中で必ず呼ばれる必要がある。
+        /// </summary>
+        public Action<AggregateMember.ValueMember, List<string>>? EditComponentAttributes { get; init; }
     }
 }

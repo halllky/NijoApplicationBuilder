@@ -95,9 +95,9 @@ namespace Nijo.Core.AggregateMemberTypes {
             var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
 
             var attrs = new List<string> {
-                $"options={{[{Definition.Items.Select(x => $"'{x.PhysicalName}' as const").Join(", ")}]}} ",
+                $"options={{[{Definition.Items.Select(x => $"'{x.PhysicalName}' as const").Join(", ")}]}}",
                 $"textSelector={{item => item}}",
-                $"{ctx.RenderReadOnlyStatement(vm.Declared)} ", // readonly
+                $"{ctx.RenderReadOnlyStatement(vm.Declared)}", // readonly
             };
 
             // ラジオボタンまたはコンボボックスどちらか決め打ちの場合
@@ -107,8 +107,10 @@ namespace Nijo.Core.AggregateMemberTypes {
                 attrs.Add("radio");
             }
 
+            ctx.EditComponentAttributes?.Invoke(vm, attrs);
+
             return $$"""
-                <Input.Selection {...{{ctx.Register}}(`{{fullpath}}`)} {{attrs.Join("")}}/>
+                <Input.Selection {...{{ctx.Register}}(`{{fullpath}}`)} {{attrs.Join(" ")}}/>
                 {{ctx.RenderErrorMessage(vm)}}
                 """;
         }

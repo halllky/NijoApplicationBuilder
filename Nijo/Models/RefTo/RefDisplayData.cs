@@ -366,6 +366,12 @@ namespace Nijo.Models.RefTo {
                     return FormUIRenderingContext.READONLY;
                 },
                 RenderErrorMessage = vm => SKIP_MARKER, // 参照先のエラーメッセージは個別のValueMemberではなくRefMeber自体の脇に表示
+                EditComponentAttributes = (vm, attrs) => {
+                    // キー項目の場合、onChangeはただの値変更ではなく、検索処理実行のトリガーになる。
+                    if (vm.IsKey) {
+                        attrs.Add($"onChange={{handleChange{vm.MemberName}}}");
+                    }
+                },
             };
 
             var indentNode = new VForm2.IndentNode(new VForm2.JSXElementLabel($$"""
@@ -379,6 +385,13 @@ namespace Nijo.Models.RefTo {
                 </>)
                 """));
             BuildVForm(this, indentNode);
+
+            var refSearch = new RefSearchMethod(_aggregate, _refEntry);
+            var refSearchCondition = new RefSearchCondition(_aggregate, _refEntry);
+            var keys = _aggregate
+                .GetKeys()
+                .OfType<AggregateMember.ValueMember>()
+                .ToArray();
 
             return $$"""
                 /**
@@ -417,6 +430,35 @@ namespace Nijo.Models.RefTo {
                       onSelect: item => setValue(props.name, item as ReactHookForm.PathValue<TFieldValues, TFieldName>)
                     })
                   })
+
+                  const { load } = useSearchReference参照先(true)
+                {{keys.SelectTextTemplate(vm => $$"""
+
+                  const handleChange{{vm.MemberName}} = useEvent(async (value: {{vm.Options.MemberType.GetTypeScriptTypeName()}} | undefined) => {
+                    // キー未入力なら参照先をクリア
+                    if (value === undefined) {
+                      setValue(props.name, undefined as ReactHookForm.PathValue<TFieldValues, TFieldName>, { shouldDirty: true })
+                      return
+                    }
+
+                    // キーで検索をかけて1件だけヒットした場合に参照先をセット
+                    const currentValue = getValues(props.name) as Types.{{TsTypeName}} | undefined
+                    const searchCondition = Types.{{refSearchCondition.CreateNewObjectFnName}}()
+                    /* value以外の主キーを代入する。
+                       ソリューションを "#58" で検索して同様の処理を行っている箇所から類似処理を持ってくること。
+                {{keys.Where(key => key != vm).SelectTextTemplate(key => $$"""
+                    searchCondition.{{key.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript).Join(".")}} = currentValue?.{{key.Declared.GetFullPathAsDataClassForRefTarget().Join("?.")}}
+                """)}}
+                    */
+                    searchCondition.{{vm.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript).Join(".")}} = value
+                    const searchResult = await load(searchCondition)
+                    if (searchResult.length === 1) {
+                      setValue(props.name, searchResult[0] as ReactHookForm.PathValue<TFieldValues, TFieldName>, { shouldDirty: true })
+                    } else {
+                      setValue(props.name, undefined as ReactHookForm.PathValue<TFieldValues, TFieldName>, { shouldDirty: true })
+                    }
+                  })
+                """)}}
 
                   const { CustomUiComponent } = useCustomizerContext()
 
