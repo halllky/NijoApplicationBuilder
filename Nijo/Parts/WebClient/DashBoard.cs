@@ -12,7 +12,7 @@ namespace Nijo.Parts.WebClient {
             return new SourceFile {
                 FileName = "DashBoard.tsx",
                 RenderContent = context => $$"""
-                    import { useCallback, useState, useEffect } from 'react'
+                    import React, { useCallback, useState, useEffect } from 'react'
                     import { useEvent } from 'react-use-event-hook'
                     import * as Icon from '@heroicons/react/24/outline'
                     import * as Util from '../util'
@@ -36,6 +36,7 @@ namespace Nijo.Parts.WebClient {
                       const { applicationName } = useCustomizerContext()
 
                       // デバッグ用DB再作成コマンド
+                      const [recreating, setRecreating] = React.useState(false)
                       const [, dispatchMsg] = Util.useMsgContext()
                       const [, dispatchToast] = Util.useToastContext()
                       const { get, post } = Util.useHttpRequest()
@@ -44,11 +45,15 @@ namespace Nijo.Parts.WebClient {
                       const { reset: resetLocalRepository } = Util.useLocalRepositoryChangeList()
 
                       const recreateDatabase = useEvent(async () => {
-                        if (window.confirm('DBを再作成します。データは全て削除されます。よろしいですか？')) {
+                        if (recreating) return
+                        if (!window.confirm('DBを再作成します。データは全て削除されます。よろしいですか？')) return
+                        try {
+                          setRecreating(true)
                           try {
                             await resetLocalRepository()
                           } catch (error) {
                             dispatchMsg(msg => msg.error(`ローカルリポジトリの初期化に失敗しました: ${error}`))
+                            return
                           }
 
                           const response = await post('/WebDebugger/recreate-database')
@@ -61,6 +66,8 @@ namespace Nijo.Parts.WebClient {
                             }
                           }
                           dispatchToast(msg => msg.info('DBを再作成しました。'))
+                        } finally {
+                          setRecreating(false)
                         }
                       })
 
@@ -95,7 +102,7 @@ namespace Nijo.Parts.WebClient {
                             <VForm2.Root label="デバッグ用コマンド ※この欄は開発環境でのみ表示されます" estimatedLabelWidth="8rem">
                               <VForm2.Indent label="データベース">
                                 <VForm2.Item label="再作成" wideValue>
-                                  <Input.IconButton onClick={recreateDatabase} fill>DBを再作成する</Input.IconButton>
+                                  <Input.IconButton onClick={recreateDatabase} fill loading={recreating}>DBを再作成する</Input.IconButton>
                                 </VForm2.Item>
                                 <VForm2.Item wideValue>
                                   <Input.CheckBox value={withDummyData} onChange={setWithDummyData}>ダミーデータも併せて作成する</Input.CheckBox>
