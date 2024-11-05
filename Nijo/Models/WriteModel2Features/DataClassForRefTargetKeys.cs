@@ -24,10 +24,19 @@ namespace Nijo.Models.WriteModel2Features {
 
         internal string CsClassName => _refEntry == _aggregate
             ? $"{_refEntry.Item.PhysicalName}RefTargetKeys"
-            : $"{_refEntry.Item.PhysicalName}RefTargetKeys_{_aggregate.Item.PhysicalName}";
+            : $"{_refEntry.Item.PhysicalName}RefTargetKeys_{GetRelationHistory().Join("の")}";
         internal string TsTypeName => _refEntry == _aggregate
             ? $"{_refEntry.Item.PhysicalName}RefTargetKeys"
-            : $"{_refEntry.Item.PhysicalName}RefTargetKeys_{_aggregate.Item.PhysicalName}";
+            : $"{_refEntry.Item.PhysicalName}RefTargetKeys_{GetRelationHistory().Join("の")}";
+        private IEnumerable<string> GetRelationHistory() {
+            foreach (var edge in _aggregate.PathFromEntry().Since(_refEntry)) {
+                if (edge.IsParentChild() && edge.Source == edge.Terminal) {
+                    yield return edge.Initial.As<Aggregate>().Item.PhysicalName;
+                } else {
+                    yield return edge.RelationName.ToCSharpSafe();
+                }
+            }
+        }
 
         /// <summary>
         /// この集約自身がもつメンバーを列挙します。

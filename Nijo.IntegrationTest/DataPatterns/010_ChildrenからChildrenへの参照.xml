@@ -1,20 +1,29 @@
-<?xml version="1.0" encoding="utf-8" ?>
-
-<自動テストで作成されたプロジェクト>
-  <参照先 is="write-model-2 generate-default-read-model">
-    <参照先集約ID is="uuid key" />
-    <参照先集約名 is="word name" />
-    <参照先の子配列 is="children">
-      <参照先の子配列のキー is="uuid key" />
-      <参照先の子配列の名前プロパティ is="word name" />
-    </参照先の子配列>
-  </参照先>
-  <参照元 is="read-model-2">
-    <参照元集約ID is="uuid key" />
-    <参照元集約名 is="word name" />
-    <参照元の子配列 is="children">
-      <参照元の子配列のキー is="uuid key" />
-      <参照 is="ref-to:参照先/参照先の子配列" />
-    </参照元の子配列>
-  </参照元>
+<?xml version="1.0" encoding="utf-8"?>
+<自動テストで作成されたプロジェクト DbContextName="MyDbContext">
+  <見積書テンプレート is="write-model-2 generate-default-read-model">
+    <テンプレートID is="uuid key" />
+    <テンプレート名 is="word name" />
+    <セクション is="children">
+      <セクションID is="uuid key" />
+      <セクション名 is="word name" />
+    </セクション>
+  </見積書テンプレート>
+  <見積書 is="write-model-2 generate-default-read-model">
+    <見積書ID is="uuid key" />
+    <タイトル is="word name" />
+    <発行日時 is="datetime" />
+    <定型欄 is="children">
+      <欄ID is="uuid key" />
+      <セクションテンプレート is="ref-to:見積書テンプレート/セクション" />
+      <文 is="sentence" />
+    </定型欄>
+  </見積書>
+  <見積回答 is="write-model-2 generate-default-read-model">
+    <見積書 is="ref-to:見積書 key" />
+    <返答日 is="date" />
+    <コメント is="children">
+      <対象 is="ref-to:見積書/定型欄 key" />
+      <コメント文章 is="sentence" />
+    </コメント>
+  </見積回答>
 </自動テストで作成されたプロジェクト>
