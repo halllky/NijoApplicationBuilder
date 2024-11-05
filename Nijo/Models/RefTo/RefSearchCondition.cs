@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static Nijo.Models.CommandModelFeatures.CommandParameter;
 
 namespace Nijo.Models.RefTo {
     /// <summary>
@@ -185,6 +184,25 @@ namespace Nijo.Models.RefTo {
                     }
                 }
             }
+        }
+        internal string RenderCustomizersDeclaring() {
+            return $$"""
+                /**
+                 * {{_aggregate.Item.DisplayName}}の検索条件のUIコンポーネント。
+                 * VFrom2のItemやIndentとしてレンダリングされます。
+                 * **【注意】このコンポーネントをAutoColumnに包むかどうかはnijo.xml側で制御する必要があります**
+                 */
+                {{UiComponentName}}?: <
+                  /** react hook form が管理しているデータの型。このコンポーネント内部ではなく画面全体の型。 */
+                  TFieldValues extends ReactHookForm.FieldValues = ReactHookForm.FieldValues,
+                  /** react hook form が管理しているデータの型の各プロパティへの名前。 */
+                  TFieldName extends ReactHookForm.FieldPath<TFieldValues> = ReactHookForm.FieldPath<TFieldValues>
+                >(props: {
+                  displayName: string
+                  name: ReactHookForm.PathValue<TFieldValues, TFieldName> extends (AggregateType.{{TsFilterTypeName}} | undefined) ? TFieldName : never
+                  registerEx: Util.UseFormExRegisterEx<TFieldValues>
+                }) => React.ReactNode
+                """;
         }
         #endregion UIコンポーネント
 

@@ -118,6 +118,8 @@ namespace Nijo.Models {
                     refToFile.Add(asEntry, searchDialog.RenderHook(context));
                     refToFile.Add(asEntry, inlineRef.Render(context));
                     customizer.AddMember(searchDialog.RenderCustomizersDeclaring());
+                    customizer.AddMember(refDisplayData.RenderCustomizersDeclaring());
+                    customizer.AddMember(refSearchCondition.RenderCustomizersDeclaring());
 
                     // UI: DataTable用の列
                     var refToColumn = new DataTableRefColumnHelper(asEntry);

@@ -521,6 +521,26 @@ namespace Nijo.Models.RefTo {
                 }
             }
         }
+        internal string RenderCustomizersDeclaring() {
+            return $$"""
+                /**
+                 *  詳細画面のフォームで{{_aggregate.Item.DisplayName}}を参照する部分。
+                 *  VFrom2のItemやIndentとしてレンダリングされます。
+                 *  **【注意】このコンポーネントをAutoColumnに包むかどうかはnijo.xml側で制御する必要があります**
+                 */
+                {{UiComponentName}}?: <
+                  /** react hook form が管理しているデータの型。このコンポーネント内部ではなく画面全体の型。 */
+                  TFieldValues extends ReactHookForm.FieldValues = ReactHookForm.FieldValues,
+                  /** react hook form が管理しているデータの型の各プロパティへの名前。 */
+                  TFieldName extends ReactHookForm.FieldPath<TFieldValues> = ReactHookForm.FieldPath<TFieldValues>
+                >(props: {
+                  displayName: string
+                  name: ReactHookForm.PathValue<TFieldValues, TFieldName> extends (AggregateType.{{TsTypeName}} | undefined) ? TFieldName : never
+                  readOnly: boolean
+                  required: boolean
+                }) => React.ReactNode
+                """;
+        }
         #endregion UI
 
 
