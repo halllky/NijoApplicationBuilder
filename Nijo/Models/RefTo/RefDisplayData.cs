@@ -350,6 +350,46 @@ namespace Nijo.Models.RefTo {
         internal string UiComponentName => $"RefTo{_aggregate.Item.PhysicalName}";
         internal string RenderSingleViewUiComponent(CodeRenderingContext ctx) {
             var dialog = new SearchDialog(_aggregate, _aggregate);
+            var refSearch = new RefSearchMethod(_aggregate, _refEntry);
+            var refSearchCondition = new RefSearchCondition(_aggregate, _refEntry);
+            var keys = _aggregate
+                .GetKeys()
+                .OfType<AggregateMember.ValueMember>()
+                .ToArray();
+
+            // フォーカス離脱時の検索 // #58 この処理が何度も出てくるのでリファクタリングする
+            var keysForSearchOnBlur = keys.Select(vm => {
+                var leftFullPath = vm.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript);
+
+                // セルの値を検索条件オブジェクトに代入する処理
+                Func<string, string> AssignExpression;
+                if (vm is AggregateMember.Variation variation) {
+                    AssignExpression = value => $$"""
+                        {{variation.GetGroupItems().SelectTextTemplate((variationItem, i) => $$"""
+                        {{(i == 0 ? "" : "else ")}}if ({{value}} === '{{variationItem.Relation.RelationName}}') cond.{{leftFullPath.Join(".")}} = { {{variationItem.Relation.RelationName}}: true }
+                        """)}}
+                        """;
+                } else if (vm.Options.MemberType is Core.AggregateMemberTypes.EnumList enumList) {
+                    AssignExpression = value => $$"""
+                        {{enumList.Definition.Items.SelectTextTemplate((option, i) => $$"""
+                        {{(i == 0 ? "" : "else ")}}if ({{value}} === '{{option.PhysicalName}}') cond.{{leftFullPath.Join(".")}} = { {{option.PhysicalName}}: true }
+                        """)}}
+                        """;
+                } else if (vm.Options.MemberType is SchalarMemberType) {
+                    AssignExpression = value => $$"""
+                        cond.{{leftFullPath.Join(".")}} = { {{FromTo.FROM_TS}}: {{value}}, {{FromTo.TO_TS}}: {{value}} }
+                        """;
+                } else {
+                    AssignExpression = value => $$"""
+                        cond.{{leftFullPath.Join(".")}} = {{value}}
+                        """;
+                }
+
+                return new {
+                    vm.Declared,
+                    AssignExpression,
+                };
+            });
 
             var formContext = new FormUIRenderingContext {
                 CodeRenderingContext = ctx,
@@ -368,7 +408,7 @@ namespace Nijo.Models.RefTo {
                 RenderErrorMessage = vm => SKIP_MARKER, // 参照先のエラーメッセージは個別のValueMemberではなくRefMeber自体の脇に表示
                 EditComponentAttributes = (vm, attrs) => {
                     // キー項目の場合、onChangeはただの値変更ではなく、検索処理実行のトリガーになる。
-                    if (vm.IsKey) {
+                    if (vm.IsKey && vm.DeclaringAggregate == _aggregate) {
                         attrs.Add($"onChange={{handleChange{vm.MemberName}}}");
                     }
                 },
@@ -385,13 +425,6 @@ namespace Nijo.Models.RefTo {
                 </>)
                 """));
             BuildVForm(this, indentNode);
-
-            var refSearch = new RefSearchMethod(_aggregate, _refEntry);
-            var refSearchCondition = new RefSearchCondition(_aggregate, _refEntry);
-            var keys = _aggregate
-                .GetKeys()
-                .OfType<AggregateMember.ValueMember>()
-                .ToArray();
 
             return $$"""
                 /**
@@ -431,7 +464,7 @@ namespace Nijo.Models.RefTo {
                     })
                   })
 
-                  const { load } = useSearchReference参照先(true)
+                  const { load } = {{refSearch.ReactHookName}}(true)
                 {{keys.SelectTextTemplate(vm => $$"""
 
                   const handleChange{{vm.MemberName}} = useEvent(async (value: {{vm.Options.MemberType.GetTypeScriptTypeName()}} | undefined) => {
@@ -443,15 +476,18 @@ namespace Nijo.Models.RefTo {
 
                     // キーで検索をかけて1件だけヒットした場合に参照先をセット
                     const currentValue = getValues(props.name) as Types.{{TsTypeName}} | undefined
-                    const searchCondition = Types.{{refSearchCondition.CreateNewObjectFnName}}()
-                    /* value以外の主キーを代入する。
-                       ソリューションを "#58" で検索して同様の処理を行っている箇所から類似処理を持ってくること。
-                {{keys.Where(key => key != vm).SelectTextTemplate(key => $$"""
-                    searchCondition.{{key.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript).Join(".")}} = currentValue?.{{key.Declared.GetFullPathAsDataClassForRefTarget().Join("?.")}}
+                    const cond = Types.{{refSearchCondition.CreateNewObjectFnName}}()
+
+                {{keysForSearchOnBlur.SelectTextTemplate(key => $$"""
+                {{If(key.Declared == vm.Declared, () => $$"""
+                    {{WithIndent(key.AssignExpression("value"), "    ")}}
+
+                """).Else(() => $$"""
+                    {{WithIndent(key.AssignExpression($"currentValue?.{key.Declared.GetFullPathAsDataClassForRefTarget().Join("?.")}"), "    ")}}
+
                 """)}}
-                    */
-                    searchCondition.{{vm.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript).Join(".")}} = value
-                    const searchResult = await load(searchCondition)
+                """)}}
+                    const searchResult = await load(cond)
                     if (searchResult.length === 1) {
                       setValue(props.name, searchResult[0] as ReactHookForm.PathValue<TFieldValues, TFieldName>, { shouldDirty: true })
                     } else {
