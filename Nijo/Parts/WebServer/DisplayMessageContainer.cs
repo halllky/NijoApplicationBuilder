@@ -70,7 +70,7 @@ namespace Nijo.Parts.WebServer {
                     /// <summary>
                     /// 登録処理などで生じたエラーメッセージなどをHTTPレスポンスとして返すまでの入れ物の抽象クラス
                     /// </summary>
-                    public abstract class {{ABSTRACT_CLASS}} : {{INTERFACE}} {
+                    public abstract partial class {{ABSTRACT_CLASS}} : {{INTERFACE}} {
                         public {{ABSTRACT_CLASS}}(IEnumerable<string> path) {
                             _path = path;
                         }
@@ -141,7 +141,7 @@ namespace Nijo.Parts.WebServer {
                     /// <summary>
                     /// 登録処理などで生じたエラーメッセージなどをHTTPレスポンスとして返すまでの入れ物
                     /// </summary>
-                    public class {{CONCRETE_CLASS}} : {{ABSTRACT_CLASS}} {
+                    public partial class {{CONCRETE_CLASS}} : {{ABSTRACT_CLASS}} {
                         public {{CONCRETE_CLASS}}(IEnumerable<string> path) : base(path) { }
 
                         public override IEnumerable<{{INTERFACE}}> EnumerateChildren() {
@@ -154,7 +154,7 @@ namespace Nijo.Parts.WebServer {
                     /// グリッドのヘッダと自身のセルの部分の2か所にエラー等のメッセージを表示する必要があるため、
                     /// エラーメッセージが1個追加されるごとにHTTPレスポンスのエラーメッセージのオブジェクトが2個ずつ増えていく。
                     /// </summary>
-                    public class {{CONCRETE_CLASS_IN_GRID}} : {{ABSTRACT_CLASS}} {
+                    public partial class {{CONCRETE_CLASS_IN_GRID}} : {{ABSTRACT_CLASS}} {
                         /// <param name="path">このメンバー自身のパス</param>
                         /// <param name="gridRoot">グリッドに表示されるメッセージの入れ物</param>
                         /// <param name="rowIndex">このオブジェクトがグリッドの何行目か</param>
@@ -186,7 +186,7 @@ namespace Nijo.Parts.WebServer {
                     /// <summary>
                     /// 登録処理などで生じたエラーメッセージなどをHTTPレスポンスとして返すまでの入れ物の配列
                     /// </summary>
-                    public class {{CONCRETE_CLASS_LIST}}<T> : {{ABSTRACT_CLASS}}, IReadOnlyList<T> where T : {{INTERFACE}} {
+                    public partial class {{CONCRETE_CLASS_LIST}}<T> : {{ABSTRACT_CLASS}}, IReadOnlyList<T> where T : {{INTERFACE}} {
                         public {{CONCRETE_CLASS_LIST}}(IEnumerable<string> path, Func<int, T> createItem) : base(path) {
                             _createItem = createItem;
                         }
