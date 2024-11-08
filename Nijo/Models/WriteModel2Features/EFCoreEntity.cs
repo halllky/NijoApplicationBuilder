@@ -117,7 +117,7 @@ namespace Nijo.Models.WriteModel2Features {
                     /// テーブルやカラムの詳細を定義します。
                     /// 参考: "Fluent API" （Entity FrameWork Core の仕組み）
                     /// </summary>
-                    public static void {{ON_MODEL_CREATING}}(ModelBuilder modelBuilder) {
+                    public static void {{ON_MODEL_CREATING}}({{context.Config.DbContextName}} dbContext, ModelBuilder modelBuilder) {
                         modelBuilder.Entity<{{context.Config.EntityNamespace}}.{{_aggregate.Item.EFCoreEntityClassName}}>(entity => {
 
                             entity.ToTable("{{_aggregate.Item.Options.DbName ?? _aggregate.Item.PhysicalName}}");
@@ -209,7 +209,7 @@ namespace Nijo.Models.WriteModel2Features {
         /// </summary>
         internal Func<string, string> RenderCallingOnModelCreating(CodeRenderingContext context) {
             return modelBuilder => $$"""
-                {{ClassName}}.{{ON_MODEL_CREATING}}({{modelBuilder}});
+                {{ClassName}}.{{ON_MODEL_CREATING}}(this, {{modelBuilder}});
                 """;
         }
 
