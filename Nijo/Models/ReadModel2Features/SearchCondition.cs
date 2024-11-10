@@ -347,7 +347,7 @@ namespace Nijo.Models.ReadModel2Features {
                         <Components.{{refSearchCondition.UiComponentName}}
                           control={control}
                           displayName="{{@ref.DisplayName.Replace("\"", "&quot;")}}"
-                          name={`{{fullpath.Join(".")}}`}
+                          {...{{context.Register}}(`{{fullpath.Join(".")}}`)}
                         />
                         """, @ref.Relation.IsWide() ?? true));
 

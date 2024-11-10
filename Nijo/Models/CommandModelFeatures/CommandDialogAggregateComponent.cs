@@ -172,8 +172,8 @@ namespace Nijo.Models.CommandModelFeatures {
 
                     formBuilder.Append(new VForm2.UnknownNode($$"""
                         <Components.{{refDisplayData.UiComponentName}}
+                          {...registerEx(`{{valueFullPath.Join(".")}}`)}
                           control={control}
-                          name={`{{valueFullPath.Join(".")}}`}
                           displayName="{{@ref.DisplayName.Replace("\"", "&quot;")}}"
                           readOnly={false}
                           required={{{(@ref.Relation.IsRequired() ? "true" : "false")}}}

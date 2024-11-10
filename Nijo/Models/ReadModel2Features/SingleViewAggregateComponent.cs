@@ -160,8 +160,8 @@ namespace Nijo.Models.ReadModel2Features {
 
                     formBuilder.Append(new VForm2.UnknownNode($$"""
                         <Components.{{refDisplayData.UiComponentName}}
+                          {...registerEx(`{{valueFullpath.Join(".")}}`)}
                           control={control}
-                          name={`{{valueFullpath.Join(".")}}`}
                           displayName="{{@ref.DisplayName.Replace("\"", "&quot;")}}"
                           readOnly={Util.isReadOnlyField(`{{readonlyFullpath.Join(".")}}`, getValues)}
                           required={{{(@ref.Relation.IsRequired() ? "true" : "false")}}}

@@ -439,6 +439,8 @@ namespace Nijo.Models.RefTo {
                   /** react hook form が管理しているデータの型の各プロパティへの名前。 */
                   TFieldName extends ReactHookForm.FieldPath<TFieldValues> = ReactHookForm.FieldPath<TFieldValues>
                 >(props: {
+                  value: Types.{{TsTypeName}} | undefined
+                  onChange: (v: Types.{{TsTypeName}} | undefined) => void
                   displayName: string
                   name: ReactHookForm.PathValue<TFieldValues, TFieldName> extends (Types.{{TsTypeName}} | undefined) ? TFieldName : never
                   readOnly: boolean
@@ -553,6 +555,8 @@ namespace Nijo.Models.RefTo {
                   /** react hook form が管理しているデータの型の各プロパティへの名前。 */
                   TFieldName extends ReactHookForm.FieldPath<TFieldValues> = ReactHookForm.FieldPath<TFieldValues>
                 >(props: {
+                  value: {{TsTypeName}} | undefined
+                  onChange: (v: {{TsTypeName}} | undefined) => void
                   control: ReactHookForm.Control<TFieldValues>
                   displayName: string
                   name: ReactHookForm.PathValue<TFieldValues, TFieldName> extends ({{TsTypeName}} | undefined) ? TFieldName : never

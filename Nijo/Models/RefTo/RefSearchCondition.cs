@@ -98,6 +98,8 @@ namespace Nijo.Models.RefTo {
                   /** react hook form が管理しているデータの型の各プロパティへの名前。 */
                   TFieldName extends ReactHookForm.FieldPath<TFieldValues> = ReactHookForm.FieldPath<TFieldValues>
                 >(props: {
+                  value: Types.{{TsFilterTypeName}}
+                  onChange: (v: Types.{{TsFilterTypeName}}) => void
                   control: ReactHookForm.Control<TFieldValues>
                   displayName: string
                   name: ReactHookForm.PathValue<TFieldValues, TFieldName> extends (Types.{{TsFilterTypeName}} | undefined) ? TFieldName : never
@@ -140,13 +142,13 @@ namespace Nijo.Models.RefTo {
 
                     } else if (member.MemberInfo is AggregateMember.Ref @ref) {
                         var fullpath = GetFullPathForRefRHFRegisterName(@ref).Skip(1); // 先頭の "filter." をはじくためにSkip(1)
-                        var sc = new RefSearchCondition(@ref.RefTo, _refEntry);
+                        var sc = new RefSearchCondition(@ref.RefTo, @ref.RefTo);
                         var componentName = $"{RefToFile.GetImportAlias(@ref.RefTo)}.{sc.UiComponentName}";
                         var body = $$"""
                            <{{componentName}}
                              control={props.control}
                              displayName="{{@ref.DisplayName.Replace("\"", "&quot;")}}"
-                             name={getPath(`{{fullpath.Join(".")}}`) as Extract<Parameters<typeof {{componentName}}>['0']['name'], never>}
+                             {...registerEx(getPath(`{{fullpath.Join(".")}}`)) as unknown as ({ name: any, value: Types.{{sc.TsFilterTypeName}}, onChange: () => void })}
                            />
                            """;
                         section.Append(new VForm2.UnknownNode(body, true));
@@ -180,6 +182,8 @@ namespace Nijo.Models.RefTo {
                   /** react hook form が管理しているデータの型の各プロパティへの名前。 */
                   TFieldName extends ReactHookForm.FieldPath<TFieldValues> = ReactHookForm.FieldPath<TFieldValues>
                 >(props: {
+                  value: {{TsFilterTypeName}}
+                  onChange: (v: {{TsFilterTypeName}}) => void
                   control: ReactHookForm.Control<TFieldValues>
                   displayName: string
                   name: ReactHookForm.PathValue<TFieldValues, TFieldName> extends ({{TsFilterTypeName}} | undefined) ? TFieldName : never
