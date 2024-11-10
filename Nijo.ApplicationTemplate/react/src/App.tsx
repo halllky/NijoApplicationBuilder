@@ -11,6 +11,7 @@ import MultiViewEditable検討 from './debug-room/MultiViewEditable検討'
 import TextInputBaseテスト from './debug-room/TextInputBaseテスト'
 import IconButtonテスト from './debug-room/IconButtonテスト'
 import FileAttachmentテスト from './debug-room/FileAttachmentテスト'
+import UseFormContextExテスト from './debug-room/useFormContextExテスト'
 
 function App() {
 
@@ -26,6 +27,7 @@ function App() {
     { path: '/text-input-base', label: 'TextInputBaseテスト', element: <TextInputBaseテスト /> },
     { path: '/icon-button-test', label: 'IconButtonテスト', element: <IconButtonテスト /> },
     { path: '/file-attachment-test', label: 'FileAttachmentテスト', element: <FileAttachmentテスト /> },
+    { path: '/use-form-context-ex-test', label: 'useFormContextExテスト', element: <UseFormContextExテスト /> },
   ], [])
 
   return (

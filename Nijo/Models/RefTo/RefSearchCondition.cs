@@ -105,10 +105,10 @@ namespace Nijo.Models.RefTo {
                   // React hook form のメンバーパスがこのコンポーネントの外（呼ぶ側）とこのコンポーネント内部で分断されるが、
                   // そのどちらでもTypeScriptの型検査が効くようにするために内外のパスをつなげる関数
                   const getPath = (path: ReactHookForm.FieldPath<Types.{{TsFilterTypeName}}>): TFieldName => `${props.name}.${path}` as TFieldName
-                  const { register } = ReactHookForm.useFormContext()
+                  const { registerEx } = Util.useFormContextEx()
                   const register2 = <P extends ReactHookForm.FieldPath<Types.{{TsFilterTypeName}}>>(path: P) => {
                     // onChangeの型がうまく推論されないので明示的にキャストしている
-                    return register(getPath(path)) as unknown as Util.RegisterExReturns<Types.{{TsFilterTypeName}}, P>
+                    return registerEx(getPath(path)) as unknown as Util.RegisterExReturns<Types.{{TsFilterTypeName}}, P>
                   }
 
                   return (
