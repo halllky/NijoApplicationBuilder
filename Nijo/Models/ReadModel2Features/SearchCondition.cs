@@ -321,8 +321,6 @@ namespace Nijo.Models.ReadModel2Features {
         }
         private void BuildVForm2(FormUIRenderingContext context, VForm2 section) {
 
-            /// <see cref="RefTo.RefSearchCondition.RenderUiComponent"/> とロジックを合わせる
-
             var renderedMembers = GetOwnMembers().Select(m => new {
                 MemberInfo = (AggregateMember.AggregateMemberBase)m.Member,
                 m.DisplayName,
@@ -340,6 +338,18 @@ namespace Nijo.Models.ReadModel2Features {
                     var fullpath = context.GetReactHookFormFieldPath(vm);
                     var body = vm.Options.MemberType.RenderSearchConditionVFormBody(vm, context);
                     section.Append(new VForm2.ItemNode(new VForm2.StringLabel(m.DisplayName), false, body));
+
+                } else if (m.MemberInfo is AggregateMember.Ref @ref) {
+                    var refSearchCondition = new RefTo.RefSearchCondition(@ref.RefTo, @ref.RefTo);
+                    var fullpath = @ref.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript);
+
+                    section.Append(new VForm2.UnknownNode($$"""
+                        <Components.{{refSearchCondition.UiComponentName}}
+                          control={control}
+                          displayName="{{@ref.DisplayName.Replace("\"", "&quot;")}}"
+                          name={`{{fullpath.Join(".")}}`}
+                        />
+                        """, @ref.Relation.IsWide() ?? true));
 
                 } else {
                     // 入れ子コンポーネントをレンダリングする

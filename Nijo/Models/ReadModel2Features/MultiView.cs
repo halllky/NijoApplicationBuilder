@@ -123,9 +123,7 @@ namespace Nijo.Models.ReadModel2Features {
                       })
 
                       // カスタマイズ
-                      const {
-                        {{UiContextSectionName}}: UI,
-                      } = React.useContext({{UiContext.CONTEXT_NAME}})
+                      const { {{UiContextSectionName}}: UI, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       // ブラウザのタイトル
                       const browserTitle = React.useMemo(() => {
@@ -175,6 +173,7 @@ namespace Nijo.Models.ReadModel2Features {
                         registerEx: registerExCondition,
                         reset: resetSearchCondition,
                         formState: { defaultValues }, // 最後に検索した時の検索条件
+                        control,
                       } = rhfSearchMethods
 
                       // 検索条件の並び順コンボボックス
@@ -232,9 +231,7 @@ namespace Nijo.Models.ReadModel2Features {
                       })
 
                       // カスタマイズ
-                      const {
-                        {{UiContextSectionName}}: UI,
-                      } = React.useContext({{UiContext.CONTEXT_NAME}})
+                      const { {{UiContextSectionName}}: UI, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
                       const tableRef = useRef<Layout.DataTableRef<AggregateType.{{searchResult.TsTypeName}}>>(null)
                       const getSelectedItems = useEvent(() => {
                         return tableRef.current?.getSelectedRows().map(x => x.row) ?? []

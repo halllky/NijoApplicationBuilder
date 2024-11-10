@@ -79,7 +79,7 @@ namespace Nijo.Models.RefTo {
             var formUiContext = new FormUIRenderingContext {
                 CodeRenderingContext = ctx,
                 GetReactHookFormFieldPath = vm => vm.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript, _refEntry).Skip(1), // 先頭の "filter." をはじくためにSkip(1)
-                Register = "registerEx2",
+                Register = "register2",
                 RenderReadOnlyStatement = vm => string.Empty, // 検索条件欄の項目が読み取り専用になることはない
                 RenderErrorMessage = vm => throw new InvalidOperationException("検索条件欄では項目ごとにエラーメッセージを表示するという概念が無い"),
             };
@@ -98,16 +98,17 @@ namespace Nijo.Models.RefTo {
                   /** react hook form が管理しているデータの型の各プロパティへの名前。 */
                   TFieldName extends ReactHookForm.FieldPath<TFieldValues> = ReactHookForm.FieldPath<TFieldValues>
                 >(props: {
+                  control: ReactHookForm.Control<TFieldValues>
                   displayName: string
                   name: ReactHookForm.PathValue<TFieldValues, TFieldName> extends (Types.{{TsFilterTypeName}} | undefined) ? TFieldName : never
-                  registerEx: Util.UseFormExRegisterEx<TFieldValues>
                 }) => {
                   // React hook form のメンバーパスがこのコンポーネントの外（呼ぶ側）とこのコンポーネント内部で分断されるが、
                   // そのどちらでもTypeScriptの型検査が効くようにするために内外のパスをつなげる関数
                   const getPath = (path: ReactHookForm.FieldPath<Types.{{TsFilterTypeName}}>): TFieldName => `${props.name}.${path}` as TFieldName
-                  const registerEx2 = <P extends ReactHookForm.FieldPath<Types.{{TsFilterTypeName}}>>(path: P) => {
+                  const { register } = ReactHookForm.useFormContext()
+                  const register2 = <P extends ReactHookForm.FieldPath<Types.{{TsFilterTypeName}}>>(path: P) => {
                     // onChangeの型がうまく推論されないので明示的にキャストしている
-                    return props.registerEx(getPath(path)) as unknown as Util.RegisterExReturns<Types.{{TsFilterTypeName}}, P>
+                    return register(getPath(path)) as unknown as Util.RegisterExReturns<Types.{{TsFilterTypeName}}, P>
                   }
 
                   return (
@@ -143,9 +144,9 @@ namespace Nijo.Models.RefTo {
                         var componentName = $"{RefToFile.GetImportAlias(@ref.RefTo)}.{sc.UiComponentName}";
                         var body = $$"""
                            <{{componentName}}
+                             control={props.control}
                              displayName="{{@ref.DisplayName.Replace("\"", "&quot;")}}"
                              name={getPath(`{{fullpath.Join(".")}}`) as Extract<Parameters<typeof {{componentName}}>['0']['name'], never>}
-                             registerEx={props.registerEx}
                            />
                            """;
                         section.Append(new VForm2.UnknownNode(body, true));
@@ -179,9 +180,9 @@ namespace Nijo.Models.RefTo {
                   /** react hook form が管理しているデータの型の各プロパティへの名前。 */
                   TFieldName extends ReactHookForm.FieldPath<TFieldValues> = ReactHookForm.FieldPath<TFieldValues>
                 >(props: {
+                  control: ReactHookForm.Control<TFieldValues>
                   displayName: string
                   name: ReactHookForm.PathValue<TFieldValues, TFieldName> extends ({{TsFilterTypeName}} | undefined) ? TFieldName : never
-                  registerEx: Util.UseFormExRegisterEx<TFieldValues>
                 }) => React.ReactNode
                 """, $$"""
                 {{UiComponentName}}: RefTo{{_aggregate.Item.PhysicalName}}.{{UiComponentName}}

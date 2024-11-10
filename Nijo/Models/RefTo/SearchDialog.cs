@@ -82,6 +82,7 @@ namespace Nijo.Models.RefTo {
                         registerEx: registerExCondition,
                         reset: resetSearchCondition,
                         formState: { defaultValues },
+                        control,
                       } = rhfSearchMethods
 
                       // クリア時処理
@@ -125,13 +126,11 @@ namespace Nijo.Models.RefTo {
                       })
 
                       // カスタマイズ
-                      const {
-                        {{Customizer}}: Customizers,
-                      } = React.useContext({{UiContext.CONTEXT_NAME}})
+                      const { {{Customizer}}: UI, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       // 検索結果欄の列定義
                       const cellType = Layout.{{CellType.USE_HELPER}}<Types.{{searchResult.TsTypeName}}>()
-                      const gridCustomizer = Customizers?.{{SEARCH_RESULT_CUSTOMIZER}}?.()
+                      const gridCustomizer = UI.{{SEARCH_RESULT_CUSTOMIZER}}?.()
                       const columnDefs: Layout.DataTableColumn<Types.{{searchResult.TsTypeName}}>[] = React.useMemo(() => {
                         const defs: Layout.DataTableColumn<Types.{{searchResult.TsTypeName}}>[] = [
                           {{WithIndent(tableBuilder.RenderColumnDef(context), "          ")}}
@@ -147,8 +146,8 @@ namespace Nijo.Models.RefTo {
                             <Panel defaultSize={30} className="flex flex-col">
                               <div className="flex-1 overflow-y-scroll border border-color-4 bg-color-gutter">
                                 <ReactHookForm.FormProvider {...rhfSearchMethods}>
-                                  {Customizers?.{{SEARCH_CONDITION_CUSTOMIZER}} ? (
-                                    <Customizers.{{SEARCH_CONDITION_CUSTOMIZER}} />
+                                  {UI.{{SEARCH_CONDITION_CUSTOMIZER}} ? (
+                                    <UI.{{SEARCH_CONDITION_CUSTOMIZER}} />
                                   ) : (
                                     {{WithIndent(searchCondition.RenderVForm2(pageRenderingContext, false), "                    ")}}
                                   )}
