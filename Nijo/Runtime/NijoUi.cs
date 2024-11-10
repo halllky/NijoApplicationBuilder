@@ -495,6 +495,7 @@ namespace Nijo.Runtime {
                                 { DirectedEdgeExtensions.REL_ATTR_IS_INSTANCE_NAME, options.IsDisplayName == true },
                                 { DirectedEdgeExtensions.REL_ATTR_IS_NAME_LIKE, options.IsNameLike == true },
                                 { DirectedEdgeExtensions.REL_ATTR_IS_REQUIRED, options.IsRequired == true },
+                                { DirectedEdgeExtensions.REL_ATTR_IS_WIDE, options.WideInVForm },
                                 { DirectedEdgeExtensions.REL_ATTR_INVISIBLE_IN_GUI, options.InvisibleInGui == true },
                                 { DirectedEdgeExtensions.REL_ATTR_SINGLEVIEW_CUSTOM_UI_COMPONENT_NAME, options.SingleViewCustomUiComponentName },
                                 { DirectedEdgeExtensions.REL_ATTR_SEARCHCONDITION_CUSTOM_UI_COMPONENT_NAME, options.SearchConditionCustomUiComponentName },
@@ -524,7 +525,7 @@ namespace Nijo.Runtime {
                             SingleViewCustomUiComponentName = options.SingleViewCustomUiComponentName,
                             SearchConditionCustomUiComponentName = options.SearchConditionCustomUiComponentName,
                             UiWidth = options.UiWidthRem,
-                            WideInVForm = options.WideInVForm == true,
+                            WideInVForm = options.WideInVForm,
                             IsCombo = options.IsCombo == true,
                             IsRadio = options.IsRadio == true,
                             DisplayName = options.DisplayName,
@@ -1555,9 +1556,6 @@ namespace Nijo.Runtime {
             yield return Wide;
             yield return Width;
 
-            yield return SingleViewUi;
-            yield return SearchConditionUi;
-
             yield return Combo;
             yield return Radio;
         }
@@ -2074,7 +2072,12 @@ namespace Nijo.Runtime {
                 // 特に処理なし
             },
             EditAggregateMemberOption = (value, node, schema, opt) => {
-                opt.WideInVForm = true;
+                if (string.IsNullOrWhiteSpace(value)) {
+                    opt.WideInVForm = true;
+                } else if (bool.TryParse(value, out var bln)) {
+                    // ref-toに対しては is="wide:false" のように「wideにしたくない」形の指定があるのでTryParseにかけている
+                    opt.WideInVForm = bln;
+                }
             },
         };
         private static OptionalAttributeDef Width => new OptionalAttributeDef {
@@ -2114,49 +2117,8 @@ namespace Nijo.Runtime {
             },
         };
 
-        private static OptionalAttributeDef SingleViewUi => new OptionalAttributeDef {
-            Key = "single-view-ui",
-            DisplayName = "詳細画面UI",
-            Type = E_OptionalAttributeType.String,
-            HelpText = $$"""
-                詳細画面におけるこの項目の入力フォームが、自動生成されるものではなくここで指定した名前のコンポーネントになります。
-                コンポーネントは自前で実装する必要があります。
-                """,
-            Validate = (value, node, schema, errors) => {
-                var nodeType = node.GetNodeType();
-                if (nodeType != E_NodeType.Ref && nodeType != E_NodeType.Enum && nodeType != E_NodeType.SchalarMember) {
-                    errors.Add("この属性は入力フォームをもつ項目にのみ指定できます。");
-                }
-            },
-            EditAggregateOption = (value, node, schema, opt) => {
-                // 特に処理なし
-            },
-            EditAggregateMemberOption = (value, node, schema, opt) => {
-                opt.SingleViewCustomUiComponentName = value;
-            },
-        };
-        private static OptionalAttributeDef SearchConditionUi => new OptionalAttributeDef {
-            Key = "search-condition-ui",
-            DisplayName = "検索条件欄UI",
-            Type = E_OptionalAttributeType.String,
-            HelpText = $$"""
-                詳細画面におけるこの項目の入力フォームが、自動生成されるものではなくここで指定した名前のコンポーネントになります。
-                コンポーネントは自前で実装する必要があります。
-                """,
-            Validate = (value, node, schema, errors) => {
-                var nodeType = node.GetNodeType();
-                if (nodeType != E_NodeType.Ref && nodeType != E_NodeType.Enum && nodeType != E_NodeType.SchalarMember) {
-                    errors.Add("この属性は入力フォームをもつ項目にのみ指定できます。");
-                }
-            },
-            EditAggregateOption = (value, node, schema, opt) => {
-                // 特に処理なし
-            },
-            EditAggregateMemberOption = (value, node, schema, opt) => {
-                opt.SearchConditionCustomUiComponentName = value;
-            },
-        };
 
+        [Obsolete("#60 最終的にnijo.xmlではなくApp.tsxで決められるようにするためこの属性は削除する")]
         private static OptionalAttributeDef Combo => new OptionalAttributeDef {
             Key = "combo",
             DisplayName = "コンボボックス",
@@ -2178,6 +2140,7 @@ namespace Nijo.Runtime {
                 opt.IsCombo = true;
             },
         };
+        [Obsolete("#60 最終的にnijo.xmlではなくApp.tsxで決められるようにするためこの属性は削除する")]
         private static OptionalAttributeDef Radio => new OptionalAttributeDef {
             Key = "radio",
             DisplayName = "ラジオボタン",

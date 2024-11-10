@@ -17,10 +17,13 @@ namespace Nijo.Core {
         public bool IsNameLike { get; set; }
         public bool IsRequired { get; set; }
         public bool InvisibleInGui { get; set; }
+        [Obsolete("#60 最終的にnijo.xmlではなくApp.tsxで決められるようにするためこの属性は削除する")]
         public string? SingleViewCustomUiComponentName { get; set; }
+        [Obsolete("#60 最終的にnijo.xmlではなくApp.tsxで決められるようにするためこの属性は削除する")]
         public string? SearchConditionCustomUiComponentName { get; set; }
         public TextBoxWidth? UiWidth { get; set; }
-        public bool WideInVForm { get; set; }
+        /// <summary>nijo.xmlで指定が無い場合はnullになる</summary>
+        public bool? WideInVForm { get; set; }
         public bool IsCombo { get; set; }
         public bool IsRadio { get; set; }
         public string? DisplayName { get; set; }
@@ -479,8 +482,10 @@ namespace Nijo.Core {
             internal override GraphNode<Aggregate> MemberAggregate => Relation.Terminal;
 
             /// <summary>生成後のソースで外から注入して、中で React context 経由で参照するコンポーネント。ValueMemberまたはRefでのみ使用</summary>
+            [Obsolete("#60 最終的にnijo.xmlではなくApp.tsxで決められるようにするためこの属性は削除する")]
             internal string? SingleViewCustomUiComponentName => Relation.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_SINGLEVIEW_CUSTOM_UI_COMPONENT_NAME, out var s) ? (string?)s : null;
             /// <summary>生成後のソースで外から注入して、中で React context 経由で参照するコンポーネント。ValueMemberまたはRefでのみ使用</summary>
+            [Obsolete("#60 最終的にnijo.xmlではなくApp.tsxで決められるようにするためこの属性は削除する")]
             internal string? SearchConditionCustomUiComponentName => Relation.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_SEARCHCONDITION_CUSTOM_UI_COMPONENT_NAME, out var s) ? (string?)s : null;
 
             internal IEnumerable<ValueMember> GetForeignKeys() {

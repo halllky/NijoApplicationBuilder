@@ -106,6 +106,7 @@ namespace Nijo.Models.CommandModelFeatures {
                 var displayData = new CommandParameter(_aggregate);
                 members = displayData
                     .GetOwnMembers()
+                    .Where(m => m.MemberInfo is not AggregateMember.Ref) // 参照はUIコンテキストから取得するので子要素コンポーネント不要
                     .Select(m => m.MemberInfo)
                     .OfType<AggregateMember.RelationMember>();
             }
@@ -162,8 +163,22 @@ namespace Nijo.Models.CommandModelFeatures {
 
                     formBuilder.Append(new VForm2.ItemNode(
                         label,
-                        vm.Options.WideInVForm,
+                        vm.Options.WideInVForm ?? false,
                         vm.Options.MemberType.RenderSingleViewVFormBody(vm, formContext)));
+
+                } else if (member is AggregateMember.Ref @ref) {
+                    var refDisplayData = new RefDisplayData(@ref.RefTo, @ref.RefTo);
+                    var valueFullPath = @ref.GetFullPathAsCommandParameterRHFRegisterName(GetArgumentsAndLoopVar());
+
+                    formBuilder.Append(new VForm2.UnknownNode($$"""
+                        <Components.{{refDisplayData.UiComponentName}}
+                          {...registerEx(`{{valueFullPath.Join(".")}}`)}
+                          control={control}
+                          displayName="{{@ref.DisplayName.Replace("\"", "&quot;")}}"
+                          readOnly={false}
+                          required={{{(@ref.Relation.IsRequired() ? "true" : "false")}}}
+                        />
+                        """, @ref.Relation.IsWide() ?? true));
 
                 } else if (member is AggregateMember.RelationMember rel) {
                     var descendant = GetDescendantComponent(rel);
@@ -235,6 +250,7 @@ namespace Nijo.Models.CommandModelFeatures {
             return $$"""
                 const {{ComponentName}} = ({{args}}) => {
                   const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
+                  const { ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                   return (
                     <div className="p-px">
@@ -263,7 +279,7 @@ namespace Nijo.Models.CommandModelFeatures {
                 return new VariationItemComponent(variation, _depth + 1);
 
             } else if (member is AggregateMember.Ref @ref) {
-                return new RefComponent(@ref, _depth + 1);
+                throw new InvalidOperationException($"参照先のコンポーネントは{nameof(UiContext)}経由で呼ぶのでこの分岐に来るのはおかしい");
 
             } else if (member is AggregateMember.Children children1 && !children1.ChildrenAggregate.CanDisplayAllMembersAs2DGrid()) {
                 return new ChildrenFormComponent(children1, _depth + 1);
@@ -318,7 +334,8 @@ namespace Nijo.Models.CommandModelFeatures {
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const { register, registerEx, getValues, setValue, formState: { errors } } = Util.useFormContextEx<{{UseFormType}}>()
+                      const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
+                      const { ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       return (
                         {{WithIndent(vForm.Render(context), "    ")}}
@@ -356,76 +373,14 @@ namespace Nijo.Models.CommandModelFeatures {
                       {{arg.Key}}: {{arg.Value}}
                     """)}}
                     }) => {
-                      const { register, registerEx, getValues, setValue, formState: { errors } } = Util.useFormContextEx<{{UseFormType}}>()
+                      const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
+                      const { ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       return (
                         {{WithIndent(vForm.Render(context), "    ")}}
                       )
                     }
                     """;
-            }
-        }
-
-
-        /// <summary>
-        /// <see cref="AggregateMember.Ref"/> のコンポーネント
-        /// </summary>
-        private class RefComponent : DescendantComponent {
-            internal RefComponent(AggregateMember.Ref @ref, int depth) : base(@ref, depth) {
-                _ref = @ref;
-            }
-            private readonly AggregateMember.Ref _ref;
-            private const string OPEN = "openSearchDialog";
-
-            internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
-                var args = GetArguments().ToArray();
-                var vForm = BuildVerticalForm(context, isReadOnly);
-                var dialog = new SearchDialog(_ref.RefTo, _ref.RefTo);
-                var refTarget = new RefDisplayData(_ref.RefTo, _ref.RefTo);
-                var fullpath = _ref.GetFullPathAsCommandParameterRHFRegisterName(GetArgumentsAndLoopVar());
-
-                return $$"""
-                    const {{ComponentName}} = ({{{(args.Length == 0 ? " " : $" {args.Join(", ")} ")}}}: {
-                    {{args.SelectTextTemplate(arg => $$"""
-                      {{arg}}: number
-                    """)}}
-                    }) => {
-                      const { register, registerEx, getValues, setValue, formState: { errors } } = Util.useFormContextEx<{{UseFormType}}>()
-                    {{If(!isReadOnly, () => $$"""
-                      const {{OPEN}} = RefTo.{{dialog.HookName}}()
-                      const handleClickSearch = useEvent(() => {
-                        {{OPEN}}({
-                          onSelect: item => setValue(`{{fullpath.Join(".")}}`, item ?? Types.{{refTarget.TsNewObjectFunction}}())
-                        })
-                      })
-                    """)}}
-
-                      return (
-                        {{WithIndent(vForm.Render(context), "    ")}}
-                      )
-                    }
-                    """;
-            }
-
-            protected override VForm2 GetComponentRoot(bool isReadOnly) {
-                var fullpath = _ref.GetFullPathAsCommandParameterRHFRegisterName(GetArgumentsAndLoopVar());
-                var label = new VForm2.JSXElementLabel($$"""
-                    <>
-                      <div className="inline-flex items-center py-1 gap-2">
-                        <VForm2.LabelText>
-                          {{_ref.DisplayName}}
-                    {{If(_ref.Relation.IsRequired() && _ref.Owner.IsInEntryTree(), () => $$"""
-                          <Input.RequiredChip />
-                    """)}}
-                        </VForm2.LabelText>
-                    {{If(!isReadOnly, () => $$"""
-                        <Input.IconButton underline mini icon={Icon.MagnifyingGlassIcon} onClick={handleClickSearch}>検索</Input.IconButton>
-                    """)}}
-                      </div>
-                      <Input.FormItemMessage name={`{{fullpath.Join(".")}}`} errors={errors} />
-                    </>
-                    """);
-                return new VForm2.IndentNode(label);
             }
         }
 
@@ -452,6 +407,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     """)}}
                     }) => {
                       const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
+                      const { ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
                       const switchProp = useWatch({ name: `{{switchProp}}`, control })
 
                       const body = (
@@ -549,6 +505,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     """)}}
                     }) => {
                       const { register, registerEx, getValues, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
+                      const { ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
                       const { fields, append, remove } = useFieldArray({ control, name: `{{registerNameArray.Join(".")}}` })
                     {{If(creatable, () => $$"""
                       const onCreate = useCallback(() => {
@@ -636,6 +593,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     }) => {
                       const { complexPost } = Util.useHttpRequest()
                       const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
+                      const { ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
                       const { fields, append, remove, update } = useFieldArray({ control, name: `{{registerNameArray.Join(".")}}` })
                       const dtRef = useRef<Layout.DataTableRef<{{rowType}}>>(null)
 
