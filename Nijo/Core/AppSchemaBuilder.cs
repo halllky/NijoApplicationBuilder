@@ -157,6 +157,7 @@ namespace Nijo.Core {
         internal const string REL_ATTR_IS_INSTANCE_NAME = "is-instance-name";
         internal const string REL_ATTR_IS_NAME_LIKE = "is-name-like";
         internal const string REL_ATTR_IS_REQUIRED = "is-required";
+        internal const string REL_ATTR_IS_WIDE = "is-wide";
         internal const string REL_ATTR_INVISIBLE_IN_GUI = "invisible-in-gui";
         internal const string REL_ATTR_SINGLEVIEW_CUSTOM_UI_COMPONENT_NAME = "singleview-custom-ui-component-name";
         internal const string REL_ATTR_SEARCHCONDITION_CUSTOM_UI_COMPONENT_NAME = "searchcondition-custom-ui-component-name";
@@ -180,6 +181,9 @@ namespace Nijo.Core {
         }
         internal static bool IsRequired(this GraphEdge graphEdge) {
             return graphEdge.Attributes.TryGetValue(REL_ATTR_IS_REQUIRED, out var bln) && (bool)bln!;
+        }
+        internal static bool? IsWide(this GraphEdge graphEdge) {
+            return graphEdge.Attributes.TryGetValue(REL_ATTR_IS_WIDE, out var bln) ? (bool?)bln : null;
         }
         internal static bool InvisibleInGui(this GraphEdge graphEdge) {
             return graphEdge.Attributes.TryGetValue(REL_ATTR_INVISIBLE_IN_GUI, out var bln) && (bool)bln!;

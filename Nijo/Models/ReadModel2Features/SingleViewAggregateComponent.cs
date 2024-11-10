@@ -101,13 +101,9 @@ namespace Nijo.Models.ReadModel2Features {
                     .OfType<AggregateMember.RelationMember>();
             } else {
                 var displayData = new DataClassForDisplay(_aggregate);
-                var refs = displayData
-                    .GetOwnMembers()
-                    .OfType<AggregateMember.Ref>();
-                var child = displayData
+                members = displayData
                     .GetChildMembers()
                     .Select(x => x.MemberInfo);
-                members = refs.Concat(child);
             }
 
             // 子要素のコンポーネントへの変換
@@ -155,7 +151,22 @@ namespace Nijo.Models.ReadModel2Features {
 
                     var body = vm.Options.MemberType.RenderSingleViewVFormBody(vm, formContext);
 
-                    formBuilder.Append(new VForm2.ItemNode(label, vm.Options.WideInVForm, body));
+                    formBuilder.Append(new VForm2.ItemNode(label, vm.Options.WideInVForm ?? false, body));
+
+                } else if (member is AggregateMember.Ref @ref) {
+                    var refDisplayData = new RefDisplayData(@ref.RefTo, @ref.RefTo);
+                    var valueFullpath = @ref.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, GetArgumentsAndLoopVar());
+                    var readonlyFullpath = @ref.GetFullPathAsReactHookFormRegisterName(E_PathType.ReadOnly, GetArgumentsAndLoopVar());
+
+                    formBuilder.Append(new VForm2.UnknownNode($$"""
+                        <Components.{{refDisplayData.UiComponentName}}
+                          control={control}
+                          name={`{{valueFullpath.Join(".")}}`}
+                          displayName="{{@ref.DisplayName.Replace("\"", "&quot;")}}"
+                          readOnly={Util.isReadOnlyField(`{{readonlyFullpath.Join(".")}}`, getValues)}
+                          required={{{(@ref.Relation.IsRequired() ? "true" : "false")}}}
+                        />
+                        """, @ref.Relation.IsWide() ?? true));
 
                 } else if (member is AggregateMember.RelationMember rel) {
                     var descendant = GetDescendantComponent(rel);
@@ -239,7 +250,7 @@ namespace Nijo.Models.ReadModel2Features {
                 export const {{ComponentName}} = () => {
                   const { mode } = useContext({{SingleView.PAGE_CONTEXT}})
                   const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
-                  const { {{UiContextSectionName}}: UI } = React.useContext({{UiContext.CONTEXT_NAME}})
+                  const { {{UiContextSectionName}}: UI, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                   return (
                     <div className="p-px">
@@ -280,7 +291,7 @@ namespace Nijo.Models.ReadModel2Features {
                 return new VariationItemComponent(variation, _depth + 1);
 
             } else if (member is AggregateMember.Ref @ref) {
-                return new RefComponent(@ref, _depth + 1);
+                throw new InvalidOperationException($"参照先のコンポーネントは{nameof(UiContext)}経由で呼ぶのでこの分岐に来るのはおかしい");
 
             } else if (member is AggregateMember.Children children1 && !children1.ChildrenAggregate.CanDisplayAllMembersAs2DGrid()) {
                 return new ChildrenFormComponent(children1, _depth + 1);
@@ -338,82 +349,13 @@ namespace Nijo.Models.ReadModel2Features {
                     }) => {
                       const { mode } = useContext({{SingleView.PAGE_CONTEXT}})
                       const { register, registerEx, getValues, setValue, formState: { errors } } = Util.useFormContextEx<{{UseFormType}}>()
-                      const { {{UiContextSectionName}}: UI } = React.useContext({{UiContext.CONTEXT_NAME}})
+                      const { {{UiContextSectionName}}: UI, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       return (
                         {{WithIndent(vForm.Render(context), "    ")}}
                       )
                     }
                     """;
-            }
-        }
-
-
-        /// <summary>
-        /// <see cref="AggregateMember.Ref"/> のコンポーネント
-        /// </summary>
-        private class RefComponent : DescendantComponent {
-            internal RefComponent(AggregateMember.Ref @ref, int depth) : base(@ref, depth) {
-                _ref = @ref;
-            }
-            private readonly AggregateMember.Ref _ref;
-            private const string OPEN = "openSearchDialog";
-
-            internal override string RenderDeclaring(CodeRenderingContext context) {
-                var args = GetArguments().ToArray();
-                var vForm = BuildVerticalForm(context);
-                var dialog = new SearchDialog(_ref.RefTo, _ref.RefTo);
-                var refTarget = new RefDisplayData(_ref.RefTo, _ref.RefTo);
-                var fullpath = _ref.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, GetArgumentsAndLoopVar());
-
-                return $$"""
-                    export const {{ComponentName}} = ({{{(args.Length == 0 ? " " : $" {args.Join(", ")} ")}}}: {
-                    {{args.SelectTextTemplate(arg => $$"""
-                      {{arg}}: number
-                    """)}}
-                    }) => {
-                      const { mode } = useContext({{SingleView.PAGE_CONTEXT}})
-                      const { register, registerEx, getValues, setValue, formState: { errors } } = Util.useFormContextEx<{{UseFormType}}>()
-                      const { {{UiContextSectionName}}: UI } = React.useContext({{UiContext.CONTEXT_NAME}})
-
-                      const {{OPEN}} = RefTo.{{dialog.HookName}}()
-                      const handleClickSearch = useEvent(() => {
-                        {{OPEN}}({
-                          onSelect: item => setValue(`{{fullpath.Join(".")}}`, item ?? AggregateType.{{refTarget.TsNewObjectFunction}}())
-                        })
-                      })
-
-                      return (
-                        {{WithIndent(vForm.Render(context), "    ")}}
-                      )
-                    }
-                    """;
-            }
-
-            protected override VForm2 GetComponentRoot() {
-                // 参照先の参照先は変更不可
-                var showMagnifyingGlass = _ref.Owner.IsInEntryTree();
-
-                var fullpath = _ref.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, GetArgumentsAndLoopVar());
-                var label = new VForm2.JSXElementLabel($$"""
-                    <>
-                      <div className="inline-flex items-center py-1 gap-2">
-                        <VForm2.LabelText>
-                          {{_ref.DisplayName}}
-                    {{If(_ref.Relation.IsRequired() && _ref.Owner.IsInEntryTree(), () => $$"""
-                          <Input.RequiredChip />
-                    """)}}
-                        </VForm2.LabelText>
-                    {{If(showMagnifyingGlass, () => $$"""
-                        {mode !== 'detail' && (
-                          <Input.IconButton underline mini icon={Icon.MagnifyingGlassIcon} onClick={handleClickSearch}>検索</Input.IconButton>
-                        )}
-                    """)}}
-                      </div>
-                      <Input.FormItemMessage name={`{{fullpath.Join(".")}}`} errors={errors} />
-                    </>
-                    """);
-                return new VForm2.IndentNode(label);
             }
         }
 
@@ -442,7 +384,7 @@ namespace Nijo.Models.ReadModel2Features {
                       const { mode } = useContext({{SingleView.PAGE_CONTEXT}})
                       const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
                       const switchProp = useWatch({ name: `{{switchProp}}`, control })
-                      const { {{UiContextSectionName}}: UI } = React.useContext({{UiContext.CONTEXT_NAME}})
+                      const { {{UiContextSectionName}}: UI, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       const body = (
                         {{WithIndent(vForm.Render(context), "    ")}}
@@ -548,7 +490,7 @@ namespace Nijo.Models.ReadModel2Features {
                         }
                       }, [remove])
                     """)}}
-                      const { {{UiContextSectionName}}: UI } = React.useContext({{UiContext.CONTEXT_NAME}})
+                      const { {{UiContextSectionName}}: UI, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       return (
                         <VForm2.Indent label={<>

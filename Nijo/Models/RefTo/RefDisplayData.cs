@@ -517,7 +517,7 @@ namespace Nijo.Models.RefTo {
                         var fullpath = vm.GetFullPathAsDataClassForRefTarget();
                         var mustReadOnly = vm.IsKey && vm.DeclaringAggregate == _refEntry;
 
-                        formBuilder.Append(new VForm2.ItemNode(label, vm.Options.WideInVForm, $$"""
+                        formBuilder.Append(new VForm2.ItemNode(label, vm.Options.WideInVForm ?? false, $$"""
                             {{vm.Options.MemberType.RenderSingleViewVFormBody(vm, formContext)}}
                             """));
 
@@ -553,6 +553,7 @@ namespace Nijo.Models.RefTo {
                   /** react hook form が管理しているデータの型の各プロパティへの名前。 */
                   TFieldName extends ReactHookForm.FieldPath<TFieldValues> = ReactHookForm.FieldPath<TFieldValues>
                 >(props: {
+                  control: ReactHookForm.Control<TFieldValues>
                   displayName: string
                   name: ReactHookForm.PathValue<TFieldValues, TFieldName> extends ({{TsTypeName}} | undefined) ? TFieldName : never
                   readOnly: boolean

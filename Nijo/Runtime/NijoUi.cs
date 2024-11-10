@@ -495,6 +495,7 @@ namespace Nijo.Runtime {
                                 { DirectedEdgeExtensions.REL_ATTR_IS_INSTANCE_NAME, options.IsDisplayName == true },
                                 { DirectedEdgeExtensions.REL_ATTR_IS_NAME_LIKE, options.IsNameLike == true },
                                 { DirectedEdgeExtensions.REL_ATTR_IS_REQUIRED, options.IsRequired == true },
+                                { DirectedEdgeExtensions.REL_ATTR_IS_WIDE, options.WideInVForm },
                                 { DirectedEdgeExtensions.REL_ATTR_INVISIBLE_IN_GUI, options.InvisibleInGui == true },
                                 { DirectedEdgeExtensions.REL_ATTR_SINGLEVIEW_CUSTOM_UI_COMPONENT_NAME, options.SingleViewCustomUiComponentName },
                                 { DirectedEdgeExtensions.REL_ATTR_SEARCHCONDITION_CUSTOM_UI_COMPONENT_NAME, options.SearchConditionCustomUiComponentName },
@@ -524,7 +525,7 @@ namespace Nijo.Runtime {
                             SingleViewCustomUiComponentName = options.SingleViewCustomUiComponentName,
                             SearchConditionCustomUiComponentName = options.SearchConditionCustomUiComponentName,
                             UiWidth = options.UiWidthRem,
-                            WideInVForm = options.WideInVForm == true,
+                            WideInVForm = options.WideInVForm,
                             IsCombo = options.IsCombo == true,
                             IsRadio = options.IsRadio == true,
                             DisplayName = options.DisplayName,
@@ -2071,7 +2072,12 @@ namespace Nijo.Runtime {
                 // 特に処理なし
             },
             EditAggregateMemberOption = (value, node, schema, opt) => {
-                opt.WideInVForm = true;
+                if (string.IsNullOrWhiteSpace(value)) {
+                    opt.WideInVForm = true;
+                } else if (bool.TryParse(value, out var bln)) {
+                    // ref-toに対しては is="wide:false" のように「wideにしたくない」形の指定があるのでTryParseにかけている
+                    opt.WideInVForm = bln;
+                }
             },
         };
         private static OptionalAttributeDef Width => new OptionalAttributeDef {

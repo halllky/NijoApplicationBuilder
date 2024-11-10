@@ -22,7 +22,8 @@ namespace Nijo.Core {
         [Obsolete("#60 最終的にnijo.xmlではなくApp.tsxで決められるようにするためこの属性は削除する")]
         public string? SearchConditionCustomUiComponentName { get; set; }
         public TextBoxWidth? UiWidth { get; set; }
-        public bool WideInVForm { get; set; }
+        /// <summary>nijo.xmlで指定が無い場合はnullになる</summary>
+        public bool? WideInVForm { get; set; }
         public bool IsCombo { get; set; }
         public bool IsRadio { get; set; }
         public string? DisplayName { get; set; }
