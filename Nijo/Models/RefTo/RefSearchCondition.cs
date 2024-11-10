@@ -5,6 +5,7 @@ using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -109,8 +110,6 @@ namespace Nijo.Models.RefTo {
                     return props.registerEx(getPath(path)) as unknown as Util.RegisterExReturns<Types.{{TsFilterTypeName}}, P>
                   }
 
-                  const { CustomUiComponent } = useCustomizerContext()
-
                   return (
                     {{WithIndent(rootNode.Render(ctx), "    ")}}
                   )
@@ -135,43 +134,21 @@ namespace Nijo.Models.RefTo {
                     if (member.MemberInfo is AggregateMember.ValueMember vm) {
                         if (vm.Options.InvisibleInGui) continue; // 非表示項目
 
-                        if (vm.Options.SearchConditionCustomUiComponentName == null) {
-                            // 既定の検索条件コンポーネント
-                            var body = vm.Options.MemberType.RenderSearchConditionVFormBody(vm, formUiContext);
-                            section.Append(new VForm2.ItemNode(new VForm2.StringLabel(member.DisplayName), false, body));
-
-                        } else {
-                            // カスタマイズ検索条件コンポーネント
-                            var fullpath = formUiContext.GetReactHookFormFieldPath(vm);
-                            var body = $$"""
-                                <{{DefaultUi.CUSTOM_UI_COMPONENT}}.{{vm.Options.SearchConditionCustomUiComponentName}} {...{{formUiContext.Register}}(`{{fullpath.Join(".")}}`)} readOnly={false} />
-                                """;
-                            section.Append(new VForm2.ItemNode(new VForm2.StringLabel(member.DisplayName), false, body));
-                        }
+                        var body = vm.Options.MemberType.RenderSearchConditionVFormBody(vm, formUiContext);
+                        section.Append(new VForm2.ItemNode(new VForm2.StringLabel(member.DisplayName), false, body));
 
                     } else if (member.MemberInfo is AggregateMember.Ref @ref) {
                         var fullpath = GetFullPathForRefRHFRegisterName(@ref).Skip(1); // 先頭の "filter." をはじくためにSkip(1)
-
-                        if (@ref.SearchConditionCustomUiComponentName == null) {
-                            // 参照先ref-to既定の検索条件コンポーネント
-                            var sc = new RefSearchCondition(@ref.RefTo, _refEntry);
-                            var componentName = $"{RefToFile.GetImportAlias(@ref.RefTo)}.{sc.UiComponentName}";
-                            var body = $$"""
-                               <{{componentName}}
-                                 displayName="{{@ref.DisplayName.Replace("\"", "&quot;")}}"
-                                 name={getPath(`{{fullpath.Join(".")}}`) as Extract<Parameters<typeof {{componentName}}>['0']['name'], never>}
-                                 registerEx={props.registerEx}
-                               />
-                               """;
-                            section.Append(new VForm2.UnknownNode(body, true));
-
-                        } else {
-                            // 参照先ref-toカスタマイズ検索条件コンポーネント
-                            var body = $$"""
-                                <{{DefaultUi.CUSTOM_UI_COMPONENT}}.{{@ref.SearchConditionCustomUiComponentName}} {...{{formUiContext.Register}}(`{{fullpath.Join(".")}}`)} readOnly={false} />
-                                """;
-                            section.Append(new VForm2.ItemNode(new VForm2.StringLabel(member.DisplayName), false, body));
-                        }
+                        var sc = new RefSearchCondition(@ref.RefTo, _refEntry);
+                        var componentName = $"{RefToFile.GetImportAlias(@ref.RefTo)}.{sc.UiComponentName}";
+                        var body = $$"""
+                           <{{componentName}}
+                             displayName="{{@ref.DisplayName.Replace("\"", "&quot;")}}"
+                             name={getPath(`{{fullpath.Join(".")}}`) as Extract<Parameters<typeof {{componentName}}>['0']['name'], never>}
+                             registerEx={props.registerEx}
+                           />
+                           """;
+                        section.Append(new VForm2.UnknownNode(body, true));
 
                     } else if (member.MemberInfo is AggregateMember.RelationMember rm) {
                         // 入れ子コンポーネント
@@ -185,24 +162,30 @@ namespace Nijo.Models.RefTo {
                 }
             }
         }
-        internal string RenderCustomizersDeclaring() {
-            return $$"""
+        internal void RegisterUiContext(UiContext uiContext) {
+            var filename = Path.GetFileNameWithoutExtension(RefToFile.GetFileName(_aggregate));
+
+            uiContext.Add($$"""
+                import * as RefTo{{_aggregate.Item.PhysicalName}} from './{{RefToFile.DIR_NAME}}/{{filename}}'
+                """, $$"""
                 /**
                  * {{_aggregate.Item.DisplayName}}の検索条件のUIコンポーネント。
                  * VFrom2のItemやIndentとしてレンダリングされます。
                  * **【注意】このコンポーネントをAutoColumnに包むかどうかはnijo.xml側で制御する必要があります**
                  */
-                {{UiComponentName}}?: <
+                {{UiComponentName}}: <
                   /** react hook form が管理しているデータの型。このコンポーネント内部ではなく画面全体の型。 */
                   TFieldValues extends ReactHookForm.FieldValues = ReactHookForm.FieldValues,
                   /** react hook form が管理しているデータの型の各プロパティへの名前。 */
                   TFieldName extends ReactHookForm.FieldPath<TFieldValues> = ReactHookForm.FieldPath<TFieldValues>
                 >(props: {
                   displayName: string
-                  name: ReactHookForm.PathValue<TFieldValues, TFieldName> extends (AggregateType.{{TsFilterTypeName}} | undefined) ? TFieldName : never
+                  name: ReactHookForm.PathValue<TFieldValues, TFieldName> extends ({{TsFilterTypeName}} | undefined) ? TFieldName : never
                   registerEx: Util.UseFormExRegisterEx<TFieldValues>
                 }) => React.ReactNode
-                """;
+                """, $$"""
+                {{UiComponentName}}: RefTo{{_aggregate.Item.PhysicalName}}.{{UiComponentName}}
+                """);
         }
         #endregion UIコンポーネント
 

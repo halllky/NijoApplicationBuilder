@@ -5,6 +5,7 @@ using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -126,8 +127,7 @@ namespace Nijo.Models.RefTo {
                       // カスタマイズ
                       const {
                         {{Customizer}}: Customizers,
-                        {{DefaultUi.CUSTOM_UI_COMPONENT}},
-                      } = {{DefaultUi.USE_CONTEXT}}()
+                      } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       // 検索結果欄の列定義
                       const cellType = Layout.{{CellType.USE_HELPER}}<Types.{{searchResult.TsTypeName}}>()
@@ -193,17 +193,26 @@ namespace Nijo.Models.RefTo {
         private const string SEARCH_CONDITION_CUSTOMIZER = $"SearchConditionComponent";
         private const string SEARCH_RESULT_CUSTOMIZER = $"useGridColumnCustomizer";
 
-        internal string RenderCustomizersDeclaring() {
+        internal void RegisterUiContext(UiContext uiContext) {
             var displayData = new RefDisplayData(_aggregate, _refEntry);
-            return $$"""
-                /** {{_aggregate.Item.DisplayName.Replace("*/", "")}} の検索ダイアログをカスタマイズします。 */
-                {{Customizer}}?: {
+            var filename = Path.GetFileNameWithoutExtension(RefToFile.GetFileName(_aggregate));
+
+            uiContext.Add($$"""
+                import * as RefTo{{_aggregate.Item.PhysicalName}} from './{{RefToFile.DIR_NAME}}/{{filename}}'
+                """, $$"""
+                /** {{_aggregate.Item.DisplayName.Replace("*/", "")}} の検索ダイアログ */
+                {{Customizer}}: {
                   /** 検索条件欄。これが指定されている場合、自動生成された検索条件欄は使用されません。 */
                   {{SEARCH_CONDITION_CUSTOMIZER}}?: () => React.ReactNode
                   /** 検索結果欄のグリッドの列定義を編集するReactフックを返してください。 */
-                  {{SEARCH_RESULT_CUSTOMIZER}}?: () => ((defaultColumns: Layout.DataTableColumn<AggregateType.{{displayData.TsTypeName}}>[]) => Layout.DataTableColumn<AggregateType.{{displayData.TsTypeName}}>[])
+                  {{SEARCH_RESULT_CUSTOMIZER}}?: () => ((defaultColumns: Layout.DataTableColumn<{{displayData.TsTypeName}}>[]) => Layout.DataTableColumn<{{displayData.TsTypeName}}>[])
                 }
-                """;
+                """, $$"""
+                {{Customizer}}: {
+                  {{SEARCH_CONDITION_CUSTOMIZER}}: undefined,
+                  {{SEARCH_RESULT_CUSTOMIZER}}: undefined,
+                }
+                """);
         }
         #endregion カスタマイズ部分
     }

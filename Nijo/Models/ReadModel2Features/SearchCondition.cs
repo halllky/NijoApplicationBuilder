@@ -338,21 +338,7 @@ namespace Nijo.Models.ReadModel2Features {
                     if (vm.Options.InvisibleInGui) continue; // 非表示項目
 
                     var fullpath = context.GetReactHookFormFieldPath(vm);
-                    var body = vm.Options.SearchConditionCustomUiComponentName == null
-                        ? vm.Options.MemberType.RenderSearchConditionVFormBody(vm, context)
-                        : $$"""
-                        <{{DefaultUi.CUSTOM_UI_COMPONENT}}.{{vm.Options.SearchConditionCustomUiComponentName}} {...{{context.Register}}(`{{fullpath.Join(".")}}`)} readOnly={false} />
-                        """;
-                    section.Append(new VForm2.ItemNode(new VForm2.StringLabel(m.DisplayName), false, body));
-
-                } else if (m.MemberInfo is AggregateMember.Ref @ref
-                    && @ref.SearchConditionCustomUiComponentName != null) {
-
-                    // カスタムUIをレンダリングする
-                    var fullpath = GetFullPathForRefRHFRegisterName(@ref);
-                    var body = $$"""
-                        <{{DefaultUi.CUSTOM_UI_COMPONENT}}.{{@ref.SearchConditionCustomUiComponentName}} {...{{context.Register}}(`{{fullpath.Join(".")}}`)} readOnly={false} />
-                        """;
+                    var body = vm.Options.MemberType.RenderSearchConditionVFormBody(vm, context);
                     section.Append(new VForm2.ItemNode(new VForm2.StringLabel(m.DisplayName), false, body));
 
                 } else {

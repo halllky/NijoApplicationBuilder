@@ -99,8 +99,10 @@ namespace Nijo.Core {
         public bool? WideInVForm { get; set; }
 
         /// <summary>列挙体の詳細画面のUIを強制的にコンボボックスにする</summary>
+        [Obsolete("#60 最終的にnijo.xmlではなくApp.tsxで決められるようにするためこの属性は削除する")]
         public bool? IsCombo { get; set; }
         /// <summary>列挙体の詳細画面のUIを強制的にラジオボタンにする</summary>
+        [Obsolete("#60 最終的にnijo.xmlではなくApp.tsxで決められるようにするためこの属性は削除する")]
         public bool? IsRadio { get; set; }
 
         /// <summary>

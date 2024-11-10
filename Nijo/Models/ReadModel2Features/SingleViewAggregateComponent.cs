@@ -27,7 +27,7 @@ namespace Nijo.Models.ReadModel2Features {
         protected readonly GraphNode<Aggregate> _aggregate;
         private readonly int _depth;
 
-        protected string ComponentName {
+        internal string ComponentName {
             get {
                 if (_componentName == null) {
                     if (_aggregate.IsOutOfEntryTree()) {
@@ -153,48 +153,9 @@ namespace Nijo.Models.ReadModel2Features {
                             """)
                         : new VForm2.StringLabel(member.DisplayName);
 
-                    var body = vm.Options.SingleViewCustomUiComponentName == null
-                        ? vm.Options.MemberType.RenderSingleViewVFormBody(vm, formContext)
-                        : $$"""
-                            <{{DefaultUi.CUSTOM_UI_COMPONENT}}.{{vm.Options.SingleViewCustomUiComponentName}} {...{{formContext.Register}}(`{{fullpath.Join(".")}}`)} {{readOnlyStatement}} />
-                            {{formContext.RenderErrorMessage(vm)}}
-                            """;
+                    var body = vm.Options.MemberType.RenderSingleViewVFormBody(vm, formContext);
 
                     formBuilder.Append(new VForm2.ItemNode(label, vm.Options.WideInVForm, body));
-
-                } else if (member is AggregateMember.Ref @ref) {
-                    if ((!@ref.Owner.IsOutOfEntryTree()
-                        || @ref.Relation == @ref.Owner.GetRefEntryEdge()) // ルート集約0が参照先1を見ており、参照先1がさらに別の参照先2を見ており、
-                                                                          // かつ1から2への参照でカスタムUIが指定されていた場合であっても、
-                                                                          // 1から2への参照ではカスタムコンポーネントは用いない
-                                                                          // （ルート集約0の画面で1がどの2を参照するかを変えることができてはいけないので）
-                        && @ref.SingleViewCustomUiComponentName != null) {
-
-                        var readOnlyStatement = GetReadOnlyStatement(@ref);
-                        var fullpath = @ref.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, GetArgumentsAndLoopVar());
-
-                        VForm2.Label label = @ref.Relation.IsRequired() && @ref.Owner.IsInEntryTree()
-                            ? new VForm2.JSXElementLabel($$"""
-                                (
-                                  <VForm2.LabelText>
-                                    {{member.DisplayName}}
-                                    <Input.RequiredChip />
-                                  </VForm2.LabelText>
-                                )
-                                """)
-                            : new VForm2.StringLabel(@ref.DisplayName);
-
-                        var body = $$"""
-                            <{{DefaultUi.CUSTOM_UI_COMPONENT}}.{{@ref.SingleViewCustomUiComponentName}} {...{{formContext.Register}}(`{{fullpath.Join(".")}}`)} {{readOnlyStatement}} />
-                            <Input.FormItemMessage name={`{{fullpath.Join(".")}}`} errors={errors} />
-                            """;
-
-                        formBuilder.Append(new VForm2.ItemNode(label, false, body));
-
-                    } else {
-                        var descendant = GetDescendantComponent(@ref);
-                        formBuilder.Append(new VForm2.UnknownNode(descendant.RenderCaller(GetArgumentsAndLoopVar()), true));
-                    }
 
                 } else if (member is AggregateMember.RelationMember rel) {
                     var descendant = GetDescendantComponent(rel);
@@ -266,25 +227,19 @@ namespace Nijo.Models.ReadModel2Features {
             var parameters = GetArguments()
                 .Select((a, i) => $"{a}={{{args?.ElementAtOrDefault(i)}}} ");
             return $$"""
-                <{{ComponentName}} {{parameters.Join("")}}/>
+                <UI.{{ComponentName}} {{parameters.Join("")}}/>
                 """;
         }
 
         internal virtual string RenderDeclaring(CodeRenderingContext context) {
             // ルート要素のコンポーネントのレンダリング
             var vForm = BuildVerticalForm(context);
-            var existsCustomUi = _aggregate
-                .GetMembers()
-                .Any(m => m is AggregateMember.ValueMember vm && vm.DeclaringAggregate == _aggregate && vm.Options.SingleViewCustomUiComponentName != null
-                       || m is AggregateMember.Ref @ref && @ref.SingleViewCustomUiComponentName != null);
 
             return $$"""
-                const {{ComponentName}} = () => {
+                export const {{ComponentName}} = () => {
                   const { mode } = useContext({{SingleView.PAGE_CONTEXT}})
                   const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
-                {{If(existsCustomUi, () => $$"""
-                  const { {{DefaultUi.CUSTOM_UI_COMPONENT}} } = {{DefaultUi.USE_CONTEXT}}()
-                """)}}
+                  const { {{UiContextSectionName}}: UI } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                   return (
                     <div className="p-px">
@@ -296,6 +251,18 @@ namespace Nijo.Models.ReadModel2Features {
                 """;
         }
 
+        /* ------------------------- UIコンテキスト用 ここから ------------------------------ */
+        protected string UiContextSectionName => new SingleView(_aggregate.GetEntry().As<Aggregate>()).UiContextSectionName;
+        internal string RenderUiContextType() {
+            return $$"""
+                /** 画面中の{{_aggregate.Item.DisplayName.Replace("*/", "")}}を表す部分 */
+                {{ComponentName}}: (props: {
+                {{GetArguments().SelectTextTemplate(arg => $$"""
+                  {{arg}}: number
+                """)}}
+                }) => React.ReactNode
+                """;
+        }
 
         /* ------------------------- 子孫要素のコンポーネント ここから ------------------------------ */
 
@@ -362,22 +329,16 @@ namespace Nijo.Models.ReadModel2Features {
             internal override string RenderDeclaring(CodeRenderingContext context) {
                 var args = GetArguments().ToArray();
                 var vForm = BuildVerticalForm(context);
-                var existsCustomUi = _aggregate
-                    .GetMembers()
-                    .Any(m => m is AggregateMember.ValueMember vm && vm.DeclaringAggregate == _aggregate && vm.Options.SingleViewCustomUiComponentName != null
-                           || m is AggregateMember.Ref @ref && @ref.SingleViewCustomUiComponentName != null);
 
                 return $$"""
-                    const {{ComponentName}} = ({{{(args.Length == 0 ? " " : $" {args.Join(", ")} ")}}}: {
+                    export const {{ComponentName}} = ({{{(args.Length == 0 ? " " : $" {args.Join(", ")} ")}}}: {
                     {{args.SelectTextTemplate(arg => $$"""
                       {{arg}}: number
                     """)}}
                     }) => {
                       const { mode } = useContext({{SingleView.PAGE_CONTEXT}})
                       const { register, registerEx, getValues, setValue, formState: { errors } } = Util.useFormContextEx<{{UseFormType}}>()
-                    {{If(existsCustomUi, () => $$"""
-                      const { {{DefaultUi.CUSTOM_UI_COMPONENT}} } = {{DefaultUi.USE_CONTEXT}}()
-                    """)}}
+                      const { {{UiContextSectionName}}: UI } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       return (
                         {{WithIndent(vForm.Render(context), "    ")}}
@@ -404,22 +365,16 @@ namespace Nijo.Models.ReadModel2Features {
                 var dialog = new SearchDialog(_ref.RefTo, _ref.RefTo);
                 var refTarget = new RefDisplayData(_ref.RefTo, _ref.RefTo);
                 var fullpath = _ref.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, GetArgumentsAndLoopVar());
-                var existsCustomUi = _aggregate
-                    .GetMembers()
-                    .Any(m => m is AggregateMember.ValueMember vm && vm.DeclaringAggregate == _aggregate && vm.Options.SingleViewCustomUiComponentName != null
-                           || m is AggregateMember.Ref @ref && @ref.SingleViewCustomUiComponentName != null);
 
                 return $$"""
-                    const {{ComponentName}} = ({{{(args.Length == 0 ? " " : $" {args.Join(", ")} ")}}}: {
+                    export const {{ComponentName}} = ({{{(args.Length == 0 ? " " : $" {args.Join(", ")} ")}}}: {
                     {{args.SelectTextTemplate(arg => $$"""
                       {{arg}}: number
                     """)}}
                     }) => {
                       const { mode } = useContext({{SingleView.PAGE_CONTEXT}})
                       const { register, registerEx, getValues, setValue, formState: { errors } } = Util.useFormContextEx<{{UseFormType}}>()
-                    {{If(existsCustomUi, () => $$"""
-                      const { {{DefaultUi.CUSTOM_UI_COMPONENT}} } = {{DefaultUi.USE_CONTEXT}}()
-                    """)}}
+                      const { {{UiContextSectionName}}: UI } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       const {{OPEN}} = RefTo.{{dialog.HookName}}()
                       const handleClickSearch = useEvent(() => {
@@ -477,13 +432,9 @@ namespace Nijo.Models.ReadModel2Features {
                 var args = GetArguments().ToArray();
                 var vForm = BuildVerticalForm(context);
                 var switchProp = _variation.Group.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, args).Join(".");
-                var existsCustomUi = _aggregate
-                    .GetMembers()
-                    .Any(m => m is AggregateMember.ValueMember vm && vm.DeclaringAggregate == _aggregate && vm.Options.SingleViewCustomUiComponentName != null
-                           || m is AggregateMember.Ref @ref && @ref.SingleViewCustomUiComponentName != null);
 
                 return $$"""
-                    const {{ComponentName}} = ({{{(args.Length == 0 ? " " : $" {args.Join(", ")} ")}}}: {
+                    export const {{ComponentName}} = ({{{(args.Length == 0 ? " " : $" {args.Join(", ")} ")}}}: {
                     {{args.SelectTextTemplate(arg => $$"""
                       {{arg}}: number
                     """)}}
@@ -491,9 +442,7 @@ namespace Nijo.Models.ReadModel2Features {
                       const { mode } = useContext({{SingleView.PAGE_CONTEXT}})
                       const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
                       const switchProp = useWatch({ name: `{{switchProp}}`, control })
-                    {{If(existsCustomUi, () => $$"""
-                      const { {{DefaultUi.CUSTOM_UI_COMPONENT}} } = {{DefaultUi.USE_CONTEXT}}()
-                    """)}}
+                      const { {{UiContextSectionName}}: UI } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       const body = (
                         {{WithIndent(vForm.Render(context), "    ")}}
@@ -579,13 +528,8 @@ namespace Nijo.Models.ReadModel2Features {
                     ? string.Empty
                     : $"AggregateType.{new DataClassForDisplay(_aggregate).TsNewObjectFunction}()";
 
-                var existsCustomUi = _aggregate
-                    .GetMembers()
-                    .Any(m => m is AggregateMember.ValueMember vm && vm.DeclaringAggregate == _aggregate && vm.Options.SingleViewCustomUiComponentName != null
-                           || m is AggregateMember.Ref @ref && @ref.SingleViewCustomUiComponentName != null);
-
                 return $$"""
-                    const {{ComponentName}} = ({{{(args.Length == 0 ? " " : $" {args.Join(", ")} ")}}}: {
+                    export const {{ComponentName}} = ({{{(args.Length == 0 ? " " : $" {args.Join(", ")} ")}}}: {
                     {{args.SelectTextTemplate(arg => $$"""
                       {{arg}}: number
                     """)}}
@@ -604,9 +548,7 @@ namespace Nijo.Models.ReadModel2Features {
                         }
                       }, [remove])
                     """)}}
-                    {{If(existsCustomUi, () => $$"""
-                      const { {{DefaultUi.CUSTOM_UI_COMPONENT}} } = {{DefaultUi.USE_CONTEXT}}()
-                    """)}}
+                      const { {{UiContextSectionName}}: UI } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       return (
                         <VForm2.Indent label={<>
@@ -683,7 +625,7 @@ namespace Nijo.Models.ReadModel2Features {
                 var editable = !_aggregate.IsOutOfEntryTree();
 
                 return $$"""
-                    const {{ComponentName}} = ({{{(args.Length == 0 ? " " : $" {args.Join(", ")} ")}}}: {
+                    export const {{ComponentName}} = ({{{(args.Length == 0 ? " " : $" {args.Join(", ")} ")}}}: {
                     {{args.SelectTextTemplate(arg => $$"""
                       {{arg}}: number
                     """)}}
