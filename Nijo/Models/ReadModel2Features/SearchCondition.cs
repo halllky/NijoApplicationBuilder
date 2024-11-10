@@ -341,7 +341,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                 } else if (m.MemberInfo is AggregateMember.Ref @ref) {
                     var refSearchCondition = new RefTo.RefSearchCondition(@ref.RefTo, @ref.RefTo);
-                    var fullpath = @ref.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript);
+                    var fullpath = GetFullPathForRefRHFRegisterName(@ref);
 
                     section.Append(new VForm2.UnknownNode($$"""
                         <Components.{{refSearchCondition.UiComponentName}}
