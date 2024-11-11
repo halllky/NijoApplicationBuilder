@@ -23,7 +23,7 @@ namespace Nijo.Core.AggregateMemberTypes {
         private readonly string _primitiveType;
         private readonly E_SearchBehavior _searchBehavior;
 
-        protected override E_SearchBehavior SearchBehavior { get; }
+        protected override E_SearchBehavior SearchBehavior => _searchBehavior;
 
         public override string GetCSharpTypeName() {
             return _className;
