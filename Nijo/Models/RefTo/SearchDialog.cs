@@ -126,10 +126,10 @@ namespace Nijo.Models.RefTo {
                       })
 
                       // カスタマイズ
-                      const { {{Customizer}}: UI, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
+                      const { {{Customizer}}: UI, {{CellType.USE_HELPER}}, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       // 検索結果欄の列定義
-                      const cellType = Layout.{{CellType.USE_HELPER}}<Types.{{searchResult.TsTypeName}}>()
+                      const cellType = {{CellType.USE_HELPER}}<Types.{{searchResult.TsTypeName}}>()
                       const gridCustomizer = UI.{{SEARCH_RESULT_CUSTOMIZER}}?.()
                       const columnDefs: Layout.DataTableColumn<Types.{{searchResult.TsTypeName}}>[] = React.useMemo(() => {
                         const defs: Layout.DataTableColumn<Types.{{searchResult.TsTypeName}}>[] = [

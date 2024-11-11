@@ -293,7 +293,7 @@ namespace Nijo.Models.ReadModel2Features {
                 """)}}
                 }) => {
                   const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
-                  const { {{UiContextSectionName}}: UI, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
+                  const { {{UiContextSectionName}}: UI, {{Parts.WebClient.DataTable.CellType.USE_HELPER}}, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
                   const handleBlur = useEvent((e: React.FocusEvent) => {
                     // blurイベント自体はdiv内部のコントロールからdiv内部の別のコントロールへの移動等でも発火するので、
                     // あくまでフォーカスがこのdivの外に出たときのみ引数のイベントが実行されるようにする
@@ -401,7 +401,7 @@ namespace Nijo.Models.ReadModel2Features {
                     """)}}
                     }) => {
                       const { register, registerEx, getValues, setValue, formState: { errors } } = Util.useFormContextEx<{{UseFormType}}>()
-                      const { {{UiContextSectionName}}: UI, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
+                      const { {{UiContextSectionName}}: UI, {{Parts.WebClient.DataTable.CellType.USE_HELPER}}, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       return (
                         {{WithIndent(vForm.Render(context), "    ")}}
@@ -437,7 +437,7 @@ namespace Nijo.Models.ReadModel2Features {
                     }) => {
                       const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
                       const switchProp = useWatch({ name: `{{switchProp}}`, control })
-                      const { {{UiContextSectionName}}: UI, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
+                      const { {{UiContextSectionName}}: UI, {{Parts.WebClient.DataTable.CellType.USE_HELPER}}, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       const body = (
                         {{WithIndent(vForm.Render(context), "    ")}}
@@ -542,7 +542,7 @@ namespace Nijo.Models.ReadModel2Features {
                         }
                       }, [remove])
                     """)}}
-                      const { {{UiContextSectionName}}: UI, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
+                      const { {{UiContextSectionName}}: UI, {{Parts.WebClient.DataTable.CellType.USE_HELPER}}, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       return (
                         <VForm2.Indent label={<>
@@ -639,7 +639,8 @@ namespace Nijo.Models.ReadModel2Features {
                       }, [dtRef, remove])
 
                     """)}}
-                      const cellType = Layout.{{Parts.WebClient.DataTable.CellType.USE_HELPER}}<{{rowType}}>()
+                      const { {{Parts.WebClient.DataTable.CellType.USE_HELPER}}, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
+                      const cellType = {{Parts.WebClient.DataTable.CellType.USE_HELPER}}<{{rowType}}>()
                       const columns = useMemo((): Layout.DataTableColumn<{{rowType}}>[] => [
                         {{WithIndent(tableBuilder.RenderColumnDef(context), "    ")}}
                       ], [complexPost, update, setValue{{args.Select(a => $", {a}").Join("")}}, cellType])

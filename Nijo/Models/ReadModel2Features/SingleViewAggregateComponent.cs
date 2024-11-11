@@ -250,7 +250,7 @@ namespace Nijo.Models.ReadModel2Features {
                 export const {{ComponentName}} = () => {
                   const { mode } = useContext({{SingleView.PAGE_CONTEXT}})
                   const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
-                  const { {{UiContextSectionName}}: UI, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
+                  const { {{UiContextSectionName}}: UI, {{Parts.WebClient.DataTable.CellType.USE_HELPER}}, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                   return (
                     <div className="p-px">
@@ -349,7 +349,7 @@ namespace Nijo.Models.ReadModel2Features {
                     }) => {
                       const { mode } = useContext({{SingleView.PAGE_CONTEXT}})
                       const { register, registerEx, getValues, setValue, formState: { errors } } = Util.useFormContextEx<{{UseFormType}}>()
-                      const { {{UiContextSectionName}}: UI, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
+                      const { {{UiContextSectionName}}: UI, {{Parts.WebClient.DataTable.CellType.USE_HELPER}}, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       return (
                         {{WithIndent(vForm.Render(context), "    ")}}
@@ -384,7 +384,7 @@ namespace Nijo.Models.ReadModel2Features {
                       const { mode } = useContext({{SingleView.PAGE_CONTEXT}})
                       const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
                       const switchProp = useWatch({ name: `{{switchProp}}`, control })
-                      const { {{UiContextSectionName}}: UI, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
+                      const { {{UiContextSectionName}}: UI, {{Parts.WebClient.DataTable.CellType.USE_HELPER}}, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       const body = (
                         {{WithIndent(vForm.Render(context), "    ")}}
@@ -490,7 +490,7 @@ namespace Nijo.Models.ReadModel2Features {
                         }
                       }, [remove])
                     """)}}
-                      const { {{UiContextSectionName}}: UI, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
+                      const { {{UiContextSectionName}}: UI, {{Parts.WebClient.DataTable.CellType.USE_HELPER}}, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       return (
                         <VForm2.Indent label={<>
@@ -590,7 +590,8 @@ namespace Nijo.Models.ReadModel2Features {
                       }, [dtRef, remove])
 
                     """)}}
-                      const cellType = Layout.{{Parts.WebClient.DataTable.CellType.USE_HELPER}}<{{rowType}}>()
+                      const { {{Parts.WebClient.DataTable.CellType.USE_HELPER}}, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
+                      const cellType = {{Parts.WebClient.DataTable.CellType.USE_HELPER}}<{{rowType}}>()
                       const columns = useMemo((): Layout.DataTableColumn<{{rowType}}>[] => [
                         {{WithIndent(tableBuilder.RenderColumnDef(context), "    ")}}
                       ], [mode, complexPost, update, setValue{{args.Select(a => $", {a}").Join("")}}, cellType])

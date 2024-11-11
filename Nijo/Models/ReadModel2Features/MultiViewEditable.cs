@@ -11,12 +11,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nijo.Models.ReadModel2Features {
+namespace Nijo.Models.ReadModel2Features
+{
     /// <summary>
     /// 一括編集画面
     /// </summary>
-    internal class MultiViewEditable {
-        internal MultiViewEditable(GraphNode<Aggregate> rootAggregate) {
+    internal class MultiViewEditable
+    {
+        internal MultiViewEditable(GraphNode<Aggregate> rootAggregate)
+        {
             _rootAggregate = rootAggregate;
         }
         private readonly GraphNode<Aggregate> _rootAggregate;
@@ -30,15 +33,18 @@ namespace Nijo.Models.ReadModel2Features {
 
         internal const string HANDLE_BLUR = "handleBlur";
 
-        public SourceFile GetSourceFile() => new() {
+        public SourceFile GetSourceFile() => new()
+        {
             FileName = "multi-view-editable.tsx",
-            RenderContent = ctx => {
+            RenderContent = ctx =>
+            {
                 var dataClass = new DataClassForDisplay(_rootAggregate);
                 var searchCondition = new SearchCondition(_rootAggregate);
                 var loadMethod = new LoadMethod(_rootAggregate);
                 var rootAggregateComponent = new MultiViewEditableAggregateComponent(_rootAggregate);
 
-                string OnValueChange(AggregateMember.AggregateMemberBase m) {
+                string OnValueChange(AggregateMember.AggregateMemberBase m)
+                {
                     return $$"""
                         (row, value, rowIndex) => {
                         {{If(m.Owner != _rootAggregate, () => $$"""
@@ -49,12 +55,14 @@ namespace Nijo.Models.ReadModel2Features {
                         }
                         """;
                 }
-                string ReadOnlyDynamic(AggregateMember.AggregateMemberBase member) {
+                string ReadOnlyDynamic(AggregateMember.AggregateMemberBase member)
+                {
                     return $"(row, rowIndex) => Util.isReadOnlyField(`data.${{rowIndex}}.{member.GetFullPathAsReactHookFormRegisterName(E_PathType.ReadOnly, ["rowIndex"]).Join(".")}`, reactHookFormMethods.getValues)";
                 }
                 var tableBuilder = Parts.WebClient.DataTable.DataTableBuilder.EditableGrid(_rootAggregate, $"AggregateType.{dataClass.TsTypeName}", OnValueChange, ReadOnlyDynamic)
                     // 行ヘッダ（列の状態）
-                    .Add(new Parts.WebClient.DataTable.AdhocColumn {
+                    .Add(new Parts.WebClient.DataTable.AdhocColumn
+                    {
                         Header = string.Empty,
                         DefaultWidth = 48,
                         EnableResizing = false,
@@ -156,6 +164,7 @@ namespace Nijo.Models.ReadModel2Features {
                       nowSaving: boolean
                     }) => {
                       const tableRef = React.useRef<Layout.DataTableRef<AggregateType.{{dataClass.TsTypeName}}>>(null)
+                      const { {{UiContextSectionName}}: UI, {{Parts.WebClient.DataTable.CellType.USE_HELPER}}, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       // 編集中データ
                       const { insert, remove, update } = useFieldArray({ name: 'data', control: reactHookFormMethods.control })
@@ -182,7 +191,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                       // 列定義
                       const { complexPost } = Util.useHttpRequest()
-                      const cellType = Layout.{{Parts.WebClient.DataTable.CellType.USE_HELPER}}<AggregateType.{{dataClass.TsTypeName}}>()
+                      const cellType = {{Parts.WebClient.DataTable.CellType.USE_HELPER}}<AggregateType.{{dataClass.TsTypeName}}>()
                       const handleChangeRow = useEvent((rowIndex: number, row: AggregateType.{{dataClass.TsTypeName}}) => {
                         const defaultValue = defaultValuesDict.get(getItemKeyAsString(row))
                         if (defaultValue) {
@@ -259,11 +268,6 @@ namespace Nijo.Models.ReadModel2Features {
                       const handleSave = useEvent(() => {
                         onSave(reactHookFormMethods.getValues('data'))
                       })
-
-                      // カスタマイズ
-                      const {
-                        {{UiContextSectionName}}: UI,
-                      } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       // ブラウザのタイトル
                       const browserTitle = React.useMemo(() => {
@@ -358,7 +362,8 @@ namespace Nijo.Models.ReadModel2Features {
 
         internal string NavigationHookName => $"useNavigateTo{_rootAggregate.Item.PhysicalName}MultiViewEditable";
 
-        internal string RenderNavigationHook(CodeRenderingContext context) {
+        internal string RenderNavigationHook(CodeRenderingContext context)
+        {
             var searchCondition = new SearchCondition(_rootAggregate);
             return $$"""
                 /** {{_rootAggregate.Item.DisplayName}}の一括編集画面へ遷移します。初期表示時検索条件を指定することができます。 */
@@ -385,7 +390,8 @@ namespace Nijo.Models.ReadModel2Features {
         #region カスタマイズ部分
         private const string SET_BROWSER_TITLE = "setBrowserTitle";
 
-        internal void RegisterUiContext(UiContext uiContext) {
+        internal void RegisterUiContext(UiContext uiContext)
+        {
             var components = new MultiViewEditableAggregateComponent(_rootAggregate)
                 .EnumerateThisAndDescendantsRecursively();
 

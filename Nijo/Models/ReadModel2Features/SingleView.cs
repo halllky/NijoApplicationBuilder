@@ -348,9 +348,7 @@ namespace Nijo.Models.ReadModel2Features {
                       })
 
                       // カスタマイズ
-                      const {
-                        {{UiContextSectionName}}: UI,
-                      } = React.useContext({{UiContext.CONTEXT_NAME}})
+                      const { {{UiContextSectionName}}: UI, {{Parts.WebClient.DataTable.CellType.USE_HELPER}}, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       // ブラウザのタイトル
                       const browserTitle = React.useMemo(() => {

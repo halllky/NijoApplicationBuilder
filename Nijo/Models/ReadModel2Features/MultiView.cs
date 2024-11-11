@@ -123,7 +123,7 @@ namespace Nijo.Models.ReadModel2Features {
                       })
 
                       // カスタマイズ
-                      const { {{UiContextSectionName}}: UI, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
+                      const { {{UiContextSectionName}}: UI, {{CellType.USE_HELPER}}, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       // ブラウザのタイトル
                       const browserTitle = React.useMemo(() => {
@@ -231,7 +231,7 @@ namespace Nijo.Models.ReadModel2Features {
                       })
 
                       // カスタマイズ
-                      const { {{UiContextSectionName}}: UI, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
+                      const { {{UiContextSectionName}}: UI, {{CellType.USE_HELPER}}, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
                       const tableRef = useRef<Layout.DataTableRef<AggregateType.{{searchResult.TsTypeName}}>>(null)
                       const getSelectedItems = useEvent(() => {
                         return tableRef.current?.getSelectedRows().map(x => x.row) ?? []
@@ -239,7 +239,7 @@ namespace Nijo.Models.ReadModel2Features {
                       const columnCustomizer = UI.{{SEARCH_RESULT_CUSTOMIZER}}?.()
 
                       // 列定義
-                      const cellType = Layout.{{CellType.USE_HELPER}}<AggregateType.{{searchResult.TsTypeName}}>()
+                      const cellType = {{CellType.USE_HELPER}}<AggregateType.{{searchResult.TsTypeName}}>()
                       const columnDefs: Layout.DataTableColumn<AggregateType.{{searchResult.TsTypeName}}>[] = useMemo(() => {
                         const defs: Layout.DataTableColumn<AggregateType.{{searchResult.TsTypeName}}>[] = [
                           {{WithIndent(tableBuilder.RenderColumnDef(context), "      ")}}

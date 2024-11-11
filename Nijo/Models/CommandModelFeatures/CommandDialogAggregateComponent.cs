@@ -250,7 +250,7 @@ namespace Nijo.Models.CommandModelFeatures {
             return $$"""
                 const {{ComponentName}} = ({{args}}) => {
                   const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
-                  const { ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
+                  const { {{Parts.WebClient.DataTable.CellType.USE_HELPER}}, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                   return (
                     <div className="p-px">
@@ -335,7 +335,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     """)}}
                     }) => {
                       const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
-                      const { ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
+                      const { {{Parts.WebClient.DataTable.CellType.USE_HELPER}}, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       return (
                         {{WithIndent(vForm.Render(context), "    ")}}
@@ -374,7 +374,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     """)}}
                     }) => {
                       const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
-                      const { ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
+                      const { {{Parts.WebClient.DataTable.CellType.USE_HELPER}}, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       return (
                         {{WithIndent(vForm.Render(context), "    ")}}
@@ -407,7 +407,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     """)}}
                     }) => {
                       const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
-                      const { ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
+                      const { {{Parts.WebClient.DataTable.CellType.USE_HELPER}}, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
                       const switchProp = useWatch({ name: `{{switchProp}}`, control })
 
                       const body = (
@@ -505,7 +505,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     """)}}
                     }) => {
                       const { register, registerEx, getValues, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
-                      const { ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
+                      const { {{Parts.WebClient.DataTable.CellType.USE_HELPER}}, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
                       const { fields, append, remove } = useFieldArray({ control, name: `{{registerNameArray.Join(".")}}` })
                     {{If(creatable, () => $$"""
                       const onCreate = useCallback(() => {
@@ -593,7 +593,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     }) => {
                       const { complexPost } = Util.useHttpRequest()
                       const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
-                      const { ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
+                      const { {{Parts.WebClient.DataTable.CellType.USE_HELPER}}, ...Components } = React.useContext({{UiContext.CONTEXT_NAME}})
                       const { fields, append, remove, update } = useFieldArray({ control, name: `{{registerNameArray.Join(".")}}` })
                       const dtRef = useRef<Layout.DataTableRef<{{rowType}}>>(null)
 
@@ -609,7 +609,7 @@ namespace Nijo.Models.CommandModelFeatures {
                       }, [dtRef, remove])
 
                     """)}}
-                      const cellType = Layout.{{Parts.WebClient.DataTable.CellType.USE_HELPER}}<{{rowType}}>()
+                      const cellType = {{Parts.WebClient.DataTable.CellType.USE_HELPER}}<{{rowType}}>()
                       const columns = useMemo((): Layout.DataTableColumn<{{rowType}}>[] => [
                         {{WithIndent(tableBuilder.RenderColumnDef(context), "    ")}}
                       ], [complexPost, update, setValue{{args.Select(a => $", {a}").Join("")}}, cellType])
