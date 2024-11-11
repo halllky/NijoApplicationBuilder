@@ -377,7 +377,6 @@ namespace Nijo.Models.ReadModel2Features {
                 """)}}
                   },
                   {{SORT_TS}}: [],
-                  {{TAKE_TS}}: 20,
                 })
                 """;
         }
