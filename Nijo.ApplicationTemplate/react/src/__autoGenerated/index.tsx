@@ -167,7 +167,7 @@ const ApplicationRootOutOfContext = (props: DefaultNijoAppProps) => {
   )
 }
 
-type DefaultNijoAppProps = {
+export type DefaultNijoAppProps = {
   /** UIカスタマイザ。自動生成されたUIをカスタマイズする場合はこの関数の中で定義してください。 */
   uiCustomizer: UiCustomizer
   /** アプリケーション名 */
