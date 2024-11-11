@@ -20,6 +20,9 @@ namespace Nijo.Parts.WebServer {
         public const string CURRENT_TIME = "CurrentTime";
         public const string CURRENT_USER = "CurrentUser";
 
+        public const string BEFORE_DB_RECREATE = "OnBeforeDbRecreate";
+        public const string AFTER_DB_RECREATE = "OnAfterDbRecreate";
+
         // ----------------------------------------------
         /// <summary>
         /// アプリケーションサービスにメソッドを追加します。
@@ -76,6 +79,16 @@ namespace Nijo.Parts.WebServer {
                         /// </summary>
                         public virtual string {{CURRENT_USER}} => _currentUser ??= "UNDEFINED";
                         private string? _currentUser;
+
+                #if DEBUG
+                        public virtual void {{BEFORE_DB_RECREATE}}() {
+                            // デバッグ用のDB再作成処理の前に実行される処理がある場合、ここに記載してください。
+                        }
+                        public virtual void {{AFTER_DB_RECREATE}}() {
+                            // デバッグ用のDB再作成処理のあとに実行される処理がある場合、ここに記載してください。
+                        }
+                #endif
+
                 {{_sourceCodes.SelectTextTemplate(code => $$"""
 
                         {{WithIndent(code, "        ")}}
