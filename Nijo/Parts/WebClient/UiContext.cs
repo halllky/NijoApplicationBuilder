@@ -65,6 +65,8 @@ namespace Nijo.Parts.WebClient {
                     /** ログイン済みの場合に表示されるコンポーネント */
                     LoggedInContents: JSX.Element
                   }) => React.ReactNode
+                  /** 設定画面 */
+                  UserSetting?: () => React.ReactNode
                 {{_contextValueType.SelectTextTemplate(source => $$"""
                   {{WithIndent(source, "  ")}}
                 """)}}

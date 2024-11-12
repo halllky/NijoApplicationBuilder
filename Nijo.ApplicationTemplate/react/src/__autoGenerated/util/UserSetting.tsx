@@ -1,9 +1,10 @@
-import { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import * as Input from "../input";
 import { PageFrame, PageTitle, VForm2 as VForm } from '../collection'
 import { useFormEx } from './ReactHookFormUtil'
 import { defineStorageContext } from './Storage'
 import { useToastContext } from './Notification'
+import { UiContext } from '../default-ui-component';
 
 export type UserSettings = {
   apiDomain?: string
@@ -28,6 +29,11 @@ export const [UserSettingContextProvider, useUserSetting] = defineStorageContext
 
 
 export const ServerSettingScreen = () => {
+
+  // カスタマイズされた設定画面があるならばそちらを表示
+  const { UserSetting } = React.useContext(UiContext)
+  if (UserSetting) return <UserSetting />
+
 
   const [, dispatchToast] = useToastContext()
   const { data: appState, save } = useUserSetting()
