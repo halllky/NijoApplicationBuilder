@@ -14,7 +14,10 @@ export const UiContextProvider = ({ customizer, children }: {
   children?: React.ReactNode
 }) => {
   const uiContextValue = React.useMemo((): Types.UiContextValue => {
-    return customizer({})
+    return customizer({
+      /** 既定のログイン画面。何もせずログイン後の画面を表示する。 */
+      LoginPage: ({ LoggedInContents }) => LoggedInContents,
+    })
   }, [customizer])
   return (
     <UiContext.Provider value={uiContextValue}>

@@ -147,67 +147,60 @@ function ApplicationRootInContext({
     fetchSideMenu()
   }, [fetchSideMenu])
 
-  const LoggedInContents = (
-    <Util.SideMenuContext.Provider value={sideMenuContextValue}>
-      <PanelGroup
-        direction='horizontal'
-        autoSaveId="LOCAL_STORAGE_KEY.SIDEBAR_SIZE_X"
-        className={darkMode ? 'dark' : undefined}
-        style={{ fontFamily: fontFamily ?? Util.DEFAULT_FONT_FAMILY }}>
+  return (
+    <LoginPage LoggedInContents={(
+      <Util.SideMenuContext.Provider value={sideMenuContextValue}>
+        <PanelGroup
+          direction='horizontal'
+          autoSaveId="LOCAL_STORAGE_KEY.SIDEBAR_SIZE_X"
+          className={darkMode ? 'dark' : undefined}
+          style={{ fontFamily: fontFamily ?? Util.DEFAULT_FONT_FAMILY }}>
 
-        {/* サイドメニュー */}
-        <Panel ref={sideMenuRef} defaultSize={20} collapsible>
-          <PanelGroup direction="vertical"
-            className="bg-color-2 text-color-12"
-            autoSaveId="LOCAL_STORAGE_KEY.SIDEBAR_SIZE_Y">
-            <Panel className="flex flex-col">
-              <Link to='/' className="p-1 ellipsis-ex font-semibold select-none border-r border-color-4">
-                {applicationName}
-              </Link>
-              <nav className="flex-1 overflow-y-auto leading-none flex flex-col">
-                {sideMenu.top.map(x =>
-                  <SideMenuLink key={x.item.url} url={x.item.url} depth={x.depth} icon={x.item.icon}>{x.item.text}</SideMenuLink>
-                )}
-                <div className="flex-1 min-h-0 border-r border-color-4"></div>
-              </nav>
-              <nav className="flex flex-col">
-                {sideMenu.bottom.map(x =>
-                  <SideMenuLink key={x.item.url} url={x.item.url} depth={x.depth} icon={x.item.icon}>{x.item.text}</SideMenuLink>
-                )}
-              </nav>
-              <span className="p-1 text-sm whitespace-nowrap overflow-hidden border-r border-color-4">
-                ver. 0.9.0.0
-              </span>
-            </Panel>
-          </PanelGroup>
-        </Panel>
+          {/* サイドメニュー */}
+          <Panel ref={sideMenuRef} defaultSize={20} collapsible>
+            <PanelGroup direction="vertical"
+              className="bg-color-2 text-color-12"
+              autoSaveId="LOCAL_STORAGE_KEY.SIDEBAR_SIZE_Y">
+              <Panel className="flex flex-col">
+                <Link to='/' className="p-1 ellipsis-ex font-semibold select-none border-r border-color-4">
+                  {applicationName}
+                </Link>
+                <nav className="flex-1 overflow-y-auto leading-none flex flex-col">
+                  {sideMenu.top.map(x =>
+                    <SideMenuLink key={x.item.url} url={x.item.url} depth={x.depth} icon={x.item.icon}>{x.item.text}</SideMenuLink>
+                  )}
+                  <div className="flex-1 min-h-0 border-r border-color-4"></div>
+                </nav>
+                <nav className="flex flex-col">
+                  {sideMenu.bottom.map(x =>
+                    <SideMenuLink key={x.item.url} url={x.item.url} depth={x.depth} icon={x.item.icon}>{x.item.text}</SideMenuLink>
+                  )}
+                </nav>
+                <span className="p-1 text-sm whitespace-nowrap overflow-hidden border-r border-color-4">
+                  ver. 0.9.0.0
+                </span>
+              </Panel>
+            </PanelGroup>
+          </Panel>
 
-        <PanelResizeHandle className="w-1 bg-color-base" />
+          <PanelResizeHandle className="w-1 bg-color-base" />
 
-        {/* コンテンツ */}
-        <Panel className={`flex flex-col bg-color-base text-color-12`}>
-          <Util.MsgContextProvider>
+          {/* コンテンツ */}
+          <Panel className={`flex flex-col bg-color-base text-color-12`}>
+            <Util.MsgContextProvider>
 
-            {/* createBrowserRouterのchildrenのうち現在のURLと対応するものがOutletの位置に表示される */}
-            <Outlet />
+              {/* createBrowserRouterのchildrenのうち現在のURLと対応するものがOutletの位置に表示される */}
+              <Outlet />
 
-          </Util.MsgContextProvider>
+            </Util.MsgContextProvider>
 
-          {/* コンテンツの外で発生したエラーが表示される欄 */}
-          <Util.InlineMessageList />
+            {/* コンテンツの外で発生したエラーが表示される欄 */}
+            <Util.InlineMessageList />
 
-        </Panel>
-      </PanelGroup>
-    </Util.SideMenuContext.Provider>
-  )
-
-  return LoginPage ? (
-    // ログイン画面がある場合はログイン画面を通す。
-    // アプリケーション本体を表示するかどうかはログイン画面の制御に任せる。
-    <LoginPage LoggedInContents={LoggedInContents} />
-  ) : (
-    // ログイン画面が無い場合はコンテンツをそのまま表示
-    LoggedInContents
+          </Panel>
+        </PanelGroup>
+      </Util.SideMenuContext.Provider>
+    )} />
   )
 }
 

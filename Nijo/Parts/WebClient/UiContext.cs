@@ -61,7 +61,7 @@ namespace Nijo.Parts.WebClient {
                   /** サイドメニューをカスタマイズするReactフック */
                   useSideMenuCustomizer?: () => ((defaultMenu: SideMenu) => Promise<SideMenu>)
                   /** ログイン画面を使用する場合はここに指定してください。ログイン成功の場合は引数のコンポーネントをそのまま返してください。 */
-                  LoginPage?: (props: {
+                  LoginPage: (props: {
                     /** ログイン済みの場合に表示されるコンポーネント */
                     LoggedInContents: JSX.Element
                   }) => React.ReactNode
@@ -119,6 +119,7 @@ namespace Nijo.Parts.WebClient {
                                    * App.tsxでこれらを上書きする指定がされた場合はそちらが優先されます。
                                    * 特に上書き指定が無い場合は自動生成されたコンポーネントがそのまま使用されます。
                                    */
+                                  LoginPage: ({ LoggedInContents }) => LoggedInContents,
                             {{_defaultValue.SelectTextTemplate(sourceCode => $$"""
                                   {{WithIndent(sourceCode, "      ")}},
                             """)}}
