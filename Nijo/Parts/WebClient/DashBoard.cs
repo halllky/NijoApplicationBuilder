@@ -18,18 +18,21 @@ namespace Nijo.Parts.WebClient {
                     import * as Util from '../util'
                     import * as Input from '../input'
                     import { VForm2 } from '../collection'
+                    import { {{UiContext.CONTEXT_NAME}} } from '../default-ui-component'
                     {{context.ReactProject.DashBoardImports.SelectTextTemplate(import => import)}}
 
                     /** DashBoard */
-                    export default function ({ applicationName }: { applicationName: string }) {
+                    export default function () {
                       return (
                         <Util.MsgContextProvider>
-                          <DashBoard applicationName={applicationName} />
+                          <DashBoard />
                         </Util.MsgContextProvider>
                       )
                     }
 
-                    const DashBoard = ({ applicationName }: { applicationName: string }) => {
+                    const DashBoard = () => {
+
+                      const { applicationName } = React.useContext({{UiContext.CONTEXT_NAME}})
 
                       // デバッグ用DB再作成コマンド
                       const [recreating, setRecreating] = React.useState(false)
