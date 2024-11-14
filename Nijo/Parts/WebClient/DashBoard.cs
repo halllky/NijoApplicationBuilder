@@ -106,7 +106,7 @@ namespace Nijo.Parts.WebClient {
                                 <VForm2.Item wideValue>
                                   <Input.CheckBox value={withDummyData} onChange={setWithDummyData}>ダミーデータも併せて作成する</Input.CheckBox>
                                 </VForm2.Item>
-                                <VForm2.Indent label="現在の接続先データベース（{{RuntimeSettings.JSON_FILE_NAME}} で設定されています）">
+                                <VForm2.Indent label="現在の接続先データベース（appsettings.json の {{RuntimeSettings.APP_SETTINGS_SECTION_NAME}} セクションで変更可能です。）">
                                   <VForm2.Item label="設定名" wideValue>
                                     {currentDb?.name}
                                   </VForm2.Item>

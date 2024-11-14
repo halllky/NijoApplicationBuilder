@@ -57,13 +57,6 @@ namespace Nijo.Features.Debugging {
                             var runtimeSetting = _provider.GetRequiredService<{{{RuntimeSettings.ServerSetiingTypeFullName}}}>();
                             return this.JsonContent(runtimeSetting);
                         }
-                        [HttpPost("secret-settings")]
-                        public IActionResult SetSecretSettings([FromBody] {{{RuntimeSettings.ServerSetiingTypeFullName}}} settings) {
-                            var json = settings.{{{RuntimeSettings.TO_JSON}}}();
-                            using var sw = new System.IO.StreamWriter("{{{RuntimeSettings.JSON_FILE_NAME}}}", false, new System.Text.UTF8Encoding(false));
-                            sw.WriteLine(json);
-                            return Ok();
-                        }
                     }
                     #endif
                     """";

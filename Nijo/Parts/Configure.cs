@@ -29,6 +29,7 @@ namespace Nijo.Parts {
 
                     return $$"""
                         namespace {{_ctx.Config.RootNamespace}} {
+                            using Microsoft.Extensions.Configuration;
                             using Microsoft.Extensions.DependencyInjection;
                             using Microsoft.Extensions.Logging;
 
@@ -55,19 +56,14 @@ namespace Nijo.Parts {
                                     });
 
                                     // 実行時設定ファイル
-                                    services.AddScoped(_ => {
-                                        var filename = "{{RuntimeSettings.JSON_FILE_NAME}}";
-                                        if (System.IO.File.Exists(filename)) {
-                                            using var stream = File.Open(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                                            var parsed = System.Text.Json.JsonSerializer.Deserialize<{{runtimeServerSettings}}>(stream);
-                                            return parsed ?? {{runtimeServerSettings}}.{{RuntimeSettings.GET_DEFAULT}}();
-                                        } else {
-                                            var setting = {{runtimeServerSettings}}.{{RuntimeSettings.GET_DEFAULT}}();
-                                            File.WriteAllText(filename, System.Text.Json.JsonSerializer.Serialize(setting, new System.Text.Json.JsonSerializerOptions {
-                                                WriteIndented = true,
-                                            }));
-                                            return setting;
-                                        }
+                                    services.AddScoped(provider => {
+                                        // appsettings.json から読み取る
+                                        var instance = {{runtimeServerSettings}}.{{RuntimeSettings.GET_DEFAULT}}();
+                                        provider
+                                            .GetRequiredService<IConfiguration>()
+                                            .GetSection("{{RuntimeSettings.APP_SETTINGS_SECTION_NAME}}")
+                                            .Bind(instance);
+                                        return instance;
                                     });
 
                                     // ログ

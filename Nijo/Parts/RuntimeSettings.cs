@@ -12,7 +12,7 @@ namespace Nijo.Parts {
 
         private const string SERVER = "Server";
 
-        internal const string JSON_FILE_NAME = "nijo-runtime-config.json";
+        internal const string APP_SETTINGS_SECTION_NAME = "Nijo";
         internal const string TO_JSON = "ToJson";
         internal const string GET_DEFAULT = "GetDefault";
         internal const string GET_ACTIVE_CONNSTR = "GetActiveConnectionString";
@@ -24,7 +24,7 @@ namespace Nijo.Parts {
                     using System.Text.Json;
                     using System.Text.Json.Serialization;
 
-                    public static class RuntimeSettings {
+                    public static partial class RuntimeSettings {
 
                         /// <summary>
                         /// 実行時クライアント側設定
@@ -38,7 +38,7 @@ namespace Nijo.Parts {
                         /// 実行時サーバー側設定。機密情報を含んでよい。
                         /// 本番環境ではサーバー管理者のみ閲覧編集可能、デバッグ環境では画面から閲覧編集可能。
                         /// </summary>
-                        public class {{SERVER}} {
+                        public partial class {{SERVER}} {
                             /// <summary>
                             /// ログ出力先ディレクトリ
                             /// </summary>
@@ -99,7 +99,7 @@ namespace Nijo.Parts {
                             }
 
                             /// <summary>
-                            /// 規定の実行時設定を返します。
+                            /// 既定の実行時設定を返します。
                             /// </summary>
                             public static {{SERVER}} {{GET_DEFAULT}}() {
                                 var connStr = new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder();
