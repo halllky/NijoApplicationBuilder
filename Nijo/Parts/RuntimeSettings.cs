@@ -42,39 +42,31 @@ namespace Nijo.Parts {
                             /// <summary>
                             /// ログ出力先ディレクトリ
                             /// </summary>
-                            [JsonPropertyName("log")]
                             public string? LogDirectory { get; set; }
                             /// <summary>
                             /// バッチ実行結果出力先ディレクトリ
                             /// </summary>
-                            [JsonPropertyName("job")]
                             public string? JobDirectory { get; set; }
 
                             /// <summary>
                             /// 現在接続中のDBの名前。 <see cref="DbProfiles"/> のいずれかのキーと一致
                             /// </summary>
-                            [JsonPropertyName("currentDb")]
                             public string? CurrentDb { get; set; }
 
-                            [JsonPropertyName("db")]
                             public List<DbProfile> DbProfiles { get; set; } = new();
                             public class DbProfile {
-                                [JsonPropertyName("name")]
                                 public string Name { get; set; } = string.Empty;
-                                [JsonPropertyName("connStr")]
                                 public string ConnStr { get; set; } = string.Empty;
                             }
 
                             /// <summary>
                             /// バックグラウンド処理に関する設定
                             /// </summary>
-                            [JsonPropertyName("backgroundTask")]
                             public BackgroundTaskSetting BackgroundTask { get; set; } = new();
                             public class BackgroundTaskSetting {
                                 /// <summary>
                                 /// ポーリング間隔（ミリ秒）
                                 /// </summary>
-                                [JsonPropertyName("pollingSpanMilliSeconds")]
                                 public int PollingSpanMilliSeconds { get; set; } = 5000;
                             }
 
