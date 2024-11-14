@@ -1,5 +1,8 @@
 /自動テストで作成されたプロジェクト/*
 
+# 開発者個人設定
+appsettings.Development.json
+
 # SQLiteのコミット前の状態が保存される一時ファイル
 *.sqlite3-shm
 *.sqlite3-wal
