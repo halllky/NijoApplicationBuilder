@@ -38,23 +38,9 @@ export type DefaultNijoAppProps = {
 /** 自動生成されるソースとその外側との境界 */
 export function DefaultNijoApp(props: DefaultNijoAppProps) {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Util.MsgContextProvider>
-        <Util.ToastContextProvider>
-          <Util.LocalRepositoryContextProvider>
-            <Util.UserSettingContextProvider>
-              <UiContextProvider customizer={props.uiCustomizer}>
-                <DialogContextProvider>
-                  <ReactRouterSetting {...props} />
-                  <Util.EnvNameRibbon />
-                  <Util.Toast />
-                </DialogContextProvider>
-              </UiContextProvider>
-            </Util.UserSettingContextProvider>
-          </Util.LocalRepositoryContextProvider>
-        </Util.ToastContextProvider>
-      </Util.MsgContextProvider>
-    </QueryClientProvider>
+    <UiContextProvider customizer={props.uiCustomizer}>
+      <ReactRouterSetting {...props} />
+    </UiContextProvider>
   )
 }
 
@@ -70,7 +56,23 @@ const ReactRouterSetting = (props: DefaultNijoAppProps) => {
     return createBrowserRouter([{
       path: '/',
       children: modifyRoutes?.(defaultRoutes) ?? defaultRoutes,
-      element: <ApplicationRoot {...props} />,
+      element: (
+        <QueryClientProvider client={queryClient}>
+          <Util.MsgContextProvider>
+            <Util.ToastContextProvider>
+              <Util.LocalRepositoryContextProvider>
+                <Util.UserSettingContextProvider>
+                  <DialogContextProvider>
+                    <ApplicationRoot {...props} />
+                    <Util.EnvNameRibbon />
+                    <Util.Toast />
+                  </DialogContextProvider>
+                </Util.UserSettingContextProvider>
+              </Util.LocalRepositoryContextProvider>
+            </Util.ToastContextProvider>
+          </Util.MsgContextProvider>
+        </QueryClientProvider>
+      ),
     },
     ])
   }, [UI, modifyRoutes, ...Object.values(props)])
