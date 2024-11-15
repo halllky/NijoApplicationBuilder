@@ -36,23 +36,29 @@ namespace Nijo.Core.AggregateMemberTypes {
                 : member.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.CSharp);
             var fullpathNullable = $"{searchCondition}.{pathFromSearchCondition.Join("?.")}";
             var fullpathNotNull = $"{searchCondition}.{pathFromSearchCondition.Join(".")}";
-            var method = SearchBehavior switch {
-                E_SearchBehavior.PartialMatch => "Contains",
-                E_SearchBehavior.ForwardMatch => "StartsWith",
-                E_SearchBehavior.BackwardMatch => "EndsWith",
-                _ => "Equals",
-            };
             var whereFullpath = searchQueryObject == E_SearchQueryObject.SearchResult
                 ? member.GetFullPathAsSearchResult(E_CsTs.CSharp, out var isArray)
                 : member.GetFullPathAsDbEntity(E_CsTs.CSharp, out isArray);
 
             return $$"""
                 if (!string.IsNullOrWhiteSpace({{fullpathNullable}})) {
-                    var trimmed = {{fullpathNotNull}}.Trim();
-                {{If(isArray, () => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => (({{_primitiveType}})y.{{member.MemberName}}).{{method}}(trimmed)));
+                {{If(SearchBehavior == E_SearchBehavior.PartialMatch, () => $$"""
+                    var escaped = "%" + {{fullpathNotNull}}.Trim().Replace("\\", "\\\\").Replace("%", "\\%") + "%";
+
+                """).ElseIf(SearchBehavior == E_SearchBehavior.ForwardMatch, () => $$"""
+                    var escaped = {{fullpathNotNull}}.Trim().Replace("\\", "\\\\").Replace("%", "\\%") + "%";
+
+                """).ElseIf(SearchBehavior == E_SearchBehavior.BackwardMatch, () => $$"""
+                    var escaped = "%" + {{fullpathNotNull}}.Trim().Replace("\\", "\\\\").Replace("%", "\\%");
+
                 """).Else(() => $$"""
-                    {{query}} = {{query}}.Where(x => (({{_primitiveType}})x.{{whereFullpath.Join(".")}}).{{method}}(trimmed));
+                    var escaped = {{fullpathNotNull}}.Trim().Replace("\\", "\\\\").Replace("%", "\\%");
+
+                """)}}
+                {{If(isArray, () => $$"""
+                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => EF.Functions.Like(({{_primitiveType}})y.{{member.MemberName}}, escaped, "\\")));
+                """).Else(() => $$"""
+                    {{query}} = {{query}}.Where(x => EF.Functions.Like(({{_primitiveType}})x.{{whereFullpath.Join(".")}}, escaped, "\\"));
                 """)}}
                 }
                 """;
