@@ -28,16 +28,6 @@ namespace Nijo.Parts.WebClient {
             _defaultValue.Add(defaultValue);
         }
 
-        /// <summary>
-        /// React context 直下のメンバー名とその型を定義します。
-        /// </summary>
-        [Obsolete("'Add' に変更になった")]
-        internal void AddMember(string sourceCode) {
-            _sourceCode.Add(sourceCode);
-        }
-        [Obsolete("'Add' に変更になった")]
-        private readonly List<string> _sourceCode = new();
-
         void ISummarizedFile.OnEndGenerating(CodeRenderingContext context) {
 
             // データテーブルの列定義生成ヘルパーは集約定義にかかわらず必要なのでここでAddする
