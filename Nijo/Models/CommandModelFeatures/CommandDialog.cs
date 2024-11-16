@@ -43,7 +43,7 @@ namespace Nijo.Models.CommandModelFeatures {
                   const [, dispatchDialog] = Layout.useDialogContext()
 
                   return React.useCallback((initialParam?: Types.{{param.TsTypeName}}) => {
-                    dispatchDialog(state => state.pushDialog('{{_rootAggregate.Item.DisplayName.Replace("'", "\\'")}}', ({ closeDialog }) => {
+                    dispatchDialog(state => state.pushDialog({ title: '{{_rootAggregate.Item.DisplayName.Replace("'", "\\'")}}', disableConfirm: false }, ({ closeDialog }) => {
                       const rhfMethods = Util.useFormEx<Types.{{param.TsTypeName}}>({ defaultValues: initialParam ?? Types.{{param.TsNewObjectFunction}}() })
                       const { getValues, setError, clearErrors, reset } = rhfMethods
                       const {{{(steps.Length != 0 ? " currentStep, allSteps, toPreviousStep, toNextStep," : "")}} launch, resultDetail } = Hooks.{{executor.HookName}}({{hookArgs.Join(", ")}})

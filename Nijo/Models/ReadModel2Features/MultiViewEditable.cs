@@ -93,7 +93,7 @@ namespace Nijo.Models.ReadModel2Features
                 return $$"""
                     import React, { useState, useContext, useRef, useMemo, useCallback, useEffect } from 'react'
                     import useEvent from 'react-use-event-hook'
-                    import { useLocation } from 'react-router-dom'
+                    import * as ReactRouter from 'react-router-dom'
                     import { useFieldArray, FormProvider, useWatch, UseFormReturn, FieldPath } from 'react-hook-form'
                     import * as Icon from '@heroicons/react/24/outline'
                     import { Panel, PanelGroup, PanelResizeHandle, ImperativePanelHandle } from 'react-resizable-panels'
@@ -110,7 +110,7 @@ namespace Nijo.Models.ReadModel2Features
                     export default function () {
                       // 画面初期表示時データ読み込み
                       const [loaded, setLoaded] = useState(false)
-                      const { search: locationSerach } = useLocation()
+                      const { search: locationSerach } = ReactRouter.useLocation()
                       const { {{LoadMethod.LOAD}} } = AggregateHook.{{loadMethod.ReactHookName}}(true)
                       const reactHookFormMethods = Util.useFormEx<{ data: AggregateType.{{dataClass.TsTypeName}}[] }>({})
                       const { reset, setError, clearErrors } = reactHookFormMethods
@@ -125,8 +125,32 @@ namespace Nijo.Models.ReadModel2Features
                           setLoaded(true)
                         }
                       }, [locationSerach])
+
+                      // 画面離脱（他画面への遷移）アラート設定
+                      const blockCondition: ReactRouter.unstable_BlockerFunction = useEvent(({ currentLocation, nextLocation }) => {
+                        if (currentLocation.pathname !== nextLocation.pathname) {
+                          if (confirm('画面を移動すると、変更内容が破棄されます。よろしいでしょうか？')) return false
+                        }
+                        return currentLocation.pathname !== nextLocation.pathname
+                      })
+                      // ブロッカー
+                      let blocker = ReactRouter.unstable_useBlocker(blockCondition)
+
                       React.useEffect(() => {
                         reload()
+
+                        // 画面離脱（ブラウザ閉じるorタブ閉じる）アラート設定
+                        const handleBeforeUnload: OnBeforeUnloadEventHandler = e => {
+                          e.preventDefault()
+                          return null
+                        };
+                        
+                        window.addEventListener("beforeunload", handleBeforeUnload, false);
+                        
+                        return () => {
+                          window.removeEventListener("beforeunload", handleBeforeUnload, false);
+                        
+                        };
                       }, [reload])
 
                       // 保存時

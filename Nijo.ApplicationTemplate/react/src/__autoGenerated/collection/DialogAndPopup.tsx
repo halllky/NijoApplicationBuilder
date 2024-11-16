@@ -6,19 +6,40 @@ import { defineContext2, useOutsideClick } from '../util/ReactUtil'
 import { MsgContextProvider, InlineMessageList } from '../util/Notification'
 
 /** モーダルダイアログの枠 */
-const ModalDialog = ({ title, onClose, children }: {
+const ModalDialog = ({ title, onClose, disableConfirm, children }: {
   title?: string
   onClose: () => void
+  disableConfirm: boolean
   children?: React.ReactNode
 }) => {
+  // 閉じる
+  const handleClose = useEvent(() => {
+    if (!disableConfirm && !confirm('入力内容が破棄されます。よろしいでしょうか？')) {
+      return
+    }
+    onClose()
+  })
+
   const dialogRef = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
     dialogRef.current?.focus()
   }, [dialogRef])
 
+  // 画面離脱（ブラウザ閉じるorタブ閉じる）アラート設定
+  React.useEffect(() => {
+    const handleBeforeUnload: OnBeforeUnloadEventHandler = e => {
+      e.preventDefault()
+      return null
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload, false)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload, false)
+    }
+  }, [dialogRef])
+
   // Escapeキーでダイアログを閉じる
   const handleKeyDown: React.KeyboardEventHandler = useEvent(e => {
-    if (e.target === dialogRef.current && e.key === 'Escape') onClose()
+    if (e.target === dialogRef.current && e.key === 'Escape') handleClose()
   })
 
   // ダイアログの外にフォーカスが出るのを防ぐ
@@ -34,7 +55,7 @@ const ModalDialog = ({ title, onClose, children }: {
       >
         {/* シェード */}
         <div
-          onMouseDown={onClose} // 背景のシェードが押されたらダイアログを閉じる
+          onMouseDown={handleClose} // 背景のシェードが押されたらダイアログを閉じる
           onFocus={preventFocusOut} // Shift + Tab でダイアログの外にフォーカスを当てることができてしまうのを防ぐ
           tabIndex={0} // onFocusが発火されるために必要
           className="absolute inset-0 bg-black opacity-25"
@@ -53,7 +74,7 @@ const ModalDialog = ({ title, onClose, children }: {
               <span className="font-medium select-none">{title}</span>
             )}
             <div className="flex-1"></div>
-            <IconButton onClick={onClose}>閉じる</IconButton>
+            <IconButton onClick={handleClose}>閉じる</IconButton>
           </div>
           <InlineMessageList />
 
@@ -132,7 +153,7 @@ const PopupFrame = ({ target, onClose, elementRef, children }: {
 
 type DialogContextState = {
   /** 開かれているダイアログ。一度に複数開くことができ、そして後から開かれたダイアログが前面に表示されるので、スタックの形をとっている。 */
-  stack: { id: string, title: string, contents: DialogOrPopupContents }[]
+  stack: { id: string, option: { title: string, disableConfirm?: boolean }, contents: DialogOrPopupContents }[]
   /** 開かれているポップアップ。一度に1つしか開けない。 */
   popup: { target: HTMLElement | null | undefined, contents: DialogOrPopupContents, onClose: (() => void) | undefined } | undefined
   /** 開かれているポップアップのHTML要素への参照 */
@@ -152,8 +173,8 @@ const { reducer, ContextProvider, useContext: useDialogContext } = defineContext
   initialize,
   state => ({
     /** 新しいダイアログを開きます。一度に複数のダイアログが開かれる可能性を考慮し、新しいダイアログはスタックに積まれます。 */
-    pushDialog: (title: string, contents: DialogOrPopupContents) => ({
-      stack: [{ id: UUID.generate(), title, contents }, ...state.stack],
+    pushDialog: (option: { title: string, disableConfirm?: boolean }, contents: DialogOrPopupContents) => ({
+      stack: [{ id: UUID.generate(), option, contents }, ...state.stack],
       popup: state.popup,
       popupElementRef: state.popupElementRef,
     }),
@@ -199,8 +220,8 @@ const DialogContextProvider = ({ children }: {
       {children}
 
       {/* ダイアログ。ダイアログが一度に複数開かれている場合は後にスタックに積まれた方が手前に表示される。 */}
-      {stack.map(({ id, title, contents }) => (
-        <ModalDialog key={id} title={title} onClose={handleCancel(id)}>
+      {stack.map(({ id, option, contents }) => (
+        <ModalDialog key={id} title={option.title} onClose={handleCancel(id)} disableConfirm={option.disableConfirm ?? false}>
           {React.createElement(contents, {
             closeDialog: handleCancel(id),
           })}

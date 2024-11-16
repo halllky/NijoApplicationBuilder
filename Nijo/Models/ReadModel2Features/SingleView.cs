@@ -184,9 +184,48 @@ namespace Nijo.Models.ReadModel2Features {
                       dispatchMsg(msg => msg.warn('データの読み込みに失敗しました。'))
                     }
                   })
+
+                  // 画面離脱（他画面への遷移）アラート設定
+                  const blockCondition: ReactRouter.unstable_BlockerFunction = useEvent(({ currentLocation, nextLocation }) => {
+                    if (isChanged() && currentLocation.pathname !== nextLocation.pathname) {
+                      if (confirm('画面を移動すると、変更内容が破棄されます。よろしいでしょうか？')) return false
+                    }
+                    return isChanged() &&
+                      currentLocation.pathname !== nextLocation.pathname
+                  })
+                  // ブロッカー
+                  let blocker = ReactRouter.unstable_useBlocker(blockCondition)
+
                   React.useEffect(() => {
                     reload()
+
+                    // 画面離脱（ブラウザ閉じるorタブ閉じる）アラート設定
+                    const handleBeforeUnload: OnBeforeUnloadEventHandler = e => {
+                        e.preventDefault()
+                        return null
+                    };
+
+                    window.addEventListener("beforeunload", handleBeforeUnload, false);
+
+                    return () => {
+                        window.removeEventListener("beforeunload", handleBeforeUnload, false);
+
+                    };
+
                   }, [{{MODE}}])
+
+                  // 画面項目値が変更されているか（画面遷移のチェックに使用）
+                  const isChanged = useEvent((): boolean => {
+                    const currentValues = getValues()
+                    if (defaultValues) {
+                      const changed = Types.{{dataClass.CheckChangesFunction}}({
+                        defaultValues: defaultValues as Types.{{dataClass.TsTypeName}},
+                        currentValues,
+                      })
+                      return changed
+                    }
+                    return false
+                  })
 
                   // 保存時
                   const { batchUpdateReadModels, nowSaving } = {{BatchUpdateReadModel.HOOK_NAME}}()
