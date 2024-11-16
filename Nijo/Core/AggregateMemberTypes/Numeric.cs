@@ -21,9 +21,10 @@ namespace Nijo.Core.AggregateMemberTypes {
 
         public override string DataTableColumnDefHelperName => "numeric";
         public override Parts.WebClient.DataTable.CellType.Helper RenderDataTableColumnDefHelper(CodeRenderingContext ctx) {
+            var returnType = $"{Parts.WebClient.DataTable.CellType.RETURNS_ONE_COLUMN}<TRow, {GetTypeScriptTypeName()} | undefined>";
             var body = $$"""
                 /** 実数 */
-                const numeric: {{Parts.WebClient.DataTable.CellType.RETURNS_ONE_COLUMN}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => ({
+                const numeric: {{returnType}} = (header, getValue, setValue, opt) => ({
                   ...opt,
                   id: `${opt?.headerGroupName}::${header}`,
                   header,
@@ -49,6 +50,7 @@ namespace Nijo.Core.AggregateMemberTypes {
             return new() {
                 Body = body,
                 FunctionName = DataTableColumnDefHelperName,
+                ReturnType = returnType,
             };
         }
     }

@@ -188,9 +188,10 @@ namespace Nijo.Core {
             ? "multiLineText"
             : "text";
         Parts.WebClient.DataTable.CellType.Helper IAggregateMemberType.RenderDataTableColumnDefHelper(CodeRenderingContext ctx) {
+            var returnType = $"{Parts.WebClient.DataTable.CellType.RETURNS_ONE_COLUMN}<TRow, {GetTypeScriptTypeName()} | undefined>";
             var body = $$"""
                 /** 文字列 */
-                const {{DataTableColumnDefHelperName}}: {{Parts.WebClient.DataTable.CellType.RETURNS_ONE_COLUMN}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => ({
+                const {{DataTableColumnDefHelperName}}: {{returnType}} = (header, getValue, setValue, opt) => ({
                   ...opt,
                   id: `${opt?.headerGroupName}::${header}`,
                   header,
@@ -209,6 +210,7 @@ namespace Nijo.Core {
                 """;
             return new() {
                 FunctionName = DataTableColumnDefHelperName,
+                ReturnType = returnType,
                 Body = body,
             };
         }

@@ -83,9 +83,10 @@ namespace Nijo.Core.AggregateMemberTypes {
 
         public string DataTableColumnDefHelperName => "bool";
         Parts.WebClient.DataTable.CellType.Helper IAggregateMemberType.RenderDataTableColumnDefHelper(CodeRenderingContext ctx) {
+            var returnType = $"{Parts.WebClient.DataTable.CellType.RETURNS_ONE_COLUMN}<TRow, {GetTypeScriptTypeName()} | undefined>";
             var body = $$"""
                 /** 真偽値 */
-                const bool: {{Parts.WebClient.DataTable.CellType.RETURNS_ONE_COLUMN}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => {
+                const bool: {{returnType}} = (header, getValue, setValue, opt) => {
                   const editSetting: ColumnEditSetting<TRow, { key: 'T' | 'F', text: string }> = {
                     type: 'combo',
                     readOnly: typeof opt?.readOnly === 'function'
@@ -126,6 +127,7 @@ namespace Nijo.Core.AggregateMemberTypes {
             return new() {
                 Body = body,
                 FunctionName = DataTableColumnDefHelperName,
+                ReturnType = returnType,
             };
         }
     }

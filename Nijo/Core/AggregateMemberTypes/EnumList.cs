@@ -117,9 +117,10 @@ namespace Nijo.Core.AggregateMemberTypes {
 
         public string DataTableColumnDefHelperName => Definition.Name;
         Parts.WebClient.DataTable.CellType.Helper IAggregateMemberType.RenderDataTableColumnDefHelper(CodeRenderingContext ctx) {
+            var returnType = $"{Parts.WebClient.DataTable.CellType.RETURNS_ONE_COLUMN}<TRow, {GetTypeScriptTypeName()} | undefined>";
             var body = $$"""
                 /** {{Definition.Name}} */
-                const {{Definition.Name}}: {{Parts.WebClient.DataTable.CellType.RETURNS_ONE_COLUMN}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = (header, getValue, setValue, opt) => {
+                const {{Definition.Name}}: {{returnType}} = (header, getValue, setValue, opt) => {
                   const editSetting: ColumnEditSetting<TRow, {{GetTypeScriptTypeName()}}> = {
                     type: 'combo',
                     readOnly: typeof opt?.readOnly === 'function'
@@ -166,6 +167,7 @@ namespace Nijo.Core.AggregateMemberTypes {
             return new() {
                 Body = body,
                 FunctionName = DataTableColumnDefHelperName,
+                ReturnType = returnType,
             };
         }
     }

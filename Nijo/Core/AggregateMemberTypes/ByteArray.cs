@@ -32,6 +32,7 @@ namespace Nijo.Core.AggregateMemberTypes {
         public CellType.Helper RenderDataTableColumnDefHelper(CodeRenderingContext ctx) {
             return new() {
                 FunctionName = DataTableColumnDefHelperName,
+                ReturnType = $"{CellType.RETURNS_ONE_COLUMN}<TRow, {GetTypeScriptTypeName()} | undefined>",
                 Body = $$"""
                     const {{DataTableColumnDefHelperName}}: {{CellType.RETURNS_ONE_COLUMN}}<TRow, {{GetTypeScriptTypeName()}} | undefined> = () => {
                       throw new Error('Byte配列の列定義はサポートされていません。')

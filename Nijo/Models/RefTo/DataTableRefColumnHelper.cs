@@ -86,9 +86,10 @@ namespace Nijo.Models.RefTo {
                 """);
             deps.Add($"load{_refEntry.Item.PhysicalName}");
 
+            var returnType = $"{Parts.WebClient.DataTable.CellType.RETURNS_MANY_COLUMN}<TRow, AggregateType.{displayData.TsTypeName} | undefined>";
             var body = $$"""
                 /** {{_refEntry.Item.DisplayName}}を参照する列 */
-                const {{MethodName}}: {{Parts.WebClient.DataTable.CellType.RETURNS_MANY_COLUMN}}<TRow, AggregateType.{{displayData.TsTypeName}} | undefined> = (header, getValue, setValue, opt) => {
+                const {{MethodName}}: {{returnType}} = (header, getValue, setValue, opt) => {
                   const cols: DataTableColumn<TRow>[] = []
                   if (opt?.readOnly !== true) {
                     // 参照先検索の虫眼鏡ダイアログ検索
@@ -162,6 +163,7 @@ namespace Nijo.Models.RefTo {
                 Body = body,
                 Deps = deps,
                 FunctionName = MethodName,
+                ReturnType = returnType,
             };
         }
     }

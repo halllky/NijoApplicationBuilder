@@ -42,11 +42,11 @@ namespace Nijo.Parts.WebClient {
 
             // データテーブルの列定義生成ヘルパーは集約定義にかかわらず必要なのでここでAddする
             context.ReactProject.Types.AddImport($$"""
-                import { {{DataTable.CellType.USE_HELPER}} } from './collection/DataTable.CellType'
+                import { {{DataTable.CellType.USE_HELPER}}, {{DataTable.CellType.HELPER_TYPE}} } from './collection/DataTable.CellType'
                 """);
             _contextValueType.Add($$"""
                 /** 列定義生成ヘルパー関数。グリッドの列定義ソースを簡略化してくれます。 */
-                {{DataTable.CellType.USE_HELPER}}: typeof {{DataTable.CellType.USE_HELPER}},
+                {{DataTable.CellType.USE_HELPER}}: <TRow extends ReactHookForm.FieldValues>() => {{DataTable.CellType.HELPER_TYPE}}<TRow>,
                 """);
             _defaultValue.Add($$"""
                 {{DataTable.CellType.USE_HELPER}}
