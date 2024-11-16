@@ -1,6 +1,6 @@
 import React, { useEffect, useImperativeHandle, useRef, useState } from "react";
 import { ValidationHandler, ValidationResult, defineCustomComponent } from "./InputBase";
-import { useUserSetting } from "..";
+import { useIMEOpened, useUserSetting } from "..";
 import useEvent from "react-use-event-hook";
 
 /** TextInputBase特有の属性 */
@@ -105,9 +105,10 @@ export const TextInputBase = defineCustomComponent<
     executeFormat()
   }, [onValidate])
 
+  const [{ isImeOpen }] = useIMEOpened()
   const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = useEvent(e => {
-    if (e.key === 'Enter') {
-      e.preventDefault() // Enterキーでsubmitされるのを防ぐ
+    if (e.key === 'Enter' && !isImeOpen) {
+      executeFormat()
     }
     onKeyDown?.(e)
   })

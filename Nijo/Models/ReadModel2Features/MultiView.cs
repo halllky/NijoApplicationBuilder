@@ -174,6 +174,7 @@ namespace Nijo.Models.ReadModel2Features {
                         reset: resetSearchCondition,
                         formState: { defaultValues }, // 最後に検索した時の検索条件
                         control,
+                        handleSubmit,
                       } = rhfSearchMethods
 
                       // 検索条件の並び順コンボボックス
@@ -206,11 +207,6 @@ namespace Nijo.Models.ReadModel2Features {
                         defaultValues?.take,
                         totalItemCount,
                         skip => reload({ ...getConditionValues(), skip }))
-
-                      // 再読み込み時処理
-                      const handleReload = useEvent(() => {
-                        reload({ ...getConditionValues(), {{SearchCondition.SKIP_TS}}: undefined, {{SearchCondition.TAKE_TS}}: undefined })
-                      })
 
                       // クリア時処理
                       const clearSearchCondition = useEvent(() => {
@@ -264,7 +260,7 @@ namespace Nijo.Models.ReadModel2Features {
                             )}
                             <Input.IconButton className="self-center" onClick={clearSearchCondition}>クリア</Input.IconButton>
                             <div className="self-center flex">
-                              <Input.IconButton icon={Icon.MagnifyingGlassIcon} fill onClick={handleReload}>検索</Input.IconButton>
+                              <Input.IconButton submit form="search-condition-form" icon={Icon.MagnifyingGlassIcon} fill>検索</Input.IconButton>
                               <div className="self-stretch w-px bg-color-base"></div>
                               <Input.IconButton icon={collapsed ? Icon.ChevronDownIcon : Icon.ChevronUpIcon} fill onClick={toggleSearchCondition} hideText>検索条件</Input.IconButton>
                             </div>
@@ -275,7 +271,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                             {/* 検索条件欄 */}
                             <Panel ref={searchConditionPanelRef} defaultSize={30} collapsible onCollapse={setCollapsed} className="max-h-max">
-                              <div className="h-full overflow-y-scroll border border-color-4 bg-color-gutter">
+                              <form id="search-condition-form" onSubmit={handleSubmit(reload)} className="h-full overflow-y-scroll border border-color-4 bg-color-gutter">
                                 <FormProvider {...rhfSearchMethods}>
                                   {UI.{{SEARCH_CONDITION_CUSTOMIZER}} ? (
                                     <UI.{{SEARCH_CONDITION_CUSTOMIZER}} />
@@ -283,7 +279,7 @@ namespace Nijo.Models.ReadModel2Features {
                                     {{WithIndent(searchCondition.RenderVForm2(pageRenderingContext, true), "                ")}}
                                   )}
                                 </FormProvider>
-                              </div>
+                              </form>
                             </Panel>
 
                             <PanelResizeHandle className="h-2" />

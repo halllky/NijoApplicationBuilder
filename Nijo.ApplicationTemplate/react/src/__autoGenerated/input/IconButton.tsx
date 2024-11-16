@@ -15,6 +15,7 @@ export const IconButton = (args: {
   inline?: boolean
   tabIndex?: number
   className?: string
+  form?: string
 }) => {
 
   const flex = args.inline ? 'inline-flex' : 'flex'
@@ -74,6 +75,7 @@ export const IconButton = (args: {
       className={className}
       title={args.hideText ? (args.children as string) : undefined}
       tabIndex={args.tabIndex}
+      form={args.form}
     >
 
       {/* アイコン or 読み込み中のくるくる */}
