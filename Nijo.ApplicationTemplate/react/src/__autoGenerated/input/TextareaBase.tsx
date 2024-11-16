@@ -33,8 +33,15 @@ export const TextareaBase = defineCustomComponent<string, {}, TextareaHTMLAttrib
   }, [onChange])
 
   const className = readOnly
-    ? `block w-full outline-none px-1 bg-transparent cursor-default ${propsClassName}`
+    ? `block w-full outline-none px-1 bg-transparent cursor-default whitespace-pre-wrap ${propsClassName}`
     : `block w-full outline-none px-1 bg-color-base border border-color-5 ${propsClassName}`
+
+  if (readOnly)
+    return (
+      <p className={className}>
+        {value ?? ''}
+      </p>
+    )
 
   return (
     <textarea
