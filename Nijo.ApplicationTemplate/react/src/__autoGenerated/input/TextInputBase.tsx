@@ -4,7 +4,7 @@ import { useIMEOpened, useUserSetting } from "..";
 import useEvent from "react-use-event-hook";
 
 /** TextInputBase特有の属性 */
-type TextInputBaseAdditionalAttrs = {
+export type TextInputBaseAdditionalAttrs = {
   onValidate?: ValidationHandler
   /** onChangeと異なり1文字入力されるごとに発火する */
   onOneCharChanged?: (value: string) => void
@@ -12,6 +12,7 @@ type TextInputBaseAdditionalAttrs = {
   AtStart?: React.ReactNode
   /** テキストボックスの右側に表示されるコンポーネント */
   AtEnd?: React.ReactNode
+  inputClassName?: string
 }
 /** TextInputBase特有のRef */
 export type TextInputBaseAdditionalRef = {
@@ -31,6 +32,7 @@ export const TextInputBase = defineCustomComponent<
     readOnly,
     placeholder,
     className: propsClassName,
+    inputClassName,
     onChange: onChangeFormattedText,
     onOneCharChanged,
     onFocus,
@@ -154,7 +156,7 @@ export const TextInputBase = defineCustomComponent<
         type="text"
         ref={inputRef}
         value={unFormatText}
-        className="outline-none flex-1 min-w-0 px-1 bg-transparent"
+        className={`outline-none flex-1 min-w-0 px-1 bg-transparent ${inputClassName ?? ''}`}
         spellCheck="false"
         autoComplete="off"
         readOnly={readOnly}

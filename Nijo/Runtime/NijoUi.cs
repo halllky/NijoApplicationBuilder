@@ -2093,7 +2093,7 @@ namespace Nijo.Runtime {
 
                 } else if (!string.IsNullOrWhiteSpace(value)) {
                     var first = value.FirstOrDefault();
-                    if (first != 'z' && first != 'z') {
+                    if (first != 'h' && first != 'z') {
                         errors.Add("全角10文字なら'z10', 半角10文字なら'h10'のようにzかhをつけて指定してください。");
                     }
                     if (!int.TryParse(value.AsSpan(1), out var _)) {

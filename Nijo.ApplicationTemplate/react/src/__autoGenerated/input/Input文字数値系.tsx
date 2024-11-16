@@ -1,11 +1,11 @@
 import { useMemo, useCallback, useRef, useImperativeHandle } from "react"
 import { CustomComponentRef, defineCustomComponent } from "./InputBase"
-import { TextInputBase } from "./TextInputBase"
+import { TextInputBase, TextInputBaseAdditionalAttrs } from "./TextInputBase"
 import { TextareaBase } from "./TextareaBase"
 import { tryParseAsNumberOrEmpty } from "../util/JsUtil"
 
 /** 単語 */
-export const Word = defineCustomComponent<string>((props, ref) => {
+export const Word = defineCustomComponent<string, TextInputBaseAdditionalAttrs>((props, ref) => {
   return <TextInputBase ref={ref} {...props} />
 })
 

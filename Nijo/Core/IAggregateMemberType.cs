@@ -160,6 +160,12 @@ namespace Nijo.Core {
             var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
             attrs.Add($"{{...{ctx.Register}(`{fullpath}`)}}");
 
+            if (vm.Options.UiWidth != null) {
+                var rem = vm.Options.UiWidth.GetCssValue();
+                attrs.Add($"className=\"min-w-[{rem}]\"");
+                attrs.Add($"inputClassName=\"max-w-[{rem}] min-w-[{rem}]\"");
+            }
+
             ctx.EditComponentAttributes?.Invoke(vm, attrs);
 
             return $$"""
@@ -174,7 +180,11 @@ namespace Nijo.Core {
 
             attrs.Add(ctx.RenderReadOnlyStatement(vm.Declared));
 
-            if (vm.Options.UiWidth != null) attrs.Add($"className=\"min-w-[{vm.Options.UiWidth.GetCssValue()}]\"");
+            if (vm.Options.UiWidth != null) {
+                var rem = vm.Options.UiWidth.GetCssValue();
+                attrs.Add($"className=\"min-w-[{rem}]\"");
+                attrs.Add($"inputClassName=\"max-w-[{rem}] min-w-[{rem}]\"");
+            }
 
             ctx.EditComponentAttributes?.Invoke(vm, attrs);
 
@@ -334,7 +344,11 @@ namespace Nijo.Core {
             var readOnly = ctx.RenderReadOnlyStatement(vm.Declared);
             if (readOnly != null) attrs.Add(readOnly);
 
-            if (vm.Options.UiWidth != null) attrs.Add($"className=\"min-w-[{vm.Options.UiWidth.GetCssValue()}]\"");
+            if (vm.Options.UiWidth != null) {
+                var rem = vm.Options.UiWidth.GetCssValue();
+                attrs.Add($"className=\"min-w-[{rem}]\"");
+                attrs.Add($"inputClassName=\"max-w-[{rem}] min-w-[{rem}]\"");
+            }
 
             ctx.EditComponentAttributes?.Invoke(vm, attrs);
 
