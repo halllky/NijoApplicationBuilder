@@ -6,43 +6,49 @@ import { defineContext2, useOutsideClick } from '../util/ReactUtil'
 import { MsgContextProvider, InlineMessageList } from '../util/Notification'
 
 /** モーダルダイアログの枠 */
-const ModalDialog = ({ title, open, onClose, children, className }: {
+const ModalDialog = ({ title, onClose, children }: {
   title?: string
-  open: boolean
   onClose: () => void
   children?: React.ReactNode
-  className?: string
 }) => {
-
-  const dialogRef = useRef<HTMLDialogElement>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
-    if (open) {
-      dialogRef.current?.showModal()
-      dialogRef.current?.focus()
-    } else {
-      dialogRef.current?.close()
-    }
-  }, [dialogRef, open])
+    dialogRef.current?.focus()
+  }, [dialogRef])
 
-  const handleDialogClick: React.MouseEventHandler = useEvent(e => {
-    if (e.target === dialogRef.current) onClose() // ダイアログ自身がクリックされたときのみダイアログを閉じる
+  // Escapeキーでダイアログを閉じる
+  const handleKeyDown: React.KeyboardEventHandler = useEvent(e => {
+    if (e.target === dialogRef.current && e.key === 'Escape') onClose()
   })
-  const handleTitleClick: React.MouseEventHandler = useEvent(e => {
-    e.stopPropagation() // 閉じるボタン以外のタイトル部分クリックでダイアログが閉じられるのを防ぐ
+
+  // ダイアログの外にフォーカスが出るのを防ぐ
+  const preventFocusOut = useEvent(() => {
+    dialogRef.current?.focus()
   })
 
   return (
     <MsgContextProvider>
-      <dialog
-        ref={dialogRef}
-        onClick={handleDialogClick}
-        onClose={onClose}
-        onCancel={onClose}
-        className={`absolute inset-12 w-auto h-auto border border-color-5 outline-none ${className ?? ''}`}
+      {/* 画面全体 */}
+      <div
+        className="fixed inset-0 w-screen h-screen"
       >
-        <div className="w-full h-full flex flex-col">
+        {/* シェード */}
+        <div
+          onMouseDown={onClose} // 背景のシェードが押されたらダイアログを閉じる
+          onFocus={preventFocusOut} // Shift + Tab でダイアログの外にフォーカスを当てることができてしまうのを防ぐ
+          tabIndex={0} // onFocusが発火されるために必要
+          className="absolute inset-0 bg-black opacity-25"
+        ></div>
 
-          <div className="flex items-center p-1 border-b border-color-4" onClick={handleTitleClick}>
+        {/* ダイアログ本体 */}
+        <div
+          ref={dialogRef}
+          onKeyDown={handleKeyDown}
+          tabIndex={0} // Escapeキーが押されたときにダイアログ自身がフォーカスされているかどうかの判定に必要
+          className="absolute flex flex-col inset-16 bg-color-0 border border-color-5 outline-none"
+        >
+          {/* ヘッダ */}
+          <div className="flex items-center p-1 border-b border-color-4">
             {title && (
               <span className="font-medium select-none">{title}</span>
             )}
@@ -51,13 +57,16 @@ const ModalDialog = ({ title, open, onClose, children, className }: {
           </div>
           <InlineMessageList />
 
+          {/* ボディ */}
           <div className="flex-1 p-1 overflow-auto">
             {children}
           </div>
-
         </div>
-      </dialog>
 
+        {/* Tabキーでダイアログの外にフォーカスを当てることができてしまうのを防ぐ */}
+        <div onFocus={preventFocusOut} tabIndex={0}></div>
+
+      </div>
     </MsgContextProvider>
   )
 }
@@ -191,7 +200,7 @@ const DialogContextProvider = ({ children }: {
 
       {/* ダイアログ。ダイアログが一度に複数開かれている場合は後にスタックに積まれた方が手前に表示される。 */}
       {stack.map(({ id, title, contents }) => (
-        <ModalDialog key={id} open title={title} onClose={handleCancel(id)}>
+        <ModalDialog key={id} title={title} onClose={handleCancel(id)}>
           {React.createElement(contents, {
             closeDialog: handleCancel(id),
           })}
