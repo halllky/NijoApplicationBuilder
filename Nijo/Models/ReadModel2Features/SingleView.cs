@@ -201,14 +201,14 @@ namespace Nijo.Models.ReadModel2Features {
 
                     // 画面離脱（ブラウザ閉じるorタブ閉じる）アラート設定
                     const handleBeforeUnload: OnBeforeUnloadEventHandler = e => {
-                        e.preventDefault()
-                        return null
+                      e.preventDefault()
+                      return null
                     };
 
                     window.addEventListener("beforeunload", handleBeforeUnload, false);
 
                     return () => {
-                        window.removeEventListener("beforeunload", handleBeforeUnload, false);
+                      window.removeEventListener("beforeunload", handleBeforeUnload, false);
 
                     };
 
