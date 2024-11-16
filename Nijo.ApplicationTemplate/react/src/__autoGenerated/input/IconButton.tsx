@@ -20,7 +20,7 @@ export const IconButton = (args: {
   const flex = args.inline ? 'inline-flex' : 'flex'
   const direction = args.iconRight ? 'flex-row-reverse' : 'flex-row'
 
-  let className = `${flex} ${direction} justify-center items-center gap-1 select-none outline-none ${args.className}`
+  let className = `${flex} ${direction} justify-center items-center gap-1 select-none ${args.className}`
 
   if (args.fill || args.outline) {
     className += (args.mini ? ' px-1 py-px' : ' px-2 py-1')
