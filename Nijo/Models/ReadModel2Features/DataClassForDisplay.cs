@@ -505,6 +505,13 @@ namespace Nijo.Models.ReadModel2Features {
                     return $"{member.MemberName}: '{variation.GetGroupItems().First().TsValue}',";
                 }
 
+                // ref
+                if (member is AggregateMember.Ref @ref
+                    && @ref.DeclaringAggregate == Aggregate) {
+                    var refInstance = new RefDisplayData(@ref.RefTo, @ref.RefTo);
+                    return $"{member.MemberName}: {refInstance.TsNewObjectFunction}(),";
+                }
+
                 // 初期値なし
                 return null;
             }

@@ -337,7 +337,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                     var fullpath = context.GetReactHookFormFieldPath(vm);
                     var body = vm.Options.MemberType.RenderSearchConditionVFormBody(vm, context);
-                    section.Append(new VForm2.ItemNode(new VForm2.StringLabel(m.DisplayName), false, body));
+                    section.Append(new VForm2.ItemNode(new VForm2.StringLabel(m.DisplayName), vm.Options.WideInVForm == true, body));
 
                 } else if (m.MemberInfo is AggregateMember.Ref @ref) {
                     var refSearchCondition = new RefTo.RefSearchCondition(@ref.RefTo, @ref.RefTo);

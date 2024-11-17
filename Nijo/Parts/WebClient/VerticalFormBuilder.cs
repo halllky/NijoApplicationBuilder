@@ -88,15 +88,22 @@ namespace Nijo.Parts.WebClient {
         /// VForm2.Item
         /// </summary>
         internal class ItemNode : VForm2 {
-            internal ItemNode(Label? label, bool isWide, string contents, params string[] additionalAttributes) {
+            internal ItemNode(
+                Label? label,
+                bool isWide,
+                string contents,
+                Func<string, string>? afterRendering = null,
+                params string[] additionalAttributes) {
                 _label = label;
                 _isWide = isWide;
                 _contents = contents;
+                _afterRendering = afterRendering;
                 _additionalAttributes = additionalAttributes;
             }
             private readonly Label? _label;
             private readonly bool _isWide;
             private readonly string _contents;
+            private readonly Func<string, string>? _afterRendering;
             private readonly string[] _additionalAttributes;
 
             protected override bool ShouldWrapAutoColumn => !_isWide;
@@ -115,11 +122,15 @@ namespace Nijo.Parts.WebClient {
                 }
                 attrs.AddRange(_additionalAttributes);
 
-                return $$"""
+                var sourceCode = $$"""
                     <VForm2.Item{{attrs.Select(x => " " + x).Join("")}}>
                       {{WithIndent(_contents, "  ")}}
                     </VForm2.Item>
                     """;
+                if (_afterRendering != null) {
+                    sourceCode = _afterRendering(sourceCode);
+                }
+                return sourceCode;
             }
         }
 

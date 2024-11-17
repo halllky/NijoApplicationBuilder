@@ -88,6 +88,10 @@ namespace Nijo.Models {
                 singleView.LabelInMenu,
                 singleView.GetSourceFile());
 
+            // SingleView 初期表示時サーバー側処理
+            aggregateFile.AppServiceMethods.Add(singleView.RenderSetSingleViewDisplayDataFn(context));
+            aggregateFile.ControllerActions.Add(singleView.RenderSetSingleViewDisplayData(context));
+
             // UI: SingleViewナビゲーション用関数
             context.ReactProject.UrlUtil.Add(singleView.RenderNavigateFn(context, SingleView.E_Type.New));
             context.ReactProject.UrlUtil.Add(singleView.RenderNavigateFn(context, SingleView.E_Type.Edit)); // readonly, edit は関数共用
@@ -149,7 +153,7 @@ namespace Nijo.Models {
 
                 // UI: DataTable用の列
                 var refToColumn = new DataTableRefColumnHelper(asEntry);
-                context.UseSummarizedFile<Parts.WebClient.DataTable.CellType>().Add(refToColumn.Render());
+                context.UseSummarizedFile<Parts.WebClient.DataTable.CellType>().Add(refToColumn.Render(context));
 
                 // 処理: 参照先検索
                 var searchRef = new RefSearchMethod(asEntry, asEntry);

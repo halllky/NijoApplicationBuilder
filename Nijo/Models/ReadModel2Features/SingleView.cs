@@ -5,6 +5,7 @@ using Nijo.Parts.Utility;
 using Nijo.Parts.WebClient;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
+using Nijo.Parts.WebServer;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -82,6 +83,7 @@ namespace Nijo.Models.ReadModel2Features {
             var searchCondition = new SearchCondition(_aggregate);
             var loadFeature = new LoadMethod(_aggregate);
 
+            var controller = new Controller(_aggregate.Item);
             var keys = _aggregate
                 .GetKeys()
                 .OfType<AggregateMember.ValueMember>()
@@ -103,6 +105,7 @@ namespace Nijo.Models.ReadModel2Features {
                 /** {{_aggregate.Item.DisplayName.Replace("*/", "")}} の詳細画面のデータの読み込みと保存を行います。 */
                 export const {{DataHookName}} = () => {
                   const [, dispatchMsg] = Util.useMsgContext()
+                  const { get } = Util.useHttpRequest()
 
                   // 表示データ
                   const reactHookFormMethods = Util.useFormEx<Types.{{dataClass.TsTypeName}}>({ criteriaMode: 'all' })
@@ -111,6 +114,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                   // 画面表示時
                   const { search } = ReactRouter.useLocation() // URLからクエリパラメータを受け取る
+                  const { complexPost } = Util.useHttpRequest()
                   const { {{new[] { $"{MODE}: modeInUrl" }.Concat(urlKeysWithMember.Values).Join(", ")}} } = ReactRouter.useParams() // URLから画面モードと表示データのキーを受け取る
                   const { {{LoadMethod.LOAD}}: load{{_aggregate.Item.PhysicalName}} } = {{loadFeature.ReactHookName}}()
                   const mode = React.useMemo(() => {
@@ -127,16 +131,21 @@ namespace Nijo.Models.ReadModel2Features {
                       if ({{MODE}} === 'new') {
                         // ------ 画面表示時処理: 新規作成モードの場合 ------
                         setDisplayName('新規作成')
+                        let data: Types.{{dataClass.TsTypeName}}
                         const queryParameter = new URLSearchParams(search)
                         const initValueJson = queryParameter.get('{{NEW_MODE_INITVALUE}}')
                         if (initValueJson != null) {
                           // クエリパラメータで画面初期値が指定されている場合はそれを初期表示する
                           const initValueObject: Types.{{dataClass.TsTypeName}} = JSON.parse(initValueJson)
-                          reset(initValueObject)
+                          data = initValueObject
                         } else {
                           // 通常の初期値
-                          reset(Types.{{dataClass.TsNewObjectFunction}}())
+                          data = Types.{{dataClass.TsNewObjectFunction}}()
                         }
+                        const initProcessResult = await complexPost<Types.{{dataClass.TsTypeName}}>('/{{Controller.SUBDOMAIN}}/{{UrlSubDomain}}/{{API_NEW_DISPLAY_DATA}}', { data })
+                        if (!initProcessResult.ok) return
+                        reset(initProcessResult.data)
+
                         setLoadState('ready')
 
                       } else if ({{MODE}} === 'detail' || {{MODE}} === 'edit') {
@@ -339,6 +348,11 @@ namespace Nijo.Models.ReadModel2Features {
         private const string EDIT_MODE_INITVALUE = "init";
 
         /// <summary>
+        /// 新規モード初期表示時サーバー側処理のAPI名
+        /// </summary>
+        private const string API_NEW_DISPLAY_DATA = "new-display-data";
+
+        /// <summary>
         /// ページ全体の状態をコンポーネント間で状態を受け渡すのに使うReactコンテキスト
         /// </summary>
         internal const string PAGE_CONTEXT = "PageContext";
@@ -422,6 +436,36 @@ namespace Nijo.Models.ReadModel2Features {
                     """;
             },
         };
+
+        //SingleViewの新規登録画面の表示データ設定処理
+        private string SetReadOnlyToSingleViewData => $"SettingDisplayData{_aggregate.Item.PhysicalName}";
+        internal string RenderSetSingleViewDisplayDataFn(CodeRenderingContext context) {
+
+            var displayData = new DataClassForDisplay(_aggregate);
+
+            return $$"""
+                //シーケンスの項目をReadOnlyにする
+                public virtual void {{SetReadOnlyToSingleViewData}}({{displayData.CsClassName}} displayData) {
+                }
+                """;
+        }
+
+        internal string RenderSetSingleViewDisplayData(CodeRenderingContext context) {
+            var displayData = new DataClassForDisplay(_aggregate);
+
+            return $$"""
+                //webApi
+                /// <summary>
+                /// 新規作成時の画面データを作成します
+                /// </summary>
+                /// <param name="request">新規作成の画面表示データ</param>
+                [HttpPost("{{API_NEW_DISPLAY_DATA}}")]
+                public virtual IActionResult Setting{{_aggregate.Item.PhysicalName}}DisplayData(ComplexPostRequest<{{displayData.CsClassName}}> request) {
+                    _applicationService.{{SetReadOnlyToSingleViewData}}(request.Data);
+                    return this.ReturnsDataUsingReactHook(request.Data);
+                }
+                """;
+        }
 
         #region この画面へ遷移する処理＠クライアント側
         /// <summary>

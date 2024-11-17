@@ -123,7 +123,7 @@ namespace Nijo.Models {
 
                     // UI: DataTable用の列
                     var refToColumn = new DataTableRefColumnHelper(asEntry);
-                    context.UseSummarizedFile<Parts.WebClient.DataTable.CellType>().Add(refToColumn.Render());
+                    context.UseSummarizedFile<Parts.WebClient.DataTable.CellType>().Add(refToColumn.Render(context));
 
                     // 処理: 参照先検索
                     var searchRef = new RefSearchMethod(asEntry, asEntry);

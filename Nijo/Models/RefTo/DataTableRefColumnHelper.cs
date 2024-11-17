@@ -23,7 +23,7 @@ namespace Nijo.Models.RefTo {
 
         internal string MethodName => $"refTo{_refEntry.Item.PhysicalName}";
 
-        internal Parts.WebClient.DataTable.CellType.Helper Render() {
+        internal Parts.WebClient.DataTable.CellType.Helper Render(CodeRenderingContext ctx) {
             var keys = _refEntry
                 .GetKeys()
                 .OfType<AggregateMember.ValueMember>()
@@ -42,6 +42,7 @@ namespace Nijo.Models.RefTo {
             var keysForSearchOnBlur = keys.Select(vm => {
                 var leftFullPath = vm.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript);
 
+                //#58
                 // セルの値を検索条件オブジェクトに代入する処理
                 Func<string, string> AssignExpression;
                 if (vm is AggregateMember.Variation variation) {

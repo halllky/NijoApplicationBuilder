@@ -254,8 +254,9 @@ namespace Nijo.Models.CommandModelFeatures {
                 } else if (MemberInfo is AggregateMember.ValueMember) {
                     return $"undefined"; // 初期値なし
 
-                } else if (MemberInfo is AggregateMember.Ref) {
-                    return $"undefined"; // 初期値なし
+                } else if (MemberInfo is AggregateMember.Ref @ref) {
+                    var refInstance = new RefDisplayData(@ref.RefTo, @ref.RefTo);
+                    return $"{refInstance.TsNewObjectFunction}()";
 
                 } else if (MemberInfo is AggregateMember.Children) {
                     return $"[]";

@@ -68,6 +68,7 @@ export const TextInputBase = defineCustomComponent<
       if (result.ok) {
         formatted = result.formatted
         setFormatError(false)
+        setUnFormatText(formatted)
       } else {
         formatted = ''
         setFormatError(true)

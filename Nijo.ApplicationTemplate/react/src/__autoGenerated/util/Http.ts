@@ -87,7 +87,7 @@ export const useHttpRequest = () => {
     // HTTPリクエスト実行
     let response: Response
     try {
-      response = await fetch(url, option)
+      response = await fetch(url, { ...option, credentials: 'include' })
     } catch (errors) {
       dispatchMsg(msg => msg.error(`通信でエラーが発生しました(${url})\n${parseUnknownErrors(errors).join('\n')}`))
       return { ok: false, errors }
@@ -157,6 +157,7 @@ export const useHttpRequest = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
+        credentials: 'include',
       })
     } catch (errors) {
       dispatchMsg(msg => msg.error(`通信でエラーが発生しました(${url})\n${parseUnknownErrors(errors).join('\n')}`))
