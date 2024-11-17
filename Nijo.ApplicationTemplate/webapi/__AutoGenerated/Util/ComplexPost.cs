@@ -1,11 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using NIJO_APPLICATION_TEMPLATE;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Text.Json.Serialization;
 
-namespace NIJO_APPLICATION_TEMPLATE_WebApi {
+namespace NIJO_APPLICATION_TEMPLATE {
 
     /// <summary>
     /// Reactフック側の処理と組み合わせて複雑な挙動を実現するPOSTリクエスト。
@@ -48,14 +46,10 @@ namespace NIJO_APPLICATION_TEMPLATE_WebApi {
 
             public Task BindModelAsync(ModelBindingContext bindingContext) {
                 try {
-                    var options = new JsonSerializerOptions();
-                    NIJO_APPLICATION_TEMPLATE.Util.ModifyJsonSrializerOptions(options);
-                    options.Converters.Add(new MultipartFormDataFileConevrter(bindingContext.HttpContext));
-
                     // data
                     var dataJson = bindingContext.HttpContext.Request.Form[PARAM_DATA];
                     var dataType = bindingContext.ModelType.GenericTypeArguments[0];
-                    var parsedData = JsonSerializer.Deserialize(dataJson!, dataType, options);
+                    var parsedData = JsonSerializer.Deserialize(dataJson!, dataType, Util.GetJsonSrializerOptions());
 
                     // ignoreConfirm
                     var ignoreConfirm = bindingContext.HttpContext.Request.Form.TryGetValue(PARAM_IGNORE_CONFIRM, out var strIgnoreConfirm)
@@ -73,31 +67,6 @@ namespace NIJO_APPLICATION_TEMPLATE_WebApi {
                 } catch (Exception) {
                     bindingContext.Result = ModelBindingResult.Failed();
                     return Task.CompletedTask;
-                }
-            }
-
-            /// <summary>
-            /// <see cref="ComplexPostRequest{T}"/> の仕組みでは、
-            /// HTTPリクエストで入力フォームの内容とファイル送信が同時に行われるとき、
-            /// ファイル内容のバイナリは Content-Type: multipart/form-data の別パートとして分離して送信されるようにし、
-            /// 元の入力フォームでは当該別パートのNameだけを保持している。
-            /// このコンバータは、別々のパートに分離されたファイルのオブジェクトを、入力フォームのJSONの元々そのファイルが添付されていた位置に復元する役割を持つ。
-            /// </summary>
-            private class MultipartFormDataFileConevrter : JsonConverter<IFormFile> {
-                public MultipartFormDataFileConevrter(HttpContext httpContext) {
-                    _httpContext = httpContext;
-                }
-                private readonly HttpContext _httpContext;
-
-                public override IFormFile? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
-                    // クライアント側のReactフック内でHTTPリクエストボディを組み立てる際に発行される一意なUUIDを使って該当のファイルを探す
-                    var fileId = reader.GetString();
-                    if (fileId == null) return null;
-                    return _httpContext.Request.Form.Files.GetFile(fileId);
-                }
-
-                public override void Write(Utf8JsonWriter writer, IFormFile value, JsonSerializerOptions options) {
-                    // サーバー側からクライアント側へJSONの一部としてファイルを送ることはない。
                 }
             }
         }
