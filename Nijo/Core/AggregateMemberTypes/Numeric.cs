@@ -15,7 +15,7 @@ namespace Nijo.Core.AggregateMemberTypes {
 
         protected override string ComponentName => "Input.Num";
 
-        protected override IEnumerable<string> RenderAttributes() {
+        private protected override IEnumerable<string> RenderAttributes(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
             yield return $"className=\"w-28\"";
         }
 

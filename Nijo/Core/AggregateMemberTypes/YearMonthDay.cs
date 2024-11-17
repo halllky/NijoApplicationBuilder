@@ -29,7 +29,7 @@ namespace Nijo.Core.AggregateMemberTypes {
         public override string GetTypeScriptTypeName() => "string";
 
         protected override string ComponentName => "Input.Date";
-        protected override IEnumerable<string> RenderAttributes() {
+        private protected override IEnumerable<string> RenderAttributes(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
             yield return $"className=\"w-28\"";
         }
 

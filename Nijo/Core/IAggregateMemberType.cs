@@ -322,16 +322,16 @@ namespace Nijo.Core {
         /// <summary>コンポーネント名</summary>
         protected abstract string ComponentName { get; }
         /// <summary>レンダリングされるコンポーネントの属性をレンダリングします</summary>
-        protected abstract IEnumerable<string> RenderAttributes();
+        private protected abstract IEnumerable<string> RenderAttributes(AggregateMember.ValueMember vm, FormUIRenderingContext ctx);
 
         private protected virtual string RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
             var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
 
             return $$"""
                 <div className="flex flex-nowrap items-center gap-1">
-                  <{{ComponentName}} {...{{ctx.Register}}(`{{fullpath}}.{{FromTo.FROM_TS}}`)} {{RenderAttributes().Select(x => $"{x} ").Join("")}}/>
+                  <{{ComponentName}} {...{{ctx.Register}}(`{{fullpath}}.{{FromTo.FROM_TS}}`)} {{RenderAttributes(vm, ctx).Select(x => $"{x} ").Join("")}}/>
                   <span className="select-none">～</span>
-                  <{{ComponentName}} {...{{ctx.Register}}(`{{fullpath}}.{{FromTo.TO_TS}}`)} {{RenderAttributes().Select(x => $"{x} ").Join("")}}/>
+                  <{{ComponentName}} {...{{ctx.Register}}(`{{fullpath}}.{{FromTo.TO_TS}}`)} {{RenderAttributes(vm, ctx).Select(x => $"{x} ").Join("")}}/>
                 </div>
                 """;
         }
@@ -340,7 +340,7 @@ namespace Nijo.Core {
         string IAggregateMemberType.RenderSingleViewVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
             var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
 
-            var attrs = RenderAttributes().ToList();
+            var attrs = RenderAttributes(vm, ctx).ToList();
             var readOnly = ctx.RenderReadOnlyStatement(vm.Declared);
             if (readOnly != null) attrs.Add(readOnly);
 
