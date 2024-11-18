@@ -71,22 +71,19 @@ namespace Nijo.Parts.WebClient {
                       })
 
                       // 現在の接続先DB
-                      const [currentDb, setCurrentDb] = useState<{ name?: string, connStr?: string } | undefined>()
+                      const [currentDb, setCurrentDb] = useState<{ Name?: string, ConnStr?: string } | undefined>()
                       useEffect(() => {
-                        get<{ currentDb?: string, db?: { name?: string, connStr?: string }[] }>('/WebDebugger/secret-settings').then(res => {
+                        get<{ CurrentDb?: string, DbProfiles?: { Name?: string, ConnStr?: string }[] }>('/WebDebugger/secret-settings').then(res => {
                           if (!res.ok) return
-                          const currentDbDetail = res.data.db?.find(x => x.name === res.data.currentDb)
+                          const currentDbDetail = res.data.DbProfiles?.find(x => x.Name === res.data.CurrentDb)
                           if (currentDbDetail) {
                             setCurrentDb(currentDbDetail)
                           } else {
-                            setCurrentDb({ name: res.data?.currentDb })
+                            setCurrentDb({ Name: res.data?.CurrentDb })
                           }
                         })
                       }, [])
-                      const [visible, toggleVisigle] = Util.useToggle()
-                      const handleToggle = useEvent(() => {
-                        toggleVisigle(x => x.toggle())
-                      })
+                      const { opened: visible, toggle: toggleVisigle } = Util.useToggle2()
 
                       return (
                         <div className="page-content-root gap-4 p-1">
@@ -108,13 +105,15 @@ namespace Nijo.Parts.WebClient {
                                 </VForm2.Item>
                                 <VForm2.Indent label="現在の接続先データベース（appsettings.json の {{RuntimeSettings.APP_SETTINGS_SECTION_NAME}} セクションで変更可能です。）">
                                   <VForm2.Item label="設定名" wideValue>
-                                    {currentDb?.name}
+                                    {currentDb?.Name}
                                   </VForm2.Item>
                                   <VForm2.Item label="接続文字列" wideValue>
                                     <div className="flex justify-start gap-1">
-                                      <Input.IconButton icon={(visible ? Icon.EyeIcon : Icon.EyeSlashIcon)} onClick={handleToggle} outline mini>表示</Input.IconButton>
+                                      <Input.IconButton icon={(visible ? Icon.EyeIcon : Icon.EyeSlashIcon)} onClick={toggleVisigle} outline mini>表示</Input.IconButton>
                                       <span>
-                                        {(visible ? currentDb?.connStr : '*********************************')}
+                                        {(visible
+                                          ? currentDb?.ConnStr
+                                          : (currentDb?.ConnStr ? '*********************************' : ''))}
                                       </span>
                                     </div>
                                   </VForm2.Item>
