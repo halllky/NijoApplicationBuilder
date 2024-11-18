@@ -14,7 +14,7 @@ export const useAppSetting = (
   const [, dispatchDialog] = Layout.useDialogContext()
 
   const openAppSettingDialog = useEvent(() => {
-    dispatchDialog(state => state.pushDialog('設定', context => {
+    dispatchDialog(state => state.pushDialog({ title: '設定', disableConfirm: true }, context => {
       const config = Object.entries(rhfMethods.getValues('config'))
 
       return (

@@ -181,7 +181,7 @@ function App() {
     const aggregates = getValues('aggregates')
     if (!aggregates) return
     const mermaidJsText = await mermaid(getValues('config'), aggregates)
-    dispatchDialog(x => x.pushDialog('プレビュー', () => (
+    dispatchDialog(x => x.pushDialog({ title: 'プレビュー', disableConfirm: true }, () => (
       <MermaidPreview mermaidJsText={mermaidJsText} />
     )))
   })
@@ -217,7 +217,7 @@ function App() {
     <ValidationErrorContextProvider value={validationErrors}>
       <PanelGroup direction="vertical" className="w-full h-full p-1">
         <Panel className="flex flex-col gap-1">
-          <div className="flex gap-1 items-center">
+          <div className="flex flex-wrap gap-1 items-center">
             <Input.IconButton onClick={showMermaidGraph} icon={Icon.ShareIcon} outline mini>プレビュー</Input.IconButton>
             <div className="basis-2"></div>
             <Input.IconButton onClick={collapseAll} outline mini>折り畳み</Input.IconButton>
