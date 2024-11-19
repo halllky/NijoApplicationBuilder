@@ -793,6 +793,12 @@ namespace Nijo.Runtime {
                                 Key = ValidationError.ERR_TO_TYPE,
                                 Message = "参照先に指定されている項目はref-toの参照先として使えません。",
                             };
+                        } else if (node.IsWriteModel(this) && !refTo.IsWriteModel(this)) {
+                            yield return new ValidationError {
+                                Node = node,
+                                Key = ValidationError.ERR_TO_TYPE,
+                                Message = "DBの外部キーが定義できるようにするため、WriteModelが参照する先はWriteModelである必要があります。",
+                            };
                         }
                     } else if (node.Type.StartsWith(MutableSchemaNode.ENUM_PREFIX)) {
                         // 列挙体
