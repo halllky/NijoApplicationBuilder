@@ -1859,6 +1859,12 @@ namespace Nijo.Runtime {
                     errors.Add("物理名を数字から始めることはできません。");
                 } else if (char.IsLower(value[0])) {
                     errors.Add("Reactのコンポーネント名が小文字始まりだとエラーになるので大文字から始めてください。");
+                } else {
+                    try {
+                        XmlConvert.VerifyName(value);
+                    } catch (XmlException ex) {
+                        errors.Add($"XMLの要素名として使用できない文字が含まれています。（{ex.Message}）");
+                    }
                 }
             },
             EditAggregateOption = (value, node, schema, opt) => {
