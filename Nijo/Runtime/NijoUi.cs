@@ -104,9 +104,22 @@ namespace Nijo.Runtime {
                         .RootNodes()
                         .Where(n => VIEW_AGGRTEGATE_TYPES.Contains(schema.GetRoot(n).Type))
                         .ToArray();
+
+                    var existsInitialOrTerminal = rootNodes
+                        .SelectMany(n => EnumerateDescendantSubgraphNodes(n))
+                        .ToDictionary(n => n.UniqueId);
                     var references = schema
                         .Where(n => n.GetNodeType()?.HasFlag(E_NodeType.Ref) == true)
-                        .Select(n => new { Initial = schema.GetParent(n)?.UniqueId, Terminal = n.Type?.Substring(MutableSchemaNode.REFTO_PREFIX.Length), Label = string.IsNullOrEmpty(n.DisplayName) ? "???(Ref)" : $"{n.DisplayName}(Ref)" });
+                        .Select(n => new {
+                            Initial = schema.GetParent(n)?.UniqueId,
+                            Terminal = n.Type?.Substring(MutableSchemaNode.REFTO_PREFIX.Length),
+                            Label = string.IsNullOrEmpty(n.DisplayName) ? "???(Ref)" : $"{n.DisplayName}(Ref)",
+                        })
+                        // 矢印の根本と先端のノードどちらかが存在しない場合はmermaidがエラーを起こすので
+                        .Where(n => n.Initial != null
+                                 && n.Terminal != null
+                                 && existsInitialOrTerminal.ContainsKey(n.Initial)
+                                 && existsInitialOrTerminal.ContainsKey(n.Terminal));
 
                     context.Response.ContentType = "text/plain; charset=utf-8";
                     await context.Response.WriteAsync($$"""
@@ -119,6 +132,24 @@ namespace Nijo.Runtime {
                         """)}}
                         """.Replace(SKIP_MARKER, string.Empty), new UTF8Encoding(false, false));
 
+                    IEnumerable<MutableSchemaNode> EnumerateDescendantSubgraphNodes(MutableSchemaNode node) {
+                        foreach (var child in EnumerateChildSubgraphNodes(node)) {
+                            yield return child;
+
+                            foreach (var desc in EnumerateDescendantSubgraphNodes(child)) {
+                                yield return desc;
+                            }
+                        }
+                    }
+                    IEnumerable<MutableSchemaNode> EnumerateChildSubgraphNodes(MutableSchemaNode node) {
+                        foreach (var childNode in schema.GetChildren(node)) {
+                            var nodeType = childNode.GetNodeType();
+                            if (nodeType?.HasFlag(E_NodeType.Aggregate) == true || nodeType == E_NodeType.Variation) {
+                                yield return childNode;
+                            }
+                        }
+                    }
+
                     string RenderSubgraphRecursively(MutableSchemaNode node) {
                         var displayName = string.IsNullOrEmpty(node.DisplayName)
                             ? "???"
@@ -127,17 +158,9 @@ namespace Nijo.Runtime {
                             ? $"({type.DisplayName})"
                             : $"(???)";
 
-                        var childrenAggregates = new List<MutableSchemaNode>();
-                        foreach (var childNode in schema.GetChildren(node)) {
-                            var nodeType = childNode.GetNodeType();
-                            if (nodeType?.HasFlag(E_NodeType.Aggregate) == true || nodeType == E_NodeType.Variation) {
-                                childrenAggregates.Add(childNode);
-                            }
-                        }
-
                         return $$"""
                             subgraph {{node.UniqueId}}["{{displayName.Replace("\"", "”")}}"]
-                            {{childrenAggregates.SelectTextTemplate(childNode => $$"""
+                            {{EnumerateChildSubgraphNodes(node).SelectTextTemplate(childNode => $$"""
                               {{WithIndent(RenderSubgraphRecursively(childNode), "  ")}}
                             """)}}
                             end
