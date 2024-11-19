@@ -105,7 +105,7 @@ const ApplicationRoot = ({ applicationName }: DefaultNijoAppProps) => {
         <PanelGroup
           direction='horizontal'
           autoSaveId="LOCAL_STORAGE_KEY.SIDEBAR_SIZE_X"
-          className={darkMode ? 'dark' : undefined}
+          className={`relative z-0 ${darkMode ? 'dark' : ''}`}
           style={{ fontFamily: fontFamily ?? Util.DEFAULT_FONT_FAMILY }}>
 
           {/* サイドメニュー */}

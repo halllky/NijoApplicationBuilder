@@ -51,7 +51,7 @@ const ModalDialog = ({ title, onClose, disableConfirm, children }: {
     <MsgContextProvider>
       {/* 画面全体 */}
       <div
-        className="fixed inset-0 w-screen h-screen"
+        className="fixed z-0 inset-0 w-screen h-screen"
       >
         {/* シェード */}
         <div
