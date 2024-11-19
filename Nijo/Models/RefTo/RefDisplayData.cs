@@ -269,7 +269,7 @@ namespace Nijo.Models.RefTo {
                     var depth = member.Owner.PathFromEntry().Count();
                     var x = depth == 0 ? "x" : $"x{depth}";
                     return $$"""
-                        {{instance}}.{{pathToArray.Join("?.")}}.Select({{x}} => {{rdd.RenderConvertFromRefSearchResultPrivate(x, children.ChildrenAggregate, true, pkDict)}}).ToList() ?? []
+                        {{instance}}.{{pathToArray.Join("?.")}}?.Select({{x}} => {{rdd.RenderConvertFromRefSearchResultPrivate(x, children.ChildrenAggregate, true, pkDict)}}).ToList() ?? []
                         """;
 
                 } else if (member is AggregateMember.RelationMember rel) {
