@@ -79,7 +79,8 @@ export const useTypeCombo = (
   const typeComboProps = React.useMemo((): Input.ComboProps<TypeComboOption, GridRow['type']> => ({
     onFilter: keyword => {
       if (keyword) {
-        return Promise.resolve(comboSource.filter(t => t.displayName?.includes(keyword)) ?? [])
+        const lower = keyword.toLowerCase()
+        return Promise.resolve(comboSource.filter(t => t.displayName?.toLowerCase().includes(lower)) ?? [])
       } else {
         return Promise.resolve(comboSource)
       }
