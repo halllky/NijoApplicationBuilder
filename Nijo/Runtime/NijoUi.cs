@@ -1081,8 +1081,7 @@ namespace Nijo.Runtime {
                 // 主キー必須
                 var children = schema.GetChildren(this).ToArray();
                 var nodeType = GetNodeType();
-                if (Depth == 0
-                    && children.All(c => c.AttrValues == null || !c.AttrValues.Any(a => a.Key == KeyDef.Key))
+                if (children.All(c => c.AttrValues == null || !c.AttrValues.Any(a => a.Key == KeyDef.Key))
                     && (IsWriteModel(schema) || IsReadModel(schema))
                     && (nodeType == E_NodeType.RootAggregate || Type == Children.Key)) {
                     errors.Add("ルート集約とChildrenではキー指定が必須です。");
