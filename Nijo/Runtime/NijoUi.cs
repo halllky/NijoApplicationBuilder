@@ -683,6 +683,23 @@ namespace Nijo.Runtime {
             /// エラーを収集します。
             /// </summary>
             public IEnumerable<ValidationError> CollectVaridationErrors() {
+
+                // 物理名の重複チェック
+                var samePhysicalNameGroups = _list
+                    .Where(node => node.GetNodeType()?.HasFlag(E_NodeType.Aggregate) == true)
+                    .GroupBy(node => node.GetPhysicalName())
+                    .Where(group => group.Count() >= 2);
+                foreach (var group in samePhysicalNameGroups) {
+                    foreach (var node in group) {
+                        yield return new ValidationError {
+                            Node = node,
+                            Key = PhysicalName.Key,
+                            Message = $"物理名「{group.Key}」が重複しています。",
+                        };
+                    }
+                }
+
+                // ノード1個ずつのチェック
                 var errorList = new List<string>();
                 foreach (var node in _list) {
                     // 行全体に対するエラー
