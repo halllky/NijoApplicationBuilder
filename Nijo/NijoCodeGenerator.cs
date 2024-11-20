@@ -87,6 +87,10 @@ namespace Nijo {
 
             var validationErrors = new Dictionary<GraphNode<Aggregate>, IEnumerable<string>>();
             foreach (var rootAggregate in ctx.Schema.RootAggregates()) {
+                _log?.LogInformation("モデル生成開始: {rootAggregate} ({handler})",
+                    rootAggregate.Item.DisplayName,
+                    rootAggregate.Item.Options.Handler);
+
                 if (!string.IsNullOrWhiteSpace(rootAggregate.Item.Options.Handler)) {
                     var model = ctx.GetModel(rootAggregate.Item.Options.Handler);
                     var modelErrors = model.ValidateAggregate(rootAggregate).ToArray();

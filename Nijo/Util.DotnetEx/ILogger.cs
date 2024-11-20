@@ -13,6 +13,7 @@ namespace Nijo.Util.DotnetEx {
                 builder.AddSimpleConsole(opt => {
                     opt.SingleLine = true;
                     opt.IncludeScopes = true;
+                    opt.TimestampFormat = "yyyy/MM/dd HH:mm:ss.fff\t";
                 });
 
                 if (verbose) {
