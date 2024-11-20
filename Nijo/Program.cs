@@ -98,6 +98,10 @@ namespace Nijo {
                 ["-n", "--no-browser"],
                 description: "スキーマ定義編集アプリケーションの開始時に自動的にブラウザを開くのを防ぎます。");
 
+            var timeout = new Option<int?>(
+                ["-n", "--no-browser"],
+                description: "TypeScriptやC#のビルドのタイムアウト時間。単位は秒。");
+
             // コマンド定義
             var create = new Command(name: "create", description: "新しいプロジェクトを作成します。") { verbose, applicationName, keepTempIferror };
             create.SetHandler((verbose, applicationName, keepTempIferror) => {
@@ -124,8 +128,8 @@ namespace Nijo {
             }, verbose, path);
             rootCommand.AddCommand(update);
 
-            var debug = new Command(name: "debug", description: "プロジェクトのデバッグを開始します。") { verbose, path, noBuild };
-            debug.SetHandler((verbose, path, noBuild) => {
+            var debug = new Command(name: "debug", description: "プロジェクトのデバッグを開始します。") { verbose, path, noBuild, timeout };
+            debug.SetHandler((verbose, path, noBuild, timeout) => {
                 var logger = ILoggerExtension.CreateConsoleLogger(verbose);
                 var project = GeneratedProject.Open(path, serviceProvider, logger);
                 var firstLaunch = true;
@@ -140,7 +144,11 @@ namespace Nijo {
                         }
 
                         launcher.Launch();
-                        launcher.WaitForReady();
+
+                        var timeoutTimespan = timeout == null
+                            ? (TimeSpan?)null
+                            : TimeSpan.FromSeconds(timeout.Value);
+                        launcher.WaitForReady(timeoutTimespan);
 
                         // 初回ビルド時はブラウザ立ち上げ
                         if (firstLaunch) {
@@ -169,7 +177,7 @@ namespace Nijo {
                     var input = Console.ReadKey(true);
                     if (input.Key == ConsoleKey.Q) break;
                 }
-            }, verbose, path, noBuild);
+            }, verbose, path, noBuild, timeout);
             rootCommand.AddCommand(debug);
 
             var dump = new Command(
