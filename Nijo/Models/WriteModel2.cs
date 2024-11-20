@@ -86,6 +86,12 @@ namespace Nijo.Models {
             } else {
                 // 既定のReadModelが無い場合でも他の集約から参照されるときのための部品は必要になるので生成する
                 foreach (var agg in allAggregates) {
+
+                    // パフォーマンス改善のため、ほかの集約から参照されていない集約のRefTo部品は生成しない
+                    if (!context.Config.GenerateUnusedRefToModules && !agg.GetReferedEdges().Any()) {
+                        continue;
+                    }
+
                     var asEntry = agg.AsEntry();
 
                     // データ型

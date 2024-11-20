@@ -75,6 +75,7 @@ namespace Nijo {
 
                 var config = new Config {
                     RootNamespace = applicationName.ToCSharpSafe(),
+                    GenerateUnusedRefToModules = false,
                     DbContextName = "MyDbContext",
                     CreateUserDbColumnName = null,
                     UpdateUserDbColumnName = null,

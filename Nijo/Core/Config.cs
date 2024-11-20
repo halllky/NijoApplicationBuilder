@@ -10,6 +10,11 @@ namespace Nijo.Core {
     public class Config {
         public required string RootNamespace { get; set; }
 
+        /// <summary>
+        /// どの集約からも参照されていないRefTo関連部品を生成するかどうか
+        /// </summary>
+        public required bool GenerateUnusedRefToModules { get; set; }
+
         public string EntityNamespace => RootNamespace;
         public string DbContextNamespace => RootNamespace;
         public required string DbContextName { get; set; }
@@ -48,6 +53,8 @@ namespace Nijo.Core {
             NavigateToEditMode,
         }
 
+        private const string GENERATE_UNUSED_REFTO_MODULES = "GenerateUnusedRefToModules";
+
         private const string DBCONTEXT_NAME = "DbContextName";
 
         private const string CREATE_USER_DB_COLUMN_NAME = "CreateUserDbColumnName";
@@ -64,6 +71,10 @@ namespace Nijo.Core {
         public void ToXElement(XElement root) {
 
             root.Name = XName.Get(RootNamespace);
+
+            if (GenerateUnusedRefToModules) {
+                root.SetAttributeValue(GENERATE_UNUSED_REFTO_MODULES, "True");
+            }
 
             if (string.IsNullOrWhiteSpace(DbContextName)) {
                 root.Attribute(DBCONTEXT_NAME)?.Remove();
@@ -125,6 +136,7 @@ namespace Nijo.Core {
 
             return new Config {
                 RootNamespace = xDocument.Root.Name.LocalName.ToCSharpSafe(),
+                GenerateUnusedRefToModules = xDocument.Root.Attribute(GENERATE_UNUSED_REFTO_MODULES) != null,
                 DisableLocalRepository = xDocument.Root.Attribute(DISABLE_LOCAL_REPOSITORY) != null,
                 ButtonColor = xDocument.Root.Attribute(BUTTON_COLOR)?.Value.Trim().ToLower(),
                 DbContextName = xDocument.Root.Attribute(DBCONTEXT_NAME)?.Value ?? "MyDbContext",

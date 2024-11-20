@@ -36,6 +36,7 @@ namespace Nijo.Models.WriteModel2Features {
                     .OrderByDataFlow();
                 var refSearchHooks = _aggregates
                     .SelectMany(agg => agg.EnumerateThisAndDescendants())
+                    .Where(agg => ctx.Config.GenerateUnusedRefToModules || agg.GetReferedEdges().Any())
                     .Select(agg => new RefSearchHookTemp(agg));
 
                 return $$"""
