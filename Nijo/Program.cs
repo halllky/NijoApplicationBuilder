@@ -99,7 +99,7 @@ namespace Nijo {
                 description: "スキーマ定義編集アプリケーションの開始時に自動的にブラウザを開くのを防ぎます。");
 
             var timeout = new Option<int?>(
-                ["-n", "--no-browser"],
+                ["-t", "--timeout"],
                 description: "TypeScriptやC#のビルドのタイムアウト時間。単位は秒。");
 
             // コマンド定義
