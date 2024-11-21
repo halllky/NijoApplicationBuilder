@@ -24,8 +24,17 @@ namespace Nijo.Models {
             var className = rootAggregate.Item.PhysicalName;
 
             // EFCore用型変換処理を登録
-            var dbContext = context.UseSummarizedFile<Parts.WebServer.DbContextClass>();
-            dbContext.AddOnModelCreatingPropConverter(className, $"{className}.{EFCORE_VALUE_CONVERTER}");
+            var configureClassMethodName = $"GetEFCoreValueConverterOf{className}";
+            context.UseSummarizedFile<Parts.WebServer.DbContextClass>()
+                .AddOnModelCreatingPropConverter(className, configureClassMethodName);
+            context.UseSummarizedFile<Parts.Configure>().AddMethod($$"""
+                /// <summary>
+                /// <see cref="{{className}}"/> クラスのプロパティがDBとC#の間で変換されるときの処理を定義するクラスを返します。
+                /// </summary>
+                public virtual Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter {{configureClassMethodName}}() {
+                    return new {{className}}.{{EFCORE_VALUE_CONVERTER}}();
+                }
+                """);
 
             // HTTP用型変換処理を登録
             var util = context.UseSummarizedFile<Parts.Utility.UtilityClass>();

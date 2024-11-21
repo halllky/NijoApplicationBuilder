@@ -28,10 +28,10 @@ namespace Nijo.Parts.WebServer {
         /// 二重ループの処理をレンダリングことによるパフォーマンスの都合上、
         /// <see cref="AddOnModelCreating"/> とは別のメソッドになっている。
         /// </summary>
-        /// <param name="propClassName">プロパティの型の名前</param>
-        /// <param name="converterClassName">コンバータの型の名前</param>
-        internal void AddOnModelCreatingPropConverter(string propClassName, string converterClassName) {
-            _onModelCreatingPropValueConverter.Add(propClassName, converterClassName);
+        /// <param name="className">変換対象の型の名前</param>
+        /// <param name="configureClassMethodName">コンフィグクラスのメソッドの名前</param>
+        internal void AddOnModelCreatingPropConverter(string className, string configureClassMethodName) {
+            _onModelCreatingPropValueConverter.Add(className, configureClassMethodName);
         }
         private readonly Dictionary<string, string> _onModelCreatingPropValueConverter = new();
 
@@ -78,7 +78,7 @@ namespace Nijo.Parts.WebServer {
                                     foreach (var property in entityType.GetProperties()) {
                     {{_onModelCreatingPropValueConverter.SelectTextTemplate((kv, i) => $$"""
                                         {{(i == 0 ? "if" : "} else if")}} (property.ClrType == typeof({{kv.Key}})) {
-                                            property.SetValueConverter(new {{kv.Value}}());
+                                            property.SetValueConverter(customizedConfigure.{{kv.Value}}());
                     """)}}
                                         }
                                     }

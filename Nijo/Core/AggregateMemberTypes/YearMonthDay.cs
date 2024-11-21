@@ -21,8 +21,16 @@ namespace Nijo.Core.AggregateMemberTypes {
             util.AddJsonConverter(Parts.Utility.RuntimeDateClass.GetCustomJsonConverter());
 
             // C#とDBの間の変換
-            var dbContext = context.UseSummarizedFile<Parts.WebServer.DbContextClass>();
-            dbContext.AddOnModelCreatingPropConverter(Parts.Utility.RuntimeDateClass.CLASS_NAME, Parts.Utility.RuntimeDateClass.EFCoreConverterClassFullName);
+            context.UseSummarizedFile<Parts.WebServer.DbContextClass>()
+                .AddOnModelCreatingPropConverter(Parts.Utility.RuntimeDateClass.CLASS_NAME, "GetYearMonthDayEFCoreValueConverter");
+            context.UseSummarizedFile<Parts.Configure>().AddMethod($$"""
+                /// <summary>
+                /// <see cref="{{Parts.Utility.RuntimeDateClass.CLASS_NAME}}"/> クラスのプロパティがDBとC#の間で変換されるときの処理を定義するクラスを返します。
+                /// </summary>
+                public virtual Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter GetYearMonthDayEFCoreValueConverter() {
+                    return new {{Parts.Utility.RuntimeDateClass.EFCoreConverterClassFullName}}();
+                }
+                """);
         }
 
         public override string GetCSharpTypeName() => Parts.Utility.RuntimeDateClass.CLASS_NAME;
