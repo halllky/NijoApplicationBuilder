@@ -1,5 +1,5 @@
 import React, { useEffect, useImperativeHandle, useRef, useState } from "react";
-import { ValidationHandler, ValidationResult, defineCustomComponent } from "./InputBase";
+import { DefaultElementAttrs, ValidationHandler, ValidationResult, defineCustomComponent } from "./InputBase";
 import { useIMEOpened, useUserSetting } from "..";
 import useEvent from "react-use-event-hook";
 
@@ -22,7 +22,7 @@ export type TextInputBaseAdditionalRef = {
 export const TextInputBase = defineCustomComponent<
   string,
   TextInputBaseAdditionalAttrs,
-  React.HTMLAttributes<HTMLElement>,
+  DefaultElementAttrs,
   TextInputBaseAdditionalRef
 >((props, ref) => {
 

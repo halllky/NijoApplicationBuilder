@@ -11,10 +11,10 @@ export type ValidationResult = ReturnType<ValidationHandler>
 export const defineCustomComponent = <
   TValue,
   TAdditionalProp extends {} = {},
-  TElementAttrs extends HTMLAttributes<HTMLElement> = HTMLAttributes<HTMLElement>,
+  TElementAttrs extends DefaultElementAttrs = DefaultElementAttrs,
   TAdditionalRef extends {} = {},
 >(fn: (
-  props: CustomComponentProps<TValue, TAdditionalProp, TElementAttrs>,
+  props: React.PropsWithoutRef<CustomComponentProps<TValue, TAdditionalProp, TElementAttrs>>,
   ref: React.ForwardedRef<CustomComponentRef<TValue> & TAdditionalRef>) => React.ReactNode
 ) => {
   return forwardRefEx(fn)
@@ -25,6 +25,11 @@ export type CustomComponent<
   TAdditionalProp extends {} = {},
   TElementAttrs extends HTMLAttributes<HTMLElement> = HTMLAttributes<HTMLElement>
 > = ReturnType<typeof defineCustomComponent<TValue, TAdditionalProp, TElementAttrs>>
+
+export type DefaultElementAttrs = HTMLAttributes<HTMLElement> & {
+  // 2024-11-21 少し古いバージョンの HTMLAttributes<HTMLElement> にはこのプロパティも含まれていた。後方互換性のために明示的に定義している。
+  placeholder?: string
+}
 
 export interface CustomComponentRef<T = any> {
   /**

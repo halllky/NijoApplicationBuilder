@@ -73,9 +73,12 @@ export const defineContext2 = <S, M extends StateModifier<S>>(
   }
 }
 
-/** forwardRefの戻り値の型定義がややこしいので単純化するためのラッピング関数 */
+/**
+ * forwardRefの戻り値の型定義がややこしいので単純化するためのラッピング関数
+ * ※ 2024-11-21: Reactのアップデートにより不要になった（forwardRefの型自体が分かりやすくなってくれた）可能性があるが未調査
+ */
 export const forwardRefEx = <TRef, TProps>(
-  fn: (props: TProps, ref: React.ForwardedRef<TRef>) => React.ReactNode
+  fn: (props: React.PropsWithoutRef<TProps>, ref: React.ForwardedRef<TRef>) => React.ReactNode
 ) => {
   return React.forwardRef(fn) as ForwardedRefEx<TRef, TProps>
 }

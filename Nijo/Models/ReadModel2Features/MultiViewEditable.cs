@@ -127,14 +127,14 @@ namespace Nijo.Models.ReadModel2Features
                       }, [locationSerach])
 
                       // 画面離脱（他画面への遷移）アラート設定
-                      const blockCondition: ReactRouter.unstable_BlockerFunction = useEvent(({ currentLocation, nextLocation }) => {
+                      const blockCondition: ReactRouter.BlockerFunction = useEvent(({ currentLocation, nextLocation }) => {
                         if (currentLocation.pathname !== nextLocation.pathname) {
                           if (confirm('画面を移動すると、変更内容が破棄されます。よろしいでしょうか？')) return false
                         }
                         return currentLocation.pathname !== nextLocation.pathname
                       })
                       // ブロッカー
-                      let blocker = ReactRouter.unstable_useBlocker(blockCondition)
+                      let blocker = ReactRouter.useBlocker(blockCondition)
 
                       React.useEffect(() => {
                         reload()
