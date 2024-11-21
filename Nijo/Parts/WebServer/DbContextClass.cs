@@ -56,7 +56,9 @@ namespace Nijo.Parts.WebServer {
                     namespace {{ctx.Config.DbContextNamespace}} {
 
                         public partial class {{ctx.Config.DbContextName}} : DbContext {
+                    #pragma warning disable CS8618 // DbSetはEFCore側で自動的に設定されるため問題なし
                             public {{ctx.Config.DbContextName}}(DbContextOptions<{{ctx.Config.DbContextName}}> options) : base(options) { }
+                    #pragma warning restore CS8618 // DbSetはEFCore側で自動的に設定されるため問題なし
 
                     {{_dbSet.SelectTextTemplate(dbSet => $$"""
                             public virtual DbSet<{{dbSet.ClassName}}> {{dbSet.PropName}} { get; set; }
