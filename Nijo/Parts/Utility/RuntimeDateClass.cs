@@ -23,8 +23,10 @@ namespace Nijo.Parts.Utility {
 
                     /// <summary>
                     /// <see cref="DateTime"/> から時分秒を除いた日付型。
+                    /// 通常の <see cref="DateTime"/> を使った場合とで何か挙動が変わるといったことはない。
+                    /// 例えば範囲検索で時分秒を除外し忘れるなどといった実装ミスを減らすことを目的としている。
                     /// </summary>
-                    public class {{CLASS_NAME}} {
+                    public partial class {{CLASS_NAME}} {
                         public Date(int year, int month, int day) {
                             // 年、月、日の範囲チェック
                             if (year < 1 || month < 1 || month > 12 || day < 1 || day > DateTime.DaysInMonth(year, month)) {

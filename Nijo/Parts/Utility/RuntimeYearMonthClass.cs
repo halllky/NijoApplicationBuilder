@@ -22,9 +22,12 @@ namespace Nijo.Parts.Utility {
                     namespace {{ctx.Config.RootNamespace}};
 
                     /// <summary>
-                    /// 年月
+                    /// 年月。
+                    /// 通常の <see cref="DateTime"/> を使った場合とで何か挙動が変わるといったことはない。
+                    /// 通常の <see cref="DateTime"/> を使った場合、日・時・分・秒といった情報がノイズになるので、
+                    /// わざわざそれを意識しなくても済むようにするためのクラス。
                     /// </summary>
-                    public class {{CLASS_NAME}} {
+                    public partial class {{CLASS_NAME}} {
                         public YearMonth(int year, int month) {
                             // 年、月の範囲チェック
                             if (year < 1 || month < 1 || month > 12) {
