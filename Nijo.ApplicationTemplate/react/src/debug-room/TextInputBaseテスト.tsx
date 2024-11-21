@@ -63,7 +63,7 @@ const Page = () => {
 
           <div className="col-span-2">
             <button type="button" onClick={() => {
-              dispatchDialog(state => state.pushDialog('aaa', ctx => (
+              dispatchDialog(state => state.pushDialog({ title: 'aaa' }, ctx => (
                 <div className="w-64 h-64">
                   aassa
                 </div>
