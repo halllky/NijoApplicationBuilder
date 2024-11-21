@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nijo.Parts.Utility {
+namespace Nijo.Parts.WebServer {
     internal class DotnetExtensions {
 
         internal static SourceFile RenderCoreLibrary() => new SourceFile {

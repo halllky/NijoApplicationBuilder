@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nijo.Parts.Utility {
+namespace Nijo.Parts.BothOfClientAndServer {
     /// <summary>
     /// 処理の実体はアプリケーションテンプレート側のソースにあります。
     /// </summary>

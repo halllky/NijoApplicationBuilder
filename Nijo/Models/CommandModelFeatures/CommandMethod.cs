@@ -1,5 +1,5 @@
 using Nijo.Core;
-using Nijo.Parts.Utility;
+using Nijo.Parts.BothOfClientAndServer;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;

@@ -1,7 +1,6 @@
 using Nijo.Core;
 using Nijo.Models.RefTo;
 using Nijo.Models.WriteModel2Features;
-using Nijo.Parts.Utility;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
@@ -10,7 +9,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static Nijo.Models.CommandModelFeatures.CommandParameter;
 
 namespace Nijo.Models.ReadModel2Features {
     /// <summary>

@@ -1,3 +1,4 @@
+using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using System;
 using System.Collections.Generic;
@@ -13,27 +14,27 @@ namespace Nijo.Core.AggregateMemberTypes {
         public override void GenerateCode(CodeRenderingContext context) {
             // クラス定義
             context.CoreLibrary.UtilDir(dir => {
-                dir.Generate(Parts.Utility.RuntimeDateClass.RenderDeclaring());
+                dir.Generate(RuntimeDateClass.RenderDeclaring());
             });
 
             // JavaScriptとC#の間の変換
-            var util = context.UseSummarizedFile<Parts.Utility.UtilityClass>();
-            util.AddJsonConverter(Parts.Utility.RuntimeDateClass.GetCustomJsonConverter());
+            var util = context.UseSummarizedFile<UtilityClass>();
+            util.AddJsonConverter(RuntimeDateClass.GetCustomJsonConverter());
 
             // C#とDBの間の変換
             context.UseSummarizedFile<Parts.WebServer.DbContextClass>()
-                .AddOnModelCreatingPropConverter(Parts.Utility.RuntimeDateClass.CLASS_NAME, "GetYearMonthDayEFCoreValueConverter");
+                .AddOnModelCreatingPropConverter(RuntimeDateClass.CLASS_NAME, "GetYearMonthDayEFCoreValueConverter");
             context.UseSummarizedFile<Parts.Configure>().AddMethod($$"""
                 /// <summary>
-                /// <see cref="{{Parts.Utility.RuntimeDateClass.CLASS_NAME}}"/> クラスのプロパティがDBとC#の間で変換されるときの処理を定義するクラスを返します。
+                /// <see cref="{{RuntimeDateClass.CLASS_NAME}}"/> クラスのプロパティがDBとC#の間で変換されるときの処理を定義するクラスを返します。
                 /// </summary>
                 public virtual Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter GetYearMonthDayEFCoreValueConverter() {
-                    return new {{Parts.Utility.RuntimeDateClass.EFCoreConverterClassFullName}}();
+                    return new {{RuntimeDateClass.EFCoreConverterClassFullName}}();
                 }
                 """);
         }
 
-        public override string GetCSharpTypeName() => Parts.Utility.RuntimeDateClass.CLASS_NAME;
+        public override string GetCSharpTypeName() => RuntimeDateClass.CLASS_NAME;
         public override string GetTypeScriptTypeName() => "string";
 
         protected override string ComponentName => "Input.Date";

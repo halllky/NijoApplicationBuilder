@@ -1,4 +1,5 @@
 using Nijo.Core;
+using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -69,7 +70,7 @@ namespace Nijo.Models.WriteModel2Features {
             context.ReactProject.Types.Add(RenderTypeScriptType());
 
             // JSONコンバータ
-            context.UseSummarizedFile<Parts.Utility.UtilityClass>().AddJsonConverter(RenderJsonDeserialization());
+            context.UseSummarizedFile<UtilityClass>().AddJsonConverter(RenderJsonDeserialization());
 
             // 追加更新削除区分
             context.CoreLibrary.Enums.Add(RenderAddModDelEnum());
@@ -188,8 +189,8 @@ namespace Nijo.Models.WriteModel2Features {
         /// <summary>
         /// クライアント側からTypeScriptの型定義で送られてきたJSONをC#側のクラスに変換する
         /// </summary>
-        private Parts.Utility.UtilityClass.CustomJsonConverter RenderJsonDeserialization() => new Parts.Utility.UtilityClass.CustomJsonConverter {
-            ConverterClassName = $"{Parts.Utility.UtilityClass.CUSTOM_CONVERTER_NAMESPACE}.SaveCommandBaseConverter",
+        private UtilityClass.CustomJsonConverter RenderJsonDeserialization() => new UtilityClass.CustomJsonConverter {
+            ConverterClassName = $"{UtilityClass.CUSTOM_CONVERTER_NAMESPACE}.SaveCommandBaseConverter",
             ConverterClassDeclaring = $$"""
                 class SaveCommandBaseConverter : JsonConverter<{{SAVE_COMMAND_BASE}}> {
                     public override {{SAVE_COMMAND_BASE}}? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {

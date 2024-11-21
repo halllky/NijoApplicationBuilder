@@ -1,3 +1,4 @@
+using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using System;
 using System.Collections.Generic;
@@ -13,27 +14,27 @@ namespace Nijo.Core.AggregateMemberTypes {
         public override void GenerateCode(CodeRenderingContext context) {
             // クラス定義
             context.CoreLibrary.UtilDir(dir => {
-                dir.Generate(Parts.Utility.RuntimeYearMonthClass.RenderDeclaring());
+                dir.Generate(RuntimeYearMonthClass.RenderDeclaring());
             });
 
             // JavaScriptとC#の間の変換
-            var util = context.UseSummarizedFile<Parts.Utility.UtilityClass>();
-            util.AddJsonConverter(Parts.Utility.RuntimeYearMonthClass.GetCustomJsonConverter(context));
+            var util = context.UseSummarizedFile<UtilityClass>();
+            util.AddJsonConverter(RuntimeYearMonthClass.GetCustomJsonConverter(context));
 
             // C#とDBの間の変換
             context.UseSummarizedFile<Parts.WebServer.DbContextClass>()
-                .AddOnModelCreatingPropConverter(Parts.Utility.RuntimeYearMonthClass.CLASS_NAME, "GetYearMonthEFCoreValueConverter");
+                .AddOnModelCreatingPropConverter(RuntimeYearMonthClass.CLASS_NAME, "GetYearMonthEFCoreValueConverter");
             context.UseSummarizedFile<Parts.Configure>().AddMethod($$"""
                 /// <summary>
-                /// <see cref="{{Parts.Utility.RuntimeYearMonthClass.CLASS_NAME}}"/> クラスのプロパティがDBとC#の間で変換されるときの処理を定義するクラスを返します。
+                /// <see cref="{{RuntimeYearMonthClass.CLASS_NAME}}"/> クラスのプロパティがDBとC#の間で変換されるときの処理を定義するクラスを返します。
                 /// </summary>
                 public virtual Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter GetYearMonthEFCoreValueConverter() {
-                    return new {{Parts.Utility.RuntimeYearMonthClass.EFCoreConverterClassFullName}}();
+                    return new {{RuntimeYearMonthClass.EFCoreConverterClassFullName}}();
                 }
                 """);
         }
 
-        public override string GetCSharpTypeName() => Parts.Utility.RuntimeYearMonthClass.CLASS_NAME;
+        public override string GetCSharpTypeName() => RuntimeYearMonthClass.CLASS_NAME;
         public override string GetTypeScriptTypeName() => "number";
 
         protected override string ComponentName => "Input.YearMonth";

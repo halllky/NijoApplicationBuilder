@@ -1,4 +1,5 @@
 using Nijo.Core;
+using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -37,7 +38,7 @@ namespace Nijo.Models {
                 """);
 
             // HTTP用型変換処理を登録
-            var util = context.UseSummarizedFile<Parts.Utility.UtilityClass>();
+            var util = context.UseSummarizedFile<UtilityClass>();
             util.AddJsonConverter(new() { ConverterClassName = $"{className}.{JSON_VALUE_CONVERTER}", ConverterClassDeclaring = string.Empty });
 
             // クラス本体を定義

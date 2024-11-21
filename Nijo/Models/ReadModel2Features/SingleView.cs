@@ -1,7 +1,6 @@
 using Nijo.Core;
-using Nijo.Models.WriteModel2Features;
 using Nijo.Parts;
-using Nijo.Parts.Utility;
+using Nijo.Parts.BothOfClientAndServer;
 using Nijo.Parts.WebClient;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;

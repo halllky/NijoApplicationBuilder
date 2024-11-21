@@ -55,7 +55,7 @@ namespace Nijo.Models.ReadModel2Features {
             var batchUpdate = context.UseSummarizedFile<BatchUpdateWriteModel>();
             context.ReactProject.Types.Add(RenderFuncParamType());
             batchUpdate.AddReactHook(RenderFunction(context));
-            context.UseSummarizedFile<Parts.Utility.UtilityClass>().AddJsonConverter(RenderJsonConverter());
+            context.UseSummarizedFile<UtilityClass>().AddJsonConverter(RenderJsonConverter());
             batchUpdate.AddControllerAction(RenderControllerAction(context));
             batchUpdate.AddAppSrvMethod(RenderAppSrvMethod(context));
         }
@@ -96,7 +96,7 @@ namespace Nijo.Models.ReadModel2Features {
                       const responseHandler: Util.ComplexPostOptions<never>['responseHandler'] = async response => {
                         // Unprocessable Content. 入力内容エラー
                         if (response.status === 422 && setError) {
-                          const errors = await response.json() as { {{Parts.Utility.ComplexPost.RESPONSE_DETAIL}}: ErrorDetailType[] }
+                          const errors = await response.json() as { {{Parts.BothOfClientAndServer.ComplexPost.RESPONSE_DETAIL}}: ErrorDetailType[] }
                           for (const error of errors.detail) setError(...error)
                           return { handled: true, ok: false }
 
@@ -120,8 +120,8 @@ namespace Nijo.Models.ReadModel2Features {
                 """;
         }
 
-        private Parts.Utility.UtilityClass.CustomJsonConverter RenderJsonConverter() => new() {
-            ConverterClassName = $"{Parts.Utility.UtilityClass.CUSTOM_CONVERTER_NAMESPACE}.DisplayDataBatchUpdateCommandConverter",
+        private UtilityClass.CustomJsonConverter RenderJsonConverter() => new() {
+            ConverterClassName = $"{UtilityClass.CUSTOM_CONVERTER_NAMESPACE}.DisplayDataBatchUpdateCommandConverter",
             ConverterClassDeclaring = $$"""
                 class DisplayDataBatchUpdateCommandConverter : JsonConverter<{{DataClassForDisplay.BASE_CLASS_NAME}}> {
                     public override {{DataClassForDisplay.BASE_CLASS_NAME}}? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {

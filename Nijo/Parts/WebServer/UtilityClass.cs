@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Nijo.Core;
 using Nijo.Util.CodeGenerating;
 
-namespace Nijo.Parts.Utility {
+namespace Nijo.Parts.WebServer {
     internal class UtilityClass : ISummarizedFile {
         internal const string CLASSNAME = "Util";
         internal const string GET_JSONOPTION = "GetJsonSrializerOptions";

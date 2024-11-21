@@ -176,7 +176,7 @@ namespace Nijo.Parts {
 
                                     }).AddJsonOptions(option => {
                                         // JSON日本語設定
-                                        {{Utility.UtilityClass.CLASSNAME}}.{{Utility.UtilityClass.MODIFY_JSONOPTION}}(option.JsonSerializerOptions);
+                                        {{UtilityClass.CLASSNAME}}.{{UtilityClass.MODIFY_JSONOPTION}}(option.JsonSerializerOptions);
                                     });
                                 }
 

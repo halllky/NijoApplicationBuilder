@@ -5,133 +5,124 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nijo.Parts.Utility {
+namespace Nijo.Parts.WebServer {
     /// <summary>
-    /// 自動生成される側のプロジェクトで定義される年月クラス
+    /// 自動生成される側のプロジェクトで定義される日付クラス
     /// </summary>
-    internal class RuntimeYearMonthClass {
-        internal const string CLASS_NAME = "YearMonth";
+    internal class RuntimeDateClass {
+        internal const string CLASS_NAME = "Date";
 
         internal static string EFCoreConverterClassFullName => $"{CLASS_NAME}.{EFCORE_CONVERTER}";
-        private const string EFCORE_CONVERTER = "EFCoreYearMonthConverter";
+        private const string EFCORE_CONVERTER = "EFCoreDateConverter";
 
         internal static SourceFile RenderDeclaring() => new() {
-            FileName = "YearMonth.cs",
+            FileName = "Date.cs",
             RenderContent = ctx => {
                 return $$"""
                     namespace {{ctx.Config.RootNamespace}};
 
                     /// <summary>
-                    /// 年月。
+                    /// <see cref="DateTime"/> から時分秒を除いた日付型。
                     /// 通常の <see cref="DateTime"/> を使った場合とで何か挙動が変わるといったことはない。
-                    /// 通常の <see cref="DateTime"/> を使った場合、日・時・分・秒といった情報がノイズになるので、
-                    /// わざわざそれを意識しなくても済むようにするためのクラス。
+                    /// 例えば範囲検索で時分秒を除外し忘れるなどといった実装ミスを減らすことを目的としている。
                     /// </summary>
                     public partial class {{CLASS_NAME}} {
-                        public YearMonth(int year, int month) {
-                            // 年、月の範囲チェック
-                            if (year < 1 || month < 1 || month > 12) {
-                                throw new ArgumentOutOfRangeException($"年月の値が不正です: {year:0000}-{month:00}");
+                        public Date(int year, int month, int day) {
+                            // 年、月、日の範囲チェック
+                            if (year < 1 || month < 1 || month > 12 || day < 1 || day > DateTime.DaysInMonth(year, month)) {
+                                throw new ArgumentOutOfRangeException($"日付の値が不正です: {year:0000}-{month:00}-{day:00}");
                             }
                             Year = year;
                             Month = month;
+                            Day = day;
                         }
-                        public YearMonth(DateTime dateTime) {
+                        public Date(DateTime dateTime) {
                             Year = dateTime.Year;
                             Month = dateTime.Month;
-                        }
-                        public YearMonth({{RuntimeDateClass.CLASS_NAME}} date) {
-                            Year = date.Year;
-                            Month = date.Month;
+                            Day = dateTime.Day;
                         }
 
                         public int Year { get; }
                         public int Month { get; }
+                        public int Day { get; }
 
                         public DateTime ToDateTime() {
-                            return new DateTime(Year, Month, 1); // 日は1日固定
-                        }
-
-                        public bool Contains(DateTime dateTime) {
-                            return dateTime.Year == Year && dateTime.Month == Month;
-                        }
-                        public bool Contains(Date date) {
-                            return date.Year == Year && date.Month == Month;
+                            return new DateTime(Year, Month, Day);
                         }
 
                         public override bool Equals(object? obj) {
-                            if (obj is YearMonth other) {
-                                return Year == other.Year && Month == other.Month;
+                            if (obj is Date other) {
+                                return Year == other.Year && Month == other.Month && Day == other.Day;
                             }
                             return false;
                         }
                         public override int GetHashCode() {
-                            return HashCode.Combine(Year, Month);
+                            return HashCode.Combine(Year, Month, Day);
                         }
                         public override string ToString() {
-                            return $"{Year:0000}-{Month:00}";
+                            return $"{Year:0000}-{Month:00}-{Day:00}";
                         }
 
-                        public static bool operator ==(YearMonth? left, YearMonth? right) {
+                        public static bool operator ==(Date? left, Date? right) {
                             return Equals(left, right);
                         }
-                        public static bool operator !=(YearMonth? left, YearMonth? right) {
+                        public static bool operator !=(Date? left, Date? right) {
                             return !Equals(left, right);
                         }
-                        public static bool operator <(YearMonth? left, YearMonth? right) {
+                        public static bool operator <(Date? left, Date? right) {
                             if (left == null || right == null)
                                 return false;
                             if (left.Year != right.Year)
                                 return left.Year < right.Year;
-                            return left.Month < right.Month;
+                            if (left.Month != right.Month)
+                                return left.Month < right.Month;
+                            return left.Day < right.Day;
                         }
-                        public static bool operator >(YearMonth? left, YearMonth? right) {
+                        public static bool operator >(Date? left, Date? right) {
                             if (left == null || right == null)
                                 return false;
                             if (left.Year != right.Year)
                                 return left.Year > right.Year;
-                            return left.Month > right.Month;
+                            if (left.Month != right.Month)
+                                return left.Month > right.Month;
+                            return left.Day > right.Day;
                         }
-                        public static bool operator <=(YearMonth? left, YearMonth? right) {
+                        public static bool operator <=(Date? left, Date? right) {
                             return left < right || left == right;
                         }
-                        public static bool operator >=(YearMonth? left, YearMonth? right) {
+                        public static bool operator >=(Date? left, Date? right) {
                             return left > right || left == right;
                         }
 
                         /// <summary>
                         /// Entity Framework Core 用のDBとC#の型変換定義
                         /// </summary>
-                        public class {{EFCORE_CONVERTER}} : Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<{{CLASS_NAME}}, int> {
+                        public class {{EFCORE_CONVERTER}} : Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<{{CLASS_NAME}}, DateTime> {
                             public {{EFCORE_CONVERTER}}() : base(
-                                yearMonth => (yearMonth.Year * 100) + yearMonth.Month,
-                                yyyymm => new {{CLASS_NAME}}(yyyymm / 100, yyyymm % 100)) { }
+                                date => date.ToDateTime(),
+                                datetime => new Date(datetime)) { }
                         }
                     }
                     """;
-            },
+            }
         };
 
-        internal static UtilityClass.CustomJsonConverter GetCustomJsonConverter(CodeRenderingContext ctx) => new() {
-            ConverterClassName = $"{Parts.Utility.UtilityClass.CUSTOM_CONVERTER_NAMESPACE}.YearMonthJsonValueConverter",
+        internal static UtilityClass.CustomJsonConverter GetCustomJsonConverter() => new() {
+            ConverterClassName = $"{UtilityClass.CUSTOM_CONVERTER_NAMESPACE}.DateJsonValueConverter",
             ConverterClassDeclaring = $$"""
-                class YearMonthJsonValueConverter : JsonConverter<{{CLASS_NAME}}?> {
+                class DateJsonValueConverter : JsonConverter<{{CLASS_NAME}}?> {
                     public override {{CLASS_NAME}}? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
-                        if (reader.TokenType == JsonTokenType.Null) {
-                            return null;
-                        } else {
-                            var yyyymm = reader.GetInt32();
-                            var year = yyyymm / 100;
-                            var month = yyyymm % 100;
-                            return new {{CLASS_NAME}}(year, month);
-                        }
+                        var strDateTime = reader.GetString();
+                        return string.IsNullOrWhiteSpace(strDateTime)
+                            ? null
+                            : new {{CLASS_NAME}}(DateTime.Parse(strDateTime));
                     }
 
                     public override void Write(Utf8JsonWriter writer, {{CLASS_NAME}}? value, JsonSerializerOptions options) {
                         if (value == null) {
                             writer.WriteNullValue();
                         } else {
-                            writer.WriteNumberValue((value.Year * 100) + value.Month);
+                            writer.WriteStringValue(value.ToString());
                         }
                     }
                 }

@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nijo.Parts.Utility {
+namespace Nijo.Parts.BothOfClientAndServer {
     internal class FromTo {
         internal const string CLASSNAME = "FromTo";
         internal const string FROM = "From";

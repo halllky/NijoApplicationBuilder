@@ -2,7 +2,6 @@ using Nijo.Core;
 using Nijo.Models.ReadModel2Features;
 using Nijo.Models.RefTo;
 using Nijo.Models.WriteModel2Features;
-using Nijo.Parts.Utility;
 using Nijo.Parts.WebClient;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
