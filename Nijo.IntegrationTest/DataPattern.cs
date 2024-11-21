@@ -81,6 +81,13 @@ namespace Nijo.IntegrationTest {
                                     public OverridedApplicationService(IServiceProvider serviceProvider) : base(serviceProvider) { }
 
                                     {{WithIndent(OverridedAppSrvMethods(), "        ")}}
+
+                                    /// <summary>
+                                    /// アプリケーションの設定を行うクラスです。
+                                    /// 自動生成された初期設定のうちカスタマイズしたいものがある場合はここで該当の設定処理をオーバーライドしてください。
+                                    /// </summary>
+                                    public partial class CustomizedConfiguration : DefaultConfiguration {
+                                    }
                                 }
                             }
                             """, new UTF8Encoding(false, false));

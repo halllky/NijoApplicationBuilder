@@ -107,6 +107,14 @@ namespace Nijo.Parts.WebServer {
                 /// </summary>
                 public partial class {{ConcreteClassName}} : {{AbstractClassName}} {
                     public {{ConcreteClassName}}(IServiceProvider serviceProvider) : base(serviceProvider) { }
+
+
+                    /// <summary>
+                    /// アプリケーションの設定を行うクラスです。
+                    /// 自動生成された初期設定のうちカスタマイズしたいものがある場合はここで該当の設定処理をオーバーライドしてください。
+                    /// </summary>
+                    public partial class {{Configure.CONCRETE_CLASS_NAME}} : {{Configure.ABSTRACT_CLASS_NAME}} {
+                    }
                 }
             }
             """;

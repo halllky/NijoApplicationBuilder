@@ -139,6 +139,8 @@ namespace Nijo.Parts.WebServer {
         private SourceFile RenderFactoryForMigration() => new SourceFile {
             FileName = $"EFCoreDbContextFactoryForMigration.cs",
             RenderContent = ctx => {
+                var app = new ApplicationService();
+
                 return $$"""
                     using Microsoft.EntityFrameworkCore.Design;
                     using Microsoft.Extensions.DependencyInjection;
@@ -155,7 +157,7 @@ namespace Nijo.Parts.WebServer {
                         internal class {{ctx.Config.DbContextName}}FactoryForMigration : IDesignTimeDbContextFactory<{{ctx.Config.DbContextName}}> {
                             public {{ctx.Config.DbContextName}} CreateDbContext(string[] args) {
                                 var serviceCollection = new ServiceCollection();
-                                {{Configure.CLASSNAME_CORE}}.{{Configure.CONFIGURE_SERVICES}}(serviceCollection);
+                                new {{app.ConcreteClassName}}.{{Configure.CONCRETE_CLASS_NAME}}().{{Configure.CONFIGURE_SERVICES}}(serviceCollection);
                                 var services = serviceCollection.BuildServiceProvider();
                                 return services.GetRequiredService<{{ctx.Config.DbContextName}}>();
                             }
