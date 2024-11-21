@@ -36,7 +36,11 @@ namespace Nijo.Parts {
                             using Microsoft.Extensions.DependencyInjection;
                             using Microsoft.Extensions.Logging;
 
-                            public abstract class {{ABSTRACT_CLASS_NAME}} {
+                            /// <summary>
+                            /// 自動生成されたアプリケーション実行時設定。
+                            /// 設定の一部を変更したい場合は <see cref="{{appSrv.ConcreteClassName}}.{{CONCRETE_CLASS_NAME}}"/> で該当の設定をオーバーライドしてください。
+                            /// </summary>
+                            public abstract partial class {{ABSTRACT_CLASS_NAME}} {
 
                                 /// <summary>
                                 /// DI設定

@@ -47,6 +47,8 @@ namespace Nijo.Parts.WebServer {
         private SourceFile RenderDeclaring() => new SourceFile {
             FileName = $"EFCoreDbContext.cs",
             RenderContent = ctx => {
+                var app = new ApplicationService();
+
                 return $$"""
                     using Microsoft.EntityFrameworkCore;
                     using Microsoft.Extensions.Logging;
@@ -62,6 +64,8 @@ namespace Nijo.Parts.WebServer {
 
                             /// <inheritdoc />
                             protected override void OnModelCreating(ModelBuilder modelBuilder) {
+                                var customizedConfigure = new {{app.ConcreteClassName}}.{{Configure.CONCRETE_CLASS_NAME}}();
+
                     {{_onModelCreating.SelectTextTemplate(fn => $$"""
                                 {{WithIndent(fn("modelBuilder"), "            ")}}
                     """)}}
