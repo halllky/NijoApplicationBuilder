@@ -142,7 +142,7 @@ namespace Nijo.Models.ReadModel2Features {
                           // 通常の初期値
                           data = Types.{{dataClass.TsNewObjectFunction}}()
                         }
-                        const initProcessResult = await complexPost<Types.{{dataClass.TsTypeName}}>('/{{Controller.SUBDOMAIN}}/{{UrlSubDomain}}/{{API_NEW_DISPLAY_DATA}}', { data })
+                        const initProcessResult = await complexPost<Types.{{dataClass.TsTypeName}}>('/{{controller.SubDomain}}/{{API_NEW_DISPLAY_DATA}}', { data })
                         if (!initProcessResult.ok) return
                         reset(initProcessResult.data)
 
