@@ -56,7 +56,7 @@ namespace Nijo.IntegrationTest {
                         chcp 65001
                         cd %~dp0
                         dotnet build ..\Nijo
-                        ..\Nijo\bin\Debug\net8.0\nijo.exe update . %* 
+                        ..\Nijo\bin\Debug\net9.0\nijo.exe update . %* 
                         pause
                         """, new UTF8Encoding(false, false));
 
@@ -65,7 +65,7 @@ namespace Nijo.IntegrationTest {
                         chcp 65001
                         cd %~dp0
                         dotnet build ..\Nijo
-                        ..\Nijo\bin\Debug\net8.0\nijo.exe debug . %* 
+                        ..\Nijo\bin\Debug\net9.0\nijo.exe debug . %* 
                         pause
                         """, new UTF8Encoding(false, false));
 
@@ -81,7 +81,7 @@ namespace Nijo.IntegrationTest {
                         chcp 65001
                         cd %~dp0
                         dotnet build ..\Nijo
-                        ..\Nijo\bin\Debug\net8.0\nijo.exe ui . %* 
+                        ..\Nijo\bin\Debug\net9.0\nijo.exe ui . %* 
                         pause
                         """, new UTF8Encoding(false, false));
                 }
@@ -90,13 +90,13 @@ namespace Nijo.IntegrationTest {
                     File.WriteAllText(Path.Combine(dir, "BUILD.command"), $$"""
                         cd `dirname $0`
                         dotnet build ../Nijo
-                        ../Nijo/bin/Debug/net8.0/nijo update . 
+                        ../Nijo/bin/Debug/net9.0/nijo update . 
                         """.Replace("\r\n", "\n"), new UTF8Encoding(false, false));
 
                     File.WriteAllText(Path.Combine(dir, "DEBUG.command"), $$"""
                         cd `dirname $0`
                         dotnet build ../Nijo
-                        ../Nijo/bin/Debug/net8.0/nijo debug . 
+                        ../Nijo/bin/Debug/net9.0/nijo debug . 
                         """.Replace("\r\n", "\n"), new UTF8Encoding(false, false));
 
                     File.WriteAllText(Path.Combine(dir, "TSC.command"), $$"""
@@ -108,7 +108,7 @@ namespace Nijo.IntegrationTest {
                     File.WriteAllText(Path.Combine(dir, "EDITOR.command"), $$"""
                         cd `dirname $0`
                         dotnet build ../Nijo
-                        ../Nijo/bin/Debug/net8.0/nijo ui . 
+                        ../Nijo/bin/Debug/net9.0/nijo ui . 
                         """.Replace("\r\n", "\n"), new UTF8Encoding(false, false));
                 }
 
