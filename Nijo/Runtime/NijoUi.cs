@@ -97,16 +97,24 @@ namespace Nijo.Runtime {
             app.MapPost("/mermaid", async context => {
                 try {
                     var NODE_TYPE_DICT = EnumerateSchemaNodeTypes().ToDictionary(x => x.Key!);
-                    var VIEW_AGGRTEGATE_TYPES = new[] { WriteModel.Key, ReadModel.Key, WriteRead.Key, Command.Key };
 
                     var schema = await MutableSchema.FromHttpRequest(context.Request.Body);
+
+                    // グラフ中のノードのIDは整数の連番
+                    var nodeIdDict = schema
+                        .Select((node, index) => new { node, index })
+                        .ToDictionary(x => x.node.UniqueId, x => x.index);
+
+                    // 集約メンバーを表示するとノードが多すぎて見づらいことが多いため集約のみ表示
+                    var VIEW_AGGRTEGATE_TYPES = new[] { WriteModel.Key, ReadModel.Key, WriteRead.Key, Command.Key };
                     var rootNodes = schema
                         .RootNodes()
                         .Where(n => VIEW_AGGRTEGATE_TYPES.Contains(schema.GetRoot(n).Type))
                         .ToArray();
 
+                    // ref
                     var existsInitialOrTerminal = rootNodes
-                        .SelectMany(n => EnumerateDescendantSubgraphNodes(n))
+                        .Concat(rootNodes.SelectMany(n => EnumerateDescendantSubgraphNodes(n)))
                         .ToDictionary(n => n.UniqueId);
                     var references = schema
                         .Where(n => n.GetNodeType()?.HasFlag(E_NodeType.Ref) == true)
@@ -115,20 +123,22 @@ namespace Nijo.Runtime {
                             Terminal = n.Type?.Substring(MutableSchemaNode.REFTO_PREFIX.Length),
                             Label = string.IsNullOrEmpty(n.DisplayName) ? "???(Ref)" : $"{n.DisplayName}(Ref)",
                         })
-                        // 矢印の根本と先端のノードどちらかが存在しない場合はmermaidがエラーを起こすので
-                        .Where(n => n.Initial != null
-                                 && n.Terminal != null
-                                 && existsInitialOrTerminal.ContainsKey(n.Initial)
-                                 && existsInitialOrTerminal.ContainsKey(n.Terminal));
+                        // 視認性向上のために矢印の根元と先端が同じものは1本の矢印にまとめる
+                        .GroupBy(n => new { n.Initial, n.Terminal })
+                        .Where(n => n.Key.Initial != null
+                                 && n.Key.Terminal != null
+                                 && existsInitialOrTerminal.ContainsKey(n.Key.Initial)
+                                 && existsInitialOrTerminal.ContainsKey(n.Key.Terminal));
 
+                    // レンダリング
                     context.Response.ContentType = "text/plain; charset=utf-8";
                     await context.Response.WriteAsync($$"""
                         graph RL;
                         {{rootNodes.SelectTextTemplate(node => $$"""
                           {{WithIndent(RenderSubgraphRecursively(node), "  ")}}
                         """)}}
-                        {{references.SelectTextTemplate(edge => $$"""
-                          {{edge.Initial}} --"{{edge.Label.Replace("\"", "”")}}"--> {{edge.Terminal}}
+                        {{references.SelectTextTemplate(g => $$"""
+                          {{nodeIdDict[g.Key.Initial!]}} --"{{g.First().Label.Replace("\"", "”")}}{{(g.Skip(1).Any() ? $"など計{g.Count()}個の参照" : "")}}"--> {{nodeIdDict[g.Key.Terminal!]}}
                         """)}}
                         """.Replace(SKIP_MARKER, string.Empty), new UTF8Encoding(false, false));
 
@@ -159,7 +169,7 @@ namespace Nijo.Runtime {
                             : $"(???)";
 
                         return $$"""
-                            subgraph {{node.UniqueId}}["{{displayName.Replace("\"", "”")}}"]
+                            subgraph {{nodeIdDict[node.UniqueId]}}["{{displayName.Replace("\"", "”")}}"]
                             {{EnumerateChildSubgraphNodes(node).SelectTextTemplate(childNode => $$"""
                               {{WithIndent(RenderSubgraphRecursively(childNode), "  ")}}
                             """)}}
