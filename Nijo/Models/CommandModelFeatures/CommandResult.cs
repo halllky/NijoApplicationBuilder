@@ -75,6 +75,10 @@ namespace Nijo.Models.CommandModelFeatures {
                     /// <summary>
                     /// コマンド本処理実行時引数。
                     /// 主な役割は処理結果のハンドリングに関する処理。
+                    /// 
+                    /// 例えば「～ですがよろしいですか」の確認メッセージの実装方法はWebとコマンドラインアプリで大きく異なるが、
+                    /// コマンド処理のビジネスロジック本体はWebかそれ以外かなどを意識せずに共通で使いたい。
+                    /// そこで処理結果をどうするかをインターフェースに切り出している。
                     /// </summary>
                     public interface {{GENERATOR_INTERFACE_NAME}}<TErrors> where TErrors : {{DisplayMessageContainer.ABSTRACT_CLASS}} {
                         /// <summary>

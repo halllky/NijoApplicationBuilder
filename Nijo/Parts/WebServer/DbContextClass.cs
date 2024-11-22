@@ -67,6 +67,10 @@ namespace Nijo.Parts.WebServer {
 
                     namespace {{ctx.Config.DbContextNamespace}} {
 
+                        /// <summary>
+                        /// DBコンテキスト。データベース全体と対応する抽象。
+                        /// 詳しくは Entity Framework Core で調べてください。
+                        /// </summary>
                         public partial class {{ctx.Config.DbContextName}} : DbContext {
                     #pragma warning disable CS8618 // DbSetはEFCore側で自動的に設定されるため問題なし
                             public {{ctx.Config.DbContextName}}(DbContextOptions<{{ctx.Config.DbContextName}}> options) : base(options) { }
