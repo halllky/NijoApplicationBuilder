@@ -1,6 +1,7 @@
 import React, { useCallback, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import useEvent from 'react-use-event-hook'
 import * as RT from '@tanstack/react-table'
+import * as ReactVirtual from '@tanstack/react-virtual'
 import * as Util from '../util'
 import { DataTableProps, DataTableRef } from './DataTable.Public'
 import { TABLE_ZINDEX, CellEditorRef, RTColumnDefEx, CellPosition } from './DataTable.Parts'
@@ -139,6 +140,16 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     }),
   }), [getSelectedRows, divRef, startEditing, selectObject])
 
+  // 行の仮想化（パフォーマンスのために画面上に見えている範囲のみ描画するようにする）
+  const ROW_HEIGHT = 20 // 1行の高さ（px）
+  const rowVirtualizer = ReactVirtual.useVirtualizer({
+    count: props.data?.length ?? 0,
+    getScrollElement: () => divRef.current,
+    estimateSize: () => ROW_HEIGHT,
+  })
+
+  const flatRows = api.getRowModel().flatRows
+
   return (
     <div
       ref={divRef}
@@ -201,14 +212,22 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
 
         {/* ボディ */}
         <tbody className="bg-color-0">
-          {api.getRowModel().flatRows.map((row, rowIndex) => (
+
+          {/* スクロール範囲外の上方向にあって描画されていない行 */}
+          {(rowVirtualizer.range?.startIndex ?? 0) > 0 && (
+            <tr className="leading-tight">
+              <td style={{ height: `${rowVirtualizer.scrollOffset ?? 0}px` }}></td>
+            </tr>
+          )}
+
+          {rowVirtualizer.getVirtualItems().map(virtualItem => (
             <tr
-              key={row.id}
+              key={flatRows[virtualItem.index].id}
               className="leading-tight"
             >
-              {row.getVisibleCells().map((cell, colIndex) => (
+              {flatRows[virtualItem.index].getVisibleCells().map((cell, colIndex) => (
                 <MemorizedTd key={cell.id}
-                  ref={tdRefs.current[rowIndex]?.[colIndex]}
+                  ref={tdRefs.current[virtualItem.index]?.[colIndex]}
                   cell={cell}
                   cellEditorRef={cellEditorRef}
                   getColWidth={getColWidth}
@@ -221,6 +240,11 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
           ))}
         </tbody>
       </table>
+
+      {/* スクロール範囲外の下方向にあって描画されていない行 */}
+      <div style={{
+        height: `${((props.data?.length ?? 0) - (rowVirtualizer.range?.endIndex ?? 0) - 1) * ROW_HEIGHT}px`,
+      }}></div>
 
       {/* 末尾の行をスクロールエリア内の最上部までスクロールできるようにするための余白。 */}
       {/* 4remは ヘッダ2行 + ボディ1行 + スクロールバー の縦幅のおおよその合計。 */}

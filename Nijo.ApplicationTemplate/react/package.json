@@ -19,6 +19,7 @@
     "@heroicons/react": "^2.2.0",
     "@hookform/error-message": "^2.0.1",
     "@tanstack/react-table": "^8.20.5",
+    "@tanstack/react-virtual": "^3.10.9",
     "dayjs": "^1.11.13",
     "easymde": "^2.18.0",
     "react": "^18.3.1",
