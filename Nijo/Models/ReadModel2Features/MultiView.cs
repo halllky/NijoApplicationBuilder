@@ -193,8 +193,10 @@ namespace Nijo.Models.ReadModel2Features {
                       // 検索条件欄の開閉
                       const searchConditionPanelRef = useRef<ImperativePanelHandle>(null)
                       const [collapsed, setCollapsed] = useState(false)
+                      const handleCollapse = useEvent(() => setCollapsed(false))
+                      const handleExpand = useEvent(() => setCollapsed(true))
                       const toggleSearchCondition = useCallback(() => {
-                        if (searchConditionPanelRef.current?.getCollapsed()) {
+                        if (searchConditionPanelRef.current?.isCollapsed()) {
                           searchConditionPanelRef.current.expand()
                         } else {
                           searchConditionPanelRef.current?.collapse()
@@ -270,7 +272,7 @@ namespace Nijo.Models.ReadModel2Features {
                           <PanelGroup direction="vertical">
 
                             {/* 検索条件欄 */}
-                            <Panel ref={searchConditionPanelRef} defaultSize={30} collapsible onCollapse={setCollapsed} className="max-h-max">
+                            <Panel ref={searchConditionPanelRef} defaultSize={30} collapsible onCollapse={handleCollapse} onExpand={handleExpand} className="max-h-max">
                               <form id="search-condition-form" onSubmit={handleSubmit(reload)} className="h-full overflow-y-scroll border border-color-4 bg-color-gutter">
                                 <FormProvider {...rhfSearchMethods}>
                                   {UI.{{SEARCH_CONDITION_CUSTOMIZER}} ? (

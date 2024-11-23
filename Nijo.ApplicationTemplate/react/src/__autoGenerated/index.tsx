@@ -91,7 +91,7 @@ const ApplicationRoot = ({ applicationName }: DefaultNijoAppProps) => {
   // サイドメニュー開閉
   const sideMenuRef = React.useRef<ImperativePanelHandle>(null)
   const sideMenuContextValue = React.useMemo((): Util.SideMenuContextType => ({
-    toggle: () => sideMenuRef.current?.getCollapsed()
+    toggle: () => sideMenuRef.current?.isCollapsed()
       ? sideMenuRef.current.expand()
       : sideMenuRef.current?.collapse(),
     setCollapsed: collapsed => collapsed

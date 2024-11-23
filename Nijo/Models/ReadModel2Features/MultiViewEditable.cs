@@ -197,6 +197,8 @@ namespace Nijo.Models.ReadModel2Features
                       // 詳細部分のレイアウト
                       const [singleViewPosition, setSingleViewPosition] = React.useState<'horizontal' | 'vertical'>('horizontal')
                       const [singleViewCollapsed, setSingleViewCollapsed] = React.useState(false)
+                      const handleCollapse = useEvent(() => setSingleViewCollapsed(false))
+                      const handleExpand = useEvent(() => setSingleViewCollapsed(true))
                       const resizerCssClass = React.useMemo(() => {
                         return singleViewPosition === 'horizontal' ? 'w-2' : 'h-2'
                       }, [singleViewPosition])
@@ -346,7 +348,8 @@ namespace Nijo.Models.ReadModel2Features
                                 ref={singleViewRef}
                                 defaultSize={0} // 初期表示時は折りたたみ状態
                                 collapsible
-                                onCollapse={setSingleViewCollapsed}
+                                onCollapse={handleCollapse}
+                                onExpand={handleExpand}
                               >
                                 <div className="relative h-full border border-color-4 overflow-auto">
                                   {!singleViewCollapsed && debouncedActiveRowIndex !== undefined && (
