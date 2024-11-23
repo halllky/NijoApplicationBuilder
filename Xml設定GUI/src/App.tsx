@@ -289,10 +289,11 @@ const ActiveRowErrors = ({ activeRowUniqueId }: { activeRowUniqueId: GridRow['un
 const MermaidPreview = ({ getValues }: { getValues: UseFormGetValues<PageState> }) => {
   const { ready, mermaid } = useBackend()
   const [mermaidJsText, setMermaidJsText] = React.useState<string>()
-  const reload = useEvent(async () => {
+  const reload = useEvent(async (onlyRoot: boolean) => {
+    setMermaidJsText(undefined)
     const aggregates = getValues('aggregates')
     if (!aggregates) return
-    setMermaidJsText(await mermaid(getValues('config'), aggregates))
+    setMermaidJsText(await mermaid(getValues('config'), aggregates, onlyRoot))
   })
 
   const divRef = React.useCallback((div: HTMLDivElement | null) => {
@@ -314,16 +315,40 @@ const MermaidPreview = ({ getValues }: { getValues: UseFormGetValues<PageState> 
   }, [])
 
   React.useEffect(() => {
-    if (ready) reload()
+    if (ready) reload(true)
   }, [ready])
 
-  if (!mermaidJsText) return (
-    <Input.NowLoading />
-  )
+  // 表示オプション
+  const [viewType, setViewType] = React.useState<typeof showOptions[0] | undefined>('ルート集約のみ表示')
+  const showOptions = React.useMemo(() => [
+    'ルート集約のみ表示' as const,
+    '子孫集約も表示' as const,
+  ], [])
+  const textSelector = React.useCallback((opt: string) => {
+    return opt
+  }, [])
+  const handleViewTypeChanged = useEvent((value: typeof showOptions[0] | undefined) => {
+    setViewType(value)
+    reload(value !== '子孫集約も表示')
+  })
 
   return (
-    <div ref={divRef} className="mermaid">
-      {mermaidJsText}
+    <div className="flex flex-col h-full">
+      <div>
+        <Input.Selection
+          value={viewType}
+          onChange={handleViewTypeChanged}
+          options={showOptions}
+          textSelector={textSelector}
+        />
+      </div>
+      <div className="flex-1 relative">
+        {mermaidJsText && (
+          <div ref={divRef} className="mermaid">
+            {mermaidJsText}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

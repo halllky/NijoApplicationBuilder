@@ -99,6 +99,7 @@ namespace Nijo.Runtime {
                     var NODE_TYPE_DICT = EnumerateSchemaNodeTypes().ToDictionary(x => x.Key!);
 
                     var schema = await MutableSchema.FromHttpRequest(context.Request.Body);
+                    var onlyRoot = context.Request.Query.ContainsKey("only-root");
 
                     // グラフ中のノードのIDは整数の連番
                     var nodeIdDict = schema
@@ -119,21 +120,34 @@ namespace Nijo.Runtime {
                     var references = schema
                         .Where(n => n.GetNodeType()?.HasFlag(E_NodeType.Ref) == true)
                         .Select(n => new {
-                            Initial = schema.GetParent(n)?.UniqueId,
-                            Terminal = n.Type?.Substring(MutableSchemaNode.REFTO_PREFIX.Length),
+                            // 参照しているノード同士の線
+                            DescToDesc = new {
+                                Initial = schema.GetParent(n)?.UniqueId,
+                                Terminal = n.Type?.Substring(MutableSchemaNode.REFTO_PREFIX.Length),
+                            },
+                            // 参照しているノードのルート同士の線（ルート集約のみ表示するオプションの場合に必要）
+                            RootToRoot = new {
+                                Initial = schema.GetRoot(n)?.UniqueId,
+                                Terminal = schema.GetRoot(schema.FindRefToNode(n.Type) ?? throw new InvalidOperationException())?.UniqueId,
+                            },
                             Label = string.IsNullOrEmpty(n.DisplayName) ? "???(Ref)" : $"{n.DisplayName}(Ref)",
                         })
                         // 視認性向上のために矢印の根元と先端が同じものは1本の矢印にまとめる
-                        .GroupBy(n => new { n.Initial, n.Terminal })
+                        .GroupBy(n => onlyRoot ? n.RootToRoot : n.DescToDesc)
                         .Where(n => n.Key.Initial != null
                                  && n.Key.Terminal != null
                                  && existsInitialOrTerminal.ContainsKey(n.Key.Initial)
                                  && existsInitialOrTerminal.ContainsKey(n.Key.Terminal));
 
+                    // グラフの方向
+                    var graphDirection = context.Request.Query.TryGetValue("graph-direction", out var d)
+                        ? (string?)d
+                        : "RL";
+
                     // レンダリング
                     context.Response.ContentType = "text/plain; charset=utf-8";
                     await context.Response.WriteAsync($$"""
-                        graph RL;
+                        graph {{graphDirection}};
                         {{rootNodes.SelectTextTemplate(node => $$"""
                           {{WithIndent(RenderSubgraphRecursively(node), "  ")}}
                         """)}}
@@ -170,8 +184,10 @@ namespace Nijo.Runtime {
 
                         return $$"""
                             subgraph {{nodeIdDict[node.UniqueId]}}["{{displayName.Replace("\"", "”")}}"]
+                            {{If(!onlyRoot, () => $$"""
                             {{EnumerateChildSubgraphNodes(node).SelectTextTemplate(childNode => $$"""
                               {{WithIndent(RenderSubgraphRecursively(childNode), "  ")}}
+                            """)}}
                             """)}}
                             end
                             """;
@@ -513,8 +529,7 @@ namespace Nijo.Runtime {
 
                     } else if (nodeType == E_NodeType.Ref) {
                         var parent = GetParent(node) ?? throw new InvalidOperationException();
-                        var refToUniqueId = node.Type?.Substring(MutableSchemaNode.REFTO_PREFIX.Length);
-                        var refTo = this.SingleOrDefault(n => n.UniqueId == refToUniqueId) ?? throw new InvalidOperationException($"参照先 '{refToUniqueId}' が見つかりません。");
+                        var refTo = this.FindRefToNode(node.Type) ?? throw new InvalidOperationException($"参照先 '{node.Type}' が見つかりません。");
                         var options = node.CreateAggregateMemberOption(this);
 
                         // ref-toはグラフの辺だけ登録
@@ -789,8 +804,7 @@ namespace Nijo.Runtime {
                         };
                     } else if (node.Type.StartsWith(MutableSchemaNode.REFTO_PREFIX)) {
                         // ref-to
-                        var uniqueId = node.Type.Substring(MutableSchemaNode.REFTO_PREFIX.Length);
-                        var refTo = _list.SingleOrDefault(n => n.UniqueId == uniqueId);
+                        var refTo = this.FindRefToNode(node.Type);
                         if (refTo == null) {
                             yield return new ValidationError {
                                 Node = node,
@@ -889,6 +903,15 @@ namespace Nijo.Runtime {
                 return GetEnumerator();
             }
             #endregion IReadOnlyListの実装
+
+            /// <summary>
+            /// ref-to:xxxxxxxxx の文字列から "xxxxxxxxxx" のIDに該当するノードを検索して返す
+            /// </summary>
+            /// <param name="type"><see cref="MutableSchemaNode.Type"/> を渡してください。</param>
+            internal MutableSchemaNode? FindRefToNode(string? type) {
+                var uniqueId = type?.Substring(MutableSchemaNode.REFTO_PREFIX.Length);
+                return this.SingleOrDefault(n => n.UniqueId == uniqueId);
+            }
         }
         private class ValidationError {
             /// <summary>どの集約またはメンバーでエラーが発生したか</summary>

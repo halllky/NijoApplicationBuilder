@@ -61,9 +61,12 @@ export const useBackend = () => {
   })
 
   // mermaid.jsのグラフ描画
-  const mermaid = useEvent(async (config: ConfigType, aggregates: GridRow[]): Promise<string> => {
+  const mermaid = useEvent(async (config: ConfigType, aggregates: GridRow[], onlyRoot: boolean): Promise<string> => {
     const body: ClientRequest = { config, aggregates }
-    const response = await fetch(`${backendDomain ?? ''}/mermaid`, {
+    const query = onlyRoot
+      ? 'only-root=1'
+      : ''
+    const response = await fetch(`${backendDomain ?? ''}/mermaid?${query}`, {
       method: 'POST',
       body: JSON.stringify(body)
     })
