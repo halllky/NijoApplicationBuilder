@@ -1,6 +1,6 @@
 import React from 'react'
 import useEvent from 'react-use-event-hook'
-import { useFieldArray, useWatch } from 'react-hook-form'
+import { useFieldArray, UseFormGetValues, useWatch } from 'react-hook-form'
 import * as Icon from '@heroicons/react/24/solid'
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import mermaidEngine from 'mermaid'
@@ -18,7 +18,7 @@ import { useValidationErrorContext, ValidationErrorContextProvider } from './use
 function App() {
 
   // データ
-  const { ready, load, validate, mermaid, save, backendDomain, onChangBackendDomain } = useBackend()
+  const { ready, load, validate, save, backendDomain, onChangBackendDomain } = useBackend()
   const rhfMethods = Util.useFormEx<PageState>({})
   const { getValues, reset, control } = rhfMethods
   const { fields, update, insert, remove, move } = useFieldArray({ name: 'aggregates', control })
@@ -178,11 +178,8 @@ function App() {
   // プレビュー（mermaid.jsによるグラフ表示）
   const [, dispatchDialog] = Layout.useDialogContext()
   const showMermaidGraph = useEvent(async () => {
-    const aggregates = getValues('aggregates')
-    if (!aggregates) return
-    const mermaidJsText = await mermaid(getValues('config'), aggregates)
     dispatchDialog(x => x.pushDialog({ title: 'プレビュー', disableConfirm: true }, () => (
-      <MermaidPreview mermaidJsText={mermaidJsText} />
+      <MermaidPreview getValues={getValues} />
     )))
   })
 
@@ -289,7 +286,15 @@ const ActiveRowErrors = ({ activeRowUniqueId }: { activeRowUniqueId: GridRow['un
   )
 }
 
-const MermaidPreview = ({ mermaidJsText }: { mermaidJsText: string }) => {
+const MermaidPreview = ({ getValues }: { getValues: UseFormGetValues<PageState> }) => {
+  const { ready, mermaid } = useBackend()
+  const [mermaidJsText, setMermaidJsText] = React.useState<string>()
+  const reload = useEvent(async () => {
+    const aggregates = getValues('aggregates')
+    if (!aggregates) return
+    setMermaidJsText(await mermaid(getValues('config'), aggregates))
+  })
+
   const divRef = React.useCallback((div: HTMLDivElement | null) => {
     if (div) {
       mermaidEngine.initialize({
@@ -307,6 +312,15 @@ const MermaidPreview = ({ mermaidJsText }: { mermaidJsText: string }) => {
       mermaidEngine.run({ nodes: [div] })
     }
   }, [])
+
+  React.useEffect(() => {
+    if (ready) reload()
+  }, [ready])
+
+  if (!mermaidJsText) return (
+    <Input.NowLoading />
+  )
+
   return (
     <div ref={divRef} className="mermaid">
       {mermaidJsText}
