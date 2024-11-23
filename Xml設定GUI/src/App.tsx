@@ -203,13 +203,6 @@ function App() {
     if (ready) reload()
   }, [ready])
 
-  // キーボード操作
-  const handleKeyDown: React.KeyboardEventHandler = useEvent(e => {
-    console.log('!')
-    if (e.key === 'Space') {
-    }
-  })
-
   return (
     <ValidationErrorContextProvider value={validationErrors}>
       <PanelGroup direction="vertical" className="w-full h-full p-1">
@@ -256,7 +249,6 @@ function App() {
             ref={gridRef}
             data={expandedRows}
             columns={columns}
-            onKeyDown={handleKeyDown}
             onChangeRow={handleUpdate}
             onActiveRowChanged={handleActiveRowChanged}
             showActiveCellBorderAlways
