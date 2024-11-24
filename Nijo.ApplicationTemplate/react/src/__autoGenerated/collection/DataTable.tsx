@@ -23,6 +23,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     tableWidth,
   } = props
 
+  // ------------------------------------
   // 列
   const columnHelper = useMemo(() => RT.createColumnHelper<T>(), [])
   const columns: RT.ColumnDef<T>[] = useMemo(() => {
@@ -47,6 +48,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     return result
   }, [propsColumns, columnHelper])
 
+  // ------------------------------------
   // 表
   const optoins = useMemo((): RT.TableOptions<T> => ({
     data: data ?? [],
@@ -59,6 +61,8 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   const cellEditorRef = useRef<CellEditorRef<T>>(null)
   const [editing, setEditing] = useState(false)
 
+  const flatRows = api.getRowModel().flatRows
+
   // <td>のrefの二重配列
   const tdRefs = useRef<React.RefObject<HTMLTableCellElement>[][]>([])
   useLayoutEffect(() => {
@@ -67,6 +71,18 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     ) ?? []
   }, [data, propsColumns?.length, tdRefs])
 
+  // ------------------------------------
+  // 行の仮想化（パフォーマンスのために画面上に見えている範囲のみ描画するようにする）
+  const estimatedRowHeight = props.estimatedRowHeight ?? 20 // 1行の高さ（px）
+  const rowVirtualizer = ReactVirtual.useVirtualizer({
+    count: props.data?.length ?? 0,
+    getScrollElement: () => divRef.current,
+    estimateSize: () => estimatedRowHeight,
+    overscan: 20,
+  })
+
+  // ------------------------------------
+  // セル選択
   const [caretCell, setCaretCell] = React.useState<CellPosition | undefined>()
   const onCaretCellChanged = useEvent((cell: CellPosition | undefined) => {
     setCaretCell(cell)
@@ -80,17 +96,24 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     getSelectedColumns,
   } = useSelection<T>(api, data?.length ?? 0, columns, tdRefs, onActiveRowChanged, onCaretCellChanged, cellEditorRef)
 
+  // ------------------------------------
+  // 列幅変更
   const {
     columnSizeVars,
     getColWidth,
     ResizeHandler,
   } = useColumnResizing(api, columns)
 
+  // ------------------------------------
+  // コピーペースト
   const {
     onCopy,
     onPaste,
     clearSelectedRange,
   } = useCopyPaste(api, getSelectedRows, getSelectedColumns, onChangeRow, editing)
+
+  // ------------------------------------
+  // イベント
 
   const [isActive, setIsActive] = useState(false)
   const handleFocus: React.FocusEventHandler<HTMLDivElement> = useEvent(() => {
@@ -119,6 +142,8 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     }
   })
 
+  // ------------------------------------
+  // セル編集
   const divRef = useRef<HTMLDivElement>(null)
   const startEditing = useEvent(() => {
     if (!caretCell || !cellEditorRef.current) return
@@ -140,17 +165,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     }),
   }), [getSelectedRows, divRef, startEditing, selectObject])
 
-  // 行の仮想化（パフォーマンスのために画面上に見えている範囲のみ描画するようにする）
-  const ROW_HEIGHT = 20 // 1行の高さ（px）
-  const rowVirtualizer = ReactVirtual.useVirtualizer({
-    count: props.data?.length ?? 0,
-    getScrollElement: () => divRef.current,
-    estimateSize: () => ROW_HEIGHT,
-    overscan: 20,
-  })
-
-  const flatRows = api.getRowModel().flatRows
-
+  // ------------------------------------
   return (
     <div
       ref={divRef}
