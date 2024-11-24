@@ -146,34 +146,34 @@ namespace Nijo.Core {
                 var fullPathFrom = $"{searchCondition}.{pathFromSearchCondition.Join(".")}.{FromTo.FROM}";
                 var fullPathTo = $"{searchCondition}.{pathFromSearchCondition.Join(".")}.{FromTo.TO}";
                 return $$"""
-                    if ({{nullableFullPathFrom}} != null && {{nullableFullPathTo}} != null) {
+                    if (!string.IsNullOrWhiteSpace({{nullableFullPathFrom}}) && !string.IsNullOrWhiteSpace({{nullableFullPathTo}})) {
                         // from, to のうち to の方が小さい場合は from-to を逆に読み替える
-                        var min = {{fullPathFrom}} < {{fullPathTo}}
-                            ? {{fullPathFrom}}
-                            : {{fullPathTo}};
-                        var max = {{fullPathFrom}} < {{fullPathTo}}
-                            ? {{fullPathTo}}
-                            : {{fullPathFrom}};
+                        var min = string.Compare({{fullPathFrom}}, {{fullPathTo}}) < 0
+                            ? {{fullPathFrom}}.Trim()
+                            : {{fullPathTo}}.Trim();
+                        var max = string.Compare({{fullPathFrom}}, {{fullPathTo}}) < 0
+                            ? {{fullPathTo}}.Trim()
+                            : {{fullPathFrom}}.Trim();
                     {{If(isArray, () => $$"""
-                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{member.MemberName}} >= min && y.{{member.MemberName}} <= max));
+                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => string.Compare(y.{{member.MemberName}}, min) >= 0 && string.Compare(y.{{member.MemberName}}, max) <= 0));
                     """).Else(() => $$"""
-                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} >= min && x.{{whereFullpath.Join(".")}} <= max);
+                        {{query}} = {{query}}.Where(x => string.Compare(x.{{whereFullpath.Join(".")}}, min) >= 0 && string.Compare(x.{{whereFullpath.Join(".")}}, max) <= 0);
                     """)}}
 
-                    } else if ({{nullableFullPathFrom}} != null) {
-                        var from = {{fullPathFrom}};
+                    } else if (!string.IsNullOrWhiteSpace({{nullableFullPathFrom}})) {
+                        var from = {{fullPathFrom}}.Trim();
                     {{If(isArray, () => $$"""
-                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{member.MemberName}} >= from));
+                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => string.Compare(y.{{member.MemberName}}, from) >= 0));
                     """).Else(() => $$"""
-                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} >= from);
+                        {{query}} = {{query}}.Where(x => string.Compare(x.{{whereFullpath.Join(".")}}, from) >= 0);
                     """)}}
 
-                    } else if ({{nullableFullPathTo}} != null) {
-                        var to = {{fullPathTo}};
+                    } else if (!string.IsNullOrWhiteSpace({{nullableFullPathTo}})) {
+                        var to = {{fullPathTo}}.Trim();
                     {{If(isArray, () => $$"""
-                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{member.MemberName}} <= to));
+                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => string.Compare(y.{{member.MemberName}}, to) <= 0));
                     """).Else(() => $$"""
-                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} <= to);
+                        {{query}} = {{query}}.Where(x => string.Compare(x.{{whereFullpath.Join(".")}}, to) <= 0);
                     """)}}
                     }
                     """;
