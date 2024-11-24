@@ -118,10 +118,6 @@ namespace Nijo.Core {
         /// コード型でのみ使用。検索条件の挙動。
         /// </summary>
         public E_SearchBehavior? SearchBehavior { get; set; }
-        /// <summary>
-        /// コード型でのみ使用。入力された値をゼロ埋めするかどうか。
-        /// </summary>
-        public bool? ZeroPadding { get; set; }
 
         /// <summary>
         /// 文字列型の最大長

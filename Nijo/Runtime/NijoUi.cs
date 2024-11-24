@@ -579,7 +579,6 @@ namespace Nijo.Runtime {
                             DisplayName = options.DisplayName,
                             DbName = options.DbName,
                             SearchBehavior = options.SearchBehavior,
-                            ZeroPadding = options.ZeroPadding,
                             MaxLength = options.MaxLength,
                         });
 
@@ -1629,7 +1628,7 @@ namespace Nijo.Runtime {
             yield return NameDef;
             yield return Required;
 
-            yield return Max;
+            yield return MaxLength;
             yield return FormLabelWidth;
             yield return HasLifeCycle;
             yield return ReadOnly;
@@ -1641,7 +1640,6 @@ namespace Nijo.Runtime {
             yield return Radio;
 
             yield return SearchBehavior;
-            yield return ZeroPadding;
         }
 
         #region ルート集約に設定できる種類
@@ -2046,7 +2044,7 @@ namespace Nijo.Runtime {
             },
         };
 
-        private static OptionalAttributeDef Max => new OptionalAttributeDef {
+        private static OptionalAttributeDef MaxLength => new OptionalAttributeDef {
             Key = "max-length",
             DisplayName = "MaxLength",
             Type = E_OptionalAttributeType.Number,
@@ -2297,24 +2295,6 @@ namespace Nijo.Runtime {
                     "範囲検索" => E_SearchBehavior.Range,
                     _ => null,
                 };
-            },
-        };
-        private static OptionalAttributeDef ZeroPadding => new OptionalAttributeDef {
-            Key = "zero-padding",
-            DisplayName = "ゼロ埋め",
-            Type = E_OptionalAttributeType.Boolean,
-            HelpText = $$"""
-                コード型でのみ使用。入力された値をゼロ埋めするかどうか。
-                """,
-            Validate = (value, node, schema, errors) => {
-                if (string.IsNullOrWhiteSpace(value)) return;
-                if (node.Type != MemberTypeResolver.TYPE_CODE_STRING) {
-                    errors.Add("この属性はコード型にのみ設定できます。");
-                    return;
-                }
-            },
-            EditAggregateMemberOption = (value, node, schema, opt) => {
-                opt.ZeroPadding = true;
             },
         };
         #endregion オプショナル属性
