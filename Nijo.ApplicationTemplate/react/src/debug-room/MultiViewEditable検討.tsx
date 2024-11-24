@@ -56,8 +56,8 @@ const AfterLoaded = ({ data }: {
   // 一覧部分と詳細部分のレイアウト
   const [singleViewPosition, setSingleViewPosition] = React.useState<'horizontal' | 'vertical'>('horizontal')
   const [singleViewCollapsed, setSingleViewCollapsed] = React.useState(false)
-  const handleCollapse = useEvent(() => setSingleViewCollapsed(false))
-  const handleExpand = useEvent(() => setSingleViewCollapsed(true))
+  const handleCollapse = useEvent(() => setSingleViewCollapsed(true))
+  const handleExpand = useEvent(() => setSingleViewCollapsed(false))
   const resizerCssClass = React.useMemo(() => {
     return singleViewPosition === 'horizontal' ? 'w-2' : 'h-2'
   }, [singleViewPosition])

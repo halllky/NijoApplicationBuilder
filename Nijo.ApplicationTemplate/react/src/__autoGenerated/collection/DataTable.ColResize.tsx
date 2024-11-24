@@ -1,4 +1,5 @@
 import { useMemo, useCallback } from 'react'
+import useEvent from 'react-use-event-hook'
 import * as RT from '@tanstack/react-table'
 
 export const getColumnResizeOption = <T,>(): Partial<RT.TableOptions<T>> => ({
@@ -15,15 +16,17 @@ export const useColumnResizing = <T,>(
   columns: unknown
 ) => {
 
-  const columnSizeVars = useMemo(() => {
+  const { colSizes, colSizesByIndex } = useMemo(() => {
     const headers = api.getFlatHeaders()
     const colSizes: { [key: string]: number } = {}
+    const colSizesByIndex: { [key: number]: number } = {}
     for (let i = 0; i < headers.length; i++) {
       const header = headers[i]!
       colSizes[`--header-${header.id}-size`] = header.getSize()
       colSizes[`--col-${header.column.id}-size`] = header.column.getSize()
+      colSizesByIndex[i] = header.column.getSize()
     }
-    return colSizes
+    return { colSizes, colSizesByIndex }
 
     // @tanstack/react-table の仕様上、
     // columnSizingInfoオブジェクトの参照が変わったタイミングでの列幅再計算が妥当
@@ -33,6 +36,10 @@ export const useColumnResizing = <T,>(
   const getColWidth = useCallback((column: RT.Column<T, unknown>) => {
     return `calc(var(--header-${column.id}-size) * 1px)`
   }, [])
+
+  const getColWidthByIndex = useEvent((colIndex: number): number => {
+    return colSizesByIndex[colIndex] ?? 0
+  })
 
   const ResizeHandler = useCallback(({ header }: {
     header: RT.Header<T, unknown>
@@ -49,8 +56,9 @@ export const useColumnResizing = <T,>(
   }, [])
 
   return {
-    columnSizeVars,
+    columnSizeVars: colSizes,
     getColWidth,
+    getColWidthByIndex,
     ResizeHandler,
   }
 }

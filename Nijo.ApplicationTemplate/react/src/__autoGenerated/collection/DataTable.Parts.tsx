@@ -23,6 +23,17 @@ export type CellPosition = {
   colIndex: number
 }
 
+/**
+ * rowIndexやcolIndexから、スクロールエリア内でのx, y座標のピクセルを導出する関数。
+ * 列幅変更や行の仮想化を考慮している。
+ */
+export type GetPixelFunction = (args
+  : { position: 'top', rowIndex: number, colIndex?: never }
+  | { position: 'bottom', rowIndex: number, colIndex?: never }
+  | { position: 'left', colIndex: number, rowIndex?: never }
+  | { position: 'right', colIndex: number, rowIndex?: never }
+) => number
+
 export type CellEditorRef<T> = {
   focus: () => void
   startEditing: (cell: RT.Cell<T, unknown>) => void

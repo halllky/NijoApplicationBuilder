@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useImperativeHandle, useMemo, use
 import useEvent from 'react-use-event-hook'
 import * as RT from '@tanstack/react-table'
 import * as Util from '../util'
-import { CellEditorRef, CellPosition, RTColumnDefEx, TABLE_ZINDEX } from './DataTable.Parts'
+import { CellEditorRef, CellPosition, GetPixelFunction, RTColumnDefEx, TABLE_ZINDEX } from './DataTable.Parts'
 import { DataTableProps } from '..'
 
 export type SelectTarget
@@ -15,7 +15,6 @@ export const useSelection = <T,>(
   api: RT.Table<T>,
   rowCount: number,
   columns: RT.ColumnDef<T>[],
-  tdRefs: React.MutableRefObject<React.RefObject<HTMLTableCellElement>[][]>,
   onActiveRowChanged: DataTableProps<T>['onActiveRowChanged'] | undefined,
   onCaretCellChanged: (cell: CellPosition | undefined) => void,
   cellEditorRef: React.RefObject<CellEditorRef<T>>,
@@ -27,25 +26,6 @@ export const useSelection = <T,>(
   const caretCell = useRef<CellPosition | undefined>()
   const selectionStart = useRef<CellPosition | undefined>()
   const [containsRowHeader, setContainsRowHeader] = useState(false)
-
-  // -----------------------------------------
-  // <td>への参照
-  const caretTdRef = useRef<HTMLTableCellElement>()
-  const selectionStartTdRef = useRef<HTMLTableCellElement>()
-  const updateTdRef = useCallback((caretCellPos: CellPosition | undefined, selectionStartPos: CellPosition | undefined) => {
-    if (caretCellPos) {
-      caretTdRef.current = tdRefs.current[caretCellPos.rowIndex]?.[caretCellPos.colIndex]?.current ?? undefined
-    } else {
-      caretTdRef.current = undefined
-    }
-    if (selectionStartPos) {
-      selectionStartTdRef.current = tdRefs.current[selectionStartPos.rowIndex]?.[selectionStartPos.colIndex]?.current ?? undefined
-    } else {
-      selectionStartTdRef.current = undefined
-    }
-    // 選択範囲の表示のアップデート
-    activeCellRef.current?.update(caretTdRef.current, selectionStartTdRef.current, containsRowHeader)
-  }, [containsRowHeader, tdRefs, caretTdRef, selectionStartTdRef, activeCellRef])
 
   // -----------------------------------------
   // 選択
@@ -105,8 +85,8 @@ export const useSelection = <T,>(
         onCaretCellChanged(undefined)
       }
     }
-    // tdへの参照を最新の値に更新
-    updateTdRef(caretCell.current, selectionStart.current)
+    // 選択範囲の表示のアップデート
+    activeCellRef.current?.update(caretCell.current, selectionStart.current, containsRowHeader)
     // クイック編集のために常にCellEditorにフォーカスを当てる
     cellEditorRef.current?.focus()
   })
@@ -170,7 +150,6 @@ export const useSelection = <T,>(
   }, [api, caretCell, selectionStart])
 
   return {
-    caretTdRef,
     selectObject,
     handleSelectionKeyDown,
 
@@ -185,14 +164,15 @@ export const useSelection = <T,>(
 
 
 type ActiveRangeRef = {
-  update: (caretCellTd: HTMLTableCellElement | undefined, selectionStartTd: HTMLTableCellElement | undefined, containsRowHeader: boolean) => void
+  update: (caretCell: CellPosition | undefined, selectionStart: CellPosition | undefined, containsRowHeader: boolean) => void
   scrollToActiveCell: () => void
 }
 type ActiveRangeProps = {
+  getPixel: GetPixelFunction
   hidden: boolean
 }
 
-export const ActiveCellBorder = Util.forwardRefEx(({ hidden }: ActiveRangeProps, ref: React.ForwardedRef<ActiveRangeRef>) => {
+export const ActiveCellBorder = Util.forwardRefEx(({ getPixel, hidden }: ActiveRangeProps, ref: React.ForwardedRef<ActiveRangeRef>) => {
   const svgRef = useRef<SVGSVGElement>(null)
   const scrollTargetRef = useRef<SVGRectElement>(null)
   const [maskBlackProps, setMaskBlackProps] = useState<React.SVGProps<SVGRectElement>>({})
@@ -205,25 +185,30 @@ export const ActiveCellBorder = Util.forwardRefEx(({ hidden }: ActiveRangeProps,
   }), [hidden, svgHidden, svgPosition])
 
   /** 選択範囲の四角形の表示を更新する */
-  const update: ActiveRangeRef['update'] = useCallback((caretCellTd, selectionStartTd, containsRowHeader) => {
-    const head = caretCellTd
-    const root = selectionStartTd
+  const update: ActiveRangeRef['update'] = useCallback((caretCell, selectionStart, containsRowHeader) => {
+    const head = caretCell
+    const root = selectionStart
     if (!head || !root) {
       setSvgHidden(true)
       return
     }
-    const left = Math.min(
-      head.offsetLeft,
-      root.offsetLeft)
-    const right = Math.max(
-      head.offsetLeft + head.offsetWidth,
-      root.offsetLeft + root.offsetWidth)
-    const top = Math.min(
-      head.offsetTop,
-      root.offsetTop)
-    const bottom = Math.max(
-      head.offsetTop + head.offsetHeight,
-      root.offsetTop + root.offsetHeight)
+    // 選択範囲全体の矩形のサイズ
+    const left = getPixel({ position: 'left', colIndex: Math.min(head.colIndex, root.colIndex) })
+    const right = getPixel({ position: 'right', colIndex: Math.max(head.colIndex, root.colIndex) })
+    const top = getPixel({ position: 'top', rowIndex: Math.min(head.rowIndex, root.rowIndex) })
+    const bottom = getPixel({ position: 'bottom', rowIndex: Math.max(head.rowIndex, root.rowIndex) })
+
+    // headの矩形のサイズ
+    const headOffsetLeft = getPixel({ position: 'left', colIndex: head.colIndex })
+    const headOffsetTop = getPixel({ position: 'top', rowIndex: head.rowIndex })
+    const headOffsetWidth = getPixel({ position: 'right', colIndex: head.colIndex }) - headOffsetLeft + 1
+    const headOffsetHeight = getPixel({ position: 'bottom', rowIndex: head.rowIndex }) - headOffsetTop + 1
+
+    // rootの矩形のサイズ
+    const rootOffsetLeft = getPixel({ position: 'left', colIndex: root.colIndex })
+    const rootOffsetTop = getPixel({ position: 'top', rowIndex: root.rowIndex })
+    const rootOffsetWidth = getPixel({ position: 'right', colIndex: root.colIndex }) - rootOffsetLeft + 1
+    const rootOffsetHeight = getPixel({ position: 'bottom', rowIndex: root.rowIndex }) - rootOffsetTop + 1
 
     setSvgHidden(false)
     setSvgPosition({
@@ -236,18 +221,18 @@ export const ActiveCellBorder = Util.forwardRefEx(({ hidden }: ActiveRangeProps,
         : TABLE_ZINDEX.SELECTION.toString(),
     })
     setMaskBlackProps({
-      x: `${head.offsetLeft - left - 3}px`, // 3はボーダーの分
-      y: `${head.offsetTop - top - 3}px`, // 3はボーダーの分
-      width: `${head.offsetWidth}px`,
-      height: `${head.offsetHeight}px`,
+      x: `${headOffsetLeft - left - 3}px`, // 3はボーダーの分
+      y: `${headOffsetTop - top - 3}px`, // 3はボーダーの分
+      width: `${headOffsetWidth}px`,
+      height: `${headOffsetHeight}px`,
     })
     setScrollTargetProps({
-      x: `${root.offsetLeft - left - SCROLL_RECT_MARGIN.X - 3}px`, // 3はボーダーの分
-      y: `${root.offsetTop - top - SCROLL_RECT_MARGIN.Y - 3}px`, // 3はボーダーの分
-      width: `${root.offsetWidth + (SCROLL_RECT_MARGIN.X * 2)}px`,
-      height: `${root.offsetHeight + (SCROLL_RECT_MARGIN.Y * 2)}px`,
+      x: `${rootOffsetLeft - left - SCROLL_RECT_MARGIN.X - 3}px`, // 3はボーダーの分
+      y: `${rootOffsetTop - top - SCROLL_RECT_MARGIN.Y - 3}px`, // 3はボーダーの分
+      width: `${rootOffsetWidth + (SCROLL_RECT_MARGIN.X * 2)}px`,
+      height: `${rootOffsetHeight + (SCROLL_RECT_MARGIN.Y * 2)}px`,
     })
-  }, [setSvgHidden, setSvgPosition, setMaskBlackProps])
+  }, [getPixel, setSvgHidden, setSvgPosition, setMaskBlackProps])
 
   useImperativeHandle(ref, () => ({
     update,

@@ -18,6 +18,8 @@ export type DataTableProps<T> = {
   showActiveCellBorderAlways?: boolean
   tableWidth?: 'fit' | 'dyanmic'
   className?: string
+  /** 行の仮想化のために使われる、1行の縦幅(px)。既定ではCascadia Mono 想定のため20px */
+  estimatedRowHeight?: number
 }
 
 // -------------------------------------------

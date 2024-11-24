@@ -2,14 +2,14 @@ import React, { useEffect, useImperativeHandle, useRef, useState } from 'react'
 import useEvent from 'react-use-event-hook'
 import * as RT from '@tanstack/react-table'
 import { DataTableProps, ColumnEditSetting } from './DataTable.Public'
-import { CellEditorRef, CellPosition, RTColumnDefEx, TABLE_ZINDEX } from './DataTable.Parts'
+import { CellEditorRef, CellPosition, GetPixelFunction, RTColumnDefEx, TABLE_ZINDEX } from './DataTable.Parts'
 import * as Input from '../input'
 import * as Util from '../util'
 
 export type CellEditorProps<T> = {
   api: RT.Table<T>
   caretCell: CellPosition | undefined
-  caretTdRef: React.RefObject<HTMLTableCellElement | undefined>
+  getPixel: GetPixelFunction
   onChangeEditing: (editing: boolean) => void
   onChangeRow: DataTableProps<T>['onChangeRow']
   onKeyDown: React.KeyboardEventHandler
@@ -18,7 +18,7 @@ export type CellEditorProps<T> = {
 export const CellEditor = Util.forwardRefEx(<T,>({
   api,
   caretCell,
-  caretTdRef,
+  getPixel,
   onChangeEditing,
   onChangeRow,
   onKeyDown,
@@ -47,21 +47,25 @@ export const CellEditor = Util.forwardRefEx(<T,>({
       setCaretCellEditingInfo(columnDef?.ex.editSetting)
 
       // エディタを編集対象セルの位置に移動させる
-      if (caretTdRef.current && containerRef.current) {
-        containerRef.current.style.left = `${caretTdRef.current.offsetLeft}px`
-        containerRef.current.style.top = `${caretTdRef.current.offsetTop}px`
-        containerRef.current.style.minWidth = `${caretTdRef.current.clientWidth}px`
-        containerRef.current.style.minHeight = `${caretTdRef.current.clientHeight}px`
+      if (containerRef.current) {
+        const left = getPixel({ position: 'left', colIndex: caretCell.colIndex })
+        const right = getPixel({ position: 'right', colIndex: caretCell.colIndex })
+        const top = getPixel({ position: 'top', rowIndex: caretCell.rowIndex })
+        const bottom = getPixel({ position: 'bottom', rowIndex: caretCell.rowIndex })
+        containerRef.current.style.left = `${left}px`
+        containerRef.current.style.top = `${top}px`
+        containerRef.current.style.minWidth = `${right - left + 1}px`
+        containerRef.current.style.minHeight = `${bottom - top + 1}px`
       }
       // 前のセルで入力した値をクリアする
       setUnComittedText('')
     } else {
       setCaretCellEditingInfo(undefined)
     }
-  }, [caretCell, api, caretTdRef, containerRef])
+  }, [caretCell, api, containerRef])
   useEffect(() => {
     if (caretCellEditingInfo) editorRef.current?.focus()
-  }, [caretCellEditingInfo])
+  }, [caretCellEditingInfo, getPixel])
 
   /** 編集開始 */
   const startEditing = useEvent((cell: RT.Cell<T, unknown>) => {

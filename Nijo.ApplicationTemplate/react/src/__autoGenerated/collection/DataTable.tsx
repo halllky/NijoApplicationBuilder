@@ -4,7 +4,7 @@ import * as RT from '@tanstack/react-table'
 import * as ReactVirtual from '@tanstack/react-virtual'
 import * as Util from '../util'
 import { DataTableProps, DataTableRef } from './DataTable.Public'
-import { TABLE_ZINDEX, CellEditorRef, RTColumnDefEx, CellPosition } from './DataTable.Parts'
+import { TABLE_ZINDEX, CellEditorRef, RTColumnDefEx, CellPosition, GetPixelFunction } from './DataTable.Parts'
 import { CellEditor } from './DataTable.Editing'
 import { ActiveCellBorder, SelectTarget, useSelection } from './DataTable.Selecting'
 import { getColumnResizeOption, useColumnResizing } from './DataTable.ColResize'
@@ -63,13 +63,39 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
 
   const flatRows = api.getRowModel().flatRows
 
-  // <td>のrefの二重配列
-  const tdRefs = useRef<React.RefObject<HTMLTableCellElement>[][]>([])
-  useLayoutEffect(() => {
-    tdRefs.current = data?.map(() =>
-      Array.from({ length: propsColumns?.length ?? 0 }).map(() => React.createRef())
-    ) ?? []
-  }, [data, propsColumns?.length, tdRefs])
+  // x,y座標を返す関数
+  const getPixel: GetPixelFunction = useEvent(args => {
+    // 左右のpxを導出するのに必要な情報は列幅変更フックが持っている
+    if (args.position === 'left') {
+      let sum = 0
+      for (let i = 0; i < args.colIndex; i++) sum += getColWidthByIndex(i)
+      return sum
+    } else if (args.position === 'right') {
+      let sum = 0
+      for (let i = 0; i <= args.colIndex; i++) sum += getColWidthByIndex(i)
+      return sum
+    }
+
+    // 上下の計算について、描画範囲内にあるセルの場合はtd要素のclientRectで、範囲外は計算で導出する
+    if (rowVirtualizer.range
+      && args.rowIndex >= rowVirtualizer.range.startIndex
+      && args.rowIndex <= rowVirtualizer.range.endIndex) {
+      const td = tdRefs.current
+        ?.[args.rowIndex]
+        ?.[0] // ここではtdの縦幅さえ採れればよいので先頭列決め打ち
+        ?.current
+      if (td) {
+        return args.position === 'top'
+          ? td.offsetTop
+          : (td.offsetTop + td.offsetHeight)
+      }
+    }
+    if (args.position === 'top') {
+      return args.rowIndex * estimatedRowHeight
+    } else {
+      return (args.rowIndex + 1) * estimatedRowHeight
+    }
+  })
 
   // ------------------------------------
   // 行の仮想化（パフォーマンスのために画面上に見えている範囲のみ描画するようにする）
@@ -78,8 +104,14 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     count: props.data?.length ?? 0,
     getScrollElement: () => divRef.current,
     estimateSize: () => estimatedRowHeight,
-    overscan: 20,
   })
+
+  // <td>のrefの二重配列
+  const tdRefs = useRef<{ [rowIndexInPropsData: number]: React.RefObject<HTMLTableCellElement>[] }>([])
+  tdRefs.current = {}
+  for (const virtualItem of rowVirtualizer.getVirtualItems()) {
+    tdRefs.current[virtualItem.index] = Array.from({ length: propsColumns?.length ?? 0 }).map(() => React.createRef())
+  }
 
   // ------------------------------------
   // セル選択
@@ -88,19 +120,19 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     setCaretCell(cell)
   })
   const {
-    caretTdRef,
     selectObject,
     handleSelectionKeyDown,
     activeCellBorderProps,
     getSelectedRows,
     getSelectedColumns,
-  } = useSelection<T>(api, data?.length ?? 0, columns, tdRefs, onActiveRowChanged, onCaretCellChanged, cellEditorRef)
+  } = useSelection<T>(api, data?.length ?? 0, columns, onActiveRowChanged, onCaretCellChanged, cellEditorRef)
 
   // ------------------------------------
   // 列幅変更
   const {
     columnSizeVars,
     getColWidth,
+    getColWidthByIndex,
     ResizeHandler,
   } = useColumnResizing(api, columns)
 
@@ -259,20 +291,24 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
 
       {/* スクロール範囲外の下方向にあって描画されていない行 */}
       <div style={{
-        height: `${((props.data?.length ?? 0) - (rowVirtualizer.range?.endIndex ?? 0) - 1) * ROW_HEIGHT}px`,
+        height: `${((props.data?.length ?? 0) - (rowVirtualizer.range?.endIndex ?? 0) - 1) * estimatedRowHeight}px`,
       }}></div>
 
       {/* 末尾の行をスクロールエリア内の最上部までスクロールできるようにするための余白。 */}
       {/* 4remは ヘッダ2行 + ボディ1行 + スクロールバー の縦幅のおおよその合計。 */}
       <div className="h-[calc(100%-4rem)]"></div>
 
-      <ActiveCellBorder hidden={!showActiveCellBorderAlways && (!isActive || editing)} {...activeCellBorderProps} />
+      <ActiveCellBorder
+        getPixel={getPixel}
+        hidden={!showActiveCellBorderAlways && (!isActive || editing)}
+        {...activeCellBorderProps}
+      />
 
       <CellEditor
         ref={cellEditorRef}
         api={api}
         caretCell={caretCell}
-        caretTdRef={caretTdRef}
+        getPixel={getPixel}
         onChangeEditing={setEditing}
         onKeyDown={handleKeyDown}
         onChangeRow={onChangeRow}
