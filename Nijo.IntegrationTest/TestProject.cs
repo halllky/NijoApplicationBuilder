@@ -76,7 +76,7 @@ namespace Nijo.IntegrationTest {
                         pause
                         """, new UTF8Encoding(false, false));
 
-                    File.WriteAllText(Path.Combine(dir, "EDITOR.cmd"), $$"""
+                    File.WriteAllText(Path.Combine(dir, "UI.cmd"), $$"""
                         @echo off
                         chcp 65001
                         cd %~dp0
