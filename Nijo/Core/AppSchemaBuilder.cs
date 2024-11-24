@@ -113,6 +113,15 @@ namespace Nijo.Core {
         /// データベーステーブル名 or カラム名
         /// </summary>
         public string? DbName { get; set; }
+
+        /// <summary>
+        /// コード型でのみ使用。検索条件の挙動。
+        /// </summary>
+        public E_SearchBehavior? SearchBehavior { get; set; }
+        /// <summary>
+        /// コード型でのみ使用。入力された値をゼロ埋めするかどうか。
+        /// </summary>
+        public bool? ZeroPadding { get; set; }
     }
     public sealed class EnumValueOption {
         public string PhysicalName { get; set; } = string.Empty;

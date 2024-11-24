@@ -28,6 +28,10 @@ namespace Nijo.Core {
         public bool IsRadio { get; set; }
         public string? DisplayName { get; set; }
         public string? DbName { get; set; }
+        /// <summary>コード型でのみ使用。検索条件の挙動</summary>
+        public E_SearchBehavior? SearchBehavior { get; set; }
+        /// <summary>コード型でのみ使用。入力された値をゼロ埋めするかどうか。</summary>
+        public bool? ZeroPadding { get; set; }
 
         public override string ToString() => Id.Value;
     }

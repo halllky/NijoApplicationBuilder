@@ -23,7 +23,7 @@ namespace Nijo.Core.AggregateMemberTypes {
         private readonly string _primitiveType;
         private readonly E_SearchBehavior _searchBehavior;
 
-        protected override E_SearchBehavior SearchBehavior => _searchBehavior;
+        protected override E_SearchBehavior GetSearchBehavior(AggregateMember.ValueMember vm) => _searchBehavior;
 
         public override string GetCSharpTypeName() {
             return _className;
@@ -39,16 +39,17 @@ namespace Nijo.Core.AggregateMemberTypes {
             var whereFullpath = searchQueryObject == E_SearchQueryObject.SearchResult
                 ? member.GetFullPathAsSearchResult(E_CsTs.CSharp, out var isArray)
                 : member.GetFullPathAsDbEntity(E_CsTs.CSharp, out isArray);
+            var searchBehavior = GetSearchBehavior(member);
 
             return $$"""
                 if (!string.IsNullOrWhiteSpace({{fullpathNullable}})) {
-                {{If(SearchBehavior == E_SearchBehavior.PartialMatch, () => $$"""
+                {{If(searchBehavior == E_SearchBehavior.PartialMatch, () => $$"""
                     var escaped = "%" + {{fullpathNotNull}}.Trim().Replace("\\", "\\\\").Replace("%", "\\%") + "%";
 
-                """).ElseIf(SearchBehavior == E_SearchBehavior.ForwardMatch, () => $$"""
+                """).ElseIf(searchBehavior == E_SearchBehavior.ForwardMatch, () => $$"""
                     var escaped = {{fullpathNotNull}}.Trim().Replace("\\", "\\\\").Replace("%", "\\%") + "%";
 
-                """).ElseIf(SearchBehavior == E_SearchBehavior.BackwardMatch, () => $$"""
+                """).ElseIf(searchBehavior == E_SearchBehavior.BackwardMatch, () => $$"""
                     var escaped = "%" + {{fullpathNotNull}}.Trim().Replace("\\", "\\\\").Replace("%", "\\%");
 
                 """).Else(() => $$"""

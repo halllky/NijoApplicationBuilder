@@ -463,7 +463,7 @@ namespace Nijo.Runtime {
                     var voMember = new ValueObjectMember(
                         node.GetPhysicalName(),
                         Models.ValueObjectModel.PRIMITIVE_TYPE,
-                        StringMemberType.E_SearchBehavior.PartialMatch); // 当面文字列型の部分一致しか使わないので決め打ち
+                        E_SearchBehavior.PartialMatch); // 当面文字列型の部分一致しか使わないので決め打ち
                     memberTypeResolver.Register(MutableSchemaNode.VALUE_OBJECT_PREFIX + node.UniqueId, voMember);
 
                     // 集約（有向グラフの頂点）を登録
@@ -578,6 +578,8 @@ namespace Nijo.Runtime {
                             IsRadio = options.IsRadio == true,
                             DisplayName = options.DisplayName,
                             DbName = options.DbName,
+                            SearchBehavior = options.SearchBehavior,
+                            ZeroPadding = options.ZeroPadding,
                         });
 
                         // 集約メンバーの登録（親とこのメンバーの間のエッジ）
@@ -1636,6 +1638,9 @@ namespace Nijo.Runtime {
 
             yield return Combo;
             yield return Radio;
+
+            yield return SearchBehavior;
+            yield return ZeroPadding;
         }
 
         #region ルート集約に設定できる種類
@@ -2244,6 +2249,55 @@ namespace Nijo.Runtime {
             },
             EditAggregateMemberOption = (value, node, schema, opt) => {
                 opt.IsRadio = true;
+            },
+        };
+
+        private static OptionalAttributeDef SearchBehavior => new OptionalAttributeDef {
+            Key = "search-behavior",
+            DisplayName = "検索時の挙動",
+            Type = E_OptionalAttributeType.String,
+            HelpText = $$"""
+                検索時の挙動。コード型でのみ使用可能。
+                「前方一致」「後方一致」「完全一致」「部分一致」「範囲検索」のいずれかを指定してください。
+                """,
+            Validate = (value, node, schema, errors) => {
+                if (string.IsNullOrWhiteSpace(value)) return;
+                if (node.Type != MemberTypeResolver.TYPE_CODE_STRING) {
+                    errors.Add("この属性はコード型にのみ設定できます。");
+                    return;
+                }
+                var behaviors = new[] { "前方一致", "後方一致", "完全一致", "部分一致", "範囲検索" };
+                if (!behaviors.Contains(value)) {
+                    errors.Add($"{behaviors.Select(x => $"\"{x}\"").Join(", ")}のいずれかを入力してください。");
+                }
+            },
+            EditAggregateMemberOption = (value, node, schema, opt) => {
+                opt.SearchBehavior = value switch {
+                    "前方一致" => E_SearchBehavior.ForwardMatch,
+                    "後方一致" => E_SearchBehavior.BackwardMatch,
+                    "完全一致" => E_SearchBehavior.Strict,
+                    "部分一致" => E_SearchBehavior.PartialMatch,
+                    "範囲検索" => E_SearchBehavior.Range,
+                    _ => null,
+                };
+            },
+        };
+        private static OptionalAttributeDef ZeroPadding => new OptionalAttributeDef {
+            Key = "zero-padding",
+            DisplayName = "ゼロ埋め",
+            Type = E_OptionalAttributeType.Boolean,
+            HelpText = $$"""
+                コード型でのみ使用。入力された値をゼロ埋めするかどうか。
+                """,
+            Validate = (value, node, schema, errors) => {
+                if (string.IsNullOrWhiteSpace(value)) return;
+                if (node.Type != MemberTypeResolver.TYPE_CODE_STRING) {
+                    errors.Add("この属性はコード型にのみ設定できます。");
+                    return;
+                }
+            },
+            EditAggregateMemberOption = (value, node, schema, opt) => {
+                opt.ZeroPadding = true;
             },
         };
         #endregion オプショナル属性

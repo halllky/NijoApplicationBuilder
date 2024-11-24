@@ -14,6 +14,6 @@ namespace Nijo.Core.AggregateMemberTypes {
                 $"クライアント側でのオブジェクト作成のタイミングで発番されます。";
         }
 
-        protected override E_SearchBehavior SearchBehavior => E_SearchBehavior.Strict;
+        protected override E_SearchBehavior GetSearchBehavior(AggregateMember.ValueMember vm) => E_SearchBehavior.Strict;
     }
 }

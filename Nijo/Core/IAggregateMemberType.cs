@@ -106,7 +106,7 @@ namespace Nijo.Core {
         /// 検索時の挙動。
         /// 既定値は <see cref="E_SearchBehavior.PartialMatch"/>
         /// </summary>
-        protected virtual E_SearchBehavior SearchBehavior { get; } = E_SearchBehavior.PartialMatch;
+        protected virtual E_SearchBehavior GetSearchBehavior(AggregateMember.ValueMember vm) => E_SearchBehavior.PartialMatch;
         /// <summary>
         /// 複数行にわたる文字列になる可能性があるかどうか
         /// </summary>
@@ -121,35 +121,83 @@ namespace Nijo.Core {
         public virtual string GetCSharpTypeName() => "string";
         public virtual string GetTypeScriptTypeName() => "string";
 
-        public virtual string GetSearchConditionCSharpType(AggregateMember.ValueMember vm) => "string";
-        public virtual string GetSearchConditionTypeScriptType(AggregateMember.ValueMember vm) => "string";
+        public virtual string GetSearchConditionCSharpType(AggregateMember.ValueMember vm) {
+            return vm.Options.SearchBehavior == E_SearchBehavior.Range
+                ? $"{FromTo.CLASSNAME}<string>"
+                : $"string";
+        }
+        public virtual string GetSearchConditionTypeScriptType(AggregateMember.ValueMember vm) {
+            return vm.Options.SearchBehavior == E_SearchBehavior.Range
+                ? $"{{ {FromTo.FROM_TS}?: string, {FromTo.TO_TS}?: string }}"
+                : $"string";
+        }
 
         private protected virtual string RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition, E_SearchConditionObject searchConditionObject, E_SearchQueryObject searchQueryObject) {
             var pathFromSearchCondition = searchConditionObject == E_SearchConditionObject.SearchCondition
                 ? member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.CSharp)
                 : member.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.CSharp);
-            var fullpathNullable = $"{searchCondition}.{pathFromSearchCondition.Join("?.")}";
-            var fullpathNotNull = $"{searchCondition}.{pathFromSearchCondition.Join(".")}";
-            var method = SearchBehavior switch {
-                E_SearchBehavior.PartialMatch => "Contains",
-                E_SearchBehavior.ForwardMatch => "StartsWith",
-                E_SearchBehavior.BackwardMatch => "EndsWith",
-                _ => "Equals",
-            };
             var whereFullpath = searchQueryObject == E_SearchQueryObject.SearchResult
                 ? member.GetFullPathAsSearchResult(E_CsTs.CSharp, out var isArray)
                 : member.GetFullPathAsDbEntity(E_CsTs.CSharp, out isArray);
 
-            return $$"""
-                if (!string.IsNullOrWhiteSpace({{fullpathNullable}})) {
-                    var trimmed = {{fullpathNotNull}}.Trim();
-                {{If(isArray, () => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{member.MemberName}}.{{method}}(trimmed)));
-                """).Else(() => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}}.{{method}}(trimmed));
-                """)}}
-                }
-                """;
+            if (GetSearchBehavior(member) == E_SearchBehavior.Range) {
+                var nullableFullPathFrom = $"{searchCondition}.{pathFromSearchCondition.Join("?.")}?.{FromTo.FROM}";
+                var nullableFullPathTo = $"{searchCondition}.{pathFromSearchCondition.Join("?.")}?.{FromTo.TO}";
+                var fullPathFrom = $"{searchCondition}.{pathFromSearchCondition.Join(".")}.{FromTo.FROM}";
+                var fullPathTo = $"{searchCondition}.{pathFromSearchCondition.Join(".")}.{FromTo.TO}";
+                return $$"""
+                    if ({{nullableFullPathFrom}} != null && {{nullableFullPathTo}} != null) {
+                        // from, to のうち to の方が小さい場合は from-to を逆に読み替える
+                        var min = {{fullPathFrom}} < {{fullPathTo}}
+                            ? {{fullPathFrom}}
+                            : {{fullPathTo}};
+                        var max = {{fullPathFrom}} < {{fullPathTo}}
+                            ? {{fullPathTo}}
+                            : {{fullPathFrom}};
+                    {{If(isArray, () => $$"""
+                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{member.MemberName}} >= min && y.{{member.MemberName}} <= max));
+                    """).Else(() => $$"""
+                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} >= min && x.{{whereFullpath.Join(".")}} <= max);
+                    """)}}
+
+                    } else if ({{nullableFullPathFrom}} != null) {
+                        var from = {{fullPathFrom}};
+                    {{If(isArray, () => $$"""
+                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{member.MemberName}} >= from));
+                    """).Else(() => $$"""
+                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} >= from);
+                    """)}}
+
+                    } else if ({{nullableFullPathTo}} != null) {
+                        var to = {{fullPathTo}};
+                    {{If(isArray, () => $$"""
+                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{member.MemberName}} <= to));
+                    """).Else(() => $$"""
+                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} <= to);
+                    """)}}
+                    }
+                    """;
+
+            } else {
+                var fullpathNullable = $"{searchCondition}.{pathFromSearchCondition.Join("?.")}";
+                var fullpathNotNull = $"{searchCondition}.{pathFromSearchCondition.Join(".")}";
+                var method = GetSearchBehavior(member) switch {
+                    E_SearchBehavior.PartialMatch => "Contains",
+                    E_SearchBehavior.ForwardMatch => "StartsWith",
+                    E_SearchBehavior.BackwardMatch => "EndsWith",
+                    _ => "Equals",
+                };
+                return $$"""
+                    if (!string.IsNullOrWhiteSpace({{fullpathNullable}})) {
+                        var trimmed = {{fullpathNotNull}}.Trim();
+                    {{If(isArray, () => $$"""
+                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{member.MemberName}}.{{method}}(trimmed)));
+                    """).Else(() => $$"""
+                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}}.{{method}}(trimmed));
+                    """)}}
+                    }
+                    """;
+            }
         }
         string IAggregateMemberType.RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition, E_SearchConditionObject searchConditionObject, E_SearchQueryObject searchQueryObject) {
             return RenderFilteringStatement(member, query, searchCondition, searchConditionObject, searchQueryObject);
@@ -158,7 +206,6 @@ namespace Nijo.Core {
         string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
             var attrs = new List<string>();
             var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
-            attrs.Add($"{{...{ctx.Register}(`{fullpath}`)}}");
 
             if (vm.Options.UiWidth != null) {
                 var rem = vm.Options.UiWidth.GetCssValue();
@@ -168,9 +215,20 @@ namespace Nijo.Core {
 
             ctx.EditComponentAttributes?.Invoke(vm, attrs);
 
-            return $$"""
-                <Input.Word {{attrs.Join(" ")}}/>
-                """;
+            if (GetSearchBehavior(vm) == E_SearchBehavior.Range) {
+                return $$"""
+                    <div className="flex flex-nowrap items-center gap-1">
+                      <Input.Word {...{{ctx.Register}}(`{{fullpath}}.{{FromTo.FROM_TS}}`)} {{attrs.Join(" ")}}/>
+                      <span className="select-none">～</span>
+                      <Input.Word {...{{ctx.Register}}(`{{fullpath}}.{{FromTo.TO_TS}}`)} {{attrs.Join(" ")}}/>
+                    </div>
+                    """;
+
+            } else {
+                return $$"""
+                    <Input.Word {...{{ctx.Register}}(`{{fullpath}}`)} {{attrs.Join(" ")}}/>
+                    """;
+            }
         }
 
         string IAggregateMemberType.RenderSingleViewVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
@@ -224,32 +282,37 @@ namespace Nijo.Core {
                 Body = body,
             };
         }
+    }
 
+    /// <summary>
+    /// 文字列検索の挙動
+    /// </summary>
+    public enum E_SearchBehavior {
         /// <summary>
-        /// 文字列検索の挙動
+        /// 完全一致。
+        /// 発行されるSQL文: WHERE DBの値 = 検索条件
         /// </summary>
-        public enum E_SearchBehavior {
-            /// <summary>
-            /// 完全一致。
-            /// 発行されるSQL文: WHERE DBの値 = 検索条件
-            /// </summary>
-            Strict,
-            /// <summary>
-            /// 部分一致。
-            /// 発行されるSQL文: WHERE DBの値 LIKE '%検索条件%'
-            /// </summary>
-            PartialMatch,
-            /// <summary>
-            /// 前方一致。
-            /// 発行されるSQL文: WHERE DBの値 LIKE '検索条件%'
-            /// </summary>
-            ForwardMatch,
-            /// <summary>
-            /// 後方一致。
-            /// 発行されるSQL文: WHERE DBの値 LIKE '%検索条件'
-            /// </summary>
-            BackwardMatch,
-        }
+        Strict,
+        /// <summary>
+        /// 部分一致。
+        /// 発行されるSQL文: WHERE DBの値 LIKE '%検索条件%'
+        /// </summary>
+        PartialMatch,
+        /// <summary>
+        /// 前方一致。
+        /// 発行されるSQL文: WHERE DBの値 LIKE '検索条件%'
+        /// </summary>
+        ForwardMatch,
+        /// <summary>
+        /// 後方一致。
+        /// 発行されるSQL文: WHERE DBの値 LIKE '%検索条件'
+        /// </summary>
+        BackwardMatch,
+        /// <summary>
+        /// 範囲検索。
+        /// 発行されるSQL文: WHERE DBの値 BETWEEN '検索条件1個目' AND '検索条件2個目'
+        /// </summary>
+        Range,
     }
 
     /// <summary>
