@@ -97,6 +97,9 @@ namespace Nijo.Runtime {
         }
         private void OnDotnetStdErr(object sender, DataReceivedEventArgs e) {
             if (e.Data == null) return;
+            lock (_lock) {
+                if (_state == E_State.Launched) _state = E_State.Ready;
+            }
             _logger.LogError("dotnet run: {Data}", e.Data);
             OnError?.Invoke(this, e.Data);
         }
@@ -114,6 +117,9 @@ namespace Nijo.Runtime {
         }
         private void OnNpmStdErr(object sender, DataReceivedEventArgs e) {
             if (e.Data == null) return;
+            lock (_lock) {
+                if (_state == E_State.Launched) _state = E_State.Ready;
+            }
             _logger.LogError("npm run   : {Data}", e.Data);
             OnError?.Invoke(this, e.Data);
         }
@@ -165,9 +171,21 @@ namespace Nijo.Runtime {
         }
 
         private enum E_State {
+            /// <summary>
+            /// このクラスのインスタンスが作成されてから <see cref="Launch"/> でプロセスが開始されるまでの間
+            /// </summary>
             Initialized = 0,
+            /// <summary>
+            /// <see cref="Launch"/> でプロセスが開始されてからnpmとdotnetの両プロセスが起動されるまでの間
+            /// </summary>
             Launched = 1,
+            /// <summary>
+            /// npmとdotnetの両プロセスが起動されてからデバッグが停止されるまでの間
+            /// </summary>
             Ready = 2,
+            /// <summary>
+            /// デバッグが停止されて以降
+            /// </summary>
             Stopped = 3,
         }
     }
