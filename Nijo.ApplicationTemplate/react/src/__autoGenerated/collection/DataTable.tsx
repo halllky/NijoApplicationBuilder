@@ -146,6 +146,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     count: props.data?.length ?? 0,
     getScrollElement: () => divRef.current,
     estimateSize: () => ROW_HEIGHT,
+    overscan: 20,
   })
 
   const flatRows = api.getRowModel().flatRows
