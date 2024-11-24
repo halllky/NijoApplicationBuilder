@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Core.AggregateMemberTypes {
-    public class ByteArray : IAggregateMemberType {
+    internal class ByteArray : IAggregateMemberType {
 
         public string GetUiDisplayName() {
             return "byte[]";
@@ -43,10 +43,10 @@ namespace Nijo.Core.AggregateMemberTypes {
         #endregion データテーブル列定義
 
         #region 検索条件
-        public string GetSearchConditionCSharpType() {
+        public string GetSearchConditionCSharpType(AggregateMember.ValueMember vm) {
             return "byte[]";
         }
-        public string GetSearchConditionTypeScriptType() {
+        public string GetSearchConditionTypeScriptType(AggregateMember.ValueMember vm) {
             return "string";
         }
         string IAggregateMemberType.RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition, E_SearchConditionObject searchConditionObject, E_SearchQueryObject searchQueryObject) {

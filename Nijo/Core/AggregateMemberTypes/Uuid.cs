@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Core.AggregateMemberTypes {
-    public class Uuid : StringMemberType {
+    internal class Uuid : StringMemberType {
         public override string GetUiDisplayName() => "UUID";
         public override string GetHelpText() {
             return $"UUID。" +

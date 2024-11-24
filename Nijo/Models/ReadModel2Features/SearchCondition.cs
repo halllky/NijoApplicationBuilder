@@ -454,8 +454,8 @@ namespace Nijo.Models.ReadModel2Features {
 
         internal string PhysicalName => Member.MemberName;
         internal string DisplayName => Member.DisplayName;
-        internal string CsTypeName => Member.Options.MemberType.GetSearchConditionCSharpType();
-        internal string TsTypeName => Member.Options.MemberType.GetSearchConditionTypeScriptType();
+        internal string CsTypeName => Member.Options.MemberType.GetSearchConditionCSharpType(Member);
+        internal string TsTypeName => Member.Options.MemberType.GetSearchConditionTypeScriptType(Member);
     }
 
 

@@ -38,10 +38,10 @@ namespace Nijo.Core.AggregateMemberTypes {
         private const string ANY_CHECKED = "AnyChecked";
         private const string ALL_CHECKED = "AllChecked";
 
-        public string GetSearchConditionCSharpType() {
+        public string GetSearchConditionCSharpType(AggregateMember.ValueMember vm) {
             return SearchConditionClass;
         }
-        public string GetSearchConditionTypeScriptType() {
+        public string GetSearchConditionTypeScriptType(AggregateMember.ValueMember vm) {
             return $"{{ {_variationGroup.VariationAggregates.Values.Select(edge => $"{edge.Terminal.Item.PhysicalName}?: boolean").Join(", ")} }}";
         }
 

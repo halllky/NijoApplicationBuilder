@@ -30,8 +30,8 @@ namespace Nijo.Core {
         /// </summary>
         void GenerateCode(CodeRenderingContext context) { }
 
-        string GetSearchConditionCSharpType();
-        string GetSearchConditionTypeScriptType();
+        string GetSearchConditionCSharpType(AggregateMember.ValueMember vm);
+        string GetSearchConditionTypeScriptType(AggregateMember.ValueMember vm);
 
         /// <summary>
         /// 検索条件の絞り込み処理（WHERE句組み立て処理）をレンダリングします。
@@ -98,7 +98,7 @@ namespace Nijo.Core {
     /// <summary>
     /// 文字列系メンバー型
     /// </summary>
-    public abstract class StringMemberType : IAggregateMemberType {
+    internal abstract class StringMemberType : IAggregateMemberType {
         public abstract string GetUiDisplayName();
         public abstract string GetHelpText();
 
@@ -121,8 +121,8 @@ namespace Nijo.Core {
         public virtual string GetCSharpTypeName() => "string";
         public virtual string GetTypeScriptTypeName() => "string";
 
-        public virtual string GetSearchConditionCSharpType() => "string";
-        public virtual string GetSearchConditionTypeScriptType() => "string";
+        public virtual string GetSearchConditionCSharpType(AggregateMember.ValueMember vm) => "string";
+        public virtual string GetSearchConditionTypeScriptType(AggregateMember.ValueMember vm) => "string";
 
         private protected virtual string RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition, E_SearchConditionObject searchConditionObject, E_SearchQueryObject searchQueryObject) {
             var pathFromSearchCondition = searchConditionObject == E_SearchConditionObject.SearchCondition
@@ -255,7 +255,7 @@ namespace Nijo.Core {
     /// <summary>
     /// 数値や日付など連続した量をもつ値
     /// </summary>
-    public abstract class SchalarMemberType : IAggregateMemberType {
+    internal abstract class SchalarMemberType : IAggregateMemberType {
         public abstract string GetUiDisplayName();
         public abstract string GetHelpText();
 
@@ -264,11 +264,11 @@ namespace Nijo.Core {
         public abstract string GetCSharpTypeName();
         public abstract string GetTypeScriptTypeName();
 
-        public string GetSearchConditionCSharpType() {
+        public string GetSearchConditionCSharpType(AggregateMember.ValueMember vm) {
             var type = GetCSharpTypeName();
             return $"{FromTo.CLASSNAME}<{type}?>";
         }
-        public string GetSearchConditionTypeScriptType() {
+        public string GetSearchConditionTypeScriptType(AggregateMember.ValueMember vm) {
             var type = GetTypeScriptTypeName();
             return $"{{ {FromTo.FROM_TS}?: {type}, {FromTo.TO_TS}?: {type} }}";
         }

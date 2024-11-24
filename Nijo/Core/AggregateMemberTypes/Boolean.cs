@@ -22,8 +22,8 @@ namespace Nijo.Core.AggregateMemberTypes {
         private const string ONLY_TRUE = "Trueのみ";
         private const string ONLY_FALSE = "Falseのみ";
 
-        public string GetSearchConditionCSharpType() => BOOL_SEARCH_CONDITION_ENUM;
-        public string GetSearchConditionTypeScriptType() => $"'{NO_FILTER}' | '{ONLY_TRUE}' | '{ONLY_FALSE}'";
+        public string GetSearchConditionCSharpType(AggregateMember.ValueMember vm) => BOOL_SEARCH_CONDITION_ENUM;
+        public string GetSearchConditionTypeScriptType(AggregateMember.ValueMember vm) => $"'{NO_FILTER}' | '{ONLY_TRUE}' | '{ONLY_FALSE}'";
 
         void IAggregateMemberType.GenerateCode(CodeRenderingContext context) {
             context.CoreLibrary.Enums.Add($$"""

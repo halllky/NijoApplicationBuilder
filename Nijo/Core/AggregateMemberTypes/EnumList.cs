@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Core.AggregateMemberTypes {
-    public class EnumList : IAggregateMemberType {
+    internal class EnumList : IAggregateMemberType {
         public string GetUiDisplayName() => "列挙体";
         public string GetHelpText() => $"列挙体。";
 
@@ -27,10 +27,10 @@ namespace Nijo.Core.AggregateMemberTypes {
         private string SearchConditionEnum => $"{Definition.Name}SearchCondition";
         private const string ANY_CHECKED = "AnyChecked";
 
-        public string GetSearchConditionCSharpType() {
+        public string GetSearchConditionCSharpType(AggregateMember.ValueMember vm) {
             return SearchConditionEnum;
         }
-        public string GetSearchConditionTypeScriptType() {
+        public string GetSearchConditionTypeScriptType(AggregateMember.ValueMember vm) {
             return $"{{ {Definition.Items.Select(i => $"{i.PhysicalName}?: boolean").Join(", ")} }}";
         }
 
