@@ -122,6 +122,11 @@ namespace Nijo.Core {
         /// コード型でのみ使用。入力された値をゼロ埋めするかどうか。
         /// </summary>
         public bool? ZeroPadding { get; set; }
+
+        /// <summary>
+        /// 文字列型の最大長
+        /// </summary>
+        public int? MaxLength { get; set; }
     }
     public sealed class EnumValueOption {
         public string PhysicalName { get; set; } = string.Empty;

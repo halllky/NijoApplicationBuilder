@@ -133,6 +133,9 @@ namespace Nijo.Models.WriteModel2Features {
                 {{_aggregate.GetMembers().OfType<AggregateMember.ValueMember>().SelectTextTemplate(col => $$"""
                             entity.Property(e => e.{{col.MemberName}})
                                 .HasColumnName("{{col.DbColumnName}}")
+                {{If(col.Options.MaxLength != null, () => $$"""
+                                .HasMaxLength({{col.Options.MaxLength}})
+                """)}}
                                 .IsRequired({{(col.IsRequired ? "true" : "false")}});
                 """)}}
                 {{If(_aggregate.IsRoot() && context.Config.CreateUserDbColumnName != null, () => $$"""

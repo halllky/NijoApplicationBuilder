@@ -7,6 +7,9 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Parts.WebServer {
+    /// <summary>
+    /// 実行時の拡張メソッド。stringなど、.NETの基本クラスに対する拡張メソッドを記述することを想定。
+    /// </summary>
     internal class DotnetExtensions {
 
         internal static SourceFile RenderCoreLibrary() => new SourceFile {
@@ -21,6 +24,9 @@ namespace Nijo.Parts.WebServer {
 
                     public static class DotnetExtensions {
 
+                        /// <summary>
+                        /// 例外オブジェクトのメッセージを列挙します。InnerExceptionsも考慮します。
+                        /// </summary>
                         public static IEnumerable<string> GetMessagesRecursively(this Exception ex, string indent = "") {
                             yield return indent + ex.Message;
 
@@ -37,6 +43,16 @@ namespace Nijo.Parts.WebServer {
                                     yield return inner;
                                 }
                             }
+                        }
+
+                        /// <summary>
+                        /// 文字列の最大長を検査します。
+                        /// サロゲートペアや結合文字列も1文字としてカウントします。
+                        /// </summary>
+                        public static bool IsStringWithinLimit(this string? str, int maxLength) {
+                            if (str == null) return true;
+                            var stringInfo = new System.Globalization.StringInfo(str);
+                            return stringInfo.LengthInTextElements <= maxLength;
                         }
                     }
                 }

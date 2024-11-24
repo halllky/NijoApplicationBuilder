@@ -33,6 +33,9 @@ namespace Nijo.Core {
         /// <summary>コード型でのみ使用。入力された値をゼロ埋めするかどうか。</summary>
         public bool? ZeroPadding { get; set; }
 
+        /// <summary>文字列型の最大長</summary>
+        public int? MaxLength { get; set; }
+
         public override string ToString() => Id.Value;
     }
 

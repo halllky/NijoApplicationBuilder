@@ -580,6 +580,7 @@ namespace Nijo.Runtime {
                             DbName = options.DbName,
                             SearchBehavior = options.SearchBehavior,
                             ZeroPadding = options.ZeroPadding,
+                            MaxLength = options.MaxLength,
                         });
 
                         // 集約メンバーの登録（親とこのメンバーの間のエッジ）
@@ -2046,20 +2047,36 @@ namespace Nijo.Runtime {
         };
 
         private static OptionalAttributeDef Max => new OptionalAttributeDef {
-            Key = "max",
-            DisplayName = "Max",
+            Key = "max-length",
+            DisplayName = "MaxLength",
             Type = E_OptionalAttributeType.Number,
             HelpText = $$"""
                 文字列項目の最大長。整数で指定してください。
                 """,
             Validate = (value, node, schema, errors) => {
-                // TODO: チェック処理未実装
+                if (string.IsNullOrWhiteSpace(value)) return;
+                if (!int.TryParse(value, out var parsed)) {
+                    errors.Add("整数で入力してください。");
+                } else if (parsed <= 0) {
+                    errors.Add("正の数で入力してください。");
+                }
+
+                var availableTypes = new[] {
+                    MemberTypeResolver.TYPE_WORD,
+                    MemberTypeResolver.TYPE_SENTENCE,
+                    MemberTypeResolver.TYPE_CODE_STRING,
+                };
+                if (node.Type != null
+                    && !node.Type.StartsWith(MutableSchemaNode.VALUE_OBJECT_PREFIX)
+                    && !availableTypes.Contains(node.Type)) {
+                    errors.Add("数値か文字列にのみ設定可能です。");
+                }
             },
             EditAggregateOption = (value, node, schema, opt) => {
                 // 特に処理なし
             },
             EditAggregateMemberOption = (value, node, schema, opt) => {
-                // TODO: 未実装
+                opt.MaxLength = int.Parse(value!);
             },
         };
         private static OptionalAttributeDef FormLabelWidth => new OptionalAttributeDef {
