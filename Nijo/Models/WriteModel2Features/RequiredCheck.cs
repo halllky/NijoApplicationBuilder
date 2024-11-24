@@ -26,7 +26,7 @@ namespace Nijo.Models.WriteModel2Features {
 
             return $$"""
                 /// <summary>
-                /// 必須チェック処理。空の項目があった場合はその旨がは第2引数のオブジェクト内に追記されます。
+                /// 必須チェック処理。空の項目があった場合はその旨が第2引数のオブジェクト内に追記されます。
                 /// </summary>
                 public virtual void {{METHOD_NAME}}({{rootDbEntity.ClassName}} dbEntity, {{SaveContext.BEFORE_SAVE}}<{{dataClass.MessageDataCsInterfaceName}}> e) {
                     {{WithIndent(RenderAggregate(rootAggregate, "dbEntity", rootAggregate), "    ")}}
