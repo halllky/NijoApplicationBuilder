@@ -2277,8 +2277,9 @@ namespace Nijo.Runtime {
                 """,
             Validate = (value, node, schema, errors) => {
                 if (string.IsNullOrWhiteSpace(value)) return;
-                if (node.Type != MemberTypeResolver.TYPE_CODE_STRING) {
-                    errors.Add("この属性はコード型にのみ設定できます。");
+                if (node.Type != MemberTypeResolver.TYPE_WORD
+                    && node.Type != MemberTypeResolver.TYPE_CODE_STRING) {
+                    errors.Add("この属性は単語型またはコード型にのみ設定できます。");
                     return;
                 }
                 var behaviors = new[] { "前方一致", "後方一致", "完全一致", "部分一致", "範囲検索" };
