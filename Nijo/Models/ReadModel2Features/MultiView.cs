@@ -193,8 +193,8 @@ namespace Nijo.Models.ReadModel2Features {
                       // 検索条件欄の開閉
                       const searchConditionPanelRef = useRef<ImperativePanelHandle>(null)
                       const [collapsed, setCollapsed] = useState(false)
-                      const handleCollapse = useEvent(() => setCollapsed(false))
-                      const handleExpand = useEvent(() => setCollapsed(true))
+                      const handleCollapse = useEvent(() => setCollapsed(true))
+                      const handleExpand = useEvent(() => setCollapsed(false))
                       const toggleSearchCondition = useCallback(() => {
                         if (searchConditionPanelRef.current?.isCollapsed()) {
                           searchConditionPanelRef.current.expand()
