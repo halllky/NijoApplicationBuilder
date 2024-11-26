@@ -2062,7 +2062,6 @@ namespace Nijo.Runtime {
                 var availableTypes = new[] {
                     MemberTypeResolver.TYPE_WORD,
                     MemberTypeResolver.TYPE_SENTENCE,
-                    MemberTypeResolver.TYPE_CODE_STRING,
                 };
                 if (node.Type != null
                     && !node.Type.StartsWith(MutableSchemaNode.VALUE_OBJECT_PREFIX)
@@ -2272,14 +2271,13 @@ namespace Nijo.Runtime {
             DisplayName = "検索時の挙動",
             Type = E_OptionalAttributeType.String,
             HelpText = $$"""
-                検索時の挙動。コード型でのみ使用可能。
+                検索時の挙動。単語型でのみ使用可能。
                 「前方一致」「後方一致」「完全一致」「部分一致」「範囲検索」のいずれかを指定してください。
                 """,
             Validate = (value, node, schema, errors) => {
                 if (string.IsNullOrWhiteSpace(value)) return;
-                if (node.Type != MemberTypeResolver.TYPE_WORD
-                    && node.Type != MemberTypeResolver.TYPE_CODE_STRING) {
-                    errors.Add("この属性は単語型またはコード型にのみ設定できます。");
+                if (node.Type != MemberTypeResolver.TYPE_WORD) {
+                    errors.Add("この属性は単語型にのみ設定できます。");
                     return;
                 }
                 var behaviors = new[] { "前方一致", "後方一致", "完全一致", "部分一致", "範囲検索" };

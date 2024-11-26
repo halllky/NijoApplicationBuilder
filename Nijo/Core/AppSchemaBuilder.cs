@@ -115,7 +115,7 @@ namespace Nijo.Core {
         public string? DbName { get; set; }
 
         /// <summary>
-        /// コード型でのみ使用。検索条件の挙動。
+        /// 検索条件の挙動
         /// </summary>
         public E_SearchBehavior? SearchBehavior { get; set; }
 

@@ -20,8 +20,7 @@ namespace Nijo.Core {
                 .Register(TYPE_YEARMONTH, new YearMonth())
                 .Register(TYPE_DATE, new YearMonthDay())
                 .Register(TYPE_DATETIME, new YearMonthDayTime())
-                .Register(TYPE_BYTEARRAY, new ByteArray())
-                .Register(TYPE_CODE_STRING, new CodeOfString());
+                .Register(TYPE_BYTEARRAY, new ByteArray());
             return resolver;
         }
         internal const string TYPE_UUID = "uuid";
@@ -36,7 +35,6 @@ namespace Nijo.Core {
         internal const string TYPE_DATE = "date";
         internal const string TYPE_DATETIME = "datetime";
         internal const string TYPE_BYTEARRAY = "bytearray";
-        internal const string TYPE_CODE_STRING = "code-string";
 
         private MemberTypeResolver() { }
         private readonly Dictionary<string, IAggregateMemberType> _registered = new();
