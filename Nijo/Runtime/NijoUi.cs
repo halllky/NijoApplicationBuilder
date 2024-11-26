@@ -76,9 +76,6 @@ namespace Nijo.Runtime {
 
             // 画面初期表示時データ読み込み処理
             app.MapGet("/load", async context => {
-                var typeDefs = EnumerateSchemaNodeTypes().ToList();
-                var optionDefs = EnumerateOptionalAttributes().ToList();
-
                 var schema = MutableSchema.FromXmlDocument(_project.SchemaXmlPath);
 
                 context.Response.ContentType = "application/json";
@@ -88,16 +85,14 @@ namespace Nijo.Runtime {
                     EditingXmlFilePath = _project.SchemaXmlPath,
                     Config = schema.Config,
                     Nodes = schema.ToList(),
-                    SchemaNodeTypes = typeDefs,
-                    OptionalAttributes = optionDefs,
+                    SchemaNodeTypes = NODE_TYPE.Values.ToList(),
+                    OptionalAttributes = ATTR_DEF.Values.ToList(),
                 }.ConvertToJson());
             });
 
             // mermaid.js によるグラフ表示
             app.MapPost("/mermaid", async context => {
                 try {
-                    var NODE_TYPE_DICT = EnumerateSchemaNodeTypes().ToDictionary(x => x.Key!);
-
                     var schema = await MutableSchema.FromHttpRequest(context.Request.Body);
                     var onlyRoot = context.Request.Query.ContainsKey("only-root");
 
@@ -178,7 +173,7 @@ namespace Nijo.Runtime {
                         var displayName = string.IsNullOrEmpty(node.DisplayName)
                             ? "???"
                             : node.DisplayName;
-                        displayName += node.Type != null && NODE_TYPE_DICT.TryGetValue(node.Type, out var type)
+                        displayName += node.Type != null && NODE_TYPE.TryGetValue(node.Type, out var type)
                             ? $"({type.DisplayName})"
                             : $"(???)";
 
@@ -263,9 +258,6 @@ namespace Nijo.Runtime {
             /// XMLドキュメントから <see cref="MutableSchema"/> のインスタンスを作成
             /// </summary>
             public static MutableSchema FromXmlDocument(string entryXmlFilePath) {
-                var typeDefs = EnumerateSchemaNodeTypes().ToArray();
-                var optionDefs = EnumerateOptionalAttributes().ToDictionary(x => x.Key);
-
                 XDocument? entry = null;
                 var xDocuments = GetXDocumentsRecursively(entryXmlFilePath).ToList();
                 var rootNameSpace = entry!.Root?.Name.LocalName ?? string.Empty;
@@ -301,8 +293,6 @@ namespace Nijo.Runtime {
                         var nodes = MutableSchemaNode.FromXElement(
                             el,
                             doc.FilePath,
-                            typeDefs,
-                            optionDefs,
                             refToPath => {
                                 var found = xDocuments
                                     .Select(doc => doc.XDocument.XPathSelectElement($"/{rootNameSpace}/{refToPath}"))
@@ -850,8 +840,7 @@ namespace Nijo.Runtime {
                         }
                     } else {
                         // 上記以外
-                        var typeDef = EnumerateSchemaNodeTypes().SingleOrDefault(d => d.Key == node.Type);
-                        if (typeDef == null) {
+                        if (!NODE_TYPE.TryGetValue(node.Type, out var typeDef)) {
                             yield return new ValidationError {
                                 Node = node,
                                 Key = ValidationError.ERR_TO_TYPE,
@@ -872,8 +861,7 @@ namespace Nijo.Runtime {
 
                     // オプショナル属性に関するエラー
                     foreach (var attrValue in node.AttrValues ?? []) {
-                        var optionDef = EnumerateOptionalAttributes().SingleOrDefault(d => d.Key == attrValue.Key);
-                        if (optionDef == null) {
+                        if (attrValue.Key == null || !ATTR_DEF.TryGetValue(attrValue.Key, out var optionDef)) {
                             yield return new ValidationError {
                                 Node = node,
                                 Key = attrValue.Key!,
@@ -951,7 +939,7 @@ namespace Nijo.Runtime {
                  *   }
                  * }
                  */
-                var keyNameDict = EnumerateOptionalAttributes().ToDictionary(x => x.Key, x => x.DisplayName);
+                var keyNameDict = ATTR_DEF.ToDictionary(x => x.Key, x => x.Value.DisplayName);
                 keyNameDict[ERR_TO_TYPE] = "種類";
                 keyNameDict[ERR_TO_TYPE_DETAIL] = "種類";
                 keyNameDict[ERR_TO_COMMENT] = "コメント";
@@ -1115,7 +1103,7 @@ namespace Nijo.Runtime {
                 if (Type.StartsWith(REFTO_PREFIX)) return E_NodeType.Ref;
                 if (Type.StartsWith(ENUM_PREFIX)) return E_NodeType.Enum;
                 if (Type.StartsWith(VALUE_OBJECT_PREFIX)) return E_NodeType.ValueObject;
-                return EnumerateSchemaNodeTypes().SingleOrDefault(t => t.Key == Type)?.NodeType;
+                return NODE_TYPE.TryGetValue(Type, out var def) ? def?.NodeType : null;
             }
             public bool IsWriteModel(MutableSchema schema) {
                 var root = schema.GetRoot(this);
@@ -1285,18 +1273,14 @@ namespace Nijo.Runtime {
             public static IEnumerable<MutableSchemaNode> FromXElement(
                 XElement xElement,
                 string xmlDocumentFilePath,
-                IEnumerable<SchemaNodeTypeDef> typeDefs,
-                IReadOnlyDictionary<string, OptionalAttributeDef> optionDefs,
                 Func<string, XElement?> findRefToElement,
                 Func<string[], XElement?> findEnumElement,
                 Func<string[], XElement?> findValueObjectElement) {
-                return FromXElementPrivate(xElement, xmlDocumentFilePath, typeDefs, optionDefs, 0, findRefToElement, findEnumElement, findValueObjectElement);
+                return FromXElementPrivate(xElement, xmlDocumentFilePath, 0, findRefToElement, findEnumElement, findValueObjectElement);
             }
             private static IEnumerable<MutableSchemaNode> FromXElementPrivate(
                 XElement xElement,
                 string xmlDocumentFilePath,
-                IEnumerable<SchemaNodeTypeDef> typeDefs,
-                IReadOnlyDictionary<string, OptionalAttributeDef> optionDefs,
                 int depth,
                 Func<string, XElement?> findRefToElement,
                 Func<string[], XElement?> findEnumElement,
@@ -1314,7 +1298,7 @@ namespace Nijo.Runtime {
                 // ref-toやenumなど以外の型
                 string? type = null;
                 string? typeDetail = null;
-                foreach (var def in typeDefs.OrderBy(d => d.Key)) {
+                foreach (var def in NODE_TYPE.Values.OrderBy(d => d.Key)) {
                     var isAttr = def.FindMatchingIsAttribute(depth, isAttrValues);
                     if (isAttr != null) {
                         type = def.Key;
@@ -1374,7 +1358,7 @@ namespace Nijo.Runtime {
                 }
 
                 // is属性のうちtypeの方で既にハンドリング済みのものは除外
-                attrs.RemoveAll(a => a.Key == null || !optionDefs.ContainsKey(a.Key));
+                attrs.RemoveAll(a => a.Key == null || !ATTR_DEF.ContainsKey(a.Key));
 
                 // -------------------------------------
                 // コメント。PreviousNodeを使って取得する都合上、XMLを下から順番に辿る形になる。
@@ -1409,7 +1393,7 @@ namespace Nijo.Runtime {
                     if (node is XComment xComment) {
                         comments.Add(xComment);
                     } else if (node is XElement childXmlElement) {
-                        descendants.AddRange(FromXElementPrivate(childXmlElement, xmlDocumentFilePath, typeDefs, optionDefs, depth + 1, findRefToElement, findEnumElement, findValueObjectElement));
+                        descendants.AddRange(FromXElementPrivate(childXmlElement, xmlDocumentFilePath, depth + 1, findRefToElement, findEnumElement, findValueObjectElement));
                         comments.Clear();
                     }
                 }
@@ -1429,13 +1413,13 @@ namespace Nijo.Runtime {
             public AggregateBuildOption CreateAggregateOption(MutableSchema schema) {
                 var options = new AggregateBuildOption();
                 foreach (var attrValue in AttrValues ?? []) {
-                    var type = EnumerateOptionalAttributes().SingleOrDefault(x => x.Key == attrValue.Key);
-                    if (type == null) continue;
+                    if (attrValue.Key == null || !ATTR_DEF.TryGetValue(attrValue.Key, out var type)) continue;
                     type.EditAggregateOption(attrValue.Value, this, schema, options);
                 }
 
-                var nodeType = EnumerateSchemaNodeTypes().SingleOrDefault(x => x.Key == Type);
-                nodeType?.EditAggregateOption(this, schema, options);
+                if (Type != null && NODE_TYPE.TryGetValue(Type, out var nodeType)) {
+                    nodeType.EditAggregateOption(this, schema, options);
+                }
 
                 options.DisplayName = DisplayName;
 
@@ -1446,13 +1430,13 @@ namespace Nijo.Runtime {
                     MemberType = Type,
                 };
                 foreach (var attrValue in AttrValues ?? []) {
-                    var type = EnumerateOptionalAttributes().SingleOrDefault(x => x.Key == attrValue.Key);
-                    if (type == null) continue;
+                    if (attrValue.Key == null || !ATTR_DEF.TryGetValue(attrValue.Key, out var type)) continue;
                     type.EditAggregateMemberOption(attrValue.Value, this, schema, options);
                 }
 
-                var nodeType = EnumerateSchemaNodeTypes().SingleOrDefault(x => x.Key == Type);
-                nodeType?.EditAggregateMemberOption(this, schema, options);
+                if (Type != null && NODE_TYPE.TryGetValue(Type, out var nodeType)) {
+                    nodeType.EditAggregateMemberOption(this, schema, options);
+                }
 
                 options.DisplayName = DisplayName;
 
@@ -1586,6 +1570,8 @@ namespace Nijo.Runtime {
         /// <summary>
         /// 集約やメンバーの種類として指定することができる属性を列挙します。
         /// </summary>
+        private static IReadOnlyDictionary<string, SchemaNodeTypeDef> NODE_TYPE => _cacheOfNodeType ??= EnumerateSchemaNodeTypes().ToDictionary(x => x.Key);
+        private static IReadOnlyDictionary<string, SchemaNodeTypeDef>? _cacheOfNodeType;
         private static IEnumerable<SchemaNodeTypeDef> EnumerateSchemaNodeTypes() {
             // ルート集約に設定できる種類
             yield return WriteModel;
@@ -1616,9 +1602,12 @@ namespace Nijo.Runtime {
                 };
             }
         }
+
         /// <summary>
         /// 集約やメンバーのオプショナル属性として指定することができる属性を列挙します。
         /// </summary>
+        private static IReadOnlyDictionary<string, OptionalAttributeDef> ATTR_DEF => _cacheOfAttrDef ??= EnumerateOptionalAttributes().ToDictionary(x => x.Key);
+        private static IReadOnlyDictionary<string, OptionalAttributeDef>? _cacheOfAttrDef;
         private static IEnumerable<OptionalAttributeDef> EnumerateOptionalAttributes() {
             yield return PhysicalName;
             yield return DbName;
