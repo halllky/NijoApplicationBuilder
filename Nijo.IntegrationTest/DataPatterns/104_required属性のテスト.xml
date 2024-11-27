@@ -62,7 +62,7 @@
     <別途契約 />
   </課題対応方針>
 
-  <アカウント Latin="Account" is="write-model-2 generate-derault-read-model">
+  <アカウント Latin="Account" is="write-model-2 generate-default-read-model">
     <アカウントID is="word key" />
     <アカウント種別 is="E_アカウント種別 key" />
     <アカウント名 is="word name required" />

@@ -79,65 +79,10 @@ namespace Nijo.Models {
             var setReadOnly = new SetReadOnly(rootAggregate);
             aggregateFile.AppServiceMethods.Add(setReadOnly.Render(context));
 
-
+            // ---------------------------------------------
+            // WriteModelと同じ型のReadModelを生成する
             if (rootAggregate.Item.Options.GenerateDefaultReadModel) {
-                // 既定のReadModel（WriteModelと同じ型のReadModel）を生成する
                context.GetModel<ReadModel2>().GenerateCode(context, rootAggregate);
-
-            } else {
-                // 既定のReadModelが無い場合でも他の集約から参照されるときのための部品は必要になるので生成する
-                foreach (var agg in allAggregates) {
-
-                    // パフォーマンス改善のため、ほかの集約から参照されていない集約のRefTo部品は生成しない
-                    if (!context.Config.GenerateUnusedRefToModules && !agg.GetReferedEdges().Any()) {
-                        continue;
-                    }
-
-                    var asEntry = agg.AsEntry();
-
-                    // データ型
-                    var refTargetKeys = new DataClassForRefTargetKeys(asEntry, asEntry);
-                    var refSearchCondition = new RefSearchCondition(asEntry, asEntry);
-                    var refSearchResult = new RefSearchResult(asEntry, asEntry);
-                    var refDisplayData = new RefDisplayData(asEntry, asEntry);
-                    aggregateFile.DataClassDeclaring.Add(refTargetKeys.RenderCSharpDeclaringRecursively(context));
-                    aggregateFile.DataClassDeclaring.Add(refSearchCondition.RenderCSharpDeclaringRecursively(context));
-                    aggregateFile.DataClassDeclaring.Add(refSearchResult.RenderCSharp(context));
-                    aggregateFile.DataClassDeclaring.Add(refDisplayData.RenderCSharp(context));
-                    context.ReactProject.Types.Add(rootAggregate, refSearchCondition.RenderTypeScriptDeclaringRecursively(context));
-                    context.ReactProject.Types.Add(rootAggregate, refSearchCondition.RenderCreateNewObjectFn(context));
-                    context.ReactProject.Types.Add(rootAggregate, refTargetKeys.RenderTypeScriptDeclaringRecursively(context));
-                    context.ReactProject.Types.Add(rootAggregate, refDisplayData.RenderTypeScript(context));
-                    context.ReactProject.Types.Add(rootAggregate, refDisplayData.RenderTsNewObjectFunction(context));
-
-                    // UI: 詳細画面用のVFormの一部
-                    // UI: 検索条件欄のVFormの一部
-                    // UI: コンボボックス
-                    // UI: 検索ダイアログ
-                    // UI: インライン検索ビュー
-                    var refToFile = context.UseSummarizedFile<RefToFile>();
-                    var comboBox = new SearchComboBox(asEntry);
-                    var searchDialog = new SearchDialog(asEntry, asEntry);
-                    var inlineRef = new SearchInline(asEntry);
-                    refToFile.Add(asEntry, refDisplayData.RenderSingleViewUiComponent(context));
-                    refToFile.Add(asEntry, refSearchCondition.RenderUiComponent(context));
-                    refToFile.Add(asEntry, comboBox.Render(context));
-                    refToFile.Add(asEntry, searchDialog.RenderHook(context));
-                    refToFile.Add(asEntry, inlineRef.Render(context));
-                    searchDialog.RegisterUiContext(uiContext);
-                    refDisplayData.RegisterUiContext(uiContext);
-                    refSearchCondition.RegisterUiContext(uiContext);
-
-                    // UI: DataTable用の列
-                    var refToColumn = new DataTableRefColumnHelper(asEntry);
-                    context.UseSummarizedFile<Parts.WebClient.DataTable.CellType>().Add(refToColumn.Render(context));
-
-                    // 処理: 参照先検索
-                    var searchRef = new RefSearchMethod(asEntry, asEntry);
-                    refToFile.Add(asEntry, searchRef.RenderHook(context));
-                    aggregateFile.ControllerActions.Add(searchRef.RenderController(context));
-                    aggregateFile.AppServiceMethods.Add(searchRef.RenderAppSrvMethodOfWriteModel(context));
-                }
             }
 
             // ---------------------------------------------

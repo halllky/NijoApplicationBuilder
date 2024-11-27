@@ -809,12 +809,35 @@ namespace Nijo.Runtime {
                                 Key = ValidationError.ERR_TO_TYPE,
                                 Message = "参照先に指定されている項目はref-toの参照先として使えません。",
                             };
-                        } else if (node.IsWriteModel(this) && !refTo.IsWriteModel(this)) {
-                            yield return new ValidationError {
-                                Node = node,
-                                Key = ValidationError.ERR_TO_TYPE,
-                                Message = "DBの外部キーが定義できるようにするため、WriteModelが参照する先はWriteModelである必要があります。",
-                            };
+                        } else {
+                            // モデルによって参照できるものが異なる
+                            if (node.IsWriteModel(this)) {
+                                if (!refTo.IsWriteModel(this)) {
+                                    yield return new ValidationError {
+                                        Node = node,
+                                        Key = ValidationError.ERR_TO_TYPE,
+                                        Message = "DBの外部キーが定義できるようにするため、WriteModelが参照する先はWriteModelである必要があります。",
+                                    };
+                                }
+                            }
+                            if (node.IsReadModel(this)) {
+                                if (!refTo.IsReadModel(this)) {
+                                    yield return new ValidationError {
+                                        Node = node,
+                                        Key = ValidationError.ERR_TO_TYPE,
+                                        Message = "UI部品などが利用できるかどうかが異なるため、ReadModelの参照先はReadModelである必要があります。",
+                                    };
+                                }
+                            }
+                            if (node.IsCommandModel(this)) {
+                                if (!refTo.IsReadModel(this)) {
+                                    yield return new ValidationError {
+                                        Node = node,
+                                        Key = ValidationError.ERR_TO_TYPE,
+                                        Message = "UI部品などが利用できるかどうかが異なるため、CommandModelの参照先はReadModelである必要があります。",
+                                    };
+                                }
+                            }
                         }
                     } else if (node.Type.StartsWith(MutableSchemaNode.ENUM_PREFIX)) {
                         // 列挙体
@@ -1114,6 +1137,10 @@ namespace Nijo.Runtime {
                 var root = schema.GetRoot(this);
                 return root.Type == ReadModel.Key
                     || root.Type == WriteRead.Key;
+            }
+            public bool IsCommandModel(MutableSchema schema) {
+                var root = schema.GetRoot(this);
+                return root.Type == Command.Key;
             }
             /// <summary>
             /// エラーチェック
