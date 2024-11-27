@@ -52,9 +52,6 @@ namespace Nijo.Models {
             // 処理: 検索処理の最後に読み取り専用を設定
             aggregateFile.AppServiceMethods.Add(rootDisplayData.RenderSetKeysReadOnly(context));
 
-            // データ型: 一括更新処理 エラーメッセージの入れ物
-            context.UseSummarizedFile<SaveContext>().AddReadModel(rootAggregate);
-
             // 処理: 一括更新処理
             context.UseSummarizedFile<BatchUpdateReadModel>().Register(rootAggregate);
 
