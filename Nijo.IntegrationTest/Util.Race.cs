@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,25 +12,22 @@ namespace Nijo.IntegrationTest {
 		/// 例えばCSV2つをキーで突き合わせて差分を見たりするのに使うなど。
 		/// </summary>
 		/// <typeparam name="TItem">オブジェクトの型</typeparam>
-		/// <typeparam name="TMatchingKey">オブジェクトのキーの型</typeparam>
 		/// <param name="left">配列その1</param>
 		/// <param name="right">配列その2</param>
 		/// <param name="matchingKey">マッチングキー定義</param>
-		/// <param name="sort">マッチングキーのソート順指定</param>
 		/// <param name="whenMatch">キーが合致するものが両方の配列に存在した場合の処理</param>
 		/// <param name="whenOnlyLeft">キーが合致するものが1つめの配列にのみに存在した場合の処理</param>
 		/// <param name="whenOnlyRight">キーが合致するものが2つめの配列にのみに存在した場合の処理</param>
-		public static void Race<TItem, TMatchingKey, TSortKey>(
+		public static void Race<TItem>(
 			IEnumerable<TItem> left,
 			IEnumerable<TItem> right,
-			Func<TItem, TMatchingKey> matchingKey,
-			Func<TMatchingKey, TSortKey> sort,
+			Func<TItem, string> matchingKey,
 			Action<IEnumerable<TItem>, IEnumerable<TItem>>? whenMatch = null,
 			Action<IEnumerable<TItem>>? whenOnlyLeft = null,
 			Action<IEnumerable<TItem>>? whenOnlyRight = null) {
 
-			var groupedLeft = left.GroupBy(matchingKey).OrderBy(group => sort(group.Key)).GetEnumerator();
-			var groupedRight = right.GroupBy(matchingKey).OrderBy(group => sort(group.Key)).GetEnumerator();
+			var groupedLeft = left.GroupBy(matchingKey).OrderBy(group => group.Key).GetEnumerator();
+			var groupedRight = right.GroupBy(matchingKey).OrderBy(group => group.Key).GetEnumerator();
 
 			bool hasLeft = groupedLeft.MoveNext();
 			bool hasRight = groupedRight.MoveNext();
@@ -39,7 +36,7 @@ namespace Nijo.IntegrationTest {
 				var leftGroup = groupedLeft.Current;
 				var rightGroup = groupedRight.Current;
 
-				int comparison = Comparer<TMatchingKey>.Default.Compare(leftGroup.Key, rightGroup.Key);
+				int comparison = string.Compare(leftGroup.Key, rightGroup.Key);
 
 				if (comparison == 0) {
 					// キーが合致する場合の処理
