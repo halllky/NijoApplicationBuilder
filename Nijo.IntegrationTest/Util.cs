@@ -13,7 +13,7 @@ using Nijo.Util.DotnetEx;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Nijo.IntegrationTest {
-    internal static class Util {
+    internal static partial class Util {
         /// <summary>
         /// デバッグモードで作成される集約1個あたりのダミーデータの数
         /// </summary>
