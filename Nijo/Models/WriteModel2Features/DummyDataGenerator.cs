@@ -24,9 +24,31 @@ namespace Nijo.Models.WriteModel2Features {
 
         void ISummarizedFile.OnEndGenerating(CodeRenderingContext context) {
             context.ReactProject.UtilDir(utilDir => {
-                utilDir.Generate(Render());
+                utilDir.Generate(RenderTemporary());
             });
         }
+
+        private static SourceFile RenderTemporary() => new SourceFile {
+            FileName = "useDummyDataGenerator2.ts",
+            RenderContent = ctx => {
+                // #71
+                // ダミーデータ作成処理でしか使わないソースコードが増えてきており、
+                // ダミーデータ作成処理の品質が安定しないため、いったん無効化している。
+                return $$"""
+                    import React from 'react'
+                    import * as Util from '../util'
+
+                    export const useDummyDataGenerator2 = () => {
+                      const [, dispatchMsg] = Util.useMsgContext()
+
+                      return React.useCallback(async () => {
+                        dispatchMsg(msg => msg.warn(`ダミーデータ作成処理の品質が安定しないため、無効化しています。Issue #71 の解消をお待ちください。`))
+                        return false
+                      }, [])
+                    }
+                    """;
+            }
+        };
 
         private SourceFile Render() => new SourceFile {
             FileName = "useDummyDataGenerator2.ts",
