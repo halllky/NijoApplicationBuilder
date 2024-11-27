@@ -53,6 +53,12 @@ namespace Nijo.Models {
                     context.ReactProject.Types.Add(dataClassForNewItem.RenderTsNewObjectFunction(context));
                     context.ReactProject.Types.Add(dataClassForSave.RenderTsNewObjectFunction(context));
                 }
+
+                // データ型: ほかの集約から参照されるときのキー
+                var asEntry = agg.AsEntry();
+                var refTargetKeys = new DataClassForRefTargetKeys(asEntry, asEntry);
+                aggregateFile.DataClassDeclaring.Add(refTargetKeys.RenderCSharpDeclaringRecursively(context));
+                context.ReactProject.Types.Add(rootAggregate, refTargetKeys.RenderTypeScriptDeclaringRecursively(context));
             }
 
             // データ型: 一括更新処理 エラーメッセージの入れ物
