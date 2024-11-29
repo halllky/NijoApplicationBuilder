@@ -27,7 +27,7 @@
 
     <Children is="children">
       <!--値オブジェクト-->
-      <ChildrenId is="ChildrenID key" />
+      <ChildrenId is="ChildrenID key max-length:25" />
 
       <!--文字列系-->
       <単語 is="word" />

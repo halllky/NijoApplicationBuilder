@@ -43,9 +43,12 @@ namespace Nijo.Models.WriteModel2Features {
                     if (schalar.Options.MaxLength == null) continue;
 
                     var path = schalar.Declared.GetFullPathAsDbEntity(since: instanceAggregate);
+                    var cast = schalar.Options.MemberType is Core.AggregateMemberTypes.ValueObjectMember
+                        ? "(string?)"
+                        : "";
 
                     yield return $$"""
-                        if (!DotnetExtensions.IsStringWithinLimit({{instance}}.{{path.Join("?.")}}, {{schalar.Options.MaxLength}})) {
+                        if (!DotnetExtensions.IsStringWithinLimit({{cast}}{{instance}}.{{path.Join("?.")}}, {{schalar.Options.MaxLength}})) {
                             e.{{GetErrorMemberPath(member).Join(".")}}.AddError("{{schalar.Options.MaxLength}}文字以内で入力してください。");
                         }
                         """;
