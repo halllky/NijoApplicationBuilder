@@ -225,6 +225,11 @@ namespace Nijo.Runtime {
                     // 保存
                     schema.Save(_project.SchemaXmlPath);
 
+                    // コード自動生成かけなおし
+                    if (context.Request.Query.ContainsKey("build")) {
+                        _project.CodeGenerator.GenerateCode();
+                    }
+
                     context.Response.StatusCode = (int)HttpStatusCode.OK;
 
                 } catch (Exception ex) {

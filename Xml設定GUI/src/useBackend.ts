@@ -75,9 +75,10 @@ export const useBackend = () => {
   })
 
   // 保存
-  const save = useEvent(async (config: ConfigType, aggregates: GridRow[]): Promise<boolean> => {
+  const save = useEvent(async (config: ConfigType, aggregates: GridRow[], generateCode: boolean): Promise<boolean> => {
     const body: ClientRequest = { config, aggregates }
-    const response = await fetch(`${backendDomain ?? ''}/save`, {
+    const query = generateCode ? `?build=1` : ``
+    const response = await fetch(`${backendDomain ?? ''}/save${query}`, {
       method: 'POST',
       body: JSON.stringify(body)
     })

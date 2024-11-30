@@ -190,11 +190,18 @@ function App() {
   })
 
   // 保存
+  const [saving, setSaving] = React.useState(false)
   const handleSave = useEvent(async () => {
-    if (await save(getValues('config'), fields)) {
-      await reload()
-    } else {
-      executeValidate()
+    if (saving) return
+    setSaving(true)
+    try {
+      if (await save(getValues('config'), fields, true)) {
+        await reload()
+      } else {
+        executeValidate()
+      }
+    } finally {
+      setSaving(false)
     }
   })
 
@@ -225,7 +232,7 @@ function App() {
             <div className="flex-1"></div>
             <Input.IconButton onClick={reload} icon={Icon.ArrowPathIcon} outline mini>再読み込み</Input.IconButton>
             <Input.IconButton onClick={openAppSettingDialog} icon={Icon.Cog6ToothIcon} outline mini>設定</Input.IconButton>
-            <Input.IconButton onClick={handleSave} icon={Icon.BookmarkSquareIcon} fill mini>保存</Input.IconButton>
+            <Input.IconButton onClick={handleSave} icon={Icon.BookmarkSquareIcon} loading={saving} fill mini>保存してコード再生成</Input.IconButton>
           </div>
 
           <Util.InlineMessageList />
