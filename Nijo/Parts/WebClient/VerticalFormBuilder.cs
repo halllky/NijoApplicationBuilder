@@ -256,11 +256,17 @@ namespace Nijo.Parts.WebClient {
         /// またその中身もCSSファイルに直で書くよりループを回して自動生成した方が楽な箇所があり、
         /// それをこのメソッドでレンダリングしている。
         /// </summary>
-        internal static string RenderContainerQuery() {
+        internal static string RenderContainerQuery(CodeRenderingContext ctx) {
 
-            const int MAX_COLUMN = 5;  // 最大列数。通常のデスクトップPCならこの列数まで用意しておけば足りるだろう
-            const int MAX_MEMBER = 100; // CSSクラスを生成する数。1つの親要素の直下に並ぶメンバーの限界値
-            const int THRESHOLD = 320; // 列数が切り替わる閾値（px）
+            // 最大列数。通常のデスクトップPCならこの列数まで用意しておけば足りるだろうという数
+            var MAX_COLUMN = ctx.Config.VFormMaxColumnCount ?? 5;
+
+            // CSSクラスを生成する数。1つの親要素の直下に並ぶメンバーの限界値。
+            // メンバーの数がこれを超えるとレイアウトが崩れる。
+            var MAX_MEMBER = ctx.Config.VFormMaxMemberCount ?? 100;
+
+            // 列数が切り替わる閾値（px）
+            var THRESHOLD = ctx.Config.VFormThreshold ?? 320;
 
             return Enumerable.Range(1, MAX_COLUMN).SelectTextTemplate(col => {
 

@@ -85,6 +85,9 @@ namespace Nijo {
                     DisableLocalRepository = false,
                     ButtonColor = null,
                     MultiViewDetailLinkBehavior = Config.E_MultiViewDetailLinkBehavior.NavigateToEditMode,
+                    VFormMaxColumnCount = null,
+                    VFormMaxMemberCount = null,
+                    VFormThreshold = null,
                 };
 
                 using (var _ = log?.BeginScope("nijo.xmlの作成")) {
