@@ -40,7 +40,6 @@ namespace Nijo.Parts.WebClient {
                       const [, dispatchToast] = Util.useToastContext()
                       const { get, post } = Util.useHttpRequest()
                       const [withDummyData, setWithDummyData] = useState<boolean | undefined>(true)
-                      const genereateDummyData2 = Util.useDummyDataGenerator2()
                       const { reset: resetLocalRepository } = Util.useLocalRepositoryChangeList()
 
                       const recreateDatabase = useEvent(async () => {
@@ -55,16 +54,8 @@ namespace Nijo.Parts.WebClient {
                             return
                           }
 
-                          const response = await post('/WebDebugger/recreate-database')
-                          if (!response.ok) { return }
-                          if (withDummyData) {
-                            const success = await genereateDummyData2()
-                            if (!success) {
-                              dispatchMsg(msg => msg.error('DBを再作成しましたがダミーデータ作成に失敗しました。'))
-                              return
-                            }
-                          }
-                          dispatchToast(msg => msg.info('DBを再作成しました。'))
+                          const response = await post(`/WebDebugger/recreate-database?generateDummyData=${withDummyData}`)
+                          if (response.ok) dispatchToast(msg => msg.info('DBを再作成しました。'))
                         } finally {
                           setRecreating(false)
                         }
