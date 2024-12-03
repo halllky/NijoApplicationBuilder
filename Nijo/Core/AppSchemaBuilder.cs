@@ -123,6 +123,11 @@ namespace Nijo.Core {
         /// 文字列型の最大長
         /// </summary>
         public int? MaxLength { get; set; }
+
+        /// <summary>
+        /// 列挙体のSQLパラメータの型
+        /// </summary>
+        public string? EnumSqlParamType { get; set; }
     }
     public sealed class EnumValueOption {
         public string PhysicalName { get; set; } = string.Empty;

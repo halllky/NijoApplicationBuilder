@@ -575,6 +575,7 @@ namespace Nijo.Runtime {
                             DbName = options.DbName,
                             SearchBehavior = options.SearchBehavior,
                             MaxLength = options.MaxLength,
+                            EnumSqlParamType = options.EnumSqlParamType,
                         });
 
                         // 集約メンバーの登録（親とこのメンバーの間のエッジ）
@@ -1661,6 +1662,8 @@ namespace Nijo.Runtime {
             yield return Radio;
 
             yield return SearchBehavior;
+
+            yield return EnumSqlParamType;
         }
 
         #region ルート集約に設定できる種類
@@ -2315,6 +2318,26 @@ namespace Nijo.Runtime {
                     "範囲検索" => E_SearchBehavior.Range,
                     _ => null,
                 };
+            },
+        };
+
+        private static OptionalAttributeDef EnumSqlParamType => new OptionalAttributeDef {
+            Key = "enum-sql-param-type",
+            DisplayName = "列挙体のSQLクエリパラメータの型",
+            Type = E_OptionalAttributeType.String,
+            HelpText = $$"""
+                ソース生成後のDbContextにて列挙体のDBの型をintやvarcharに設定したとき、
+                LINQで組み立てるSQLのパラメータの型がenumのままだと例外が出るので、その回避策。
+                intのみ対応。
+                """,
+            Validate = (value, node, schema, errors) => {
+                if (node.Type?.StartsWith(MutableSchemaNode.ENUM_PREFIX) != true) {
+                    errors.Add("この属性は列挙体にのみ設定できます。");
+                    return;
+                }
+            },
+            EditAggregateMemberOption = (value, node, schema, opt) => {
+                opt.EnumSqlParamType = value;
             },
         };
         #endregion オプショナル属性

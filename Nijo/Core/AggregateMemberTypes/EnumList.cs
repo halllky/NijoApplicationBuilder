@@ -58,22 +58,33 @@ namespace Nijo.Core.AggregateMemberTypes {
                 : member.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.CSharp);
             var fullpathNullable = $"{searchCondition}.{pathFromSearchCondition.Join("?.")}";
             var fullpathNotNull = $"{searchCondition}.{pathFromSearchCondition.Join(".")}";
+
             var enumType = GetCSharpTypeName();
+            string paramType;
+            string cast;
+            if (string.IsNullOrWhiteSpace(member.Options.EnumSqlParamType)) {
+                paramType = enumType;
+                cast = string.Empty;
+            } else {
+                paramType = member.Options.EnumSqlParamType;
+                cast = $"({member.Options.EnumSqlParamType}?)";
+            }
+
             var whereFullpath = searchQueryObject == E_SearchQueryObject.SearchResult
                 ? member.GetFullPathAsSearchResult(E_CsTs.CSharp, out var isArray)
                 : member.GetFullPathAsDbEntity(E_CsTs.CSharp, out isArray);
 
             return $$"""
                 if ({{fullpathNullable}} != null && {{fullpathNotNull}}.{{ANY_CHECKED}}()) {
-                    var array = new List<{{enumType}}?>();
+                    var array = new List<{{paramType}}?>();
                 {{Definition.Items.SelectTextTemplate(item => $$"""
-                    if ({{fullpathNotNull}}.{{item.PhysicalName}}) array.Add({{enumType}}.{{item.PhysicalName}});
+                    if ({{fullpathNotNull}}.{{item.PhysicalName}}) array.Add({{cast}}{{enumType}}.{{item.PhysicalName}});
                 """)}}
 
                 {{If(isArray, () => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => array.Contains(y.{{member.MemberName}})));
+                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => array.Contains({{cast}}y.{{member.MemberName}})));
                 """).Else(() => $$"""
-                    {{query}} = {{query}}.Where(x => array.Contains(x.{{whereFullpath.Join(".")}}));
+                    {{query}} = {{query}}.Where(x => array.Contains({{cast}}x.{{whereFullpath.Join(".")}}));
                 """)}}
                 }
                 """;

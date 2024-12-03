@@ -34,6 +34,8 @@ namespace Nijo.Core {
         /// <summary>文字列型の最大長</summary>
         public int? MaxLength { get; set; }
 
+        public string? EnumSqlParamType { get; set; }
+
         public override string ToString() => Id.Value;
     }
 
