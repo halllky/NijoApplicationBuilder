@@ -237,17 +237,19 @@ namespace Nijo.Models.ReadModel2Features {
                   })
 
                   // 画面離脱（他画面への遷移）アラート設定
+                  const isAfterSave = React.useRef(false) // 保存成功後の画面遷移でアラートが出ないようにするためのフラグ
                   const blockCondition: ReactRouter.BlockerFunction = useEvent(({ currentLocation, nextLocation }) => {
+                    if (isAfterSave.current) return false // 保存成功後の画面遷移ではアラートを出さない
+                    if (currentLocation.pathname === nextLocation.pathname) return false
+
                     const currentValues = getValues()
                     const changed = defaultValues && Types.{{dataClass.CheckChangesFunction}}({
                       defaultValues: defaultValues as Types.{{dataClass.TsTypeName}},
                       currentValues,
                     })
-                    const block = changed && currentLocation.pathname !== nextLocation.pathname
-                    if (block) {
-                      if (confirm('画面を移動すると、変更内容が破棄されます。よろしいでしょうか？')) return false
-                    }
-                    return block
+                    if (changed && !confirm('画面を移動すると、変更内容が破棄されます。よろしいでしょうか？')) return true
+
+                    return false
                   })
                   ReactRouter.useBlocker(blockCondition)
 
@@ -308,9 +310,19 @@ namespace Nijo.Models.ReadModel2Features {
                       navigateToDetailPage(currentValues, 'readonly')
                     }
                 """).Else(() => $$"""
-                    // 処理成功の場合はリロード
+                    // 処理成功の場合は編集画面へ遷移 or リロード
                     if (result.ok) {
-                      reload()
+                      isAfterSave.current = true
+                      const navigateOrReload = () => {
+                        if (!isAfterSave.current) {
+                          setTimeout(navigateOrReload, 10)
+                        } else if ({{MODE}} === 'new') {
+                          navigateToDetailPage(currentValues, 'edit')
+                        } else {
+                          reload()
+                        }
+                      }
+                      navigateOrReload()
                     }
                 """)}}
                   })
