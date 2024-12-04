@@ -193,8 +193,8 @@ namespace Nijo.Models.ReadModel2Features {
                       // 検索条件欄の開閉
                       const searchConditionPanelRef = useRef<ImperativePanelHandle>(null)
                       const [collapsed, setCollapsed] = useState(false)
-                      const handleCollapse = useEvent(() => setCollapsed(false))
-                      const handleExpand = useEvent(() => setCollapsed(true))
+                      const handleCollapse = useEvent(() => setCollapsed(true))
+                      const handleExpand = useEvent(() => setCollapsed(false))
                       const toggleSearchCondition = useCallback(() => {
                         if (searchConditionPanelRef.current?.isCollapsed()) {
                           searchConditionPanelRef.current.expand()
@@ -312,19 +312,21 @@ namespace Nijo.Models.ReadModel2Features {
 
                     /** 初期並び順のコンボボックスの設定 */
                     const {{SORT_COMBO_SETTING}} = {
-                      getOptionText: (opt: typeof SORT_COMBO_SOURCE[0]) => opt,
-                      getValueText: (value: typeof SORT_COMBO_SOURCE[0]) => value,
-                      getValueFromOption: (opt: typeof SORT_COMBO_SOURCE[0]) => opt,
+                      getOptionText: (opt: SortComboItem) => opt,
+                      getValueText: (value: SortComboItem) => value,
+                      getValueFromOption: (opt: SortComboItem) => opt,
                     }
+                    /** 初期並び順のコンボボックスのデータソースの型 */
+                    export type SortComboItem = typeof SORT_COMBO_SOURCE[0]
                     /** 初期並び順のコンボボックスのデータソース */
                     {{If(searchCondition.GetSortLiterals().Any(), () => $$"""
-                    const SORT_COMBO_SOURCE = [
+                    export const SORT_COMBO_SOURCE = [
                     {{searchCondition.GetSortLiterals().SelectTextTemplate(sort => $$"""
                       '{{sort}}' as const,
                     """)}}
                     ]
                     """).Else(() => $$"""
-                    const SORT_COMBO_SOURCE: string[] = []
+                    export const SORT_COMBO_SOURCE: string[] = []
                     """)}}
                     """;
             },

@@ -1,7 +1,6 @@
 using Nijo.Core;
 using Nijo.Models.ReadModel2Features;
 using Nijo.Models.RefTo;
-using Nijo.Models.WriteModel2Features;
 using Nijo.Parts.WebClient;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
@@ -51,9 +50,6 @@ namespace Nijo.Models {
 
             // 処理: 検索処理の最後に読み取り専用を設定
             aggregateFile.AppServiceMethods.Add(rootDisplayData.RenderSetKeysReadOnly(context));
-
-            // データ型: 一括更新処理 エラーメッセージの入れ物
-            context.UseSummarizedFile<SaveContext>().AddReadModel(rootAggregate);
 
             // 処理: 一括更新処理
             context.UseSummarizedFile<BatchUpdateReadModel>().Register(rootAggregate);
@@ -124,17 +120,14 @@ namespace Nijo.Models {
                 var asEntry = agg.AsEntry();
 
                 // データ型
-                var refTargetKeys = new DataClassForRefTargetKeys(asEntry, asEntry);
                 var refSearchCondition = new RefSearchCondition(asEntry, asEntry);
                 var refSearchResult = new RefSearchResult(asEntry, asEntry);
                 var refDisplayData = new RefDisplayData(asEntry, asEntry);
-                aggregateFile.DataClassDeclaring.Add(refTargetKeys.RenderCSharpDeclaringRecursively(context));
                 aggregateFile.DataClassDeclaring.Add(refSearchCondition.RenderCSharpDeclaringRecursively(context));
                 aggregateFile.DataClassDeclaring.Add(refSearchResult.RenderCSharp(context));
                 aggregateFile.DataClassDeclaring.Add(refDisplayData.RenderCSharp(context));
                 context.ReactProject.Types.Add(rootAggregate, refSearchCondition.RenderTypeScriptDeclaringRecursively(context));
                 context.ReactProject.Types.Add(rootAggregate, refSearchCondition.RenderCreateNewObjectFn(context));
-                context.ReactProject.Types.Add(rootAggregate, refTargetKeys.RenderTypeScriptDeclaringRecursively(context));
                 context.ReactProject.Types.Add(rootAggregate, refDisplayData.RenderTypeScript(context));
                 context.ReactProject.Types.Add(rootAggregate, refDisplayData.RenderTsNewObjectFunction(context));
 

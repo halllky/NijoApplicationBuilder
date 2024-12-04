@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.IntegrationTest.DataPatternsClass {
-    public class _017_CommandModel : DataPattern {
+    public class _017_CommandModel : DataPatternFromXml {
         public _017_CommandModel() : base("017_CommandModel.xml") { }
 
         protected override string OverridedAppSrvMethods() {

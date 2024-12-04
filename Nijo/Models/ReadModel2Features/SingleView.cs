@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Nijo.Models.RefTo;
 
 namespace Nijo.Models.ReadModel2Features {
     /// <summary>
@@ -97,6 +98,47 @@ namespace Nijo.Models.ReadModel2Features {
                 .Select(vm => vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript).ToArray())
                 .ToArray();
 
+            // フォーカス離脱時の検索 // #58 この処理が何度も出てくるのでリファクタリングする
+            string RenderAssignExpression(AggregateMember.ValueMember vm, string sourceInstance) {
+                var leftFullPath = vm.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript);
+
+                //#58
+                // セルの値を検索条件オブジェクトに代入する処理
+                Func<string, string> AssignExpression;
+                if (vm is AggregateMember.Variation variation) {
+                    AssignExpression = value => $$"""
+                        {{variation.GetGroupItems().SelectTextTemplate((variationItem, i) => $$"""
+                        {{(i == 0 ? "" : "else ")}}if ({{value}} === '{{variationItem.Relation.RelationName}}') searchCondition.{{vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".")}}  = { {{variationItem.Relation.RelationName}}: true }
+                        """)}}
+                        """;
+                } else if (vm.Options.MemberType is Core.AggregateMemberTypes.EnumList enumList) {
+                    AssignExpression = value => $$"""
+                        {{enumList.Definition.Items.SelectTextTemplate((option, i) => $$"""
+                        {{(i == 0 ? "" : "else ")}}if ({{value}} === '{{option.PhysicalName}}') searchCondition.{{vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".")}}  = { {{option.PhysicalName}}: true }
+                        """)}}
+                        """;
+                } else if (vm.Options.MemberType is SchalarMemberType) {
+                    AssignExpression = value => {
+                        string asVmValue;
+                        if (vm.Options.MemberType is Core.AggregateMemberTypes.Integer
+                            || vm.Options.MemberType is Core.AggregateMemberTypes.Numeric) {
+                            asVmValue = $"Number({value})";
+                        } else {
+                            asVmValue = value;
+                        }
+                        return $$"""
+                            searchCondition.{{vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".")}}  = { {{FromTo.FROM_TS}}: {{asVmValue}}, {{FromTo.TO_TS}}: {{asVmValue}} }
+                            """;
+                    };
+                } else {
+                    AssignExpression = value => $$"""
+                        searchCondition.{{vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".")}}  = {{value}}
+                        """;
+                }
+
+                return AssignExpression(sourceInstance);
+            }
+
             return $$"""
                 /** {{_aggregate.Item.DisplayName.Replace("*/", "")}} の詳細画面のデータの読み込みと保存を行うReactフックの戻り値 */
                 export type {{DataHookReturnType}} = ReturnType<typeof {{DataHookName}}>
@@ -155,8 +197,9 @@ namespace Nijo.Models.ReadModel2Features {
 
                         // URLで指定されたキーで検索をかける。1件だけヒットするはずなのでそれを画面に初期表示する
                         const searchCondition = Types.{{searchCondition.CreateNewObjectFnName}}()
+
                 {{urlKeysWithMember.SelectTextTemplate(kv => $$"""
-                        searchCondition.{{kv.Key.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".")}} = {{ConvertUrlParamToSearchConditionValue(kv.Key, kv.Value)}}
+                        {{WithIndent(RenderAssignExpression(kv.Key, kv.Value), "        ")}}
                 """)}}
 
                         const searchResult = await load{{_aggregate.Item.PhysicalName}}(searchCondition)
@@ -194,15 +237,21 @@ namespace Nijo.Models.ReadModel2Features {
                   })
 
                   // 画面離脱（他画面への遷移）アラート設定
+                  const isAfterSave = React.useRef(false) // 保存成功後の画面遷移でアラートが出ないようにするためのフラグ
                   const blockCondition: ReactRouter.BlockerFunction = useEvent(({ currentLocation, nextLocation }) => {
-                    if (isChanged() && currentLocation.pathname !== nextLocation.pathname) {
-                      if (confirm('画面を移動すると、変更内容が破棄されます。よろしいでしょうか？')) return false
-                    }
-                    return isChanged() &&
-                      currentLocation.pathname !== nextLocation.pathname
+                    if (isAfterSave.current) return false // 保存成功後の画面遷移ではアラートを出さない
+                    if (currentLocation.pathname === nextLocation.pathname) return false
+
+                    const currentValues = getValues()
+                    const changed = defaultValues && Types.{{dataClass.CheckChangesFunction}}({
+                      defaultValues: defaultValues as Types.{{dataClass.TsTypeName}},
+                      currentValues,
+                    })
+                    if (changed && !confirm('画面を移動すると、変更内容が破棄されます。よろしいでしょうか？')) return true
+
+                    return false
                   })
-                  // ブロッカー
-                  let blocker = ReactRouter.useBlocker(blockCondition)
+                  ReactRouter.useBlocker(blockCondition)
 
                   React.useEffect(() => {
                     reload()
@@ -221,19 +270,6 @@ namespace Nijo.Models.ReadModel2Features {
                     };
 
                   }, [{{MODE}}])
-
-                  // 画面項目値が変更されているか（画面遷移のチェックに使用）
-                  const isChanged = useEvent((): boolean => {
-                    const currentValues = getValues()
-                    if (defaultValues) {
-                      const changed = Types.{{dataClass.CheckChangesFunction}}({
-                        defaultValues: defaultValues as Types.{{dataClass.TsTypeName}},
-                        currentValues,
-                      })
-                      return changed
-                    }
-                    return false
-                  })
 
                   // 保存時
                   const { batchUpdateReadModels, nowSaving } = {{BatchUpdateReadModel.HOOK_NAME}}()
@@ -274,9 +310,19 @@ namespace Nijo.Models.ReadModel2Features {
                       navigateToDetailPage(currentValues, 'readonly')
                     }
                 """).Else(() => $$"""
-                    // 処理成功の場合はリロード
+                    // 処理成功の場合は編集画面へ遷移 or リロード
                     if (result.ok) {
-                      reload()
+                      isAfterSave.current = true
+                      const navigateOrReload = () => {
+                        if (!isAfterSave.current) {
+                          setTimeout(navigateOrReload, 10)
+                        } else if ({{MODE}} === 'new') {
+                          navigateToDetailPage(currentValues, 'edit')
+                        } else {
+                          reload()
+                        }
+                      }
+                      navigateOrReload()
                     }
                 """)}}
                   })

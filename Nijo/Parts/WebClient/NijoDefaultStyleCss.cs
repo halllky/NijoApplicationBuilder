@@ -25,7 +25,7 @@ namespace Nijo.Parts.WebClient {
 
                 var sourceCode = $$"""
                     {{reader.ReadToEnd()}}
-                    {{VForm2.RenderContainerQuery()}}
+                    {{VForm2.RenderContainerQuery(ctx)}}
                     """;
 
                 // ボタン色が指定されている場合は変更

@@ -103,10 +103,10 @@ namespace Nijo.Parts.WebServer {
                                         }
                                     }
                                 }
+                    """)}}
 
                                 // モデル定義に変更を加えたい場合は {{Configure.CONCRETE_CLASS_NAME}} クラスでこのメソッドをオーバーライドしてください。
                                 customizedConfigure.{{ON_DBCONTEXT_MODEL_CREATING}}(modelBuilder);
-                    """)}}
                             }
 
                             /// <inheritdoc />

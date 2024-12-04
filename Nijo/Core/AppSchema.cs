@@ -32,13 +32,6 @@ namespace Nijo.Core {
         internal IReadOnlyCollection<EnumDefinition> EnumDefinitions { get; }
 
         /// <summary>
-        /// データの流れの順（=Refされている順）に列挙
-        /// </summary>
-        internal IEnumerable<GraphNode<Aggregate>> RootAggregatesOrderByDataFlow() {
-            return RootAggregates().OrderByDataFlow();
-        }
-
-        /// <summary>
         /// デバッグ用TSV。Excelやスプレッドシートに貼り付けて構造の妥当性を確認するのに使う
         /// </summary>
         internal string DumpTsv() {

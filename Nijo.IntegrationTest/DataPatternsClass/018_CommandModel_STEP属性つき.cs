@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.IntegrationTest.DataPatternsClass {
-    public class _018_CommandModel_STEP属性つき : DataPattern {
+    public class _018_CommandModel_STEP属性つき : DataPatternFromXml {
         public _018_CommandModel_STEP属性つき() : base("018_CommandModel_STEP属性つき.xml") { }
 
         protected override string AppTsxCustomizer(CodeRenderingContext ctx) {

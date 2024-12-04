@@ -97,8 +97,8 @@ namespace Nijo.Models {
                                 public static bool operator !=({{className}}? left, {{className}}? right) {
                                     return !(left == right);
                                 }
-                                public static explicit operator {{primitiveType}}({{className}} vo) => vo._value;
-                                public static explicit operator {{className}}({{primitiveType}} value) => new {{className}}(value);
+                                public static explicit operator {{primitiveType}}?({{className}}? vo) => vo?._value;
+                                public static explicit operator {{className}}?({{primitiveType}}? value) => value == null ? null : new {{className}}(value);
 
 
                                 /// <summary>

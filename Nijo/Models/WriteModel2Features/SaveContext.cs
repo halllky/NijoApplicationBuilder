@@ -16,12 +16,8 @@ namespace Nijo.Models.WriteModel2Features {
     internal class SaveContext : ISummarizedFile {
 
         private readonly List<GraphNode<Aggregate>> _writeModels = new();
-        private readonly List<GraphNode<Aggregate>> _readModels = new();
         internal void AddWriteModel(GraphNode<Aggregate> rootAggregate) {
             _writeModels.Add(rootAggregate);
-        }
-        internal void AddReadModel(GraphNode<Aggregate> rootAggregate) {
-            _readModels.Add(rootAggregate);
         }
 
         /// <summary>
@@ -54,9 +50,6 @@ namespace Nijo.Models.WriteModel2Features {
                 var saveCommands = _writeModels.Select(agg => new {
                     CreateCommand = new DataClassForSave(agg, DataClassForSave.E_Type.Create),
                     SaveCommand = new DataClassForSave(agg, DataClassForSave.E_Type.UpdateOrDelete),
-                });
-                var displayData = _readModels.Select(agg => new {
-                    DisplayData = new DataClassForDisplay(agg),
                 });
 
                 return $$"""

@@ -28,11 +28,13 @@ namespace Nijo.Core {
         public bool IsRadio { get; set; }
         public string? DisplayName { get; set; }
         public string? DbName { get; set; }
-        /// <summary>コード型でのみ使用。検索条件の挙動</summary>
+        /// <summary>検索条件の挙動</summary>
         public E_SearchBehavior? SearchBehavior { get; set; }
 
         /// <summary>文字列型の最大長</summary>
         public int? MaxLength { get; set; }
+
+        public string? EnumSqlParamType { get; set; }
 
         public override string ToString() => Id.Value;
     }

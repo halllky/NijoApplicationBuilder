@@ -152,18 +152,15 @@ const ToastMessage = ({ msg, darkMode }: {
   const [, dispatch] = useToastContext()
   const [visible, setVisible] = useState(true)
   useEffect(() => {
-    // infoのトーストは勝手に消えてほしいのでタイマーをかけて消す
-    if (msg.type === 'info') {
-      const timer1 = setTimeout(() => {
-        setVisible(false)
-      }, 3000)
-      const timer2 = setTimeout(() => {
-        dispatch(state => state.clear(msg))
-      }, 5000)
-      return () => {
-        clearTimeout(timer1)
-        clearTimeout(timer2)
-      }
+    const timer1 = setTimeout(() => {
+      setVisible(false)
+    }, 3000)
+    const timer2 = setTimeout(() => {
+      dispatch(state => state.clear(msg))
+    }, 5000)
+    return () => {
+      clearTimeout(timer1)
+      clearTimeout(timer2)
     }
   }, [dispatch, msg])
 

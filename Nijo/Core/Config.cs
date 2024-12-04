@@ -53,6 +53,22 @@ namespace Nijo.Core {
             NavigateToEditMode,
         }
 
+        #region VForm2
+        /// <summary>
+        /// VFormでレスポンシブに変化する列数の最大列数。
+        /// </summary>
+        public required int? VFormMaxColumnCount { get; set; }
+        /// <summary>
+        /// VFormの中に入ることができる最大のメンバーの数。
+        /// これより多くのメンバー数をもつ集約が定義された場合はレイアウトが崩れる。
+        /// </summary>
+        public required int? VFormMaxMemberCount { get; set; }
+        /// <summary>
+        /// VFormの列数が切り替わる閾値。単位はpx
+        /// </summary>
+        public required int? VFormThreshold { get; set; }
+        #endregion VForm2
+
         private const string GENERATE_UNUSED_REFTO_MODULES = "GenerateUnusedRefToModules";
 
         private const string DBCONTEXT_NAME = "DbContextName";
@@ -67,6 +83,10 @@ namespace Nijo.Core {
         private const string BUTTON_COLOR = "ButtonColor";
 
         private const string MULTI_VIEW_DETAIL_LINK_BEHAVIOR = "MultiViewDetailLinkBehavior";
+
+        private const string VFORM_MAX_COLUMN_COUNT = "VFormMaxColumnCount";
+        private const string VFORM_MAX_MEMBER_COUNT = "VFormMaxMemberCount";
+        private const string VFORM_THRESHOLD = "VFormThreshold";
 
         public void ToXElement(XElement root) {
 
@@ -129,6 +149,24 @@ namespace Nijo.Core {
             } else {
                 root.Attribute(MULTI_VIEW_DETAIL_LINK_BEHAVIOR)?.Remove();
             }
+
+            if (VFormMaxColumnCount != null) {
+                root.SetAttributeValue(VFORM_MAX_COLUMN_COUNT, VFormMaxColumnCount.ToString());
+            } else {
+                root.Attribute(VFORM_MAX_COLUMN_COUNT)?.Remove();
+            }
+
+            if (VFormMaxMemberCount != null) {
+                root.SetAttributeValue(VFORM_MAX_MEMBER_COUNT, VFormMaxMemberCount.ToString());
+            } else {
+                root.Attribute(VFORM_MAX_MEMBER_COUNT)?.Remove();
+            }
+
+            if (VFormThreshold != null) {
+                root.SetAttributeValue(VFORM_THRESHOLD, VFormThreshold.ToString());
+            } else {
+                root.Attribute(VFORM_THRESHOLD)?.Remove();
+            }
         }
 
         public static Config FromXml(XDocument xDocument) {
@@ -148,6 +186,15 @@ namespace Nijo.Core {
                 MultiViewDetailLinkBehavior = xDocument.Root.Attribute(MULTI_VIEW_DETAIL_LINK_BEHAVIOR)?.Value == E_MultiViewDetailLinkBehavior.NavigateToReadOnlyMode.ToString()
                     ? E_MultiViewDetailLinkBehavior.NavigateToReadOnlyMode
                     : E_MultiViewDetailLinkBehavior.NavigateToEditMode,
+                VFormMaxColumnCount = xDocument.Root.Attribute(VFORM_MAX_COLUMN_COUNT) != null
+                    ? int.Parse(xDocument.Root.Attribute(VFORM_MAX_COLUMN_COUNT)!.Value)
+                    : null,
+                VFormMaxMemberCount = xDocument.Root.Attribute(VFORM_MAX_MEMBER_COUNT) != null
+                    ? int.Parse(xDocument.Root.Attribute(VFORM_MAX_MEMBER_COUNT)!.Value)
+                    : null,
+                VFormThreshold = xDocument.Root.Attribute(VFORM_THRESHOLD) != null
+                    ? int.Parse(xDocument.Root.Attribute(VFORM_THRESHOLD)!.Value)
+                    : null,
             };
         }
     }
