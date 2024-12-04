@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react"
 import useEvent from "react-use-event-hook"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import * as ReactHookForm from "react-hook-form"
 import { UUID } from "uuidjs"
 import { useUserSetting } from "./UserSetting"
@@ -37,6 +37,7 @@ export const useHttpRequest = () => {
   const [, dispatchMsg] = useMsgContext()
   const [, dispatchToast] = useToastContext()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const dotnetWebApiDomain = useMemo(() => {
     const domain = apiDomain
@@ -87,7 +88,7 @@ export const useHttpRequest = () => {
     // HTTPリクエスト実行
     let response: Response
     try {
-      response = await fetch(url, { ...option, credentials: 'include' })
+      response = await fetch(url, {headers: { 'Nijo-Client-URL': location.pathname }, ...option, credentials: 'include'})
     } catch (errors) {
       dispatchMsg(msg => msg.error(`通信でエラーが発生しました(${url})\n${parseUnknownErrors(errors).join('\n')}`))
       return { ok: false, errors }
@@ -155,7 +156,7 @@ export const useHttpRequest = () => {
     try {
       return await fetch(`${dotnetWebApiDomain}${url}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Nijo-Client-URL': location.pathname},
         body: JSON.stringify(data),
         credentials: 'include',
       })
@@ -235,6 +236,7 @@ export const useHttpRequest = () => {
       let response: Response
       try {
         response = await fetch(`${dotnetWebApiDomain}${url}`, {
+          headers:{'Nijo-Client-URL': location.pathname},
           method: 'POST',
           body: formData, // bodyにFormDataのインスタンスを設定した場合は Content-Type は自動的に設定される
           credentials: 'include', // 認証用のCookieを含む

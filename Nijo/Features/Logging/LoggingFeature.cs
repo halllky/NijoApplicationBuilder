@@ -12,7 +12,7 @@ namespace Nijo.Features.Logging {
         public void GenerateCode(CodeRenderingContext context) {
 
             context.CoreLibrary.UtilDir(utilDir => {
-                utilDir.Generate(DefaultLogger.Render(context));
+                //utilDir.Generate(DefaultLogger.Render(context));
             });
 
             context.WebApiProject.UtilDir(utilDir => {

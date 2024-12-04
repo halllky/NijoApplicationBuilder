@@ -52,6 +52,7 @@ namespace Nijo.Parts.WebServer {
                 genDir.Directory("EntityFramework", efDir => {
                     efDir.Generate(RenderDeclaring());
                     efDir.Generate(RenderFactoryForMigration());
+                    efDir.Generate(RenderLogEntry());
                 });
             });
         }
@@ -79,6 +80,8 @@ namespace Nijo.Parts.WebServer {
                     {{_dbSet.SelectTextTemplate(dbSet => $$"""
                             public virtual DbSet<{{dbSet.ClassName}}> {{dbSet.PropName}} { get; set; }
                     """)}}
+
+                           public DbSet<LogEntry> LogEntry { get; set; }
 
                             /// <inheritdoc />
                             protected override void OnModelCreating(ModelBuilder modelBuilder) {
@@ -187,6 +190,35 @@ namespace Nijo.Parts.WebServer {
                                 var services = serviceCollection.BuildServiceProvider();
                                 return services.GetRequiredService<{{ctx.Config.DbContextName}}>();
                             }
+                        }
+                    }
+                    """;
+            },
+        };
+
+        private SourceFile RenderLogEntry() => new SourceFile {
+            FileName = $"LogEntry.cs",
+            RenderContent = ctx => {
+                var app = new ApplicationService();
+
+                return $$"""
+                    using System.ComponentModel.DataAnnotations;
+
+                    namespace {{ctx.Config.DbContextNamespace}} {
+                        /// <summary>
+                        /// LogEntryのデータモデル
+                        /// </summary>
+                        public class LogEntry {
+                           [Key]
+                           public Guid UUID { get; set; } = Guid.NewGuid();
+                           public string SessionKey { get; set; }
+                           public DateTime LogTimestamp { get; set; } = DateTime.Now;
+                           public string UserID { get; set; }
+                           public int LogLevel { get; set; }
+                           public string LogSummary { get; set; }
+                           public string ClientUrl { get; set; }
+                           public string ServerUrl { get; set; }
+                           public int ResponseHttpStatusCode { get; set; }
                         }
                     }
                     """;
