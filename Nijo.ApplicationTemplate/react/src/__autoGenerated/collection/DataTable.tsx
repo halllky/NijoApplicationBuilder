@@ -262,11 +262,11 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
         <tbody className="bg-color-0">
 
           {/* スクロール範囲外の上方向にあって描画されていない行 */}
-          {(rowVirtualizer.range?.startIndex ?? 0) > 0 && (
-            <tr className="leading-tight">
-              <td style={{ height: `${rowVirtualizer.scrollOffset ?? 0}px` }}></td>
-            </tr>
-          )}
+          <tr>
+            <td className="invisible p-0" style={{
+              height: `${rowVirtualizer.scrollOffset ?? 0}px`
+            }}></td>
+          </tr>
 
           {rowVirtualizer.getVirtualItems().map(virtualItem => (
             <tr
@@ -347,11 +347,12 @@ const MemorizedTd: MemorizedCellComponent = React.memo(React.forwardRef(<T,>({
     </td>
   )
 }), (prev, next) => {
-  return Object.is(prev.cell.row.original, next.cell.row.original)
-    && Object.is(prev.getColWidth, next.getColWidth)
-    && Object.is(prev.selectObject, next.selectObject)
-    && Object.is(prev.cellEditorRef, next.cellEditorRef)
-    && Object.is(prev.colIndex, next.colIndex)
+  if (!Object.is(prev.cell.row.original, next.cell.row.original)) return false
+  if (!Object.is(prev.getColWidth, next.getColWidth)) return false
+  if (!Object.is(prev.selectObject, next.selectObject)) return false
+  if (!Object.is(prev.cellEditorRef, next.cellEditorRef)) return false
+  if (!Object.is(prev.colIndex, next.colIndex)) return false
+  return true
 }) as <T>(props: MemorizedCellArgs<T>) => JSX.Element
 
 // -----------------------------------------------
