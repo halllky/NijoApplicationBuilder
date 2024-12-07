@@ -46,7 +46,7 @@ export const useTypeCombo = (
           || agg.type === 'variation-item')
       source.push(...onlyAggregate.map<RefToAggregateOption>(agg => ({
         key: `ref-to:${agg.uniqueId}`,
-        displayName: `ref-to:${agg.displayName}`,
+        displayName: `ref-to:${agg.attrValues?.find(a => a.key === 'physical-name')?.value ?? agg.displayName}`,
       })))
     }
 
@@ -58,7 +58,7 @@ export const useTypeCombo = (
         && agg.type === 'enum')
     source.push(...enums.map<EnumComboOption>(en => ({
       key: `enum:${en.uniqueId}`,
-      displayName: en.displayName,
+      displayName: en.attrValues?.find(a => a.key === 'physical-name')?.value ?? en.displayName,
     })))
 
     // -------------------------------
@@ -69,7 +69,7 @@ export const useTypeCombo = (
         && agg.type === 'value-object')
     source.push(...valueObjects.map<ValueObjectComboOption>(en => ({
       key: `value-object:${en.uniqueId}`,
-      displayName: en.displayName,
+      displayName: en.attrValues?.find(a => a.key === 'physical-name')?.value ?? en.displayName,
     })))
 
     // -------------------------------
