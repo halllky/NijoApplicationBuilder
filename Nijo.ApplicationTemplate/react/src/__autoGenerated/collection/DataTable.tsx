@@ -105,12 +105,19 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     getScrollElement: () => divRef.current,
     estimateSize: () => estimatedRowHeight,
   })
+  const virtualItems = rowVirtualizer.getVirtualItems()
 
+  // ------------------------------------
   // <td>のrefの二重配列
-  const tdRefs = useRef<{ [rowIndexInPropsData: number]: React.RefObject<HTMLTableCellElement>[] }>([])
+  const tdRefs = useRef<{ [rowIndexInPropsData: number]: React.RefObject<HTMLTableCellElement>[] }>({})
+  const tdRefsPrevious = { ...tdRefs.current }
   tdRefs.current = {}
-  for (const virtualItem of rowVirtualizer.getVirtualItems()) {
-    tdRefs.current[virtualItem.index] = Array.from({ length: propsColumns?.length ?? 0 }).map(() => React.createRef())
+  for (const virtualItem of virtualItems) {
+    // 前回のレンダリングで作成されたrefがある場合は再利用し、
+    // 画面スクロールなどにより新しく出現した行の場合はcreateRefする
+    tdRefs.current[virtualItem.index]
+      = tdRefsPrevious[virtualItem.index]
+      ?? Array.from({ length: propsColumns?.length ?? 0 }).map(() => React.createRef())
   }
 
   // ------------------------------------
@@ -268,7 +275,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
             }}></td>
           </tr>
 
-          {rowVirtualizer.getVirtualItems().map(virtualItem => (
+          {virtualItems.map(virtualItem => (
             <tr
               key={flatRows[virtualItem.index].id}
               className="leading-tight"
