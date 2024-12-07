@@ -77,52 +77,90 @@ function App() {
 
   // 挿入
   const insertRows = useEvent(() => {
-    expandAll()
     const selectedRows = gridRef.current?.getSelectedRows()
     if (selectedRows === undefined) return
-    const index = Math.min(...selectedRows.map(r => r.rowIndex))
-    const depth = fields[index]?.depth ?? 0
-    const count = gridRef.current?.getSelectedRows().length ?? 0
-    insert(index, Array.from({ length: count }).map(() => createNewGridRow(depth)))
+    const indexInExpandedRows = Math.min(...selectedRows.map(r => r.rowIndex))
+    const insertPoint = expandedRows[indexInExpandedRows]
+    const indexInAllRows = fields.findIndex(x => x.uniqueId === insertPoint?.uniqueId)
+    const depth = insertPoint?.depth ?? 0
+    insert(indexInAllRows, Array
+      .from({ length: selectedRows.length })
+      .map(() => createNewGridRow(depth)))
     executeValidate()
   })
 
   // 下挿入
   const insertRowsBelow = useEvent(() => {
-    expandAll()
     const selectedRows = gridRef.current?.getSelectedRows()
     if (selectedRows === undefined) return
-    const index = Math.max(...selectedRows.map(r => r.rowIndex)) + 1
-    const depth = fields[index]?.depth ?? 0
-    const count = selectedRows.length
-    insert(index, Array.from({ length: count }).map(() => createNewGridRow(depth)))
+    const indexInExpandedRows = Math.max(...selectedRows.map(r => r.rowIndex)) + 1
+    const insertPoint = expandedRows[indexInExpandedRows]
+    const indexInAllRows = fields.findIndex(x => x.uniqueId === insertPoint?.uniqueId)
+    const depth = insertPoint?.depth ?? 0
+    insert(indexInAllRows, Array
+      .from({ length: selectedRows.length })
+      .map(() => createNewGridRow(depth)))
     executeValidate()
   })
 
   // 削除
   const removeRows = useEvent(() => {
-    expandAll()
-    const selectedRows = gridRef.current?.getSelectedRows().map(r => r.rowIndex)
-    if (selectedRows !== undefined) remove(selectedRows)
+    const selectedRows = gridRef.current?.getSelectedRows()
+    if (selectedRows === undefined) return
+
+    const rowIndexMap = new Map(fields.map((x, i) => [x.uniqueId, i]))
+    const targetIndexes: number[] = []
+    for (const r of selectedRows) {
+      targetIndexes.push(rowIndexMap.get(r.row.uniqueId)!)
+      // 折りたたまれている場合は子孫も削除
+      if (collapsedRowIds.has(r.row.uniqueId)) {
+        for (const descendant of treeMethods.getDescendants(r.row)) {
+          targetIndexes.push(rowIndexMap.get(descendant.uniqueId)!)
+        }
+      }
+    }
+    remove(targetIndexes)
     executeValidate()
   })
 
   // インデント上げ下げ
   const handleIncreaseIndent = useEvent(() => {
-    expandAll()
     const selectedRows = gridRef.current?.getSelectedRows()
     if (!selectedRows) return
-    for (const { rowIndex, row } of selectedRows) {
-      update(rowIndex, { ...row, depth: Math.max(0, row.depth - 1) })
+
+    const targetRows: GridRow[] = []
+    for (const r of selectedRows) {
+      targetRows.push(r.row)
+      // 折りたたまれている場合は子孫も対象
+      if (collapsedRowIds.has(r.row.uniqueId)) {
+        for (const descendant of treeMethods.getDescendants(r.row)) {
+          targetRows.push(descendant)
+        }
+      }
+    }
+    const rowIndexMap = new Map(fields.map((x, i) => [x.uniqueId, i]))
+    for (const row of targetRows) {
+      update(rowIndexMap.get(row.uniqueId)!, { ...row, depth: Math.max(0, row.depth - 1) })
     }
     executeValidate()
   })
   const handleDecreaseIndent = useEvent(() => {
-    expandAll()
     const selectedRows = gridRef.current?.getSelectedRows()
     if (!selectedRows) return
-    for (const { rowIndex, row } of selectedRows) {
-      update(rowIndex, { ...row, depth: row.depth + 1 })
+
+    const targetRows: GridRow[] = []
+    for (const r of selectedRows) {
+      targetRows.push(r.row)
+      // 折りたたまれている場合は子孫も対象
+      if (collapsedRowIds.has(r.row.uniqueId)) {
+        for (const descendant of treeMethods.getDescendants(r.row)) {
+          targetRows.push(descendant)
+        }
+      }
+    }
+    const rowIndexMap = new Map(fields.map((x, i) => [x.uniqueId, i]))
+    for (const row of targetRows) {
+      update(rowIndexMap.get(row.uniqueId)!, { ...row, depth: row.depth + 1 })
     }
     executeValidate()
   })
