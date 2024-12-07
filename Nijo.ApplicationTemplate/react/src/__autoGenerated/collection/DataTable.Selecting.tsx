@@ -152,11 +152,7 @@ export const useSelection = <T,>(
   return {
     selectObject,
     handleSelectionKeyDown,
-
-    activeCellBorderProps: {
-      ref: activeCellRef,
-    },
-
+    activeCellRef,
     getSelectedRows,
     getSelectedColumns,
   }
@@ -164,7 +160,10 @@ export const useSelection = <T,>(
 
 
 type ActiveRangeRef = {
+  /** 選択範囲の即時更新 */
   update: (caretCell: CellPosition | undefined, selectionStart: CellPosition | undefined, containsRowHeader: boolean) => void
+  /** 選択範囲の再レンダリング */
+  reRender: () => void
   scrollToActiveCell: () => void
 }
 type ActiveRangeProps = {
@@ -186,6 +185,8 @@ export const ActiveCellBorder = Util.forwardRefEx(({ getPixel, hidden }: ActiveR
 
   /** 選択範囲の四角形の表示を更新する */
   const update: ActiveRangeRef['update'] = useCallback((caretCell, selectionStart, containsRowHeader) => {
+    setCache([caretCell, selectionStart, containsRowHeader])
+
     const head = caretCell
     const root = selectionStart
     if (!head || !root) {
@@ -234,8 +235,15 @@ export const ActiveCellBorder = Util.forwardRefEx(({ getPixel, hidden }: ActiveR
     })
   }, [getPixel, setSvgHidden, setSvgPosition, setMaskBlackProps])
 
+  // virtualizerの更新時のための再レンダリング処理
+  const [cache, setCache] = React.useState<Parameters<ActiveRangeRef['update']>>()
+  const reRender = useEvent(() => {
+    if (cache) update(...cache)
+  })
+
   useImperativeHandle(ref, () => ({
     update,
+    reRender,
     scrollToActiveCell: () => {
       scrollTargetRef.current?.scrollIntoView({
         behavior: 'instant',

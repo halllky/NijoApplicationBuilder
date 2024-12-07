@@ -104,6 +104,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     count: props.data?.length ?? 0,
     getScrollElement: () => divRef.current,
     estimateSize: () => estimatedRowHeight,
+    onChange: () => activeCellRef.current?.reRender(),
   })
   const virtualItems = rowVirtualizer.getVirtualItems()
 
@@ -129,7 +130,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   const {
     selectObject,
     handleSelectionKeyDown,
-    activeCellBorderProps,
+    activeCellRef,
     getSelectedRows,
     getSelectedColumns,
   } = useSelection<T>(api, data?.length ?? 0, columns, onActiveRowChanged, onCaretCellChanged, cellEditorRef)
@@ -306,9 +307,9 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
       <div className="h-[calc(100%-4rem)]"></div>
 
       <ActiveCellBorder
+        ref={activeCellRef}
         getPixel={getPixel}
         hidden={!showActiveCellBorderAlways && (!isActive || editing)}
-        {...activeCellBorderProps}
       />
 
       <CellEditor
