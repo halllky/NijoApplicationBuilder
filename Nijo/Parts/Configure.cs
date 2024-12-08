@@ -174,7 +174,7 @@ namespace Nijo.Parts {
 
                                     builder.Services.AddControllers(option => {
                                         // エラーハンドリング
-                                        option.Filters.Add<{{_ctx.Config.RootNamespace}}.HttpResponseExceptionFilter>();
+                                        option.Filters.Add<{{_ctx.Config.RootNamespace}}.{{HttpResponseExceptionFilter.CLASSNAME}}>();
 
                                     }).AddJsonOptions(option => {
                                         // JSON日本語設定
