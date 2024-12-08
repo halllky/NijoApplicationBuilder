@@ -47,8 +47,10 @@ namespace Nijo.Parts.WebServer {
                 namespace {{ctx.Config.RootNamespace}} {
                     using Microsoft.Extensions.DependencyInjection;
                     using {{ctx.Config.DbContextNamespace}};
+                    using NLog;
 
                     public partial class {{AbstractClassName}} {
+                        public Logger Log => ServiceProvider.GetRequiredService<Logger>();
                         public {{AbstractClassName}}(IServiceProvider serviceProvider) {
                             {{ServiceProvider}} = serviceProvider;
                         }

@@ -1,12 +1,12 @@
 using CommandLine;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using NLog;
 
 namespace NIJO_APPLICATION_TEMPLATE_Cli;
 
@@ -77,19 +77,19 @@ public abstract partial class BatchBase {
             var jobId = Guid.NewGuid().ToString().Substring(0, 8);
 
             // コマンドライン引数をログ出力
-            var logger = serviceProvider.GetRequiredService<ILogger>();
-            using var logScope = logger.BeginScope($"ID::{jobId}");
+            var logger = serviceProvider.GetRequiredService<Logger>();
+            using var logScope = logger.PushScopeNested($"ID::{jobId}");
 
             // 本処理
-            logger.Log(LogLevel.Information, message: $"処理開始 コマンドライン引数:{string.Join(" ", commandLineArgs)}");
+            logger.Info(message: $"処理開始 コマンドライン引数:{string.Join(" ", commandLineArgs)}");
             try {
                 var ctx = new BatchExecutingContext(jobId, serviceProvider);
                 await batchBase.Execute(ctx);
 
             } catch (Exception ex) {
-                logger.LogError(ex, "予期しないエラーが発生しました。");
+                logger.Error(ex, "予期しないエラーが発生しました。");
             }
-            logger.Log(LogLevel.Information, message: "処理終了");
+            logger.Info(message: "処理終了");
         });
     }
 

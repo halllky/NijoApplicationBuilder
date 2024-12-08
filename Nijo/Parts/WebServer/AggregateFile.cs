@@ -54,11 +54,9 @@ namespace Nijo.Parts.WebServer {
                             [ApiController]
                             [Route("{{Controller.SUBDOMAIN}}/[controller]")]
                             public partial class {{controller.ClassName}} : ControllerBase {
-                                public {{controller.ClassName}}(ILogger<{{controller.ClassName}}> logger, {{appSrv.ConcreteClassName}} applicationService) {
-                                    _logger = logger;
+                                public {{controller.ClassName}}({{appSrv.ConcreteClassName}} applicationService) {
                                     _applicationService = applicationService;
                                 }
-                                protected readonly ILogger<{{controller.ClassName}}> _logger;
                                 protected readonly {{appSrv.ConcreteClassName}} _applicationService;
                         
                                 {{WithIndent(ControllerActions, "        ")}}
