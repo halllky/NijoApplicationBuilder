@@ -215,6 +215,7 @@ namespace Nijo.Models.CommandModelFeatures {
                 /// </summary>
                 [HttpPost("{{(_rootAggregate.Item.Options.LatinName ?? _rootAggregate.Item.UniqueId).ToKebabCase()}}/{{CONTROLLER_CHAGNE_STEPS}}")]
                 public virtual IActionResult {{_rootAggregate.Item.PhysicalName}}ChgngeStep(ComplexPostRequest<{{STEP_CHANGING_EVENT_ARGS}}<{{param.CsClassName}}, {{StepEnumName}}, {{param.MessageDataCsClassName}}>> e) {
+                    _applicationService.Log.Debug("ChgngeStep {{_rootAggregate.Item.PhysicalName}}: {0}", param.Data.ToJson());
                     _applicationService.{{AppSrvOnStepChangingMethod}}(e.Data);
                     if (e.Data.Messages.HasError()) {
                         return this.ShowErrorsUsingReactHook(new JsonArray(e.Data.Messages.ToReactHookFormErrors().ToArray()));
@@ -229,9 +230,10 @@ namespace Nijo.Models.CommandModelFeatures {
                 /// {{_rootAggregate.Item.DisplayName}}処理をWebAPI経由で実行するためのエンドポイント
                 /// </summary>
                 [HttpPost("{{(_rootAggregate.Item.Options.LatinName ?? _rootAggregate.Item.UniqueId).ToKebabCase()}}")]
-                public virtual IActionResult {{_rootAggregate.Item.PhysicalName}}(ComplexPostRequest<{{param.CsClassName}}> param) {
+                public virtual async Task<IActionResult> {{_rootAggregate.Item.PhysicalName}}(ComplexPostRequest<{{param.CsClassName}}> param) {
+                    _applicationService.Log.Debug("Execute {{_rootAggregate.Item.PhysicalName}}: {0}", param.Data.ToJson());
                     var resultGenerator = new {{CommandResult.GENERATOR_WEB_CLASS_NAME}}<{{param.MessageDataCsClassName}}>(this, _applicationService);
-                    var commandResult = _applicationService.{{AppSrvExecuteMethod}}(param.Data, resultGenerator);
+                    var commandResult = await _applicationService.{{AppSrvExecuteMethod}}(param.Data, resultGenerator);
                     return (({{CommandResult.GENERATOR_WEB_CLASS_NAME}}<{{param.MessageDataCsClassName}}>.{{CommandResult.ACTION_RESULT_CONTAINER}})commandResult).ActionResult;
                 }
                 """;
@@ -263,7 +265,7 @@ namespace Nijo.Models.CommandModelFeatures {
                 /// </summary>
                 /// <param name="param">処理パラメータ</param>
                 /// <param name="result">処理結果。return result.XXXXX(); のような形で記述してください。</param>
-                public virtual {{CommandResult.RESULT_INTERFACE_NAME}} {{AppSrvExecuteMethod}}({{param.CsClassName}} param, {{CommandResult.GENERATOR_INTERFACE_NAME}}<{{param.MessageDataCsClassName}}> result) {
+                public virtual Task<{{CommandResult.RESULT_INTERFACE_NAME}}> {{AppSrvExecuteMethod}}({{param.CsClassName}} param, {{CommandResult.GENERATOR_INTERFACE_NAME}}<{{param.MessageDataCsClassName}}> result) {
                     throw new NotImplementedException("{{_rootAggregate.Item.DisplayName}}処理は実装されていません。");
                 }
                 """;

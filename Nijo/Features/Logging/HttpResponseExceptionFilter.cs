@@ -15,6 +15,7 @@ namespace Nijo.Features.Logging {
             RenderContent = context => $$"""
                 namespace {{ctx.Config.RootNamespace}} {
                     using Microsoft.AspNetCore.Mvc.Filters;
+                    using Microsoft.AspNetCore.Mvc.Infrastructure;
                     using Microsoft.AspNetCore.Mvc;
                     using System.Net;
                     using System.Text.Json;
@@ -29,16 +30,22 @@ namespace Nijo.Features.Logging {
 
                         public void OnActionExecuting(ActionExecutingContext context) {
                             _logger.Properties["ClientUrl"] = context.HttpContext.Request.Headers["Nijo-Client-URL"];
-                            _logger.Properties["ServerUrl"] = context.HttpContext.Request.Path;
-                            _logger.Properties["RequestBody"] = context.HttpContext.Request.Body;
-                            _logger.Info("OnActionExecuting");
+                            _logger.Properties["ServerUrl"] = System.Web.HttpUtility.UrlDecode(context.HttpContext.Request.GetEncodedPathAndQuery());
+                            _logger.Info("START");
                         }
 
                         public void OnActionExecuted(ActionExecutedContext context) {
-                            _logger.Properties["ClientUrl"] = context.HttpContext.Request.Headers["Nijo-Client-URL"];
-                            _logger.Properties["ServerUrl"] = context.HttpContext.Request.Path;
-                            _logger.Properties["ResponseStatusCode"] = context.HttpContext.Response.StatusCode;
-                            _logger.Info("OnActionExecuted");
+                            string? strStatusCode;
+                            if (context.Result is IStatusCodeActionResult statusCodeActionResult) {
+                                strStatusCode = statusCodeActionResult.StatusCode?.ToString();
+                            } else {
+                                strStatusCode = string.Empty;
+                            }
+                            _logger.Info(new LogEventInfo {
+                                Message = "END (Http Status Code: {0})",
+                                Parameters = [strStatusCode],
+                                Properties = { ["Option"] = strStatusCode },
+                            });
                         }
 
                         public void OnException(ExceptionContext context) {

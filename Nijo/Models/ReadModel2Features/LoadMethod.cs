@@ -111,11 +111,13 @@ namespace Nijo.Models.ReadModel2Features {
             return $$"""
                 [HttpPost("{{CONTROLLER_ACTION_LOAD}}")]
                 public virtual IActionResult Load{{_aggregate.Item.PhysicalName}}(ComplexPostRequest<{{searchCondition.CsClassName}}> request) {
+                    _applicationService.Log.Debug("Load {{_aggregate.Item.PhysicalName}}: {0}", request.Data.ToJson());
                     var searchResult = _applicationService.{{AppSrvLoadMethod}}(request.Data);
                     return this.ReturnsDataUsingReactHook(searchResult.ToArray());
                 }
                 [HttpPost("{{CONTROLLER_ACTION_COUNT}}")]
                 public virtual IActionResult Count{{_aggregate.Item.PhysicalName}}(ComplexPostRequest<{{searchCondition.CsFilterClassName}}> request) {
+                    _applicationService.Log.Debug("Count {{_aggregate.Item.PhysicalName}}: {0}", request.Data.ToJson());
                     var count = _applicationService.{{AppSrvCountMethod}}(request.Data);
                     return this.ReturnsDataUsingReactHook(count);
                 }
@@ -317,7 +319,13 @@ namespace Nijo.Models.ReadModel2Features {
                     }
 
                     // 検索結果を画面表示用の型に変換
-                    var displayDataList = query.AsEnumerable().Select({{METHOD_NAME_TO_DISPLAY_DATA}}).ToArray();
+                    {{returnType.CsClassName}}[] displayDataList;
+                    try {
+                        displayDataList = query.AsEnumerable().Select({{METHOD_NAME_TO_DISPLAY_DATA}}).ToArray();
+                    } catch {
+                        Log.Debug("SQL発行でエラーが発生しました\t{0}", query.ToQueryString());
+                        throw;
+                    }
 
                     // 読み取り専用項目の設定や、追加情報などを付すなど、任意のカスタマイズ処理
                     var returnValue = {{AppSrvAfterLoadedMethod}}(displayDataList);

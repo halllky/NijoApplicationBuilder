@@ -93,9 +93,8 @@ namespace NIJO_APPLICATION_TEMPLATE {
         /// multipart/form-data 内の入力内容データJSONの項目のキー。
         /// この名前はReact側の処理と一致させておく必要がある。
         /// </summary>
-        private const string PARAM_DATA = "data";
+        internal const string PARAM_DATA = "data";
         /// <summary>
-        /// multipart/form-data 内の入力内容データJSONの項目のキー。
         /// この名前はReact側の処理と一致させておく必要がある。
         /// </summary>
         private const string PARAM_IGNORE_CONFIRM = "ignoreConfirm";
@@ -153,7 +152,9 @@ namespace NIJO_APPLICATION_TEMPLATE {
         /// <param name="data">処理結果データの内容</param>
         public static IActionResult ReturnsDataUsingReactHook<T>(this ControllerBase controller, T data) {
             // このHTTPステータスコードと戻り値のオブジェクトの型は React hook 側と合わせる必要がある
-            return controller.Content(Util.ToJson(new { type = "data", data }), "application/json");
+            var result = controller.Content(Util.ToJson(new { type = "data", data }), "application/json");
+            result.StatusCode = (int?)System.Net.HttpStatusCode.OK;
+            return result;
         }
 
         /// <summary>
@@ -163,7 +164,9 @@ namespace NIJO_APPLICATION_TEMPLATE {
         /// <param name="url">リダイレクト先URL</param>
         public static IActionResult RedirectUsingReactHook(this ControllerBase controller, string url) {
             // このHTTPステータスコードと戻り値のオブジェクトの型は React hook 側と合わせる必要がある
-            return controller.Content(Util.ToJson(new { type = "redirect", url }), "application/json");
+            var result = controller.Content(Util.ToJson(new { type = "redirect", url }), "application/json");
+            result.StatusCode = (int?)System.Net.HttpStatusCode.OK;
+            return result;
         }
 
         /// <summary>
@@ -172,7 +175,9 @@ namespace NIJO_APPLICATION_TEMPLATE {
         /// <param name="text">メッセージ。未指定の場合は既定のメッセージが表示されます。</param>
         public static IActionResult ShowSuccessMessageReactHook(this ControllerBase controller, string? text = null) {
             // このHTTPステータスコードと戻り値のオブジェクトの型は React hook 側と合わせる必要がある
-            return controller.Content(Util.ToJson(new { type = "message", text }), "application/json");
+            var result = controller.Content(Util.ToJson(new { type = "message", text }), "application/json");
+            result.StatusCode = (int?)System.Net.HttpStatusCode.OK;
+            return result;
         }
     }
 }

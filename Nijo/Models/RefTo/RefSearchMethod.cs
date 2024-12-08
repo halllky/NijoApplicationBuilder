@@ -109,11 +109,13 @@ namespace Nijo.Models.RefTo {
             return $$"""
                 [HttpPost("{{ControllerLoadAction}}")]
                 public virtual IActionResult Load{{_aggregate.Item.PhysicalName}}(ComplexPostRequest<{{searchCondition.CsClassName}}> request) {
+                    _applicationService.Log.Debug("Load(ref) {{_aggregate.Item.PhysicalName}}: {0}", request.Data.ToJson());
                     var searchResult = _applicationService.{{AppSrvLoadMethod}}(request.Data);
                     return this.ReturnsDataUsingReactHook(searchResult.ToArray());
                 }
                 [HttpPost("{{ControllerCountAction}}")]
                 public virtual IActionResult Count{{_aggregate.Item.PhysicalName}}(ComplexPostRequest<{{searchCondition.CsFilterClassName}}> request) {
+                    _applicationService.Log.Debug("Count(ref) {{_aggregate.Item.PhysicalName}}: {0}", request.Data.ToJson());
                     var count = _applicationService.{{AppSrvCountMethod}}(request.Data);
                     return this.ReturnsDataUsingReactHook(count);
                 }

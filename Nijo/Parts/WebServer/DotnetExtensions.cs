@@ -73,7 +73,9 @@ namespace Nijo.Parts.WebServer {
                     public static class DotnetExtensionsInWebApi {
                         public static IActionResult JsonContent<T>(this ControllerBase controller, T obj) {
                             var json = {{UtilityClass.CLASSNAME}}.{{UtilityClass.TO_JSON}}(obj);
-                            return controller.Content(json, "application/json");
+                            var result = controller.Content(json, "application/json");
+                            result.StatusCode = (int?)System.Net.HttpStatusCode.OK;
+                            return result;
                         }
                     }
                 }

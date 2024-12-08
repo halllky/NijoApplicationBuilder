@@ -108,20 +108,17 @@ namespace Nijo.Models.WriteModel2Features {
                         /// <param name="ignoreConfirm">「○○ですがよろしいですか？」などのコンファームを無視します。</param>
                         [HttpPost("{{CONTROLLER_ACTION_IMMEDIATELY}}")]
                         public virtual IActionResult ExecuteImmediately([FromBody] WriteModelsBatchUpdateParameter parameter, [FromQuery] bool ignoreConfirm) {
-                            try {
-                                var options = new {{SaveContext.SAVE_OPTIONS}} {
-                                    IgnoreConfirm = ignoreConfirm,
-                                };
-                                var result = _applicationService.{{APPSRV_METHOD}}(parameter.{{HOOK_PARAM_ITEMS}}, options);
+                            _applicationService.Log.Debug("Batch Update: {0}", Request.Form[ComplexPostRequest.PARAM_DATA].ToString());
 
-                                if (result.HasError()) {
-                                    return BadRequest(result.GetErrorDataJson());
-                                }
-                                return Ok();
-
-                            } catch (Exception ex) {
-                                return Problem(ex.ToString());
+                            var options = new {{SaveContext.SAVE_OPTIONS}} {
+                                IgnoreConfirm = ignoreConfirm,
+                            };
+                            var result = _applicationService.{{APPSRV_METHOD}}(parameter.{{HOOK_PARAM_ITEMS}}, options);
+                    
+                            if (result.HasError()) {
+                                return BadRequest(result.GetErrorDataJson());
                             }
+                            return Ok();
                         }
                         public partial class WriteModelsBatchUpdateParameter {
                             public List<{{DataClassForSaveBase.SAVE_COMMAND_BASE}}> {{HOOK_PARAM_ITEMS}} { get; set; } = new();

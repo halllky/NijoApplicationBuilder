@@ -19,6 +19,7 @@ namespace Nijo.Parts.WebServer {
 
         public const string CURRENT_TIME = "CurrentTime";
         public const string CURRENT_USER = "CurrentUser";
+        public const string LOG_SESSION_KEY = "LogSessionKey";
 
         public const string BEFORE_DB_RECREATE = "OnBeforeDbRecreate";
         public const string AFTER_DB_RECREATE = "OnAfterDbRecreate";
@@ -84,8 +85,12 @@ namespace Nijo.Parts.WebServer {
                         /// <summary>
                         /// 現在操作中のユーザーの名前。データ更新時の更新者の記録などに使用。
                         /// </summary>
-                        public virtual string {{CURRENT_USER}} => _currentUser ??= "UNDEFINED";
-                        private string? _currentUser;
+                        public virtual string {{CURRENT_USER}} => "UNDEFINED";
+
+                        /// <summary>
+                        /// 現在のセッションの識別子。ログ出力に使用。
+                        /// </summary>
+                        public virtual string? {{LOG_SESSION_KEY}} => null;
 
                 #if DEBUG
                         public virtual void {{BEFORE_DB_RECREATE}}() {

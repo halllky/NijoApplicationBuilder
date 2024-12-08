@@ -155,28 +155,25 @@ namespace Nijo.Models.ReadModel2Features {
                 /// <param name="request">一括更新内容</param>
                 [HttpPost("{{CONTROLLER_ACTION}}")]
                 public virtual IActionResult BatchUpdateReadModels(ComplexPostRequest<ReadModelsBatchUpdateParameter> request) {
-                    try {
-                        var options = new {{SaveContext.SAVE_OPTIONS}} {
-                            IgnoreConfirm = request.IgnoreConfirm,
-                        };
-                        var result = _applicationService.{{APPSRV_BATCH_UPDATE}}(request.Data.{{HOOK_PARAM_ITEMS}}, options);
+                    _applicationService.Log.Debug("Batch Update: {0}", Request.Form[ComplexPostRequest.PARAM_DATA].ToString());
 
-                        if (result.HasError()) {
-                            return UnprocessableEntity(new {
-                                {{HTTP_RESULT_DETAIL}} = result.GetErrorDataJson(),
-                            });
-                        }
-                        if (!request.IgnoreConfirm && result.HasConfirm()) {
-                            return Accepted(new {
-                                {{HTTP_RESULT_CONFIRM}} = result.GetConfirms().ToArray(),
-                                {{HTTP_RESULT_DETAIL}} = result.GetErrorDataJson(),
-                            });
-                        }
-                        return Ok();
-
-                    } catch (Exception ex) {
-                        return Problem(ex.ToString());
+                    var options = new {{SaveContext.SAVE_OPTIONS}} {
+                        IgnoreConfirm = request.IgnoreConfirm,
+                    };
+                    var result = _applicationService.{{APPSRV_BATCH_UPDATE}}(request.Data.{{HOOK_PARAM_ITEMS}}, options);
+                
+                    if (result.HasError()) {
+                        return UnprocessableEntity(new {
+                            {{HTTP_RESULT_DETAIL}} = result.GetErrorDataJson(),
+                        });
                     }
+                    if (!request.IgnoreConfirm && result.HasConfirm()) {
+                        return Accepted(new {
+                            {{HTTP_RESULT_CONFIRM}} = result.GetConfirms().ToArray(),
+                            {{HTTP_RESULT_DETAIL}} = result.GetErrorDataJson(),
+                        });
+                    }
+                    return Ok();
                 }
                 public partial class ReadModelsBatchUpdateParameter {
                     public List<{{DataClassForDisplay.BASE_CLASS_NAME}}> {{HOOK_PARAM_ITEMS}} { get; set; } = new();
