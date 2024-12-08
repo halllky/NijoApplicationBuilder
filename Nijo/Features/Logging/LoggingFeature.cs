@@ -11,10 +11,6 @@ namespace Nijo.Features.Logging {
     internal class LoggingFeature : IFeature {
         public void GenerateCode(CodeRenderingContext context) {
 
-            context.CoreLibrary.UtilDir(utilDir => {
-                //utilDir.Generate(DefaultLogger.Render(context));
-            });
-
             context.WebApiProject.UtilDir(utilDir => {
                 utilDir.Generate(HttpResponseExceptionFilter.Render(context));
             });

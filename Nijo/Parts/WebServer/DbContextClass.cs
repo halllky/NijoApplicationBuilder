@@ -52,7 +52,7 @@ namespace Nijo.Parts.WebServer {
                 genDir.Directory("EntityFramework", efDir => {
                     efDir.Generate(RenderDeclaring());
                     efDir.Generate(RenderFactoryForMigration());
-                    efDir.Generate(RenderLogEntry());
+                    efDir.Generate(RenderLogEntity());
                 });
             });
         }
@@ -81,7 +81,11 @@ namespace Nijo.Parts.WebServer {
                             public virtual DbSet<{{dbSet.ClassName}}> {{dbSet.PropName}} { get; set; }
                     """)}}
 
-                           public DbSet<LogEntry> LogEntry { get; set; }
+                            /// <summary>
+                            /// ログテーブル。このDbSetを直に参照する使い方は想定されていない。
+                            /// ログ出力はアプリケーションサービスのログプロパティ経由で行う想定
+                            /// </summary>
+                            public DbSet<LogEntity> LogEntity { get; set; }
 
                             /// <inheritdoc />
                             protected override void OnModelCreating(ModelBuilder modelBuilder) {
@@ -196,29 +200,27 @@ namespace Nijo.Parts.WebServer {
             },
         };
 
-        private SourceFile RenderLogEntry() => new SourceFile {
-            FileName = $"LogEntry.cs",
+        private SourceFile RenderLogEntity() => new SourceFile {
+            FileName = $"LogEntity.cs",
             RenderContent = ctx => {
-                var app = new ApplicationService();
-
                 return $$"""
                     using System.ComponentModel.DataAnnotations;
 
-                    namespace {{ctx.Config.DbContextNamespace}} {
+                    namespace {{ctx.Config.RootNamespace}} {
                         /// <summary>
-                        /// LogEntryのデータモデル
+                        /// LogEntityのデータモデル
                         /// </summary>
-                        public class LogEntry {
+                        public class LogEntity {
                            [Key]
                            public Guid UUID { get; set; } = Guid.NewGuid();
-                           public string SessionKey { get; set; }
+                           public string? SessionKey { get; set; }
                            public DateTime LogTimestamp { get; set; } = DateTime.Now;
-                           public string UserID { get; set; }
+                           public string? UserID { get; set; }
                            public int LogLevel { get; set; }
-                           public string LogSummary { get; set; }
-                           public string ClientUrl { get; set; }
-                           public string ServerUrl { get; set; }
-                           public int ResponseHttpStatusCode { get; set; }
+                           public string? LogSummary { get; set; }
+                           public string? ClientUrl { get; set; }
+                           public string? ServerUrl { get; set; }
+                           public int? ResponseHttpStatusCode { get; set; }
                         }
                     }
                     """;

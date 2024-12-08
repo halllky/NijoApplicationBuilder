@@ -21,7 +21,7 @@ namespace Nijo.Features.Logging {
                     using Microsoft.AspNetCore.Http.Extensions;
                     using NLog;
 
-                    public class {{CLASSNAME}} : IExceptionFilter, IActionFilter{
+                    public class {{CLASSNAME}} : IExceptionFilter, IActionFilter {
                         public {{CLASSNAME}}(Logger logger) {
                             _logger = logger;
                         }

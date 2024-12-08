@@ -50,7 +50,6 @@ namespace Nijo.Parts.WebServer {
                     using NLog;
 
                     public partial class {{AbstractClassName}} {
-                        public Logger Log => ServiceProvider.GetRequiredService<Logger>();
                         public {{AbstractClassName}}(IServiceProvider serviceProvider) {
                             {{ServiceProvider}} = serviceProvider;
                         }
@@ -59,6 +58,12 @@ namespace Nijo.Parts.WebServer {
 
                         private {{ctx.Config.DbContextName}}? _dbContext;
                         public virtual {{ctx.Config.DbContextName}} {{DbContext}} => _dbContext ??= {{ServiceProvider}}.GetRequiredService<{{ctx.Config.DbContextName}}>();
+
+                        /// <summary>
+                        /// ログ出力はこのプロパティを通して行われる想定
+                        /// </summary>
+                        public Logger Log => _logger ??= ServiceProvider.GetRequiredService<Logger>();
+                        private Logger? _logger;
 
                         /// <summary>
                         /// <para>
