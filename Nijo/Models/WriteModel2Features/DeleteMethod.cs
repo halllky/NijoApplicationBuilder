@@ -37,7 +37,8 @@ namespace Nijo.Models.WriteModel2Features {
                 .OfType<AggregateMember.ValueMember>()
                 .Select((vm, i) => new {
                     TempVarName = $"searchKey{i + 1}",
-                    vm.MemberName,
+                    PhysicalName = vm.MemberName,
+                    vm.DisplayName,
                     DbEntityFullPath = vm.Declared.GetFullPathAsDbEntity().ToArray(),
                     SaveCommandFullPath = vm.Declared.GetFullPathAsForSave(),
                     ErrorFullPath = vm.Declared.Owner.IsOutOfEntryTree()
@@ -55,7 +56,7 @@ namespace Nijo.Models.WriteModel2Features {
                     // 削除に必要な項目が空の場合は処理中断
                 {{keys.SelectTextTemplate(k => $$"""
                     if (after.{{DataClassForSaveBase.VALUES_CS}}.{{k.SaveCommandFullPath.Join("?.")}} == null) {
-                        messages.{{k.ErrorFullPath.Join(".")}}.AddError("{{k.MemberName}}が空です。");
+                        messages.{{k.ErrorFullPath.Join(".")}}.AddError("{{k.PhysicalName}}が空です。");
                     }
                 """)}}
                     if (messages.HasError()) {
@@ -118,7 +119,12 @@ namespace Nijo.Models.WriteModel2Features {
                     } catch (Exception ex) {
                         messages.AddError($"更新後処理でエラーが発生しました: {string.Join(Environment.NewLine, ex.GetMessagesRecursively())}");
                         {{appSrv.DbContext}}.Database.CurrentTransaction!.RollbackToSavepoint(SAVE_POINT);
+                        return;
                     }
+
+                    Log.Info("{{_rootAggregate.Item.DisplayName.Replace("\"", "\\\"")}}データを物理削除しました。（{{keys.Select((x, i) => $"{x.DisplayName.Replace("\"", "\\\"")}: {{key{i}}}").Join(", ")}}）", {{keys.Select(x => $"afterDbEntity.{x.DbEntityFullPath.Join("?.")}").Join(", ")}});
+                    Log.Debug("更新前データ: {0}", beforeDbEntity.ToJson()); // 更新内容をすべてログ出力
+                    Log.Debug("更新後データ: {0}", afterDbEntity.ToJson()); // 更新内容をすべてログ出力
                 }
 
                 /// <summary>

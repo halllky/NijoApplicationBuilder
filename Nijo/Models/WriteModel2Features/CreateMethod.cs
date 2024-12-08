@@ -32,6 +32,16 @@ namespace Nijo.Models.WriteModel2Features {
             var dataClass = new DataClassForSave(_rootAggregate, DataClassForSave.E_Type.Create);
             var argType = $"{DataClassForSaveBase.CREATE_COMMAND}<{dataClass.CsClassName}>";
 
+            var keys = _rootAggregate
+                .GetKeys()
+                .OfType<AggregateMember.ValueMember>()
+                .Select(vm => new {
+                    PhysicalName = vm.MemberName,
+                    vm.DisplayName,
+                    DbEntityFullPath = vm.Declared.GetFullPathAsDbEntity(),
+                })
+                .ToArray();
+
             return $$"""
                 /// <summary>
                 /// 新しい{{_rootAggregate.Item.DisplayName}}を作成する情報を受け取って登録します。
@@ -79,7 +89,11 @@ namespace Nijo.Models.WriteModel2Features {
                     } catch (Exception ex) {
                         messages.AddError($"更新後処理でエラーが発生しました: {string.Join(Environment.NewLine, ex.GetMessagesRecursively())}");
                         {{appSrv.DbContext}}.Database.CurrentTransaction!.RollbackToSavepoint(SAVE_POINT);
+                        return;
                     }
+
+                    Log.Info("{{_rootAggregate.Item.DisplayName.Replace("\"", "\\\"")}}データを新規登録しました。（{{keys.Select((x, i) => $"{x.DisplayName.Replace("\"", "\\\"")}: {{key{i}}}").Join(", ")}}）", {{keys.Select(x => $"dbEntity.{x.DbEntityFullPath.Join("?.")}").Join(", ")}});
+                    Log.Debug("新規登録データ: {0}", dbEntity.ToJson());
                 }
 
                 /// <summary>
