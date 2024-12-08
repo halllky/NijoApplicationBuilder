@@ -100,6 +100,8 @@ namespace Nijo.Models.WriteModel2Features {
                 {{If(_aggregate.IsRoot(), () => $$"""
 
                     {{WithIndent(RenderToDbEntity(), "    ")}}
+
+                    {{WithIndent(RenderFromDbEntity(), "    ")}}
                 """)}}
                 }
                 """;
@@ -188,6 +190,79 @@ namespace Nijo.Models.WriteModel2Features {
                     };
                 }
                 """;
+        }
+
+        /// <summary>
+        /// <see cref="EFCoreEntity"/> をこのクラスのオブジェクトに変換するメソッドの名前
+        /// </summary>
+        internal const string FROM_DBENTITY = "FromDbEntity";
+        /// <summary>
+        /// EFCoreEntityの項目をこのクラスにマッピングする処理をレンダリングします。
+        /// </summary>
+        private string RenderFromDbEntity() {
+
+            var efCoreEntity = new EFCoreEntity(_aggregate);
+
+            // - 子孫要素を参照するデータを引数の配列中から探すためにはキーで引き当てる必要があるが、
+            //   子孫要素のラムダ式の中ではその外にある変数を参照するしかない
+            // - 複数経路の参照があるケースを想定してGraphPathもキーに加えている
+            var pkVarNames = new Dictionary<(AggregateMember.ValueMember, GraphPath), string>();
+
+            return $$"""
+                /// <summary>
+                /// {{_aggregate.Item.DisplayName}}のオブジェクトをデータベースに保存する形に変換します。
+                /// </summary>
+                public static {{CsClassName}} {{FROM_DBENTITY}}({{efCoreEntity.ClassName}} dbEntity) {
+                    return new {{CsClassName}} {
+                        {{WithIndent(RenderBodyOfFromDbEntity(this, _aggregate, "dbEntity"), "        ")}}
+                    };
+                }
+                """;
+
+            IEnumerable<string> RenderBodyOfFromDbEntity(DataClassForSave writeModel, GraphNode<Aggregate> instanceAgg, string instanceName) {
+
+                var keys = writeModel._aggregate.GetKeys().OfType<AggregateMember.ValueMember>();
+                foreach (var key in keys) {
+                    var path = key.DeclaringAggregate.PathFromEntry();
+                    if (!pkVarNames.ContainsKey((key.Declared, path)))
+                        pkVarNames.Add((key.Declared, path), $"{instanceName}.{key.Declared.GetFullPathAsDbEntity(since: instanceAgg).Join("?.")}");
+                }
+
+                foreach (var member in writeModel.GetOwnMembers()) {
+                    if (member is AggregateMember.ValueMember vm) {
+                        var path = vm.DeclaringAggregate.PathFromEntry();
+                        var value = pkVarNames.TryGetValue((vm.Declared, path), out var ancestorInstanceValue)
+                            ? ancestorInstanceValue
+                            : $"{instanceName}.{vm.Declared.GetFullPathAsDbEntity(since: instanceAgg).Join("?.")}";
+
+                        yield return $$"""
+                            {{vm.MemberName}} = {{value}},
+                            """;
+
+                    } else if (member is AggregateMember.Children children) {
+                        var nav = children.GetNavigationProperty();
+                        var loopVar = $"item{children.ChildrenAggregate.EnumerateAncestors().Count()}";
+                        var childrenWriteModel = new DataClassForSave(nav.Relevant.Owner, Type);
+
+                        yield return $$"""
+                            {{children.MemberName}} = {{instanceName}}.{{member.GetFullPathAsDbEntity(since: instanceAgg).Join("?.")}}?.Select({{loopVar}} => new {{childrenWriteModel.CsClassName}} {
+                                {{WithIndent(RenderBodyOfFromDbEntity(childrenWriteModel, children.ChildrenAggregate, loopVar), "    ")}}
+                            }).ToList() ?? new List<{{childrenWriteModel.CsClassName}}>(),
+                            """;
+
+                    } else if (member is AggregateMember.RelationMember childOrVariation
+                        && (member is AggregateMember.Child || member is AggregateMember.VariationItem)) {
+                        var nav = childOrVariation.GetNavigationProperty();
+                        var childWriteModel = new DataClassForSave(nav.Relevant.Owner, Type);
+
+                        yield return $$"""
+                            {{childOrVariation.MemberName}} = new {{childWriteModel.CsClassName}} {
+                                {{WithIndent(RenderBodyOfFromDbEntity(childWriteModel, instanceAgg, instanceName), "    ")}}
+                            },
+                            """;
+                    }
+                }
+            }
         }
         #endregion 値
 

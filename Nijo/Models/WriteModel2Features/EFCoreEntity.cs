@@ -16,6 +16,7 @@ namespace Nijo.Models.WriteModel2Features {
         internal EFCoreEntity(GraphNode<Aggregate> agg) {
             _aggregate = agg;
         }
+        internal GraphNode<Aggregate> Aggregate => _aggregate;
         private readonly GraphNode<Aggregate> _aggregate;
 
         internal string ClassName => _aggregate.Item.EFCoreEntityClassName;
