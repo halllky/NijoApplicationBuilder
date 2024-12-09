@@ -12,7 +12,10 @@ namespace Nijo.Features.Logging {
 
         internal static SourceFile Render(CodeRenderingContext ctx) => new SourceFile {
             FileName = "HttpResponseExceptionFilter.cs",
-            RenderContent = context => $$"""
+            RenderContent = context => {
+                var appsrv = new ApplicationService();
+
+                return $$"""
                 namespace {{ctx.Config.RootNamespace}} {
                     using Microsoft.AspNetCore.Mvc.Filters;
                     using Microsoft.AspNetCore.Mvc.Infrastructure;
@@ -23,14 +26,18 @@ namespace Nijo.Features.Logging {
                     using NLog;
 
                     public class {{CLASSNAME}} : IExceptionFilter, IActionFilter {
-                        public {{CLASSNAME}}(Logger logger) {
+                        public {{CLASSNAME}}(Logger logger, {{appsrv.ConcreteClassName}} app) {
                             _logger = logger;
+                            _app = app;
                         }
                         private readonly Logger _logger;
+                        private readonly {{appsrv.ConcreteClassName}} _app;
                         private IDisposable? _logScope;
 
                         public void OnActionExecuting(ActionExecutingContext context) {
                             _logScope = NLog.ScopeContext.PushProperties([
+                                KeyValuePair.Create("UserId", _app.{{ApplicationService.CURRENT_USER}}),
+                                KeyValuePair.Create("SessionKey", _app.{{ApplicationService.LOG_SESSION_KEY}} ?? string.Empty),
                                 KeyValuePair.Create("ClientUrl", context.HttpContext.Request.Headers["Nijo-Client-URL"].ToString()),
                                 KeyValuePair.Create("ServerUrl", System.Web.HttpUtility.UrlDecode(context.HttpContext.Request.GetEncodedPathAndQuery()) ?? string.Empty),
                                 ]);
@@ -53,7 +60,14 @@ namespace Nijo.Features.Logging {
                         }
 
                         public void OnException(ExceptionContext context) {
-                            _logger.Error(context.Exception, "Internal Server Error: {Url}", context.HttpContext.Request.GetDisplayUrl());
+                            using (NLog.ScopeContext.PushProperties([
+                                KeyValuePair.Create("UserId", _app.{{ApplicationService.CURRENT_USER}}),
+                                KeyValuePair.Create("SessionKey", _app.{{ApplicationService.LOG_SESSION_KEY}} ?? string.Empty),
+                                KeyValuePair.Create("ClientUrl", context.HttpContext.Request.Headers["Nijo-Client-URL"].ToString()),
+                                KeyValuePair.Create("ServerUrl", System.Web.HttpUtility.UrlDecode(context.HttpContext.Request.GetEncodedPathAndQuery()) ?? string.Empty),
+                                ])) {
+                                _logger.Error(context.Exception, "Internal Server Error: {Url}", context.HttpContext.Request.GetDisplayUrl());
+                            }
                             var contentResult = new ContentResult();
                             contentResult.ContentType = "application/json";
                             contentResult.Content = Util.ToJson(new[] {
@@ -65,7 +79,8 @@ namespace Nijo.Features.Logging {
                         }
                     }
                 }
-                """,
+                """;
+            },
         };
     }
 }
