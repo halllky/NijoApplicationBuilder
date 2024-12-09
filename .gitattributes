@@ -1,0 +1,13 @@
+# 改行コードの取り扱いを .editorconfig に合わせる
+*.cs   eol=crlf
+*.js   eol=lf
+*.jsx  eol=lf
+*.ts   eol=lf
+*.tsx  eol=lf
+*.cjs  eol=lf
+*.css  eol=lf
+*.html eol=lf
+*.xml  eol=lf
+*.json eol=lf
+*.md   eol=lf
+*.xml  eol=lf
