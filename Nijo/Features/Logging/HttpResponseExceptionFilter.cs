@@ -27,10 +27,13 @@ namespace Nijo.Features.Logging {
                             _logger = logger;
                         }
                         private readonly Logger _logger;
+                        private IDisposable? _logScope;
 
                         public void OnActionExecuting(ActionExecutingContext context) {
-                            _logger.Properties["ClientUrl"] = context.HttpContext.Request.Headers["Nijo-Client-URL"];
-                            _logger.Properties["ServerUrl"] = System.Web.HttpUtility.UrlDecode(context.HttpContext.Request.GetEncodedPathAndQuery());
+                            _logScope = NLog.ScopeContext.PushProperties([
+                                KeyValuePair.Create("ClientUrl", context.HttpContext.Request.Headers["Nijo-Client-URL"].ToString()),
+                                KeyValuePair.Create("ServerUrl", System.Web.HttpUtility.UrlDecode(context.HttpContext.Request.GetEncodedPathAndQuery()) ?? string.Empty),
+                                ]);
                             _logger.Info("START");
                         }
 
@@ -46,6 +49,7 @@ namespace Nijo.Features.Logging {
                                 Parameters = [strStatusCode],
                                 Properties = { ["Option"] = strStatusCode },
                             });
+                            _logScope?.Dispose();
                         }
 
                         public void OnException(ExceptionContext context) {
