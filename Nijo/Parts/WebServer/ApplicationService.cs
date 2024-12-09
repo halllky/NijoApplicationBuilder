@@ -50,7 +50,7 @@ namespace Nijo.Parts.WebServer {
                     using {{ctx.Config.DbContextNamespace}};
                     using NLog;
 
-                    public partial class {{AbstractClassName}} : IDisposable {
+                    public partial class {{AbstractClassName}} {
                         public {{AbstractClassName}}(IServiceProvider serviceProvider) {
                             {{ServiceProvider}} = serviceProvider;
                         }
@@ -63,25 +63,8 @@ namespace Nijo.Parts.WebServer {
                         /// <summary>
                         /// ログ出力はこのプロパティを通して行われる想定
                         /// </summary>
-                        public Logger Log {
-                            get {
-                                if (_logger == null) {
-                                    _logger = ServiceProvider.GetRequiredService<Logger>();
-
-                                    // このアプリケーションサービスのインスタンスから出されるログは常に同じユーザーIDとセッションキーを出力
-                                    _logScope = NLog.ScopeContext.PushProperties([
-                                        KeyValuePair.Create("UserId", {{CURRENT_USER}}),
-                                        KeyValuePair.Create("SessionKey", {{LOG_SESSION_KEY}} ?? string.Empty)]);
-                                }
-                                return _logger;
-                            }
-                        }
+                        public Logger Log => _logger ??= ServiceProvider.GetRequiredService<Logger>();
                         private Logger? _logger;
-                        private IDisposable? _logScope;
-
-                        void IDisposable.Dispose() {
-                            _logScope?.Dispose();
-                        }
 
                         /// <summary>
                         /// <para>
