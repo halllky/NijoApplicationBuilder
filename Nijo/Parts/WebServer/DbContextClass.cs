@@ -74,8 +74,12 @@ namespace Nijo.Parts.WebServer {
                         /// </summary>
                         public partial class {{ctx.Config.DbContextName}} : DbContext {
                     #pragma warning disable CS8618 // DbSetはEFCore側で自動的に設定されるため問題なし
-                            public {{ctx.Config.DbContextName}}(DbContextOptions<{{ctx.Config.DbContextName}}> options) : base(options) { }
+                            public {{ctx.Config.DbContextName}}(DbContextOptions<{{ctx.Config.DbContextName}}> options, NLog.Logger logger) : base(options) {
+                                _logger = logger;
+                            }
                     #pragma warning restore CS8618 // DbSetはEFCore側で自動的に設定されるため問題なし
+
+                            private readonly NLog.Logger _logger;
 
                     {{_dbSet.SelectTextTemplate(dbSet => $$"""
                             public virtual DbSet<{{dbSet.ClassName}}> {{dbSet.PropName}} { get; set; }
@@ -116,14 +120,17 @@ namespace Nijo.Parts.WebServer {
                             /// <inheritdoc />
                             protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) {
                                 optionsBuilder.LogTo(sql => {
+                                    _logger.Debug(sql);
                                     if (OutSqlToVisualStudio) {
                                         System.Diagnostics.Debug.WriteLine("---------------------");
                                         System.Diagnostics.Debug.WriteLine(sql);
                                     }
-                                }, LogLevel.Information);
+                                },
+                                LogLevel.Information,
+                                Microsoft.EntityFrameworkCore.Diagnostics.DbContextLoggerOptions.SingleLine);
                             }
                             /// <summary>デバッグ用</summary>
-                            public bool OutSqlToVisualStudio { get; set; } = false;
+                            public static bool OutSqlToVisualStudio { get; set; } = false;
                         }
 
                     }
