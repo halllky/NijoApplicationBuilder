@@ -93,7 +93,7 @@ namespace Nijo.Models.WriteModel2Features {
                     }
 
                     Log.Info("{{_rootAggregate.Item.DisplayName.Replace("\"", "\\\"")}}データを新規登録しました。（{{keys.Select((x, i) => $"{x.DisplayName.Replace("\"", "\\\"")}: {{key{i}}}").Join(", ")}}）", {{keys.Select(x => $"dbEntity.{x.DbEntityFullPath.Join("?.")}").Join(", ")}});
-                    Log.Debug("新規登録データ: {0}", dbEntity.ToJson());
+                    Log.Debug("新規登録データ: {0}", command.ToJson());
                 }
 
                 /// <summary>

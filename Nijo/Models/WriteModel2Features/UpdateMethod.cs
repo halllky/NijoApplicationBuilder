@@ -137,8 +137,7 @@ namespace Nijo.Models.WriteModel2Features {
                     }
 
                     Log.Info("{{_rootAggregate.Item.DisplayName.Replace("\"", "\\\"")}}データを更新しました。（{{keys.Select((x, i) => $"{x.DisplayName.Replace("\"", "\\\"")}: {{key{i}}}").Join(", ")}}）", {{keys.Select(x => $"afterDbEntity.{x.DbEntityFullPath.Join("?.")}").Join(", ")}});
-                    Log.Debug("更新前データ: {0}", beforeDbEntity.ToJson()); // 更新内容をすべてログ出力
-                    Log.Debug("更新後データ: {0}", afterDbEntity.ToJson()); // 更新内容をすべてログ出力
+                    Log.Debug("更新後データ: {0}", after.ToJson());
                 }
 
                 /// <summary>

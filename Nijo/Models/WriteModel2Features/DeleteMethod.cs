@@ -123,7 +123,7 @@ namespace Nijo.Models.WriteModel2Features {
                     }
 
                     Log.Info("{{_rootAggregate.Item.DisplayName.Replace("\"", "\\\"")}}データを物理削除しました。（{{keys.Select((x, i) => $"{x.DisplayName.Replace("\"", "\\\"")}: {{key{i}}}").Join(", ")}}）", {{keys.Select(x => $"afterDbEntity.{x.DbEntityFullPath.Join("?.")}").Join(", ")}});
-                    Log.Debug("削除データ: {0}", beforeDbEntity.ToJson()); // 更新内容をすべてログ出力
+                    Log.Debug("削除データ: {0}", after.ToJson());
                 }
 
                 /// <summary>
