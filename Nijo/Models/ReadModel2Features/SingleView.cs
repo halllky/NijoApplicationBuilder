@@ -570,12 +570,12 @@ namespace Nijo.Models.ReadModel2Features {
                     """)}}
 
                         if (to === 'readonly') {
-                          navigate(`{{GetUrl(E_Type.ReadOnly)}}/{{keys.Select((_, i) => $"${{window.encodeURI(`${{key{i}}}`)}}").Join("/")}}`)
+                          navigate(`{{GetUrl(E_Type.ReadOnly)}}/{{keys.Select((_, i) => $"${{window.encodeURIComponent(`${{key{i}}}`)}}").Join("/")}}`)
                         } else {
                           const queryString = overwrite
                             ? `?${new URLSearchParams({ {{EDIT_MODE_INITVALUE}}: JSON.stringify(obj) }).toString()}`
                             : ''
-                          navigate(`{{GetUrl(E_Type.Edit)}}/{{keys.Select((_, i) => $"${{window.encodeURI(`${{key{i}}}`)}}").Join("/")}}${queryString}`)
+                          navigate(`{{GetUrl(E_Type.Edit)}}/{{keys.Select((_, i) => $"${{window.encodeURIComponent(`${{key{i}}}`)}}").Join("/")}}${queryString}`)
                         }
                       }, [navigate])
                     }
