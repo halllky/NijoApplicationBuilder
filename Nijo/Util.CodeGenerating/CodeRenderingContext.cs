@@ -207,6 +207,9 @@ namespace Nijo.Util.CodeGenerating {
                 cellType.Add(memberType.RenderDataTableColumnDefHelper(this));
             }
 
+            // 区分マスタ（動的列挙体）
+            Models.DynamicEnum.GenerateSourceCode(this);
+
             // モデルと関係するがルート集約1個と対応しないソースコードを生成する
             foreach (var model in _handledModels.Values) {
                 model.GenerateCode(this);

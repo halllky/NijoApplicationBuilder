@@ -1206,6 +1206,19 @@ namespace Nijo.Runtime {
                     && (nodeType == E_NodeType.RootAggregate || Type == Children.Key)) {
                     errors.Add("ルート集約とChildrenではキー指定が必須です。");
                 }
+
+                // 動的列挙体（区分マスタ）
+                if (AttrValues?.Any(a => a.Key == IsDynamicEnumWriteModel.Key) == true) {
+                    if (!children.Any(c => c.GetPhysicalName() == Models.DynamicEnum.TYPE_PROP_NAME)) {
+                        errors.Add($"動的列挙体（区分マスタ）のWriteModelは '{Models.DynamicEnum.TYPE_PROP_NAME}' という物理名の要素を持つ必要があります。");
+                    }
+                    if (!children.Any(c => c.GetPhysicalName() == Models.DynamicEnum.DISPLAY_NAME_PROP_NAME)) {
+                        errors.Add($"動的列挙体（区分マスタ）のWriteModelは '{Models.DynamicEnum.DISPLAY_NAME_PROP_NAME}' という物理名の要素を持つ必要があります。");
+                    }
+                    if (!children.Any(c => c.GetPhysicalName() == Models.DynamicEnum.VALUE_PROP_NAME)) {
+                        errors.Add($"動的列挙体（区分マスタ）のWriteModelは '{Models.DynamicEnum.VALUE_PROP_NAME}' という物理名の要素を持つ必要があります。");
+                    }
+                }
             }
 
             public override string ToString() {
@@ -1834,6 +1847,7 @@ namespace Nijo.Runtime {
             Validate = (node, schema, errors) => {
                 if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
                 if (schema.GetChildren(node).Any()) errors.Add("この型に子要素を設定することはできません。");
+                if (string.IsNullOrWhiteSpace(node.TypeDetail)) errors.Add("値を指定してください。");
             },
         };
         #endregion ルート集約に設定できる種類

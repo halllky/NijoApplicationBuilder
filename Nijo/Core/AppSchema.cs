@@ -33,6 +33,9 @@ namespace Nijo.Core {
         internal IReadOnlyCollection<EnumDefinition> EnumDefinitions { get; }
 
         internal IReadOnlyCollection<DynamicEnumTypeInfo> DynamicEnumTypeInfo { get; }
+        internal GraphNode<Aggregate>? GetDynamicEnumWriteModel() {
+            return RootAggregates().SingleOrDefault(x => x.Item.Options.IsDynamicEnumWriteModel);
+        }
 
         /// <summary>
         /// デバッグ用TSV。Excelやスプレッドシートに貼り付けて構造の妥当性を確認するのに使う
