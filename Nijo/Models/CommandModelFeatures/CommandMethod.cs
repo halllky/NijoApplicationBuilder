@@ -215,7 +215,7 @@ namespace Nijo.Models.CommandModelFeatures {
                 /// </summary>
                 [HttpPost("{{(_rootAggregate.Item.Options.LatinName ?? _rootAggregate.Item.UniqueId).ToKebabCase()}}/{{CONTROLLER_CHAGNE_STEPS}}")]
                 public virtual IActionResult {{_rootAggregate.Item.PhysicalName}}ChgngeStep(ComplexPostRequest<{{STEP_CHANGING_EVENT_ARGS}}<{{param.CsClassName}}, {{StepEnumName}}, {{param.MessageDataCsClassName}}>> e) {
-                    _applicationService.Log.Debug("ChgngeStep {{_rootAggregate.Item.PhysicalName}}: {0}", param.Data.ToJson());
+                    _applicationService.Log.Debug("ChgngeStep {{_rootAggregate.Item.PhysicalName}}: {0}", e.Data.ToJson());
                     _applicationService.{{AppSrvOnStepChangingMethod}}(e.Data);
                     if (e.Data.Messages.HasError()) {
                         return this.ShowErrorsUsingReactHook(new JsonArray(e.Data.Messages.ToReactHookFormErrors().ToArray()));
