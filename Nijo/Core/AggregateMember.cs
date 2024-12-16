@@ -510,6 +510,18 @@ namespace Nijo.Core {
                     }
                 }
             }
+
+            /// <summary>
+            /// このrefが区分マスタへの参照の場合、その詳細情報を返します。
+            /// </summary>
+            internal DynamicEnumTypeInfo? GetDynamicEnumTypeInfo(Util.CodeGenerating.CodeRenderingContext ctx) {
+                if (!Relation.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_DYNAMIC_ENUM_TYPE_NAME, out var dynamicEnumTypePhysicalName)
+                    || string.IsNullOrWhiteSpace((string?)dynamicEnumTypePhysicalName)) {
+                    return null;
+                }
+
+                return ctx.Schema.DynamicEnumTypeInfo.Single(x => x.PhysicalName == (string)dynamicEnumTypePhysicalName);
+            }
         }
 
         /// <summary>

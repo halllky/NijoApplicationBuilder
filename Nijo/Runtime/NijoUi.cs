@@ -471,6 +471,16 @@ namespace Nijo.Runtime {
                 }
 
                 // -------------------------------------------
+                // 動的列挙体（区分マスタ）種類の登録
+                var dynamicEnumTypes = RootNodes()
+                    .Where(n => n.Type == DynamicEnumDefType.Key)
+                    .Select(n => new DynamicEnumTypeInfo {
+                        DisplayName = n.DisplayName,
+                        PhysicalName = n.GetPhysicalName(),
+                        TypeKey = n.TypeDetail!,
+                    });
+
+                // -------------------------------------------
                 // WriteModel, ReadModel, Command の登録
                 foreach (var node in this) {
                     var root = GetRoot(node);
@@ -545,6 +555,7 @@ namespace Nijo.Runtime {
                                 { DirectedEdgeExtensions.REL_ATTR_DISPLAY_NAME, options.DisplayName },
                                 { DirectedEdgeExtensions.REL_ATTR_DB_NAME, options.DbName },
                                 { DirectedEdgeExtensions.REL_ATTR_MEMBER_ORDER, _list.IndexOf(node) },
+                                { DirectedEdgeExtensions.REL_ATTR_DYNAMIC_ENUM_TYPE_NAME, options.DynamicEnumTypePhysicalName },
                             },
                         });
 
@@ -597,7 +608,7 @@ namespace Nijo.Runtime {
                 if (!DirectedGraph.TryCreate(graphNodes, graphEdges, out var graph, out var errors1)) {
                     throw new InvalidOperationException($"列挙体の構築時にエラーが発生しました。:{errors1.Join(", ")}");
                 }
-                var appSchema = new AppSchema(Config.RootNamespace, graph, enums);
+                var appSchema = new AppSchema(Config.RootNamespace, graph, enums, dynamicEnumTypes.ToArray());
                 return appSchema;
             }
             #endregion 入出力
@@ -718,6 +729,20 @@ namespace Nijo.Runtime {
                             Node = node,
                             Key = PhysicalName.Key,
                             Message = $"物理名「{group.Key}」が重複しています。",
+                        };
+                    }
+                }
+
+                // 区分マスタは1個だけ
+                var dynamicEnumWriteModels = _list
+                    .Where(n => n.AttrValues?.Any(a => a.Key == IsDynamicEnumWriteModel.Key) == true)
+                    .ToArray();
+                if (dynamicEnumWriteModels.Length >= 2) {
+                    foreach (var node in dynamicEnumWriteModels) {
+                        yield return new ValidationError {
+                            Key = IsDynamicEnumWriteModel.Key,
+                            Node = node,
+                            Message = $"{IsDynamicEnumWriteModel.DisplayName}はアプリケーション全体で1つしか定義できません。",
                         };
                     }
                 }
@@ -845,6 +870,17 @@ namespace Nijo.Runtime {
                                 }
                             }
                         }
+
+                        if (node.IsRefToDynamicEnum(this)) {
+                            if (node.AttrValues?.Any(a => a.Key == DynamicEnumTypePhysicalName.Key) != true) {
+                                yield return new ValidationError {
+                                    Node = node,
+                                    Key = DynamicEnumTypePhysicalName.Key,
+                                    Message = "区分マスタの種類が指定されていません。",
+                                };
+                            }
+                        }
+
                     } else if (node.Type.StartsWith(MutableSchemaNode.ENUM_PREFIX)) {
                         // 列挙体
                         var uniqueId = node.Type.Substring(MutableSchemaNode.ENUM_PREFIX.Length);
@@ -1148,6 +1184,11 @@ namespace Nijo.Runtime {
                 var root = schema.GetRoot(this);
                 return root.Type == Command.Key;
             }
+            public bool IsRefToDynamicEnum(MutableSchema schema) {
+                if (Type?.StartsWith(REFTO_PREFIX) != true) return false;
+                return schema.FindRefToNode(Type)?.AttrValues?.Any(a => a.Key == IsDynamicEnumWriteModel.Key) == true;
+            }
+
             /// <summary>
             /// エラーチェック
             /// </summary>
@@ -1613,6 +1654,7 @@ namespace Nijo.Runtime {
             yield return EnumDef;
             yield return Command;
             yield return ValueObjectDef;
+            yield return DynamicEnumDefType;
 
             // 子孫集約に設定できる種類
             yield return Child;
@@ -1646,6 +1688,8 @@ namespace Nijo.Runtime {
             yield return DbName;
             yield return LatinName;
 
+            yield return DynamicEnumTypePhysicalName;
+
             yield return KeyDef;
             yield return NameDef;
             yield return Required;
@@ -1664,6 +1708,8 @@ namespace Nijo.Runtime {
             yield return SearchBehavior;
 
             yield return EnumSqlParamType;
+
+            yield return IsDynamicEnumWriteModel;
         }
 
         #region ルート集約に設定できる種類
@@ -1774,6 +1820,20 @@ namespace Nijo.Runtime {
             },
             EditAggregateOption = (node, schema, opt) => {
                 opt.Handler = NijoCodeGenerator.Models.ValueObjectModel.Key;
+            },
+        };
+        private static SchemaNodeTypeDef DynamicEnumDefType => new SchemaNodeTypeDef {
+            NodeType = E_NodeType.RootAggregate,
+            Key = "dynamic-enum-type",
+            DisplayName = "区分マスタ（動的列挙体）の種類",
+            HelpText = $$"""
+                これが区分マスタの種類であることを表します。
+                """,
+            FindMatchingIsAttribute = (depth, isAttr) => depth == 0
+                                                      && isAttr.TryGetValue("dynamic-enum-type", out var isAttribute) ? isAttribute : null,
+            Validate = (node, schema, errors) => {
+                if (node.Depth != 0) errors.Add("この型はルート要素にしか設定できません。");
+                if (schema.GetChildren(node).Any()) errors.Add("この型に子要素を設定することはできません。");
             },
         };
         #endregion ルート集約に設定できる種類
@@ -1988,6 +2048,32 @@ namespace Nijo.Runtime {
             },
             EditAggregateMemberOption = (value, node, schema, opt) => {
                 // 特に処理なし
+            },
+        };
+
+        private static OptionalAttributeDef DynamicEnumTypePhysicalName => new OptionalAttributeDef {
+            Key = "dynamic-enum-type-physical-name",
+            DisplayName = "区分マスタの種類",
+            Type = E_OptionalAttributeType.String,
+            HelpText = $$"""
+                この項目が区分マスタのうちどの種類をとりうるか。
+                ref-to:区分マスタ にのみ定義可能。
+                """,
+            Validate = (value, node, schema, errors) => {
+                if (node.IsRefToDynamicEnum(schema)) {
+
+                    if (string.IsNullOrWhiteSpace(value)) {
+                        errors.Add("区分マスタのうちどの種類かを指定してください。");
+                    } else if (!schema.RootNodes().Where(n => n.Type == DynamicEnumDefType.Key).Any(n => n.GetPhysicalName() == value)) {
+                        errors.Add($"区分マスタに種類'{value}'が存在しません。");
+                    }
+
+                } else {
+                    errors.Add("この設定は区分マスタを参照する項目にのみ指定できます。");
+                }
+            },
+            EditAggregateMemberOption = (value, node, schema, opt) => {
+                opt.DynamicEnumTypePhysicalName = value;
             },
         };
 
@@ -2338,6 +2424,26 @@ namespace Nijo.Runtime {
             },
             EditAggregateMemberOption = (value, node, schema, opt) => {
                 opt.EnumSqlParamType = value;
+            },
+        };
+
+        private static OptionalAttributeDef IsDynamicEnumWriteModel => new OptionalAttributeDef {
+            Key = "is-dynamic-enum-write-model",
+            DisplayName = "区分マスタ",
+            Type = E_OptionalAttributeType.Boolean,
+            HelpText = $$"""
+                このWriteModelが区分マスタであることを表します。
+                区分マスタはアプリケーション中で1つしか定義できません。
+                """,
+            Validate = (value, node, schema, errors) => {
+                if (node.Depth != 0) {
+                    errors.Add("この属性はルート集約にのみ設定できます。");
+                } else if (!node.IsWriteModel(schema)) {
+                    errors.Add("この属性はWriteModelにのみ設定できます。");
+                }
+            },
+            EditAggregateOption = (value, node, schema, opt) => {
+                opt.IsDynamicEnumWriteModel = true;
             },
         };
         #endregion オプショナル属性

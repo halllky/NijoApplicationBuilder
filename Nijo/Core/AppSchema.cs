@@ -8,12 +8,13 @@ using System.Threading.Tasks;
 
 namespace Nijo.Core {
     public class AppSchema {
-        internal static AppSchema Empty() => new(string.Empty, DirectedGraph.Empty(), new HashSet<EnumDefinition>());
+        internal static AppSchema Empty() => new(string.Empty, DirectedGraph.Empty(), new HashSet<EnumDefinition>(), new HashSet<DynamicEnumTypeInfo>());
 
-        internal AppSchema(string appName, DirectedGraph directedGraph, IReadOnlyCollection<EnumDefinition> enumDefinitions) {
+        internal AppSchema(string appName, DirectedGraph directedGraph, IReadOnlyCollection<EnumDefinition> enumDefinitions, IReadOnlyCollection<DynamicEnumTypeInfo> dynamicEnumTypeInfo) {
             ApplicationName = appName;
             Graph = directedGraph;
             EnumDefinitions = enumDefinitions;
+            DynamicEnumTypeInfo = dynamicEnumTypeInfo;
         }
 
         public string ApplicationName { get; }
@@ -30,6 +31,8 @@ namespace Nijo.Core {
         }
 
         internal IReadOnlyCollection<EnumDefinition> EnumDefinitions { get; }
+
+        internal IReadOnlyCollection<DynamicEnumTypeInfo> DynamicEnumTypeInfo { get; }
 
         /// <summary>
         /// デバッグ用TSV。Excelやスプレッドシートに貼り付けて構造の妥当性を確認するのに使う

@@ -79,6 +79,12 @@ namespace Nijo.Core {
         /// ラテン語名
         /// </summary>
         public string? LatinName { get; set; }
+
+        /// <summary>
+        /// このWriteModelが区分マスタであることを表します。
+        /// 区分マスタはアプリケーション中で1つしか定義できません。
+        /// </summary>
+        public bool IsDynamicEnumWriteModel { get; set; }
     }
     // TODO: それぞれのオプションの説明を書く
     public sealed class AggregateMemberBuildOption {
@@ -128,6 +134,11 @@ namespace Nijo.Core {
         /// 列挙体のSQLパラメータの型
         /// </summary>
         public string? EnumSqlParamType { get; set; }
+
+        /// <summary>
+        /// 動的列挙体（区分マスタ）のうちどの種類をとるか
+        /// </summary>
+        public string? DynamicEnumTypePhysicalName { get; set; }
     }
     public sealed class EnumValueOption {
         public string PhysicalName { get; set; } = string.Empty;
@@ -179,6 +190,7 @@ namespace Nijo.Core {
         internal const string REL_ATTR_DISPLAY_NAME = "display-name";
         internal const string REL_ATTR_DB_NAME = "ref-db-name";
         internal const string REL_ATTR_MEMBER_ORDER = "relation-aggregate-order";
+        internal const string REL_ATTR_DYNAMIC_ENUM_TYPE_NAME = "dynamic-enum-type-physical-name";
         internal const string REL_ATTR_IS_COMBO = "is-combo";
         internal const string REL_ATTR_IS_RADIO = "is-radio";
 
