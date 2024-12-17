@@ -1209,6 +1209,9 @@ namespace Nijo.Runtime {
 
                 // 動的列挙体（区分マスタ）
                 if (AttrValues?.Any(a => a.Key == IsDynamicEnumWriteModel.Key) == true) {
+                    if (!children.Any(c => c.GetPhysicalName() == Models.DynamicEnum.PK_PROP_NAME)) {
+                        errors.Add($"動的列挙体（区分マスタ）のWriteModelは '{Models.DynamicEnum.PK_PROP_NAME}' という物理名の要素を持つ必要があります。");
+                    }
                     if (!children.Any(c => c.GetPhysicalName() == Models.DynamicEnum.TYPE_PROP_NAME)) {
                         errors.Add($"動的列挙体（区分マスタ）のWriteModelは '{Models.DynamicEnum.TYPE_PROP_NAME}' という物理名の要素を持つ必要があります。");
                     }

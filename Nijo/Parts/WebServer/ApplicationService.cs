@@ -53,6 +53,7 @@ namespace Nijo.Parts.WebServer {
                     public partial class {{AbstractClassName}} {
                         public {{AbstractClassName}}(IServiceProvider serviceProvider) {
                             {{ServiceProvider}} = serviceProvider;
+                            {{Models.DynamicEnum.CSHARP_UTIL_PROPERTY}} = new(serviceProvider.GetRequiredService<{{ctx.Config.DbContextName}}>());
                         }
 
                         public IServiceProvider {{ServiceProvider}} { get; }

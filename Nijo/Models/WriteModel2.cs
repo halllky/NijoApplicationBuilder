@@ -80,6 +80,7 @@ namespace Nijo.Models {
             // 処理: 自動生成されるバリデーションエラーチェック
             aggregateFile.AppServiceMethods.Add(RequiredCheck.Render(rootAggregate, context));
             aggregateFile.AppServiceMethods.Add(MaxLengthCheck.Render(rootAggregate, context));
+            aggregateFile.AppServiceMethods.Add(DynamicEnum.RenderAppSrvCheckMethod(rootAggregate, context));
 
             // 処理: SetReadOnly AppSrv
             var setReadOnly = new SetReadOnly(rootAggregate);
@@ -88,7 +89,7 @@ namespace Nijo.Models {
             // ---------------------------------------------
             // WriteModelと同じ型のReadModelを生成する
             if (rootAggregate.Item.Options.GenerateDefaultReadModel) {
-               context.GetModel<ReadModel2>().GenerateCode(context, rootAggregate);
+                context.GetModel<ReadModel2>().GenerateCode(context, rootAggregate);
             }
 
             // ---------------------------------------------
