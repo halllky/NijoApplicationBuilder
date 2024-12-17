@@ -85,10 +85,13 @@ namespace Nijo.Models {
         private static string RenderTypeScript(CodeRenderingContext ctx) {
             return $$"""
                 /** 区分マスタの種類名 */
-                export type 区分マスタType
+                export type 区分マスタ種別 = keyof typeof 区分マスタ種別Key
+                /** 区分マスタの種類と対応するキー */
+                export const 区分マスタ種別Key = {
                 {{ctx.Schema.DynamicEnumTypeInfo.SelectTextTemplate((x, i) => $$"""
-                  {{(i == 0 ? "=" : "|")}} '{{x.PhysicalName}}'
+                  {{x.PhysicalName}}: '{{x.TypeKey}}' as const,
                 """)}}
+                }
                 """;
         }
 
