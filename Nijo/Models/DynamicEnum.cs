@@ -19,10 +19,14 @@ namespace Nijo.Models {
         internal const string VALUE_PROP_NAME = "値CD";
         internal const string DISPLAY_NAME_PROP_NAME = "表示名称";
 
+        internal static bool ExistsDynamicEnum(CodeRenderingContext ctx) {
+            return ctx.Schema.RootAggregates().Any(agg => agg.Item.Options.IsDynamicEnumWriteModel);
+        }
+
         internal static void GenerateSourceCode(CodeRenderingContext ctx) {
 
             // 区分マスタが無いならレンダリングしない
-            if (!ctx.Schema.RootAggregates().Any(agg => agg.Item.Options.IsDynamicEnumWriteModel)) return;
+            if (!ExistsDynamicEnum(ctx)) return;
 
             ctx.CoreLibrary.AppSrvMethods.Add(RenderAppSrvUtilProperty());
             ctx.CoreLibrary.UtilDir(dir => {
