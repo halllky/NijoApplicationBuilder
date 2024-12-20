@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static Nijo.Models.CommandModelFeatures.CommandParameter;
 
 namespace Nijo.Models.WriteModel2Features {
     /// <summary>
@@ -256,10 +257,44 @@ namespace Nijo.Models.WriteModel2Features {
                         var childWriteModel = new DataClassForSave(nav.Relevant.Owner, Type);
 
                         yield return $$"""
-                            {{childOrVariation.MemberName}} = new {{childWriteModel.CsClassName}} {
+                            {{childOrVariation.MemberName}} = new() {
                                 {{WithIndent(RenderBodyOfFromDbEntity(childWriteModel, instanceAgg, instanceName), "    ")}}
                             },
                             """;
+
+                    } else if (member is AggregateMember.Ref @ref) {
+                        var refTargetKeyEntry = new DataClassForRefTargetKeys(@ref.RefTo, @ref.RefTo);
+                        yield return $$"""
+                            {{@ref.MemberName}} = new() {
+                                {{WithIndent(RenderRefTargetKeyBody(refTargetKeyEntry), "    ")}}
+                            },
+                            """;
+
+                        IEnumerable<string> RenderRefTargetKeyBody(DataClassForRefTargetKeys refTargetKey) {
+                            foreach (var fk in refTargetKey.GetValueMembers()) {
+
+                                // ナビゲーションプロパティからではなくエンティティ自身がもっているプロパティからマッピングする。
+                                // ナビゲーションプロパティはEFCoreの都合が絡んでくるので汎用性の高いFromDbEntityメソッドの中で使うのは少々不安
+                                var vm = writeModel._aggregate
+                                    .GetMembers()
+                                    .OfType<AggregateMember.ValueMember>()
+                                    .SingleOrDefault(vm => vm.Inherits?.Member.Declared.Owner.IsOutOfEntryTree() == true
+                                                        && vm.Inherits?.Member.Declared.Owner.GetRefEntryEdge() == @ref.Relation
+                                                        && vm.Inherits?.Member.Declared == fk.Member.Declared)
+                                    ?? fk.Member; // 対応するプロパティが無い場合はナビゲーションプロパティのそれを使う（どういうケース…？）
+
+                                yield return $$"""
+                                    {{fk.MemberName}} = {{instanceName}}.{{vm.GetFullPathAsDbEntity(since: instanceAgg).Join("?.")}},
+                                    """;
+                            }
+                            foreach (var desc in refTargetKey.GetRelationMembers()) {
+                                yield return $$"""
+                                    {{desc.MemberName}} = new() {
+                                        {{WithIndent(RenderRefTargetKeyBody(desc), "    ")}}
+                                    },
+                                    """;
+                            }
+                        }
                     }
                 }
             }
