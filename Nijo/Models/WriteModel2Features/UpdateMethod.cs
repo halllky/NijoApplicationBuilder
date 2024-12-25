@@ -128,7 +128,13 @@ namespace Nijo.Models.WriteModel2Features {
                     // 更新後処理
                     try {
                         var afterSaveEventArgs = new {{SaveContext.AFTER_SAVE_EVENT_ARGS}}(batchUpdateState);
-                        {{AfterMethodName}}(beforeDbEntity, afterDbEntity, afterSaveEventArgs);;
+                        {{AfterMethodName}}(beforeDbEntity, afterDbEntity, afterSaveEventArgs);
+
+                        // 後続処理に影響が出るのを防ぐためエンティティを解放
+                        {{appSrv.DbContext}}.Entry(afterDbEntity).State = EntityState.Detached;
+                        {{WithIndent(RenderDescendantDetaching(_rootAggregate, "afterDbEntity"), "        ")}}
+
+                        // セーブポイント解放
                         {{appSrv.DbContext}}.Database.CurrentTransaction!.ReleaseSavepoint(SAVE_POINT);
                     } catch (Exception ex) {
                         messages.AddError($"更新後処理でエラーが発生しました: {string.Join(Environment.NewLine, ex.GetMessagesRecursively())}");
@@ -224,5 +230,53 @@ namespace Nijo.Models.WriteModel2Features {
             return builder.ToString();
         }
 
+        internal static string RenderDescendantDetaching(GraphNode<Aggregate> rootAggregate, string rootEntityName) {
+            var dbContext = new ApplicationService().DbContext;
+            var builder = new StringBuilder();
+
+            var descendantDbEntities = rootAggregate.EnumerateDescendants().ToArray();
+            for (int i = 0; i < descendantDbEntities.Length; i++) {
+                var paths = descendantDbEntities[i].PathFromEntry().ToArray();
+                var after_ = $"after{descendantDbEntities[i].Item.PhysicalName}_{i}";
+
+                // before, after それぞれの子孫インスタンスを一次配列に格納する
+                void RenderEntityArray() {
+                    var tempVar = after_;
+
+                    if (paths.Any(path => path.Terminal.As<Aggregate>().IsChildrenMember())) {
+                        // 子集約までの経路の途中に配列が含まれる場合
+                        builder.Append($"var {tempVar} = {rootEntityName}");
+
+                        var select = false;
+                        foreach (var path in paths) {
+                            if (select && path.Terminal.As<Aggregate>().IsChildrenMember()) {
+                                builder.Append($".SelectMany(x => x.{path.RelationName})");
+                            } else if (select) {
+                                builder.Append($".Select(x => x.{path.RelationName})");
+                            } else {
+                                builder.Append($".{path.RelationName}?");
+                                if (path.Terminal.As<Aggregate>().IsChildrenMember()) select = true;
+                            }
+                        }
+                        builder.Append($".OfType<{descendantDbEntities[i].Item.EFCoreEntityClassName}>()");
+                        builder.AppendLine($" ?? Enumerable.Empty<{descendantDbEntities[i].Item.EFCoreEntityClassName}>();");
+
+                    } else {
+                        // 子集約までの経路の途中に配列が含まれない場合
+                        builder.AppendLine($"var {tempVar} = new {descendantDbEntities[i].Item.EFCoreEntityClassName}?[] {{");
+                        builder.AppendLine($"    {rootEntityName}.{paths.Select(p => p.RelationName).Join("?.")},");
+                        builder.AppendLine($"}}.OfType<{descendantDbEntities[i].Item.EFCoreEntityClassName}>().ToArray();");
+                    }
+                }
+                RenderEntityArray();
+
+                // ChangeState変更
+                builder.AppendLine($"foreach (var a in {after_}) {{");
+                builder.AppendLine($"    {dbContext}.Entry(a).State = EntityState.Detached;");
+                builder.AppendLine($"}}");
+            }
+
+            return builder.ToString();
+        }
     }
 }

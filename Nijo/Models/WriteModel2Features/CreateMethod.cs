@@ -85,6 +85,12 @@ namespace Nijo.Models.WriteModel2Features {
                     try {
                         var afterSaveEventArgs = new {{SaveContext.AFTER_SAVE_EVENT_ARGS}}(batchUpdateState);
                         {{AfterMethodName}}(dbEntity, afterSaveEventArgs);
+
+                        // 後続処理に影響が出るのを防ぐためエンティティを解放
+                        {{appSrv.DbContext}}.Entry(dbEntity).State = EntityState.Detached;
+                        {{WithIndent(UpdateMethod.RenderDescendantDetaching(_rootAggregate, "dbEntity"), "        ")}}
+
+                        // セーブポイント解放
                         {{appSrv.DbContext}}.Database.CurrentTransaction!.ReleaseSavepoint(SAVE_POINT);
                     } catch (Exception ex) {
                         messages.AddError($"更新後処理でエラーが発生しました: {string.Join(Environment.NewLine, ex.GetMessagesRecursively())}");
