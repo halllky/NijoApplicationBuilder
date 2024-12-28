@@ -121,7 +121,10 @@ namespace Nijo.Models.ReadModel2Features {
                     AssignExpression = value => {
                         string asVmValue;
                         if (vm.Options.MemberType is Core.AggregateMemberTypes.Integer
-                            || vm.Options.MemberType is Core.AggregateMemberTypes.Numeric) {
+                            || vm.Options.MemberType is Core.AggregateMemberTypes.Numeric
+                            || vm.Options.MemberType is Core.AggregateMemberTypes.Year
+                            || vm.Options.MemberType is Core.AggregateMemberTypes.YearMonth) {
+
                             asVmValue = $"Number({value})";
                         } else {
                             asVmValue = value;
