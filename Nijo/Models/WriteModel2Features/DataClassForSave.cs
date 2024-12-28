@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Nijo.Core;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
@@ -145,6 +146,11 @@ namespace Nijo.Models.WriteModel2Features {
 
                 foreach (var member in agg.GetMembers()) {
                     if (member is AggregateMember.ValueMember vm) {
+
+                        // 代理外部キーの場合、存在しないカラムへは代入できないので、スキップ
+                        var foreignKeyProxy = vm.Inherits?.GetRefForeignKeyProxy();
+                        if (foreignKeyProxy != null) continue;
+
                         var path = vm.DeclaringAggregate.PathFromEntry();
                         var value = pkVarNames.TryGetValue((vm.Declared, path), out var ancestorInstanceValue)
                             ? ancestorInstanceValue
@@ -282,6 +288,12 @@ namespace Nijo.Models.WriteModel2Features {
                                                         && vm.Inherits?.Member.Declared.Owner.GetRefEntryEdge() == @ref.Relation
                                                         && vm.Inherits?.Member.Declared == fk.Member.Declared)
                                     ?? fk.Member; // 対応するプロパティが無い場合はナビゲーションプロパティのそれを使う（どういうケース…？）
+
+                                // 代理外部キーがある場合
+                                var foreignKeyProxy = vm.Inherits?.GetRefForeignKeyProxy();
+                                if (foreignKeyProxy != null) {
+                                    vm = foreignKeyProxy.GetProxyMember();
+                                }
 
                                 yield return $$"""
                                     {{fk.MemberName}} = {{instanceName}}.{{vm.GetFullPathAsDbEntity(since: instanceAgg).Join("?.")}},
