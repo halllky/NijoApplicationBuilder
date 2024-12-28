@@ -2476,6 +2476,7 @@ namespace Nijo.Runtime {
                 そのうちの一部を、ref-toが存在しなかった場合であっても存在する元々あるカラムで代替させる設定。
                 ref.Prop1.Prop2=this.PARENT.Prop3.Prop4;Prop5=Prop6 のように、「ref.略=this.略」の形で書く。
                 略の部分はDB名ではなく物理名。複数のキーを代理させる場合は「ref.略=this.略;ref.略=this.略;」のようにセミコロンで区切る。
+                【注意】2024-12-28現在、時間の都合上、ユニットテスト105番「105_外部キー代理.xml」のパターンしかテストしていません。
                 """,
             Validate = (value, node, schema, errors) => {
                 if (node.Type?.StartsWith(MutableSchemaNode.REFTO_PREFIX) != true) {
