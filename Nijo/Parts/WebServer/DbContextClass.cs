@@ -138,44 +138,6 @@ namespace Nijo.Parts.WebServer {
             },
         };
 
-        private IEnumerable<string> RenderNavigationPropertyOnModelCreating(GraphNode<Aggregate> aggregate) {
-            var efCoreEntity = new Models.WriteModel2Features.EFCoreEntity(aggregate);
-
-            foreach (var nav in efCoreEntity.GetNavigationProperties()) {
-
-                if (nav.Principal.Owner != aggregate) continue;
-
-                // Has
-                if (nav.Principal.OppositeIsMany) {
-                    yield return $"entity.HasMany(e => e.{nav.Principal.PropertyName})";
-                } else {
-                    yield return $"entity.HasOne(e => e.{nav.Principal.PropertyName})";
-                }
-
-                // With
-                if (nav.Relevant.OppositeIsMany) {
-                    yield return $"    .WithMany(e => e.{nav.Relevant.PropertyName})";
-                } else {
-                    yield return $"    .WithOne(e => e.{nav.Relevant.PropertyName})";
-                }
-
-                // FK
-                if (!nav.Principal.OppositeIsMany && !nav.Relevant.OppositeIsMany) {
-                    // HasOneWithOneのときは型引数が要るらしい
-                    yield return $"    .HasForeignKey<{nav.Relevant.Owner.Item.EFCoreEntityClassName}>(e => new {{";
-                } else {
-                    yield return $"    .HasForeignKey(e => new {{";
-                }
-                foreach (var fk in nav.Relevant.GetForeignKeys()) {
-                    yield return $"        e.{fk.MemberName},";
-                }
-                yield return $"    }})";
-
-                // OnDelete
-                yield return $"    .OnDelete({nameof(DeleteBehavior)}.{nav.OnPrincipalDeleted});";
-            }
-        }
-
         private SourceFile RenderFactoryForMigration() => new SourceFile {
             FileName = $"EFCoreDbContextFactoryForMigration.cs",
             RenderContent = ctx => {
