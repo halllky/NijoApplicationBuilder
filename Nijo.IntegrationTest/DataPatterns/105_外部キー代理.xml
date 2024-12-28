@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<自動テストで作成されたプロジェクト DbContextName="MyDbContext">
+  <会社 is="write-model-2 generate-default-read-model">
+    <会社ID is="int key" />
+    <会社名 is="word" />
+  </会社>
+  <部署 is="write-model-2 generate-default-read-model">
+    <会社 is="ref-to:会社 key" />
+    <営業区ID is="word key" />
+    <部署ID is="word key" />
+    <部署名 is="word name" />
+  </部署>
+  <従業員 is="write-model-2 generate-default-read-model">
+    <会社 is="ref-to:会社 key" />
+    <従業員ID is="word key" />
+    <従業員名 is="word name" />
+    <所属部署情報 is="children">
+      <年度 is="year key" />
+      <!-- 本務・兼務の会社は従業員自身の会社IDと必ず一致していなければならない。テーブル構造上、本務部署・兼務部署それぞれ用の会社IDができるのではなく、従業員テーブルのキーが結合に用いられる。 -->
+      <本務部署 is="ref-to:部署 foreign-key-proxy:ref.会社.会社ID=this.Parent.会社.会社ID" />
+      <兼務部署 is="ref-to:部署 foreign-key-proxy:ref.会社.会社ID=this.Parent.会社.会社ID" />
+    </所属部署情報>
+  </従業員>
+</自動テストで作成されたプロジェクト>

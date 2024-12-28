@@ -139,6 +139,9 @@ namespace Nijo.Core {
         /// 動的列挙体（区分マスタ）のうちどの種類をとるか
         /// </summary>
         public string? DynamicEnumTypePhysicalName { get; set; }
+
+        /// <inheritdoc cref="RefForeignKeyProxy"/>
+        public RefForeignKeyProxy[]? ForeignKeyProxies { get; set; }
     }
     public sealed class EnumValueOption {
         public string PhysicalName { get; set; } = string.Empty;
@@ -191,6 +194,7 @@ namespace Nijo.Core {
         internal const string REL_ATTR_DB_NAME = "ref-db-name";
         internal const string REL_ATTR_MEMBER_ORDER = "relation-aggregate-order";
         internal const string REL_ATTR_DYNAMIC_ENUM_TYPE_NAME = "dynamic-enum-type-physical-name";
+        internal const string REL_ATTR_PROXY = "ref-fk-proxy";
         internal const string REL_ATTR_IS_COMBO = "is-combo";
         internal const string REL_ATTR_IS_RADIO = "is-radio";
 

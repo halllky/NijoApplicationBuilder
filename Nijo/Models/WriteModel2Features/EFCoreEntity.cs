@@ -48,7 +48,12 @@ namespace Nijo.Models.WriteModel2Features {
         /// このエンティティのテーブルに属するカラムと対応するメンバーを列挙します。
         /// </summary>
         internal IEnumerable<AggregateMember.ValueMember> GetTableColumnMembers() {
-            return _aggregate.GetMembers().OfType<AggregateMember.ValueMember>();
+            foreach (var member in _aggregate.GetMembers()) {
+                if (member is not AggregateMember.ValueMember vm) continue;
+                if (vm.Inherits?.GetRefForeignKeyProxy() != null) continue;
+
+                yield return vm;
+            }
         }
 
         /// <summary>

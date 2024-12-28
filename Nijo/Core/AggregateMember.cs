@@ -310,6 +310,7 @@ namespace Nijo.Core {
             internal class InheritInfo {
                 internal required GraphEdge<Aggregate> Relation { get; init; }
                 internal required ValueMember Member { get; init; }
+                internal required Func<RefForeignKeyProxy?> GetRefForeignKeyProxy { get; init; }
             }
         }
 
@@ -500,16 +501,27 @@ namespace Nijo.Core {
                     if (fk is Schalar schalar) {
                         yield return new Schalar(
                             Relation.Initial,
-                            new ValueMember.InheritInfo { Relation = Relation, Member = schalar, },
+                            new ValueMember.InheritInfo { Relation = Relation, Member = schalar, GetRefForeignKeyProxy = () => GetForeignKeyProxy(schalar) },
                             schalar.GraphNode.Item);
 
                     } else if (fk is Variation variation) {
                         yield return new Variation(
                             Relation.Initial,
-                            new ValueMember.InheritInfo { Relation = Relation, Member = variation });
+                            new ValueMember.InheritInfo { Relation = Relation, Member = variation, GetRefForeignKeyProxy = () => GetForeignKeyProxy(variation) });
                     }
                 }
+
+                RefForeignKeyProxy? GetForeignKeyProxy(ValueMember pkOfRef) {
+                    var foreignKeyProxies = Relation.Attributes
+                        .TryGetValue(DirectedEdgeExtensions.REL_ATTR_PROXY, out var p)
+                        ? (RefForeignKeyProxy[]?)p
+                        : null;
+                    if (foreignKeyProxies == null) return null;
+
+                    return foreignKeyProxies.FirstOrDefault(p => p.IsMatch(this, pkOfRef));
+                }
             }
+
 
             /// <summary>
             /// このrefが区分マスタへの参照の場合、その詳細情報を返します。
@@ -544,17 +556,129 @@ namespace Nijo.Core {
                     if (parentPk is Schalar schalar) {
                         yield return new Schalar(
                             Relation.Terminal,
-                            new ValueMember.InheritInfo { Relation = Relation, Member = schalar },
+                            new ValueMember.InheritInfo { Relation = Relation, Member = schalar, GetRefForeignKeyProxy = () => null },
                             schalar.GraphNode.Item);
 
                     } else if (parentPk is Variation variation) {
                         yield return new Variation(
                             Relation.Terminal,
-                            new ValueMember.InheritInfo { Relation = Relation, Member = variation });
+                            new ValueMember.InheritInfo { Relation = Relation, Member = variation, GetRefForeignKeyProxy = () => null });
                     }
                 }
             }
         }
         #endregion MEMBER IMPLEMEMT
+    }
+
+
+    /// <summary>
+    /// 通常はref-to毎にDBの外部キーのカラムが生成されるところ、
+    /// そのうちの一部を、ref-toが存在しなかった場合であっても存在する元々あるカラムで代替させる設定。
+    /// </summary>
+    public class RefForeignKeyProxy {
+        /// <summary>
+        /// nijo ui （nijo.xml）で指定されたパスの解釈
+        /// </summary>
+        /// <param name="value">xmlで指定されたパス</param>
+        /// <param name="availableRefToKeys">参照先のキーの属性名として指定できる名前の一覧</param>
+        /// <param name="availableProxies">代理キーの名前として指定できるものの一覧</param>
+        /// <param name="proxy">戻り値</param>
+        /// <returns>エラーがある場合はエラーメッセージを返します。エラーが無い場合はnull。</returns>
+        internal static string? ParseOrGetErrorMessage(
+            string value,
+            IEnumerable<AvailableItem> availableRefToKeys,
+            IEnumerable<AvailableItem> availableProxies,
+            out RefForeignKeyProxy proxy) {
+            proxy = new RefForeignKeyProxy([], []);
+
+            var arr = value.Split('=');
+            if (arr.Length != 2) return $"代理キー指定 '{value}' が不正です。'ref.略.略.略=this.略.略.略' のように等号で結ばれた式である必要があります。";
+
+            var member = arr[0].Split('.');
+            var proxyMember = arr[1].Split('.');
+
+            if (member.Length <= 1) return $"代理キー指定 '{value}' が不正です。参照先のどのキーを代理するかが指定されていません。";
+            if (proxyMember.Length <= 1) return $"代理キー指定 '{value}' が不正です。参照先のキーを自身のどの属性で代理するかが指定されていません。";
+
+            // 使用可能なパスが指定されているかどうか（参照先のキー）
+            var current = availableRefToKeys;
+            for (int i = 0; i < member.Length; i++) {
+                var path = member[i];
+                if (i == 0) {
+                    if (path != "ref") return $"代理キー指定 '{value}' が不正です。代理キー指定の等号の前は 'ref.略.略.略=this.略.略.略' のように'ref'で始まる必要があります。";
+                } else {
+                    var found = current.FirstOrDefault(x => x.RelationPhysicalName == path);
+                    if (found == null) return $"代理キー指定 '{value}' が不正です。等号の前の{i + 1}番目に項目名 '{path}' は指定できません。この位置に使用できるのは {current.Select(x => x.RelationPhysicalName).Join(", ")} のいずれかです。";
+                    current = found.GetNeighborItems().ToArray();
+                }
+            }
+
+            // 使用可能なパスが指定されているかどうか（代理キー）
+            current = availableProxies;
+            for (int i = 0; i < proxyMember.Length; i++) {
+                var path = proxyMember[i];
+                if (i == 0) {
+                    if (path != "this") return $"代理キー指定 '{value}' が不正です。代理キー指定の等号の後は 'ref.略.略.略=this.略.略.略' のように'this'で始まる必要があります。";
+                } else {
+                    var found = current.FirstOrDefault(x => x.RelationPhysicalName == proxyMember[i]);
+                    if (found == null) return $"代理キー指定 '{value}' が不正です。等号の後の{i + 1}番目に項目名 '{path}' は指定できません。この位置に使用できるのは {current.Select(x => x.RelationPhysicalName).Join(", ")} のいずれかです。";
+                    current = found.GetNeighborItems().ToArray();
+                }
+            }
+
+            proxy = new RefForeignKeyProxy(
+                member.Skip(1).ToArray(),
+                proxyMember.Skip(1).ToArray());
+            return null;
+        }
+        public class AvailableItem {
+            public required string RelationPhysicalName { get; init; }
+            public required Func<IEnumerable<AvailableItem>> GetNeighborItems { get; init; }
+        }
+
+        private RefForeignKeyProxy(string[] refKeyMemberPath, string[] proxyMemberPath) {
+            _refKeyMemberPath = refKeyMemberPath;
+            _proxyMemberPath = proxyMemberPath;
+        }
+
+        /// <summary>
+        /// 紐づけ対象となるメンバーの名前。
+        /// もしこの設定がなければ生成されていたであろうメンバーの物理名。
+        /// </summary>
+        private readonly string[] _refKeyMemberPath;
+        /// <summary>
+        /// 紐づけ対象となるメンバーの名前。
+        /// <see cref="_refKeyMemberPath"/> のかわりに使われるメンバーへの物理名のパス
+        /// </summary>
+        private readonly string[] _proxyMemberPath;
+
+        /// <summary>
+        /// 引数のValueMemberがこのインスタンスで置き換えられるべき対象か否かを返します。
+        /// </summary>
+        internal bool IsMatch(AggregateMember.Ref @ref, AggregateMember.ValueMember pkOfRef) {
+            var path = pkOfRef.Declared
+                .GetFullPathAsForSave(since: @ref.RefTo)
+                .ToArray();
+            var currentAggregate = @ref.RefTo;
+            for (int i = 0; i < _refKeyMemberPath.Length; i++) {
+                var isLast = i == _refKeyMemberPath.Length - 1;
+                var physicalName = _refKeyMemberPath[i];
+                if (isLast) {
+                    return currentAggregate
+                        .GetMembers()
+                        .OfType<AggregateMember.ValueMember>()
+                        .Any(vm => vm.MemberName == physicalName);
+                } else {
+                    var agg = currentAggregate
+                        .GetMembers()
+                        .OfType<AggregateMember.RelationMember>()
+                        .SingleOrDefault(rm => rm.MemberName == physicalName)
+                        ?.MemberAggregate;
+                    if (agg == null) return false;
+                    currentAggregate = agg;
+                }
+            }
+            return false;
+        }
     }
 }

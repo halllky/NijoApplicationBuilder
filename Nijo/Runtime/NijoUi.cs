@@ -556,6 +556,7 @@ namespace Nijo.Runtime {
                                 { DirectedEdgeExtensions.REL_ATTR_DB_NAME, options.DbName },
                                 { DirectedEdgeExtensions.REL_ATTR_MEMBER_ORDER, _list.IndexOf(node) },
                                 { DirectedEdgeExtensions.REL_ATTR_DYNAMIC_ENUM_TYPE_NAME, options.DynamicEnumTypePhysicalName },
+                                { DirectedEdgeExtensions.REL_ATTR_PROXY, options.ForeignKeyProxies },
                             },
                         });
 
@@ -1726,6 +1727,8 @@ namespace Nijo.Runtime {
             yield return EnumSqlParamType;
 
             yield return IsDynamicEnumWriteModel;
+
+            yield return ForeignKeyProxy;
         }
 
         #region ルート集約に設定できる種類
@@ -2463,6 +2466,76 @@ namespace Nijo.Runtime {
                 opt.IsDynamicEnumWriteModel = true;
             },
         };
+
+        private static OptionalAttributeDef ForeignKeyProxy => new OptionalAttributeDef {
+            Key = "foreign-key-proxy",
+            DisplayName = "外部キー代理",
+            Type = E_OptionalAttributeType.String,
+            HelpText = $$"""
+                通常はref-to毎にDBの外部キーのカラムが生成されるところ、
+                そのうちの一部を、ref-toが存在しなかった場合であっても存在する元々あるカラムで代替させる設定。
+                ref.Prop1.Prop2=this.PARENT.Prop3.Prop4;Prop5=Prop6 のように、「ref.略=this.略」の形で書く。
+                略の部分はDB名ではなく物理名。複数のキーを代理させる場合は「ref.略=this.略;ref.略=this.略;」のようにセミコロンで区切る。
+                """,
+            Validate = (value, node, schema, errors) => {
+                if (node.Type?.StartsWith(MutableSchemaNode.REFTO_PREFIX) != true) {
+                    errors.Add($"{MutableSchemaNode.REFTO_PREFIX} にのみ設定できます。");
+
+                } else {
+                    var refTo = schema.FindRefToNode(node.Type);
+                    var parent = schema.GetParent(node);
+                    if (refTo != null && parent != null) {
+                        var availableRefToKeys = GetProxyValidationItem(refTo, schema, true).ToArray();
+                        var availableProxies = GetProxyValidationItem(parent, schema, false).ToArray();
+                        var splitted = value?.Split(FOREIGN_KEY_PROXY_MEMBER_SPLITTER) ?? [];
+                        foreach (var x in splitted) {
+                            var errorMessage = RefForeignKeyProxy.ParseOrGetErrorMessage(x, availableRefToKeys, availableProxies, out var _);
+                            if (errorMessage != null) errors.Add(errorMessage);
+                        }
+                    }
+                }
+            },
+            EditAggregateMemberOption = (value, node, schema, opt) => {
+                var refTo = schema.FindRefToNode(node.Type);
+                var parent = schema.GetParent(node);
+                var availableRefToKeys = GetProxyValidationItem(refTo ?? throw new InvalidOperationException("バリデーションでチェックがかかっているはずなのでこの分岐に来ることは無い"), schema, true).ToArray();
+                var availableProxies = GetProxyValidationItem(parent ?? throw new InvalidOperationException("バリデーションでチェックがかかっているはずなのでこの分岐に来ることは無い"), schema, false).ToArray();
+
+                opt.ForeignKeyProxies = value
+                    ?.Split(FOREIGN_KEY_PROXY_MEMBER_SPLITTER)
+                    .Select(x => RefForeignKeyProxy.ParseOrGetErrorMessage(x, availableRefToKeys, availableProxies, out var p) == null
+                        ? p
+                        : throw new InvalidOperationException("バリデーションでチェックがかかっているはずなのでこの分岐に来ることは無い"))
+                    .ToArray();
+            },
+        };
+        private const char FOREIGN_KEY_PROXY_MEMBER_SPLITTER = ';';
+        private static IEnumerable<RefForeignKeyProxy.AvailableItem> GetProxyValidationItem(MutableSchemaNode node, MutableSchema schema, bool keyOnly) {
+            var parent = schema.GetParent(node);
+            if (parent != null) {
+                yield return new() {
+                    RelationPhysicalName = AggregateMember.PARENT_PROPNAME,
+                    GetNeighborItems = () => GetProxyValidationItem(parent, schema, keyOnly),
+                };
+            }
+
+            foreach (var child in schema.GetChildren(node)) {
+                // 参照先の子要素はkey指定されたもののみ指定可能
+                if (keyOnly && (child.AttrValues?.Any(kv => kv.Key == KeyDef.Key) != true)) continue;
+
+                yield return new() {
+                    RelationPhysicalName = child.GetPhysicalName(),
+                    GetNeighborItems = () => {
+                        if (child.Type?.StartsWith(MutableSchemaNode.REFTO_PREFIX) == true) {
+                            var refTo = schema.FindRefToNode(child.Type);
+                            return refTo != null ? GetProxyValidationItem(refTo, schema, keyOnly) : [];
+                        } else {
+                            return GetProxyValidationItem(child, schema, keyOnly);
+                        }
+                    },
+                };
+            }
+        }
         #endregion オプショナル属性
     }
 }
