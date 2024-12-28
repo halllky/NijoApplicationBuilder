@@ -2489,7 +2489,7 @@ namespace Nijo.Runtime {
                         var availableProxies = GetProxyValidationItem(parent, schema, false).ToArray();
                         var splitted = value?.Split(FOREIGN_KEY_PROXY_MEMBER_SPLITTER) ?? [];
                         foreach (var x in splitted) {
-                            var errorMessage = RefForeignKeyProxy.ParseOrGetErrorMessage(x, availableRefToKeys, availableProxies, out var _);
+                            var errorMessage = RefForeignKeyProxySetting.ParseOrGetErrorMessage(x, availableRefToKeys, availableProxies, out var _);
                             if (errorMessage != null) errors.Add(errorMessage);
                         }
                     }
@@ -2503,14 +2503,14 @@ namespace Nijo.Runtime {
 
                 opt.ForeignKeyProxies = value
                     ?.Split(FOREIGN_KEY_PROXY_MEMBER_SPLITTER)
-                    .Select(x => RefForeignKeyProxy.ParseOrGetErrorMessage(x, availableRefToKeys, availableProxies, out var p) == null
+                    .Select(x => RefForeignKeyProxySetting.ParseOrGetErrorMessage(x, availableRefToKeys, availableProxies, out var p) == null
                         ? p
                         : throw new InvalidOperationException("バリデーションでチェックがかかっているはずなのでこの分岐に来ることは無い"))
                     .ToArray();
             },
         };
         private const char FOREIGN_KEY_PROXY_MEMBER_SPLITTER = ';';
-        private static IEnumerable<RefForeignKeyProxy.AvailableItem> GetProxyValidationItem(MutableSchemaNode node, MutableSchema schema, bool keyOnly) {
+        private static IEnumerable<RefForeignKeyProxySetting.AvailableItem> GetProxyValidationItem(MutableSchemaNode node, MutableSchema schema, bool keyOnly) {
             var parent = schema.GetParent(node);
             if (parent != null) {
                 yield return new() {

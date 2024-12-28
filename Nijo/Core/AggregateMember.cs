@@ -310,7 +310,7 @@ namespace Nijo.Core {
             internal class InheritInfo {
                 internal required GraphEdge<Aggregate> Relation { get; init; }
                 internal required ValueMember Member { get; init; }
-                internal required Func<RefForeignKeyProxy?> GetRefForeignKeyProxy { get; init; }
+                internal required Func<RefForeignKeyProxySetting.LogicClass?> GetRefForeignKeyProxy { get; init; }
             }
         }
 
@@ -511,14 +511,19 @@ namespace Nijo.Core {
                     }
                 }
 
-                RefForeignKeyProxy? GetForeignKeyProxy(ValueMember pkOfRef) {
+                RefForeignKeyProxySetting.LogicClass? GetForeignKeyProxy(ValueMember pkOfRef) {
                     var foreignKeyProxies = Relation.Attributes
                         .TryGetValue(DirectedEdgeExtensions.REL_ATTR_PROXY, out var p)
-                        ? (RefForeignKeyProxy[]?)p
+                        ? (RefForeignKeyProxySetting[]?)p
                         : null;
                     if (foreignKeyProxies == null) return null;
 
-                    return foreignKeyProxies.FirstOrDefault(p => p.TryGetForeignKeyProxy(this, pkOfRef, out var _));
+                    foreach (var proxy in foreignKeyProxies) {
+                        if (proxy.TryGetLogicClass(this, pkOfRef, out var logicClass)) {
+                            return logicClass;
+                        }
+                    }
+                    return null;
                 }
             }
 
@@ -571,11 +576,12 @@ namespace Nijo.Core {
     }
 
 
+    #region 代理外部キー
     /// <summary>
     /// 通常はref-to毎にDBの外部キーのカラムが生成されるところ、
     /// そのうちの一部を、ref-toが存在しなかった場合であっても存在する元々あるカラムで代替させる設定。
     /// </summary>
-    public class RefForeignKeyProxy {
+    public class RefForeignKeyProxySetting {
         /// <summary>
         /// nijo ui （nijo.xml）で指定されたパスの解釈
         /// </summary>
@@ -588,8 +594,8 @@ namespace Nijo.Core {
             string value,
             IEnumerable<AvailableItem> availableRefToKeys,
             IEnumerable<AvailableItem> availableProxies,
-            out RefForeignKeyProxy proxy) {
-            proxy = new RefForeignKeyProxy([], []);
+            out RefForeignKeyProxySetting proxy) {
+            proxy = new RefForeignKeyProxySetting([], []);
 
             var arr = value.Split('=');
             if (arr.Length != 2) return $"代理キー指定 '{value}' が不正です。'ref.略.略.略=this.略.略.略' のように等号で結ばれた式である必要があります。";
@@ -626,7 +632,7 @@ namespace Nijo.Core {
                 }
             }
 
-            proxy = new RefForeignKeyProxy(
+            proxy = new RefForeignKeyProxySetting(
                 member.Skip(1).ToArray(),
                 proxyMember.Skip(1).ToArray());
             return null;
@@ -636,7 +642,7 @@ namespace Nijo.Core {
             public required Func<IEnumerable<AvailableItem>> GetNeighborItems { get; init; }
         }
 
-        private RefForeignKeyProxy(string[] refKeyMemberPath, string[] proxyMemberPath) {
+        private RefForeignKeyProxySetting(string[] refKeyMemberPath, string[] proxyMemberPath) {
             _refKeyMemberPath = refKeyMemberPath;
             _proxyMemberPath = proxyMemberPath;
         }
@@ -653,79 +659,76 @@ namespace Nijo.Core {
         private readonly string[] _proxyMemberPath;
 
         /// <summary>
-        /// 代理外部キーが祖先の主キーである場合はtrue
+        /// このインスタンスの設定値と引数のValueMemberが一致する場合はロジック付きクラスを返す
         /// </summary>
-        internal bool IsAncestorsKey => _proxyMemberPath.First() == AggregateMember.PARENT_PROPNAME;
-
-        /// <summary>
-        /// 引数のValueMemberと対応する代理外部キーを返します。
-        /// </summary>
-        /// <param name="pkOfRef">参照先のキー</param>
-        /// <param name="foreignKeyProxy">代理外部キー（参照元のモデル内にある方）</param>
-        internal bool TryGetForeignKeyProxy(
-            AggregateMember.Ref @ref,
-            AggregateMember.ValueMember pkOfRef,
-            out AggregateMember.ValueMember foreignKeyProxy) {
-
-            // そもそも引数のValueMemberがこのインスタンスで既定されているキーでない場合は関係ない
-            var isForeignKeyProxy = pkOfRef.Declared
+        internal bool TryGetLogicClass(AggregateMember.Ref @ref, AggregateMember.ValueMember pkOfRef, out LogicClass logicClass) {
+            var isMach = pkOfRef.Declared
                 .GetFullPathAsForSave(since: @ref.RefTo)
                 .SequenceEqual(_refKeyMemberPath);
-            if (!isForeignKeyProxy) {
-                foreignKeyProxy = null!;
+            if (isMach) {
+                logicClass = new LogicClass(this, @ref, pkOfRef);
+                return true;
+            } else {
+                logicClass = null!;
                 return false;
             }
-
-            // refのOwnerを基点に代理キーを探して返す
-            var currentAggregate = @ref.Owner;
-            for (int i = 0; i < _proxyMemberPath.Length; i++) {
-                var isLast = i == _proxyMemberPath.Length - 1;
-                var name = _proxyMemberPath[i];
-                if (isLast) {
-                    foreignKeyProxy = currentAggregate
-                        .GetMembers()
-                        .OfType<AggregateMember.ValueMember>()
-                        .Single(m => m.MemberName == name);
-                    return true;
-
-                } else {
-                    var member = currentAggregate
-                        .GetMembers()
-                        .OfType<AggregateMember.RelationMember>()
-                        .Single(m => m.MemberName == name);
-                    currentAggregate = member.MemberAggregate;
-                }
-            }
-
-            throw new InvalidOperationException("ここまで来ることは無いはず");
         }
 
         /// <summary>
-        /// 引数のValueMemberと対応する代理外部キーを返します。
-        /// なお、代理外部キーが祖先の主キーである場合、代理外部キーそれ自身ではなく、
-        /// 引数のRefの集約の中にある、当該祖先の主キーを継承したメンバーを返します。
+        /// <see cref="RefForeignKeyProxySetting"/> クラスにソースコード自動生成の各所で使える便利ロジックを持たせたもの
         /// </summary>
-        /// <param name="pkOfRef">参照先のキー</param>
-        /// <param name="foreignKeyProxy">代理外部キー（参照元のモデル内にある方）</param>
-        internal bool TryGetProxyOwnColumn(
-            AggregateMember.Ref @ref,
-            AggregateMember.ValueMember pkOfRef,
-            out AggregateMember.ValueMember foreignKeyProxy) {
-
-            if (!TryGetForeignKeyProxy(@ref, pkOfRef, out foreignKeyProxy)) {
-                return false;
+        internal class LogicClass {
+            internal LogicClass(RefForeignKeyProxySetting settings, AggregateMember.Ref @ref, AggregateMember.ValueMember pkOfRef) {
+                _settings = settings;
+                _ref = @ref;
+                _pkOfRef = pkOfRef;
             }
+            private readonly RefForeignKeyProxySetting _settings;
+            private readonly AggregateMember.Ref _ref;
+            private readonly AggregateMember.ValueMember _pkOfRef;
 
-            if (IsAncestorsKey) {
-                var parent = @ref.Owner.GetParent();
-                var proxy = foreignKeyProxy;
-                foreignKeyProxy = @ref.Owner
-                    .GetMembers()
-                    .OfType<AggregateMember.ValueMember>()
-                    .Single(x => x.Inherits?.Member.Declared == proxy
-                              && x.Inherits?.Relation == parent);
+            /// <summary>
+            /// 引数のValueMemberと対応する代理外部キーを返します。
+            /// なお、代理外部キーが祖先の主キーである場合、代理外部キーそれ自身ではなく、
+            /// 引数のRefの集約の中にある、当該祖先の主キーを継承したメンバーを返します。
+            /// </summary>
+            internal AggregateMember.ValueMember GetProxyMember() {
+
+                // refのOwnerを基点に代理キーを探して返す
+                var currentAggregate = _ref.Owner;
+                for (int i = 0; i < _settings._proxyMemberPath.Length; i++) {
+                    var isLast = i == _settings._proxyMemberPath.Length - 1;
+                    var name = _settings._proxyMemberPath[i];
+                    if (isLast) {
+                        var ownColumn = currentAggregate
+                            .GetMembers()
+                            .OfType<AggregateMember.ValueMember>()
+                            .Single(m => m.MemberName == name);
+
+                        // 代理外部キーが祖先の主キーである場合、代理外部キーそれ自身ではなく、
+                        // 引数のRefの集約の中にある、当該祖先の主キーを継承したメンバーを返す
+                        if (_settings._proxyMemberPath.First() == AggregateMember.PARENT_PROPNAME) {
+                            var parent = _ref.Owner.GetParent();
+                            ownColumn = _ref.Owner
+                                .GetMembers()
+                                .OfType<AggregateMember.ValueMember>()
+                                .Single(x => x.Inherits?.Member.Declared == ownColumn
+                                          && x.Inherits?.Relation == parent);
+                        }
+                        return ownColumn;
+
+                    } else {
+                        var member = currentAggregate
+                            .GetMembers()
+                            .OfType<AggregateMember.RelationMember>()
+                            .Single(m => m.MemberName == name);
+                        currentAggregate = member.MemberAggregate;
+                    }
+                }
+
+                throw new InvalidOperationException("ここまで来ることは無いはず");
             }
-            return true;
         }
     }
+    #endregion 代理外部キー
 }

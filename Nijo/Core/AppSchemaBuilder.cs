@@ -140,8 +140,8 @@ namespace Nijo.Core {
         /// </summary>
         public string? DynamicEnumTypePhysicalName { get; set; }
 
-        /// <inheritdoc cref="RefForeignKeyProxy"/>
-        public RefForeignKeyProxy[]? ForeignKeyProxies { get; set; }
+        /// <inheritdoc cref="RefForeignKeyProxySetting"/>
+        public RefForeignKeyProxySetting[]? ForeignKeyProxies { get; set; }
     }
     public sealed class EnumValueOption {
         public string PhysicalName { get; set; } = string.Empty;
