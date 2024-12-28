@@ -126,6 +126,8 @@ namespace Nijo.Models.WriteModel2Features {
                     || _relation.Terminal.IsChildrenMember()
                     || _relation.Terminal.IsVariationMember())) {
 
+                    // このナビゲーションプロパティが親子間のつながりのとき、
+                    // 子供側集約にある親のキーを継承したメンバーを返す
                     return _relation.Terminal
                         .GetKeys()
                         .OfType<AggregateMember.ValueMember>()
@@ -134,11 +136,24 @@ namespace Nijo.Models.WriteModel2Features {
                 } else if (_relation.Initial == Owner
                         && _relation.IsRef()) {
 
+                    // このナビゲーションプロパティがref-toのとき
                     return _relation.Initial
                         .GetMembers()
                         .OfType<AggregateMember.Ref>()
                         .Where(refMember => refMember.Relation == _relation)
-                        .SelectMany(refMember => refMember.GetForeignKeys());
+                        .SelectMany(refMember => refMember.GetForeignKeys(), (@ref, vm) => new { @ref, vm })
+                        .Select(x => {
+                            // 通常は参照元集約にある参照先のキーを継承したメンバーを返す。
+                            // 代理外部キーが設定されているものの場合、それが存在しないため、代理外部キーの方を返す。
+                            // なお、代理外部キーに参照元集約の祖先のキーが指定されている場合、
+                            // 参照元集約に当該祖先のキーを継承したメンバーがあるはずなので、それを返す。
+                            var refForeignKeyProxy = x.vm.Inherits?.GetRefForeignKeyProxy();
+                            if (refForeignKeyProxy?.TryGetProxyOwnColumn(x.@ref, x.vm, out var fkProxy) == true) {
+                                return fkProxy;
+                            } else {
+                                return x.vm;
+                            }
+                        });
 
                 } else {
                     return Enumerable.Empty<AggregateMember.ValueMember>();

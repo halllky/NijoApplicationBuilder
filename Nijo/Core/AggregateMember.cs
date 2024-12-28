@@ -653,6 +653,11 @@ namespace Nijo.Core {
         private readonly string[] _proxyMemberPath;
 
         /// <summary>
+        /// 代理外部キーが祖先の主キーである場合はtrue
+        /// </summary>
+        internal bool IsAncestorsKey => _proxyMemberPath.First() == AggregateMember.PARENT_PROPNAME;
+
+        /// <summary>
         /// 引数のValueMemberと対応する代理外部キーを返します。
         /// </summary>
         /// <param name="pkOfRef">参照先のキー</param>
@@ -693,6 +698,34 @@ namespace Nijo.Core {
             }
 
             throw new InvalidOperationException("ここまで来ることは無いはず");
+        }
+
+        /// <summary>
+        /// 引数のValueMemberと対応する代理外部キーを返します。
+        /// なお、代理外部キーが祖先の主キーである場合、代理外部キーそれ自身ではなく、
+        /// 引数のRefの集約の中にある、当該祖先の主キーを継承したメンバーを返します。
+        /// </summary>
+        /// <param name="pkOfRef">参照先のキー</param>
+        /// <param name="foreignKeyProxy">代理外部キー（参照元のモデル内にある方）</param>
+        internal bool TryGetProxyOwnColumn(
+            AggregateMember.Ref @ref,
+            AggregateMember.ValueMember pkOfRef,
+            out AggregateMember.ValueMember foreignKeyProxy) {
+
+            if (!TryGetForeignKeyProxy(@ref, pkOfRef, out foreignKeyProxy)) {
+                return false;
+            }
+
+            if (IsAncestorsKey) {
+                var parent = @ref.Owner.GetParent();
+                var proxy = foreignKeyProxy;
+                foreignKeyProxy = @ref.Owner
+                    .GetMembers()
+                    .OfType<AggregateMember.ValueMember>()
+                    .Single(x => x.Inherits?.Member.Declared == proxy
+                              && x.Inherits?.Relation == parent);
+            }
+            return true;
         }
     }
 }
