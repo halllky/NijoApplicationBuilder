@@ -518,7 +518,7 @@ namespace Nijo.Core {
                         : null;
                     if (foreignKeyProxies == null) return null;
 
-                    return foreignKeyProxies.FirstOrDefault(p => p.IsMatch(this, pkOfRef));
+                    return foreignKeyProxies.FirstOrDefault(p => p.TryGetForeignKeyProxy(this, pkOfRef, out var _));
                 }
             }
 
@@ -653,32 +653,46 @@ namespace Nijo.Core {
         private readonly string[] _proxyMemberPath;
 
         /// <summary>
-        /// 引数のValueMemberがこのインスタンスで置き換えられるべき対象か否かを返します。
+        /// 引数のValueMemberと対応する代理外部キーを返します。
         /// </summary>
-        internal bool IsMatch(AggregateMember.Ref @ref, AggregateMember.ValueMember pkOfRef) {
-            var path = pkOfRef.Declared
+        /// <param name="pkOfRef">参照先のキー</param>
+        /// <param name="foreignKeyProxy">代理外部キー（参照元のモデル内にある方）</param>
+        internal bool TryGetForeignKeyProxy(
+            AggregateMember.Ref @ref,
+            AggregateMember.ValueMember pkOfRef,
+            out AggregateMember.ValueMember foreignKeyProxy) {
+
+            // そもそも引数のValueMemberがこのインスタンスで既定されているキーでない場合は関係ない
+            var isForeignKeyProxy = pkOfRef.Declared
                 .GetFullPathAsForSave(since: @ref.RefTo)
-                .ToArray();
-            var currentAggregate = @ref.RefTo;
-            for (int i = 0; i < _refKeyMemberPath.Length; i++) {
-                var isLast = i == _refKeyMemberPath.Length - 1;
-                var physicalName = _refKeyMemberPath[i];
+                .SequenceEqual(_refKeyMemberPath);
+            if (!isForeignKeyProxy) {
+                foreignKeyProxy = null!;
+                return false;
+            }
+
+            // refのOwnerを基点に代理キーを探して返す
+            var currentAggregate = @ref.Owner;
+            for (int i = 0; i < _proxyMemberPath.Length; i++) {
+                var isLast = i == _proxyMemberPath.Length - 1;
+                var name = _proxyMemberPath[i];
                 if (isLast) {
-                    return currentAggregate
+                    foreignKeyProxy = currentAggregate
                         .GetMembers()
                         .OfType<AggregateMember.ValueMember>()
-                        .Any(vm => vm.MemberName == physicalName);
+                        .Single(m => m.MemberName == name);
+                    return true;
+
                 } else {
-                    var agg = currentAggregate
+                    var member = currentAggregate
                         .GetMembers()
                         .OfType<AggregateMember.RelationMember>()
-                        .SingleOrDefault(rm => rm.MemberName == physicalName)
-                        ?.MemberAggregate;
-                    if (agg == null) return false;
-                    currentAggregate = agg;
+                        .Single(m => m.MemberName == name);
+                    currentAggregate = member.MemberAggregate;
                 }
             }
-            return false;
+
+            throw new InvalidOperationException("ここまで来ることは無いはず");
         }
     }
 }
