@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { createBrowserRouter, Link, NavLink, Outlet, RouteObject, RouterProvider, useLocation } from 'react-router-dom'
+import { createBrowserRouter, FutureConfig, Link, NavLink, Outlet, RouteObject, RouterProvider, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import * as Icon from '@heroicons/react/24/outline'
 import { ImperativePanelHandle, Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
@@ -74,12 +74,30 @@ const ReactRouterSetting = (props: DefaultNijoAppProps) => {
         </QueryClientProvider>
       ),
     },
-    ])
+    ], {
+      // React router v7 で修正される予定の処理のうちどれを早期適用するかの指定
+      future: {
+        v7_fetcherPersist: true,
+        v7_relativeSplatPath: true,
+        v7_skipActionErrorRevalidation: true,
+        v7_normalizeFormMethod: true,
+        v7_partialHydration: true,
+      },
+    })
   }, [UI, modifyRoutes, ...Object.values(props)])
 
   return (
-    <RouterProvider router={router} />
+    <RouterProvider
+      router={router}
+      future={REACT_ROUTER_FUTURE_FLAGS}
+    />
   )
+}
+
+/** React router v7 で修正される予定の処理のうちどれを早期適用するかの指定 */
+const REACT_ROUTER_FUTURE_FLAGS: FutureConfig = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true,
 }
 
 /** アプリケーション本体 */
