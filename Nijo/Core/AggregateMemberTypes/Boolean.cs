@@ -17,6 +17,11 @@ namespace Nijo.Core.AggregateMemberTypes {
         public string GetCSharpTypeName() => "bool";
         public string GetTypeScriptTypeName() => "boolean";
 
+        public string UiConstraintType => "MemberConstraintBase";
+        public virtual IEnumerable<string> RenderUiConstraintValue(AggregateMember.ValueMember vm) {
+            yield break;
+        }
+
         private const string BOOL_SEARCH_CONDITION_ENUM = "E_BoolSearchCondition";
         private const string NO_FILTER = "指定なし";
         private const string ONLY_TRUE = "Trueのみ";

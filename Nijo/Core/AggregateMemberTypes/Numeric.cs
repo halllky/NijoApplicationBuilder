@@ -13,6 +13,8 @@ namespace Nijo.Core.AggregateMemberTypes {
         public override string GetCSharpTypeName() => "decimal";
         public override string GetTypeScriptTypeName() => "number";
 
+        public override string UiConstraintType => "NumberMemberConstraint";
+
         protected override string ComponentName => "Input.Num";
 
         private protected override IEnumerable<string> RenderAttributes(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {

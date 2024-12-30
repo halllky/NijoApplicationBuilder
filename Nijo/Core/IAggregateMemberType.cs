@@ -74,6 +74,17 @@ namespace Nijo.Core {
         /// <see cref="Parts.WebClient.DataTable.CellType"/> で使用される列定義生成ヘルパーメソッドの名前
         /// </summary>
         string DataTableColumnDefHelperName { get; }
+
+        /// <summary>
+        /// UIの制約定義（文字列項目なら最大文字数など、数値なら桁数など）の型の名前。
+        /// </summary>
+        string UiConstraintType { get; }
+        /// <summary>
+        /// UIの制約定義（文字列項目なら最大文字数など、数値なら桁数など）の具体的な値をレンダリングします。
+        /// なお、必須項目か否かはこのメソッドを呼ぶ側でレンダリングしているため、定義不要です。
+        /// </summary>
+        IEnumerable<string> RenderUiConstraintValue(AggregateMember.ValueMember vm);
+
         /// <summary>
         /// <see cref="DataTableColumnDefHelperName"/> のメソッド本体をレンダリングします。
         /// </summary>
@@ -120,6 +131,15 @@ namespace Nijo.Core {
 
         public virtual string GetCSharpTypeName() => "string";
         public virtual string GetTypeScriptTypeName() => "string";
+
+        public virtual string UiConstraintType => "StringMemberConstraint";
+        public virtual IEnumerable<string> RenderUiConstraintValue(AggregateMember.ValueMember vm) {
+            if (vm.Options.MaxLength.HasValue) {
+                yield return $"maxLength: {vm.Options.MaxLength}";
+            }
+
+            // TODO #79 半角英数字のオプションを yield return する
+        }
 
         public virtual string GetSearchConditionCSharpType(AggregateMember.ValueMember vm) {
             return vm.Options.SearchBehavior == E_SearchBehavior.Range
@@ -326,6 +346,11 @@ namespace Nijo.Core {
 
         public abstract string GetCSharpTypeName();
         public abstract string GetTypeScriptTypeName();
+
+        public virtual string UiConstraintType => "MemberConstraintBase";
+        public virtual IEnumerable<string> RenderUiConstraintValue(AggregateMember.ValueMember vm) {
+            yield break;
+        }
 
         public string GetSearchConditionCSharpType(AggregateMember.ValueMember vm) {
             var type = GetCSharpTypeName();

@@ -24,6 +24,11 @@ namespace Nijo.Core.AggregateMemberTypes {
             return Definition.Items.Select(x => $"'{x.PhysicalName}'").Join(" | ");
         }
 
+        public string UiConstraintType => "MemberConstraintBase";
+        public virtual IEnumerable<string> RenderUiConstraintValue(AggregateMember.ValueMember vm) {
+            yield break;
+        }
+
         private string SearchConditionEnum => $"{Definition.Name}SearchCondition";
         private const string ANY_CHECKED = "AnyChecked";
 
