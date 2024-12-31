@@ -1,3 +1,4 @@
+using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using System;
 using System.Collections.Generic;
@@ -17,10 +18,31 @@ namespace Nijo.Models.ReadModel2Features {
         private readonly List<DataClassForDisplay> _displayDataList = new();
 
         public void OnEndGenerating(CodeRenderingContext context) {
-            context.ReactProject.Types.Add(Render(context));
+            if (context.Config.CustomizeAllUi) {
+
+                context.ReactProject.UtilDir(dir => {
+                    dir.Generate(new SourceFile {
+                        FileName = "constraints.ts",
+                        RenderContent = ctx => {
+                            return RenderCommonConstraint();
+                        },
+                    });
+                });
+
+                foreach (var disp in _displayDataList) {
+                    var aggregateFile = context.CoreLibrary.UseAggregateFile(disp.Aggregate);
+                    aggregateFile.TypeScriptFile.Add($$"""
+                        {{WithIndent(disp.RenderUiConstraintType(context), "")}}
+                        {{WithIndent(disp.RenderUiConstraintValue(context), "")}}
+                        """);
+                }
+
+            } else {
+                context.ReactProject.Types.Add(Render(context));
+            }
         }
 
-        private string Render(CodeRenderingContext ctx) {
+        private static string RenderCommonConstraint() {
             return $$"""
                 /** AggregateMemberの制約 */
                 export type MemberConstraintBase = {
@@ -49,6 +71,12 @@ namespace Nijo.Models.ReadModel2Features {
                   StringMemberConstraint
                   & NumberMemberConstraint
                 >
+                """;
+        }
+
+        private string Render(CodeRenderingContext ctx) {
+            return $$"""
+                {{RenderCommonConstraint()}}
 
                 //#region UI制約
                 {{_displayDataList.SelectTextTemplate(disp => $$"""

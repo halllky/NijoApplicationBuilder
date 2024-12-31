@@ -762,6 +762,8 @@ namespace Nijo.Models.ReadModel2Features {
         internal string UiConstraintTypeName => $"{Aggregate.Item.PhysicalName}ConstraintType";
         internal string UiConstraingValueName => $"{Aggregate.Item.PhysicalName}Constraints";
         internal string RenderUiConstraintType(CodeRenderingContext ctx) {
+            var prefix = ctx.Config.CustomizeAllUi ? "Constraints." : "";
+
             return $$"""
                 /** {{Aggregate.Item.DisplayName}}の各メンバーの制約の型 */
                 type {{UiConstraintTypeName}} = {
@@ -769,14 +771,14 @@ namespace Nijo.Models.ReadModel2Features {
                 }
                 """;
 
-            static string RenderMembers(DataClassForDisplay displayData) {
+            string RenderMembers(DataClassForDisplay displayData) {
                 return $$"""
                     {{VALUES_TS}}: {
                     {{displayData.GetOwnMembers().SelectTextTemplate(m => $$"""
                     {{If(m is AggregateMember.ValueMember, () => $$"""
-                      {{m.MemberName}}: {{((AggregateMember.ValueMember)m).Options.MemberType.UiConstraintType}}
+                      {{m.MemberName}}: {{prefix}}{{((AggregateMember.ValueMember)m).Options.MemberType.UiConstraintType}}
                     """).ElseIf(m is AggregateMember.Ref, () => $$"""
-                      {{m.MemberName}}: MemberConstraintBase
+                      {{m.MemberName}}: {{prefix}}MemberConstraintBase
                     """)}}
                     """)}}
                     }
@@ -791,7 +793,7 @@ namespace Nijo.Models.ReadModel2Features {
         internal string RenderUiConstraintValue(CodeRenderingContext ctx) {
             return $$"""
                 /** {{Aggregate.Item.DisplayName}}の各メンバーの制約の具体的な値 */
-                const {{UiConstraingValueName}}: {{UiConstraintTypeName}} = {
+                export const {{UiConstraingValueName}}: {{UiConstraintTypeName}} = {
                   {{WithIndent(RenderMembers(this), "  ")}}
                 }
                 """;
