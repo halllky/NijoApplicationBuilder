@@ -99,6 +99,7 @@ namespace Nijo.Models {
             // 処理: 自動生成されるバリデーションエラーチェック
             aggregateFile.AppServiceMethods.Add(RequiredCheck.Render(rootAggregate, context));
             aggregateFile.AppServiceMethods.Add(MaxLengthCheck.Render(rootAggregate, context));
+            aggregateFile.AppServiceMethods.Add(CharacterTypeCheck.Render(rootAggregate, context));
             aggregateFile.AppServiceMethods.Add(DynamicEnum.RenderAppSrvCheckMethod(rootAggregate, context));
 
             // 処理: SetReadOnly AppSrv

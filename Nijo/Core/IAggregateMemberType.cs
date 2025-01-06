@@ -137,8 +137,9 @@ namespace Nijo.Core {
             if (vm.Options.MaxLength.HasValue) {
                 yield return $"maxLength: {vm.Options.MaxLength}";
             }
-
-            // TODO #79 半角英数字のオプションを yield return する
+            if (vm.Options.CharacterType.HasValue) {
+                yield return $"characterType: '{vm.Options.CharacterType}'";
+            }
         }
 
         public virtual string GetSearchConditionCSharpType(AggregateMember.ValueMember vm) {
@@ -333,6 +334,16 @@ namespace Nijo.Core {
         /// 発行されるSQL文: WHERE DBの値 BETWEEN '検索条件1個目' AND '検索条件2個目'
         /// </summary>
         Range,
+    }
+
+    /// <summary>
+    /// 文字列系項目がとることのできる文字の種類
+    /// </summary>
+    public enum E_CharacterType {
+        /// <summary>
+        /// 半角英数。記号やスペースは含まない。
+        /// </summary>
+        半角英数,
     }
 
     /// <summary>

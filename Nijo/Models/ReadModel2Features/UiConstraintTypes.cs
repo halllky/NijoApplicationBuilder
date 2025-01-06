@@ -1,5 +1,6 @@
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
+using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -55,7 +56,7 @@ namespace Nijo.Models.ReadModel2Features {
                   /** 最大長。文字数でカウントする */
                   maxLength?: number
                   /** この値がとることのできる文字種。未指定の場合は制約なし */
-                  charType?: '半角英数'
+                  characterType?: {{Enum.GetValues<Core.E_CharacterType>().Select(type => $"'{type}'").Join(" | ")}}
                 }
 
                 /** 整数型と実数型の制約 */

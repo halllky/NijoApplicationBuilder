@@ -124,6 +124,8 @@ namespace Nijo.Core {
         /// 検索条件の挙動
         /// </summary>
         public E_SearchBehavior? SearchBehavior { get; set; }
+        /// <inheritdoc cref="E_CharacterType"/>
+        public E_CharacterType? CharacterType { get; set; }
 
         /// <summary>
         /// 文字列型の最大長

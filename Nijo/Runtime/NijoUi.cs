@@ -586,6 +586,7 @@ namespace Nijo.Runtime {
                             DisplayName = options.DisplayName,
                             DbName = options.DbName,
                             SearchBehavior = options.SearchBehavior,
+                            CharacterType = options.CharacterType,
                             MaxLength = options.MaxLength,
                             EnumSqlParamType = options.EnumSqlParamType,
                         });
@@ -1723,6 +1724,7 @@ namespace Nijo.Runtime {
             yield return Radio;
 
             yield return SearchBehavior;
+            yield return CharacterType;
 
             yield return EnumSqlParamType;
 
@@ -2424,6 +2426,32 @@ namespace Nijo.Runtime {
                     "範囲検索" => E_SearchBehavior.Range,
                     _ => null,
                 };
+            },
+        };
+        private static OptionalAttributeDef CharacterType => new OptionalAttributeDef {
+            Key = "character-type",
+            DisplayName = "文字種",
+            Type = E_OptionalAttributeType.Boolean,
+            HelpText = $$"""
+                文字列型のメンバーがとることのできる文字の種類。
+                {{Enum.GetValues<E_CharacterType>().Select(c => $"'{c}'").Join(", ")}} が使用可能。
+                """,
+            Validate = (value, node, schema, errors) => {
+                if (string.IsNullOrWhiteSpace(value)) return;
+                if (node.Type != MemberTypeResolver.TYPE_WORD
+                    && node.Type != MemberTypeResolver.TYPE_SENTENCE
+                    && node.Type?.StartsWith(MutableSchemaNode.VALUE_OBJECT_PREFIX) != true) {
+                    errors.Add("この属性は文字列系項目にのみ設定できます。");
+                    return;
+                }
+
+                var available = Enum.GetValues<E_CharacterType>().Select(enm => enm.ToString()).ToArray();
+                if (!available.Contains(value)) {
+                    errors.Add($"{available.Select(x => $"\"{x}\"").Join(", ")}のいずれかを入力してください。");
+                }
+            },
+            EditAggregateMemberOption = (value, node, schema, opt) => {
+                opt.CharacterType = value == null ? null : Enum.Parse<E_CharacterType>(value);
             },
         };
 
