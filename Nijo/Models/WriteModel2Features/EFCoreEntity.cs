@@ -206,7 +206,8 @@ namespace Nijo.Models.WriteModel2Features {
                     yield return $"    .HasForeignKey(e => new {{";
                 }
                 foreach (var fk in nav.Relevant.GetForeignKeys()) {
-                    yield return $"        e.{fk.MemberName},";
+                    var memberName = fk.Inherits?.GetRefForeignKeyProxy()?.GetProxyMember().MemberName ?? fk.MemberName;
+                    yield return $"        e.{memberName},";
                 }
                 yield return $"    }})";
 
