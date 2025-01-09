@@ -113,7 +113,7 @@ namespace Nijo.Models.WriteModel2Features {
 
                     /// <summary>このオブジェクトと比較対象のオブジェクトの主キーが一致するかを返します。</summary>
                     public bool {{KEYEQUALS}}({{ClassName}} entity) {
-                {{_aggregate.GetKeys().OfType<AggregateMember.ValueMember>().SelectTextTemplate(col => $$"""
+                {{_aggregate.GetKeys().OfType<AggregateMember.ValueMember>().Where(col => col.Inherits?.GetRefForeignKeyProxy() == null).SelectTextTemplate(col => $$"""
                         if (entity.{{col.MemberName}} != this.{{col.MemberName}}) return false;
                 """)}}
                         return true;
@@ -131,7 +131,7 @@ namespace Nijo.Models.WriteModel2Features {
                             entity.ToTable("{{_aggregate.Item.Options.DbName ?? _aggregate.Item.PhysicalName}}");
 
                             entity.HasKey(e => new {
-                {{_aggregate.GetKeys().OfType<AggregateMember.ValueMember>().SelectTextTemplate(pk => $$"""
+                {{_aggregate.GetKeys().OfType<AggregateMember.ValueMember>().Where(pk => pk.Inherits?.GetRefForeignKeyProxy() == null).SelectTextTemplate(pk => $$"""
                                 e.{{pk.MemberName}},
                 """)}}
                             });
