@@ -62,7 +62,7 @@ namespace Nijo.Models.WriteModel2Features {
                     if (!@ref.Relation.IsPrimary() && !@ref.Relation.IsRequired()) continue;
 
                     var isEmpty = new List<string>();
-                    foreach (var fk in @ref.GetForeignKeys()) {
+                    foreach (var fk in @ref.GetForeignKeys().Where(fk => fk.Inherits?.GetRefForeignKeyProxy() == null)) {
                         // stringならIsNullOrWhiteSpaceで判定、それ以外はnullか否かで判定
                         var path = fk.GetFullPathAsDbEntity(since: instanceAggregate);
                         isEmpty.Add(fk.Options.MemberType.GetCSharpTypeName() == "string"

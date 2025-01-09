@@ -23,4 +23,22 @@
       <!-- <兼務部署 is="ref-to:部署" /> -->
     </所属部署情報>
   </従業員>
+
+  <集約A is="write-model-2 generate-default-read-model">
+    <会社ID is="int key" />
+    <営業区ID is="word key" />
+    <部署ID is="word key" />
+    <部署名 is="word name" />
+  </集約A>
+  <集約B is="write-model-2 generate-default-read-model">
+    <会社ID is="int key" />
+    <従業員ID is="word key" />
+    <従業員名 is="word name" />
+  </集約B>
+  <集約C is="write-model-2 generate-default-read-model">
+    <会社ID is="int key" />
+    <集約A is="ref-to:集約A key foreign-key-proxy:ref.会社ID=this.会社ID" />
+    <集約B is="ref-to:集約B key foreign-key-proxy:ref.会社ID=this.会社ID" />
+    <非キー項目 is="word" />
+  </集約C>
 </自動テストで作成されたプロジェクト>
