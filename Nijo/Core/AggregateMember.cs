@@ -523,6 +523,11 @@ namespace Nijo.Core {
                             return logicClass;
                         }
                     }
+
+                    // 参照先に更に別の集約への参照かつキーかつ代理外部キーがある場合
+                    var proxyRecursively = pkOfRef.Inherits?.GetRefForeignKeyProxy();
+                    if (proxyRecursively != null) return proxyRecursively;
+
                     return null;
                 }
             }
@@ -688,7 +693,7 @@ namespace Nijo.Core {
             private readonly AggregateMember.ValueMember _pkOfRef;
 
             /// <summary>
-            /// 引数のValueMemberと対応する代理外部キーを返します。
+            /// <see cref="LogicClass"/> のコンストラクタの引数のValueMemberと対応する代理外部キーを返します。
             /// なお、代理外部キーが祖先の主キーである場合、代理外部キーそれ自身ではなく、
             /// 引数のRefの集約の中にある、当該祖先の主キーを継承したメンバーを返します。
             /// </summary>

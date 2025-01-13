@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <自動テストで作成されたプロジェクト DbContextName="MyDbContext">
+
+  <!-- 従業員のデータ構造で右記ルールが表現されている: 本務・兼務の会社は従業員自身の会社IDと必ず一致していなければならない。テーブル構造上、本務部署・兼務部署それぞれ用の会社IDができるのではなく、従業員テーブルのキーが結合に用いられる。 -->
   <会社 is="write-model-2 generate-default-read-model">
     <会社ID is="int key" />
     <会社名 is="word" />
@@ -16,13 +18,12 @@
     <従業員名 is="word name" />
     <所属部署情報 is="children">
       <年度 is="year key" />
-      <!-- 本務・兼務の会社は従業員自身の会社IDと必ず一致していなければならない。テーブル構造上、本務部署・兼務部署それぞれ用の会社IDができるのではなく、従業員テーブルのキーが結合に用いられる。 -->
       <本務部署 is="ref-to:部署 foreign-key-proxy:ref.会社.会社ID=this.Parent.会社.会社ID" />
       <兼務部署 is="ref-to:部署 foreign-key-proxy:ref.会社.会社ID=this.Parent.会社.会社ID" />
-      <!-- <本務部署 is="ref-to:部署" /> -->
-      <!-- <兼務部署 is="ref-to:部署" /> -->
     </所属部署情報>
   </従業員>
+
+  <!-- **************************************** -->
 
   <集約A is="write-model-2 generate-default-read-model">
     <会社ID is="int key" />
@@ -41,4 +42,29 @@
     <集約B is="ref-to:集約B key foreign-key-proxy:ref.会社ID=this.会社ID" />
     <非キー項目 is="word" />
   </集約C>
+
+  <!-- **************************************** -->
+
+  <顧客 is="write-model-2 generate-default-read-model">
+    <リージョン is="int key" />
+    <顧客ID is="word key" />
+    <顧客名 is="word name" />
+  </顧客>
+  <パッケージ is="write-model-2 generate-default-read-model">
+    <リージョン is="int key" />
+    <パッケージID is="word key" />
+    <パッケージ名 is="word name" />
+  </パッケージ>
+  <エディション is="write-model-2 generate-default-read-model">
+    <リージョン is="int key" />
+    <パッケージ is="ref-to:パッケージ key foreign-key-proxy:ref.リージョン=this.リージョン" />
+    <名前 is="word key" />
+  </エディション>
+  <ライセンス is="write-model-2 generate-default-read-model">
+    <リージョン is="int key" />
+    <顧客 is="ref-to:顧客 key foreign-key-proxy:ref.リージョン=this.リージョン" />
+    <エディション is="ref-to:エディション key foreign-key-proxy:ref.リージョン=this.リージョン" />
+    <契約開始日 is="date" />
+  </ライセンス>
+
 </自動テストで作成されたプロジェクト>

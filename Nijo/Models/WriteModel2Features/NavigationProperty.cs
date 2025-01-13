@@ -137,12 +137,22 @@ namespace Nijo.Models.WriteModel2Features {
                         && _relation.IsRef()) {
 
                     // このナビゲーションプロパティがref-toのとき
-                    return _relation.Initial
+                    var refMember = _relation.Initial
                         .GetMembers()
                         .OfType<AggregateMember.Ref>()
-                        .Where(refMember => refMember.Relation == _relation)
-                        .SelectMany(refMember => refMember.GetForeignKeys())
-                        .Select(vm => vm.Inherits?.GetRefForeignKeyProxy()?.GetProxyMember() ?? vm);
+                        .Single(refMember => refMember.Relation == _relation);
+                    var candidates = refMember
+                        .GetForeignKeys()
+                        .Select((vm, index) => new {
+                            vm,
+                            proxy = vm.Inherits?.GetRefForeignKeyProxy()?.GetProxyMember(),
+                            //vmOwner = vm.Owner,
+                            //proxyOwner = vm.Inherits?.GetRefForeignKeyProxy()?.GetProxyMember().Owner,
+                        });
+                    return candidates
+                        .Select(x => x.proxy ?? x.vm)
+                        // 参照先のキーに外部代理キーが含まれる場合、ここでOwnerが参照先であるvmが紛れ込んでしまうため、除外する
+                        .Where(vm => vm.Owner == Owner);
 
                 } else {
                     return Enumerable.Empty<AggregateMember.ValueMember>();
