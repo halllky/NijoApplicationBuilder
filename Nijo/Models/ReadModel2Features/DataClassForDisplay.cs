@@ -648,7 +648,7 @@ namespace Nijo.Models.ReadModel2Features {
                         KeyPaths = disp.MemberInfo.MemberAggregate
                             .GetKeys()
                             .OfType<AggregateMember.ValueMember>()
-                            .Where(vm => vm.DeclaringAggregate == vm.Owner)
+                            .Where(vm => vm.Inherits?.Relation.IsParentChild() != true)
                             .Select(vm => vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, disp.MemberInfo.MemberAggregate)),
                     };
                 });
