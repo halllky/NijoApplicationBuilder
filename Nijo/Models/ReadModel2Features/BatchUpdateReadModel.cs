@@ -56,26 +56,14 @@ namespace Nijo.Models.ReadModel2Features {
         void ISummarizedFile.OnEndGenerating(CodeRenderingContext context) {
 
             // 一括更新処理
-            if (context.Config.UseBatchUpdateVersion2) {
-                foreach (var agg in _aggregates) {
-                    if (agg.Item.Options.IsReadOnlyAggregate) continue;
-
-                    var aggregateFile = context.CoreLibrary.UseAggregateFile(agg);
-                    aggregateFile.TypeScriptFile.Add(RenderFunction(context, agg));
-                    aggregateFile.ControllerActions.Add(RenderControllerActionVersion2(context, agg));
-                    aggregateFile.AppServiceMethods.Add(RenderAppSrvMethodVersion2(context, agg));
-                }
-
-            } else {
-                var batchUpdate = context.UseSummarizedFile<BatchUpdateWriteModel>();
-                if (!context.Config.CustomizeAllUi) {
-                    context.ReactProject.Types.Add(RenderFuncParamType(context));
-                }
-                batchUpdate.AddReactHook(RenderFunction(context, null));
-                context.UseSummarizedFile<UtilityClass>().AddJsonConverter(RenderJsonConverter());
-                batchUpdate.AddControllerAction(RenderControllerAction(context));
-                batchUpdate.AddAppSrvMethod(RenderAppSrvMethod(context));
+            var batchUpdate = context.UseSummarizedFile<BatchUpdateWriteModel>();
+            if (!context.Config.CustomizeAllUi) {
+                context.ReactProject.Types.Add(RenderFuncParamType(context));
             }
+            batchUpdate.AddReactHook(RenderFunction(context, null));
+            context.UseSummarizedFile<UtilityClass>().AddJsonConverter(RenderJsonConverter());
+            batchUpdate.AddControllerAction(RenderControllerAction(context));
+            batchUpdate.AddAppSrvMethod(RenderAppSrvMethod(context));
         }
 
         private string RenderFuncParamType(CodeRenderingContext context) {
@@ -89,7 +77,7 @@ namespace Nijo.Models.ReadModel2Features {
                 """;
         }
 
-        private string RenderFunction(CodeRenderingContext context, GraphNode<Aggregate>? aggregate) {
+        internal string RenderFunction(CodeRenderingContext context, GraphNode<Aggregate>? aggregate) {
 
             // aggregateがnullならver.1用ソースをレンダリング。nullでないならver.2
 
@@ -386,7 +374,7 @@ namespace Nijo.Models.ReadModel2Features {
 
 
         #region version.2
-        private static string RenderControllerActionVersion2(CodeRenderingContext context, GraphNode<Aggregate> aggregate) {
+        internal static string RenderControllerActionVersion2(CodeRenderingContext context, GraphNode<Aggregate> aggregate) {
             var displayData = new DataClassForDisplay(aggregate);
 
             return $$"""
@@ -415,7 +403,7 @@ namespace Nijo.Models.ReadModel2Features {
         }
 
 
-        private static string RenderAppSrvMethodVersion2(CodeRenderingContext context, GraphNode<Aggregate> aggregate) {
+        internal static string RenderAppSrvMethodVersion2(CodeRenderingContext context, GraphNode<Aggregate> aggregate) {
             var displayData = new DataClassForDisplay(aggregate);
 
             return $$"""
