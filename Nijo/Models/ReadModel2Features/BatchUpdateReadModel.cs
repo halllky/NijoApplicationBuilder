@@ -36,10 +36,14 @@ namespace Nijo.Models.ReadModel2Features {
         private const string VALUES_TS = "values";
 
         internal const string HOOK_NAME = "useBatchUpdateReadModels";
+        internal static string GetHookName(GraphNode<Aggregate> agg) => $"useBatchUpdate{agg.Item.PhysicalName}";
+
         private const string HOOK_PARA_TYPE = "BatchUpdateDisplayDataParam";
         private const string HOOK_PARAM_ITEMS = "Items";
 
         private const string CONTROLLER_ACTION = "display-data";
+        private const string CONTROLLER_ACTION_VER2 = "batch-update";
+
         /// <summary><see cref="DisplayMessageContainer.INTERFACE"/>エラーが格納されるプロパティ</summary>
         private const string HTTP_RESULT_DETAIL = "detail";
         /// <summary>ブラウザのアラートに表示されるstringの配列</summary>
@@ -52,42 +56,77 @@ namespace Nijo.Models.ReadModel2Features {
         void ISummarizedFile.OnEndGenerating(CodeRenderingContext context) {
 
             // 一括更新処理
-            var batchUpdate = context.UseSummarizedFile<BatchUpdateWriteModel>();
-            context.ReactProject.Types.Add(RenderFuncParamType());
-            batchUpdate.AddReactHook(RenderFunction(context));
-            context.UseSummarizedFile<UtilityClass>().AddJsonConverter(RenderJsonConverter());
-            batchUpdate.AddControllerAction(RenderControllerAction(context));
-            batchUpdate.AddAppSrvMethod(RenderAppSrvMethod(context));
+            if (context.Config.UseBatchUpdateVersion2) {
+                foreach (var agg in _aggregates) {
+                    if (agg.Item.Options.IsReadOnlyAggregate) continue;
+
+                    var aggregateFile = context.CoreLibrary.UseAggregateFile(agg);
+                    aggregateFile.TypeScriptFile.Add(RenderFunction(context, agg));
+                    aggregateFile.ControllerActions.Add(RenderControllerActionVersion2(context, agg));
+                    aggregateFile.AppServiceMethods.Add(RenderAppSrvMethodVersion2(context, agg));
+                }
+
+            } else {
+                var batchUpdate = context.UseSummarizedFile<BatchUpdateWriteModel>();
+                if (!context.Config.CustomizeAllUi) {
+                    context.ReactProject.Types.Add(RenderFuncParamType(context));
+                }
+                batchUpdate.AddReactHook(RenderFunction(context, null));
+                context.UseSummarizedFile<UtilityClass>().AddJsonConverter(RenderJsonConverter());
+                batchUpdate.AddControllerAction(RenderControllerAction(context));
+                batchUpdate.AddAppSrvMethod(RenderAppSrvMethod(context));
+            }
         }
 
-        private string RenderFuncParamType() {
+        private string RenderFuncParamType(CodeRenderingContext context) {
+            var prefix = context.Config.CustomizeAllUi ? "Types." : "";
+
             return $$"""
                 export type {{HOOK_PARA_TYPE}}
                 {{_aggregates.SelectTextTemplate((agg, i) => $$"""
-                  {{(i == 0 ? "=" : "|")}} { {{DATA_TYPE_TS}}: '{{GetDataTypeLiteral(agg)}}', {{VALUES_TS}}: {{new DataClassForDisplay(agg).TsTypeName}} }
+                  {{(i == 0 ? "=" : "|")}} { {{DATA_TYPE_TS}}: '{{GetDataTypeLiteral(agg)}}', {{VALUES_TS}}: {{prefix}}{{new DataClassForDisplay(agg).TsTypeName}} }
                 """)}}
                 """;
         }
 
-        private string RenderFunction(CodeRenderingContext context) {
-            return $$"""
-                export type BatchUpdateOptions = Omit<Util.ComplexPostOptions<never>, 'setError'> & {
-                  setError?: (itemIndex: number, name: string, errors: { types: { [key: string]: string } }) => void
-                }
+        private string RenderFunction(CodeRenderingContext context, GraphNode<Aggregate>? aggregate) {
 
+            // aggregateがnullならver.1用ソースをレンダリング。nullでないならver.2
+
+            var hookName = aggregate == null
+                ? HOOK_NAME
+                : GetHookName(aggregate);
+            var prefix = context.Config.CustomizeAllUi ? "" : "Types.";
+            var argType = aggregate == null
+                ? $"{prefix}{HOOK_PARA_TYPE}"
+                : new DataClassForDisplay(aggregate).TsTypeName;
+            var url = aggregate == null
+                ? $"/{Controller.SUBDOMAIN}/{BatchUpdateWriteModel.CONTROLLER_SUBDOMAIN}/{CONTROLLER_ACTION}"
+                : $"/{new Controller(aggregate.Item).SubDomain}/{CONTROLLER_ACTION_VER2}";
+            var parameter = aggregate == null
+                ? $"{{ {HOOK_PARAM_ITEMS}: items }}"
+                : $"items";
+
+            return $$"""
+                {{If(aggregate == null && context.Config.CustomizeAllUi, () => $$"""
+                {{RenderFuncParamType(context)}}
+
+                """)}}
                 /** 画面表示用データの一括更新を即時実行します。更新するデータの量によっては長い待ち時間が発生する可能性があります。 */
-                export const {{HOOK_NAME}} = () => {
+                export const {{hookName}} = () => {
                   const { complexPost } = Util.useHttpRequest()
-                  const [, dispatchToast] = Util.useToastContext()
                   const [nowSaving, setNowSaving] = React.useState(false)
 
+                  type BatchUpdateOptions = Omit<Util.ComplexPostOptions<never>, 'setError'> & {
+                    setError?: (itemIndex: number, name: string, errors: { types: { [key: string]: string } }) => void
+                  }
                   type ErrorDetailType = [
                     itemIndex: number,
                     name: ReactHookForm.FieldPath<ReactHookForm.FieldValues>,
                     error: { types: { [key: string]: string } },
                   ]
 
-                  const batchUpdateReadModels = useEvent(async (items: Types.{{HOOK_PARA_TYPE}}[], options?: BatchUpdateOptions): Promise<{ ok: boolean }> => {
+                  const batchUpdateReadModels = useEvent(async (items: {{argType}}[], options?: BatchUpdateOptions): Promise<{ ok: boolean }> => {
                     if (nowSaving) return { ok: false }
                     setNowSaving(true)
                     try {
@@ -107,7 +146,7 @@ namespace Nijo.Models.ReadModel2Features {
                         }
                       }
 
-                      return await complexPost(`/{{Controller.SUBDOMAIN}}/{{BatchUpdateWriteModel.CONTROLLER_SUBDOMAIN}}/{{CONTROLLER_ACTION}}`,{ {{HOOK_PARAM_ITEMS}}: items }, { ...rest, responseHandler })
+                      return await complexPost(`{{url}}`, {{parameter}}, { ...rest, responseHandler })
                     } finally {
                       setNowSaving(false)
                     }
@@ -120,6 +159,8 @@ namespace Nijo.Models.ReadModel2Features {
                 """;
         }
 
+
+        #region version.1
         private UtilityClass.CustomJsonConverter RenderJsonConverter() => new() {
             ConverterClassName = $"{UtilityClass.CUSTOM_CONVERTER_NAMESPACE}.DisplayDataBatchUpdateCommandConverter",
             ConverterClassDeclaring = $$"""
@@ -341,5 +382,53 @@ namespace Nijo.Models.ReadModel2Features {
                 }
             }
         }
+        #endregion version.1
+
+
+        #region version.2
+        private static string RenderControllerActionVersion2(CodeRenderingContext context, GraphNode<Aggregate> aggregate) {
+            var displayData = new DataClassForDisplay(aggregate);
+
+            return $$"""
+                /// <summary>
+                /// 画面表示用データの一括更新処理を実行します。
+                /// </summary>
+                /// <param name="request">一括更新内容</param>
+                [HttpPost("{{CONTROLLER_ACTION_VER2}}")]
+                public virtual IActionResult BatchUpdateReadModels(ComplexPostRequest<List<{{displayData.CsClassName}}>> request) {
+                    _applicationService.Log.Debug("Batch Update: {0}", Request.Form[ComplexPostRequest.PARAM_DATA].ToString());
+
+                    var batchUpdateState = new {{SaveContext.STATE_CLASS_NAME}}(new {{SaveContext.SAVE_OPTIONS}} {
+                        IgnoreConfirm = request.IgnoreConfirm,
+                    });
+                    var result = _applicationService.{{APPSRV_BATCH_UPDATE}}(request.Data, batchUpdateState);
+
+                    if (result.HasError()) {
+                        return this.ShowErrorsUsingReactHook(result.GetErrorDataJson());
+                    }
+                    if (!request.IgnoreConfirm && result.HasConfirm()) {
+                        return this.ShowConfirmUsingReactHook(result.GetConfirms(), result.GetErrorDataJson());
+                    }
+                    return this.ShowSuccessMessageReactHook();
+                }
+                """;
+        }
+
+
+        private static string RenderAppSrvMethodVersion2(CodeRenderingContext context, GraphNode<Aggregate> aggregate) {
+            var displayData = new DataClassForDisplay(aggregate);
+
+            return $$"""
+                /// <summary>
+                /// データ一括更新を実行します。
+                /// </summary>
+                /// <param name="items">更新データ</param>
+                /// <param name="batchUpdateState">コンテキスト引数。エラーや警告の送出はこのオブジェクトを通して行なってください。</param>
+                public virtual void {{APPSRV_BATCH_UPDATE}}(IEnumerable<{{displayData.CsClassName}}> items, {{SaveContext.STATE_CLASS_NAME}} batchUpdateState) {
+                    throw new NotImplementedException("一括更新処理が実装されていません。{{APPSRV_BATCH_UPDATE}}メソッドをオーバーライドして内容を実装してください。");
+                }
+                """;
+        }
+        #endregion version.2
     }
 }
