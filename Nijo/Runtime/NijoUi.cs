@@ -2240,8 +2240,8 @@ namespace Nijo.Runtime {
                 ReadModelの中にあるChildのうち、そのChildが追加削除できるものであることを表します。
                 """,
             Validate = (value, node, schema, errors) => {
-                if (!node.IsReadModel(schema) || node.Type != "child") {
-                    errors.Add("この属性はReadModelのChildにのみ設定可能です。");
+                if (!node.IsReadModel(schema) || (node.Type != Child.Key && node.Type != Children.Key)) {
+                    errors.Add("この属性はReadModelのChildまたはChildrenにのみ設定可能です。");
                 }
             },
             EditAggregateOption = (value, node, schema, opt) => {
