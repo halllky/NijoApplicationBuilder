@@ -383,19 +383,23 @@ namespace Nijo.Models.ReadModel2Features {
                 /// </summary>
                 /// <param name="request">一括更新内容</param>
                 [HttpPost("{{CONTROLLER_ACTION_VER2}}")]
-                public virtual IActionResult BatchUpdateReadModels(ComplexPostRequest<List<{{displayData.CsClassName}}>> request) {
+                public virtual async Task<IActionResult> BatchUpdateReadModels(ComplexPostRequest<List<{{displayData.CsClassName}}>> request) {
                     _applicationService.Log.Debug("Batch Update: {0}", Request.Form[ComplexPostRequest.PARAM_DATA].ToString());
 
-                    var batchUpdateState = new {{SaveContext.STATE_CLASS_NAME}}(new {{SaveContext.SAVE_OPTIONS}} {
-                        IgnoreConfirm = request.IgnoreConfirm,
-                    });
-                    _applicationService.{{APPSRV_BATCH_UPDATE}}(request.Data, batchUpdateState);
+                    using (var tran = await _applicationService.DbContext.Database.BeginTransactionAsync()) {
+                        var batchUpdateState = new {{SaveContext.STATE_CLASS_NAME}}(new {{SaveContext.SAVE_OPTIONS}} {
+                            IgnoreConfirm = request.IgnoreConfirm,
+                        });
+                        await _applicationService.{{APPSRV_BATCH_UPDATE}}(request.Data, batchUpdateState);
 
-                    if (batchUpdateState.HasError()) {
-                        return this.ShowErrorsUsingReactHook(batchUpdateState.GetErrorDataJson());
-                    }
-                    if (!request.IgnoreConfirm && batchUpdateState.HasConfirm()) {
-                        return this.ShowConfirmUsingReactHook(batchUpdateState.GetConfirms(), batchUpdateState.GetErrorDataJson());
+                        if (batchUpdateState.HasError()) {
+                            return this.ShowErrorsUsingReactHook(batchUpdateState.GetErrorDataJson());
+                        }
+                        if (!request.IgnoreConfirm && batchUpdateState.HasConfirm()) {
+                            return this.ShowConfirmUsingReactHook(batchUpdateState.GetConfirms(), batchUpdateState.GetErrorDataJson());
+                        }
+
+                        await tran.CommitAsync();
                     }
                     return this.ShowSuccessMessageReactHook();
                 }
@@ -412,7 +416,7 @@ namespace Nijo.Models.ReadModel2Features {
                 /// </summary>
                 /// <param name="items">更新データ</param>
                 /// <param name="batchUpdateState">コンテキスト引数。エラーや警告の送出はこのオブジェクトを通して行なってください。</param>
-                public virtual void {{APPSRV_BATCH_UPDATE}}(IEnumerable<{{displayData.CsClassName}}> items, {{SaveContext.STATE_CLASS_NAME}} batchUpdateState) {
+                public virtual Task {{APPSRV_BATCH_UPDATE}}(IEnumerable<{{displayData.CsClassName}}> items, {{SaveContext.STATE_CLASS_NAME}} batchUpdateState) {
                     throw new NotImplementedException("一括更新処理が実装されていません。{{APPSRV_BATCH_UPDATE}}メソッドをオーバーライドして内容を実装してください。");
                 }
                 """;
