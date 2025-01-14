@@ -40,7 +40,7 @@ namespace Nijo.Models {
                 if (context.Config.CustomizeAllUi) {
                     aggregateFile.TypeScriptFile.Add(dataClassForNewItem.RenderTypeScript(context));
                     aggregateFile.TypeScriptFile.Add(dataClassForNewItem.RenderTypeScriptReadOnlyStructure(context));
-                } else {
+                } else if (!context.Config.UseBatchUpdateVersion2) {
                     context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScript(context));
                     context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScriptReadOnlyStructure(context));
                 }
@@ -53,7 +53,7 @@ namespace Nijo.Models {
                 if (context.Config.CustomizeAllUi) {
                     aggregateFile.TypeScriptFile.Add(dataClassForSave.RenderTypeScript(context));
                     aggregateFile.TypeScriptFile.Add(dataClassForSave.RenderTypeScriptReadOnlyStructure(context));
-                } else {
+                } else if (!context.Config.UseBatchUpdateVersion2) {
                     context.ReactProject.Types.Add(rootAggregate, dataClassForSave.RenderTypeScript(context));
                     context.ReactProject.Types.Add(rootAggregate, dataClassForSave.RenderTypeScriptReadOnlyStructure(context));
                 }
@@ -63,7 +63,7 @@ namespace Nijo.Models {
                     if (context.Config.CustomizeAllUi) {
                         aggregateFile.TypeScriptFile.Add(dataClassForNewItem.RenderTsNewObjectFunction(context));
                         aggregateFile.TypeScriptFile.Add(dataClassForSave.RenderTsNewObjectFunction(context));
-                    } else {
+                    } else if (!context.Config.UseBatchUpdateVersion2) {
                         context.ReactProject.Types.Add(dataClassForNewItem.RenderTsNewObjectFunction(context));
                         context.ReactProject.Types.Add(dataClassForSave.RenderTsNewObjectFunction(context));
                     }
@@ -75,7 +75,7 @@ namespace Nijo.Models {
                 aggregateFile.DataClassDeclaring.Add(refTargetKeys.RenderCSharpDeclaringRecursively(context));
                 if (context.Config.CustomizeAllUi) {
                     aggregateFile.TypeScriptFile.Add(refTargetKeys.RenderTypeScriptDeclaringRecursively(context));
-                } else {
+                } else if (!context.Config.UseBatchUpdateVersion2) {
                     context.ReactProject.Types.Add(rootAggregate, refTargetKeys.RenderTypeScriptDeclaringRecursively(context));
                 }
             }
@@ -84,7 +84,9 @@ namespace Nijo.Models {
             context.UseSummarizedFile<SaveContext>().AddWriteModel(rootAggregate);
 
             // 処理: 一括更新処理
-            context.UseSummarizedFile<BatchUpdateWriteModel>().Register(rootAggregate);
+            if (!context.Config.UseBatchUpdateVersion2) {
+                context.UseSummarizedFile<BatchUpdateWriteModel>().Register(rootAggregate);
+            }
 
             // 処理: 新規作成処理 AppSrv
             // 処理: 更新処理 AppSrv

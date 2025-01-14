@@ -67,7 +67,9 @@ namespace Nijo.Models {
             aggregateFile.AppServiceMethods.Add(rootDisplayData.RenderSetKeysReadOnly(context));
 
             // 処理: 一括更新処理
-            context.UseSummarizedFile<BatchUpdateReadModel>().Register(rootAggregate);
+            if (!context.Config.UseBatchUpdateVersion2) {
+                context.UseSummarizedFile<BatchUpdateReadModel>().Register(rootAggregate);
+            }
 
             // 処理: 一括更新処理前関数（ディープイコール比較関数、変更比較関数）
             if (context.Config.CustomizeAllUi) {

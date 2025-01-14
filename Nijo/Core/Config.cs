@@ -40,6 +40,10 @@ namespace Nijo.Core {
         /// </summary>
         public required bool DisableLocalRepository { get; set; }
         /// <summary>
+        /// 一括更新処理関連で生成されるソースコードとしてバージョン2（よりシンプルな処理）を使用する
+        /// </summary>
+        public required bool UseBatchUpdateVersion2 { get; set; }
+        /// <summary>
         /// ボタンの色。既定では"cyan"。Tailwind CSS で定義されている色名のみ有効。
         /// </summary>
         public required string? ButtonColor { get; set; }
@@ -85,6 +89,7 @@ namespace Nijo.Core {
         private const string VERSION_DB_COLUMN_NAME = "VersionDbColumnName";
 
         private const string DISABLE_LOCAL_REPOSITORY = "DisableLocalRepository";
+        private const string USE_BATCH_UPDATE_VERSION2 = "UseBatchUpdateVersion2";
         private const string CUSTOMIZE_ALL_UI = "CustomizeAllUi";
         private const string BUTTON_COLOR = "ButtonColor";
 
@@ -150,6 +155,12 @@ namespace Nijo.Core {
                 root.Attribute(DISABLE_LOCAL_REPOSITORY)?.Remove();
             }
 
+            if (UseBatchUpdateVersion2) {
+                root.SetAttributeValue(USE_BATCH_UPDATE_VERSION2, "True");
+            } else {
+                root.Attribute(USE_BATCH_UPDATE_VERSION2)?.Remove();
+            }
+
             if (string.IsNullOrWhiteSpace(ButtonColor)) {
                 root.Attribute(BUTTON_COLOR)?.Remove();
             } else {
@@ -189,6 +200,7 @@ namespace Nijo.Core {
                 GenerateUnusedRefToModules = xDocument.Root.Attribute(GENERATE_UNUSED_REFTO_MODULES) != null,
                 CustomizeAllUi = xDocument.Root.Attribute(CUSTOMIZE_ALL_UI) != null,
                 DisableLocalRepository = xDocument.Root.Attribute(DISABLE_LOCAL_REPOSITORY) != null,
+                UseBatchUpdateVersion2 = xDocument.Root.Attribute(USE_BATCH_UPDATE_VERSION2) != null,
                 ButtonColor = xDocument.Root.Attribute(BUTTON_COLOR)?.Value.Trim().ToLower(),
                 DbContextName = xDocument.Root.Attribute(DBCONTEXT_NAME)?.Value ?? "MyDbContext",
                 CreateUserDbColumnName = xDocument.Root.Attribute(CREATE_USER_DB_COLUMN_NAME)?.Value,

@@ -84,6 +84,7 @@ namespace Nijo {
                     VersionDbColumnName = null,
                     CustomizeAllUi = false,
                     DisableLocalRepository = false,
+                    UseBatchUpdateVersion2 = false,
                     ButtonColor = null,
                     MultiViewDetailLinkBehavior = Config.E_MultiViewDetailLinkBehavior.NavigateToEditMode,
                     VFormMaxColumnCount = null,
