@@ -389,13 +389,13 @@ namespace Nijo.Models.ReadModel2Features {
                     var batchUpdateState = new {{SaveContext.STATE_CLASS_NAME}}(new {{SaveContext.SAVE_OPTIONS}} {
                         IgnoreConfirm = request.IgnoreConfirm,
                     });
-                    var result = _applicationService.{{APPSRV_BATCH_UPDATE}}(request.Data, batchUpdateState);
+                    _applicationService.{{APPSRV_BATCH_UPDATE}}(request.Data, batchUpdateState);
 
-                    if (result.HasError()) {
-                        return this.ShowErrorsUsingReactHook(result.GetErrorDataJson());
+                    if (batchUpdateState.HasError()) {
+                        return this.ShowErrorsUsingReactHook(batchUpdateState.GetErrorDataJson());
                     }
-                    if (!request.IgnoreConfirm && result.HasConfirm()) {
-                        return this.ShowConfirmUsingReactHook(result.GetConfirms(), result.GetErrorDataJson());
+                    if (!request.IgnoreConfirm && batchUpdateState.HasConfirm()) {
+                        return this.ShowConfirmUsingReactHook(batchUpdateState.GetConfirms(), batchUpdateState.GetErrorDataJson());
                     }
                     return this.ShowSuccessMessageReactHook();
                 }
