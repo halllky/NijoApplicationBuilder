@@ -19,6 +19,7 @@ namespace Nijo.Parts.WebServer {
         internal const string CONCRETE_CLASS = "DisplayMessageContainer";
         internal const string CONCRETE_CLASS_IN_GRID = "DisplayMessageContainerInGrid";
         internal const string CONCRETE_CLASS_LIST = "DisplayMessageContainerList";
+        internal const string LIST_INTERFACE = "IDisplayMessageContainerList";
 
         /// <summary>
         /// React hook form のsetErrorsの引数の形に準じている
@@ -186,7 +187,11 @@ namespace Nijo.Parts.WebServer {
                     /// <summary>
                     /// 登録処理などで生じたエラーメッセージなどをHTTPレスポンスとして返すまでの入れ物の配列
                     /// </summary>
-                    public partial class {{CONCRETE_CLASS_LIST}}<T> : {{ABSTRACT_CLASS}}, IReadOnlyList<T> where T : {{INTERFACE}} {
+                    public interface {{LIST_INTERFACE}}<out T> : {{INTERFACE}}, IReadOnlyList<T> where T : {{INTERFACE}} {
+                    }
+
+                    /// <inheritdoc cref="{{LIST_INTERFACE}}"/>
+                    public partial class {{CONCRETE_CLASS_LIST}}<T> : {{ABSTRACT_CLASS}}, {{LIST_INTERFACE}}<T> where T : {{INTERFACE}} {
                         public {{CONCRETE_CLASS_LIST}}(IEnumerable<string> path, Func<int, T> createItem) : base(path) {
                             _createItem = createItem;
                         }

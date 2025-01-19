@@ -333,7 +333,7 @@ namespace Nijo.Models.WriteModel2Features {
                     return new { MemberInfo = m, m.MemberName, Type = DisplayMessageContainer.INTERFACE };
                 } else if (m is AggregateMember.Children children) {
                     var descendant = new DataClassForSave(children.ChildrenAggregate, Type);
-                    return new { MemberInfo = m, m.MemberName, Type = $"{DisplayMessageContainer.CONCRETE_CLASS_LIST}<{descendant.MessageDataCsInterfaceName}>" };
+                    return new { MemberInfo = m, m.MemberName, Type = $"{DisplayMessageContainer.LIST_INTERFACE}<{descendant.MessageDataCsInterfaceName}>" };
                 } else {
                     var descendant = new DataClassForSave(((AggregateMember.RelationMember)m).MemberAggregate, Type);
                     return new { MemberInfo = m, m.MemberName, Type = descendant.MessageDataCsInterfaceName };
