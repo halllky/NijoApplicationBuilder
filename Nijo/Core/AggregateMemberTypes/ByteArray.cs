@@ -26,6 +26,11 @@ namespace Nijo.Core.AggregateMemberTypes {
             return "string";
         }
 
+        public string UiConstraintType => "MemberConstraintBase";
+        public virtual IEnumerable<string> RenderUiConstraintValue(AggregateMember.ValueMember vm) {
+            yield break;
+        }
+
 
         #region データテーブル列定義
         public string DataTableColumnDefHelperName => "byteArray";

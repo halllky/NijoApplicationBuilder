@@ -226,11 +226,13 @@ namespace Nijo.Parts {
                 SourceFile sourceFile) {
 
                 // 画面ソースコードの生成
-                PagesDir(dir => {
-                    dir.Directory(dirNameInPageDir, aggregatePageDir => {
-                        aggregatePageDir.Generate(sourceFile);
+                if (!_context.Config.CustomizeAllUi) {
+                    PagesDir(dir => {
+                        dir.Directory(dirNameInPageDir, aggregatePageDir => {
+                            aggregatePageDir.Generate(sourceFile);
+                        });
                     });
-                });
+                }
 
                 // React router のルーティングと、画面左側のサイドメニューへの登録
                 _context.UseSummarizedFile<MenuTsx>().AddMenuItem(new() {

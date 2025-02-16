@@ -648,7 +648,7 @@ namespace Nijo.Models.ReadModel2Features {
                         KeyPaths = disp.MemberInfo.MemberAggregate
                             .GetKeys()
                             .OfType<AggregateMember.ValueMember>()
-                            .Where(vm => vm.DeclaringAggregate == vm.Owner)
+                            .Where(vm => vm.Inherits?.Relation.IsParentChild() != true)
                             .Select(vm => vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, disp.MemberInfo.MemberAggregate)),
                     };
                 });
@@ -738,7 +738,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                 // 子孫集約の読み取り専用
                 foreach (var child in dataClass.GetChildMembers()) {
-                     if (child.Aggregate.IsChildrenMember()) {
+                    if (child.Aggregate.IsChildrenMember()) {
                         var depth = child.Aggregate.EnumerateAncestors().Count();
                         var x = depth == 1 ? "x" : $"x{depth - 1}";
                         yield return $$"""
@@ -756,6 +756,79 @@ namespace Nijo.Models.ReadModel2Features {
             }
         }
         #endregion 主キーを読み取り専用にする
+
+
+        #region UI用の制約定義
+        internal string UiConstraintTypeName => $"{Aggregate.Item.PhysicalName}ConstraintType";
+        internal string UiConstraingValueName => $"{Aggregate.Item.PhysicalName}Constraints";
+        internal string RenderUiConstraintType(CodeRenderingContext ctx) {
+            var prefix = ctx.Config.CustomizeAllUi ? "Constraints." : "";
+
+            return $$"""
+                /** {{Aggregate.Item.DisplayName}}の各メンバーの制約の型 */
+                type {{UiConstraintTypeName}} = {
+                  {{WithIndent(RenderMembers(this), "  ")}}
+                }
+                """;
+
+            string RenderMembers(DataClassForDisplay displayData) {
+                return $$"""
+                    {{VALUES_TS}}: {
+                    {{displayData.GetOwnMembers().SelectTextTemplate(m => $$"""
+                    {{If(m is AggregateMember.ValueMember, () => $$"""
+                      {{m.MemberName}}: {{prefix}}{{((AggregateMember.ValueMember)m).Options.MemberType.UiConstraintType}}
+                    """).ElseIf(m is AggregateMember.Ref, () => $$"""
+                      {{m.MemberName}}: {{prefix}}MemberConstraintBase
+                    """)}}
+                    """)}}
+                    }
+                    {{displayData.GetChildMembers().SelectTextTemplate(desc => $$"""
+                    {{desc.MemberName}}: {
+                      {{WithIndent(RenderMembers(desc), "  ")}}
+                    }
+                    """)}}
+                    """;
+            }
+        }
+        internal string RenderUiConstraintValue(CodeRenderingContext ctx) {
+            return $$"""
+                /** {{Aggregate.Item.DisplayName}}の各メンバーの制約の具体的な値 */
+                export const {{UiConstraingValueName}}: {{UiConstraintTypeName}} = {
+                  {{WithIndent(RenderMembers(this), "  ")}}
+                }
+                """;
+
+            static string RenderMembers(DataClassForDisplay displayData) {
+                return $$"""
+                    {{VALUES_TS}}: {
+                    {{displayData.GetOwnMembers().SelectTextTemplate(m => $$"""
+                    {{If(m is AggregateMember.ValueMember, () => $$"""
+                      {{m.MemberName}}: {
+                    {{If(((AggregateMember.ValueMember)m).IsKey || ((AggregateMember.ValueMember)m).IsRequired, () => $$"""
+                        required: true,
+                    """)}}
+                    {{((AggregateMember.ValueMember)m).Options.MemberType.RenderUiConstraintValue((AggregateMember.ValueMember)m).SelectTextTemplate(source => $$"""
+                        {{WithIndent(source, "    ")}},
+                    """)}}
+                      },
+                    """).ElseIf(m is AggregateMember.Ref, () => $$"""
+                      {{m.MemberName}}: {
+                    {{If(((AggregateMember.Ref)m).Relation.IsPrimary() || ((AggregateMember.Ref)m).Relation.IsRequired(), () => $$"""
+                        required: true,
+                    """)}}
+                      },
+                    """)}}
+                    """)}}
+                    },
+                    {{displayData.GetChildMembers().SelectTextTemplate(desc => $$"""
+                    {{desc.MemberName}}: {
+                      {{WithIndent(RenderMembers(desc), "  ")}}
+                    },
+                    """)}}
+                    """;
+            }
+        }
+        #endregion UI用の制約定義
 
 
         /// <summary>

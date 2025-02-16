@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
-<自動テストで作成されたプロジェクト>
+<自動テストで作成されたプロジェクト CustomizeAllUi="True">
   <親集約 is="write-model-2 generate-default-read-model form-label-width:5.8 form-depth:0">
     <!--ID-->
     <ID is="uuid key" />
@@ -9,10 +9,11 @@
     <整数のキー is="int key" />
     <日付のキー is="date key" />
     <列挙体のキー is="MyEnum key" />
-    <値オブジェクトのキー is="ParentID key" />
+    <値オブジェクトのキー is="ParentID key character-type:半角英数" />
 
     <!--文字列系-->
     <単語 is="word" />
+    <単語半角英数 DisplayName="単語(半角英数)" is="word character-type:半角英数" />
     <文章 is="sentence name" />
 
     <!--数値系-->
@@ -33,7 +34,7 @@
 
     <Children is="children">
       <!--値オブジェクト-->
-      <ChildrenId is="ChildrenID key max-length:25" />
+      <ChildrenId is="ChildrenID key max-length:25 character-type:半角英数" />
 
       <!--文字列系-->
       <単語 is="word" />

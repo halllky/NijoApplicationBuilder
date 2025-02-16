@@ -34,6 +34,11 @@ namespace Nijo.Core.AggregateMemberTypes {
                 .Join(" | ");
         }
 
+        public string UiConstraintType => "MemberConstraintBase";
+        public virtual IEnumerable<string> RenderUiConstraintValue(AggregateMember.ValueMember vm) {
+            yield break;
+        }
+
         private string SearchConditionClass => $"{_variationGroup.GroupName}SearchCondition";
         private const string ANY_CHECKED = "AnyChecked";
         private const string ALL_CHECKED = "AllChecked";

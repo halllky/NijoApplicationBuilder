@@ -37,35 +37,56 @@ namespace Nijo.Models {
                 var dataClassForNewItem = new DataClassForSave(agg, DataClassForSave.E_Type.Create);
                 aggregateFile.DataClassDeclaring.Add(dataClassForNewItem.RenderCSharp(context));
                 aggregateFile.DataClassDeclaring.Add(dataClassForNewItem.RenderCSharpReadOnlyStructure(context));
-                context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScript(context));
-                context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScriptReadOnlyStructure(context));
+                if (context.Config.CustomizeAllUi) {
+                    aggregateFile.TypeScriptFile.Add(dataClassForNewItem.RenderTypeScript(context));
+                    aggregateFile.TypeScriptFile.Add(dataClassForNewItem.RenderTypeScriptReadOnlyStructure(context));
+                } else if (!context.Config.UseBatchUpdateVersion2) {
+                    context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScript(context));
+                    context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScriptReadOnlyStructure(context));
+                }
 
                 // データ型: DataClassForSave
                 var dataClassForSave = new DataClassForSave(agg, DataClassForSave.E_Type.UpdateOrDelete);
                 aggregateFile.DataClassDeclaring.Add(dataClassForSave.RenderCSharp(context));
                 aggregateFile.DataClassDeclaring.Add(dataClassForSave.RenderCSharpMessageStructure(context)); // メッセージクラスはCreate/Saveで共用
                 aggregateFile.DataClassDeclaring.Add(dataClassForSave.RenderCSharpReadOnlyStructure(context));
-                context.ReactProject.Types.Add(rootAggregate, dataClassForSave.RenderTypeScript(context));
-                context.ReactProject.Types.Add(rootAggregate, dataClassForSave.RenderTypeScriptReadOnlyStructure(context));
+                if (context.Config.CustomizeAllUi) {
+                    aggregateFile.TypeScriptFile.Add(dataClassForSave.RenderTypeScript(context));
+                    aggregateFile.TypeScriptFile.Add(dataClassForSave.RenderTypeScriptReadOnlyStructure(context));
+                } else if (!context.Config.UseBatchUpdateVersion2) {
+                    context.ReactProject.Types.Add(rootAggregate, dataClassForSave.RenderTypeScript(context));
+                    context.ReactProject.Types.Add(rootAggregate, dataClassForSave.RenderTypeScriptReadOnlyStructure(context));
+                }
 
                 // 処理: DataClassForSave, DataClassForNewItem 新規作成関数
                 if (agg.IsRoot() || agg.IsChildrenMember()) {
-                    context.ReactProject.Types.Add(dataClassForNewItem.RenderTsNewObjectFunction(context));
-                    context.ReactProject.Types.Add(dataClassForSave.RenderTsNewObjectFunction(context));
+                    if (context.Config.CustomizeAllUi) {
+                        aggregateFile.TypeScriptFile.Add(dataClassForNewItem.RenderTsNewObjectFunction(context));
+                        aggregateFile.TypeScriptFile.Add(dataClassForSave.RenderTsNewObjectFunction(context));
+                    } else if (!context.Config.UseBatchUpdateVersion2) {
+                        context.ReactProject.Types.Add(dataClassForNewItem.RenderTsNewObjectFunction(context));
+                        context.ReactProject.Types.Add(dataClassForSave.RenderTsNewObjectFunction(context));
+                    }
                 }
 
                 // データ型: ほかの集約から参照されるときのキー
                 var asEntry = agg.AsEntry();
                 var refTargetKeys = new DataClassForRefTargetKeys(asEntry, asEntry);
                 aggregateFile.DataClassDeclaring.Add(refTargetKeys.RenderCSharpDeclaringRecursively(context));
-                context.ReactProject.Types.Add(rootAggregate, refTargetKeys.RenderTypeScriptDeclaringRecursively(context));
+                if (context.Config.CustomizeAllUi) {
+                    aggregateFile.TypeScriptFile.Add(refTargetKeys.RenderTypeScriptDeclaringRecursively(context));
+                } else if (!context.Config.UseBatchUpdateVersion2) {
+                    context.ReactProject.Types.Add(rootAggregate, refTargetKeys.RenderTypeScriptDeclaringRecursively(context));
+                }
             }
 
             // データ型: 一括更新処理 エラーメッセージの入れ物
             context.UseSummarizedFile<SaveContext>().AddWriteModel(rootAggregate);
 
             // 処理: 一括更新処理
-            context.UseSummarizedFile<BatchUpdateWriteModel>().Register(rootAggregate);
+            if (!context.Config.UseBatchUpdateVersion2) {
+                context.UseSummarizedFile<BatchUpdateWriteModel>().Register(rootAggregate);
+            }
 
             // 処理: 新規作成処理 AppSrv
             // 処理: 更新処理 AppSrv
@@ -80,6 +101,7 @@ namespace Nijo.Models {
             // 処理: 自動生成されるバリデーションエラーチェック
             aggregateFile.AppServiceMethods.Add(RequiredCheck.Render(rootAggregate, context));
             aggregateFile.AppServiceMethods.Add(MaxLengthCheck.Render(rootAggregate, context));
+            aggregateFile.AppServiceMethods.Add(CharacterTypeCheck.Render(rootAggregate, context));
             aggregateFile.AppServiceMethods.Add(DynamicEnum.RenderAppSrvCheckMethod(rootAggregate, context));
 
             // 処理: SetReadOnly AppSrv

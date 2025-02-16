@@ -30,6 +30,9 @@ namespace Nijo.Parts.WebClient {
 
         void ISummarizedFile.OnEndGenerating(CodeRenderingContext context) {
 
+            // このオプションが指定されている場合は何も生成しない
+            if (context.Config.CustomizeAllUi) return;
+
             // データテーブルの列定義生成ヘルパーは集約定義にかかわらず必要なのでここでAddする
             context.ReactProject.Types.AddImport($$"""
                 import { {{DataTable.CellType.USE_HELPER}}, {{DataTable.CellType.HELPER_TYPE}} } from './collection/DataTable.CellType'

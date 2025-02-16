@@ -531,7 +531,7 @@ namespace Nijo.Models.ReadModel2Features {
                 return $$"""
                     /** {{_aggregate.Item.DisplayName}}の新規作成画面へ遷移する関数を返します。引数にオブジェクトを渡した場合は画面初期値になります。 */
                     export const {{GetNavigateFnName(type)}} = () => {
-                      const navigate = useNavigate()
+                      const navigate = ReactRouter.useNavigate()
 
                       return React.useCallback((initValue?: Types.{{dataClass.TsTypeName}}) => {
                         if (initValue === undefined) {
@@ -556,7 +556,7 @@ namespace Nijo.Models.ReadModel2Features {
                 return $$"""
                     /** {{_aggregate.Item.DisplayName}}の閲覧画面または編集画面へ遷移する関数を返します。 */
                     export const {{GetNavigateFnName(type)}} = () => {
-                      const navigate = useNavigate()
+                      const navigate = ReactRouter.useNavigate()
 
                       return React.useCallback((
                         obj: Types.{{dataClass.TsTypeName}},

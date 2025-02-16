@@ -102,6 +102,7 @@ namespace Nijo.Models.WriteModel2Features {
                     var beforeSaveArgs = new {{SaveContext.BEFORE_SAVE}}<{{dataClass.MessageDataCsInterfaceName}}>(batchUpdateState, messages);
                     {{RequiredCheck.METHOD_NAME}}(afterDbEntity, beforeSaveArgs);
                     {{MaxLengthCheck.METHOD_NAME}}(afterDbEntity, beforeSaveArgs);
+                    {{CharacterTypeCheck.METHOD_NAME}}(afterDbEntity, beforeSaveArgs);
                     {{BeforeMethodName}}(beforeDbEntity, afterDbEntity, beforeSaveArgs);
 
                     // 一括更新データ全件のうち1件でもエラーやコンファームがある場合は処理中断
