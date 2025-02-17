@@ -2,19 +2,20 @@ import React from "react"
 import * as ReactHookForm from "react-hook-form"
 import { UUID } from "uuidjs"
 import { ApplicationData, 属性種類定義 } from "../types"
-import { AnnotationList, PageFrame, DataTable2, HelpText, useColumnDef } from "../ui-components"
+import { AnnotationList, PageFrame, DataTable2, HelpText, useColumnDef, MarkdownTextarea } from "../ui-components"
 
 export default function () {
 
-  const { watch, control } = ReactHookForm.useFormContext<ApplicationData>()
-  const stringTypes = ReactHookForm.useFieldArray({ name: '属性種類定義.文字系属性', control })
+  const { control } = ReactHookForm.useFormContext<ApplicationData>()
+  const zenpan = ReactHookForm.useController({ name: '属性種類定義.全般', control })
 
   return (
     <PageFrame title="属性項目定義">
-      <HelpText.Container>
-        <HelpText.Item>DataModel, CommandModel, QueryModel に登場する項目の属性の種類は、以下で定義した属性の中から選択されなければならない。</HelpText.Item>
-        <HelpText.Item>もし「 **システム日付** より未来でなければならない」のように、仕様中に定数でないもの（変数）が登場した場合、それは属性項目定義ではなくCommandModelやDataModelの仕様なので、ここに書かずそちらで表現する</HelpText.Item>
-      </HelpText.Container>
+      <MarkdownTextarea
+        {...zenpan.field}
+        placeholder="属性項目定義全般に関する仕様を書いてください"
+        className="text-sm"
+      />
 
       <hr className="border-t border-color-4" />
       <文字系属性 />

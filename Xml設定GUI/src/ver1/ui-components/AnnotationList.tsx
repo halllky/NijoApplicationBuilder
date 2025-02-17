@@ -26,11 +26,12 @@ export const AnnotationList = <
     control: props.control as unknown as ReactHookForm.Control<ArrayOwner>,
   })
 
-  const handleAdd = useEvent(() => {
+  const handleAdd: React.MouseEventHandler<HTMLButtonElement> = useEvent(e => {
     fieldArray.append({
       uniqueId: UUID.generate(),
       text: '',
     })
+    e.stopPropagation()
   })
 
   const handleRemove = useEvent((index: number) => {
@@ -40,29 +41,29 @@ export const AnnotationList = <
   })
 
   const handleChangeText = useEvent((index: number, text: string) => {
+    console.log(777, text)
     fieldArray.update(index, { ...fieldArray.fields[index], text })
   })
 
   return (
-    <Accordion title={<span className="select-none text-color-7">注</span>} className="flex flex-col" defaultOpen>
-      <ul>
-        {fieldArray.fields?.map((annotation, index) => (
-          <li key={annotation.uniqueId} className="flex items-start gap-1 [&_.CodeMirror]:border-0 [&_.CodeMirror-scroll]:px-4">
-            <span className="my-1">
-              ※{index + 1}
-            </span>
-            <MarkdownTextarea
-              index={index}
-              value={annotation.text}
-              onChange={handleChangeText}
-            />
-            <Input.IconButton outline mini onClick={() => handleRemove(index)} className="my-1">削除</Input.IconButton>
-          </li>
-        ))}
-        <li>
-          <Input.IconButton outline mini onClick={handleAdd}>注釈を追加</Input.IconButton>
+    <ul className="text-sm">
+      {fieldArray.fields?.map((annotation, index) => (
+        <li key={annotation.uniqueId} className="flex items-start gap-1">
+          <span className="my-1">
+            ※{index + 1}
+          </span>
+          <MarkdownTextarea
+            value={annotation.text}
+            onChange={val => handleChangeText(index, val)}
+            placeholder="注釈を書いてください"
+            className="flex-1"
+          />
+          <Input.IconButton outline mini onClick={() => handleRemove(index)} className="my-1">削除</Input.IconButton>
         </li>
-      </ul>
-    </Accordion>
+      ))}
+      <li>
+        <Input.IconButton outline mini onClick={handleAdd}>注釈を追加</Input.IconButton>
+      </li>
+    </ul>
   )
 }

@@ -6,6 +6,8 @@ import { ApplicationData, 属性種類定義 } from "./types"
  */
 export const getDefaultSpecification = (): ApplicationData => ({
   属性種類定義: {
+    全般: `- DataModel, CommandModel, QueryModel に登場する項目の属性の種類は、以下で定義した属性の中から選択されなければならない。
+- もし「 **システム日付** より未来でなければならない」のように、仕様中に定数でないもの（変数）が登場した場合、それは属性項目定義ではなくCommandModelやDataModelの仕様なので、ここに書かずそちらで表現する`,
     文字系属性: [{
       uniqueId: UUID.generate(),
       型名: '単語',

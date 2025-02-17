@@ -1,27 +1,27 @@
+import React from "react"
 import SimpleMdeReact from "react-simplemde-editor"
-import useEvent from "react-use-event-hook"
 
-export const MarkdownTextarea = (props: {
-  index: number
+export const MarkdownTextarea = React.forwardRef((props: {
   value: string | undefined
-  onChange: (index: number, value: string) => void
-}) => {
-
-  const handleChange = useEvent((value: string) => {
-    props.onChange(props.index, value)
-  })
+  onChange: (value: string) => void
+  placeholder?: string
+  className?: string
+}, ref: React.ForwardedRef<HTMLDivElement>) => {
 
   return (
-    <SimpleMdeReact
-      value={props.value}
-      onChange={handleChange}
-      spellCheck="false"
-      options={SIMPLE_MDE_OPTIONS}
-      placeholder="注釈を書いてください"
-      className="flex-1"
-    />
+    <div className={`[&_.CodeMirror]:border-0 [&_.CodeMirror-scroll]:px-0 ${props.className ?? ''}`}>
+      <SimpleMdeReact
+        ref={ref}
+        value={props.value}
+        onChange={props.onChange}
+        spellCheck="false"
+        options={SIMPLE_MDE_OPTIONS}
+        placeholder={props.placeholder}
+        className="w-full h-full"
+      />
+    </div>
   )
-}
+})
 
 const SIMPLE_MDE_OPTIONS: EasyMDE.Options = {
   spellChecker: false, // trueだと日本語の部分が全部チェックに引っかかってしまう
