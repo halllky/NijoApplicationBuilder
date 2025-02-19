@@ -1,13 +1,8 @@
+import { OutlinerItem } from "./ui-components"
 
 /** アプリケーション全体で保持されるデータ */
 export type ApplicationData = {
   属性種類定義: 属性種類定義.Whole
-}
-
-/** 注釈 */
-export type Annotation = {
-  uniqueId: string | undefined
-  text: string | undefined
 }
 
 export namespace 属性種類定義 {
@@ -20,11 +15,11 @@ export namespace 属性種類定義 {
     時間系属性: 時間系属性[]
     区分系属性: 区分系属性[]
     その他の属性: その他の属性[]
-    文字系属性注釈: Annotation[]
-    数値系属性注釈: Annotation[]
-    時間系属性注釈: Annotation[]
-    区分系属性注釈: Annotation[]
-    その他の属性注釈: Annotation[]
+    文字系属性注釈: OutlinerItem[]
+    数値系属性注釈: OutlinerItem[]
+    時間系属性注釈: OutlinerItem[]
+    区分系属性注釈: OutlinerItem[]
+    その他の属性注釈: OutlinerItem[]
   }
 
   /** 仕様がこの文字列の場合のみ特別扱い */

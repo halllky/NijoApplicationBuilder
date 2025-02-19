@@ -2,7 +2,7 @@ import React from "react"
 import * as ReactHookForm from "react-hook-form"
 import { UUID } from "uuidjs"
 import { ApplicationData, 属性種類定義 } from "../types"
-import { AnnotationList, PageFrame, DataTable2, HelpText, useColumnDef, MarkdownTextarea } from "../ui-components"
+import { Outliner, PageFrame, DataTable2, useColumnDef, MarkdownTextarea } from "../ui-components"
 
 export default function () {
 
@@ -63,7 +63,7 @@ const 文字系属性 = () => {
         columns={columns}
         createNewItem={createNew文字系属性}
       />
-      <AnnotationList
+      <Outliner
         name="属性種類定義.文字系属性注釈"
         control={control}
       />
@@ -102,7 +102,7 @@ const 数値系属性 = () => {
         columns={columns}
         createNewItem={createNew数値系属性}
       />
-      <AnnotationList
+      <Outliner
         name="属性種類定義.数値系属性注釈"
         control={control}
       />
@@ -137,7 +137,7 @@ const 時間系属性 = () => {
         columns={columns}
         createNewItem={createNew時間系属性}
       />
-      <AnnotationList
+      <Outliner
         name="属性種類定義.時間系属性注釈"
         control={control}
       />
@@ -170,7 +170,7 @@ const 区分系属性 = () => {
         columns={columns}
         createNewItem={createNew区分系属性}
       />
-      <AnnotationList
+      <Outliner
         name="属性種類定義.区分系属性注釈"
         control={control}
       />
@@ -203,7 +203,7 @@ const その他の属性 = () => {
         columns={columns}
         createNewItem={createNewその他の属性}
       />
-      <AnnotationList
+      <Outliner
         name="属性種類定義.その他の属性注釈"
         control={control}
       />

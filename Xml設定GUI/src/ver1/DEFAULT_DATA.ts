@@ -32,12 +32,18 @@ export const getDefaultSpecification = (): ApplicationData => ({
     }],
     文字系属性注釈: [{
       uniqueId: UUID.generate(),
+      indent: 0,
+      bullet: '※1',
       text: `UUIDは基本的に画面上に表示されないため検索条件となることはないが、なる場合は完全一致検索とする。`,
     }, {
       uniqueId: UUID.generate(),
+      indent: 0,
+      bullet: '※2',
       text: `文字列型属性の文字種定義\n- 指定なし: 下記「指定なし」の定義の通り\n- 半角英数のみ: 0-9, a-z, A-Z の計62文字のみ使用可能`,
     }, {
       uniqueId: UUID.generate(),
+      indent: 0,
+      bullet: '※3',
       text: `文字種「指定なし」の定義:
 基本方針としては、各国語の一般的な文字と一般的な記号を許可し、特殊用途の文字や制御文字を除外する。
 - 許可する文字範囲

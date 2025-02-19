@@ -6,10 +6,11 @@ export const MarkdownTextarea = React.forwardRef((props: {
   onChange: (value: string) => void
   placeholder?: string
   className?: string
+  style?: React.CSSProperties
 }, ref: React.ForwardedRef<HTMLDivElement>) => {
 
   return (
-    <div className={`[&_.CodeMirror]:border-0 [&_.CodeMirror-scroll]:px-0 ${props.className ?? ''}`}>
+    <div className={`[&_.CodeMirror]:border-0 [&_.CodeMirror]:p-0 [&_.CodeMirror-scroll]:px-0 ${props.className ?? ''}`} style={props.style}>
       <SimpleMdeReact
         ref={ref}
         value={props.value}
@@ -27,5 +28,5 @@ const SIMPLE_MDE_OPTIONS: EasyMDE.Options = {
   spellChecker: false, // trueだと日本語の部分が全部チェックに引っかかってしまう
   toolbar: [], // ツールバー全部非表示
   status: false, // フッター非表示
-  minHeight: '3rem',
+  minHeight: '1rem',
 }
