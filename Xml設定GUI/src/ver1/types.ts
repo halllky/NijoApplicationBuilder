@@ -48,7 +48,7 @@ export namespace 属性種類定義 {
   }
 
   export type 文字系属性 = {
-    uniqueId?: string
+    uniqueId: string | undefined
     型名?: string
     説明?: string
     型: TypeSpecification
@@ -61,7 +61,7 @@ export namespace 属性種類定義 {
   }
 
   export type 数値系属性 = {
-    uniqueId?: string
+    uniqueId: string | undefined
     型名?: string
     説明?: string
     型: TypeSpecification
@@ -79,7 +79,7 @@ export namespace 属性種類定義 {
   }
 
   export type 時間系属性 = {
-    uniqueId?: string
+    uniqueId: string | undefined
     型名?: string
     説明?: string
     型: TypeSpecification
@@ -91,7 +91,7 @@ export namespace 属性種類定義 {
   }
 
   export type 区分系属性 = {
-    uniqueId?: string
+    uniqueId: string | undefined
     型名?: string
     説明?: string
     型: TypeSpecification
@@ -100,7 +100,7 @@ export namespace 属性種類定義 {
   }
 
   export type その他の属性 = {
-    uniqueId?: string
+    uniqueId: string | undefined
     型名?: string
     説明?: string
     型: TypeSpecification

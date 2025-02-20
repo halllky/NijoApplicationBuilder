@@ -29,6 +29,26 @@ export const getDefaultSpecification = (): ApplicationData => ({
         UIフォーカスアウト時: '前後の空白はTrim。改行は除去。',
         登録時: '前後の空白はTrim。改行は除去。',
       },
+    }, {
+      uniqueId: UUID.generate(),
+      型名: '文章',
+      型: {
+        DB: 'NVARCHAR(桁)',
+        "C#": 'string',
+        TypeScript: 'string',
+      },
+      制約: {
+        MaxLength: 属性種類定義.BY_MODEL,
+        文字種: '後述※2文字種定義の「指定なし」',
+      },
+      検索処理定義: {
+        検索処理の挙動: '部分一致',
+        全文検索の対象か否か: 属性種類定義.BY_MODEL,
+      },
+      ノーマライズ: {
+        UIフォーカスアウト時: '前後の空白はTrim',
+        登録時: '前後の空白はTrim',
+      },
     }],
     文字系属性注釈: [{
       uniqueId: UUID.generate(),
