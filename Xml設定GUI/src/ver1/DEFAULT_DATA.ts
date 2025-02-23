@@ -54,17 +54,17 @@ export const getDefaultSpecification = (): ApplicationData => ({
       uniqueId: UUID.generate(),
       indent: 0,
       bullet: '※1',
-      text: `UUIDは基本的に画面上に表示されないため検索条件となることはないが、なる場合は完全一致検索とする。`,
+      text: [`UUIDは基本的に画面上に表示されないため検索条件となることはないが、なる場合は完全一致検索とする。`],
     }, {
       uniqueId: UUID.generate(),
       indent: 0,
       bullet: '※2',
-      text: `文字列型属性の文字種定義\n- 指定なし: 下記「指定なし」の定義の通り\n- 半角英数のみ: 0-9, a-z, A-Z の計62文字のみ使用可能`,
+      text: [`文字列型属性の文字種定義\n- 指定なし: 下記「指定なし」の定義の通り\n- 半角英数のみ: 0-9, a-z, A-Z の計62文字のみ使用可能`],
     }, {
       uniqueId: UUID.generate(),
       indent: 0,
       bullet: '※3',
-      text: `文字種「指定なし」の定義:
+      text: [`文字種「指定なし」の定義:
 基本方針としては、各国語の一般的な文字と一般的な記号を許可し、特殊用途の文字や制御文字を除外する。
 - 許可する文字範囲
   - 基本的な文字セット
@@ -93,7 +93,7 @@ export const getDefaultSpecification = (): ApplicationData => ({
 - 実装者向け情報
   - 文字列の正規化はNFKCを使用
   - 入力値の検証時は、上記範囲外の文字を含む場合はエラーとする
-  - データベースのCollationはutf8mb4_general_ciを推奨`,
+  - データベースのCollationはutf8mb4_general_ciを推奨`],
     }],
     数値系属性: [],
     数値系属性注釈: [],
@@ -104,4 +104,13 @@ export const getDefaultSpecification = (): ApplicationData => ({
     その他の属性: [],
     その他の属性注釈: [],
   },
+  DataModel定義: [],
+  CommandModel定義: [{
+    uniqueId: 'command001',
+    表示名: 'CommandModelその1',
+    パラメータ: [],
+    戻り値: [],
+    処理詳細: [],
+  }],
+  QueryModel定義: [],
 })

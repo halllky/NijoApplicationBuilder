@@ -65,6 +65,7 @@ const 文字系属性 = () => {
       />
       <Outliner
         name="属性種類定義.文字系属性注釈"
+        hideHeader
         control={control}
       />
     </>
@@ -104,6 +105,7 @@ const 数値系属性 = () => {
       />
       <Outliner
         name="属性種類定義.数値系属性注釈"
+        hideHeader
         control={control}
       />
     </>
@@ -139,6 +141,7 @@ const 時間系属性 = () => {
       />
       <Outliner
         name="属性種類定義.時間系属性注釈"
+        hideHeader
         control={control}
       />
     </>
@@ -172,6 +175,7 @@ const 区分系属性 = () => {
       />
       <Outliner
         name="属性種類定義.区分系属性注釈"
+        hideHeader
         control={control}
       />
     </>
@@ -213,7 +217,7 @@ const その他の属性 = () => {
 
 // *****************************************
 
-const createNew文字系属性 = (): ReactHookForm.FieldArrayWithId<属性種類定義.Whole, '文字系属性'> => ({
+const createNew文字系属性 = (): ReactHookForm.FieldArrayWithId<属性種類定義.All, '文字系属性'> => ({
   id: UUID.generate(),
   uniqueId: UUID.generate(),
   ノーマライズ: {},
@@ -222,7 +226,7 @@ const createNew文字系属性 = (): ReactHookForm.FieldArrayWithId<属性種類
   検索処理定義: {},
 })
 
-const createNew数値系属性 = (): ReactHookForm.FieldArrayWithId<属性種類定義.Whole, '数値系属性'> => ({
+const createNew数値系属性 = (): ReactHookForm.FieldArrayWithId<属性種類定義.All, '数値系属性'> => ({
   id: UUID.generate(),
   uniqueId: UUID.generate(),
   ノーマライズ: {},
@@ -232,7 +236,7 @@ const createNew数値系属性 = (): ReactHookForm.FieldArrayWithId<属性種類
   検索処理定義: {},
 })
 
-const createNew時間系属性 = (): ReactHookForm.FieldArrayWithId<属性種類定義.Whole, '時間系属性'> => ({
+const createNew時間系属性 = (): ReactHookForm.FieldArrayWithId<属性種類定義.All, '時間系属性'> => ({
   id: UUID.generate(),
   uniqueId: UUID.generate(),
   ノーマライズ: {},
@@ -241,14 +245,14 @@ const createNew時間系属性 = (): ReactHookForm.FieldArrayWithId<属性種類
   検索処理定義: {},
 })
 
-const createNew区分系属性 = (): ReactHookForm.FieldArrayWithId<属性種類定義.Whole, '区分系属性'> => ({
+const createNew区分系属性 = (): ReactHookForm.FieldArrayWithId<属性種類定義.All, '区分系属性'> => ({
   id: UUID.generate(),
   uniqueId: UUID.generate(),
   型: {},
   検索処理定義: {},
 })
 
-const createNewその他の属性 = (): ReactHookForm.FieldArrayWithId<属性種類定義.Whole, 'その他の属性'> => ({
+const createNewその他の属性 = (): ReactHookForm.FieldArrayWithId<属性種類定義.All, 'その他の属性'> => ({
   id: UUID.generate(),
   uniqueId: UUID.generate(),
   型: {},
