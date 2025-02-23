@@ -124,6 +124,7 @@ export namespace DataModel定義 {
     キー以外のインデックス: インデックス定義[]
     ライフサイクル定義?: string
     ライフサイクル定義注釈: OutlinerItem[]
+    その他制約定義: OutlinerItem[]
   }
 
   export type 項目定義 = {

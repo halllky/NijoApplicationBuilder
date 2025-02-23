@@ -104,7 +104,14 @@ export const getDefaultSpecification = (): ApplicationData => ({
     その他の属性: [],
     その他の属性注釈: [],
   },
-  DataModel定義: [],
+  DataModel定義: [{
+    uniqueId: 'data001',
+    表示名: 'DataModelその1',
+    項目定義: [],
+    ライフサイクル定義注釈: [],
+    キー以外のインデックス: [],
+    その他制約定義: [],
+  }],
   CommandModel定義: [{
     uniqueId: 'command001',
     表示名: 'CommandModelその1',
@@ -112,5 +119,9 @@ export const getDefaultSpecification = (): ApplicationData => ({
     戻り値: [],
     処理詳細: [],
   }],
-  QueryModel定義: [],
+  QueryModel定義: [{
+    uniqueId: 'query001',
+    表示名: 'QueryModelその1',
+    項目定義: [],
+  }],
 })

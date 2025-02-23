@@ -114,13 +114,3 @@ const AfterLoaded = ({ index, rhfMethods: { control } }: {
     </div>
   )
 }
-
-const PropLabel = (props: {
-  children?: React.ReactNode
-}) => {
-  return (
-    <div className="py-1 select-none font-bold">
-      {props.children}
-    </div>
-  )
-}
