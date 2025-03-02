@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nijo.Ver1.Models.ReadModel {
+namespace Nijo.Ver1.Models.QueryModelModules {
     /// <summary>
     /// ReadModelの画面表示用データ
     /// </summary>
@@ -106,11 +106,13 @@ namespace Nijo.Ver1.Models.ReadModel {
             };
         }
 
-        internal string RenderCSharp(CodeRenderingContext ctx) {
 
-            return $$"""
+        internal virtual string RenderCSharpDeclaring(CodeRenderingContext ctx) {
+            throw new NotImplementedException();
+        }
 
-                """;
+        internal virtual string RenderTypeScriptType(CodeRenderingContext ctx) {
+            throw new NotImplementedException();
         }
     }
 }

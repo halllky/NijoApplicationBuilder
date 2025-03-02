@@ -29,16 +29,6 @@ namespace Nijo.Ver1.ImmutableSchema {
         private protected readonly GraphNode<MutableSchemaNode> _schemaNode;
 
         /// <summary>
-        /// この集約の親
-        /// </summary>
-        public AggregateBase? Parent {
-            get {
-                var parentChildEdge = _schemaNode.GetParent();
-                if (parentChildEdge == null) return null;
-                return Parse(parentChildEdge.Initial);
-            }
-        }
-        /// <summary>
         /// 物理名
         /// </summary>
         public string PhysicalName => _schemaNode.Item.GetPhysicalName();
@@ -52,6 +42,49 @@ namespace Nijo.Ver1.ImmutableSchema {
         /// </summary>
         public IEnumerable<IAggregateMember> GetMembers() {
             throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// この集約の親を返します。
+        /// </summary>
+        public AggregateBase? GetParent() {
+            var parentChildEdge = _schemaNode.GetParent();
+            if (parentChildEdge == null) return null;
+            return Parse(parentChildEdge.Initial);
+        }
+
+        /// <summary>
+        /// 祖先集約を列挙します。ルート集約が先
+        /// </summary>
+        public IEnumerable<AggregateBase> EnumerateAncestors() {
+            throw new NotImplementedException();
+        }
+        /// <summary>
+        /// この集約と祖先集約を列挙します。ルート集約が先
+        /// </summary>
+        public IEnumerable<AggregateBase> EnumerateThisAndAncestors() {
+            yield return this;
+
+            foreach (var ancestor in EnumerateAncestors()) {
+                yield return ancestor;
+            }
+        }
+
+        /// <summary>
+        /// 子孫集約を列挙します。
+        /// </summary>
+        public IEnumerable<AggregateBase> EnumerateDescendants() {
+            throw new NotImplementedException();
+        }
+        /// <summary>
+        /// この集約と子孫集約を列挙します。
+        /// </summary>
+        public IEnumerable<AggregateBase> EnumerateThisAndDescendants() {
+            yield return this;
+
+            foreach (var descendant in EnumerateDescendants()) {
+                yield return descendant;
+            }
         }
     }
 

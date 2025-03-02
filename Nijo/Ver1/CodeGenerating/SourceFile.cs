@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Nijo.Ver1.CodeGenerating {
     public class SourceFile {
         public required string FileName { get; init; }
-        public required Func<CodeRenderingContext, string> RenderContent { get; init; }
+        public required string Contents { get; init; }
 
         public static StreamWriter GetStreamWriter(string filepath) {
             var ext = Path.GetExtension(filepath).ToLower();

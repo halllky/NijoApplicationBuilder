@@ -13,5 +13,12 @@ namespace Nijo.Ver1.CodeGenerating {
         internal CodeRenderingContext() { }
 
         public MemberTypeResolver MemberTypeResolver => throw new NotImplementedException();
+
+        /// <summary>
+        /// 1つのファイルの中に複数の集約の情報が含まれるソースファイルを使用します。
+        /// </summary>
+        public T Use<T>() where T : MultiAggregateSourceFileBase {
+            throw new NotImplementedException();
+        }
     }
 }
