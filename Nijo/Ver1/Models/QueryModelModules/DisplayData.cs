@@ -114,5 +114,21 @@ namespace Nijo.Ver1.Models.QueryModelModules {
         internal virtual string RenderTypeScriptType(CodeRenderingContext ctx) {
             throw new NotImplementedException();
         }
+
+        internal string RenderDeepEqualsFunction(CodeRenderingContext ctx) {
+            throw new NotImplementedException();
+        }
+
+        internal string RenderUiConstraints(CodeRenderingContext ctx) {
+            throw new NotImplementedException();
+        }
+
+        internal string RenderTypeScriptObjectCreationFunction(CodeRenderingContext ctx) {
+            throw new NotImplementedException();
+        }
+
+        internal string ConvertSearchResultToDisplayData(CodeRenderingContext ctx) {
+            throw new NotImplementedException();
+        }
     }
 }

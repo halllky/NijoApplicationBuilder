@@ -1,3 +1,4 @@
+using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
 using System;
 using System.Collections.Generic;
@@ -16,5 +17,16 @@ namespace Nijo.Ver1.Models.DataModelModules {
         }
         private readonly AggregateBase _aggregate;
 
+        internal string RenderClassDeclaring(CodeRenderingContext ctx) {
+            throw new NotImplementedException();
+        }
+
+        internal string RenderDbSetProperty(CodeRenderingContext ctx) {
+            throw new NotImplementedException();
+        }
+
+        internal string RenderOnModelCreatingCalling(CodeRenderingContext ctx) {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -1,0 +1,14 @@
+using Nijo.Ver1.CodeGenerating;
+using Nijo.Ver1.ImmutableSchema;
+using System;
+
+namespace Nijo.Ver1.Models.DataModelModules {
+    /// <summary>
+    /// 文字種チェック
+    /// </summary>
+    internal static class CheckCharacterType {
+        internal static string Render(AggregateBase aggregate, CodeRenderingContext ctx) {
+            throw new NotImplementedException();
+        }
+    }
+}

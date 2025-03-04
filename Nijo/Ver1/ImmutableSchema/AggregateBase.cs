@@ -96,6 +96,9 @@ namespace Nijo.Ver1.ImmutableSchema {
         }
 
         public bool IsReadOnly => _schemaNode.Item.IsAttributes.Contains("");
+
+        public bool GenerateDefaultQueryModel { get; internal set; }
+        public bool GenerateBatchUpdateCommand { get; internal set; }
     }
 
     /// <summary>
