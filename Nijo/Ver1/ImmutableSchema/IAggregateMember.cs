@@ -38,6 +38,16 @@ namespace Nijo.Ver1.ImmutableSchema {
     }
 
     /// <summary>
+    /// Child, Children, RefTo の3種類
+    /// </summary>
+    public interface IRelationalMember : IAggregateMember {
+        /// <summary>
+        /// 元集約（親 or 参照元集約）との間の関係性の名前の物理名
+        /// </summary>
+        string RelationPhysicalName { get; }
+    }
+
+    /// <summary>
     /// モデルの属性のうち、xxxID, xxx名, xxx日付, ... などのような単一の値。
     /// </summary>
     public sealed class ValueMember : IAggregateMember {
@@ -73,7 +83,7 @@ namespace Nijo.Ver1.ImmutableSchema {
     /// <summary>
     /// モデルの属性のうち、外部参照。
     /// </summary>
-    public class RefToMember : IAggregateMember {
+    public class RefToMember : IRelationalMember {
         internal RefToMember(GraphEdge<MutableSchemaNode> relation) {
             _relation = relation;
         }
@@ -81,13 +91,21 @@ namespace Nijo.Ver1.ImmutableSchema {
         private readonly GraphEdge<MutableSchemaNode> _relation;
         public string PhysicalName => _relation.Initial.Item.GetPhysicalName();
         public string DisplayName => _relation.Initial.Item.GetDisplayName();
+        public string RelationPhysicalName => throw new NotImplementedException("GraphEdgeの属性で定義されている物理名を返す");
         public decimal Order => _relation.Initial.Item.GetIndexInSiblings();
 
+        /// <summary>
+        /// 参照元集約
+        /// </summary>
         public AggregateBase Owner {
             get {
                 var owner = _relation.Initial.In.Single().As<MutableSchemaNode>().Initial;
                 return AggregateBase.Parse(owner);
             }
         }
+        /// <summary>
+        /// 参照先集約
+        /// </summary>
+        public AggregateBase RefTo => AggregateBase.Parse(_relation.Terminal);
     }
 }

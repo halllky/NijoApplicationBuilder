@@ -39,6 +39,11 @@ namespace Nijo.Ver1.ImmutableSchema {
 
         /// <summary>
         /// この集約が持つメンバーを列挙します。
+        /// <list type="bullet">
+        /// <item>親: 列挙しません。</item>
+        /// <item>子(Child, Children, VariationItem): 列挙します。</item>
+        /// <item>参照先(RefTo): 列挙します。</item>
+        /// </list>
         /// </summary>
         public IEnumerable<IAggregateMember> GetMembers() {
             throw new NotImplementedException();
@@ -69,6 +74,12 @@ namespace Nijo.Ver1.ImmutableSchema {
                 yield return ancestor;
             }
         }
+        /// <summary>
+        /// ルート集約を返します。
+        /// </summary>
+        internal AggregateBase GetRoot() {
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// 子孫集約を列挙します。
@@ -95,7 +106,8 @@ namespace Nijo.Ver1.ImmutableSchema {
         internal RootAggregate(GraphNode<MutableSchemaNode> schemaNode) : base(schemaNode) {
         }
 
-        public bool IsReadOnly => _schemaNode.Item.IsAttributes.Contains("");
+        public string LatinName => throw new NotImplementedException();
+        public bool IsReadOnly => _schemaNode.Item.IsAttributes.Contains("ここどうする？");
 
         public bool GenerateDefaultQueryModel { get; internal set; }
         public bool GenerateBatchUpdateCommand { get; internal set; }
@@ -104,12 +116,13 @@ namespace Nijo.Ver1.ImmutableSchema {
     /// <summary>
     /// 親集約と1対1で対応する子集約。
     /// </summary>
-    public class ChildAggreagte : AggregateBase, IAggregateMember {
+    public class ChildAggreagte : AggregateBase, IRelationalMember {
         internal ChildAggreagte(GraphEdge<MutableSchemaNode> relation) : base(relation.Terminal) {
             _relation = relation;
         }
         private readonly GraphEdge<MutableSchemaNode> _relation;
 
+        public string RelationPhysicalName => throw new NotImplementedException("GraphEdgeの属性で定義されている物理名を返す");
         public decimal Order => _relation.Terminal.Item.GetIndexInSiblings();
         public AggregateBase Owner => Parse(_relation.Initial);
     }
@@ -117,12 +130,13 @@ namespace Nijo.Ver1.ImmutableSchema {
     /// <summary>
     /// 親集約と1対多で対応する子集約。
     /// </summary>
-    public class ChildrenAggreagte : AggregateBase, IAggregateMember {
+    public class ChildrenAggreagte : AggregateBase, IRelationalMember {
         internal ChildrenAggreagte(GraphEdge<MutableSchemaNode> relation) : base(relation.Terminal) {
             _relation = relation;
         }
         private readonly GraphEdge<MutableSchemaNode> _relation;
 
+        public string RelationPhysicalName => throw new NotImplementedException("GraphEdgeの属性で定義されている物理名を返す");
         public decimal Order => _relation.Terminal.Item.GetIndexInSiblings();
         public AggregateBase Owner => Parse(_relation.Initial);
     }

@@ -86,21 +86,19 @@ namespace Nijo.Ver1.Models {
 
             // RefToモジュール
             // - データ型
-            //   - RefSearchCondition
-            //   - RefSearchResult
             //   - RefDisplayData
             // - TS側オブジェクト作成関数
             // - 検索処理
             //   - Reactフック
             //   - ASP.NET Core Controller Action
-            var refToModule = new RefToModule();
-            aggregateFile.AddCSharpClass(refToModule.RenderRefSearchCondition(ctx));
-            aggregateFile.AddCSharpClass(refToModule.RenderRefSearchResult(ctx));
-            aggregateFile.AddCSharpClass(refToModule.RenderRefDisplayData(ctx));
-            aggregateFile.AddTypeScriptSource(refToModule.RenderTypeScriptObjectCreationFunction(ctx));
-            aggregateFile.AddCSharpClass(refToModule.RenderSearchProcessing(ctx));
-            aggregateFile.AddTypeScriptSource(refToModule.RenderReactHook(ctx));
-            aggregateFile.AddCSharpClass(refToModule.RenderAspNetCoreControllerAction(ctx));
+            var refDisplayData = new DisplayDataRefEntry(rootAggregate);
+            var searchRefs = new SearchProcessingRefs(rootAggregate);
+            aggregateFile.AddCSharpClass(refDisplayData.RenderCsClass(ctx));
+            aggregateFile.AddTypeScriptSource(refDisplayData.RenderTsType(ctx));
+            aggregateFile.AddTypeScriptSource(refDisplayData.RenderTypeScriptObjectCreationFunction(ctx));
+            aggregateFile.AddCSharpClass(searchRefs.RenderAppSrvMethod(ctx));
+            aggregateFile.AddTypeScriptSource(searchRefs.RenderReactHook(ctx));
+            aggregateFile.AddCSharpClass(searchRefs.RenderAspNetCoreControllerAction(ctx));
 
             // 権限
         }
