@@ -78,33 +78,32 @@ namespace Nijo.Ver1.Models.QueryModelModules {
         /// <summary>追加・更新・削除のいずれかの区分を返すメソッドの名前</summary>
         internal const string GET_SAVE_TYPE = "GetSaveType";
 
-        /// <summary>
-        /// 追加・更新・削除のタイミングが親要素と異なるか否か
-        /// </summary>
-        internal bool HasLifeCycle => _aggregate is RootAggregate || _aggregate is ChildrenAggreagte || Aggregate.Item.Options.HasLifeCycle;
-        /// <summary>
-        /// 楽観排他制御用のバージョンをもつかどうか
-        /// </summary>
-        internal bool HasVersion => Aggregate.IsRoot() || Aggregate.Item.Options.HasLifeCycle;
+        // HasLifeCycle, HasVersion は、子孫ReadModelに明示的にVersionを定義すればよいため、不要と判断。
+        ///// <summary>
+        ///// 追加・更新・削除のタイミングが親要素と異なるか否か
+        ///// </summary>
+        //internal bool HasLifeCycle => _aggregate is RootAggregate || _aggregate is ChildrenAggreagte || Aggregate.Item.Options.HasLifeCycle;
+        ///// <summary>
+        ///// 楽観排他制御用のバージョンをもつかどうか
+        ///// </summary>
+        //internal bool HasVersion => Aggregate.IsRoot() || Aggregate.Item.Options.HasLifeCycle;
 
-
-        /// <summary>
-        /// C#の基底クラスをレンダリングします。
-        /// </summary>
-        internal static SourceFile RenderBaseClass() {
-            return new() {
-                FileName = "DisplayDataClassBase.cs",
-                RenderContent = context => {
-                    return $$"""
-                    /// <summary>
-                    /// 画面表示用データの基底クラス
-                    /// </summary>
-                    public abstract partial class {{BASE_CLASS_NAME}} {
-                    }
-                    """;
-                },
-            };
-        }
+        // 使いどころが無い。不要。
+        ///// <summary>
+        ///// C#の基底クラスをレンダリングします。
+        ///// </summary>
+        //internal static SourceFile RenderBaseClass() {
+        //    return new() {
+        //        FileName = "DisplayDataClassBase.cs",
+        //        Contents = $$"""
+        //            /// <summary>
+        //            /// 画面表示用データの基底クラス
+        //            /// </summary>
+        //            public abstract partial class {{BASE_CLASS_NAME}} {
+        //            }
+        //            """,
+        //    };
+        //}
 
 
         internal virtual string RenderCSharpDeclaring(CodeRenderingContext ctx) {

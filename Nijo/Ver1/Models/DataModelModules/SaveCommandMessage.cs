@@ -12,12 +12,29 @@ namespace Nijo.Ver1.Models.DataModelModules {
         }
         private readonly AggregateBase _aggregate;
 
+        internal string InterfaceName => $"I{_aggregate.PhysicalName}SaveCommandMessages";
+        internal string ClassName => $"{_aggregate.PhysicalName}SaveCommandMessagesImpl";
+
         internal string RenderInterfaceDeclaring(CodeRenderingContext ctx) {
-            throw new NotImplementedException();
+            return $$"""
+                /// <summary>
+                /// {{_aggregate.DisplayName}} の保存時に発生したメッセージの入れ物
+                /// </summary>
+                public interface {{InterfaceName}} {
+                    // TODO ver.1
+                }
+                """;
         }
 
         internal string RenderClassDeclaring(CodeRenderingContext ctx) {
-            throw new NotImplementedException();
+            return $$"""
+                /// <summary>
+                /// {{_aggregate.DisplayName}} の保存時に発生したメッセージの入れ物
+                /// </summary>
+                public interface {{ClassName}} : {{InterfaceName}} {
+                    // TODO ver.1
+                }
+                """;
         }
     }
 }

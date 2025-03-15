@@ -1,3 +1,4 @@
+using Nijo.Util.DotnetEx;
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
 using System;
@@ -7,26 +8,53 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Ver1.Parts.Core {
-    public class DbContextClass : MultiAggregateSourceFileBase {
-        public DbContextClass(CodeRenderingContext ctx) : base(ctx) {
-        }
+    public class DbContextClass : IMultiAggregateSourceFile {
+
+        private readonly List<string> _dbSet = [];
+        private readonly List<string> _onModelCreating = [];
+        private readonly List<string> _configureConversions = [];
 
         public DbContextClass AddDbSet(string sourceCode) {
-            throw new NotImplementedException();
+            _dbSet.Add(sourceCode);
+            return this;
         }
         public DbContextClass AddOnModelCreating(string sourceCode) {
-            throw new NotImplementedException();
+            _onModelCreating.Add(sourceCode);
+            return this;
         }
         public DbContextClass AddConfigureConventions(string sourceCode) {
-            throw new NotImplementedException();
+            _configureConversions.Add(sourceCode);
+            return this;
         }
 
-        internal override IEnumerable<object?> EnumerateState() {
-            throw new NotImplementedException();
+        void IMultiAggregateSourceFile.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {
+            // 特になし
         }
 
-        private protected override void Render() {
-            throw new NotImplementedException();
+        void IMultiAggregateSourceFile.Render(CodeRenderingContext ctx) {
+            ctx.CoreLibrary(dir => {
+                dir.Directory("EntityFrameworkCore", efcoreDir => {
+                    efcoreDir.Generate(Render(ctx));
+                });
+            });
+        }
+
+        private SourceFile Render(CodeRenderingContext ctx) {
+            return new SourceFile {
+                FileName = $"{ctx.Config.DbContextName.ToFileNameSafe()}.cs",
+                Contents = $$"""
+                    namespace {{ctx.Config.RootNamespace}};
+
+                    public partial class {{ctx.Config.DbContextName}} {
+
+                    {{_dbSet.SelectTextTemplate(source => $$"""
+                        {{WithIndent(source, "    ")}}
+                    """)}}
+
+                        // TODO ver.1
+                    }
+                    """,
+            };
         }
     }
 }

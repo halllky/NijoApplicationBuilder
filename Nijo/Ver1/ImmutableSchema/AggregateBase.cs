@@ -1,10 +1,12 @@
 using Nijo.Util.DotnetEx;
-using Nijo.Ver1.MutableSchema;
+using Nijo.Ver1.CodeGenerating;
+using Nijo.Ver1.SchemaParsing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Nijo.Ver1.ImmutableSchema {
     /// <summary>
@@ -17,25 +19,30 @@ namespace Nijo.Ver1.ImmutableSchema {
         /// <summary>
         /// 集約ルート, Child, Children, VariationItem のいずれかを判断
         /// </summary>
-        internal static AggregateBase Parse(GraphNode<MutableSchemaNode> schemaNode) {
+        internal static AggregateBase Parse(XElement xElement, SchemaParseContext ctx) {
+            if (xElement.Parent == xElement.Document?.Root) {
+                return new RootAggregate(xElement, ctx);
+            }
             throw new NotImplementedException();
         }
         #endregion static
 
 
-        internal AggregateBase(GraphNode<MutableSchemaNode> schemaNode) {
-            _schemaNode = schemaNode;
+        internal AggregateBase(XElement xElement, SchemaParseContext ctx) {
+            _xElement = xElement;
+            _ctx = ctx;
         }
-        private protected readonly GraphNode<MutableSchemaNode> _schemaNode;
+        private protected readonly XElement _xElement;
+        private protected readonly SchemaParseContext _ctx;
 
         /// <summary>
         /// 物理名
         /// </summary>
-        public string PhysicalName => _schemaNode.Item.GetPhysicalName();
+        public string PhysicalName => _ctx.GetPhysicalName(_xElement);
         /// <summary>
         /// 表示用名称
         /// </summary>
-        public string DisplayName => _schemaNode.Item.GetDisplayName();
+        public string DisplayName => _ctx.GetDisplayName(_xElement);
 
         /// <summary>
         /// この集約が持つメンバーを列挙します。
@@ -46,16 +53,24 @@ namespace Nijo.Ver1.ImmutableSchema {
         /// </list>
         /// </summary>
         public IEnumerable<IAggregateMember> GetMembers() {
-            throw new NotImplementedException();
+            foreach (var el in _xElement.Elements()) {
+                var nodeType = _ctx.GetNodeType(el);
+                yield return nodeType switch {
+                    SchemaParseContext.E_NodeType.ChildAggregate => new ChildAggreagte(el, _ctx),
+                    SchemaParseContext.E_NodeType.ChildrenAggregate => new ChildrenAggreagte(el, _ctx),
+                    SchemaParseContext.E_NodeType.Ref => new RefToMember(el, _ctx),
+                    SchemaParseContext.E_NodeType.ValueMember => new ValueMember(el, _ctx),
+                    _ => throw new InvalidOperationException($"メンバーでない種類: {nodeType}（{el}）"),
+                };
+            }
         }
 
         /// <summary>
         /// この集約の親を返します。
         /// </summary>
         public AggregateBase? GetParent() {
-            var parentChildEdge = _schemaNode.GetParent();
-            if (parentChildEdge == null) return null;
-            return Parse(parentChildEdge.Initial);
+            if (_xElement.Parent == null) return null;
+            return Parse(_xElement.Parent, _ctx);
         }
 
         /// <summary>
@@ -78,14 +93,16 @@ namespace Nijo.Ver1.ImmutableSchema {
         /// ルート集約を返します。
         /// </summary>
         internal AggregateBase GetRoot() {
-            throw new NotImplementedException();
+            var aggregateRootElement = SchemaParseContext.GetAggregateRootElement(_xElement)
+                ?? throw new InvalidOperationException();
+            return Parse(aggregateRootElement, _ctx);
         }
 
         /// <summary>
         /// 子孫集約を列挙します。
         /// </summary>
         public IEnumerable<AggregateBase> EnumerateDescendants() {
-            throw new NotImplementedException();
+            return GetMembers().OfType<AggregateBase>();
         }
         /// <summary>
         /// この集約と子孫集約を列挙します。
@@ -103,11 +120,13 @@ namespace Nijo.Ver1.ImmutableSchema {
     /// 集約ルート
     /// </summary>
     public class RootAggregate : AggregateBase {
-        internal RootAggregate(GraphNode<MutableSchemaNode> schemaNode) : base(schemaNode) {
+        internal RootAggregate(XElement xElement, SchemaParseContext ctx) : base(xElement, ctx) {
         }
 
-        public string LatinName => throw new NotImplementedException();
-        public bool IsReadOnly => _schemaNode.Item.IsAttributes.Contains("ここどうする？");
+        public string LatinName => _ctx.GetLatinName(_xElement);
+        public bool IsReadOnly => _ctx.ParseIsAttribute(_xElement).Any(attr => attr.Key == "readonly"); // TODO ver.1
+
+        public IModel Model => _ctx.FindModel(_xElement) ?? throw new InvalidOperationException();
 
         public bool GenerateDefaultQueryModel { get; internal set; }
         public bool GenerateBatchUpdateCommand { get; internal set; }
@@ -117,27 +136,23 @@ namespace Nijo.Ver1.ImmutableSchema {
     /// 親集約と1対1で対応する子集約。
     /// </summary>
     public class ChildAggreagte : AggregateBase, IRelationalMember {
-        internal ChildAggreagte(GraphEdge<MutableSchemaNode> relation) : base(relation.Terminal) {
-            _relation = relation;
+        internal ChildAggreagte(XElement xElement, SchemaParseContext ctx) : base(xElement, ctx) {
         }
-        private readonly GraphEdge<MutableSchemaNode> _relation;
 
         public string RelationPhysicalName => throw new NotImplementedException("GraphEdgeの属性で定義されている物理名を返す");
-        public decimal Order => _relation.Terminal.Item.GetIndexInSiblings();
-        public AggregateBase Owner => Parse(_relation.Initial);
+        public decimal Order => _ctx.GetIndexInSiblings(_xElement);
+        public AggregateBase Owner => Parse(_xElement.Parent!, _ctx);
     }
 
     /// <summary>
     /// 親集約と1対多で対応する子集約。
     /// </summary>
     public class ChildrenAggreagte : AggregateBase, IRelationalMember {
-        internal ChildrenAggreagte(GraphEdge<MutableSchemaNode> relation) : base(relation.Terminal) {
-            _relation = relation;
+        internal ChildrenAggreagte(XElement xElement, SchemaParseContext ctx) : base(xElement, ctx) {
         }
-        private readonly GraphEdge<MutableSchemaNode> _relation;
 
         public string RelationPhysicalName => throw new NotImplementedException("GraphEdgeの属性で定義されている物理名を返す");
-        public decimal Order => _relation.Terminal.Item.GetIndexInSiblings();
-        public AggregateBase Owner => Parse(_relation.Initial);
+        public decimal Order => _ctx.GetIndexInSiblings(_xElement);
+        public AggregateBase Owner => Parse(_xElement.Parent!, _ctx);
     }
 }

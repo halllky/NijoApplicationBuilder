@@ -1,7 +1,6 @@
 using Nijo.Util.DotnetEx;
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
-using Nijo.Ver1.MutableSchema;
 using System;
 using System.Collections.Generic;
 

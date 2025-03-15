@@ -17,16 +17,31 @@ namespace Nijo.Ver1.Models.DataModelModules {
         }
         private readonly AggregateBase _aggregate;
 
+        internal string CsClassName => $"{_aggregate.PhysicalName}DbEntity";
+        internal string DbSetName => $"{_aggregate.PhysicalName}DbSet";
+
+        private const string ON_MODEL_CREATING = "OnModelCreating";
+
         internal string RenderClassDeclaring(CodeRenderingContext ctx) {
-            throw new NotImplementedException();
+            return $$"""
+                public partial class {{CsClassName}} {
+
+                    internal static void {{ON_MODEL_CREATING}}(ModelBuilder modelBuilder) {
+                    }
+                }
+                """;
         }
 
         internal string RenderDbSetProperty(CodeRenderingContext ctx) {
-            throw new NotImplementedException();
+            return $$"""
+                public virtual DbSet<{{CsClassName}}> {{DbSetName}} { get; set; }
+                """;
         }
 
         internal string RenderOnModelCreatingCalling(CodeRenderingContext ctx) {
-            throw new NotImplementedException();
+            return $$"""
+                {{CsClassName}}.{{ON_MODEL_CREATING}}(modelBuilder);
+                """;
         }
     }
 }

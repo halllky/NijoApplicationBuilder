@@ -30,6 +30,7 @@ namespace Nijo.Ver1.Models {
             var saveCommand = new SaveCommand(rootAggregate);
             aggregateFile.AddCSharpClass(saveCommand.RenderCreateCommandDeclaring(ctx));
             aggregateFile.AddCSharpClass(saveCommand.RenderUpdateCommandDeclaring(ctx));
+            aggregateFile.AddCSharpClass(saveCommand.RenderDeleteCommandDeclaring(ctx));
 
             // データ型: SaveCommandメッセージ
             var saveCommandMessage = new SaveCommandMessage(rootAggregate);
@@ -37,7 +38,7 @@ namespace Nijo.Ver1.Models {
             aggregateFile.AddCSharpClass(saveCommandMessage.RenderClassDeclaring(ctx));
 
             // データ型: ほかの集約から参照されるときのキー
-            var refTargetKey = new RefTargetKeyEntry(rootAggregate);
+            var refTargetKey = new KeyClass(rootAggregate);
             aggregateFile.AddCSharpClass(refTargetKey.RenderClassDeclaring(ctx));
 
             // 処理: 新規登録、更新、削除
@@ -68,6 +69,7 @@ namespace Nijo.Ver1.Models {
                 aggregateFile.AddWebapiControllerAction(batchUpdate.RenderControllerAction(ctx));
             }
 
+            aggregateFile.ExecuteRendering(ctx);
         }
 
         public void GenerateCode(CodeRenderingContext ctx) {

@@ -1,3 +1,4 @@
+using Nijo.Util.CodeGenerating;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,17 +11,22 @@ namespace Nijo.Ver1.CodeGenerating {
         public required string FileName { get; init; }
         public required string Contents { get; init; }
 
-        public static StreamWriter GetStreamWriter(string filepath) {
+        internal void Render(string filepath) {
             var ext = Path.GetExtension(filepath).ToLower();
-            var encoding = ext == ".cs"
+            var encoding = ext == ".cs" || ext == ".sql"
                 ? Encoding.UTF8 // With BOM
                 : new UTF8Encoding(false);
-            var newLine = ext == ".cs"
+            var newLine = ext == ".cs" || ext == ".sql"
                 ? "\r\n"
                 : "\n";
-            return new StreamWriter(filepath, append: false, encoding) {
+            using var sw = new StreamWriter(filepath, append: false, encoding) {
                 NewLine = newLine,
             };
+
+            foreach (var line in Contents.Split(Environment.NewLine)) {
+                if (line.Contains(SKIP_MARKER)) continue;
+                sw.WriteLine(line);
+            }
         }
     }
 }

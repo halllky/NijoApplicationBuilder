@@ -36,6 +36,8 @@ namespace Nijo.Ver1.Models {
             aggregateFile.AddTypeScriptSource(commandProcessing.RenderReactHook(ctx));
             aggregateFile.AddCSharpClass(commandProcessing.RenderWebEndpoint(ctx));
             aggregateFile.AddCSharpClass(commandProcessing.RenderAbstractMethod(ctx));
+
+            aggregateFile.ExecuteRendering(ctx);
         }
 
         public void GenerateCode(CodeRenderingContext ctx) {

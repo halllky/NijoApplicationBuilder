@@ -1,11 +1,12 @@
 using Nijo.Util.DotnetEx;
 using Nijo.Ver1.CodeGenerating;
-using Nijo.Ver1.MutableSchema;
+using Nijo.Ver1.SchemaParsing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Nijo.Ver1.ImmutableSchema {
     /// <summary>
@@ -51,61 +52,51 @@ namespace Nijo.Ver1.ImmutableSchema {
     /// モデルの属性のうち、xxxID, xxx名, xxx日付, ... などのような単一の値。
     /// </summary>
     public sealed class ValueMember : IAggregateMember {
-        internal ValueMember(GraphNode<MutableSchemaNode> schemaNode, CodeRenderingContext ctx) {
-            _schemaNode = schemaNode;
+        internal ValueMember(XElement xElement, SchemaParseContext ctx) {
+            _xElement = xElement;
             _ctx = ctx;
         }
-        private readonly GraphNode<MutableSchemaNode> _schemaNode;
-        private readonly CodeRenderingContext _ctx;
+        private readonly XElement _xElement;
+        private readonly SchemaParseContext _ctx;
 
-        public string PhysicalName => _schemaNode.Item.GetPhysicalName();
-        public string DisplayName => _schemaNode.Item.GetDisplayName();
-        public decimal Order => _schemaNode.Item.GetIndexInSiblings();
+        public string PhysicalName => _ctx.GetPhysicalName(_xElement);
+        public string DisplayName => _ctx.GetDisplayName(_xElement);
+        public decimal Order => _ctx.GetIndexInSiblings(_xElement);
 
-        public AggregateBase Owner {
-            get {
-                var parentNode = _schemaNode.In.Single().Initial.As<MutableSchemaNode>();
-                return AggregateBase.Parse(parentNode);
-            }
-        }
+        public AggregateBase Owner => AggregateBase.Parse(_xElement.Parent!, _ctx);
 
         /// <summary>
         /// この属性の型
         /// </summary>
-        public IValueMemberType Type {
-            get {
-                var typeKey = _schemaNode.Item.GetNodeType() ?? throw new InvalidOperationException();
-                return _ctx.MemberTypeResolver.Resolve(typeKey);
-            }
-        }
+        public IValueMemberType Type => _ctx.TryResolveMemberType(_xElement, out var type)
+            ? type
+            : throw new InvalidOperationException();
     }
 
     /// <summary>
     /// モデルの属性のうち、外部参照。
     /// </summary>
     public class RefToMember : IRelationalMember {
-        internal RefToMember(GraphEdge<MutableSchemaNode> relation) {
-            _relation = relation;
+        internal RefToMember(XElement xElement, SchemaParseContext ctx) {
+            _xElement = xElement;
+            _ctx = ctx;
         }
 
-        private readonly GraphEdge<MutableSchemaNode> _relation;
-        public string PhysicalName => _relation.Initial.Item.GetPhysicalName();
-        public string DisplayName => _relation.Initial.Item.GetDisplayName();
+        private readonly XElement _xElement;
+        private readonly SchemaParseContext _ctx;
+
+        public string PhysicalName => _ctx.GetPhysicalName(_xElement);
+        public string DisplayName => _ctx.GetDisplayName(_xElement);
         public string RelationPhysicalName => throw new NotImplementedException("GraphEdgeの属性で定義されている物理名を返す");
-        public decimal Order => _relation.Initial.Item.GetIndexInSiblings();
+        public decimal Order => _ctx.GetIndexInSiblings(_xElement);
 
         /// <summary>
         /// 参照元集約
         /// </summary>
-        public AggregateBase Owner {
-            get {
-                var owner = _relation.Initial.In.Single().As<MutableSchemaNode>().Initial;
-                return AggregateBase.Parse(owner);
-            }
-        }
+        public AggregateBase Owner => AggregateBase.Parse(_xElement.Parent!, _ctx);
         /// <summary>
         /// 参照先集約
         /// </summary>
-        public AggregateBase RefTo => AggregateBase.Parse(_relation.Terminal);
+        public AggregateBase RefTo => AggregateBase.Parse(_ctx.FindRefTo(_xElement) ?? throw new InvalidOperationException(), _ctx);
     }
 }

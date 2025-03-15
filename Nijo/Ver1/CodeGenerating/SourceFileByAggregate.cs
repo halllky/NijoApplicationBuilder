@@ -37,7 +37,7 @@ namespace Nijo.Ver1.CodeGenerating {
             _typeScriptSource.Add(sourceCode);
         }
 
-        public void Render(CodeRenderingContext ctx) {
+        public void ExecuteRendering(CodeRenderingContext ctx) {
 
             ctx.CoreLibrary(dir => {
                 dir.Generate(new SourceFile {

@@ -222,6 +222,44 @@ namespace Nijo {
             }, path, port, noBrowser);
             rootCommand.AddCommand(ui);
 
+            // *************************** ver.1.0.000 ***************************
+
+            var generate = new Command(
+                name: "generate-20250315",
+                description: "ソースコードの自動生成を実行します。")
+                { path };
+            generate.SetHandler(path => {
+
+                // *****************************
+                // あらかたできるまではダミーXMLを使用
+                if (!Directory.Exists("20250315")) Directory.CreateDirectory("20250315");
+                Directory.SetCurrentDirectory("20250315");
+                File.WriteAllText("nijo.xml", $$"""
+                    <?xml version="1.0" encoding="utf-8" ?>
+                    <NijoApplicationBuilder>
+                      <参照先 is="data-model">
+                        <参照先集約ID is="word key" />
+                        <参照先集約名 is="word name" />
+                      </参照先>
+                      <参照元 is="data-model">
+                        <参照元集約ID is="word key" />
+                        <参照元集約名 is="word name" />
+                        <参照 is="ref-to:参照先" />
+                      </参照元>
+                    </NijoApplicationBuilder>
+                    """, new UTF8Encoding(false, false));
+                // *****************************
+
+                var projectRoot = path == null
+                    ? Directory.GetCurrentDirectory()
+                    : Path.Combine(Directory.GetCurrentDirectory(), path);
+                var logger = ILoggerExtension.CreateConsoleLogger();
+
+                var project = new Ver1.GeneratedProject(projectRoot, logger);
+                project.GenerateCode();
+            }, path);
+            rootCommand.AddCommand(generate);
+
             return rootCommand;
         }
     }

@@ -101,6 +101,9 @@ namespace Nijo.Ver1.Models {
             aggregateFile.AddCSharpClass(searchRefs.RenderAspNetCoreControllerAction(ctx));
 
             // 権限
+            // TODO ver.1
+
+            aggregateFile.ExecuteRendering(ctx);
         }
 
         public void GenerateCode(CodeRenderingContext ctx) {

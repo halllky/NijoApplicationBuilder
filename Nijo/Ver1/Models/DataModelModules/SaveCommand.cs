@@ -17,12 +17,41 @@ namespace Nijo.Ver1.Models.DataModelModules {
         }
         private readonly AggregateBase _aggregate;
 
+        internal string CsClassNameCreate => $"{_aggregate.PhysicalName}CreateCommand";
+        internal string CsClassNameUpdate => $"{_aggregate.PhysicalName}UpdateCommand";
+        internal string CsClassNameDelete => $"{_aggregate.PhysicalName}DeleteCommand";
+
         internal string RenderCreateCommandDeclaring(CodeRenderingContext ctx) {
-            throw new NotImplementedException();
+            return $$"""
+                /// <summary>
+                /// {{_aggregate.DisplayName}} の新規登録コマンド引数
+                /// </summary>
+                public partial class {{CsClassNameCreate}} {
+                    // TODO ver.1
+                }
+                """;
         }
 
         internal string RenderUpdateCommandDeclaring(CodeRenderingContext ctx) {
-            throw new NotImplementedException();
+            return $$"""
+                /// <summary>
+                /// {{_aggregate.DisplayName}} の更新コマンド引数
+                /// </summary>
+                public partial class {{CsClassNameUpdate}} {
+                    // TODO ver.1
+                }
+                """;
+        }
+
+        internal string RenderDeleteCommandDeclaring(CodeRenderingContext ctx) {
+            return $$"""
+                /// <summary>
+                /// {{_aggregate.DisplayName}} の物理削除コマンド引数
+                /// </summary>
+                public partial class {{CsClassNameDelete}} {
+                    // TODO ver.1
+                }
+                """;
         }
     }
 }
