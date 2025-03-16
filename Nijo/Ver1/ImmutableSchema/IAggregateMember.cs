@@ -99,4 +99,26 @@ namespace Nijo.Ver1.ImmutableSchema {
         /// </summary>
         public AggregateBase RefTo => AggregateBase.Parse(_ctx.FindRefTo(_xElement) ?? throw new InvalidOperationException(), _ctx);
     }
+
+    /// <summary>
+    /// 静的区分の値
+    /// </summary>
+    internal class StaticEnumValueDef : IAggregateMember {
+
+        private const string ATTR_KEY = "key";
+
+        internal StaticEnumValueDef(XElement xElement, SchemaParseContext ctx) {
+            _xElement = xElement;
+            _ctx = ctx;
+        }
+        private readonly XElement _xElement;
+        private readonly SchemaParseContext _ctx;
+
+        public string PhysicalName => _ctx.GetPhysicalName(_xElement);
+        public string DisplayName => _ctx.GetDisplayName(_xElement);
+        public AggregateBase Owner => AggregateBase.Parse(_xElement.Parent!, _ctx);
+        public decimal Order => _ctx.GetIndexInSiblings(_xElement);
+
+        public int EnumValue => int.Parse(_xElement.Attribute(ATTR_KEY)?.Value ?? throw new InvalidOperationException());
+    }
 }

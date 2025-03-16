@@ -1,7 +1,9 @@
+using Nijo.Core;
 using Nijo.Util.DotnetEx;
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
 using Nijo.Ver1.Models;
+using Nijo.Ver1.ValueMemberTypes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -90,6 +92,8 @@ namespace Nijo.Ver1.SchemaParsing {
             return xElement.Document?.XPathSelectElement(xPath);
         }
 
+
+        #region Find系
         /// <summary>
         /// 集約ルートを返す。集約ルートは <see cref="XDocument.Root"/> の1つ下。
         /// </summary>
@@ -102,6 +106,7 @@ namespace Nijo.Ver1.SchemaParsing {
                 current = current.Parent;
             }
         }
+        #endregion Find系
 
 
         #region ノード種類
@@ -129,13 +134,21 @@ namespace Nijo.Ver1.SchemaParsing {
             /// <summary>外部参照（ref-to）</summary>
             Ref = AggregateMember | RelationMember | 1 << 7,
 
+            /// <summary>静的区分の種類</summary>
+            StaticEnumType = RootAggregate | 1 << 8,
+            /// <summary>静的区分の値</summary>
+            StaticEnumValue = 1 << 9,
+
             /// <summary>
-            /// 未知の値。例えば「静的区分の値の定義」など。
-            /// この値が不正かどうか、例えば「動的区分（種類）」や「値オブジェクト定義」は子を持てない
-            /// といったルールを担保するのは、ルート集約と対応するモデル定義の仕事とする。
+            /// 未知の値
             /// </summary>
             Unknown = 1 << 20,
         }
+        /// <summary>
+        /// XML要素の種類を判定する。
+        /// 編集途中の不正な状態であっても入力内容検査等に使う必要があるため、
+        /// XML要素が不正であっても例外を出さない。
+        /// </summary>
         internal E_NodeType GetNodeType(XElement xElement) {
             // ルート要素直下に定義されている場合はルート集約
             if (xElement.Parent == xElement.Document?.Root) {
@@ -159,6 +172,11 @@ namespace Nijo.Ver1.SchemaParsing {
             // ValueMember
             if (isAttributes.Any(x => TryResolveMemberType(xElement, out _))) {
                 return E_NodeType.ValueMember;
+            }
+
+            // 親がenumなら静的区分の値
+            if (xElement.Parent != null && ParseIsAttribute(xElement.Parent).Any(x => x.Key == IS_STATIC_ENUM_MODEL)) {
+                return E_NodeType.StaticEnumValue;
             }
 
             return E_NodeType.Unknown;
@@ -236,15 +254,18 @@ namespace Nijo.Ver1.SchemaParsing {
                 if (attr.Key == IS_DATA_MODEL) return DataModel;
                 if (attr.Key == IS_QUERY_MODEL) return QueryModel;
                 if (attr.Key == IS_COMMAND_MODEL) return CommandModel;
+                if (attr.Key == IS_STATIC_ENUM_MODEL) return StaticEnumModel;
             }
             return null;
         }
         private IModel DataModel => _dataModel ??= new DataModel();
         private IModel QueryModel => _queryModel ??= new QueryModel();
         private IModel CommandModel => _commandModel ??= new CommandModel();
+        private IModel StaticEnumModel => _staticEnumModel ??= new StaticEnumModel();
         private DataModel? _dataModel;
         private QueryModel? _queryModel;
         private CommandModel? _commandModel;
+        private StaticEnumModel? _staticEnumModel;
         #endregion is属性
 
 
@@ -252,11 +273,26 @@ namespace Nijo.Ver1.SchemaParsing {
         private readonly IReadOnlyDictionary<string, IValueMemberType> _valueMemberTypes;
         internal bool TryResolveMemberType(XElement xElement, out IValueMemberType valueMemberType) {
             var isAttribute = ParseIsAttribute(xElement).ToArray();
+            var staticEnumTypes = xElement.Document
+                ?.Descendants()
+                .Where(el => ParseIsAttribute(el).Any(attr => attr.Key == IS_STATIC_ENUM_MODEL))
+                .ToDictionary(GetPhysicalName, el => new StaticEnumMember(el, this))
+                ?? [];
+
             foreach (var attr in isAttribute) {
+                // 単語型など予め登録された型
                 if (_valueMemberTypes.TryGetValue(attr.Key, out valueMemberType!)) {
                     return true;
                 }
+
+                // 列挙体
+                if (staticEnumTypes.TryGetValue(attr.Key, out var enumMember)) {
+                    valueMemberType = enumMember;
+                    return true;
+                }
             }
+
+            // 解決できなかった
             valueMemberType = null!;
             return false;
         }

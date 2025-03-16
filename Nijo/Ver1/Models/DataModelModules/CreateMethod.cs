@@ -19,6 +19,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
 
         internal string Render(CodeRenderingContext ctx) {
             var command = new SaveCommand(_aggregate);
+            var dbEntity = new EFCoreEntity(_aggregate);
             var messages = new SaveCommandMessage(_aggregate);
 
             return $$"""
@@ -47,7 +48,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 /// <item>{{_aggregate.DisplayName}}と常に同期していなければならない外部リソースの更新やメッセージング</item>
                 /// </list>
                 /// </summary>
-                public virtual async Task {{OnAfterMethodName}}({{command.CsClassNameCreate}} command, {{messages.InterfaceName}} messages, {{PresentationContext.INTERFACE_NAME}} context) {
+                public virtual async Task {{OnAfterMethodName}}({{dbEntity.CsClassName}} newValue, {{messages.InterfaceName}} messages, {{PresentationContext.INTERFACE_NAME}} context) {
                     // このメソッドをオーバーライドして処理を実装してください。
                 }
                 #endregion 新規登録処理

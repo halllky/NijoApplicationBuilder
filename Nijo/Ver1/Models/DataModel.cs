@@ -50,10 +50,14 @@ namespace Nijo.Ver1.Models {
             aggregateFile.AddAppSrvMethod(delete.Render(ctx));
 
             // 処理: 自動生成されるバリデーションエラーチェック
-            aggregateFile.AddAppSrvMethod(CheckRequired.Render(rootAggregate, ctx));
-            aggregateFile.AddAppSrvMethod(CheckMaxLength.Render(rootAggregate, ctx));
-            aggregateFile.AddAppSrvMethod(CheckCharacterType.Render(rootAggregate, ctx));
-            aggregateFile.AddAppSrvMethod(DynamicEnum.RenderAppSrvCheckMethod(rootAggregate, ctx));
+            aggregateFile.AddAppSrvMethod($$"""
+                #region 自動生成されるバリデーション処理
+                {{CheckRequired.Render(rootAggregate, ctx)}}
+                {{CheckMaxLength.Render(rootAggregate, ctx)}}
+                {{CheckCharacterType.Render(rootAggregate, ctx)}}
+                {{DynamicEnum.RenderAppSrvCheckMethod(rootAggregate, ctx)}}
+                #endregion 自動生成されるバリデーション処理
+                """);
 
             // 処理: ダミーデータ作成関数
             ctx.Use<DummyDataGenerator>()

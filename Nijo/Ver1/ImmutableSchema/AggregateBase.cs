@@ -60,6 +60,7 @@ namespace Nijo.Ver1.ImmutableSchema {
                     SchemaParseContext.E_NodeType.ChildrenAggregate => new ChildrenAggreagte(el, _ctx),
                     SchemaParseContext.E_NodeType.Ref => new RefToMember(el, _ctx),
                     SchemaParseContext.E_NodeType.ValueMember => new ValueMember(el, _ctx),
+                    SchemaParseContext.E_NodeType.StaticEnumValue => new StaticEnumValueDef(el, _ctx),
                     _ => throw new InvalidOperationException($"メンバーでない種類: {nodeType}（{el}）"),
                 };
             }

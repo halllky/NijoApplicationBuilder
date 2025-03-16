@@ -245,7 +245,12 @@ namespace Nijo {
                         <参照元集約ID is="word key" />
                         <参照元集約名 is="word name" />
                         <参照 is="ref-to:参照先" />
+                        <参照元集約名 is="My列挙体" />
                       </参照元>
+                      <My列挙体 is="enum">
+                        <値1 DisplayName="値（1）" key="1" />
+                        <値2 key="2" />
+                      </My列挙体>
                     </NijoApplicationBuilder>
                     """, new UTF8Encoding(false, false));
                 // *****************************
