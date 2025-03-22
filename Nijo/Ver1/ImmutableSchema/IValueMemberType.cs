@@ -1,4 +1,5 @@
 using Nijo.Ver1.CodeGenerating;
+using Nijo.Ver1.Models.QueryModelModules;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,5 +34,37 @@ namespace Nijo.Ver1.ImmutableSchema {
         /// 型に由来する生成ソースがある場合はここでレンダリングする
         /// </summary>
         void GenerateCode(CodeRenderingContext ctx);
+
+        /// <summary>
+        /// QueryModelでの検索時の振る舞い。
+        /// パスワードなど検索条件に指定することができない型の場合はこれがnullになる。
+        /// </summary>
+        ValueMemberSearchBehavior? SearchBehavior { get; }
+        /// <summary>
+        /// UI上の制約がとりうる型
+        /// </summary>
+        UiConstraint.E_Type UiConstraintType { get; }
+    }
+
+
+    /// <summary>
+    /// QueryModelで検索条件に指定することが可能な <see cref="IValueMemberType"/> について、検索の振る舞い。
+    /// </summary>
+    public class ValueMemberSearchBehavior {
+        /// <summary>
+        /// 検索条件のフィルタリングの属性の型（C#）
+        /// </summary>
+        public required string FilterCsTypeName { get; init; }
+        /// <summary>
+        /// 検索条件のフィルタリングの属性の型（TypeScript）
+        /// </summary>
+        public required string FilterTsTypeName { get; init; }
+        /// <summary>
+        /// 検索条件オブジェクトの新規作成関数でこの型のメンバーがとる空の値。
+        /// 検索条件がObjectの場合など、必ずしもundefinedを初期値としてよいわけではないため、型ごとに指定させている。
+        /// </summary>
+        public required Func<string> RenderTsNewObjectFunctionValue { get; init; }
+
+
     }
 }

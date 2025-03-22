@@ -1,5 +1,6 @@
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
+using Nijo.Ver1.Models.QueryModelModules;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,6 +17,13 @@ namespace Nijo.Ver1.ValueMemberTypes {
         string IValueMemberType.CsDomainTypeName => "string";
         string IValueMemberType.CsPrimitiveTypeName => "string";
         string IValueMemberType.TsTypeName => "string";
+        UiConstraint.E_Type IValueMemberType.UiConstraintType => UiConstraint.E_Type.StringMemberConstraint;
+
+        ValueMemberSearchBehavior? IValueMemberType.SearchBehavior => new() {
+            FilterCsTypeName = "string",
+            FilterTsTypeName = "string",
+            RenderTsNewObjectFunctionValue = () => "undefined",
+        };
 
         void IValueMemberType.GenerateCode(CodeRenderingContext ctx) {
             // 特になし

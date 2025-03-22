@@ -237,7 +237,7 @@ namespace Nijo {
                 File.WriteAllText("nijo.xml", $$"""
                     <?xml version="1.0" encoding="utf-8" ?>
                     <NijoApplicationBuilder>
-                      <参照先 is="data-model">
+                      <参照先 is="data-model generate-default-query-model generate-batch-update-command">
                         <参照先集約ID is="word key" />
                         <参照先集約名 is="word name" />
                       </参照先>

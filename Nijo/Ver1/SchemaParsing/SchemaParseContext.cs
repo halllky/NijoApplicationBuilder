@@ -269,14 +269,17 @@ namespace Nijo.Ver1.SchemaParsing {
         #endregion is属性
 
 
-        #region ValueMember型解決
+        #region ImmutableSchemaへの変換
         private readonly IReadOnlyDictionary<string, IValueMemberType> _valueMemberTypes;
+        /// <summary>
+        /// ValueMemberを表すXML要素の種別（日付, 数値, ...等）を判別して返します。
+        /// </summary>
         internal bool TryResolveMemberType(XElement xElement, out IValueMemberType valueMemberType) {
             var isAttribute = ParseIsAttribute(xElement).ToArray();
             var staticEnumTypes = xElement.Document
                 ?.Descendants()
                 .Where(el => ParseIsAttribute(el).Any(attr => attr.Key == IS_STATIC_ENUM_MODEL))
-                .ToDictionary(GetPhysicalName, el => new StaticEnumMember(el, this))
+                .ToDictionary(GetPhysicalName, el => new ValueMemberTypes.StaticEnumMember(el, this))
                 ?? [];
 
             foreach (var attr in isAttribute) {
@@ -296,7 +299,24 @@ namespace Nijo.Ver1.SchemaParsing {
             valueMemberType = null!;
             return false;
         }
-        #endregion ValueMember型解決
+        /// <summary>
+        /// ルート集約や子集約を表すXML要素を <see cref="AggregateBase"/> のインスタンスに変換します。
+        /// XML要素が集約を表すもので無かった場合は例外を送出します。
+        /// </summary>
+        internal AggregateBase ToAggregateBase(XElement xElement, PathStack currentPath) {
+            var nodeType = GetNodeType(xElement);
+            if (nodeType == E_NodeType.RootAggregate) {
+                return new RootAggregate(xElement, this, currentPath.Trace(xElement));
+            }
+            if (nodeType == E_NodeType.ChildAggregate) {
+                return new ChildAggreagte(xElement, this, currentPath.Trace(xElement));
+            }
+            if (nodeType == E_NodeType.ChildrenAggregate) {
+                return new ChildrenAggreagte(xElement, this, currentPath.Trace(xElement));
+            }
+            throw new InvalidOperationException($"集約ではありません: {xElement}");
+        }
+        #endregion ImmutableSchemaへの変換
     }
 
 

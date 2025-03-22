@@ -22,16 +22,20 @@ namespace Nijo.Ver1.Models {
             //   - export type 検索条件型
             //   - export type ソート可能メンバー型
             // - TS側オブジェクト作成関数
-            var searchCondition = new SearchCondition();
+            var searchCondition = new SearchCondition(rootAggregate);
             aggregateFile.AddCSharpClass(searchCondition.RenderCSharp(ctx));
             aggregateFile.AddTypeScriptSource(searchCondition.RenderTypeScript(ctx));
 
-            // 処理: URL変換
+            // 処理: 検索条件クラスのURL変換
             // - URL => TS
             // - TS => URL
-            var urlConversion = new UrlConversion();
+            var urlConversion = new SearchConditionUrlConversion(searchCondition);
             aggregateFile.AddTypeScriptSource(urlConversion.ConvertUrlToTypeScript(ctx));
             aggregateFile.AddTypeScriptSource(urlConversion.ConvertTypeScriptToUrl(ctx));
+
+            // データ型: 検索結果クラス
+            var searchResult = new SearchResult(rootAggregate);
+            aggregateFile.AddCSharpClass(searchResult.RenderCSharpDeclaring());
 
             // データ型: 画面表示用型 DisplayData
             // - 定義(CS, TS): 値 + 状態(existsInDB, willBeChanged, willBeDeleted) + ReadOnly(画面の自動生成の一機能と位置づけるべきかも)
@@ -41,11 +45,14 @@ namespace Nijo.Ver1.Models {
             // - 変換処理: SearchResult => DisplayData
             var displayData = new DisplayData(rootAggregate);
             aggregateFile.AddCSharpClass(displayData.RenderCSharpDeclaring(ctx));
-            aggregateFile.AddTypeScriptSource(displayData.RenderTypeScriptType(ctx));
-            aggregateFile.AddCSharpClass(displayData.RenderDeepEqualsFunction(ctx));
-            aggregateFile.AddCSharpClass(displayData.RenderUiConstraints(ctx));
-            aggregateFile.AddTypeScriptSource(displayData.RenderTypeScriptObjectCreationFunction(ctx));
             aggregateFile.AddCSharpClass(displayData.ConvertSearchResultToDisplayData(ctx));
+            aggregateFile.AddTypeScriptSource(displayData.RenderTypeScriptType(ctx));
+            aggregateFile.AddTypeScriptSource(displayData.RenderUiConstraintType(ctx));
+            aggregateFile.AddTypeScriptSource(displayData.RenderUiConstraintValue(ctx));
+            aggregateFile.AddTypeScriptSource(displayData.RenderTypeScriptObjectCreationFunction(ctx));
+
+            var deepEquals = new DeepEqual(rootAggregate);
+            aggregateFile.AddCSharpClass(deepEquals.RenderTypeScript());
 
             // 検索処理
             // - reactフック

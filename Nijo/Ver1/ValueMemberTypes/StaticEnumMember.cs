@@ -1,5 +1,6 @@
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
+using Nijo.Ver1.Models.QueryModelModules;
 using Nijo.Ver1.Models.StaticEnumModelModules;
 using System;
 using System.Collections.Generic;
@@ -15,16 +16,25 @@ namespace Nijo.Ver1.ValueMemberTypes {
     internal class StaticEnumMember : IValueMemberType {
 
         internal StaticEnumMember(XElement el, SchemaParsing.SchemaParseContext ctx) {
-            _def = new StaticEnumDef(new RootAggregate(el, ctx));
+            var rootAggregate = new RootAggregate(el, ctx, PathStack.Entry());
+            _def = new StaticEnumDef(rootAggregate);
+            _condition = new StaticEnumSearchCondition(rootAggregate);
         }
         private readonly StaticEnumDef _def;
+        private readonly StaticEnumSearchCondition _condition;
 
-        public string SchemaTypeName => _def.CsEnumName;
-        public string CsDomainTypeName => _def.CsEnumName;
-        public string CsPrimitiveTypeName => _def.CsEnumName;
-        public string TsTypeName => _def.TsTypeName;
+        string IValueMemberType.SchemaTypeName => _def.CsEnumName;
+        string IValueMemberType.CsDomainTypeName => _def.CsEnumName;
+        string IValueMemberType.CsPrimitiveTypeName => _def.CsEnumName;
+        string IValueMemberType.TsTypeName => _def.TsTypeName;
+        ValueMemberSearchBehavior? IValueMemberType.SearchBehavior => new() {
+            FilterCsTypeName = _condition.CsClassName,
+            FilterTsTypeName = _condition.TsTypeName,
+            RenderTsNewObjectFunctionValue = () => "{}",
+        };
+        UiConstraint.E_Type IValueMemberType.UiConstraintType => throw new NotImplementedException();
 
-        public void GenerateCode(CodeRenderingContext ctx) {
+        void IValueMemberType.GenerateCode(CodeRenderingContext ctx) {
             // 特になし
         }
     }

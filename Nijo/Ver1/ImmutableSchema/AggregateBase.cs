@@ -15,25 +15,18 @@ namespace Nijo.Ver1.ImmutableSchema {
     /// </summary>
     public abstract class AggregateBase {
 
-        #region static
-        /// <summary>
-        /// 集約ルート, Child, Children, VariationItem のいずれかを判断
-        /// </summary>
-        internal static AggregateBase Parse(XElement xElement, SchemaParseContext ctx) {
-            if (xElement.Parent == xElement.Document?.Root) {
-                return new RootAggregate(xElement, ctx);
-            }
-            throw new NotImplementedException();
-        }
-        #endregion static
-
-
-        internal AggregateBase(XElement xElement, SchemaParseContext ctx) {
+        internal AggregateBase(XElement xElement, SchemaParseContext ctx, PathStack pathStack) {
             _xElement = xElement;
             _ctx = ctx;
+            Path = pathStack;
         }
         private protected readonly XElement _xElement;
         private protected readonly SchemaParseContext _ctx;
+
+        /// <summary>
+        /// エントリーからこの集約までのパス
+        /// </summary>
+        public PathStack Path { get; }
 
         /// <summary>
         /// 物理名
@@ -48,7 +41,7 @@ namespace Nijo.Ver1.ImmutableSchema {
         /// この集約が持つメンバーを列挙します。
         /// <list type="bullet">
         /// <item>親: 列挙しません。</item>
-        /// <item>子(Child, Children, VariationItem): 列挙します。</item>
+        /// <item>子(Child, Children): 列挙します。</item>
         /// <item>参照先(RefTo): 列挙します。</item>
         /// </list>
         /// </summary>
@@ -56,11 +49,11 @@ namespace Nijo.Ver1.ImmutableSchema {
             foreach (var el in _xElement.Elements()) {
                 var nodeType = _ctx.GetNodeType(el);
                 yield return nodeType switch {
-                    SchemaParseContext.E_NodeType.ChildAggregate => new ChildAggreagte(el, _ctx),
-                    SchemaParseContext.E_NodeType.ChildrenAggregate => new ChildrenAggreagte(el, _ctx),
-                    SchemaParseContext.E_NodeType.Ref => new RefToMember(el, _ctx),
-                    SchemaParseContext.E_NodeType.ValueMember => new ValueMember(el, _ctx),
-                    SchemaParseContext.E_NodeType.StaticEnumValue => new StaticEnumValueDef(el, _ctx),
+                    SchemaParseContext.E_NodeType.ChildAggregate => new ChildAggreagte(el, _ctx, Path.Trace(el)),
+                    SchemaParseContext.E_NodeType.ChildrenAggregate => new ChildrenAggreagte(el, _ctx, Path.Trace(el)),
+                    SchemaParseContext.E_NodeType.Ref => new RefToMember(el, _ctx, Path.Trace(el)),
+                    SchemaParseContext.E_NodeType.ValueMember => new ValueMember(el, _ctx, Path.Trace(el)),
+                    SchemaParseContext.E_NodeType.StaticEnumValue => new Models.StaticEnumModelModules.StaticEnumValueDef(el, _ctx, Path.Trace(el)),
                     _ => throw new InvalidOperationException($"メンバーでない種類: {nodeType}（{el}）"),
                 };
             }
@@ -71,7 +64,7 @@ namespace Nijo.Ver1.ImmutableSchema {
         /// </summary>
         public AggregateBase? GetParent() {
             if (_xElement.Parent == null) return null;
-            return Parse(_xElement.Parent, _ctx);
+            return _ctx.ToAggregateBase(_xElement.Parent, Path);
         }
 
         /// <summary>
@@ -94,9 +87,12 @@ namespace Nijo.Ver1.ImmutableSchema {
         /// ルート集約を返します。
         /// </summary>
         internal AggregateBase GetRoot() {
-            var aggregateRootElement = SchemaParseContext.GetAggregateRootElement(_xElement)
-                ?? throw new InvalidOperationException();
-            return Parse(aggregateRootElement, _ctx);
+            var ancestor = this;
+            while (true) {
+                var parent = ancestor.GetParent();
+                if (parent == null) return ancestor;
+                ancestor = parent;
+            }
         }
 
         /// <summary>
@@ -121,39 +117,43 @@ namespace Nijo.Ver1.ImmutableSchema {
     /// 集約ルート
     /// </summary>
     public class RootAggregate : AggregateBase {
-        internal RootAggregate(XElement xElement, SchemaParseContext ctx) : base(xElement, ctx) {
-        }
+        internal RootAggregate(XElement xElement, SchemaParseContext ctx, PathStack pathStack)
+            : base(xElement, ctx, pathStack) { }
 
         public string LatinName => _ctx.GetLatinName(_xElement);
         public bool IsReadOnly => _ctx.ParseIsAttribute(_xElement).Any(attr => attr.Key == "readonly"); // TODO ver.1
 
         public IModel Model => _ctx.FindModel(_xElement) ?? throw new InvalidOperationException();
 
-        public bool GenerateDefaultQueryModel { get; internal set; }
-        public bool GenerateBatchUpdateCommand { get; internal set; }
+        #region DataModelと全く同じ型のQueryModel, CommandModel を生成するかどうか
+        private const string IS_GENERATE_DEFAULT_QUERY_MODEL = "generate-default-query-model";
+        private const string IS_GENERATE_BATCH_UPDATE_COMMAND = "generate-batch-update-command";
+        public bool GenerateDefaultQueryModel => _ctx.ParseIsAttribute(_xElement).Any(attr => attr.Key == IS_GENERATE_DEFAULT_QUERY_MODEL);
+        public bool GenerateBatchUpdateCommand => _ctx.ParseIsAttribute(_xElement).Any(attr => attr.Key == IS_GENERATE_BATCH_UPDATE_COMMAND);
+        #endregion DataModelと全く同じ型のQueryModel, CommandModel を生成するかどうか
     }
 
     /// <summary>
     /// 親集約と1対1で対応する子集約。
     /// </summary>
     public class ChildAggreagte : AggregateBase, IRelationalMember {
-        internal ChildAggreagte(XElement xElement, SchemaParseContext ctx) : base(xElement, ctx) {
-        }
+        internal ChildAggreagte(XElement xElement, SchemaParseContext ctx, PathStack pathStack)
+            : base(xElement, ctx, pathStack) { }
 
-        public string RelationPhysicalName => throw new NotImplementedException("GraphEdgeの属性で定義されている物理名を返す");
         public decimal Order => _ctx.GetIndexInSiblings(_xElement);
-        public AggregateBase Owner => Parse(_xElement.Parent!, _ctx);
+        public AggregateBase Owner => _ctx.ToAggregateBase(_xElement.Parent ?? throw new InvalidOperationException(), Path);
+        public AggregateBase MemberAggregate => _ctx.ToAggregateBase(_xElement, Path);
     }
 
     /// <summary>
     /// 親集約と1対多で対応する子集約。
     /// </summary>
     public class ChildrenAggreagte : AggregateBase, IRelationalMember {
-        internal ChildrenAggreagte(XElement xElement, SchemaParseContext ctx) : base(xElement, ctx) {
-        }
+        internal ChildrenAggreagte(XElement xElement, SchemaParseContext ctx, PathStack pathStack)
+            : base(xElement, ctx, pathStack) { }
 
-        public string RelationPhysicalName => throw new NotImplementedException("GraphEdgeの属性で定義されている物理名を返す");
         public decimal Order => _ctx.GetIndexInSiblings(_xElement);
-        public AggregateBase Owner => Parse(_xElement.Parent!, _ctx);
+        public AggregateBase Owner => _ctx.ToAggregateBase(_xElement.Parent ?? throw new InvalidOperationException(), Path);
+        public AggregateBase MemberAggregate => _ctx.ToAggregateBase(_xElement, Path);
     }
 }

@@ -1,3 +1,4 @@
+using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.SchemaParsing;
 using System;
 using System.Collections.Generic;
@@ -44,7 +45,7 @@ namespace Nijo.Ver1.ImmutableSchema {
         /// <exception cref="NotImplementedException"></exception>
         public IEnumerable<RootAggregate> GetRootAggregates() {
             foreach (var xElement in _xDocument.Root?.Elements() ?? []) {
-                var aggregate = AggregateBase.Parse(xElement, _parseContext);
+                var aggregate = _parseContext.ToAggregateBase(xElement, PathStack.Entry());
                 if (aggregate is not RootAggregate rootAggregate) {
                     throw new InvalidOperationException();
                 }

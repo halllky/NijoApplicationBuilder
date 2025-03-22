@@ -67,7 +67,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
 
             public string MemberName => _previous._aggregate.GetParent() == _aggregate
                 ? "Parent"
-                : ((IRelationalMember)_aggregate).RelationPhysicalName;
+                : _aggregate.PhysicalName;
             public override string CsClassName => $"{_refEntry.PhysicalName}RefTarget_{GetPathFromRefEntry(this).Join("の")}";
             public override string TsTypeName => $"{_refEntry.PhysicalName}RefTarget_{GetPathFromRefEntry(this).Join("の")}";
         }
