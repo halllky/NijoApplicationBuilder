@@ -34,9 +34,8 @@ namespace Nijo.Ver1.Models {
             aggregateFile.AddCSharpClass(saveCommand.RenderDeleteCommandDeclaring(ctx));
 
             // データ型: SaveCommandメッセージ
-            var saveCommandMessage = new MessageContainer(rootAggregate);
+            var saveCommandMessage = new SaveCommandMessageContainer(rootAggregate);
             aggregateFile.AddCSharpClass(saveCommandMessage.RenderCSharp());
-            aggregateFile.AddTypeScriptSource(saveCommandMessage.RenderTypeScript());
 
             // データ型: ほかの集約から参照されるときのキー
             var refTargetKey = new KeyClass(rootAggregate);
@@ -64,21 +63,16 @@ namespace Nijo.Ver1.Models {
             ctx.Use<DummyDataGenerator>()
                 .Add(rootAggregate);
 
-            // 他モデルと全く同じ型の場合はそれぞれのモデルのソースも生成
+            // QueryModelと全く同じ型の場合はそれぞれのモデルのソースも生成
             if (rootAggregate.GenerateDefaultQueryModel) {
                 new QueryModel().GenerateCode(ctx, rootAggregate);
-            }
-            if (rootAggregate.GenerateBatchUpdateCommand) {
-                var batchUpdate = new BatchUpdate(rootAggregate);
-                aggregateFile.AddAppSrvMethod(batchUpdate.RenderAppSrvMethod(ctx));
-                aggregateFile.AddWebapiControllerAction(batchUpdate.RenderControllerAction(ctx));
             }
 
             aggregateFile.ExecuteRendering(ctx);
         }
 
         public void GenerateCode(CodeRenderingContext ctx) {
-            // TODO ver.1: 追加更新削除区分のenum(C#, TypeScript)
+            // TODO ver.1: 追加更新削除区分のenum(C#)
         }
     }
 }

@@ -21,7 +21,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
         internal string Render(CodeRenderingContext ctx) {
             var command = new SaveCommand(_aggregate);
             var dbEntity = new EFCoreEntity(_aggregate);
-            var messages = new MessageContainer(_aggregate);
+            var messages = new SaveCommandMessageContainer(_aggregate);
 
             return $$"""
                 #region 更新処理

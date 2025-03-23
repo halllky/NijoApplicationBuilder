@@ -20,42 +20,48 @@ namespace Nijo.Ver1.Models.QueryModelModules {
         /// <summary>
         /// Load処理の戻り値の型の定義をレンダリングします。（C#）
         /// </summary>
-        internal static string RenderLoadReturnType(CodeRenderingContext ctx) {
-            return $$"""
-                using System.Text.Json.Serialization;
+        internal static SourceFile RenderCSharp(CodeRenderingContext ctx) {
+            return new SourceFile {
+                FileName = "LoadReturnType.cs",
+                Contents = $$"""
+                    using System.Text.Json.Serialization;
 
-                namespace {{ctx.Config.RootNamespace}};
+                    namespace {{ctx.Config.RootNamespace}};
 
-                /// <summary>
-                /// 一覧検索処理の戻り値の型
-                /// </summary>
-                public class {{TYPE_CS}}<TDisplayData> {
                     /// <summary>
-                    /// 検索結果のうち現在のページに表示されるもの
+                    /// 一覧検索処理の戻り値の型
                     /// </summary>
-                    [JsonPropertyName("{{CURRENT_PAGE_ITEMS_TS}}")]
-                    public required IReadOnlyList<TDisplayData> {{CURRENT_PAGE_ITEMS_CS}} { get; init; }
-                    /// <summary>
-                    /// 検索結果のトータル件数（検索結果のうち現在のページ以外も含む）
-                    /// </summary>
-                    [JsonPropertyName("{{TOTAL_COUNT_TS}}")]
-                    public required int {{TOTAL_COUNT_CS}} { get; init; }
-                }
-                """;
+                    public class {{TYPE_CS}}<TDisplayData> {
+                        /// <summary>
+                        /// 検索結果のうち現在のページに表示されるもの
+                        /// </summary>
+                        [JsonPropertyName("{{CURRENT_PAGE_ITEMS_TS}}")]
+                        public required IReadOnlyList<TDisplayData> {{CURRENT_PAGE_ITEMS_CS}} { get; init; }
+                        /// <summary>
+                        /// 検索結果のトータル件数（検索結果のうち現在のページ以外も含む）
+                        /// </summary>
+                        [JsonPropertyName("{{TOTAL_COUNT_TS}}")]
+                        public required int {{TOTAL_COUNT_CS}} { get; init; }
+                    }
+                    """,
+            };
         }
         /// <summary>
         /// Load処理の戻り値の型の定義をレンダリングします。（TypeScript）
         /// </summary>
-        internal static string RenderLoadReturnType() {
-            return $$"""
-                /** 一覧検索処理の戻り値の型 */
-                export type {{TYPE_TS}}<TDisplayData> = {
-                  /** 検索結果のうち現在のページに表示されるもの */
-                  {{CURRENT_PAGE_ITEMS_TS}}: TDisplayData[]
-                  /** 検索結果のトータル件数（検索結果のうち現在のページ以外も含む） */
-                  {{TOTAL_COUNT_TS}}: number
-                }
-                """;
+        internal static SourceFile RenderTypeScript() {
+            return new SourceFile {
+                FileName = "load-return-type.ts",
+                Contents = $$"""
+                    /** 一覧検索処理の戻り値の型 */
+                    export type {{TYPE_TS}}<TDisplayData> = {
+                      /** 検索結果のうち現在のページに表示されるもの */
+                      {{CURRENT_PAGE_ITEMS_TS}}: TDisplayData[]
+                      /** 検索結果のトータル件数（検索結果のうち現在のページ以外も含む） */
+                      {{TOTAL_COUNT_TS}}: number
+                    }
+                    """,
+            };
         }
     }
 }

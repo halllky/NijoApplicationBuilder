@@ -49,7 +49,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
                     EscapedPhysicalName = rootAggregate.PhysicalName.Replace("'", "\\'"),
                     Endpoint = controller.GetActionNameForClient(CONTROLLER_ACTION_LOAD),
                     ParamType = searchCondition.TsTypeName,
-                    ReturnType = $"{SearchProcessingReturn.TYPE_TS}<{displayData.TsTypeName}>",
+                    ReturnType = $"Util.{SearchProcessingReturn.TYPE_TS}<{displayData.TsTypeName}>",
                 };
             }).ToArray();
 
@@ -83,7 +83,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
 
         internal string RenderAspNetCoreControllerAction(CodeRenderingContext ctx) {
             var searchCondition = new SearchCondition(_rootAggregate);
-            var searchConditionMessages = new MessageContainer(_rootAggregate);
+            var searchConditionMessages = new SearchConditionMessageContainer(_rootAggregate);
 
             return $$"""
                 /// <summary>

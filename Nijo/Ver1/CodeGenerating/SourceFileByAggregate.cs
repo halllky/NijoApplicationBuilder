@@ -22,7 +22,8 @@ namespace Nijo.Ver1.CodeGenerating {
         private readonly List<string> _appSrvMethods = [];
         private readonly List<string> _csharpClass = [];
         private readonly List<string> _webApiControllerAction = [];
-        private readonly List<string> _typeScriptSource = [];
+        private readonly List<string> _typeScriptTypeDef = [];
+        private readonly List<string> _typeScriptFunctions = [];
 
         public void AddAppSrvMethod(string sourceCode) {
             _appSrvMethods.Add(sourceCode);
@@ -33,29 +34,38 @@ namespace Nijo.Ver1.CodeGenerating {
         public void AddWebapiControllerAction(string sourceCode) {
             _webApiControllerAction.Add(sourceCode);
         }
-        public void AddTypeScriptSource(string sourceCode) {
-            _typeScriptSource.Add(sourceCode);
+        public void AddTypeScriptTypeDef(string sourceCode) {
+            _typeScriptTypeDef.Add(sourceCode);
+        }
+        public void AddTypeScriptFunction(string sourceCode) {
+            _typeScriptFunctions.Add(sourceCode);
         }
 
         public void ExecuteRendering(CodeRenderingContext ctx) {
 
             ctx.CoreLibrary(dir => {
-                dir.Generate(new SourceFile {
-                    FileName = $"{_rootAggregate.PhysicalName.ToFileNameSafe()}.cs",
-                    Contents = RenderCoreLibrary(ctx),
-                });
+                if (_csharpClass.Count > 0 || _appSrvMethods.Count > 0) {
+                    dir.Generate(new SourceFile {
+                        FileName = $"{_rootAggregate.PhysicalName.ToFileNameSafe()}.cs",
+                        Contents = RenderCoreLibrary(ctx),
+                    });
+                }
             });
             ctx.WebapiProject(dir => {
-                dir.Generate(new SourceFile {
-                    FileName = $"{_rootAggregate.PhysicalName.ToFileNameSafe()}.cs",
-                    Contents = RenderWebapi(ctx),
-                });
+                if (_webApiControllerAction.Count > 0) {
+                    dir.Generate(new SourceFile {
+                        FileName = $"{_rootAggregate.PhysicalName.ToFileNameSafe()}.cs",
+                        Contents = RenderWebapi(ctx),
+                    });
+                }
             });
             ctx.ReactProject(dir => {
-                dir.Generate(new SourceFile {
-                    FileName = $"{_rootAggregate.PhysicalName.ToFileNameSafe()}.ts",
-                    Contents = RenderNodeJs(ctx),
-                });
+                if (_typeScriptTypeDef.Count > 0 || _typeScriptFunctions.Count > 0) {
+                    dir.Generate(new SourceFile {
+                        FileName = $"{_rootAggregate.PhysicalName.ToFileNameSafe()}.ts",
+                        Contents = RenderNodeJs(ctx),
+                    });
+                }
             });
         }
 
@@ -139,10 +149,21 @@ namespace Nijo.Ver1.CodeGenerating {
                 {{refTos.SelectTextTemplate(r => $$"""
                 import { {{r.RefTo.TsTypeName}}, {{r.RefTo.TsNewObjectFunction}}, {{r.RefSC.TsTypeName}} } from "{{r.FileName}}"
                 """)}}
-                {{_typeScriptSource.SelectTextTemplate(source => $$"""
 
+                //#region 型定義
+                {{_typeScriptTypeDef.SelectTextTemplate(source => $$"""
                 {{source}}
+
                 """)}}
+                //#endregion 型定義
+
+
+                //#region 関数
+                {{_typeScriptFunctions.SelectTextTemplate(source => $$"""
+                {{source}}
+
+                """)}}
+                //#endregion 関数
                 """;
         }
     }

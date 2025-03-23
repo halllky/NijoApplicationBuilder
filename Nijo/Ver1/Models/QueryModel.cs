@@ -26,19 +26,20 @@ namespace Nijo.Ver1.Models {
             // - TS側オブジェクト作成関数
             var searchCondition = new SearchCondition(rootAggregate);
             aggregateFile.AddCSharpClass(searchCondition.RenderCSharp(ctx));
-            aggregateFile.AddTypeScriptSource(searchCondition.RenderTypeScript(ctx));
+            aggregateFile.AddTypeScriptTypeDef(searchCondition.RenderTypeScript(ctx));
+            aggregateFile.AddTypeScriptFunction(searchCondition.RenderNewObjectFunction());
 
             // データ型: 検索条件メッセージ
-            var searchConditionMessages = new MessageContainer(rootAggregate);
+            var searchConditionMessages = new SearchConditionMessageContainer(rootAggregate);
             aggregateFile.AddCSharpClass(searchConditionMessages.RenderCSharp());
-            aggregateFile.AddTypeScriptSource(searchConditionMessages.RenderTypeScript());
+            aggregateFile.AddTypeScriptTypeDef(searchConditionMessages.RenderTypeScript());
 
             // 処理: 検索条件クラスのURL変換
             // - URL => TS
             // - TS => URL
             var urlConversion = new SearchConditionUrlConversion(searchCondition);
-            aggregateFile.AddTypeScriptSource(urlConversion.ConvertUrlToTypeScript(ctx));
-            aggregateFile.AddTypeScriptSource(urlConversion.ConvertTypeScriptToUrl(ctx));
+            aggregateFile.AddTypeScriptFunction(urlConversion.ConvertUrlToTypeScript(ctx));
+            aggregateFile.AddTypeScriptFunction(urlConversion.ConvertTypeScriptToUrl(ctx));
 
             // データ型: 検索結果クラス
             var searchResult = new SearchResult(rootAggregate);
@@ -53,10 +54,10 @@ namespace Nijo.Ver1.Models {
             var displayData = new DisplayData(rootAggregate);
             aggregateFile.AddCSharpClass(displayData.RenderCSharpDeclaring(ctx));
             aggregateFile.AddCSharpClass(displayData.ConvertSearchResultToDisplayData(ctx));
-            aggregateFile.AddTypeScriptSource(displayData.RenderTypeScriptType(ctx));
-            aggregateFile.AddTypeScriptSource(displayData.RenderUiConstraintType(ctx));
-            aggregateFile.AddTypeScriptSource(displayData.RenderUiConstraintValue(ctx));
-            aggregateFile.AddTypeScriptSource(displayData.RenderTypeScriptObjectCreationFunction(ctx));
+            aggregateFile.AddTypeScriptTypeDef(displayData.RenderTypeScriptType(ctx));
+            aggregateFile.AddTypeScriptTypeDef(displayData.RenderUiConstraintType(ctx));
+            aggregateFile.AddTypeScriptTypeDef(displayData.RenderUiConstraintValue(ctx));
+            aggregateFile.AddTypeScriptFunction(displayData.RenderTypeScriptObjectCreationFunction(ctx));
 
             var deepEquals = new DeepEqual(rootAggregate);
             aggregateFile.AddCSharpClass(deepEquals.RenderTypeScript());
@@ -85,8 +86,8 @@ namespace Nijo.Ver1.Models {
             var refDisplayData = new DisplayDataRefEntry(rootAggregate);
             var searchRefs = new SearchProcessingRefs(rootAggregate);
             aggregateFile.AddCSharpClass(refDisplayData.RenderCsClass(ctx));
-            aggregateFile.AddTypeScriptSource(refDisplayData.RenderTsType(ctx));
-            aggregateFile.AddTypeScriptSource(refDisplayData.RenderTypeScriptObjectCreationFunction(ctx));
+            aggregateFile.AddTypeScriptTypeDef(refDisplayData.RenderTsType(ctx));
+            aggregateFile.AddTypeScriptFunction(refDisplayData.RenderTypeScriptObjectCreationFunction(ctx));
             aggregateFile.AddCSharpClass(searchRefs.RenderAppSrvMethod(ctx));
             aggregateFile.AddCSharpClass(searchRefs.RenderAspNetCoreControllerAction(ctx));
 
@@ -105,7 +106,17 @@ namespace Nijo.Ver1.Models {
         }
 
         public void GenerateCode(CodeRenderingContext ctx) {
-            // メッセージコンテナ
+            // 一覧検索の戻り値の型
+            ctx.CoreLibrary(dir => {
+                dir.Directory("Util", utilDir => {
+                    utilDir.Generate(SearchProcessingReturn.RenderCSharp(ctx));
+                });
+            });
+            ctx.ReactProject(dir => {
+                dir.Directory("util", utilDir => {
+                    utilDir.Generate(SearchProcessingReturn.RenderTypeScript());
+                });
+            });
         }
     }
 }

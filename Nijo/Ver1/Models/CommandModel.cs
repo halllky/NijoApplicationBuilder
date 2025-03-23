@@ -17,18 +17,18 @@ namespace Nijo.Ver1.Models {
             // データ型: パラメータ型定義
             var parameterType = new ParameterType(rootAggregate);
             aggregateFile.AddCSharpClass(parameterType.RenderCSharp(ctx));
-            aggregateFile.AddTypeScriptSource(parameterType.RenderTypeScript(ctx));
-            aggregateFile.AddTypeScriptSource(parameterType.RenderNewObjectFn());
+            aggregateFile.AddTypeScriptTypeDef(parameterType.RenderTypeScript(ctx));
+            aggregateFile.AddTypeScriptFunction(parameterType.RenderNewObjectFn());
 
             // データ型: パラメータ型メッセージ
-            var parameterMessages = new MessageContainer(rootAggregate.GetCommandModelParameterChild());
+            var parameterMessages = new ParameterTypeMessageContainer(rootAggregate);
             aggregateFile.AddCSharpClass(parameterMessages.RenderCSharp());
-            aggregateFile.AddTypeScriptSource(parameterMessages.RenderTypeScript());
+            aggregateFile.AddTypeScriptTypeDef(parameterMessages.RenderTypeScript());
 
             // データ型: 戻り値型定義
             var returnType = new ReturnType(rootAggregate);
             aggregateFile.AddCSharpClass(returnType.RenderCSharp(ctx));
-            aggregateFile.AddTypeScriptSource(returnType.RenderTypeScript(ctx));
+            aggregateFile.AddTypeScriptTypeDef(returnType.RenderTypeScript(ctx));
 
             // 処理: TypeScript用マッピング、Webエンドポイント、本処理抽象メソッド
             var commandProcessing = new CommandProcessing(rootAggregate);

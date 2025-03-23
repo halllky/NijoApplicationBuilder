@@ -26,7 +26,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
             return $$"""
                 /** クエリパラメータを解釈して画面初期表示時検索条件オブジェクトを返します。 */
                 export const {{ParseQueryParameter}} = (urlSearch: string): {{_searchCondition.TsTypeName}} => {
-                  const searchCondition = {{_searchCondition.CreateNewObjectFnName}}()
+                  const searchCondition = {{_searchCondition.TsNewObjectFunction}}()
                   if (!urlSearch) return searchCondition
 
                   const searchParams = new URLSearchParams(urlSearch)

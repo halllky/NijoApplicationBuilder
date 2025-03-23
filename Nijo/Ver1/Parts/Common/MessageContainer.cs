@@ -1,3 +1,4 @@
+using Nijo.Util.DotnetEx;
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
 using System;
@@ -14,39 +15,33 @@ namespace Nijo.Ver1.Parts.Common {
     /// <code>インスタンス.プロパティ名.AddError(メッセージ)</code> のように直感的に書ける、
     /// 無駄なペイロードを避けるためにメッセージが無いときはJSON化されない、といった性質を持つ。
     /// </summary>
-    internal class MessageContainer {
+    internal abstract class MessageContainer {
 
-        internal MessageContainer(AggregateBase aggregate) {
+        protected MessageContainer(AggregateBase aggregate) {
             _aggregate = aggregate;
         }
-        private readonly AggregateBase _aggregate;
+        protected readonly AggregateBase _aggregate;
 
-        internal string CsClassName => $"{_aggregate.PhysicalName}Messages";
-        internal string TsTypeName => $"{_aggregate.PhysicalName}Messages";
+        internal virtual string CsClassName => $"{_aggregate.PhysicalName}Messages";
+        internal virtual string TsTypeName => $"{_aggregate.PhysicalName}Messages";
 
         /// <summary>
-        /// DataModelの場合、ユーザーに対してDataModelの型ではなくQuery/CommandModelの型で通知する必要があるケースがあるため
-        /// DataModel型のインターフェースを実装したQueryModelのメッセージコンテナを使用することがある。
+        /// C#クラスが何らかの基底クラスやインターフェースを実装するなら使う
         /// </summary>
-        private bool UseInterface => _aggregate.GetRoot().Model is Models.DataModel;
-        internal string InterfaceName => UseInterface
-            ? $"I{_aggregate.PhysicalName}Messages"
-            : throw new InvalidOperationException($"{_aggregate}はDataModelではないためメッセージコンテナのインターフェースを使えません。");
+        /// <returns></returns>
+        protected virtual IEnumerable<string> GetCsClassImplements() {
+            yield break;
+        }
 
-        internal string RenderCSharp() {
+        internal virtual string RenderCSharp() {
+            var impl = GetCsClassImplements().ToArray();
+            var implementations = impl.Length == 0 ? "" : $": {impl.Join(", ")}";
+
             return $$"""
-                {{If(UseInterface, () => $$"""
                 /// <summary>
                 /// {{_aggregate.DisplayName}} のデータ構造と対応したメッセージの入れ物
                 /// </summary>
-                public interface {{InterfaceName}} {
-                    // TODO ver.1
-                }
-                """)}}
-                /// <summary>
-                /// <see cref="{{InterfaceName}}"/> のデータ構造と対応したメッセージの入れ物
-                /// </summary>
-                public interface {{CsClassName}} {{(UseInterface ? $": {InterfaceName}" : "")}} {
+                public interface {{CsClassName}} {{implementations}} {
                     // TODO ver.1
                 }
                 """;

@@ -113,11 +113,11 @@ namespace Nijo.Ver1.Models.QueryModelModules {
         /// <summary>
         /// TypeScriptの新規オブジェクト作成関数の名前
         /// </summary>
-        internal string CreateNewObjectFnName => $"createNew{TsTypeName}";
+        internal string TsNewObjectFunction => $"createNew{TsTypeName}";
         internal string RenderNewObjectFunction() {
             return $$"""
                 /** {{_rootAggregate.DisplayName}}の検索条件クラスの空オブジェクトを作成して返します。 */
-                export const {{CreateNewObjectFnName}} = (): {{TsTypeName}} => ({
+                export const {{TsNewObjectFunction}} = (): {{TsTypeName}} => ({
                   {{FILTER_TS}}: {
                     {{WithIndent(FilterRoot.RenderNewObjectFunctionMemberLiteral(), "    ")}}
                   },

@@ -29,34 +29,34 @@ namespace Nijo.Ver1.Models.QueryModelModules {
             var items = queryModels.Select(rootAggregate => {
                 var controller = new AspNetController(rootAggregate);
                 var searchCondition = new SearchCondition(rootAggregate);
-                var displayData = new DisplayData(rootAggregate);
+                var displayData = new DisplayDataRefEntry(rootAggregate);
 
                 return new {
                     EscapedPhysicalName = rootAggregate.PhysicalName.Replace("'", "\\'"),
                     Endpoint = controller.GetActionNameForClient(CONTROLLER_ACTION_LOAD),
                     ParamType = searchCondition.TsTypeName,
-                    ReturnType = $"{SearchProcessingReturn.TYPE_TS}<{displayData.TsTypeName}>",
+                    ReturnType = $"Util.{SearchProcessingReturn.TYPE_TS}<{displayData.TsTypeName}>",
                 };
             }).ToArray();
 
             return $$"""
-                /** 一覧検索処理 */
-                export namespace LoadFeature {
-                  /** 一覧検索処理のURLエンドポイントの一覧 */
+                /** 参照検索処理 */
+                export namespace LoadRefFeature {
+                  /** 参照検索処理のURLエンドポイントの一覧 */
                   export const Endpoint: { [key in {{MappingsForCustomize.QUERY_MODEL_TYPE}}]: string } = {
                 {{items.SelectTextTemplate(x => $$"""
                     '{{x.EscapedPhysicalName}}': '{{x.Endpoint}}',
                 """)}}
                   }
 
-                  /** 一覧検索処理のパラメータ型の一覧 */
+                  /** 参照検索処理のパラメータ型の一覧 */
                   export interface ParamType {
                 {{items.SelectTextTemplate(x => $$"""
                     '{{x.EscapedPhysicalName}}': {{x.ParamType}}
                 """)}}
                   }
 
-                  /** 一覧検索処理の処理結果の型の一覧 */
+                  /** 参照検索処理の処理結果の型の一覧 */
                   export interface ReturnType {
                 {{items.SelectTextTemplate(x => $$"""
                     '{{x.EscapedPhysicalName}}': {{x.ReturnType}}
@@ -69,7 +69,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
 
         internal string RenderAspNetCoreControllerAction(CodeRenderingContext ctx) {
             var searchCondition = new SearchCondition(_rootAggregate);
-            var searchConditionMessages = new MessageContainer(_rootAggregate);
+            var searchConditionMessages = new SearchConditionMessageContainer(_rootAggregate);
 
             return $$"""
                 /// <summary>

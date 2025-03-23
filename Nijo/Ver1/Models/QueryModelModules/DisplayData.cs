@@ -219,11 +219,11 @@ namespace Nijo.Ver1.Models.QueryModelModules {
         /// <summary>
         /// TypeScriptの新規オブジェクト作成関数の名前
         /// </summary>
-        internal string CreateNewObjectFnName => $"createNew{TsTypeName}";
+        internal string TsNewObjectFunction => $"createNew{TsTypeName}";
         internal string RenderTypeScriptObjectCreationFunction(CodeRenderingContext ctx) {
             return $$"""
                 /** {{_aggregate.DisplayName}}の画面表示用データの新しいインスタンスを作成します。 */
-                export const {{CreateNewObjectFnName}} = (): {{TsTypeName}} => ({
+                export const {{TsNewObjectFunction}} = (): {{TsTypeName}} => ({
                   // TODO ver.1
                 })
                 """;

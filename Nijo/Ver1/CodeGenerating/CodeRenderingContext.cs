@@ -127,6 +127,12 @@ namespace Nijo.Ver1.CodeGenerating {
                 Directory.Delete(dir, true);
             }
         }
+        /// <summary>
+        /// 現時点で特定のディレクトリ内に生成されたファイルの一覧を返します。
+        /// </summary>
+        public IEnumerable<string> GetGeneratedFileNames(DirectorySetupper dir) {
+            return _handled.Where(path => dir.Path == Path.GetDirectoryName(path));
+        }
         #endregion ソースコード自動生成で登場しなかった既存ファイルの削除
     }
 }

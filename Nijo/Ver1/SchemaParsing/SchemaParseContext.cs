@@ -258,10 +258,10 @@ namespace Nijo.Ver1.SchemaParsing {
             }
             return null;
         }
-        private IModel DataModel => _dataModel ??= new DataModel();
-        private IModel QueryModel => _queryModel ??= new QueryModel();
-        private IModel CommandModel => _commandModel ??= new CommandModel();
-        private IModel StaticEnumModel => _staticEnumModel ??= new StaticEnumModel();
+        internal IModel DataModel => _dataModel ??= new DataModel();
+        internal IModel QueryModel => _queryModel ??= new QueryModel();
+        internal IModel CommandModel => _commandModel ??= new CommandModel();
+        internal IModel StaticEnumModel => _staticEnumModel ??= new StaticEnumModel();
         private DataModel? _dataModel;
         private QueryModel? _queryModel;
         private CommandModel? _commandModel;

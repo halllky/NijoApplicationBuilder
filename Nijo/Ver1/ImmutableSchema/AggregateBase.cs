@@ -79,8 +79,8 @@ namespace Nijo.Ver1.ImmutableSchema {
         /// この集約の親を返します。
         /// </summary>
         public AggregateBase? GetParent() {
-            if (_xElement.Parent == null) return null;
-            return _ctx.ToAggregateBase(_xElement.Parent, Path);
+            if (_xElement.Parent == _xElement.Document?.Root) return null;
+            return _ctx.ToAggregateBase(_xElement.Parent ?? throw new InvalidOperationException(), Path);
         }
 
         /// <summary>

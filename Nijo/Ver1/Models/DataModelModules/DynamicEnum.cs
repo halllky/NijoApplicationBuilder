@@ -13,7 +13,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
 
         internal static string RenderAppSrvCheckMethod(RootAggregate rootAggregate, CodeRenderingContext ctx) {
             var efCoreEntity = new EFCoreEntity(rootAggregate);
-            var messages = new MessageContainer(rootAggregate);
+            var messages = new SaveCommandMessageContainer(rootAggregate);
 
             return $$"""
                 /// <summary>

@@ -41,11 +41,11 @@ namespace Nijo.Ver1.Models.CommandModelModules {
 
 
         #region クライアント側新規オブジェクト作成関数
-        internal string NewObjectFnName => $"createNew{TsTypeName}Parameter";
+        internal string TsNewObjectFunction => $"createNew{TsTypeName}";
         internal string RenderNewObjectFn() {
             return $$"""
                 /** {{_rootAggregate.DisplayName}}のパラメータオブジェクトの新規作成関数 */
-                export const {{NewObjectFnName}} = (): {{TsTypeName}} => ({
+                export const {{TsNewObjectFunction}} = (): {{TsTypeName}} => ({
                   // TODO ver.1
                 })
                 """;
