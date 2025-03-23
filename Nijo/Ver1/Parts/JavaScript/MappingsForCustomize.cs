@@ -1,5 +1,6 @@
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
+using Nijo.Ver1.Models.CommandModelModules;
 using Nijo.Ver1.Models.QueryModelModules;
 using System;
 using System.Collections.Generic;
@@ -90,6 +91,10 @@ namespace Nijo.Ver1.Parts.JavaScript {
                     //#region 参照検索
                     {{SearchProcessingRefs.RenderTsTypeMap(_queryModels)}}
                     //#endregion 参照検索
+
+                    //#region コマンド
+                    {{CommandProcessing.RenderTsTypeMap(_commandModels)}}
+                    //#endregion コマンド
 
                     //#region 画面遷移用フック（MultiView）
                     //#endregion 画面遷移用フック（MultiView）

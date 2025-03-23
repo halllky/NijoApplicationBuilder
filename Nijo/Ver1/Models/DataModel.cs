@@ -1,6 +1,7 @@
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
 using Nijo.Ver1.Models.DataModelModules;
+using Nijo.Ver1.Parts.Common;
 using Nijo.Ver1.Parts.CSharp;
 using System;
 using System.Collections.Generic;
@@ -33,9 +34,9 @@ namespace Nijo.Ver1.Models {
             aggregateFile.AddCSharpClass(saveCommand.RenderDeleteCommandDeclaring(ctx));
 
             // データ型: SaveCommandメッセージ
-            var saveCommandMessage = new SaveCommandMessage(rootAggregate);
-            aggregateFile.AddCSharpClass(saveCommandMessage.RenderInterfaceDeclaring(ctx));
-            aggregateFile.AddCSharpClass(saveCommandMessage.RenderClassDeclaring(ctx));
+            var saveCommandMessage = new MessageContainer(rootAggregate);
+            aggregateFile.AddCSharpClass(saveCommandMessage.RenderCSharp());
+            aggregateFile.AddTypeScriptSource(saveCommandMessage.RenderTypeScript());
 
             // データ型: ほかの集約から参照されるときのキー
             var refTargetKey = new KeyClass(rootAggregate);

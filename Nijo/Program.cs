@@ -237,16 +237,29 @@ namespace Nijo {
                 File.WriteAllText("nijo.xml", $$"""
                     <?xml version="1.0" encoding="utf-8" ?>
                     <NijoApplicationBuilder>
-                      <参照先 is="data-model generate-default-query-model generate-batch-update-command">
+                      <参照先 is="data-model generate-default-query-model generate-batch-update-command:参照先一括更新">
                         <参照先集約ID is="word key" />
                         <参照先集約名 is="word name" />
                       </参照先>
+
+                      <参照先一括更新 is="command-model">
+                        <Parameter>
+                          <Items is="children">
+                            <参照先集約ID is="word key" />
+                            <参照先集約名 is="word name" />
+                          </Items>
+                        </Parameter>
+                        <ReturnType>
+                        </ReturnType>
+                      </参照先一括更新>
+
                       <参照元 is="data-model">
                         <参照元集約ID is="word key" />
                         <参照元集約名 is="word name" />
                         <参照 is="ref-to:参照先" />
                         <参照元集約名 is="My列挙体" />
                       </参照元>
+
                       <My列挙体 is="enum">
                         <値1 DisplayName="値（1）" key="1" />
                         <値2 key="2" />

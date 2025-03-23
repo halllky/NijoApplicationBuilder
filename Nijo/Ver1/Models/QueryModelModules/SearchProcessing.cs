@@ -83,17 +83,18 @@ namespace Nijo.Ver1.Models.QueryModelModules {
 
         internal string RenderAspNetCoreControllerAction(CodeRenderingContext ctx) {
             var searchCondition = new SearchCondition(_rootAggregate);
+            var searchConditionMessages = new MessageContainer(_rootAggregate);
 
             return $$"""
                 /// <summary>
                 /// {{_rootAggregate.DisplayName}}の一覧検索処理のエンドポイント
                 /// </summary>
                 [HttpPost("{{CONTROLLER_ACTION_LOAD}}")]
-                public IActionResult Load({{ComplexPost.REQUEST_CS}}<{{searchCondition.CsClassName}}> request) {
+                public async Task<IActionResult> Load({{ComplexPost.REQUEST_CS}}<{{searchCondition.CsClassName}}> request) {
                     _applicationService.Log.Debug("Load {{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}");
                     if (_applicationService.GetAuthorizedLevel(E_AuthorizedAction.{{_rootAggregate.PhysicalName}}) == E_AuthLevel.None) return Forbid();
 
-                    var messages = new {{searchCondition.CsMessageClassName}}([]);
+                    var messages = new {{searchConditionMessages.CsClassName}}([]);
                     var context = new {{PresentationContext.CLASS_NAME}}(request.Options, messages);
 
                     // エラーチェック
@@ -103,7 +104,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
                     }
 
                     // 検索処理実行
-                    var returnValue = _applicationService.{{LOAD_METHOD}}(request.Data, context).ToArray();
+                    var returnValue = await _applicationService.{{LOAD_METHOD}}(request.Data, context);
                     return new {{ComplexPost.RESULT_CS}}(context.ToResult(), returnValue);
                 }
                 """;

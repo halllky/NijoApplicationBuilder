@@ -8,16 +8,48 @@ namespace Nijo.Ver1.Models.CommandModelModules {
     /// </summary>
     internal class ParameterType {
         internal ParameterType(RootAggregate aggregate) {
-            _aggregate = aggregate;
+            _rootAggregate = aggregate;
         }
-        private readonly RootAggregate _aggregate;
+        private readonly RootAggregate _rootAggregate;
+
+        internal string CsClassName => $"{_rootAggregate.PhysicalName}Parameter";
+        internal string TsTypeName => $"{_rootAggregate.PhysicalName}Parameter";
 
         internal string RenderCSharp(CodeRenderingContext ctx) {
-            throw new NotImplementedException();
+            var param = _rootAggregate.GetCommandModelParameterChild();
+
+            return $$"""
+                /// <summary>
+                /// {{_rootAggregate.DisplayName}}の実行時にクライアント側から渡される引数
+                /// </summary>
+                public partial class {{CsClassName}} {
+                    // TODO ver.1
+                }
+                """;
         }
 
         internal string RenderTypeScript(CodeRenderingContext ctx) {
-            throw new NotImplementedException();
+            var param = _rootAggregate.GetCommandModelParameterChild();
+
+            return $$"""
+                /** {{_rootAggregate.DisplayName}}の実行時にクライアント側から渡される引数 */
+                export type {{TsTypeName}} = {
+                    // TODO ver.1
+                }
+                """;
         }
+
+
+        #region クライアント側新規オブジェクト作成関数
+        internal string NewObjectFnName => $"createNew{TsTypeName}Parameter";
+        internal string RenderNewObjectFn() {
+            return $$"""
+                /** {{_rootAggregate.DisplayName}}のパラメータオブジェクトの新規作成関数 */
+                export const {{NewObjectFnName}} = (): {{TsTypeName}} => ({
+                  // TODO ver.1
+                })
+                """;
+        }
+        #endregion クライアント側新規オブジェクト作成関数
     }
-} 
+}

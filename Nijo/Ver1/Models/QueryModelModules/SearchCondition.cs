@@ -109,21 +109,6 @@ namespace Nijo.Ver1.Models.QueryModelModules {
         #endregion ソート
 
 
-        #region C#用エラーメッセージ等格納オブジェクト
-        internal string CsMessageClassName => $"{_rootAggregate.PhysicalName}SearchConditionMessages";
-        internal string RenderCSharpMessageClass(CodeRenderingContext ctx) {
-            return $$"""
-                /// <summary>
-                /// {{_rootAggregate.DisplayName}}の検索時の検索条件クラスのエラーメッセージ等格納オブジェクト
-                /// </summary>
-                public class {{CsMessageClassName}} : {{MessageContainer.ABSTRACT_CLASS}} {
-                    // TODO ver.1
-                }
-                """;
-        }
-        #endregion C#用エラーメッセージ等格納オブジェクト
-
-
         #region TypeScript側のオブジェクト新規作成関数
         /// <summary>
         /// TypeScriptの新規オブジェクト作成関数の名前

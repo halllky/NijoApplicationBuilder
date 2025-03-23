@@ -1,5 +1,6 @@
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
+using Nijo.Ver1.Parts.Common;
 using Nijo.Ver1.Parts.CSharp;
 using System;
 
@@ -20,7 +21,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
         internal string Render(CodeRenderingContext ctx) {
             var command = new SaveCommand(_aggregate);
             var dbEntity = new EFCoreEntity(_aggregate);
-            var messages = new SaveCommandMessage(_aggregate);
+            var messages = new MessageContainer(_aggregate);
 
             return $$"""
                 #region 物理削除処理

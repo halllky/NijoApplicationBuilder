@@ -69,6 +69,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
 
         internal string RenderAspNetCoreControllerAction(CodeRenderingContext ctx) {
             var searchCondition = new SearchCondition(_rootAggregate);
+            var searchConditionMessages = new MessageContainer(_rootAggregate);
 
             return $$"""
                 /// <summary>
@@ -79,7 +80,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
                     _applicationService.Log.Debug("Load {{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}");
                     if (_applicationService.GetAuthorizedLevel(E_AuthorizedAction.{{_rootAggregate.PhysicalName}}) == E_AuthLevel.None) return Forbid();
 
-                    var messages = new {{searchCondition.CsMessageClassName}}([]);
+                    var messages = new {{searchConditionMessages.CsClassName}}([]);
                     var context = new {{PresentationContext.CLASS_NAME}}(request.Options, messages);
 
                     // エラーチェック

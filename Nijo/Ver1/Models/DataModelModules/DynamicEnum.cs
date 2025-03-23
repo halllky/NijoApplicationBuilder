@@ -1,5 +1,6 @@
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
+using Nijo.Ver1.Parts.Common;
 using System;
 
 namespace Nijo.Ver1.Models.DataModelModules {
@@ -12,7 +13,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
 
         internal static string RenderAppSrvCheckMethod(RootAggregate rootAggregate, CodeRenderingContext ctx) {
             var efCoreEntity = new EFCoreEntity(rootAggregate);
-            var messages = new SaveCommandMessage(rootAggregate);
+            var messages = new MessageContainer(rootAggregate);
 
             return $$"""
                 /// <summary>

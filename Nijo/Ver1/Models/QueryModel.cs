@@ -1,6 +1,7 @@
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
 using Nijo.Ver1.Models.QueryModelModules;
+using Nijo.Ver1.Parts.Common;
 using Nijo.Ver1.Parts.JavaScript;
 using System;
 using System.Collections.Generic;
@@ -25,8 +26,12 @@ namespace Nijo.Ver1.Models {
             // - TS側オブジェクト作成関数
             var searchCondition = new SearchCondition(rootAggregate);
             aggregateFile.AddCSharpClass(searchCondition.RenderCSharp(ctx));
-            aggregateFile.AddCSharpClass(searchCondition.RenderCSharpMessageClass(ctx));
             aggregateFile.AddTypeScriptSource(searchCondition.RenderTypeScript(ctx));
+
+            // データ型: 検索条件メッセージ
+            var searchConditionMessages = new MessageContainer(rootAggregate);
+            aggregateFile.AddCSharpClass(searchConditionMessages.RenderCSharp());
+            aggregateFile.AddTypeScriptSource(searchConditionMessages.RenderTypeScript());
 
             // 処理: 検索条件クラスのURL変換
             // - URL => TS

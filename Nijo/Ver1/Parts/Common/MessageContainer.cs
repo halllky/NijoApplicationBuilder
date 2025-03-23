@@ -1,4 +1,5 @@
 using Nijo.Ver1.CodeGenerating;
+using Nijo.Ver1.ImmutableSchema;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,6 +15,53 @@ namespace Nijo.Ver1.Parts.Common {
     /// 無駄なペイロードを避けるためにメッセージが無いときはJSON化されない、といった性質を持つ。
     /// </summary>
     internal class MessageContainer {
+
+        internal MessageContainer(AggregateBase aggregate) {
+            _aggregate = aggregate;
+        }
+        private readonly AggregateBase _aggregate;
+
+        internal string CsClassName => $"{_aggregate.PhysicalName}Messages";
+        internal string TsTypeName => $"{_aggregate.PhysicalName}Messages";
+
+        /// <summary>
+        /// DataModelの場合、ユーザーに対してDataModelの型ではなくQuery/CommandModelの型で通知する必要があるケースがあるため
+        /// DataModel型のインターフェースを実装したQueryModelのメッセージコンテナを使用することがある。
+        /// </summary>
+        private bool UseInterface => _aggregate.GetRoot().Model is Models.DataModel;
+        internal string InterfaceName => UseInterface
+            ? $"I{_aggregate.PhysicalName}Messages"
+            : throw new InvalidOperationException($"{_aggregate}はDataModelではないためメッセージコンテナのインターフェースを使えません。");
+
+        internal string RenderCSharp() {
+            return $$"""
+                {{If(UseInterface, () => $$"""
+                /// <summary>
+                /// {{_aggregate.DisplayName}} のデータ構造と対応したメッセージの入れ物
+                /// </summary>
+                public interface {{InterfaceName}} {
+                    // TODO ver.1
+                }
+                """)}}
+                /// <summary>
+                /// <see cref="{{InterfaceName}}"/> のデータ構造と対応したメッセージの入れ物
+                /// </summary>
+                public interface {{CsClassName}} {{(UseInterface ? $": {InterfaceName}" : "")}} {
+                    // TODO ver.1
+                }
+                """;
+        }
+        internal string RenderTypeScript() {
+            return $$"""
+                /** {{_aggregate.DisplayName}} のデータ構造と対応したメッセージの入れ物 */
+                export type {{TsTypeName}} = {
+                    // TODO ver.1
+                }
+                """;
+        }
+
+
+        #region 基底クラス
         internal const string ABSTRACT_CLASS = "DisplayMessageContainerBase";
         internal const string CONCRETE_CLASS = "DisplayMessageContainer";
         internal const string CONCRETE_CLASS_IN_GRID = "DisplayMessageContainerInGrid";
@@ -21,11 +69,9 @@ namespace Nijo.Ver1.Parts.Common {
         internal const string LIST_INTERFACE = "IDisplayMessageContainerList";
 
         /// <summary>
-        /// React hook form ではルート要素自体へのエラーはこの名前で設定される
+        /// 基底クラスのレンダリング
         /// </summary>
-        internal const string ROOT = "root";
-
-        internal static SourceFile RenderCSharp(CodeRenderingContext ctx) => new SourceFile {
+        internal static SourceFile RenderCSharpBaseClass(CodeRenderingContext ctx) => new SourceFile {
             FileName = "MessageReceiver.cs",
             Contents = $$"""
                     using System.Collections;
@@ -148,5 +194,6 @@ namespace Nijo.Ver1.Parts.Common {
                     }
                     """,
         };
+        #endregion 基底クラス
     }
 }

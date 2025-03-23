@@ -102,11 +102,11 @@ namespace Nijo.Ver1.ImmutableSchema {
         /// <summary>
         /// ルート集約を返します。
         /// </summary>
-        internal AggregateBase GetRoot() {
+        internal RootAggregate GetRoot() {
             var ancestor = this;
             while (true) {
                 var parent = ancestor.GetParent();
-                if (parent == null) return ancestor;
+                if (parent == null) return (RootAggregate)ancestor;
                 ancestor = parent;
             }
         }

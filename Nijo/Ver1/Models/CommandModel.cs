@@ -1,6 +1,7 @@
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
 using Nijo.Ver1.Models.CommandModelModules;
+using Nijo.Ver1.Parts.Common;
 using Nijo.Ver1.Parts.JavaScript;
 using System;
 using System.Collections.Generic;
@@ -17,26 +18,22 @@ namespace Nijo.Ver1.Models {
             var parameterType = new ParameterType(rootAggregate);
             aggregateFile.AddCSharpClass(parameterType.RenderCSharp(ctx));
             aggregateFile.AddTypeScriptSource(parameterType.RenderTypeScript(ctx));
+            aggregateFile.AddTypeScriptSource(parameterType.RenderNewObjectFn());
+
+            // データ型: パラメータ型メッセージ
+            var parameterMessages = new MessageContainer(rootAggregate.GetCommandModelParameterChild());
+            aggregateFile.AddCSharpClass(parameterMessages.RenderCSharp());
+            aggregateFile.AddTypeScriptSource(parameterMessages.RenderTypeScript());
 
             // データ型: 戻り値型定義
             var returnType = new ReturnType(rootAggregate);
             aggregateFile.AddCSharpClass(returnType.RenderCSharp(ctx));
             aggregateFile.AddTypeScriptSource(returnType.RenderTypeScript(ctx));
 
-            // データ型: メッセージ型定義
-            var messageType = new MessageType(rootAggregate);
-            aggregateFile.AddCSharpClass(messageType.RenderCSharp(ctx));
-            aggregateFile.AddTypeScriptSource(messageType.RenderTypeScript(ctx));
-
-            // 処理: クライアント側新規オブジェクト作成関数
-            var objectCreation = new ObjectCreation(rootAggregate);
-            aggregateFile.AddTypeScriptSource(objectCreation.RenderTypeScript(ctx));
-
-            // 処理: Reactフック、Webエンドポイント、本処理抽象メソッド
+            // 処理: TypeScript用マッピング、Webエンドポイント、本処理抽象メソッド
             var commandProcessing = new CommandProcessing(rootAggregate);
-            aggregateFile.AddTypeScriptSource(commandProcessing.RenderReactHook(ctx));
-            aggregateFile.AddCSharpClass(commandProcessing.RenderWebEndpoint(ctx));
-            aggregateFile.AddCSharpClass(commandProcessing.RenderAbstractMethod(ctx));
+            aggregateFile.AddCSharpClass(commandProcessing.RenderAspNetCoreControllerAction(ctx));
+            aggregateFile.AddCSharpClass(commandProcessing.RenderAppSrvMethods(ctx));
 
             // カスタムロジック用モジュール
             ctx.Use<MappingsForCustomize>().AddCommandModel(rootAggregate);
@@ -45,7 +42,36 @@ namespace Nijo.Ver1.Models {
         }
 
         public void GenerateCode(CodeRenderingContext ctx) {
-            // 現時点では実装なし
+            // 特になし
+        }
+    }
+
+
+    internal static class CommandModelExtensions {
+        // ルート集約の直下にあり、物理名がこれらである要素は特別な意味を持つ
+        internal const string PARAMETER_PHYSICAL_NAME = "Parameter";
+        internal const string RETURN_VALUE_PHYSICAL_NAME = "ReturnValue";
+
+        /// <summary>
+        /// CommandModelの引数の型が定義された集約を返します。
+        /// 定義されていない場合は例外になります。
+        /// </summary>
+        internal static ChildAggreagte GetCommandModelParameterChild(this RootAggregate rootAggregate) {
+            var param = rootAggregate
+                .GetMembers()
+                .Single(m => m is ChildAggreagte && m.PhysicalName == PARAMETER_PHYSICAL_NAME);
+            return (ChildAggreagte)param;
+        }
+
+        /// <summary>
+        /// CommandModelの戻り値の型が定義された集約を返します。
+        /// 定義されていない場合は例外になります。
+        /// </summary>
+        internal static ChildAggreagte GetCommandModelReturnValueChild(this RootAggregate rootAggregate) {
+            var param = rootAggregate
+                .GetMembers()
+                .Single(m => m is ChildAggreagte && m.PhysicalName == RETURN_VALUE_PHYSICAL_NAME);
+            return (ChildAggreagte)param;
         }
     }
 }
