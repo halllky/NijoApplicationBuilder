@@ -1,7 +1,7 @@
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using Nijo.Ver1.ImmutableSchema;
-using Nijo.Ver1.Parts.Webapi;
+using Nijo.Ver1.Parts.CSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -127,7 +127,7 @@ namespace Nijo.Ver1.CodeGenerating {
                 .Select(@ref => new {
                     FileName = $"./{@ref.RefTo.GetRoot().PhysicalName}",
                     RefTo = new Models.QueryModelModules.DisplayDataRefEntry(@ref.RefTo),
-                    RefSC = new Models.QueryModelModules.SearchConditionRefEntry(@ref.RefTo),
+                    RefSC = new Models.QueryModelModules.SearchCondition.Filter(@ref.RefTo),
                 });
 
             return $$"""
@@ -137,7 +137,7 @@ namespace Nijo.Ver1.CodeGenerating {
                 import * as Util from "../util2"
                 import * as Constraints from "./util/constraints"
                 {{refTos.SelectTextTemplate(r => $$"""
-                import { {{r.RefTo.TsTypeName}}, {{r.RefTo.TsNewObjectFunction}}, {{r.RefSC.TsFilterTypeName}} } from "{{r.FileName}}"
+                import { {{r.RefTo.TsTypeName}}, {{r.RefTo.TsNewObjectFunction}}, {{r.RefSC.TsTypeName}} } from "{{r.FileName}}"
                 """)}}
                 {{_typeScriptSource.SelectTextTemplate(source => $$"""
 

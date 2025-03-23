@@ -24,25 +24,39 @@ namespace Nijo.Ver1.Models.QueryModelModules {
         }
 
         internal string RenderCsClass(CodeRenderingContext ctx) {
-            throw new NotImplementedException();
+            return $$"""
+                /// <summary>
+                /// {{_aggregate}}が他の集約から外部参照されるときの型
+                /// </summary>
+                public virtual class {{CsClassName}} {
+                    // TODO ver.1
+                }
+                """;
         }
         internal string RenderTsType(CodeRenderingContext ctx) {
-            throw new NotImplementedException();
+            return $$"""
+                /**
+                 * {{_aggregate}}が他の集約から外部参照されるときの型
+                 */
+                export type {{TsTypeName}} = {
+                    // TODO ver.1
+                }
+                """;
         }
 
         #region TypeScript側オブジェクト新規作成関数
         public string TsNewObjectFunction => $"createNew{TsTypeName}";
         internal string RenderTypeScriptObjectCreationFunction(CodeRenderingContext ctx) {
-            throw new NotImplementedException();
+            return $$"""
+                /**
+                 * {{_aggregate}}が他の集約から外部参照されるときのオブジェクトを新規作成します。
+                 */
+                export const {{TsNewObjectFunction}} = (): {{TsTypeName}} => ({
+                    // TODO ver.1
+                })
+                """;
         }
         #endregion TypeScript側オブジェクト新規作成関数
-
-
-        #region QueryModelの通常のSearchResultからの変換
-        internal string RenderConvertingFromSearchResult(string instance) {
-            throw new NotImplementedException();
-        }
-        #endregion QueryModelの通常のSearchResultからの変換
 
 
         #region 子孫メンバー

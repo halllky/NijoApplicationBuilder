@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nijo.Ver1.Parts.Core {
+namespace Nijo.Ver1.Parts.CSharp {
     public class DbContextClass : IMultiAggregateSourceFile {
 
         private readonly List<string> _dbSet = [];
@@ -28,7 +28,18 @@ namespace Nijo.Ver1.Parts.Core {
         }
 
         void IMultiAggregateSourceFile.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {
-            // 特になし
+            // DI設定
+            ctx.Use<ApplicationConfigure>().AddCoreMethod(
+                services => $$"""
+                    // DB接続設定
+                    {{services}}.AddScoped(ConfigureDbContext);
+                    """,
+                $$"""
+                    /// <summary>
+                    /// DB接続設定
+                    /// </summary>
+                    protected abstract {{ctx.Config.DbContextName}} ConfigureDbContext(IServiceProvider services);
+                    """);
         }
 
         void IMultiAggregateSourceFile.Render(CodeRenderingContext ctx) {

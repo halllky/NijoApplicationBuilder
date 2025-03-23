@@ -1,6 +1,7 @@
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
 using Nijo.Ver1.Models.CommandModelModules;
+using Nijo.Ver1.Parts.JavaScript;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -36,6 +37,9 @@ namespace Nijo.Ver1.Models {
             aggregateFile.AddTypeScriptSource(commandProcessing.RenderReactHook(ctx));
             aggregateFile.AddCSharpClass(commandProcessing.RenderWebEndpoint(ctx));
             aggregateFile.AddCSharpClass(commandProcessing.RenderAbstractMethod(ctx));
+
+            // カスタムロジック用モジュール
+            ctx.Use<MappingsForCustomize>().AddCommandModel(rootAggregate);
 
             aggregateFile.ExecuteRendering(ctx);
         }

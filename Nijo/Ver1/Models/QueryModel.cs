@@ -1,6 +1,7 @@
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
 using Nijo.Ver1.Models.QueryModelModules;
+using Nijo.Ver1.Parts.JavaScript;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,6 +25,7 @@ namespace Nijo.Ver1.Models {
             // - TS側オブジェクト作成関数
             var searchCondition = new SearchCondition(rootAggregate);
             aggregateFile.AddCSharpClass(searchCondition.RenderCSharp(ctx));
+            aggregateFile.AddCSharpClass(searchCondition.RenderCSharpMessageClass(ctx));
             aggregateFile.AddTypeScriptSource(searchCondition.RenderTypeScript(ctx));
 
             // 処理: 検索条件クラスのURL変換
@@ -55,9 +57,7 @@ namespace Nijo.Ver1.Models {
             aggregateFile.AddCSharpClass(deepEquals.RenderTypeScript());
 
             // 検索処理
-            // - reactフック
-            //   - load
-            //   - loadSingle
+            // - reactは型名マッピングのみ
             // - ASP.NET Core Controller Action
             // - AppSrv
             //   - CreateQuerySource
@@ -65,47 +65,33 @@ namespace Nijo.Ver1.Models {
             //   - Sort
             //   - Paging
             // - 以上がload, count それぞれ
-            var searchProcessing = new SearchProcessing();
-            aggregateFile.AddTypeScriptSource(searchProcessing.RenderReactHookLoad(ctx));
-            aggregateFile.AddTypeScriptSource(searchProcessing.RenderReactHookLoadSingle(ctx));
-            aggregateFile.AddCSharpClass(searchProcessing.RenderAspNetCoreControllerAction(ctx));
-            aggregateFile.AddCSharpClass(searchProcessing.RenderAppSrvCreateQuerySource(ctx));
-            aggregateFile.AddCSharpClass(searchProcessing.RenderAppSrvAppendWhereClause(ctx));
-            aggregateFile.AddCSharpClass(searchProcessing.RenderAppSrvSort(ctx));
-            aggregateFile.AddCSharpClass(searchProcessing.RenderAppSrvPaging(ctx));
-
-            // 一括更新コマンド（画面の自動生成の一機能と位置づけるべきかも）
-            // - Reactフック, ASP.NET Core Action
-            // - abstractメソッド
-            var batchUpdateCommand = new BatchUpdateCommand();
-            aggregateFile.AddTypeScriptSource(batchUpdateCommand.RenderReactHook(ctx));
-            aggregateFile.AddCSharpClass(batchUpdateCommand.RenderAspNetCoreAction(ctx));
-            aggregateFile.AddCSharpClass(batchUpdateCommand.RenderAbstractMethod(ctx));
-
-            // UI用モジュール
-            // - DisplayData等のマッピングオブジェクト
-            // - React Router のURL定義
-            // - ナビゲーション用関数
-            var uiModule = new UiModule();
-            aggregateFile.AddCSharpClass(uiModule.RenderMappingObject(ctx));
-            aggregateFile.AddTypeScriptSource(uiModule.RenderReactRouterUrlDefinition(ctx));
-            aggregateFile.AddCSharpClass(uiModule.RenderNavigationFunction(ctx));
+            var searchProcessing = new SearchProcessing(rootAggregate);
+            aggregateFile.AddWebapiControllerAction(searchProcessing.RenderAspNetCoreControllerAction(ctx));
+            aggregateFile.AddCSharpClass(searchProcessing.RenderAppSrvMethods(ctx));
 
             // RefToモジュール
             // - データ型
             //   - RefDisplayData
             // - TS側オブジェクト作成関数
             // - 検索処理
-            //   - Reactフック
+            //   - Reactは型マッピングのみ
             //   - ASP.NET Core Controller Action
+            //   - ApplicationService
             var refDisplayData = new DisplayDataRefEntry(rootAggregate);
             var searchRefs = new SearchProcessingRefs(rootAggregate);
             aggregateFile.AddCSharpClass(refDisplayData.RenderCsClass(ctx));
             aggregateFile.AddTypeScriptSource(refDisplayData.RenderTsType(ctx));
             aggregateFile.AddTypeScriptSource(refDisplayData.RenderTypeScriptObjectCreationFunction(ctx));
             aggregateFile.AddCSharpClass(searchRefs.RenderAppSrvMethod(ctx));
-            aggregateFile.AddTypeScriptSource(searchRefs.RenderReactHook(ctx));
             aggregateFile.AddCSharpClass(searchRefs.RenderAspNetCoreControllerAction(ctx));
+
+            // UI用モジュール
+            // - DisplayData等のマッピングオブジェクト
+            // - React Router のURL定義
+            // - ナビゲーション用関数
+            // など
+            ctx.Use<MappingsForCustomize>()
+                .AddQueryModel(rootAggregate);
 
             // 権限
             // TODO ver.1

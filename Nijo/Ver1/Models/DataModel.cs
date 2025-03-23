@@ -1,7 +1,7 @@
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
 using Nijo.Ver1.Models.DataModelModules;
-using Nijo.Ver1.Parts.Core;
+using Nijo.Ver1.Parts.CSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -77,7 +77,7 @@ namespace Nijo.Ver1.Models {
         }
 
         public void GenerateCode(CodeRenderingContext ctx) {
-            // TODO: 追加更新削除区分のenum(C#, TypeScript)
+            // TODO ver.1: 追加更新削除区分のenum(C#, TypeScript)
         }
     }
 }

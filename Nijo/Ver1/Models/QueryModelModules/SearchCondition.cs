@@ -2,6 +2,7 @@ using Nijo.Core;
 using Nijo.Util.DotnetEx;
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
+using Nijo.Ver1.Parts.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +10,8 @@ using System.Linq;
 namespace Nijo.Ver1.Models.QueryModelModules {
 
     /// <summary>
-    /// 検索条件クラス
+    /// 検索条件クラス。
+    /// 通常の一覧検索と参照先検索とで共通
     /// </summary>
     internal class SearchCondition {
         internal SearchCondition(RootAggregate rootAggregate) {
@@ -107,6 +109,21 @@ namespace Nijo.Ver1.Models.QueryModelModules {
         #endregion ソート
 
 
+        #region C#用エラーメッセージ等格納オブジェクト
+        internal string CsMessageClassName => $"{_rootAggregate.PhysicalName}SearchConditionMessages";
+        internal string RenderCSharpMessageClass(CodeRenderingContext ctx) {
+            return $$"""
+                /// <summary>
+                /// {{_rootAggregate.DisplayName}}の検索時の検索条件クラスのエラーメッセージ等格納オブジェクト
+                /// </summary>
+                public class {{CsMessageClassName}} : {{MessageContainer.ABSTRACT_CLASS}} {
+                    // TODO ver.1
+                }
+                """;
+        }
+        #endregion C#用エラーメッセージ等格納オブジェクト
+
+
         #region TypeScript側のオブジェクト新規作成関数
         /// <summary>
         /// TypeScriptの新規オブジェクト作成関数の名前
@@ -129,7 +146,8 @@ namespace Nijo.Ver1.Models.QueryModelModules {
 
 
         /// <summary>
-        /// 検索条件クラスの絞り込み条件部分
+        /// 検索条件クラスの絞り込み条件部分。
+        /// 通常の一覧検索と参照先検索とで共通
         /// </summary>
         internal class Filter {
             internal Filter(AggregateBase aggregate) {
@@ -138,6 +156,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
             private readonly AggregateBase _aggregate;
 
             internal virtual string CsClassName => $"{_aggregate.PhysicalName}SearchConditionFilter";
+            internal virtual string TsTypeName => $"{_aggregate.PhysicalName}SearchConditionFilter";
 
             /// <summary>
             /// 検索条件のフィルターに指定できるメンバーを列挙する

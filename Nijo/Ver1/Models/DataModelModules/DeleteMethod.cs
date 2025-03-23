@@ -1,6 +1,6 @@
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
-using Nijo.Ver1.Parts.Core;
+using Nijo.Ver1.Parts.CSharp;
 using System;
 
 namespace Nijo.Ver1.Models.DataModelModules {
@@ -27,7 +27,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 /// <summary>
                 /// {{_aggregate.DisplayName}} の物理削除を実行します。
                 /// </summary>
-                public virtual void {{MethodName}}({{command.CsClassNameDelete}} command, {{messages.InterfaceName}} messages, {{PresentationContext.INTERFACE_NAME}} context) {
+                public virtual void {{MethodName}}({{command.CsClassNameDelete}} command, {{messages.InterfaceName}} messages, {{PresentationContext.CLASS_NAME}} context) {
                     // TODO ver.1
                     throw new NotImplementedException();
                 }
@@ -36,7 +36,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 /// 自動生成されないエラーチェックはここで実装する。
                 /// エラーがあった場合、第3引数のメッセージにエラー内容を格納する。
                 /// </summary>
-                public virtual void {{OnBeforeMethodName}}({{command.CsClassNameDelete}} command, {{dbEntity.CsClassName}} oldValue, {{messages.InterfaceName}} messages, {{PresentationContext.INTERFACE_NAME}} context) {
+                public virtual void {{OnBeforeMethodName}}({{command.CsClassNameDelete}} command, {{dbEntity.CsClassName}} oldValue, {{messages.InterfaceName}} messages, {{PresentationContext.CLASS_NAME}} context) {
                     // このメソッドをオーバーライドして処理を実装してください。
                 }
                 /// <summary>
@@ -48,7 +48,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 /// <item>{{_aggregate.DisplayName}}と常に同期していなければならない外部リソースの更新やメッセージング</item>
                 /// </list>
                 /// </summary>
-                public virtual async Task {{OnAfterMethodName}}({{dbEntity.CsClassName}} newValue, {{dbEntity.CsClassName}} oldValue, {{messages.InterfaceName}} messages, {{PresentationContext.INTERFACE_NAME}} context) {
+                public virtual async Task {{OnAfterMethodName}}({{dbEntity.CsClassName}} newValue, {{dbEntity.CsClassName}} oldValue, {{messages.InterfaceName}} messages, {{PresentationContext.CLASS_NAME}} context) {
                     // このメソッドをオーバーライドして処理を実装してください。
                 }
                 #endregion 物理削除処理

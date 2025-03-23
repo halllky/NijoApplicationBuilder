@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nijo.Ver1.Parts.Webapi {
+namespace Nijo.Ver1.Parts.CSharp {
     public class AspNetController {
         public AspNetController(RootAggregate rootAggregate) {
             _rootAggregate = rootAggregate;
