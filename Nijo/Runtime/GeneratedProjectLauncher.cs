@@ -12,12 +12,16 @@ using System.Threading.Tasks;
 
 namespace Nijo.Runtime {
     public class GeneratedProjectLauncher : IDisposable {
-        internal GeneratedProjectLauncher(GeneratedProject project, ILogger logger) {
-            _project = project;
+        internal GeneratedProjectLauncher(string webapiProjectRoot, Uri webapiServerUrl, string reactProjectRoot, ILogger logger) {
+            _webapiProjectRoot = webapiProjectRoot;
+            _webapiServerUrl = webapiServerUrl;
+            _reactProjectRoot = reactProjectRoot;
             _logger = logger;
         }
 
-        private readonly GeneratedProject _project;
+        private readonly string _webapiProjectRoot;
+        private readonly Uri _webapiServerUrl;
+        private readonly string _reactProjectRoot;
         private readonly ILogger _logger;
         private readonly object _lock = new object();
 
@@ -38,12 +42,12 @@ namespace Nijo.Runtime {
                     throw new InvalidOperationException("プロセスは既に開始されています。");
 
                 // dotnet run が実行されるポートを npm に連携する
-                var envFile = new EnvFile(_project, _logger);
+                var envFile = new EnvFile(_webapiServerUrl, _reactProjectRoot, _logger);
                 envFile.Overwrite();
 
                 // npm run dev
                 _npmRun = new Process();
-                _npmRun.StartInfo.WorkingDirectory = _project.ReactProject.ProjectRoot;
+                _npmRun.StartInfo.WorkingDirectory = _reactProjectRoot;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                     _npmRun.StartInfo.FileName = "powershell";
                     _npmRun.StartInfo.Arguments = "/c \"npm run dev\"";
@@ -65,7 +69,7 @@ namespace Nijo.Runtime {
 
                 // dotnet run
                 _dotnetRun = new Process();
-                _dotnetRun.StartInfo.WorkingDirectory = _project.WebApiProject.ProjectRoot;
+                _dotnetRun.StartInfo.WorkingDirectory = _webapiProjectRoot;
                 _dotnetRun.StartInfo.FileName = "dotnet";
                 _dotnetRun.StartInfo.Arguments = "run --launch-profile https";
                 _dotnetRun.StartInfo.RedirectStandardOutput = true;

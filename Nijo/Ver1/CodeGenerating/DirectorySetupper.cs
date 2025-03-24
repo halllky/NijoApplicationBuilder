@@ -34,6 +34,11 @@ namespace Nijo.Ver1.CodeGenerating {
 
         public void Generate(SourceFile sourceFile) {
             var fullpath = System.IO.Path.GetFullPath(System.IO.Path.Combine(Path, sourceFile.FileName));
+
+            if (_ctx.IsHandled(fullpath)) {
+                throw new InvalidOperationException($"同じファイルを2回以上レンダリングしようとしました: {fullpath}");
+            }
+
             _ctx.Handle(fullpath);
 
             var dir = System.IO.Path.GetDirectoryName(fullpath);

@@ -288,12 +288,12 @@ namespace Nijo {
         /// プロジェクトの検査を行います。結果は戻り値ではなくログに出力されます。
         /// </summary>
         public async Task<bool> CompilerCheck(CancellationToken cancellationToken) {
-            var builder = new Runtime.GeneratedProjectBuilder(this, _log);
+            var builder = new Runtime.GeneratedProjectBuilder(WebApiProject.ProjectRoot, ReactProject.ProjectRoot, _log);
             return await builder.StaticCheck(cancellationToken);
         }
 
         public Runtime.GeneratedProjectLauncher CreateLauncher() {
-            return new Runtime.GeneratedProjectLauncher(this, _log);
+            return new Runtime.GeneratedProjectLauncher(WebApiProject.ProjectRoot, WebApiProject.GetDebugUrl(), ReactProject.ProjectRoot, _log);
         }
     }
 }

@@ -11,12 +11,14 @@ using System.Threading.Tasks;
 
 namespace Nijo.Runtime {
     internal class GeneratedProjectBuilder {
-        internal GeneratedProjectBuilder(GeneratedProject project, ILogger logger) {
-            _project = project;
+        internal GeneratedProjectBuilder(string webapiProjectRoot, string reactProjectRoot, ILogger logger) {
+            _webapiProjectRoot = webapiProjectRoot;
+            _reactProjectRoot = reactProjectRoot;
             _logger = logger;
         }
 
-        private readonly GeneratedProject _project;
+        private readonly string _webapiProjectRoot;
+        private readonly string _reactProjectRoot;
         private readonly ILogger _logger;
 
         /// <summary>
@@ -26,7 +28,7 @@ namespace Nijo.Runtime {
             var npmRun = new Process();
             var dotnetRun = new Process();
             try {
-                npmRun.StartInfo.WorkingDirectory = _project.ReactProject.ProjectRoot;
+                npmRun.StartInfo.WorkingDirectory = _reactProjectRoot;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                     npmRun.StartInfo.FileName = "powershell";
                     npmRun.StartInfo.Arguments = "/c \"npm run tsc\"";
@@ -46,7 +48,7 @@ namespace Nijo.Runtime {
                 npmRun.BeginErrorReadLine();
                 _logger.LogInformation("npm build   : Started. PID {PID}", npmRun.Id);
 
-                dotnetRun.StartInfo.WorkingDirectory = _project.WebApiProject.ProjectRoot;
+                dotnetRun.StartInfo.WorkingDirectory = _webapiProjectRoot;
                 dotnetRun.StartInfo.FileName = "dotnet";
                 dotnetRun.StartInfo.Arguments = "build";
                 dotnetRun.StartInfo.RedirectStandardOutput = true;

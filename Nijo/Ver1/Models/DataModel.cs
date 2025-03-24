@@ -65,7 +65,7 @@ namespace Nijo.Ver1.Models {
 
             // QueryModelと全く同じ型の場合はそれぞれのモデルのソースも生成
             if (rootAggregate.GenerateDefaultQueryModel) {
-                new QueryModel().GenerateCode(ctx, rootAggregate);
+                QueryModel.GenerateCode(ctx, rootAggregate, aggregateFile);
             }
 
             aggregateFile.ExecuteRendering(ctx);

@@ -12,7 +12,7 @@
     },
     "nijo ver.1": {
       "commandName": "Project",
-      "commandLineArgs": "generate-20250315"
+      "commandLineArgs": "generate"
     }
   }
 }

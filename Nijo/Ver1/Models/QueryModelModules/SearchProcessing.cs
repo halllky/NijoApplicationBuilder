@@ -116,6 +116,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
             var displayData = new DisplayData(_rootAggregate);
 
             return $$"""
+                #region 検索
                 /// <summary>
                 /// {{_rootAggregate.DisplayName}}の検索条件の内容を検証します。
                 /// 不正な場合、検索処理自体の実行が中止されます。
@@ -205,6 +206,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
                 protected virtual void {{SET_KEYS_READONLY}}({{displayData.CsClassName}} displayData) {
                     // TODO ver.1
                 }
+                #endregion 検索
                 """;
         }
     }

@@ -44,7 +44,7 @@ namespace Nijo.Ver1.Parts.CSharp {
 
         void IMultiAggregateSourceFile.Render(CodeRenderingContext ctx) {
             ctx.CoreLibrary(dir => {
-                dir.Directory("EntityFrameworkCore", efcoreDir => {
+                dir.Directory("Util", efcoreDir => {
                     efcoreDir.Generate(Render(ctx));
                 });
             });

@@ -26,7 +26,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
         internal string RenderCsClass(CodeRenderingContext ctx) {
             return $$"""
                 /// <summary>
-                /// {{_aggregate}}が他の集約から外部参照されるときの型
+                /// {{_aggregate.DisplayName}}が他の集約から外部参照されるときの型
                 /// </summary>
                 public virtual class {{CsClassName}} {
                     // TODO ver.1
@@ -36,7 +36,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
         internal string RenderTsType(CodeRenderingContext ctx) {
             return $$"""
                 /**
-                 * {{_aggregate}}が他の集約から外部参照されるときの型
+                 * {{_aggregate.DisplayName}}が他の集約から外部参照されるときの型
                  */
                 export type {{TsTypeName}} = {
                     // TODO ver.1
@@ -49,7 +49,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
         internal string RenderTypeScriptObjectCreationFunction(CodeRenderingContext ctx) {
             return $$"""
                 /**
-                 * {{_aggregate}}が他の集約から外部参照されるときのオブジェクトを新規作成します。
+                 * {{_aggregate.DisplayName}}が他の集約から外部参照されるときのオブジェクトを新規作成します。
                  */
                 export const {{TsNewObjectFunction}} = (): {{TsTypeName}} => ({
                     // TODO ver.1

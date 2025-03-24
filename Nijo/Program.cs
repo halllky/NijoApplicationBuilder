@@ -224,61 +224,94 @@ namespace Nijo {
 
             // *************************** ver.1.0.000 ***************************
 
+            // コード自動生成
             var generate = new Command(
-                name: "generate-20250315",
+                name: "generate",
                 description: "ソースコードの自動生成を実行します。")
                 { path };
-            generate.SetHandler(path => {
-
-                // *****************************
-                // あらかたできるまではダミーXMLを使用
-                if (!Directory.Exists("20250315")) Directory.CreateDirectory("20250315");
-                Directory.SetCurrentDirectory("20250315");
-                File.WriteAllText("nijo.xml", $$"""
-                    <?xml version="1.0" encoding="utf-8" ?>
-                    <NijoApplicationBuilder>
-                      <参照先 is="data-model generate-default-query-model generate-batch-update-command:参照先一括更新" LatinName="Master Data 01">
-                        <参照先集約ID is="word key" />
-                        <参照先集約名 is="word name" />
-                      </参照先>
-
-                      <参照先一括更新 is="command-model" LatinName="Batch Update Master Data 01">
-                        <Parameter is="child">
-                          <Items is="children">
-                            <参照先集約ID is="word key" />
-                            <参照先集約名 is="word name" />
-                          </Items>
-                        </Parameter>
-                        <ReturnType is="child">
-                        </ReturnType>
-                      </参照先一括更新>
-
-                      <参照元 is="data-model" LatinName="Transaction Data 01">
-                        <参照元集約ID is="word key" />
-                        <参照元集約名 is="word name" />
-                        <参照 is="ref-to:参照先" />
-                        <参照元集約名 is="My列挙体" />
-                      </参照元>
-
-                      <My列挙体 is="enum">
-                        <値1 DisplayName="値（1）" key="1" />
-                        <値2 key="2" />
-                      </My列挙体>
-                    </NijoApplicationBuilder>
-                    """, new UTF8Encoding(false, false));
-                // *****************************
-
-                var projectRoot = path == null
-                    ? Directory.GetCurrentDirectory()
-                    : Path.Combine(Directory.GetCurrentDirectory(), path);
-                var logger = ILoggerExtension.CreateConsoleLogger();
-
-                var project = new Ver1.GeneratedProject(projectRoot, logger);
-                project.GenerateCode();
-            }, path);
+            generate.SetHandler(Generate, path);
             rootCommand.AddCommand(generate);
 
+            // デバッグ実行開始
+            var run = new Command(
+                name: "run",
+                description: "プロジェクトのデバッグを開始します。")
+                { path, noBuild };
+            run.SetHandler(Run, path, noBuild);
+            rootCommand.AddCommand(run);
+
             return rootCommand;
+        }
+
+
+        /// <summary>
+        /// ソースコードの自動生成を実行します。
+        /// </summary>
+        /// <param name="path">対象フォルダまでの相対パス</param>
+        private static void Generate(string? path) {
+            var projectRoot = path == null
+                ? Directory.GetCurrentDirectory()
+                : Path.Combine(Directory.GetCurrentDirectory(), path);
+            var logger = ILoggerExtension.CreateConsoleLogger();
+            var project = new Ver1.GeneratedProject(projectRoot, logger);
+
+            project.GenerateCode();
+        }
+
+
+        /// <summary>
+        /// 対象プロジェクトのデバッグ実行を開始します。
+        /// </summary>
+        /// <param name="path">対象フォルダまでの相対パス</param>
+        /// <param name="noBuild">ソースコードの自動生成をスキップする場合はtrue</param>
+        private static void Run(string? path, bool noBuild) {
+            var projectRoot = path == null
+                ? Directory.GetCurrentDirectory()
+                : Path.Combine(Directory.GetCurrentDirectory(), path);
+            var logger = ILoggerExtension.CreateConsoleLogger();
+            var project = new Ver1.GeneratedProject(projectRoot, logger);
+
+            var firstLaunch = true;
+            while (true) {
+                logger.LogInformation("-----------------------------------------------");
+                logger.LogInformation("デバッグを開始します。キーボードのQで終了します。それ以外のキーでリビルドします。");
+
+                var reactServerUrl = project.GetConfig().ReactDebuggingUrl;
+                using var launcher = new Runtime.GeneratedProjectLauncher(project.WebapiProjectRoot, new Uri(reactServerUrl), project.ReactProjectRoot, logger);
+                try {
+                    if (!noBuild) {
+                        project.GenerateCode();
+                    }
+
+                    launcher.Launch();
+                    launcher.WaitForReady();
+
+                    // 初回ビルド時はブラウザ立ち上げ
+                    if (firstLaunch) {
+                        try {
+                            var launchBrowser = new Process();
+                            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                                launchBrowser.StartInfo.FileName = "cmd";
+                                launchBrowser.StartInfo.Arguments = $"/c \"start {reactServerUrl}\"";
+                            } else {
+                                launchBrowser.StartInfo.FileName = "open";
+                                launchBrowser.StartInfo.Arguments = reactServerUrl;
+                            }
+                            launchBrowser.Start();
+                            launchBrowser.WaitForExit();
+                        } catch (Exception ex) {
+                            logger.LogError("Fail to launch browser: {msg}", ex.Message);
+                        }
+                        firstLaunch = false;
+                    }
+                } catch (Exception ex) {
+                    logger.LogError("{msg}", ex.ToString());
+                }
+
+                // キー入力待機
+                var input = Console.ReadKey(true);
+                if (input.Key == ConsoleKey.Q) break;
+            }
         }
     }
 }

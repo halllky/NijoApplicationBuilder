@@ -32,8 +32,8 @@ namespace Nijo.Ver1.Models {
 
             // 処理: TypeScript用マッピング、Webエンドポイント、本処理抽象メソッド
             var commandProcessing = new CommandProcessing(rootAggregate);
-            aggregateFile.AddCSharpClass(commandProcessing.RenderAspNetCoreControllerAction(ctx));
-            aggregateFile.AddCSharpClass(commandProcessing.RenderAppSrvMethods(ctx));
+            aggregateFile.AddWebapiControllerAction(commandProcessing.RenderAspNetCoreControllerAction(ctx));
+            aggregateFile.AddAppSrvMethod(commandProcessing.RenderAppSrvMethods(ctx));
 
             // カスタムロジック用モジュール
             ctx.Use<MappingsForCustomize>().AddCommandModel(rootAggregate);

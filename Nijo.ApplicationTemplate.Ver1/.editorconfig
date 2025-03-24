@@ -1,0 +1,24 @@
+root = true
+
+[*.cs]
+end_of_line = crlf
+charset = utf-8-bom
+indent_size = 4
+brace_style = end_of_line
+trim_trailing_whitespace = true
+insert_final_newline = true
+csharp_new_line_before_open_brace = never
+csharp_new_line_before_else = false
+csharp_new_line_before_catch = false
+csharp_new_line_before_finally = false
+csharp_new_line_before_members_in_object_initializers = false
+csharp_new_line_before_members_in_anonymous_types = false
+csharp_new_line_between_query_expression_clauses = false
+
+[*.{js,jsx,ts,tsx,cjs,css,html,xml,json,gitignore,md}]
+end_of_line = lf
+charset = utf-8
+indent_size = 2
+brace_style = end_of_line
+trim_trailing_whitespace = true
+insert_final_newline = true

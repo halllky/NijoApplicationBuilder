@@ -17,7 +17,11 @@ namespace Nijo.Ver1.Models {
     internal class QueryModel : IModel {
         public void GenerateCode(CodeRenderingContext ctx, RootAggregate rootAggregate) {
             var aggregateFile = new SourceFileByAggregate(rootAggregate);
+            GenerateCode(ctx, rootAggregate, aggregateFile);
+            aggregateFile.ExecuteRendering(ctx);
+        }
 
+        internal static void GenerateCode(CodeRenderingContext ctx, RootAggregate rootAggregate, SourceFileByAggregate aggregateFile) {
             // データ型: 検索条件クラス
             // - CS
             // - TS
@@ -53,14 +57,14 @@ namespace Nijo.Ver1.Models {
             // - 変換処理: SearchResult => DisplayData
             var displayData = new DisplayData(rootAggregate);
             aggregateFile.AddCSharpClass(displayData.RenderCSharpDeclaring(ctx));
-            aggregateFile.AddCSharpClass(displayData.ConvertSearchResultToDisplayData(ctx));
+            aggregateFile.AddAppSrvMethod(displayData.ConvertSearchResultToDisplayData(ctx));
             aggregateFile.AddTypeScriptTypeDef(displayData.RenderTypeScriptType(ctx));
             aggregateFile.AddTypeScriptTypeDef(displayData.RenderUiConstraintType(ctx));
             aggregateFile.AddTypeScriptTypeDef(displayData.RenderUiConstraintValue(ctx));
             aggregateFile.AddTypeScriptFunction(displayData.RenderTypeScriptObjectCreationFunction(ctx));
 
             var deepEquals = new DeepEqual(rootAggregate);
-            aggregateFile.AddCSharpClass(deepEquals.RenderTypeScript());
+            aggregateFile.AddTypeScriptFunction(deepEquals.RenderTypeScript());
 
             // 検索処理
             // - reactは型名マッピングのみ
@@ -73,7 +77,7 @@ namespace Nijo.Ver1.Models {
             // - 以上がload, count それぞれ
             var searchProcessing = new SearchProcessing(rootAggregate);
             aggregateFile.AddWebapiControllerAction(searchProcessing.RenderAspNetCoreControllerAction(ctx));
-            aggregateFile.AddCSharpClass(searchProcessing.RenderAppSrvMethods(ctx));
+            aggregateFile.AddAppSrvMethod(searchProcessing.RenderAppSrvMethods(ctx));
 
             // RefToモジュール
             // - データ型
@@ -88,8 +92,8 @@ namespace Nijo.Ver1.Models {
             aggregateFile.AddCSharpClass(refDisplayData.RenderCsClass(ctx));
             aggregateFile.AddTypeScriptTypeDef(refDisplayData.RenderTsType(ctx));
             aggregateFile.AddTypeScriptFunction(refDisplayData.RenderTypeScriptObjectCreationFunction(ctx));
-            aggregateFile.AddCSharpClass(searchRefs.RenderAppSrvMethod(ctx));
-            aggregateFile.AddCSharpClass(searchRefs.RenderAspNetCoreControllerAction(ctx));
+            aggregateFile.AddAppSrvMethod(searchRefs.RenderAppSrvMethod(ctx));
+            aggregateFile.AddWebapiControllerAction(searchRefs.RenderAspNetCoreControllerAction(ctx));
 
             // UI用モジュール
             // - DisplayData等のマッピングオブジェクト
@@ -101,8 +105,6 @@ namespace Nijo.Ver1.Models {
 
             // 権限
             // TODO ver.1
-
-            aggregateFile.ExecuteRendering(ctx);
         }
 
         public void GenerateCode(CodeRenderingContext ctx) {

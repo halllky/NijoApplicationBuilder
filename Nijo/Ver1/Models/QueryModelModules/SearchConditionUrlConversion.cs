@@ -47,7 +47,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
         internal string ConvertTypeScriptToUrl(CodeRenderingContext ctx) {
             return $$"""
                 /** 画面初期表示時検索条件オブジェクトをクエリパラメータに変換します。結果は第2引数のオブジェクト内に格納されます。 */
-                export const {{ToQueryParameter}} = (searchCondition: {{_searchCondition.TsTypeName}}, URLSearchParams searchParams): void => {
+                export const {{ToQueryParameter}} = (searchCondition: {{_searchCondition.TsTypeName}}, searchParams: URLSearchParams): void => {
                   searchParams.append('{{URL_FILTER}}', JSON.stringify(searchCondition.{{SearchCondition.FILTER_TS}}))
                   if (searchCondition.{{SearchCondition.SORT_TS}} && searchCondition.{{SearchCondition.SORT_TS}}.length > 0) searchParams.append('{{URL_SORT}}', JSON.stringify(searchCondition.{{SearchCondition.SORT_TS}}))
                   if (searchCondition.{{SearchCondition.TAKE_TS}} !== undefined) searchParams.append('{{URL_TAKE}}', searchCondition.{{SearchCondition.TAKE_TS}}.toString())

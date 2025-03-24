@@ -102,6 +102,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
             var displayData = new DisplayDataRefEntry(_rootAggregate);
 
             return $$"""
+                #region 参照検索
                 /// <summary>
                 /// {{_rootAggregate.DisplayName}}の検索条件の内容を検証します。
                 /// 不正な場合、検索処理自体の実行が中止されます。
@@ -180,6 +181,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
                     // 読み込み後処理がある場合はここで実装してください。
                     return currentPageItems;
                 }
+                #endregion 参照検索
                 """;
         }
     }
