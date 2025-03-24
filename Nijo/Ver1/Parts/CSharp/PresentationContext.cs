@@ -31,7 +31,7 @@ namespace Nijo.Ver1.Parts.CSharp {
                     /// </summary>
                     public sealed class {{CLASS_NAME}} {
                         /// <inheritdoc cref="{{CLASS_NAME}}"/>
-                        public {{CLASS_NAME}}({{OPTIONS}} options, {{MessageContainer.ABSTRACT_CLASS}} messageContainerRoot) {
+                        public {{CLASS_NAME}}({{OPTIONS}} options, {{MessageContainer.INTERFACE}} messageContainerRoot) {
                             Options = options;
                             Messages = messageContainerRoot;
                         }
@@ -50,7 +50,7 @@ namespace Nijo.Ver1.Parts.CSharp {
                         /// <summary>
                         /// パラメータの各値に対するメッセージ。エラーや警告など。
                         /// </summary>
-                        public {{MessageContainer.ABSTRACT_CLASS}} Messages { get; }
+                        public {{MessageContainer.INTERFACE}} Messages { get; }
 
                         public void AddError(string message) => Messages.AddError(message);
                         public void AddWarn(string message) => Messages.AddWarn(message);
@@ -110,20 +110,20 @@ namespace Nijo.Ver1.Parts.CSharp {
                         /// <summary>
                         /// トーストメッセージ
                         /// </summary>
-                        publid required string? ToastMessage { get; init; }
+                        public required string? ToastMessage { get; init; }
                         /// <summary>
                         /// パラメータの各値に対するメッセージ。エラーや警告など。
                         /// </summary>
-                        publid required {{MessageContainer.ABSTRACT_CLASS}}? ParamMessage { get; init; }
+                        public required {{MessageContainer.INTERFACE}}? ParamMessage { get; init; }
                         /// <summary>
                         /// 確認メッセージ
                         /// </summary>
-                        public List<string> Confirms { get; init; }
+                        public required List<string> Confirms { get; init; }
 
                         [Obsolete("ToastMessageに変更されました。")]
                         public string? Summary => ToastMessage;
                         [Obsolete("ParamMessageに変更されました。")]
-                        public string? Details => ParamMessage;
+                        public {{MessageContainer.INTERFACE}}? Details => ParamMessage;
                     }
                     """,
             };

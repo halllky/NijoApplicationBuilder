@@ -16,19 +16,27 @@ namespace Nijo.Ver1.Parts.CSharp {
 
 
         #region Add
-        private readonly List<(Func<string, string> ConfigureServices, string AbstractMethod)> _core = [];
+        private readonly List<Func<string, string>> _coreConfigureServices = [];
+        private readonly List<string> _coreMethods = [];
         private readonly List<string> _webapi = [];
         private readonly List<Func<string, string>> _addControllers = [];
+
+        /// <summary>
+        /// ConfigureServicesに生成されるソースコード。
+        /// 引数は <see cref="Microsoft.Extensions.DependencyInjection.IServiceCollection"/> のインスタンスの名前。
+        /// </summary>
+        public ApplicationConfigure AddCoreConfigureServices(Func<string, string> render) {
+            _coreConfigureServices.Add(render);
+            return this;
+        }
         /// <summary>
         /// Coreプロジェクトのアプリケーション起動時に実行される設定処理にメソッド等を追加します。
         /// </summary>
         /// <param name="configureServices">
-        /// ConfigureServicesに生成されるソースコード。
-        /// 引数は <see cref="Microsoft.Extensions.DependencyInjection.IServiceCollection"/> のインスタンスの名前。
         /// </param>
         /// <param name="abstractMethodSource">クラス直下にレンダリングされるソースコード</param>
-        public ApplicationConfigure AddCoreMethod(Func<string, string> configureServices, string abstractMethodSource) {
-            _core.Add((configureServices, abstractMethodSource));
+        public ApplicationConfigure AddCoreMethod(string sourceCode) {
+            _coreMethods.Add(sourceCode);
             return this;
         }
         /// <summary>
@@ -67,10 +75,8 @@ namespace Nijo.Ver1.Parts.CSharp {
             return new SourceFile {
                 FileName = "DefaultConfiguration.cs",
                 Contents = $$"""
-                    using Microsoft.Extensions.Configuration;
                     using Microsoft.Extensions.DependencyInjection;
                     using NLog;
-                    using NLog.Web;
 
                     namespace {{ctx.Config.RootNamespace}};
 
@@ -84,14 +90,14 @@ namespace Nijo.Ver1.Parts.CSharp {
                         /// DI設定
                         /// </summary>
                         public void ConfigureServices(IServiceCollection services) {
-                    {{_core.SelectTextTemplate(x => $$"""
+                    {{_coreConfigureServices.SelectTextTemplate(render => $$"""
 
-                            {{WithIndent(x.ConfigureServices("services"), "        ")}}
+                            {{WithIndent(render("services"), "        ")}}
                     """)}}
                         }
-                    {{_core.SelectTextTemplate(x => $$"""
+                    {{_coreMethods.SelectTextTemplate(source => $$"""
 
-                        {{WithIndent(x.AbstractMethod, "    ")}}
+                        {{WithIndent(source, "    ")}}
                     """)}}
                     }
                     """,
@@ -102,6 +108,7 @@ namespace Nijo.Ver1.Parts.CSharp {
             return new SourceFile {
                 FileName = "DefaultConfigurer.cs",
                 Contents = $$"""
+                    using Microsoft.AspNetCore.Mvc.ModelBinding;
                     using Microsoft.Extensions.DependencyInjection;
                     using Microsoft.Extensions.Logging;
 

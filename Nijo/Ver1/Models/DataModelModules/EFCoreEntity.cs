@@ -38,9 +38,9 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 """;
         }
 
-        internal string RenderOnModelCreatingCalling(CodeRenderingContext ctx) {
-            return $$"""
-                {{CsClassName}}.{{ON_MODEL_CREATING}}(modelBuilder);
+        internal Func<string, string> RenderOnModelCreatingCalling(CodeRenderingContext ctx) {
+            return modelBuidler => $$"""
+                {{CsClassName}}.{{ON_MODEL_CREATING}}({{modelBuidler}});
                 """;
         }
     }

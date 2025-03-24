@@ -22,12 +22,12 @@ namespace Nijo.Ver1.Parts.CSharp {
 
         void IMultiAggregateSourceFile.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {
             // DI設定
-            ctx.Use<ApplicationConfigure>().AddCoreMethod(
-                services => $$"""
+            ctx.Use<ApplicationConfigure>()
+                .AddCoreConfigureServices(services => $$"""
                     // 実行時設定ファイル
                     {{services}}.AddScoped(ConfigureApplicationSettings);
-                    """,
-                $$"""
+                    """)
+                .AddCoreMethod($$"""
                     /// <summary>
                     /// 実行時設定をどこから参照するかの定義。
                     /// </summary>

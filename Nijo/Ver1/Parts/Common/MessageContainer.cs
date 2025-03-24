@@ -34,14 +34,14 @@ namespace Nijo.Ver1.Parts.Common {
         }
 
         internal virtual string RenderCSharp() {
-            var impl = GetCsClassImplements().ToArray();
-            var implementations = impl.Length == 0 ? "" : $": {impl.Join(", ")}";
+            var impl = new List<string>() { CONCRETE_CLASS };
+            impl.AddRange(GetCsClassImplements());
 
             return $$"""
                 /// <summary>
                 /// {{_aggregate.DisplayName}} のデータ構造と対応したメッセージの入れ物
                 /// </summary>
-                public interface {{CsClassName}} {{implementations}} {
+                public class {{CsClassName}} : {{impl.Join(", ")}} {
                     // TODO ver.1
                 }
                 """;
@@ -57,17 +57,16 @@ namespace Nijo.Ver1.Parts.Common {
 
 
         #region 基底クラス
-        internal const string ABSTRACT_CLASS = "DisplayMessageContainerBase";
-        internal const string CONCRETE_CLASS = "DisplayMessageContainer";
-        internal const string CONCRETE_CLASS_IN_GRID = "DisplayMessageContainerInGrid";
-        internal const string CONCRETE_CLASS_LIST = "DisplayMessageContainerList";
-        internal const string LIST_INTERFACE = "IDisplayMessageContainerList";
+        internal const string INTERFACE = "IMessageContainer";
+        internal const string INTERFACE_LIST = "IMessageContainerList";
+        internal const string CONCRETE_CLASS = "MessageContainer";
+        internal const string CONCRETE_CLASS_LIST = "MessageContainerList";
 
         /// <summary>
         /// 基底クラスのレンダリング
         /// </summary>
         internal static SourceFile RenderCSharpBaseClass(CodeRenderingContext ctx) => new SourceFile {
-            FileName = "MessageReceiver.cs",
+            FileName = "MessageContainer.cs",
             Contents = $$"""
                     using System.Collections;
                     using System.Text.Json;
@@ -75,13 +74,48 @@ namespace Nijo.Ver1.Parts.Common {
 
                     namespace {{ctx.Config.RootNamespace}};
 
+                    #region インターフェース
                     /// <summary>
                     /// 登録処理などで生じたエラーメッセージなどをHTTPレスポンスとして返すまでの入れ物
                     /// </summary>
-                    public abstract partial class {{ABSTRACT_CLASS}} {
-                        /// <inheritdoc cref="{{ABSTRACT_CLASS}}">
+                    public interface {{INTERFACE}} {
+                        /// <summary>エラーメッセージを付加します。</summary>
+                        void AddError(string message);
+                        /// <summary>警告メッセージを付加します。</summary>
+                        void AddWarn(string message);
+                        /// <summary>インフォメーションメッセージを付加します。</summary>
+                        void AddInfo(string message);
+
+                        /// <summary>このインスタンスまたはこのインスタンスの子孫が1件以上エラーを持っているか否かを返します。</summary>
+                        bool HasError();
+                        /// <summary>このインスタンスの直近の子を列挙します。</summary>
+                        IEnumerable<{{INTERFACE}}> EnumerateChildren();
+
+                        /// <summary>このインスタンスの子孫を列挙します。</summary>
+                        public IEnumerable<{{INTERFACE}}> EnumerateDescendants() {
+                            foreach (var child in EnumerateChildren()) {
+                                yield return child;
+
+                                foreach (var desc in child.EnumerateDescendants()) {
+                                    yield return desc;
+                                }
+                            }
+                        }
+                    }
+                    /// <summary>
+                    /// 登録処理などで生じたエラーメッセージなどをHTTPレスポンスとして返すまでの入れ物の配列
+                    /// </summary>
+                    public interface {{INTERFACE_LIST}}<out T> : {{INTERFACE}}, IReadOnlyList<T> where T : {{INTERFACE}} {
+                    }
+                    #endregion インターフェース
+
+
+                    #region 具象クラス
+                    /// <inheritdoc cref="{{INTERFACE}}">
+                    public partial class {{CONCRETE_CLASS}} : {{INTERFACE}} {
+                        /// <inheritdoc cref="{{INTERFACE}}">
                         /// <param name="path">オブジェクトルートからこのインスタンスまでのパス</param>
-                        public {{ABSTRACT_CLASS}}(IEnumerable<string> path) {
+                        public {{CONCRETE_CLASS}}(IEnumerable<string> path) {
                             _path = path;
                         }
                         private readonly IEnumerable<string> _path;
@@ -106,46 +140,18 @@ namespace Nijo.Ver1.Parts.Common {
                         /// <summary>このインスタンスまたはこのインスタンスの子孫が1件以上エラーを持っているか否かを返します。</summary>
                         public bool HasError() {
                             if (_errors.Count > 0) return true;
-                            if (EnumerateDescendants().Any(container => container.HasError())) return true;
+                            if ((({{INTERFACE}})this).EnumerateDescendants().Any(container => container.HasError())) return true;
                             return false;
                         }
 
                         /// <summary>このインスタンスの直近の子を列挙します。</summary>
-                        public abstract IEnumerable<{{ABSTRACT_CLASS}}> EnumerateChildren();
-
-                        /// <summary>このインスタンスの子孫を列挙します。</summary>
-                        public IEnumerable<{{ABSTRACT_CLASS}}> EnumerateDescendants() {
-                            foreach (var child in EnumerateChildren()) {
-                                yield return child;
-
-                                foreach (var desc in child.EnumerateDescendants()) {
-                                    yield return desc;
-                                }
-                            }
-                        }
-                    }
-
-                    /// <summary>
-                    /// <see cref="{{ABSTRACT_CLASS}}"/> のもっとも単純な実装。
-                    /// どの項目でエラーが発生したのかの情報に興味がなく、
-                    /// とにかく何でもよいのでエラーの内容さえ捕捉できればよいという状況下で使う。
-                    /// </summary>
-                    public partial class {{CONCRETE_CLASS}} : {{ABSTRACT_CLASS}} {
-                        public {{CONCRETE_CLASS}}() : base([]) { }
-
-                        public override IEnumerable<{{ABSTRACT_CLASS}}> EnumerateChildren() {
+                        public virtual IEnumerable<{{INTERFACE}}> EnumerateChildren() {
                             yield break;
                         }
                     }
 
-                    /// <summary>
-                    /// 登録処理などで生じたエラーメッセージなどをHTTPレスポンスとして返すまでの入れ物の配列
-                    /// </summary>
-                    public interface {{LIST_INTERFACE}}<out T> : {{ABSTRACT_CLASS}}, IReadOnlyList<T> where T : {{ABSTRACT_CLASS}} {
-                    }
-
-                    /// <inheritdoc cref="{{LIST_INTERFACE}}"/>
-                    public partial class {{CONCRETE_CLASS_LIST}}<T> : {{ABSTRACT_CLASS}}, {{LIST_INTERFACE}}<T> where T : {{ABSTRACT_CLASS}} {
+                    /// <inheritdoc cref="{{INTERFACE_LIST}}"/>
+                    public partial class {{CONCRETE_CLASS_LIST}}<T> : {{CONCRETE_CLASS}}, {{INTERFACE_LIST}}<T> where T : {{INTERFACE}} {
                         public {{CONCRETE_CLASS_LIST}}(IEnumerable<string> path, Func<int, T> createItem) : base(path) {
                             _createItem = createItem;
                         }
@@ -183,10 +189,11 @@ namespace Nijo.Ver1.Parts.Common {
                             return GetEnumerator();
                         }
 
-                        public override IEnumerable<{{ABSTRACT_CLASS}}> EnumerateChildren() {
-                            return this.Cast<{{ABSTRACT_CLASS}}>();
+                        public override IEnumerable<{{INTERFACE}}> EnumerateChildren() {
+                            return this.Cast<{{INTERFACE}}>();
                         }
                     }
+                    #endregion 具象クラス
                     """,
         };
         #endregion 基底クラス

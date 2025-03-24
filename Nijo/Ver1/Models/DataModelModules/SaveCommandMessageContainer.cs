@@ -27,7 +27,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 /// <summary>
                 /// {{_aggregate.DisplayName}} のデータ構造と対応したメッセージの入れ物
                 /// </summary>
-                public interface {{InterfaceName}} {
+                public interface {{InterfaceName}} : {{MessageContainer.INTERFACE}} {
                     // TODO ver.1
                 }
 
