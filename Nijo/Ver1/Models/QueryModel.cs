@@ -2,7 +2,6 @@ using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
 using Nijo.Ver1.Models.QueryModelModules;
 using Nijo.Ver1.Parts.Common;
-using Nijo.Ver1.Parts.JavaScript;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,9 +33,12 @@ namespace Nijo.Ver1.Models {
             aggregateFile.AddTypeScriptFunction(searchCondition.RenderNewObjectFunction());
 
             // データ型: 検索条件メッセージ
-            var searchConditionMessages = new SearchConditionMessageContainer(rootAggregate);
-            aggregateFile.AddCSharpClass(searchConditionMessages.RenderCSharp());
-            aggregateFile.AddTypeScriptTypeDef(searchConditionMessages.RenderTypeScript());
+            // DataModelの場合はDataModelのメッセージコンテナとクラス名もデータ構造も重複するのでレンダリングしない
+            if (rootAggregate.Model is not DataModel) {
+                var searchConditionMessages = new SearchConditionMessageContainer(rootAggregate);
+                aggregateFile.AddCSharpClass(searchConditionMessages.RenderCSharp());
+                aggregateFile.AddTypeScriptTypeDef(searchConditionMessages.RenderTypeScript());
+            }
 
             // 処理: 検索条件クラスのURL変換
             // - URL => TS
@@ -57,7 +59,6 @@ namespace Nijo.Ver1.Models {
             // - 変換処理: SearchResult => DisplayData
             var displayData = new DisplayData(rootAggregate);
             aggregateFile.AddCSharpClass(displayData.RenderCSharpDeclaring(ctx));
-            aggregateFile.AddAppSrvMethod(displayData.ConvertSearchResultToDisplayData(ctx));
             aggregateFile.AddTypeScriptTypeDef(displayData.RenderTypeScriptType(ctx));
             aggregateFile.AddTypeScriptTypeDef(displayData.RenderUiConstraintType(ctx));
             aggregateFile.AddTypeScriptTypeDef(displayData.RenderUiConstraintValue(ctx));
@@ -100,7 +101,7 @@ namespace Nijo.Ver1.Models {
             // - React Router のURL定義
             // - ナビゲーション用関数
             // など
-            ctx.Use<MappingsForCustomize>()
+            ctx.Use<CommandQueryMappings>()
                 .AddQueryModel(rootAggregate);
 
             // 権限

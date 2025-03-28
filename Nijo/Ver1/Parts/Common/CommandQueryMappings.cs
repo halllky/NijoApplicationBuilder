@@ -7,27 +7,32 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Nijo.Ver1.Parts.JavaScript {
+namespace Nijo.Ver1.Parts.Common {
     /// <summary>
-    /// UI用モジュール。
-    /// QueryModelの種類を表す文字列をキーにしてそれと対応するオブジェクトや関数を返すマッピング定義。
+    /// カスタマイズ用のマッピングモジュール。
+    /// JavaScript向けには、QueryModelやCommandModelの種類を表す文字列をキーにしてそれと対応するオブジェクトや関数を返すマッピング定義。
+    /// C#向けには、QueryModelやCommandModelの種類を表すenum。
     /// </summary>
-    internal class MappingsForCustomize : IMultiAggregateSourceFile {
+    internal class CommandQueryMappings : IMultiAggregateSourceFile {
 
         /// <summary>
-        /// QueryModelの型名のリテラル型
+        /// JavaScript用: QueryModelの型名のリテラル型
         /// </summary>
         internal const string QUERY_MODEL_TYPE = "QueryModelType";
         /// <summary>
-        /// CommandModelの型名のリテラル型
+        /// JavaScript用: CommandModelの型名のリテラル型
         /// </summary>
         internal const string COMMAND_MODEL_TYPE = "CommandModelType";
+        /// <summary>
+        /// C#用: QueryModel, CommandModelの種類を表すenum
+        /// </summary>
+        internal const string E_COMMAND_QUERY_TYPE = "E_CommandQueryType";
 
-        internal MappingsForCustomize AddQueryModel(RootAggregate rootAggregate) {
+        internal CommandQueryMappings AddQueryModel(RootAggregate rootAggregate) {
             _queryModels.Add(rootAggregate);
             return this;
         }
-        internal MappingsForCustomize AddCommandModel(RootAggregate rootAggregate) {
+        internal CommandQueryMappings AddCommandModel(RootAggregate rootAggregate) {
             _commandModels.Add(rootAggregate);
             return this;
         }
@@ -39,12 +44,40 @@ namespace Nijo.Ver1.Parts.JavaScript {
         }
 
         void IMultiAggregateSourceFile.Render(CodeRenderingContext ctx) {
+            ctx.CoreLibrary(dir => {
+                dir.Directory("Util", utilDir => {
+                    utilDir.Generate(RenderCSharp(ctx));
+                });
+            });
             ctx.ReactProject(dir => {
-                dir.Generate(Render(ctx));
+                dir.Generate(RenderTypeScript(ctx));
             });
         }
 
-        private SourceFile Render(CodeRenderingContext ctx) {
+        private SourceFile RenderCSharp(CodeRenderingContext ctx) {
+            var values = _queryModels.Concat(_commandModels);
+
+            return new SourceFile {
+                FileName = "E_CommandQueryType.cs",
+                Contents = $$"""
+                    using System.ComponentModel.DataAnnotations;
+
+                    namespace {{ctx.Config.RootNamespace}};
+
+                    /// <summary>
+                    /// CommandModel, QueryModel の種類を表すenum
+                    /// </summary>
+                    public enum {{E_COMMAND_QUERY_TYPE}} {
+                    {{values.SelectTextTemplate(agg => $$"""
+                        [Display(Name = "{{agg.DisplayName.Replace("\"", "\\\"")}}")]
+                        {{agg.PhysicalName}},
+                    """)}}
+                    }
+                    """,
+            };
+        }
+
+        private SourceFile RenderTypeScript(CodeRenderingContext ctx) {
 
             // import {} from "..." で他ファイルからインポートするモジュールを決める
             var imports = new List<(string ImportFrom, string[] Modules)>();
@@ -85,7 +118,7 @@ namespace Nijo.Ver1.Parts.JavaScript {
                     import { {{x.Modules.Join(", ")}} } from "{{x.ImportFrom}}"
                     """)}}
 
-                    //#region Query,Commandの種類の一覧
+                    //#region Command,Queryの種類の一覧
 
                     /** QueryModelの種類の一覧 */
                     export type {{QUERY_MODEL_TYPE}}
@@ -107,8 +140,8 @@ namespace Nijo.Ver1.Parts.JavaScript {
                     """)}}
                     """)}}
 
-                    /** QuerModel, CommandModelの種類の一覧 */
-                    export type QueryOrCommandModelType = {{QUERY_MODEL_TYPE}} | {{COMMAND_MODEL_TYPE}}
+                    /** CommandModel, QuerModel の種類の一覧 */
+                    export type CommandOrQueryModelType = {{QUERY_MODEL_TYPE}} | {{COMMAND_MODEL_TYPE}}
 
                     /** QueryModelの種類の一覧を文字列として返します。 */     
                     export const getQueryModelTypeList = (): {{QUERY_MODEL_TYPE}}[] => [
@@ -124,12 +157,12 @@ namespace Nijo.Ver1.Parts.JavaScript {
                     """)}}
                     ]
 
-                    /** QuerModel, CommandModelの種類の一覧を文字列として返します。 */
-                    export const getQueryOrCommandModelTypeList = (): QueryOrCommandModelType[] => [
+                    /** CommandModel, QuerModel の種類の一覧を文字列として返します。 */
+                    export const getCommandOrQueryModelTypeList = (): QueryOrCommandModelType[] => [
                       ...getQueryModelTypeList(),
                       ...getCommandModelTypeList(),
                     ]
-                    //#endregion Query,Commandの種類の一覧
+                    //#endregion Command,Queryの種類の一覧
 
 
                     //#region QueryModelのモジュールの型マッピング

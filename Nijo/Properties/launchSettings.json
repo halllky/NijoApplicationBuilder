@@ -9,10 +9,6 @@
       "commandLineArgs": "ui --port 8081 --no-browser",
       "workingDirectory": "..\\自動テストで作成されたプロジェクト",
       "hotReloadEnabled": true
-    },
-    "nijo ver.1": {
-      "commandName": "Project",
-      "commandLineArgs": "generate"
     }
   }
 }

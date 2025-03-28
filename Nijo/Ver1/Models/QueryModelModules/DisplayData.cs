@@ -229,22 +229,5 @@ namespace Nijo.Ver1.Models.QueryModelModules {
                 """;
         }
         #endregion TypeScript新規オブジェクト作成関数
-
-
-        /// <summary>
-        /// <see cref="SearchResult"/> のインスタンスを <see cref="DisplayData"/> のインスタンスに変換する処理
-        /// </summary>
-        internal string ConvertSearchResultToDisplayData(CodeRenderingContext ctx) {
-            var searchResult = new SearchResult(_aggregate);
-
-            return $$"""
-                /// <summary>
-                /// {{_aggregate.DisplayName}}の検索結果を画面表示用データに変換します。
-                /// </summary>
-                protected virtual {{CsClassName}} ToDisplayData({{searchResult.CsClassName}} searchResult) {
-                    throw new NotImplementedException(); // TODO ver.1
-                }
-                """;
-        }
     }
 }

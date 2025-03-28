@@ -118,13 +118,19 @@ namespace Nijo.Ver1.CodeGenerating {
                 /// </summary>
                 [ApiController]
                 [Route("{{controller.Route}}")]
-                public partial class {{controller.CsClassName}} : ControllerBase {
-                    public {{controller.CsClassName}}({{ApplicationService.CONCRETE_CLASS}} applicationService) {
+                internal partial class {{controller.CsClassName}} : ControllerBase {
+                    internal {{controller.CsClassName}}({{ApplicationService.ABSTRACT_CLASS}} applicationService, {{ApplicationConfigure.ABSTRACT_CLASS_WEBAPI}} webConfigure) {
                         _applicationService = applicationService;
+                        _webConfigure = webConfigure;
                     }
-                    protected readonly {{ApplicationService.CONCRETE_CLASS}} _applicationService;
+                    /// <summary>アプリケーションサービス</summary>
+                    private readonly {{ApplicationService.ABSTRACT_CLASS}} _applicationService;
+                    /// <summary>WebApiプロジェクトの設定処理</summary>
+                    private readonly {{ApplicationConfigure.ABSTRACT_CLASS_WEBAPI}} _webConfigure;
+                {{_webApiControllerAction.SelectTextTemplate(source => $$"""
 
-                    {{WithIndent(_webApiControllerAction, "        ")}}
+                    {{WithIndent(source, "    ")}}
+                """)}}
                 }
                 """;
         }

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<NijoApplicationBuilder>
+<NijoApplicationBuilder RootNamespace="MyApp">
   <参照先 is="data-model generate-default-query-model generate-batch-update-command:参照先一括更新" LatinName="Master Data 01">
     <参照先集約ID is="word key" />
     <参照先集約名 is="word name" />

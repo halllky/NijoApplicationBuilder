@@ -108,6 +108,8 @@ namespace Nijo.Ver1.Parts.CSharp {
             return new SourceFile {
                 FileName = "DefaultConfigurer.cs",
                 Contents = $$"""
+                    using Microsoft.AspNetCore.Mvc;
+                    using Microsoft.AspNetCore.Mvc.Filters;
                     using Microsoft.AspNetCore.Mvc.ModelBinding;
                     using Microsoft.Extensions.DependencyInjection;
                     using Microsoft.Extensions.Logging;

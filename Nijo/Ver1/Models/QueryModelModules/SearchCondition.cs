@@ -40,6 +40,11 @@ namespace Nijo.Ver1.Models.QueryModelModules {
                 /// </summary>
                 public partial class {{CsClassName}} {
                     // TODO ver.1
+
+                    /// <summary>ページングに使用。検索結果のうち先頭から何件スキップするか。</summary>
+                    public int? {{SKIP_CS}} { get; set; }
+                    /// <summary>ページングに使用。検索結果のうち先頭から何件抽出するか。</summary>
+                    public int? {{TAKE_CS}} { get; set; }
                 }
                 """;
         }
@@ -49,6 +54,10 @@ namespace Nijo.Ver1.Models.QueryModelModules {
                 /** {{_rootAggregate.DisplayName}}の検索時の検索条件の型。 */
                 export type {{TsTypeName}} = {
                     // TODO ver.1
+                    /** ページングに使用。検索結果のうち先頭から何件スキップするか。 */
+                    {{SKIP_TS}}?: number
+                    /** ページングに使用。検索結果のうち先頭から何件抽出するか。 */
+                    {{TAKE_TS}}?: number
                 }
                 """;
         }

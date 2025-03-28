@@ -28,7 +28,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
                 /// <summary>
                 /// {{_aggregate.DisplayName}}が他の集約から外部参照されるときの型
                 /// </summary>
-                public virtual class {{CsClassName}} {
+                public partial class {{CsClassName}} {
                     // TODO ver.1
                 }
                 """;

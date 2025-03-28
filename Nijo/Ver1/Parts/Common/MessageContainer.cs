@@ -42,6 +42,9 @@ namespace Nijo.Ver1.Parts.Common {
                 /// {{_aggregate.DisplayName}} のデータ構造と対応したメッセージの入れ物
                 /// </summary>
                 public class {{CsClassName}} : {{impl.Join(", ")}} {
+                    public {{CsClassName}}(IEnumerable<string> path) : base(path) {
+                    }
+
                     // TODO ver.1
                 }
                 """;
@@ -61,6 +64,9 @@ namespace Nijo.Ver1.Parts.Common {
         internal const string INTERFACE_LIST = "IMessageContainerList";
         internal const string CONCRETE_CLASS = "MessageContainer";
         internal const string CONCRETE_CLASS_LIST = "MessageContainerList";
+
+        /// <summary>既定のクラスを探して返すstaticメソッド</summary>
+        internal const string GET_DEFAULT_CLASS = "GetDefaultClass";
 
         /// <summary>
         /// 基底クラスのレンダリング
@@ -100,6 +106,17 @@ namespace Nijo.Ver1.Parts.Common {
                                     yield return desc;
                                 }
                             }
+                        }
+
+                        /// <summary>このインスタンスをJsonNode型に変換します。</summary>
+                        JsonObject ToJsonObject();
+
+
+                        /// <summary>
+                        /// 引数のメッセージのコンテナの形と対応する既定のインスタンスを作成して返します。
+                        /// </summary>
+                        public static T {{GET_DEFAULT_CLASS}}<T>() where T : {{INTERFACE}} {
+                            throw new NotImplementedException(); // TODO ver.1
                         }
                     }
                     /// <summary>
@@ -147,6 +164,11 @@ namespace Nijo.Ver1.Parts.Common {
                         /// <summary>このインスタンスの直近の子を列挙します。</summary>
                         public virtual IEnumerable<{{INTERFACE}}> EnumerateChildren() {
                             yield break;
+                        }
+
+                        /// <summary>このインスタンスをJsonNode型に変換します。</summary>
+                        public JsonObject ToJsonObject() {
+                            throw new NotImplementedException(); // TODO ver.1
                         }
                     }
 

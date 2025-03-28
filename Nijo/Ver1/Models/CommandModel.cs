@@ -2,7 +2,6 @@ using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
 using Nijo.Ver1.Models.CommandModelModules;
 using Nijo.Ver1.Parts.Common;
-using Nijo.Ver1.Parts.JavaScript;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -36,7 +35,7 @@ namespace Nijo.Ver1.Models {
             aggregateFile.AddAppSrvMethod(commandProcessing.RenderAppSrvMethods(ctx));
 
             // カスタムロジック用モジュール
-            ctx.Use<MappingsForCustomize>().AddCommandModel(rootAggregate);
+            ctx.Use<CommandQueryMappings>().AddCommandModel(rootAggregate);
 
             aggregateFile.ExecuteRendering(ctx);
         }
