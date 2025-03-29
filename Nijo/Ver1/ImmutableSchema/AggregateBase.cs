@@ -185,8 +185,8 @@ namespace Nijo.Ver1.ImmutableSchema {
             return obj is AggregateBase agg
                 && agg._xElement == this._xElement;
         }
-        public static bool operator ==(AggregateBase left, AggregateBase right) => ReferenceEquals(left, null) ? ReferenceEquals(right, null) : left.Equals(right);
-        public static bool operator !=(AggregateBase left, AggregateBase right) => !(left == right);
+        public static bool operator ==(AggregateBase? left, AggregateBase? right) => ReferenceEquals(left, null) ? ReferenceEquals(right, null) : left.Equals(right);
+        public static bool operator !=(AggregateBase? left, AggregateBase? right) => !(left == right);
         #endregion 等価比較
 
         public override string ToString() {

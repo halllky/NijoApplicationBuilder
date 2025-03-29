@@ -73,8 +73,8 @@ namespace Nijo.Ver1.ImmutableSchema {
             return obj is ValueMember vm
                 && vm._xElement == this._xElement;
         }
-        public static bool operator ==(ValueMember left, ValueMember right) => ReferenceEquals(left, null) ? ReferenceEquals(right, null) : left.Equals(right);
-        public static bool operator !=(ValueMember left, ValueMember right) => !(left == right);
+        public static bool operator ==(ValueMember? left, ValueMember? right) => ReferenceEquals(left, null) ? ReferenceEquals(right, null) : left.Equals(right);
+        public static bool operator !=(ValueMember? left, ValueMember? right) => !(left == right);
         #endregion 等価比較
 
         public override string ToString() {

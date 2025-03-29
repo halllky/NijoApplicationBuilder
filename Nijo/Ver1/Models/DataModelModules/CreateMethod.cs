@@ -9,31 +9,31 @@ namespace Nijo.Ver1.Models.DataModelModules {
     /// 新規登録処理
     /// </summary>
     internal class CreateMethod {
-        internal CreateMethod(AggregateBase aggregate) {
-            _aggregate = aggregate;
+        internal CreateMethod(RootAggregate rootAggregate) {
+            _rootAggregate = rootAggregate;
         }
-        private readonly AggregateBase _aggregate;
+        private readonly RootAggregate _rootAggregate;
 
-        internal string MethodName => $"Create{_aggregate.PhysicalName}Async";
-        internal string OnBeforeMethodName => $"OnBeforeCreate{_aggregate.PhysicalName}";
-        internal string OnAfterMethodName => $"OnAfterCreate{_aggregate.PhysicalName}Async";
+        internal string MethodName => $"Create{_rootAggregate.PhysicalName}Async";
+        internal string OnBeforeMethodName => $"OnBeforeCreate{_rootAggregate.PhysicalName}";
+        internal string OnAfterMethodName => $"OnAfterCreate{_rootAggregate.PhysicalName}Async";
 
         internal string Render(CodeRenderingContext ctx) {
-            var command = new SaveCommand(_aggregate);
-            var dbEntity = new EFCoreEntity(_aggregate);
-            var messages = new SaveCommandMessageContainer(_aggregate);
+            var command = new SaveCommand(_rootAggregate);
+            var dbEntity = new EFCoreEntity(_rootAggregate);
+            var messages = new SaveCommandMessageContainer(_rootAggregate);
 
             return $$"""
                 #region 新規登録処理
                 /// <summary>
-                /// {{_aggregate.DisplayName}} の新規登録を実行します。
+                /// {{_rootAggregate.DisplayName}} の新規登録を実行します。
                 /// </summary>
                 public virtual async Task {{MethodName}}({{command.CsClassNameCreate}} command, {{messages.InterfaceName}} messages, {{PresentationContext.INTERFACE}} context) {
                     // TODO ver.1
                     throw new NotImplementedException();
                 }
                 /// <summary>
-                /// {{_aggregate.DisplayName}} の新規登録の確定前に実行される処理。
+                /// {{_rootAggregate.DisplayName}} の新規登録の確定前に実行される処理。
                 /// 自動生成されないエラーチェックはここで実装する。
                 /// エラーがあった場合、第2引数のメッセージにエラー内容を格納する。
                 /// </summary>
@@ -41,12 +41,12 @@ namespace Nijo.Ver1.Models.DataModelModules {
                     // このメソッドをオーバーライドして処理を実装してください。
                 }
                 /// <summary>
-                /// {{_aggregate.DisplayName}} の新規登録のSQL発行後、コミット前に実行される処理。
-                /// このメソッドの中で例外が送出された場合、{{_aggregate.DisplayName}} の新規登録はロールバックされる。
+                /// {{_rootAggregate.DisplayName}} の新規登録のSQL発行後、コミット前に実行される処理。
+                /// このメソッドの中で例外が送出された場合、{{_rootAggregate.DisplayName}} の新規登録はロールバックされる。
                 /// このメソッドで実装される想定としているものの例は以下。
                 /// <list>
-                /// <item>{{_aggregate.DisplayName}}と常に同期していなければならないリードレプリカの更新</item>
-                /// <item>{{_aggregate.DisplayName}}と常に同期していなければならない外部リソースの更新やメッセージング</item>
+                /// <item>{{_rootAggregate.DisplayName}}と常に同期していなければならないリードレプリカの更新</item>
+                /// <item>{{_rootAggregate.DisplayName}}と常に同期していなければならない外部リソースの更新やメッセージング</item>
                 /// </list>
                 /// </summary>
                 public virtual async Task {{OnAfterMethodName}}({{dbEntity.CsClassName}} newValue, {{messages.InterfaceName}} messages, {{PresentationContext.INTERFACE}} context) {
