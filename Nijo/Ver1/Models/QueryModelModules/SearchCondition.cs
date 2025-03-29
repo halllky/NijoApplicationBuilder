@@ -256,8 +256,8 @@ namespace Nijo.Ver1.Models.QueryModelModules {
                     yield return FILTER_TS;
                 }
 
-                foreach (var path in vm.Path.GetFullPathFromEntry()) {
-                    yield return path;
+                foreach (var node in vm.GetFullPathFromEntry()) {
+                    yield return node.XElement.Name.LocalName; // LocalNameでよいかどうかは不明
                 }
             }
             /// <summary>

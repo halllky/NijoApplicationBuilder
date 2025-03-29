@@ -1,3 +1,4 @@
+using Nijo.Util.DotnetEx;
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.SchemaParsing;
 using System;
@@ -11,21 +12,26 @@ namespace Nijo.Ver1.ImmutableSchema {
     /// <summary>
     /// モデルの属性のうち、xxxID, xxx名, xxx日付, ... などのような単一の値。
     /// </summary>
-    public sealed class ValueMember : IAggregateMember {
-        internal ValueMember(XElement xElement, SchemaParseContext ctx, PathStack path) {
+    public sealed class ValueMember : IAggregateMember, ISchemaPathNode {
+        internal ValueMember(XElement xElement, SchemaParseContext ctx, ISchemaPathNode? previous) {
             _xElement = xElement;
             _ctx = ctx;
-            Path = path;
+            PreviousNode = previous;
         }
         private readonly XElement _xElement;
         private readonly SchemaParseContext _ctx;
-        public PathStack Path { get; }
+
+        XElement ISchemaPathNode.XElement => _xElement;
+        public ISchemaPathNode? PreviousNode { get; }
 
         public string PhysicalName => _ctx.GetPhysicalName(_xElement);
         public string DisplayName => _ctx.GetDisplayName(_xElement);
+        public string DbName => _ctx.GetDbName(_xElement);
         public decimal Order => _ctx.GetIndexInSiblings(_xElement);
 
-        public AggregateBase Owner => _ctx.ToAggregateBase(_xElement.Parent ?? throw new InvalidOperationException(), Path);
+        public AggregateBase Owner => _xElement.Parent == PreviousNode?.XElement
+            ? ((AggregateBase?)PreviousNode ?? throw new InvalidOperationException()) // パスの巻き戻しの場合
+            : _ctx.ToAggregateBase(_xElement.Parent ?? throw new InvalidOperationException(), this);
 
         /// <summary>
         /// この属性の型
@@ -41,6 +47,7 @@ namespace Nijo.Ver1.ImmutableSchema {
         internal const string IS_CHARACTER_TYPE = "character-type";
         internal const string IS_TOTAL_DIGIT = "total-digit";
         internal const string IS_DECIMAL_PLACE = "decimal-place";
+        internal const string IS_SEQUENCE_NAME = "sequence-name";
 
         /// <summary>キー属性か否か</summary>
         public bool IsKey => _ctx.ParseIsAttribute(_xElement).Any(attr => attr.Key == IS_KEY);
@@ -54,6 +61,25 @@ namespace Nijo.Ver1.ImmutableSchema {
         public int? TotalDigit => int.TryParse(_ctx.ParseIsAttribute(_xElement).SingleOrDefault(attr => attr.Key == IS_TOTAL_DIGIT)?.Value, out var v) ? v : null;
         /// <summary>数値系属性の小数部桁数</summary>
         public int? DecimalPlace => int.TryParse(_ctx.ParseIsAttribute(_xElement).SingleOrDefault(attr => attr.Key == IS_DECIMAL_PLACE)?.Value, out var v) ? v : null;
+        /// <summary>シーケンス物理名</summary>
+        public string? SequenceName => _ctx.ParseIsAttribute(_xElement).SingleOrDefault(attr => attr.Key == IS_SEQUENCE_NAME)?.Value;
         #endregion メンバー毎に定義される制約
+
+        #region 等価比較
+        public override int GetHashCode() {
+            return _xElement.GetHashCode();
+        }
+        public override bool Equals(object? obj) {
+            return obj is ValueMember vm
+                && vm._xElement == this._xElement;
+        }
+        public static bool operator ==(ValueMember left, ValueMember right) => ReferenceEquals(left, null) ? ReferenceEquals(right, null) : left.Equals(right);
+        public static bool operator !=(ValueMember left, ValueMember right) => !(left == right);
+        #endregion 等価比較
+
+        public override string ToString() {
+            // デバッグ用
+            return this.GetFullPathFromEntry().Select(x => x.XElement.Name.LocalName).Join(">");
+        }
     }
 }

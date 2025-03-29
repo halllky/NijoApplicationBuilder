@@ -1,5 +1,6 @@
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
+using Nijo.Ver1.SchemaParsing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,13 +13,15 @@ namespace Nijo.Ver1.Models.StaticEnumModelModules {
     /// </summary>
     internal class StaticEnumSearchCondition {
 
-        internal StaticEnumSearchCondition(RootAggregate rootAggregate) {
-            _staticEnum = new StaticEnumDef(rootAggregate);
+        internal StaticEnumSearchCondition(StaticEnumDef staticEnum, EnumDefParser parser) {
+            _staticEnum = staticEnum;
+            _parser = parser;
         }
 
         private readonly StaticEnumDef _staticEnum;
-        internal string CsClassName => $"{_staticEnum.CsEnumName}SearchCondition";
-        internal string TsTypeName => $"{_staticEnum.TsTypeName}SearchCondition";
+        private readonly EnumDefParser _parser;
+        internal string CsClassName => _parser.CsSearchConditionClassName;
+        internal string TsTypeName => _parser.CsSearchConditionClassName;
 
         internal string ANY_CHECKED = "AnyChecked";
 

@@ -22,10 +22,7 @@ namespace Nijo.Ver1.Models {
             // データ型: EFCore Entity
             var efCoreEntity = new EFCoreEntity(rootAggregate);
             aggregateFile.AddCSharpClass(efCoreEntity.RenderClassDeclaring(ctx));
-
-            ctx.Use<DbContextClass>()
-                .AddDbSet(efCoreEntity.RenderDbSetProperty(ctx))
-                .AddOnModelCreating(efCoreEntity.RenderOnModelCreatingCalling(ctx));
+            ctx.Use<DbContextClass>().AddEntity(efCoreEntity);
 
             // データ型: SaveCommand
             var saveCommand = new SaveCommand(rootAggregate);

@@ -7,26 +7,25 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using System.Xml.XPath;
 
 namespace Nijo.Ver1.ImmutableSchema {
     /// <summary>
     /// モデルの集約。
     /// 集約ルート, Child, Children, VariationItem のいずれか。
     /// </summary>
-    public abstract class AggregateBase {
+    public abstract class AggregateBase : ISchemaPathNode {
 
-        internal AggregateBase(XElement xElement, SchemaParseContext ctx, PathStack pathStack) {
+        internal AggregateBase(XElement xElement, SchemaParseContext ctx, ISchemaPathNode? previous) {
             _xElement = xElement;
             _ctx = ctx;
-            Path = pathStack;
+            PreviousNode = previous;
         }
         private protected readonly XElement _xElement;
         private protected readonly SchemaParseContext _ctx;
 
-        /// <summary>
-        /// エントリーからこの集約までのパス
-        /// </summary>
-        public PathStack Path { get; }
+        XElement ISchemaPathNode.XElement => _xElement;
+        public ISchemaPathNode? PreviousNode { get; }
 
         /// <summary>
         /// 物理名
@@ -36,6 +35,10 @@ namespace Nijo.Ver1.ImmutableSchema {
         /// 表示用名称
         /// </summary>
         public string DisplayName => _ctx.GetDisplayName(_xElement);
+        /// <summary>
+        /// データベーステーブル名
+        /// </summary>
+        public string DbName => _ctx.GetDbName(_xElement);
 
         /// <summary>
         /// この集約が持つメンバーを列挙します。
@@ -47,28 +50,44 @@ namespace Nijo.Ver1.ImmutableSchema {
         /// </summary>
         public IEnumerable<IAggregateMember> GetMembers() {
             foreach (var el in _xElement.Elements()) {
+                // パスの巻き戻しの場合（この集約の1つ前がこの集約の子、かつその子を列挙しようとしている場合）
+                // 新たにインスタンスを作るのでなく1つ前のインスタンスをそのまま使う
+                if (el == PreviousNode?.XElement) {
+                    yield return (IAggregateMember)PreviousNode;
+                    continue;
+                }
+
                 var nodeType = _ctx.GetNodeType(el);
                 yield return nodeType switch {
-                    SchemaParseContext.E_NodeType.ChildAggregate => new ChildAggreagte(el, _ctx, Path.Trace(el)),
-                    SchemaParseContext.E_NodeType.ChildrenAggregate => new ChildrenAggreagte(el, _ctx, Path.Trace(el)),
-                    SchemaParseContext.E_NodeType.Ref => new RefToMember(el, _ctx, Path.Trace(el)),
-                    SchemaParseContext.E_NodeType.ValueMember => new ValueMember(el, _ctx, Path.Trace(el)),
-                    SchemaParseContext.E_NodeType.StaticEnumValue => new Models.StaticEnumModelModules.StaticEnumValueDef(el, _ctx, Path.Trace(el)),
+                    SchemaParseContext.E_NodeType.ChildAggregate => new ChildAggreagte(el, _ctx, this),
+                    SchemaParseContext.E_NodeType.ChildrenAggregate => new ChildrenAggreagte(el, _ctx, this),
+                    SchemaParseContext.E_NodeType.Ref => new RefToMember(el, _ctx, this),
+                    SchemaParseContext.E_NodeType.ValueMember => new ValueMember(el, _ctx, this),
+                    SchemaParseContext.E_NodeType.StaticEnumValue => new Models.StaticEnumModelModules.StaticEnumValueDef(el, _ctx, this),
                     _ => throw new InvalidOperationException($"メンバーでない種類: {nodeType}（{el}）"),
                 };
             }
         }
         /// <summary>
-        /// 主キー項目のうち <see cref="ValueMember"/> を列挙します。
+        /// この集約に直接属するキー項目を返します。
+        /// つまりキーに <see cref="RefToMember"/> が含まれるならばそのRef自身を列挙します。
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<IAggregateMember> GetOwnKeys() {
+            return GetMembers().Where(m => m is ValueMember vm && vm.IsKey
+                                        || m is RefToMember rm && rm.IsKey);
+        }
+        /// <summary>
+        /// キー項目のうち <see cref="ValueMember"/> を列挙します。
         /// つまりキーに <see cref="RefToMember"/> が含まれるならばそのRefのメンバーを列挙します。
         /// </summary>
-        public IEnumerable<ValueMember> GetKeyMembers() {
+        public IEnumerable<ValueMember> GetKeyVMs() {
             foreach (var member in GetMembers()) {
                 if (member is ValueMember vm && vm.IsKey) {
                     yield return vm;
 
                 } else if (member is RefToMember refTo && refTo.IsKey) {
-                    foreach (var refToVm in refTo.RefTo.GetKeyMembers()) {
+                    foreach (var refToVm in refTo.RefTo.GetKeyVMs()) {
                         yield return refToVm;
                     }
                 }
@@ -79,8 +98,16 @@ namespace Nijo.Ver1.ImmutableSchema {
         /// この集約の親を返します。
         /// </summary>
         public AggregateBase? GetParent() {
+            // この集約がルート集約の場合
             if (_xElement.Parent == _xElement.Document?.Root) return null;
-            return _ctx.ToAggregateBase(_xElement.Parent ?? throw new InvalidOperationException(), Path);
+
+            // 1つ前の集約が親の場合
+            if (PreviousNode is AggregateBase agg && agg._xElement == this._xElement.Parent) {
+                return agg;
+            }
+
+            // 子から親に辿る場合
+            return _ctx.ToAggregateBase(_xElement.Parent ?? throw new InvalidOperationException(), this);
         }
 
         /// <summary>
@@ -127,14 +154,53 @@ namespace Nijo.Ver1.ImmutableSchema {
                 yield return descendant;
             }
         }
+
+        /// <summary>
+        /// この集約がメソッドの引数の集約の唯一のキーか否かを返します。
+        /// </summary>
+        /// <param name="refFrom">参照元</param>
+        public bool IsSingleKeyOf(AggregateBase refFrom) {
+            var keys = refFrom.GetOwnKeys().ToArray();
+            if (keys.Length != 1) return false;
+            if (keys[0] is not RefToMember rm) return false;
+            if (rm.RefTo != this) return false;
+            return true;
+        }
+        /// <summary>
+        /// この集約を直接外部参照しているメンバーを列挙します。
+        /// </summary>
+        public IEnumerable<RefToMember> GetRefFroms() {
+            return _ctx
+                .FindRefFrom(_xElement)
+                .Select(el => el == PreviousNode?.XElement
+                    ? (RefToMember)PreviousNode // パスの巻き戻しの場合
+                    : new RefToMember(el, _ctx, this));
+        }
+
+        #region 等価比較
+        public override int GetHashCode() {
+            return _xElement.GetHashCode();
+        }
+        public override bool Equals(object? obj) {
+            return obj is AggregateBase agg
+                && agg._xElement == this._xElement;
+        }
+        public static bool operator ==(AggregateBase left, AggregateBase right) => ReferenceEquals(left, null) ? ReferenceEquals(right, null) : left.Equals(right);
+        public static bool operator !=(AggregateBase left, AggregateBase right) => !(left == right);
+        #endregion 等価比較
+
+        public override string ToString() {
+            // デバッグ用
+            return this.GetFullPathFromEntry().Select(x => x.XElement.Name.LocalName).Join(">");
+        }
     }
 
     /// <summary>
     /// 集約ルート
     /// </summary>
     public class RootAggregate : AggregateBase {
-        internal RootAggregate(XElement xElement, SchemaParseContext ctx, PathStack pathStack)
-            : base(xElement, ctx, pathStack) { }
+        internal RootAggregate(XElement xElement, SchemaParseContext ctx, ISchemaPathNode? previous)
+            : base(xElement, ctx, previous) { }
 
         public string LatinName => _ctx.GetLatinName(_xElement);
         public bool IsReadOnly => _ctx.ParseIsAttribute(_xElement).Any(attr => attr.Key == "readonly"); // TODO ver.1
@@ -153,23 +219,27 @@ namespace Nijo.Ver1.ImmutableSchema {
     /// 親集約と1対1で対応する子集約。
     /// </summary>
     public class ChildAggreagte : AggregateBase, IRelationalMember {
-        internal ChildAggreagte(XElement xElement, SchemaParseContext ctx, PathStack pathStack)
-            : base(xElement, ctx, pathStack) { }
+        internal ChildAggreagte(XElement xElement, SchemaParseContext ctx, ISchemaPathNode? previous)
+            : base(xElement, ctx, previous) { }
 
         public decimal Order => _ctx.GetIndexInSiblings(_xElement);
-        public AggregateBase Owner => _ctx.ToAggregateBase(_xElement.Parent ?? throw new InvalidOperationException(), Path);
-        public AggregateBase MemberAggregate => _ctx.ToAggregateBase(_xElement, Path);
+        public AggregateBase Owner => _xElement.Parent == PreviousNode?.XElement
+            ? ((AggregateBase?)PreviousNode ?? throw new InvalidOperationException()) // パスの巻き戻しの場合
+            : _ctx.ToAggregateBase(_xElement.Parent ?? throw new InvalidOperationException(), this);
+        AggregateBase IRelationalMember.MemberAggregate => this;
     }
 
     /// <summary>
     /// 親集約と1対多で対応する子集約。
     /// </summary>
     public class ChildrenAggreagte : AggregateBase, IRelationalMember {
-        internal ChildrenAggreagte(XElement xElement, SchemaParseContext ctx, PathStack pathStack)
-            : base(xElement, ctx, pathStack) { }
+        internal ChildrenAggreagte(XElement xElement, SchemaParseContext ctx, ISchemaPathNode? previous)
+            : base(xElement, ctx, previous) { }
 
         public decimal Order => _ctx.GetIndexInSiblings(_xElement);
-        public AggregateBase Owner => _ctx.ToAggregateBase(_xElement.Parent ?? throw new InvalidOperationException(), Path);
-        public AggregateBase MemberAggregate => _ctx.ToAggregateBase(_xElement, Path);
+        public AggregateBase Owner => _xElement.Parent == PreviousNode?.XElement
+            ? ((AggregateBase?)PreviousNode ?? throw new InvalidOperationException()) // パスの巻き戻しの場合
+            : _ctx.ToAggregateBase(_xElement.Parent ?? throw new InvalidOperationException(), this);
+        AggregateBase IRelationalMember.MemberAggregate => this;
     }
 }

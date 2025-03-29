@@ -9,6 +9,11 @@
       "commandLineArgs": "ui --port 8081 --no-browser",
       "workingDirectory": "..\\自動テストで作成されたプロジェクト",
       "hotReloadEnabled": true
+    },
+    "Ver1のアプリケーションテンプレート": {
+      "commandName": "Project",
+      "commandLineArgs": "generate",
+      "workingDirectory": "..\\Nijo.ApplicationTemplate.Ver1"
     }
   }
 }

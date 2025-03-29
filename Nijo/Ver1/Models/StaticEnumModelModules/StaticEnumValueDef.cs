@@ -16,18 +16,22 @@ namespace Nijo.Ver1.Models.StaticEnumModelModules {
 
         private const string ATTR_KEY = "key";
 
-        internal StaticEnumValueDef(XElement xElement, SchemaParseContext ctx, PathStack path) {
+        internal StaticEnumValueDef(XElement xElement, SchemaParseContext ctx, ISchemaPathNode? previous) {
             _xElement = xElement;
             _ctx = ctx;
-            Path = path;
+            PreviousNode = previous;
         }
         private readonly XElement _xElement;
         private readonly SchemaParseContext _ctx;
-        public PathStack Path { get; }
+
+        XElement ISchemaPathNode.XElement => _xElement;
+        public ISchemaPathNode? PreviousNode { get; }
 
         public string PhysicalName => _ctx.GetPhysicalName(_xElement);
         public string DisplayName => _ctx.GetDisplayName(_xElement);
-        public AggregateBase Owner => _ctx.ToAggregateBase(_xElement.Parent ?? throw new InvalidOperationException(), Path);
+        public AggregateBase Owner => _xElement.Parent == PreviousNode?.XElement
+            ? ((AggregateBase?)PreviousNode ?? throw new InvalidOperationException()) // パスの巻き戻しの場合
+            : _ctx.ToAggregateBase(_xElement.Parent ?? throw new InvalidOperationException(), this);
         public decimal Order => _ctx.GetIndexInSiblings(_xElement);
 
         public int EnumValue => int.Parse(_xElement.Attribute(ATTR_KEY)?.Value ?? throw new InvalidOperationException());

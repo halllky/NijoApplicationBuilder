@@ -1,6 +1,7 @@
 using Nijo.Util.DotnetEx;
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
+using Nijo.Ver1.SchemaParsing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,15 +14,17 @@ namespace Nijo.Ver1.Models.StaticEnumModelModules {
     /// </summary>
     internal class StaticEnumDef {
 
-        internal StaticEnumDef(RootAggregate rootAggregate) {
+        internal StaticEnumDef(EnumDefParser parser, RootAggregate rootAggregate) {
+            _parser = parser;
             _rootAggregate = rootAggregate;
         }
 
+        private readonly EnumDefParser _parser;
         private readonly RootAggregate _rootAggregate;
 
-        internal string DisplayName => _rootAggregate.DisplayName;
-        internal string CsEnumName => _rootAggregate.PhysicalName;
-        internal string TsTypeName => _rootAggregate.PhysicalName;
+        internal string DisplayName => _parser.DisplayName;
+        internal string CsEnumName => _parser.CsEnumName;
+        internal string TsTypeName => _parser.TsTypeName;
 
         internal IEnumerable<StaticEnumValueDef> GetValues() {
             return _rootAggregate

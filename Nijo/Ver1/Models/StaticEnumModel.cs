@@ -2,6 +2,7 @@ using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
 using Nijo.Ver1.Models.StaticEnumModelModules;
 using Nijo.Ver1.Parts.Common;
+using Nijo.Ver1.SchemaParsing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,14 +17,15 @@ namespace Nijo.Ver1.Models {
     internal class StaticEnumModel : IModel {
         public void GenerateCode(CodeRenderingContext ctx, RootAggregate rootAggregate) {
             var enumFile = ctx.Use<EnumFile>();
+            var parser = new EnumDefParser(((ISchemaPathNode)rootAggregate).XElement, ctx.SchemaParser);
 
             // データ型: enum, リテラル型定義
-            var staticEnum = new StaticEnumDef(rootAggregate);
+            var staticEnum = new StaticEnumDef(parser, rootAggregate);
             enumFile.AddCSharpSource(staticEnum.RenderCSharp());
             enumFile.AddTypeScriptSource(staticEnum.RenderTypeScript());
 
             // データ型: 検索条件オブジェクト
-            var searchCondition = new StaticEnumSearchCondition(rootAggregate);
+            var searchCondition = new StaticEnumSearchCondition(staticEnum, parser);
             enumFile.AddCSharpSource(searchCondition.RenderCSharp());
             enumFile.AddTypeScriptSource(searchCondition.RenderTypeScript());
         }

@@ -80,6 +80,8 @@ namespace Nijo.Ver1.SchemaParsing {
         internal int GetIndexInSiblings(XElement xElement) {
             return xElement.ElementsBeforeSelf().Count();
         }
+
+        #region Find系
         /// <summary>
         /// 参照先のXML要素を返します。
         /// </summary>
@@ -91,9 +93,19 @@ namespace Nijo.Ver1.SchemaParsing {
             var xPath = $"//{refToAttribute.Value}";
             return xElement.Document?.XPathSelectElement(xPath);
         }
+        /// <summary>
+        /// 引数の集約を参照している集約を探して返します。
+        /// </summary>
+        internal IEnumerable<XElement> FindRefFrom(XElement xElement) {
+            // まずパフォーマンスのためXPathで高速に絞り込む
+            var physicalName = GetPhysicalName(xElement);
+            var xPathFiltered = xElement.Document?.XPathSelectElements($"//*[@is[contains(., '{IS_REFTO}:{physicalName}')]]") ?? [];
 
+            // 次にis属性を解釈して厳密に絞り込む
+            return xPathFiltered.Where(el => ParseIsAttribute(el).Any(attr => attr.Key == IS_REFTO
+                                                                           && attr.Value == physicalName));
+        }
 
-        #region Find系
         /// <summary>
         /// 集約ルートを返す。集約ルートは <see cref="XDocument.Root"/> の1つ下。
         /// </summary>
@@ -303,16 +315,16 @@ namespace Nijo.Ver1.SchemaParsing {
         /// ルート集約や子集約を表すXML要素を <see cref="AggregateBase"/> のインスタンスに変換します。
         /// XML要素が集約を表すもので無かった場合は例外を送出します。
         /// </summary>
-        internal AggregateBase ToAggregateBase(XElement xElement, PathStack currentPath) {
+        internal AggregateBase ToAggregateBase(XElement xElement, ISchemaPathNode? previous) {
             var nodeType = GetNodeType(xElement);
             if (nodeType == E_NodeType.RootAggregate) {
-                return new RootAggregate(xElement, this, currentPath.Trace(xElement));
+                return new RootAggregate(xElement, this, previous);
             }
             if (nodeType == E_NodeType.ChildAggregate) {
-                return new ChildAggreagte(xElement, this, currentPath.Trace(xElement));
+                return new ChildAggreagte(xElement, this, previous);
             }
             if (nodeType == E_NodeType.ChildrenAggregate) {
-                return new ChildrenAggreagte(xElement, this, currentPath.Trace(xElement));
+                return new ChildrenAggreagte(xElement, this, previous);
             }
             throw new InvalidOperationException($"集約ではありません: {xElement}");
         }

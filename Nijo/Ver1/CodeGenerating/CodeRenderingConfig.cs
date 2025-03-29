@@ -33,6 +33,17 @@ namespace Nijo.Ver1.CodeGenerating {
         /// </summary>
         public string DbContextName => _xDocument.Root?.Attribute(nameof(DbContextName))?.Value ?? "MyDbContext";
 
+        /// <summary>DBカラム名（作成者）</summary>
+        public string CreateUserDbColumnName => _xDocument.Root?.Attribute(nameof(CreateUserDbColumnName))?.Value ?? Models.DataModelModules.EFCoreEntity.CREATE_USER;
+        /// <summary>DBカラム名（更新者）</summary>
+        public string UpdateUserDbColumnName => _xDocument.Root?.Attribute(nameof(UpdateUserDbColumnName))?.Value ?? Models.DataModelModules.EFCoreEntity.UPDATE_USER;
+        /// <summary>DBカラム名（作成時刻）</summary>
+        public string CreatedAtDbColumnName => _xDocument.Root?.Attribute(nameof(CreatedAtDbColumnName))?.Value ?? Models.DataModelModules.EFCoreEntity.CREATED_AT;
+        /// <summary>DBカラム名（更新時刻）</summary>
+        public string UpdatedAtDbColumnName => _xDocument.Root?.Attribute(nameof(UpdatedAtDbColumnName))?.Value ?? Models.DataModelModules.EFCoreEntity.UPDATED_AT;
+        /// <summary>DBカラム名（楽観排他用バージョン）</summary>
+        public string VersionDbColumnName => _xDocument.Root?.Attribute(nameof(VersionDbColumnName))?.Value ?? Models.DataModelModules.EFCoreEntity.VERSION;
+
         /// <summary>
         /// 開発環境におけるReact.jsのサーバーが展開されるURL。httpから始める必要あり。
         /// ASP.NET Core サーバーでのCORS設定に必要。

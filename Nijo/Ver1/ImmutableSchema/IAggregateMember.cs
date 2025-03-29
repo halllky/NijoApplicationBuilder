@@ -15,7 +15,7 @@ namespace Nijo.Ver1.ImmutableSchema {
     /// ref-toによる外部参照、
     /// ChildやChildrenといった子要素のうちのいずれか。
     /// </summary>
-    public interface IAggregateMember {
+    public interface IAggregateMember : ISchemaPathNode {
         /// <summary>
         /// 物理名
         /// </summary>
@@ -36,10 +36,5 @@ namespace Nijo.Ver1.ImmutableSchema {
         /// ref-toを辿るごとに小数桁が1桁ずつ下がっていくためにdecimal
         /// </summary>
         decimal Order { get; }
-
-        /// <summary>
-        /// エントリーからこのメンバーまでのパス
-        /// </summary>
-        PathStack Path { get; }
     }
 }

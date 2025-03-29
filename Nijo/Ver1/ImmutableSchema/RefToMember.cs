@@ -1,3 +1,4 @@
+using Nijo.Util.DotnetEx;
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.SchemaParsing;
 using System;
@@ -12,15 +13,17 @@ namespace Nijo.Ver1.ImmutableSchema {
     /// モデルの属性のうち、外部参照。
     /// </summary>
     public class RefToMember : IRelationalMember {
-        internal RefToMember(XElement xElement, SchemaParseContext ctx, PathStack path) {
+        internal RefToMember(XElement xElement, SchemaParseContext ctx, ISchemaPathNode? previous) {
             _xElement = xElement;
             _ctx = ctx;
-            Path = path;
+            PreviousNode = previous;
         }
 
         private readonly XElement _xElement;
         private readonly SchemaParseContext _ctx;
-        public PathStack Path { get; }
+
+        XElement ISchemaPathNode.XElement => _xElement;
+        public ISchemaPathNode? PreviousNode { get; }
 
         public string PhysicalName => _ctx.GetPhysicalName(_xElement);
         public string DisplayName => _ctx.GetDisplayName(_xElement);
@@ -29,11 +32,20 @@ namespace Nijo.Ver1.ImmutableSchema {
         /// <summary>
         /// 参照元集約
         /// </summary>
-        public AggregateBase Owner => _ctx.ToAggregateBase(_xElement.Parent ?? throw new InvalidOperationException(), Path);
+        public AggregateBase Owner => _xElement.Parent == PreviousNode?.XElement
+            ? ((AggregateBase?)PreviousNode ?? throw new InvalidOperationException()) // パスの巻き戻しの場合
+            : _ctx.ToAggregateBase(_xElement.Parent ?? throw new InvalidOperationException(), this);
         /// <summary>
         /// 参照先集約
         /// </summary>
-        public AggregateBase RefTo => _ctx.ToAggregateBase(_ctx.FindRefTo(_xElement) ?? throw new InvalidOperationException(), Path);
+        public AggregateBase RefTo {
+            get {
+                var refToElement = _ctx.FindRefTo(_xElement) ?? throw new InvalidOperationException();
+                return refToElement == PreviousNode?.XElement
+                    ? ((AggregateBase?)PreviousNode ?? throw new InvalidOperationException()) // パスの巻き戻しの場合
+                    : _ctx.ToAggregateBase(refToElement, this);
+            }
+        }
         AggregateBase IRelationalMember.MemberAggregate => RefTo;
 
         #region モデル毎に定義される属性
@@ -45,5 +57,22 @@ namespace Nijo.Ver1.ImmutableSchema {
         /// <summary>必須か否か</summary>
         public bool IsRequired => _ctx.ParseIsAttribute(_xElement).Any(attr => attr.Key == IS_REQUIRED);
         #endregion モデル毎に定義される属性
+
+        #region 等価比較
+        public override int GetHashCode() {
+            return _xElement.GetHashCode();
+        }
+        public override bool Equals(object? obj) {
+            return obj is RefToMember rm
+                && rm._xElement == this._xElement;
+        }
+        public static bool operator ==(RefToMember left, RefToMember right) => ReferenceEquals(left, null) ? ReferenceEquals(right, null) : left.Equals(right);
+        public static bool operator !=(RefToMember left, RefToMember right) => !(left == right);
+        #endregion 等価比較
+
+        public override string ToString() {
+            // デバッグ用
+            return this.GetFullPathFromEntry().Select(x => x.XElement.Name.LocalName).Join(">");
+        }
     }
 }
