@@ -148,9 +148,9 @@ namespace Nijo.Ver1.Models.QueryModelModules {
                     {{VALUES_TS}}: {
                     {{displayData.GetOwnMembers().SelectTextTemplate(m => $$"""
                     {{If(m is ValueMember, () => $$"""
-                      {{m.PhysicalName}}: Constraints.{{((ValueMember)m).Type.UiConstraintType}}
+                      {{m.PhysicalName}}: Util.{{((ValueMember)m).Type.UiConstraintType}}
                     """).Else(() => $$"""
-                      {{m.PhysicalName}}: Constraints.{{UiConstraint.E_Type.MemberConstraintBase}}
+                      {{m.PhysicalName}}: Util.{{UiConstraint.E_Type.MemberConstraintBase}}
                     """)}}
                     """)}}
                     }

@@ -286,7 +286,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
                         var source = renderBefore ? "beforeDbEntity" : "afterDbEntity";
                         var dbEntity = new EFCoreEntity(descendantDbEntities[i]);
                         builder.AppendLine($$"""
-                            var {{tempVar}} = new {{dbEntity.CsClassName}}[] {
+                            var {{tempVar}} = new {{dbEntity.CsClassName}}?[] {
                                 {{source}}.{{paths.AsDbEntity().Join(".")}},
                             }.OfType<{{dbEntity.CsClassName}}>().ToArray();
                             """);
@@ -325,7 +325,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
 
             for (int i = 0; i < descendantDbEntities.Length; i++) {
                 var builder = new StringBuilder();
-                var paths = descendantDbEntities[i].GetFullPath().ToArray();
+                var paths = descendantDbEntities[i].GetFullPath().Skip(1).ToArray();
                 var after_ = $"after{descendantDbEntities[i].PhysicalName}_{i}";
 
                 // before, after それぞれの子孫インスタンスを一次配列に格納する

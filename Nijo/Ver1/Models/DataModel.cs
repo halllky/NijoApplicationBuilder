@@ -21,8 +21,8 @@ namespace Nijo.Ver1.Models {
 
             // データ型: EFCore Entity
             var efCoreEntity = new EFCoreEntity(rootAggregate);
-            aggregateFile.AddCSharpClass(efCoreEntity.RenderClassDeclaring(ctx));
-            ctx.Use<DbContextClass>().AddEntity(efCoreEntity);
+            aggregateFile.AddCSharpClass(EFCoreEntity.RenderClassDeclaring(efCoreEntity, ctx));
+            ctx.Use<DbContextClass>().AddEntities(efCoreEntity.EnumerateThisAndDescendants());
 
             // データ型: SaveCommand
             var saveCommand = new SaveCommand(rootAggregate);
@@ -32,8 +32,7 @@ namespace Nijo.Ver1.Models {
             aggregateFile.AddCSharpClass(KeyClass.KeyClassEntry.RenderClassDeclaringRecursively(rootAggregate, ctx));
 
             // データ型: SaveCommandメッセージ
-            var saveCommandMessage = new SaveCommandMessageContainer(rootAggregate);
-            aggregateFile.AddCSharpClass(saveCommandMessage.RenderCSharp());
+            aggregateFile.AddCSharpClass(SaveCommandMessageContainer.RenderTree(rootAggregate));
 
             // 処理: 新規登録、更新、削除
             var create = new CreateMethod(rootAggregate);

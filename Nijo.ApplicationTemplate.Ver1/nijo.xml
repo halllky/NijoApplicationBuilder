@@ -1,31 +1,35 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <NijoApplicationBuilder RootNamespace="MyApp">
-  <参照先 is="data-model generate-default-query-model generate-batch-update-command:参照先一括更新" LatinName="Master Data 01">
-    <参照先集約ID is="word key" />
-    <参照先集約名 is="word name" />
-  </参照先>
-  <参照先一括更新 is="command-model" LatinName="Batch Update Master Data 01">
+  <顧客 is="data-model generate-default-query-model generate-batch-update-command:参照先一括更新" LatinName="Master Data 01">
+    <顧客ID is="word key" />
+    <顧客名 is="word name" />
+    <住所 is="child">
+      <都道府県 is="word" />
+      <市町村 is="word" />
+    </住所>
+  </顧客>
+  <CommandModelテスト is="command-model" LatinName="Batch Update Master Data 01">
     <Parameter is="child">
       <Items is="children">
-        <参照先集約ID is="word key" />
-        <参照先集約名 is="word name" />
+        <Word1 is="word key" />
+        <Word2 is="word name" />
       </Items>
     </Parameter>
     <ReturnType is="child">
     </ReturnType>
-  </参照先一括更新>
-  <参照元 is="data-model" LatinName="Transaction Data 01">
-    <参照元集約ID is="word key" />
-    <参照元集約名 is="word name" />
-    <参照 is="ref-to:参照先" />
-    <My列挙体 is="My列挙体" />
-  </参照元>
-  <参照元を唯一のキーとする is="data-model" LatinName="Transaction Data 02">
-    <参照 is="ref-to:参照元 key" />
-    <名前 is="word name" />
-  </参照元を唯一のキーとする>
-  <My列挙体 is="enum">
-    <値1 DisplayName="値（1）" key="1" />
-    <値2 key="2" />
-  </My列挙体>
+  </CommandModelテスト>
+  <予約 is="data-model" LatinName="Transaction Data 01">
+    <予約ID is="word key" />
+    <ひとこと is="word name" />
+    <顧客 is="ref-to:顧客" />
+    <予約区分 is="予約区分" />
+  </予約>
+  <診察 is="data-model" LatinName="Transaction Data 02">
+    <予約 is="ref-to:予約 key" />
+    <メモ is="word name" />
+  </診察>
+  <予約区分 is="enum">
+    <初診 DisplayName="初診（しょしん）" key="1" />
+    <再診 DisplayName="再診（さいしん）" key="2" />
+  </予約区分>
 </NijoApplicationBuilder>

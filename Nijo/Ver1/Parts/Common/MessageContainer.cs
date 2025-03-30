@@ -38,7 +38,7 @@ namespace Nijo.Ver1.Parts.Common {
         /// </summary>
         protected abstract IEnumerable<IMessageContainerMember> GetMembers();
 
-        internal virtual string RenderCSharp() {
+        internal string RenderCSharp() {
             var impl = new List<string>() { CONCRETE_CLASS };
             impl.AddRange(GetCsClassImplements());
 
@@ -50,21 +50,28 @@ namespace Nijo.Ver1.Parts.Common {
                 /// </summary>
                 public class {{CsClassName}} : {{impl.Join(", ")}} {
                     public {{CsClassName}}(IEnumerable<string> path) : base(path) {
-                {{members.SelectTextTemplate(m => m.ArrayGenericType == null ? $$"""
+                {{members.SelectTextTemplate(m => $$"""
+                {{If(m.NestedObject == null, () => $$"""
                         this.{{m.PhysicalName}} = new {{CONCRETE_CLASS}}([.. path, "{{m.PhysicalName}}"]);
-                """ : $$"""
+                """).ElseIf(m.NestedObject?._aggregate is not ChildrenAggreagte, () => $$"""
+                        this.{{m.PhysicalName}} = new {{m.NestedObject?.CsClassName}}([.. path, "{{m.PhysicalName}}"]);
+                """).Else(() => $$"""
                         this.{{m.PhysicalName}} = new {{CONCRETE_CLASS_LIST}}([.. path, "{{m.PhysicalName}}"], rowIndex => {
-                            return new {{CONCRETE_CLASS}}([.. path, "{{m.PhysicalName}}", rowIndex.ToString()]);
+                            return new {{m.NestedObject?.CsClassName}}([.. path, "{{m.PhysicalName}}", rowIndex.ToString()]);
                         });
+                """)}}
                 """)}}
                     }
 
-                {{members.SelectTextTemplate(m => m.ArrayGenericType == null ? $$"""
+                {{members.SelectTextTemplate(m => $$"""
                     /// <summary>{{m.DisplayName}}に対して発生したメッセージの入れ物</summary>
-                    public {{INTERFACE}} {{m.PhysicalName}} { get; }
-                """ : $$"""
-                    /// <summary>{{m.DisplayName}}に対して発生したメッセージの入れ物</summary>
-                    public {{INTERFACE_LIST}}<{{m.ArrayGenericType}}> {{m.PhysicalName}} { get; }
+                {{If(m.NestedObject == null, () => $$"""
+                    public {{m.CsType ?? INTERFACE}} {{m.PhysicalName}} { get; }
+                """).ElseIf(m.NestedObject?._aggregate is not ChildrenAggreagte, () => $$"""
+                    public {{m.CsType ?? m.NestedObject?.CsClassName}} {{m.PhysicalName}} { get; }
+                """).Else(() => $$"""
+                    public {{m.CsType ?? $"{INTERFACE_LIST}<{m.NestedObject?.CsClassName}>"}} {{m.PhysicalName}} { get; }
+                """)}}
                 """)}}
                 }
                 """;
@@ -75,9 +82,35 @@ namespace Nijo.Ver1.Parts.Common {
             return $$"""
                 /** {{_aggregate.DisplayName}} のデータ構造と対応したメッセージの入れ物 */
                 export type {{TsTypeName}} = {
-                    // TODO ver.1
+                  {{WithIndent(RenderBody(this), "  ")}}
                 }
                 """;
+
+            static IEnumerable<string> RenderBody(MessageContainer message) {
+                foreach (var member in message.GetMembers()) {
+                    if (member.NestedObject == null) {
+                        yield return $$"""
+                            {{member.PhysicalName}}?: Util.{{TS_CONTAINER}}
+                            """;
+
+                    } else if (member.NestedObject._aggregate is not ChildrenAggreagte children) {
+                        yield return $$"""
+                            {{member.PhysicalName}}?: {
+                              {{WithIndent(RenderBody(member.NestedObject), "  ")}}
+                            }
+                            """;
+
+                    } else {
+                        yield return $$"""
+                            {{member.PhysicalName}}?: {
+                              [key: `${number}`]: {
+                                {{WithIndent(RenderBody(member.NestedObject), "    ")}}
+                              }
+                            }
+                            """;
+                    }
+                }
+            }
         }
 
 
@@ -89,6 +122,11 @@ namespace Nijo.Ver1.Parts.Common {
 
         /// <summary>既定のクラスを探して返すstaticメソッド</summary>
         internal const string GET_DEFAULT_CLASS = "GetDefaultClass";
+
+        internal const string TS_CONTAINER = "MessageContainer";
+        private const string TS_ERROR = "error";
+        private const string TS_WARN = "warn";
+        private const string TS_INFO = "info";
 
         /// <summary>
         /// 基底クラスのレンダリング
@@ -240,6 +278,22 @@ namespace Nijo.Ver1.Parts.Common {
                     #endregion 具象クラス
                     """,
         };
+        internal static SourceFile RenderTypeScriptBaseFile() {
+            return new SourceFile {
+                FileName = "message-container.ts",
+                Contents = $$"""
+                    /** サーバー側で発生したエラーメッセージ等の入れ物 */
+                    export type {{TS_CONTAINER}} = {
+                      /** エラーメッセージ */
+                      {{TS_ERROR}}?: string[]
+                      /** 警告メッセージ */
+                      {{TS_WARN}}?: string[]
+                      /** インフォメーション */
+                      {{TS_INFO}}?: string[]
+                    }
+                    """,
+            };
+        }
         #endregion 基底クラス
 
 
@@ -247,8 +301,10 @@ namespace Nijo.Ver1.Parts.Common {
         internal interface IMessageContainerMember {
             string PhysicalName { get; }
             string DisplayName { get; }
-            /// <summary>このメンバーが配列ならば配列のジェネリック型を指定する。</summary>
-            string? ArrayGenericType { get; }
+            /// <summary>ChildまたはChildren</summary>
+            MessageContainer? NestedObject { get; }
+            /// <summary>未指定の場合はデフォルトの型になる</summary>
+            string? CsType { get; }
         }
         #endregion メンバー
     }

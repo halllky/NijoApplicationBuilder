@@ -23,7 +23,7 @@ namespace Nijo.Ver1.Models.CommandModelModules {
                 /// {{_rootAggregate.DisplayName}}の実行時にクライアント側から渡される引数
                 /// </summary>
                 public partial class {{CsClassName}} {
-                    // TODO ver.1
+                  // TODO ver.1
                 }
                 """;
         }
@@ -34,7 +34,7 @@ namespace Nijo.Ver1.Models.CommandModelModules {
             return $$"""
                 /** {{_rootAggregate.DisplayName}}の実行時にクライアント側から渡される引数 */
                 export type {{TsTypeName}} = {
-                    // TODO ver.1
+                  // TODO ver.1
                 }
                 """;
         }

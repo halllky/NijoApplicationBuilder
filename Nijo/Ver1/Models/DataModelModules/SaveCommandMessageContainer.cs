@@ -31,38 +31,67 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 .Select(m => new MessageContainerMemberImpl {
                     PhysicalName = m.PhysicalName,
                     DisplayName = m.DisplayName,
-                    ArrayGenericType = m.Member is ChildrenAggreagte children
-                        ? new SaveCommandMessageContainer(children).InterfaceName
-                        : null,
+                    NestedObjectIsArray = m.Member is ChildrenAggreagte,
+                    NestedObject = m.Member switch {
+                        ChildAggreagte child => new SaveCommandMessageContainer(child),
+                        ChildrenAggreagte children => new SaveCommandMessageContainer(children),
+                        _ => null,
+                    },
+                    CsType = m.Member switch {
+                        ChildAggreagte child => new SaveCommandMessageContainer(child).InterfaceName,
+                        ChildrenAggreagte children => $"{INTERFACE_LIST}<{new SaveCommandMessageContainer(children).InterfaceName}>",
+                        _ => null,
+                    },
                 });
         }
 
-        internal override string RenderCSharp() {
-            // 基底クラス側でレンダリングされるソースに加えてインターフェースもレンダリングする
+
+        #region レンダリング
+        internal static string RenderTree(RootAggregate rootAggregate) {
+            var tree = rootAggregate
+                .EnumerateThisAndDescendants()
+                .Select(agg => new SaveCommandMessageContainer(agg))
+                .ToArray();
+
             return $$"""
                 #region 登録更新の過程で発生したメッセージの入れ物クラス
+                {{tree.SelectTextTemplate(container => $$"""
+                {{container.RenderInterface()}}
+                """)}}
+                {{tree.SelectTextTemplate(container => $$"""
+                {{container.RenderCSharp()}}
+                """)}}
+                #endregion 登録更新の過程で発生したメッセージの入れ物クラス
+                """;
+        }
+        private string RenderInterface() {
+            return $$"""
                 /// <summary>
                 /// {{_aggregate.DisplayName}} のデータ構造と対応したメッセージの入れ物
                 /// </summary>
                 public interface {{InterfaceName}} : {{INTERFACE}} {
-                {{GetMembers().SelectTextTemplate(m => m.ArrayGenericType == null ? $$"""
+                {{GetMembers().Cast<MessageContainerMemberImpl>().SelectTextTemplate(m => $$"""
                     /// <summary>{{m.DisplayName}}に対して発生したメッセージの入れ物</summary>
+                {{If(m.NestedObject == null, () => $$"""
                     {{INTERFACE}} {{m.PhysicalName}} { get; }
-                """ : $$"""
-                    /// <summary>{{m.DisplayName}}に対して発生したメッセージの入れ物</summary>
-                    {{INTERFACE_LIST}}<{{m.ArrayGenericType}}> {{m.PhysicalName}} { get; }
+                """).ElseIf(m.NestedObjectIsArray, () => $$"""
+                    {{INTERFACE_LIST}}<{{m.NestedObject?.InterfaceName}}> {{m.PhysicalName}} { get; }
+                """).Else(() => $$"""
+                    {{m.NestedObject?.InterfaceName}} {{m.PhysicalName}} { get; }
+                """)}}
                 """)}}
                 }
-
-                {{base.RenderCSharp()}}
-                #endregion 登録更新の過程で発生したメッセージの入れ物クラス
                 """;
         }
+        #endregion レンダリング
 
         private class MessageContainerMemberImpl : IMessageContainerMember {
             public required string PhysicalName { get; set; }
             public required string DisplayName { get; set; }
-            public required string? ArrayGenericType { get; set; }
+            public required bool NestedObjectIsArray { get; set; }
+            public required SaveCommandMessageContainer? NestedObject { get; set; }
+            MessageContainer? IMessageContainerMember.NestedObject => NestedObject;
+            public string? CsType { get; set; }
         }
     }
 }

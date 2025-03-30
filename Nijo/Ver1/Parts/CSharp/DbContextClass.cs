@@ -17,8 +17,8 @@ namespace Nijo.Ver1.Parts.CSharp {
         private readonly List<EFCoreEntity> _efCoreEntities = [];
         private readonly List<string> _configureConversions = [];
 
-        internal DbContextClass AddEntity(EFCoreEntity eFCoreEntity) {
-            _efCoreEntities.Add(eFCoreEntity);
+        internal DbContextClass AddEntities(IEnumerable<EFCoreEntity> eFCoreEntities) {
+            _efCoreEntities.AddRange(eFCoreEntities);
             return this;
         }
         public DbContextClass AddConfigureConventions(string sourceCode) {

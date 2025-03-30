@@ -152,8 +152,7 @@ namespace Nijo.Ver1.CodeGenerating {
                 import React from "react"
                 import * as ReactRouter from "react-router-dom"
                 import { UUID } from "uuidjs"
-                import * as Util from "../util2"
-                import * as Constraints from "./util/constraints"
+                import * as Util from "./util"
                 {{refTos.SelectTextTemplate(r => $$"""
                 import { {{r.RefTo.TsTypeName}}, {{r.RefTo.TsNewObjectFunction}}, {{r.RefSC.TsTypeName}} } from "{{r.FileName}}"
                 """)}}
