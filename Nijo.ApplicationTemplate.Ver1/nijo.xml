@@ -20,6 +20,10 @@
     <参照 is="ref-to:参照先" />
     <My列挙体 is="My列挙体" />
   </参照元>
+  <参照元を唯一のキーとする is="data-model" LatinName="Transaction Data 02">
+    <参照 is="ref-to:参照元 key" />
+    <名前 is="word name" />
+  </参照元を唯一のキーとする>
   <My列挙体 is="enum">
     <値1 DisplayName="値（1）" key="1" />
     <値2 key="2" />

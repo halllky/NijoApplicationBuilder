@@ -30,13 +30,17 @@ namespace Nijo.Ver1.Models.DataModelModules {
 
             var keys = _rootAggregate
                 .GetKeyVMs()
-                .Select((vm, i) => new {
-                    TempVarName = $"searchKey{i + 1}",
-                    vm.PhysicalName,
-                    vm.DisplayName,
-                    LogTemplate = $"{vm.DisplayName.Replace("\"", "\\\"")}: {{key{i}}}",
-                    SaveCommandFullPath = vm.GetFullPath().AsSaveCommand().ToArray(),
-                    DbEntityFullPath = vm.GetFullPath().AsDbEntity().ToArray(),
+                .Select((vm, i) => {
+                    var fullpath = vm.GetFullPath().ToArray();
+                    return new {
+                        TempVarName = $"searchKey{i + 1}",
+                        vm.PhysicalName,
+                        vm.DisplayName,
+                        LogTemplate = $"{vm.DisplayName.Replace("\"", "\\\"")}: {{key{i}}}",
+                        SaveCommandFullPath = fullpath.AsSaveCommand().ToArray(),
+                        SaveCommandMessageFullPath = fullpath.AsSaveCommandMessage().ToArray(),
+                        DbEntityFullPath = fullpath.AsDbEntity().ToArray(),
+                    };
                 })
                 .ToArray();
 
@@ -57,7 +61,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 {{keys.SelectTextTemplate(vm => $$"""
                     if (command.{{vm.SaveCommandFullPath.Join("?.")}} == null) {
                         keyIsEmpty = true;
-                        messages.{{vm.SaveCommandFullPath.Join(".")}}.AddError({{MsgFactory.MSG}}.{{ERR_KEY_IS_EMPTY}}("{{vm.DisplayName.Replace("\"", "\\\"")}}"));
+                        messages.{{vm.SaveCommandMessageFullPath.Join(".")}}.AddError({{MsgFactory.MSG}}.{{ERR_KEY_IS_EMPTY}}("{{vm.DisplayName.Replace("\"", "\\\"")}}"));
                     }
                 """)}}
                     if (keyIsEmpty) {
@@ -67,7 +71,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
 
                     // 更新前データ取得
                 {{keys.SelectTextTemplate(vm => $$"""
-                    var {{vm.TempVarName}} = command.{{vm.SaveCommandFullPath.Join(".")}};
+                    var {{vm.TempVarName}} = command.{{vm.SaveCommandFullPath.Join("!.")}};
                 """)}}
 
                     var beforeDbEntity = DbContext.{{dbEntity.DbSetName}}
@@ -127,7 +131,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
                     try {
                         var entry = DbContext.Entry(afterDbEntity);
                         entry.State = EntityState.Modified;
-                        entry.Property(e => e.{{EFCoreEntity.VERSION}}).OriginalValue = command.{{EFCoreEntity.VERSION}};
+                        entry.Property(e => e.{{EFCoreEntity.VERSION}}).OriginalValue = command.{{SaveCommand.VERSION}};
 
                 {{RenderDescendantAttaching(_rootAggregate).SelectTextTemplate(source => $$"""
                         {{WithIndent(source, "        ")}}

@@ -124,11 +124,13 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 .Where(nav => nav is NavigationOfRef && nav.Relevant.ThisSide == _aggregate);
 
             return $$"""
+                #region Entity Framework Core エンティティ定義
                 /// <summary>
                 /// {{_aggregate.DisplayName}}の Entity Framework Core エンティティ型。RDBMSのテーブル定義と対応。
                 /// </summary>
                 public partial class {{CsClassName}} {
                 {{columns.SelectTextTemplate(col => $$"""
+                    /// <summary>{{col.DisplayName}}</summary>
                     public {{col.CsType}}? {{col.PhysicalName}} { get; set; }
                 """)}}
                     /// <summary>データが新規作成された日時</summary>
@@ -254,6 +256,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
                     public virtual void {{ON_MODEL_CREATING_CUSTOMIZE}}(Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<{{CsClassName}}> entity) {
                     }
                 }
+                #endregion Entity Framework Core エンティティ定義
                 """;
         }
 
@@ -482,11 +485,12 @@ namespace Nijo.Ver1.CodeGenerating {
         /// </summary>
         public static IEnumerable<string> AsDbEntity(this IEnumerable<ISchemaPathNode> path) {
             var entry = path.FirstOrDefault()?.GetEntry();
-            var isOutOfEntryTree = false;
+            RefToMember? refEntry = null;
             var isAncestorsMember = false;
 
             foreach (var node in path) {
-                if (node == entry) continue;
+                if (node == entry) continue; // パスの一番最初（エントリー）はスキップ
+                if (node.PreviousNode is RefToMember) continue; // refの1つ次の要素の名前はrefで列挙済みのためスキップ
 
                 // 外部参照のナビゲーションプロパティを辿るパス
                 if (node is RefToMember refTo) {
@@ -496,7 +500,7 @@ namespace Nijo.Ver1.CodeGenerating {
                     // 参照元から参照先へ辿るパス
                     if (previous == refTo.Owner) {
                         yield return nav.Relevant.OtherSidePhysicalName;
-                        isOutOfEntryTree = true;
+                        refEntry = refTo;
                         continue;
                     }
                     // 参照先から参照元へ辿るパス
@@ -528,8 +532,8 @@ namespace Nijo.Ver1.CodeGenerating {
 
                 // 末端のメンバー
                 if (node is not ValueMember vm) throw new InvalidOperationException("この分岐まで来るケースは値の場合しか無いのでありえない");
-                if (isOutOfEntryTree) {
-                    var member = new EFCoreEntity.ParentKeyMember(vm);
+                if (refEntry != null) {
+                    var member = new EFCoreEntity.OwnColumnMember(vm);
                     yield return member.PhysicalName;
 
                 } else if (isAncestorsMember) {

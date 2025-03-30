@@ -13,5 +13,9 @@ namespace Nijo.Ver1.Models.QueryModelModules {
     internal class SearchConditionMessageContainer : MessageContainer {
         public SearchConditionMessageContainer(AggregateBase aggregate) : base(aggregate) {
         }
+
+        protected override IEnumerable<IMessageContainerMember> GetMembers() {
+            yield break; // TODO ver.1
+        }
     }
 }

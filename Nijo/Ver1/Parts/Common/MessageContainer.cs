@@ -33,9 +33,16 @@ namespace Nijo.Ver1.Parts.Common {
             yield break;
         }
 
+        /// <summary>
+        /// このクラスに定義されるメンバーを列挙する。
+        /// </summary>
+        protected abstract IEnumerable<IMessageContainerMember> GetMembers();
+
         internal virtual string RenderCSharp() {
             var impl = new List<string>() { CONCRETE_CLASS };
             impl.AddRange(GetCsClassImplements());
+
+            var members = GetMembers().ToArray();
 
             return $$"""
                 /// <summary>
@@ -43,13 +50,28 @@ namespace Nijo.Ver1.Parts.Common {
                 /// </summary>
                 public class {{CsClassName}} : {{impl.Join(", ")}} {
                     public {{CsClassName}}(IEnumerable<string> path) : base(path) {
+                {{members.SelectTextTemplate(m => m.ArrayGenericType == null ? $$"""
+                        this.{{m.PhysicalName}} = new {{CONCRETE_CLASS}}([.. path, "{{m.PhysicalName}}"]);
+                """ : $$"""
+                        this.{{m.PhysicalName}} = new {{CONCRETE_CLASS_LIST}}([.. path, "{{m.PhysicalName}}"], rowIndex => {
+                            return new {{CONCRETE_CLASS}}([.. path, "{{m.PhysicalName}}", rowIndex.ToString()]);
+                        });
+                """)}}
                     }
 
-                    // TODO ver.1
+                {{members.SelectTextTemplate(m => m.ArrayGenericType == null ? $$"""
+                    /// <summary>{{m.DisplayName}}に対して発生したメッセージの入れ物</summary>
+                    public {{INTERFACE}} {{m.PhysicalName}} { get; }
+                """ : $$"""
+                    /// <summary>{{m.DisplayName}}に対して発生したメッセージの入れ物</summary>
+                    public {{INTERFACE_LIST}}<{{m.ArrayGenericType}}> {{m.PhysicalName}} { get; }
+                """)}}
                 }
                 """;
         }
         internal string RenderTypeScript() {
+            var members = GetMembers().ToArray();
+
             return $$"""
                 /** {{_aggregate.DisplayName}} のデータ構造と対応したメッセージの入れ物 */
                 export type {{TsTypeName}} = {
@@ -219,5 +241,15 @@ namespace Nijo.Ver1.Parts.Common {
                     """,
         };
         #endregion 基底クラス
+
+
+        #region メンバー
+        internal interface IMessageContainerMember {
+            string PhysicalName { get; }
+            string DisplayName { get; }
+            /// <summary>このメンバーが配列ならば配列のジェネリック型を指定する。</summary>
+            string? ArrayGenericType { get; }
+        }
+        #endregion メンバー
     }
 }

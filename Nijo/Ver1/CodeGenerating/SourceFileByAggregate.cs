@@ -91,8 +91,10 @@ namespace Nijo.Ver1.CodeGenerating {
                 """)}}
                 }
 
+
                 {{_csharpClass.SelectTextTemplate(source => $$"""
                 {{WithIndent(source, "")}}
+
 
                 """)}}
                 """;

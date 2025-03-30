@@ -1,5 +1,6 @@
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
+using Nijo.Ver1.ValueMemberTypes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,10 +22,64 @@ namespace Nijo.Ver1.Models.DataModelModules {
         internal string CsClassNameUpdate => $"{_aggregate.PhysicalName}UpdateCommand";
         internal string CsClassNameDelete => $"{_aggregate.PhysicalName}DeleteCommand";
 
+        internal const string VERSION = "Version";
         internal const string TO_DBENTITY = "ToDbEntity";
         internal const string FROM_DBENTITY = "FromDbEntity";
 
-        internal string RenderCreateCommandDeclaring(CodeRenderingContext ctx) {
+        /// <summary>
+        /// 新規・更新・削除のすべてのコマンドを、子孫要素の分も含めて再帰的にレンダリングします。
+        /// </summary>
+        internal string RenderAll(CodeRenderingContext ctx) {
+            if (_aggregate is not RootAggregate) throw new InvalidOperationException();
+
+            var descendants = _aggregate.EnumerateDescendants().Select(agg => new SaveCommand(agg));
+            var tree = new[] { this }.Concat(descendants).ToArray();
+
+            return $$"""
+                #region 新規登録時引数
+                {{tree.SelectTextTemplate(agg => $$"""
+                {{agg.RenderCreateCommandDeclaring(ctx)}}
+                """)}}
+                #endregion 新規登録時引数
+
+
+                #region 更新時引数
+                {{tree.SelectTextTemplate(agg => $$"""
+                {{agg.RenderUpdateCommandDeclaring(ctx)}}
+                """)}}
+                #endregion 更新時引数
+
+
+                #region 物理削除時引数
+                {{tree.SelectTextTemplate(agg => $$"""
+                {{agg.RenderDeleteCommandDeclaring(ctx)}}
+                """)}}
+                #endregion 物理削除時引数
+                """;
+        }
+
+
+        #region CREATE
+        private IEnumerable<SaveCommandMember> GetCreateCommandMembers() {
+            foreach (var member in _aggregate.GetMembers()) {
+                if (member is ValueMember vm) {
+                    // 新規登録時に自動採番されるものは新規登録メンバー中に含めない
+                    if (vm.Type is SequenceMember) continue;
+
+                    yield return new SaveCommandValueMember(vm);
+
+                } else if (member is RefToMember rm) {
+                    yield return new SaveCommandRefMember(rm);
+
+                } else if (member is ChildAggreagte child) {
+                    yield return new SaveCommandDescendantMember(child);
+
+                } else if (member is ChildrenAggreagte children) {
+                    yield return new SaveCommandDescendantMember(children);
+                }
+            }
+        }
+        private string RenderCreateCommandDeclaring(CodeRenderingContext ctx) {
             var efCoreEntity = new EFCoreEntity(_aggregate);
 
             return $$"""
@@ -32,7 +87,10 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 /// {{_aggregate.DisplayName}} の新規登録コマンド引数
                 /// </summary>
                 public partial class {{CsClassNameCreate}} {
-                    // TODO ver.1
+                {{GetCreateCommandMembers().SelectTextTemplate(m => $$"""
+                    /// <summary>{{m.DisplayName}}</summary>
+                    public required {{m.CsCreateType}}? {{m.PhysicalName}} { get; set; }
+                """)}}
                 {{If(_aggregate is RootAggregate, () => $$"""
 
                     /// <summary>
@@ -45,8 +103,27 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 }
                 """;
         }
+        #endregion CREATE
 
-        internal string RenderUpdateCommandDeclaring(CodeRenderingContext ctx) {
+
+        #region UPDATE
+        internal IEnumerable<SaveCommandMember> GetUpdateCommandMembers() {
+            foreach (var member in _aggregate.GetMembers()) {
+                if (member is ValueMember vm) {
+                    yield return new SaveCommandValueMember(vm);
+
+                } else if (member is RefToMember rm) {
+                    yield return new SaveCommandRefMember(rm);
+
+                } else if (member is ChildAggreagte child) {
+                    yield return new SaveCommandDescendantMember(child);
+
+                } else if (member is ChildrenAggreagte children) {
+                    yield return new SaveCommandDescendantMember(children);
+                }
+            }
+        }
+        private string RenderUpdateCommandDeclaring(CodeRenderingContext ctx) {
             var efCoreEntity = new EFCoreEntity(_aggregate);
 
             return $$"""
@@ -54,8 +131,13 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 /// {{_aggregate.DisplayName}} の更新コマンド引数
                 /// </summary>
                 public partial class {{CsClassNameUpdate}} {
-                    // TODO ver.1
+                {{GetUpdateCommandMembers().SelectTextTemplate(m => $$"""
+                    /// <summary>{{m.DisplayName}}</summary>
+                    public required {{m.CsUpdateType}}? {{m.PhysicalName}} { get; set; }
+                """)}}
                 {{If(_aggregate is RootAggregate, () => $$"""
+                    /// <summary>楽観排他制御用のバージョン</summary>
+                    public required int? {{VERSION}} { get; set; }
 
                     /// <summary>
                     /// このインスタンスを Entity Framework Core のエンティティに変換します。
@@ -74,8 +156,25 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 }
                 """;
         }
+        #endregion UPDATE
 
-        internal string RenderDeleteCommandDeclaring(CodeRenderingContext ctx) {
+
+        #region DELETE
+        private IEnumerable<SaveCommandMember> GetDeleteCommandMembers() {
+            foreach (var member in _aggregate.GetMembers()) {
+                if (member is ValueMember vm) {
+                    if (!vm.IsKey) continue;
+
+                    yield return new SaveCommandValueMember(vm);
+
+                } else if (member is RefToMember rm) {
+                    if (!rm.IsKey) continue;
+
+                    yield return new SaveCommandRefMember(rm);
+                }
+            }
+        }
+        private string RenderDeleteCommandDeclaring(CodeRenderingContext ctx) {
             var efCoreEntity = new EFCoreEntity(_aggregate);
 
             return $$"""
@@ -83,16 +182,25 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 /// {{_aggregate.DisplayName}} の物理削除コマンド引数。キーとバージョンのみを持つ。
                 /// </summary>
                 public partial class {{CsClassNameDelete}} {
-                    // TODO ver.1
+                {{GetDeleteCommandMembers().SelectTextTemplate(m => $$"""
+                    /// <summary>{{m.DisplayName}}</summary>
+                    public required {{m.CsDeleteType}}? {{m.PhysicalName}} { get; set; }
+                """)}}
+                {{If(_aggregate is RootAggregate, () => $$"""
+                    /// <summary>楽観排他制御用のバージョン</summary>
+                    public required int? {{VERSION}} { get; set; }
+                """)}}
                 }
                 """;
         }
+        #endregion DELETE
 
 
         #region メンバー
         internal abstract class SaveCommandMember {
             internal abstract IAggregateMember Member { get; }
             internal abstract string PhysicalName { get; }
+            internal abstract string DisplayName { get; }
             internal abstract string CsCreateType { get; }
             internal abstract string CsUpdateType { get; }
             internal abstract string CsDeleteType { get; }
@@ -108,6 +216,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
 
             internal override IAggregateMember Member => _vm;
             internal override string PhysicalName => _vm.PhysicalName;
+            internal override string DisplayName => _vm.DisplayName;
             internal override string CsCreateType => _vm.Type.CsDomainTypeName;
             internal override string CsUpdateType => _vm.Type.CsDomainTypeName;
             internal override string CsDeleteType => _vm.Type.CsDomainTypeName;
@@ -125,6 +234,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
 
             internal override IAggregateMember Member => _refTo;
             internal override string PhysicalName => _refTo.PhysicalName;
+            internal override string DisplayName => _refTo.DisplayName;
             internal override string CsCreateType => _refToKey.ClassName;
             internal override string CsUpdateType => _refToKey.ClassName;
             internal override string CsDeleteType => _refToKey.ClassName;
@@ -143,6 +253,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
 
             internal override IAggregateMember Member => (IAggregateMember)_aggregate;
             internal override string PhysicalName => _aggregate.PhysicalName;
+            internal override string DisplayName => _aggregate.DisplayName;
             internal override string CsCreateType => _aggregate is ChildrenAggreagte ? $"List<{new SaveCommand(_aggregate).CsClassNameCreate}>" : new SaveCommand(_aggregate).CsClassNameCreate;
             internal override string CsUpdateType => _aggregate is ChildrenAggreagte ? $"List<{new SaveCommand(_aggregate).CsClassNameUpdate}>" : new SaveCommand(_aggregate).CsClassNameUpdate;
             internal override string CsDeleteType => _aggregate is ChildrenAggreagte ? $"List<{new SaveCommand(_aggregate).CsClassNameDelete}>" : new SaveCommand(_aggregate).CsClassNameDelete;
@@ -164,7 +275,8 @@ namespace Nijo.Ver1.CodeGenerating {
             var isOutOfEntryTree = false;
 
             foreach (var node in path) {
-                if (node == entry) continue;
+                if (node == entry) continue; // パスの一番最初（エントリー）はスキップ
+                if (node.PreviousNode is RefToMember) continue; // refの1つ次の要素の名前はrefで列挙済みのためスキップ
 
                 // 外部参照のナビゲーションプロパティを辿るパス
                 if (node is RefToMember refTo) {

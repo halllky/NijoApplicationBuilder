@@ -24,18 +24,67 @@ internal static class KeyClass {
 
         internal string ClassName => $"{_aggregate.PhysicalName}Key";
 
+        private IEnumerable<IKeyClassMember> GetMembers() {
+            var p = _aggregate.GetParent();
+            if (p != null) {
+                yield return new KeyClassParentMember(p);
+            }
+
+            foreach (var m in _aggregate.GetMembers()) {
+                if (m is ValueMember vm && vm.IsKey) {
+                    yield return new KeyClassValueMember(vm);
+
+                } else if (m is RefToMember rm && rm.IsKey) {
+                    yield return new KeyClassRefMember(rm);
+                }
+            }
+        }
+
         /// <summary>
         /// 子孫のキークラス定義も含めて全部レンダリング
         /// </summary>
-        internal string RenderClassDeclaringRecursively(CodeRenderingContext ctx) {
-            if (_aggregate is not RootAggregate) throw new InvalidOperationException();
+        internal static string RenderClassDeclaringRecursively(RootAggregate rootAggregate, CodeRenderingContext ctx) {
 
+            var tree = rootAggregate
+                .EnumerateThisAndDescendants()
+                .ToArray();
+
+            // キーのエントリーほかの集約から参照されている場合のみレンダリングする
+            var entries = tree
+                .Where(agg => agg.GetRefFroms().Any())
+                .Select(agg => new KeyClassEntry(agg))
+                .ToArray();
+
+            // entriesに含まれる集約の祖先はAsParentをレンダリングする
+            var parentMembers = tree
+                .Where(agg => entries.Any(entry => agg.IsAncestorOf(entry._aggregate)))
+                .Select(agg => new KeyClassParentMember(agg))
+                .ToArray();
+
+            return $$"""
+                #region キー項目のみのオブジェクト
+                {{entries.SelectTextTemplate(entry => $$"""
+                {{entry.RenderDeclaring()}}
+
+                """)}}
+                {{parentMembers.SelectTextTemplate(parent => $$"""
+                {{parent.RenderDeclaring()}}
+
+                """)}}
+                #endregion キー項目のみのオブジェクト
+                """;
+        }
+
+        protected virtual string RenderDeclaring() {
             return $$"""
                 /// <summary>
                 /// {{_aggregate.DisplayName}} のキー
                 /// </summary>
-                public sealed class {{ClassName}} {
-                    // TODO ver.1
+                public partial class {{ClassName}} {
+                {{GetMembers().SelectTextTemplate(m => $$"""
+                    /// <summary>{{m.DisplayName}}</summary>
+                    public required {{m.CsType}}? {{m.PhysicalName}} { get; set; }
+                """)}}
                 }
                 """;
         }
@@ -43,26 +92,28 @@ internal static class KeyClass {
 
 
     #region メンバー
-    internal abstract class KeyClassMember {
-        internal abstract string PhysicalName { get; }
-        internal abstract string CsType { get; }
+    internal interface IKeyClassMember {
+        string PhysicalName { get; }
+        string DisplayName { get; }
+        string CsType { get; }
     }
     /// <summary>
     /// キー情報の値メンバー
     /// </summary>
-    internal class KeyClassValueMember : KeyClassMember {
+    internal class KeyClassValueMember : IKeyClassMember {
         internal KeyClassValueMember(ValueMember vm) {
             _vm = vm;
         }
         private readonly ValueMember _vm;
 
-        internal override string PhysicalName => _vm.PhysicalName;
-        internal override string CsType => _vm.Type.CsDomainTypeName;
+        public string PhysicalName => _vm.PhysicalName;
+        public string DisplayName => _vm.DisplayName;
+        public string CsType => _vm.Type.CsDomainTypeName;
     }
     /// <summary>
     /// キー情報の中に出てくる他の集約のキー
     /// </summary>
-    internal class KeyClassRefMember : KeyClassMember {
+    internal class KeyClassRefMember : IKeyClassMember {
         internal KeyClassRefMember(RefToMember refTo) {
             _refTo = refTo;
             _refToKey = new KeyClassEntry(refTo.RefTo);
@@ -70,23 +121,25 @@ internal static class KeyClass {
         private readonly RefToMember _refTo;
         private readonly KeyClassEntry _refToKey;
 
-        internal override string PhysicalName => _refTo.PhysicalName;
-        internal override string CsType => _refToKey.ClassName;
+        public string PhysicalName => _refTo.PhysicalName;
+        public string DisplayName => _refTo.DisplayName;
+        public string CsType => _refToKey.ClassName;
     }
     /// <summary>
     /// 子孫のキー情報の中に出てくる親集約のキー。
     /// </summary>
-    internal class KeyClassParentMember : KeyClassMember {
-        internal KeyClassParentMember(AggregateBase parent) {
+    internal class KeyClassParentMember : KeyClassEntry, IKeyClassMember {
+        internal KeyClassParentMember(AggregateBase parent) : base(parent) {
             _parent = parent;
             //_keyClassEntry = keyClassEntry;
         }
         private readonly AggregateBase _parent;
         //private readonly AggregateBase _keyClassEntry;
 
-        internal override string PhysicalName => "Parent";
+        public string PhysicalName => "Parent";
+        public string DisplayName => _parent.DisplayName;
 
-        internal override string CsType => $"{_parent}KeyAsNotEntry";
+        public string CsType => $"{_parent}KeyAsNotEntry";
         //internal override string CsType {
         //    get {
         //        if (_csTypeCache == null) {
@@ -108,7 +161,7 @@ internal static class KeyClass {
         //        return _csTypeCache;
         //    }
         //}
-        private string? _csTypeCache;
+        //private string? _csTypeCache;
     }
     #endregion メンバー
 }

@@ -170,6 +170,12 @@ namespace Nijo.Ver1.ImmutableSchema {
         public bool IsChildOf(AggregateBase aggregate) {
             return this._xElement.Parent == aggregate._xElement;
         }
+        /// <summary>
+        /// この集約が引数の集約の祖先か否かを返します。
+        /// </summary>
+        public bool IsAncestorOf(AggregateBase aggregate) {
+            return aggregate._xElement.Ancestors().Contains(this._xElement);
+        }
         #endregion 親子
 
 

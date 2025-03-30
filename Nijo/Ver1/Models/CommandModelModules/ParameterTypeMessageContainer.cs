@@ -20,5 +20,9 @@ namespace Nijo.Ver1.Models.CommandModelModules {
 
         internal override string CsClassName => $"{_rootAggregate.PhysicalName}ParameterMessages";
         internal override string TsTypeName => $"{_rootAggregate.PhysicalName}ParameterMessages";
+
+        protected override IEnumerable<IMessageContainerMember> GetMembers() {
+            yield break; // TODO ver.1
+        }
     }
 }

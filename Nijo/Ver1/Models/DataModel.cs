@@ -26,17 +26,14 @@ namespace Nijo.Ver1.Models {
 
             // データ型: SaveCommand
             var saveCommand = new SaveCommand(rootAggregate);
-            aggregateFile.AddCSharpClass(saveCommand.RenderCreateCommandDeclaring(ctx));
-            aggregateFile.AddCSharpClass(saveCommand.RenderUpdateCommandDeclaring(ctx));
-            aggregateFile.AddCSharpClass(saveCommand.RenderDeleteCommandDeclaring(ctx));
+            aggregateFile.AddCSharpClass(saveCommand.RenderAll(ctx));
+
+            // データ型: ほかの集約から参照されるときのキー
+            aggregateFile.AddCSharpClass(KeyClass.KeyClassEntry.RenderClassDeclaringRecursively(rootAggregate, ctx));
 
             // データ型: SaveCommandメッセージ
             var saveCommandMessage = new SaveCommandMessageContainer(rootAggregate);
             aggregateFile.AddCSharpClass(saveCommandMessage.RenderCSharp());
-
-            // データ型: ほかの集約から参照されるときのキー
-            var refTargetKey = new KeyClass.KeyClassEntry(rootAggregate);
-            aggregateFile.AddCSharpClass(refTargetKey.RenderClassDeclaringRecursively(ctx));
 
             // 処理: 新規登録、更新、削除
             var create = new CreateMethod(rootAggregate);
