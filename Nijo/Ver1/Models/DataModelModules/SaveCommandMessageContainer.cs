@@ -16,7 +16,8 @@ namespace Nijo.Ver1.Models.DataModelModules {
         /// DataModelの場合、ユーザーに対してDataModelの型ではなくQuery/CommandModelの型で通知する必要があるケースがあるため
         /// DataModel型のインターフェースを実装したQueryModelのメッセージコンテナを使用することがある。
         /// </summary>
-        internal string InterfaceName => $"I{_aggregate.PhysicalName}Messages";
+        internal string InterfaceName => $"I{_aggregate.PhysicalName}SaveCommandMessages";
+        internal override string CsClassName => $"{_aggregate.PhysicalName}SaveCommandMessages";
 
         protected override IEnumerable<string> GetCsClassImplements() {
             yield return InterfaceName;
@@ -39,6 +40,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
         internal override string RenderCSharp() {
             // 基底クラス側でレンダリングされるソースに加えてインターフェースもレンダリングする
             return $$"""
+                #region 登録更新の過程で発生したメッセージの入れ物クラス
                 /// <summary>
                 /// {{_aggregate.DisplayName}} のデータ構造と対応したメッセージの入れ物
                 /// </summary>
@@ -53,6 +55,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 }
 
                 {{base.RenderCSharp()}}
+                #endregion 登録更新の過程で発生したメッセージの入れ物クラス
                 """;
         }
 

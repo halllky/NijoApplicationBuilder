@@ -33,12 +33,9 @@ namespace Nijo.Ver1.Models {
             aggregateFile.AddTypeScriptFunction(searchCondition.RenderNewObjectFunction());
 
             // データ型: 検索条件メッセージ
-            // DataModelの場合はDataModelのメッセージコンテナとクラス名もデータ構造も重複するのでレンダリングしない
-            if (rootAggregate.Model is not DataModel) {
-                var searchConditionMessages = new SearchConditionMessageContainer(rootAggregate);
-                aggregateFile.AddCSharpClass(searchConditionMessages.RenderCSharp());
-                aggregateFile.AddTypeScriptTypeDef(searchConditionMessages.RenderTypeScript());
-            }
+            var searchConditionMessages = new SearchConditionMessageContainer(rootAggregate);
+            aggregateFile.AddCSharpClass(searchConditionMessages.RenderCSharp());
+            aggregateFile.AddTypeScriptTypeDef(searchConditionMessages.RenderTypeScript());
 
             // 処理: 検索条件クラスのURL変換
             // - URL => TS

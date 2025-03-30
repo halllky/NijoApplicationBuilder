@@ -86,15 +86,15 @@ namespace Nijo.Ver1.CodeGenerating {
 
                 partial class {{ApplicationService.ABSTRACT_CLASS}} {
                 {{_appSrvMethods.SelectTextTemplate(source => $$"""
+
                     {{WithIndent(source, "    ")}}
 
                 """)}}
                 }
 
-
                 {{_csharpClass.SelectTextTemplate(source => $$"""
-                {{WithIndent(source, "")}}
 
+                {{WithIndent(source, "")}}
 
                 """)}}
                 """;
