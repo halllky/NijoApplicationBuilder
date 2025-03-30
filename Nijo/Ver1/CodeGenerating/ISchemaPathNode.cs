@@ -1,3 +1,4 @@
+using Nijo.Ver1.ImmutableSchema;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -50,6 +51,33 @@ namespace Nijo.Ver1.CodeGenerating {
             // エントリーが先なのでLIFOで返す
             foreach (var item in stack) {
                 yield return item;
+            }
+        }
+
+        /// <summary>
+        /// パスを後ろから辿り直近のChildren以降のみに絞り込む。
+        /// パス内にChildrenが無い場合は引数のパスがそのまま返される。
+        /// </summary>
+        public static IEnumerable<ISchemaPathNode> SinceNearestChildren(this IEnumerable<ISchemaPathNode> path) {
+            var result = new List<ISchemaPathNode>();
+
+            foreach (var node in path) {
+                if (node is ChildrenAggreagte) {
+                    result.Clear();
+
+                } else {
+                    result.Add(node);
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// パスの各要素を、特に変換や指定をかけずそのままの物理名を返す
+        /// </summary>
+        public static IEnumerable<string> SelectPhysicalName(this IEnumerable<ISchemaPathNode> path) {
+            foreach (var node in path) {
+                yield return node.XElement.Name.LocalName;
             }
         }
     }

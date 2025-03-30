@@ -46,8 +46,7 @@ namespace Nijo.Ver1.Models {
             aggregateFile.AddTypeScriptFunction(urlConversion.ConvertTypeScriptToUrl(ctx));
 
             // データ型: 検索結果クラス
-            var searchResult = new SearchResult(rootAggregate);
-            aggregateFile.AddCSharpClass(searchResult.RenderCSharpDeclaring());
+            aggregateFile.AddCSharpClass(SearchResult.RenderTree(rootAggregate));
 
             // データ型: 画面表示用型 DisplayData
             // - 定義(CS, TS): 値 + 状態(existsInDB, willBeChanged, willBeDeleted) + ReadOnly(画面の自動生成の一機能と位置づけるべきかも)
