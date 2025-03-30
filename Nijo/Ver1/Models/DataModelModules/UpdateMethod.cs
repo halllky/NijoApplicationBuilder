@@ -1,8 +1,12 @@
+using Nijo.Util.DotnetEx;
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
 using Nijo.Ver1.Parts.Common;
 using Nijo.Ver1.Parts.CSharp;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 
 namespace Nijo.Ver1.Models.DataModelModules {
     /// <summary>
@@ -55,5 +59,88 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 #endregion 更新処理
                 """;
         }
+
+
+        #region Create/Update/Deleleで共通
+        internal const string ERR_ID_SAVECHANGES = "ErrorAtSaveChanges";
+
+        internal static void RegisterCommonParts(CodeRenderingContext ctx) {
+            ctx.Use<MsgFactory>().AddMessage(
+                ERR_ID_SAVECHANGES,
+                "登録/更新/削除のタイミングでRDBMS上で何らかのエラーが生じた場合のメッセージ",
+                "登録処理でエラーが発生しました: {0}");
+        }
+
+        /// <summary>
+        /// 子孫要素の EntityState を全てDetachにしていくソースをレンダリングする。
+        /// </summary>
+        internal static IEnumerable<string> RenderDescendantDetaching(RootAggregate rootAggregate, string rootEntityName) {
+            var descendantDbEntities = rootAggregate.EnumerateDescendants().ToArray();
+
+            for (int i = 0; i < descendantDbEntities.Length; i++) {
+                var builder = new StringBuilder();
+                var paths = descendantDbEntities[i].GetFullPath().ToArray();
+                var after_ = $"after{descendantDbEntities[i].PhysicalName}_{i}";
+
+                // before, after それぞれの子孫インスタンスを一次配列に格納する
+                void RenderEntityArray() {
+                    var tempVar = after_;
+
+                    if (paths.Any(path => path is ChildrenAggreagte)) {
+                        // 子集約までの経路の途中に配列が含まれる場合
+                        builder.Append($"var {tempVar} = {rootEntityName}");
+
+                        var select = false;
+                        foreach (var node in paths) {
+                            // Children
+                            if (node is ChildrenAggreagte children) {
+                                var nav = new EFCoreEntity.NavigationOfParentChild((AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない"), children);
+                                builder.Append(select
+                                    ? $".SelectMany(x => x.{nav.Principal.OtherSidePhysicalName})"
+                                    : $".{nav.Principal.OtherSidePhysicalName}");
+                                select = true;
+                                continue;
+                            }
+                            // Child
+                            if (node is ChildAggreagte child) {
+                                var nav = new EFCoreEntity.NavigationOfParentChild((AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない"), child);
+                                builder.Append(select
+                                    ? $".Select(x => x.{nav.Principal.OtherSidePhysicalName})"
+                                    : $".{nav.Principal.OtherSidePhysicalName}");
+                                continue;
+                            }
+
+                            throw new InvalidOperationException("子孫列挙なのでChildかChildrenしかありえない");
+                        }
+
+                        var efCoreEntity = new EFCoreEntity(descendantDbEntities[i]);
+                        builder.AppendLine($".OfType<{efCoreEntity.CsClassName}>() ?? Enumerable.Empty<{efCoreEntity.CsClassName}>();");
+
+                    } else {
+                        // 子集約までの経路の途中に配列が含まれない場合
+                        var efCoreEntity = new EFCoreEntity(descendantDbEntities[i]);
+                        var childPath = paths.Select(node => new EFCoreEntity.NavigationOfParentChild(
+                            (AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない"),
+                            (AggregateBase?)node ?? throw new InvalidOperationException("ありえない")));
+                        builder.AppendLine($$"""
+                            var {{tempVar}} = new {{efCoreEntity.CsClassName}}?[] {
+                                {{rootEntityName}}.{{childPath.Select(p => p.Principal.OtherSidePhysicalName).Join("?.")}},
+                            }.OfType<{{efCoreEntity.CsClassName}}>().ToArray();
+                            """);
+                    }
+                }
+                RenderEntityArray();
+
+                // ChangeState変更
+                builder.AppendLine($$"""
+                    foreach (var a in {{after_}}) {
+                        DbContext.Entry(a).State = EntityState.Detached;
+                    }
+                    """);
+
+                yield return builder.ToString();
+            }
+        }
+        #endregion Create/Update/Deleleで共通
     }
 }

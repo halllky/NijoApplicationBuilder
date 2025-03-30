@@ -20,11 +20,24 @@ namespace Nijo.Ver1.CodeGenerating {
         ISchemaPathNode? PreviousNode { get; }
     }
 
-    public static class SchemaPathNodeExtensions {
+    public static partial class SchemaPathNodeExtensions {
+
+        /// <summary>
+        /// エントリーを返す
+        /// </summary>
+        public static ISchemaPathNode GetEntry(this ISchemaPathNode node) {
+            // 1個前のノードがnullならエントリー
+            var current = node;
+            while (current.PreviousNode != null) {
+                current = current.PreviousNode;
+            }
+            return current;
+        }
+
         /// <summary>
         /// エントリーからのパスを辿る。エントリーが先に列挙される
         /// </summary>
-        public static IEnumerable<ISchemaPathNode> GetFullPathFromEntry(this ISchemaPathNode node) {
+        public static IEnumerable<ISchemaPathNode> GetFullPath(this ISchemaPathNode node) {
             var stack = new Stack<ISchemaPathNode>();
             stack.Push(node);
 

@@ -35,7 +35,10 @@ namespace Nijo.Ver1.ValueMemberTypes {
         };
         UiConstraint.E_Type IValueMemberType.UiConstraintType => throw new NotImplementedException();
 
-        void IValueMemberType.GenerateCode(CodeRenderingContext ctx) {
+        void IValueMemberType.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {
+            // 特になし
+        }
+        void IValueMemberType.RenderStaticSources(CodeRenderingContext ctx) {
             // 特になし
         }
     }

@@ -52,6 +52,7 @@ namespace Nijo.Ver1.Models {
                 {{CheckRequired.Render(rootAggregate, ctx)}}
                 {{CheckMaxLength.Render(rootAggregate, ctx)}}
                 {{CheckCharacterType.Render(rootAggregate, ctx)}}
+                {{CheckDigitsAndScales.Render(rootAggregate, ctx)}}
                 {{DynamicEnum.RenderAppSrvCheckMethod(rootAggregate, ctx)}}
                 #endregion 自動生成されるバリデーション処理
                 """);
@@ -69,6 +70,9 @@ namespace Nijo.Ver1.Models {
         }
 
         public void GenerateCode(CodeRenderingContext ctx) {
+            // メッセージ
+            UpdateMethod.RegisterCommonParts(ctx);
+
             // TODO ver.1: 追加更新削除区分のenum(C#)
         }
     }

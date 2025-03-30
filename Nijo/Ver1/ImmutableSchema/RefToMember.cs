@@ -72,7 +72,7 @@ namespace Nijo.Ver1.ImmutableSchema {
 
         public override string ToString() {
             // デバッグ用
-            return this.GetFullPathFromEntry().Select(x => x.XElement.Name.LocalName).Join(">");
+            return this.GetFullPath().Select(x => x.XElement.Name.LocalName).Join(">");
         }
     }
 }

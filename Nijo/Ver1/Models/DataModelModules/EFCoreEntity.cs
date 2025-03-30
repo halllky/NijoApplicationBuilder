@@ -451,3 +451,77 @@ namespace Nijo.Ver1.Models.DataModelModules {
         #endregion ナビゲーションプロパティ
     }
 }
+
+namespace Nijo.Ver1.CodeGenerating {
+    using Nijo.Ver1.Models.DataModelModules;
+
+    partial class SchemaPathNodeExtensions {
+
+        /// <summary>
+        /// <see cref="GetFullPath(ISchemaPathNode)"/> の結果を <see cref="EFCoreEntity"/> のルールに沿ったパスとして返す
+        /// </summary>
+        public static IEnumerable<string> AsDbEntity(this IEnumerable<ISchemaPathNode> path) {
+            var entry = path.FirstOrDefault()?.GetEntry();
+            var isOutOfEntryTree = false;
+            var isAncestorsMember = false;
+
+            foreach (var node in path) {
+                if (node == entry) continue;
+
+                // 外部参照のナビゲーションプロパティを辿るパス
+                if (node is RefToMember refTo) {
+                    var previous = (AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("reftoの前は必ず参照元集約か参照先集約になるのでありえない");
+                    var nav = new EFCoreEntity.NavigationOfRef(refTo);
+
+                    // 参照元から参照先へ辿るパス
+                    if (previous == refTo.Owner) {
+                        yield return nav.Relevant.OtherSidePhysicalName;
+                        isOutOfEntryTree = true;
+                        continue;
+                    }
+                    // 参照先から参照元へ辿るパス
+                    if (previous == refTo.RefTo) {
+                        yield return nav.Principal.OtherSidePhysicalName;
+                        continue;
+                    }
+                    throw new InvalidOperationException("reftoの前は必ず参照元集約か参照先集約になるのでありえない");
+                }
+
+                // 親子間のナビゲーションプロパティを辿るパス
+                if (node is AggregateBase curr && node.PreviousNode is AggregateBase prev) {
+
+                    // 子から親へ辿るパス
+                    if (curr.IsParentOf(prev)) {
+                        var nav = new EFCoreEntity.NavigationOfParentChild(curr, prev);
+                        yield return nav.Relevant.OtherSidePhysicalName;
+                        isAncestorsMember = true;
+                        continue;
+                    }
+                    // 親から子へ辿るパス
+                    if (curr.IsChildOf(prev)) {
+                        var nav = new EFCoreEntity.NavigationOfParentChild(prev, curr);
+                        yield return nav.Principal.OtherSidePhysicalName;
+                        continue;
+                    }
+                    throw new InvalidOperationException("必ず 親→子, 子→親 のどちらかになるのでありえない");
+                }
+
+                // 末端のメンバー
+                if (node is not ValueMember vm) throw new InvalidOperationException("この分岐まで来るケースは値の場合しか無いのでありえない");
+                if (isOutOfEntryTree) {
+                    var member = new EFCoreEntity.ParentKeyMember(vm);
+                    yield return member.PhysicalName;
+
+                } else if (isAncestorsMember) {
+                    var member = new EFCoreEntity.ParentKeyMember(vm);
+                    yield return member.PhysicalName;
+
+                } else {
+                    var member = new EFCoreEntity.OwnColumnMember(vm);
+                    yield return member.PhysicalName;
+                }
+            }
+        }
+
+    }
+}

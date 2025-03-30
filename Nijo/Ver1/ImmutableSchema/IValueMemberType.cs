@@ -31,9 +31,15 @@ namespace Nijo.Ver1.ImmutableSchema {
         string TsTypeName { get; }
 
         /// <summary>
+        /// 型に由来する生成ソースがある場合はここで登録する
+        /// </summary>
+        /// </summary>
+        void RegisterDependencies(IMultiAggregateSourceFileManager ctx);
+        /// <summary>
         /// 型に由来する生成ソースがある場合はここでレンダリングする
         /// </summary>
-        void GenerateCode(CodeRenderingContext ctx);
+        /// </summary>
+        void RenderStaticSources(CodeRenderingContext ctx);
 
         /// <summary>
         /// QueryModelでの検索時の振る舞い。

@@ -1,5 +1,6 @@
 using Nijo.Util.DotnetEx;
 using Nijo.Ver1.CodeGenerating;
+using Nijo.Ver1.Parts.CSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,13 +13,18 @@ namespace Nijo.Ver1.Parts.Common {
     /// 自動生成されるコードの中で必要となる、ユーザーに見せるメッセージ。
     /// 具体的な文言は環境により異なるため、DIで注入したものを使用する。
     /// </summary>
-    public partial class DisplayMessageFactory : IMultiAggregateSourceFile {
+    public partial class MsgFactory : IMultiAggregateSourceFile {
         /// <summary>
-        /// 自動生成されるコードの中で <see cref="DisplayMessageFactory"/> のインスタンスにアクセスするためのインタフェース名。
+        /// C#側はアプリケーションサービスにこの名前のプロパティが存在するのでそれ経由で使用する。
+        /// </summary>
+        public const string MSG = "MSG";
+
+        /// <summary>
+        /// 自動生成されるコードの中で <see cref="MsgFactory"/> のインスタンスにアクセスするためのインタフェース名。
         /// </summary>
         public const string CS_INTERFACE = "IDisplayMessageFactory";
         /// <summary>
-        /// 自動生成されるコードの中で <see cref="DisplayMessageFactory"/> のインスタンスにアクセスするためのインタフェース名。
+        /// 自動生成されるコードの中で <see cref="MsgFactory"/> のインスタンスにアクセスするためのインタフェース名。
         /// </summary>
         public const string TS_TYPE_NAME = "DisplayMessageFactory";
 
@@ -33,7 +39,7 @@ namespace Nijo.Ver1.Parts.Common {
         /// <param name="id">プログラム中からアクセスするときの識別子。アプリケーション全体で一意である必要があります。またソースコード上で使用可能な文字しか使用できません。</param>
         /// <param name="comment">説明文</param>
         /// <param name="template">メッセージのテンプレート。<code>{0}</code>などの変数を含めることができます。</param>
-        public DisplayMessageFactory AddMessage(string id, string comment, string template) {
+        public MsgFactory AddMessage(string id, string comment, string template) {
             // ID不正チェック
             if (id.ToCSharpSafe() != id) {
                 throw new InvalidOperationException($"ソースコード上で使用できない文字列が含まれています: {id}");
@@ -63,7 +69,7 @@ namespace Nijo.Ver1.Parts.Common {
                 var match = NumberInsideCurlyBrace().Match(Template);
                 if (!match.Success) yield break;
 
-                for (int i = 0; i < match.Groups.Count - 1; i++) {
+                for (int i = 0; i < match.Groups.Count; i++) {
                     yield return $"arg{i}";
                 }
             }
@@ -101,7 +107,26 @@ namespace Nijo.Ver1.Parts.Common {
 
 
         void IMultiAggregateSourceFile.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {
-            // 特になし
+            ctx.Use<ApplicationService>().Add($$"""
+                /// <summary>
+                /// ユーザーに見せるメッセージの文言を返します。
+                /// </summary>
+                public {{CS_INTERFACE}} {{MSG}} => _displayMessageFactory ??= ServiceProvider.GetRequiredService<{{CS_INTERFACE}}>();
+                private {{CS_INTERFACE}}? _displayMessageFactory;
+                """);
+
+            ctx.Use<ApplicationConfigure>()
+                .AddCoreConfigureServices(services => $$"""
+                    ConfigureDisplayMessageFactory({{services}});
+                    """)
+                .AddCoreMethod($$"""
+                    /// <summary>
+                    /// ユーザーに見せるメッセージの文言を構成します。
+                    /// </summary>
+                    protected virtual void ConfigureDisplayMessageFactory(IServiceCollection services) {
+                        services.AddScoped<{{CS_INTERFACE}}, {{CS_DEFAULT_CLASS_NAME}}>();
+                    }
+                    """);
         }
 
         void IMultiAggregateSourceFile.Render(CodeRenderingContext ctx) {
@@ -132,7 +157,7 @@ namespace Nijo.Ver1.Parts.Common {
                             /// </summary>
                             public class {{CS_DEFAULT_CLASS_NAME}} : {{CS_INTERFACE}} {
                             {{_messages.Values.SelectTextTemplate(msg => $$"""
-                                public static string {{msg.Id}}({{msg.GetParameterVarNames().Select(p => $"string {p}").Join(", ")}}) => $"{{msg.GetTemplateLiteral(E_CsTs.CSharp)}}";
+                                public string {{msg.Id}}({{msg.GetParameterVarNames().Select(p => $"string {p}").Join(", ")}}) => $"{{msg.GetTemplateLiteral(E_CsTs.CSharp)}}";
                             """)}}
                             }
                             """,

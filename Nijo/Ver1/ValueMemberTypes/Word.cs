@@ -25,7 +25,10 @@ namespace Nijo.Ver1.ValueMemberTypes {
             RenderTsNewObjectFunctionValue = () => "undefined",
         };
 
-        void IValueMemberType.GenerateCode(CodeRenderingContext ctx) {
+        void IValueMemberType.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {
+            // 特になし
+        }
+        void IValueMemberType.RenderStaticSources(CodeRenderingContext ctx) {
             // 特になし
         }
     }

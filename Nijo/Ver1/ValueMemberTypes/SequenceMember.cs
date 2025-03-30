@@ -1,6 +1,7 @@
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
 using Nijo.Ver1.Models.QueryModelModules;
+using Nijo.Ver1.Parts.CSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,8 +26,16 @@ namespace Nijo.Ver1.ValueMemberTypes {
 
         UiConstraint.E_Type IValueMemberType.UiConstraintType => UiConstraint.E_Type.NumberMemberConstraint;
 
-        void IValueMemberType.GenerateCode(CodeRenderingContext ctx) {
+        void IValueMemberType.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {
             // 特になし
         }
+        void IValueMemberType.RenderStaticSources(CodeRenderingContext ctx) {
+            // 特になし
+        }
+
+        #region 採番処理
+        internal const string SET_METHOD = "GenerateAndSetSequenceValue";
+
+        #endregion 採番処理
     }
 }

@@ -94,6 +94,8 @@ namespace Nijo.Ver1.ImmutableSchema {
             }
         }
 
+
+        #region 親子
         /// <summary>
         /// この集約の親を返します。
         /// </summary>
@@ -156,6 +158,23 @@ namespace Nijo.Ver1.ImmutableSchema {
         }
 
         /// <summary>
+        /// この集約が引数の集約の親か否かを返します。
+        /// </summary>
+        public bool IsParentOf(AggregateBase aggregate) {
+            return aggregate._xElement.Parent == this._xElement;
+        }
+        /// <summary>
+        /// この集約が引数の集約の子か否かを返します。
+        /// （<see cref="ChildAggreagte"/> または <see cref="ChildrenAggreagte"/> のいずれでもtrue）
+        /// </summary>
+        public bool IsChildOf(AggregateBase aggregate) {
+            return this._xElement.Parent == aggregate._xElement;
+        }
+        #endregion 親子
+
+
+        #region 外部参照
+        /// <summary>
         /// この集約がメソッドの引数の集約の唯一のキーか否かを返します。
         /// </summary>
         /// <param name="refFrom">参照元</param>
@@ -176,6 +195,8 @@ namespace Nijo.Ver1.ImmutableSchema {
                     ? (RefToMember)PreviousNode // パスの巻き戻しの場合
                     : new RefToMember(el, _ctx, this));
         }
+        #endregion 外部参照
+
 
         #region 等価比較
         public override int GetHashCode() {
@@ -191,7 +212,7 @@ namespace Nijo.Ver1.ImmutableSchema {
 
         public override string ToString() {
             // デバッグ用
-            return this.GetFullPathFromEntry().Select(x => x.XElement.Name.LocalName).Join(">");
+            return this.GetFullPath().Select(x => x.XElement.Name.LocalName).Join(">");
         }
     }
 
