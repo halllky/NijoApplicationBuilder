@@ -198,6 +198,12 @@ namespace Nijo.Ver1.ImmutableSchema {
         #endregion 外部参照
 
 
+        /// <summary>
+        /// <see cref="ISchemaPathNode"/> としての経路情報をクリアした新しいインスタンスを返す
+        /// </summary>
+        public abstract AggregateBase AsEntry();
+
+
         #region 等価比較
         public override int GetHashCode() {
             return _xElement.GetHashCode();
@@ -228,6 +234,10 @@ namespace Nijo.Ver1.ImmutableSchema {
 
         public IModel Model => _ctx.FindModel(_xElement) ?? throw new InvalidOperationException();
 
+        public override AggregateBase AsEntry() {
+            return new RootAggregate(_xElement, _ctx, null);
+        }
+
         #region DataModelと全く同じ型のQueryModel, CommandModel を生成するかどうか
         private const string IS_GENERATE_DEFAULT_QUERY_MODEL = "generate-default-query-model";
         private const string IS_GENERATE_BATCH_UPDATE_COMMAND = "generate-batch-update-command";
@@ -248,6 +258,10 @@ namespace Nijo.Ver1.ImmutableSchema {
             ? ((AggregateBase?)PreviousNode ?? throw new InvalidOperationException()) // パスの巻き戻しの場合
             : _ctx.ToAggregateBase(_xElement.Parent ?? throw new InvalidOperationException(), this);
         AggregateBase IRelationalMember.MemberAggregate => this;
+
+        public override AggregateBase AsEntry() {
+            return new ChildAggreagte(_xElement, _ctx, null);
+        }
     }
 
     /// <summary>
@@ -262,5 +276,9 @@ namespace Nijo.Ver1.ImmutableSchema {
             ? ((AggregateBase?)PreviousNode ?? throw new InvalidOperationException()) // パスの巻き戻しの場合
             : _ctx.ToAggregateBase(_xElement.Parent ?? throw new InvalidOperationException(), this);
         AggregateBase IRelationalMember.MemberAggregate => this;
+
+        public override AggregateBase AsEntry() {
+            return new ChildrenAggreagte(_xElement, _ctx, null);
+        }
     }
 }

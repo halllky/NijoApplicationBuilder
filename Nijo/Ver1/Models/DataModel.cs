@@ -35,8 +35,8 @@ namespace Nijo.Ver1.Models {
             aggregateFile.AddCSharpClass(saveCommandMessage.RenderCSharp());
 
             // データ型: ほかの集約から参照されるときのキー
-            var refTargetKey = new KeyClass(rootAggregate);
-            aggregateFile.AddCSharpClass(refTargetKey.RenderClassDeclaring(ctx));
+            var refTargetKey = new KeyClass.KeyClassEntry(rootAggregate);
+            aggregateFile.AddCSharpClass(refTargetKey.RenderClassDeclaringRecursively(ctx));
 
             // 処理: 新規登録、更新、削除
             var create = new CreateMethod(rootAggregate);

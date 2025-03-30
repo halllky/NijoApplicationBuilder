@@ -449,6 +449,26 @@ namespace Nijo.Ver1.Models.DataModelModules {
             }
         }
         #endregion ナビゲーションプロパティ
+
+
+        /// <summary>
+        /// 子孫要素をIncludeする式をレンダリングします。
+        /// </summary>
+        internal IEnumerable<string> RenderInclude() {
+            foreach (var agg in _aggregate.EnumerateDescendants()) {
+                var fullPath = agg.GetFullPath().ToArray();
+
+                for (int i = 0; i < fullPath.Length; i++) {
+                    var parent = (AggregateBase?)fullPath[i].PreviousNode ?? throw new InvalidOperationException("ありえない");
+                    var child = (AggregateBase?)fullPath[i] ?? throw new InvalidOperationException("ありえない");
+                    var nav = new NavigationOfParentChild(parent, child);
+
+                    yield return i == 0
+                        ? $".Include(e => e.{nav.Principal.OtherSidePhysicalName})"      // クエリのエンティティ直下の場合はInclude
+                        : $".ThenInclude(e => e.{nav.Principal.OtherSidePhysicalName})"; // クエリのエンティティ直下でない場合はThenInclude
+                }
+            }
+        }
     }
 }
 

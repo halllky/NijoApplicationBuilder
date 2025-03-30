@@ -37,7 +37,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
             var hasSequence = _rootAggregate
                 .EnumerateThisAndDescendants()
                 .SelectMany(agg => agg.GetMembers())
-                .Any(member => member is ValueMember vm && vm.Type is ValueMemberTypes.SequenceMember);
+                .Any(member => member is ValueMember vm && vm.Type is SequenceMember);
 
             return $$"""
                 #region 新規登録処理
@@ -45,7 +45,6 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 /// {{_rootAggregate.DisplayName}} の新規登録を実行します。
                 /// </summary>
                 public virtual async Task {{MethodName}}({{command.CsClassNameCreate}} command, {{messages.InterfaceName}} messages, {{PresentationContext.INTERFACE}} context) {
-
                     var dbEntity = command.{{SaveCommand.TO_DBENTITY}}();
 
                     // 自動的に登録される項目
@@ -63,28 +62,33 @@ namespace Nijo.Ver1.Models.DataModelModules {
                     {{DynamicEnum.METHOD_NAME}}(dbEntity, messages);
                     {{OnBeforeMethodName}}(command, messages, context);
 
-                    // 単なる必須入力漏れなどでもエラーログが出過ぎてしまうのを防ぐため、
-                    // IgnoreConfirmがtrueのとき（==更新を確定するつもりのとき）のみ内容をログ出力する
-                    if (context.Options.IgnoreConfirm && messages.HasError()) {
-                        Log.Debug("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}新規作成で入力エラーが発生した登録内容(JSON): {0}", command.ToJson());
+                    // エラーがある場合は処理中断
+                    if (messages.HasError()) {
+                        // 単なる必須入力漏れなどでもエラーログが出過ぎてしまうのを防ぐため、
+                        // IgnoreConfirmがtrueのとき（==更新を確定するつもりのとき）のみ内容をログ出力する
+                        if (context.Options.IgnoreConfirm) {
+                            Log.Debug("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}新規作成で入力エラーが発生した登録内容(JSON): {0}", command.ToJson());
+                        }
+                        return;
                     }
 
                     // 「更新しますか？」の確認メッセージが承認される前の1巡目はエラーチェックのみで処理中断
                     if (!context.Options.IgnoreConfirm) return;
+
+                    if (DbContext.Database.CurrentTransaction == null) throw new InvalidOperationException("トランザクションが開始されていません。");
 
                 {{If(hasSequence, () => $$"""
                     // シーケンス項目
                     {{SequenceMember.SET_METHOD}}(dbEntity);
 
                 """)}}
-                    if (DbContext.Database.CurrentTransaction == null) throw new InvalidOperationException("トランザクションが開始されていません。");
-
                     // 更新実行
                     const string SAVE_POINT = "SAVE_POINT"; // 更新後処理でエラーが発生した場合はこのデータの更新のみロールバックする
                     await DbContext.Database.CurrentTransaction.CreateSavepointAsync(SAVE_POINT);
                     try {
                         DbContext.Add(dbEntity);
                         await DbContext.SaveChangesAsync();
+
                     } catch (DbUpdateException ex) {
                         await DbContext.Database.CurrentTransaction.RollbackToSavepointAsync(SAVE_POINT);
 
@@ -94,7 +98,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
                         {{WithIndent(source, "        ")}}
                 """)}}
 
-                        messages.AddError({{MsgFactory.MSG}}.{{UpdateMethod.ERR_ID_SAVECHANGES}}(ex.Message));
+                        messages.AddError({{MsgFactory.MSG}}.{{UpdateMethod.ERR_ID_UNKNOWN}}(ex.Message));
                         Log.Error(ex);
                         Log.Debug("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}新規作成でSQL発行時エラーが発生した登録内容(JSON): {0}", command.ToJson());
                         return;
@@ -112,8 +116,9 @@ namespace Nijo.Ver1.Models.DataModelModules {
 
                         // セーブポイント解放
                         await DbContext.Database.CurrentTransaction.ReleaseSavepointAsync(SAVE_POINT);
+
                     } catch (Exception ex) {
-                        messages.AddError({{MsgFactory.MSG}}.{{UpdateMethod.ERR_ID_SAVECHANGES}}(ex.Message));
+                        messages.AddError({{MsgFactory.MSG}}.{{UpdateMethod.ERR_ID_UNKNOWN}}(ex.Message));
                         Log.Error(ex);
                         Log.Debug("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}新規作成後エラーが発生した登録内容(JSON): {0}", command.ToJson());
                         await DbContext.Database.CurrentTransaction.RollbackToSavepointAsync(SAVE_POINT);
@@ -140,8 +145,9 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 /// <item>{{_rootAggregate.DisplayName}}と常に同期していなければならない外部リソースの更新やメッセージング</item>
                 /// </list>
                 /// </summary>
-                public virtual async Task {{OnAfterMethodName}}({{dbEntity.CsClassName}} newValue, {{messages.InterfaceName}} messages, {{PresentationContext.INTERFACE}} context) {
+                public virtual Task {{OnAfterMethodName}}({{dbEntity.CsClassName}} newValue, {{messages.InterfaceName}} messages, {{PresentationContext.INTERFACE}} context) {
                     // このメソッドをオーバーライドして処理を実装してください。
+                    return Task.CompletedTask;
                 }
                 #endregion 新規登録処理
                 """;

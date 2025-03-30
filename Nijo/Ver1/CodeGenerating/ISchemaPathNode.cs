@@ -35,7 +35,7 @@ namespace Nijo.Ver1.CodeGenerating {
         }
 
         /// <summary>
-        /// エントリーからのパスを辿る。エントリーが先に列挙される
+        /// エントリーからのパスを辿る。よりエントリーに近い方が先に列挙される
         /// </summary>
         public static IEnumerable<ISchemaPathNode> GetFullPath(this ISchemaPathNode node) {
             var stack = new Stack<ISchemaPathNode>();
