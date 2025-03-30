@@ -30,12 +30,13 @@ namespace Nijo.Ver1.Models {
             var searchCondition = new SearchCondition(rootAggregate);
             aggregateFile.AddCSharpClass(searchCondition.RenderCSharp(ctx));
             aggregateFile.AddTypeScriptTypeDef(searchCondition.RenderTypeScript(ctx));
+            aggregateFile.AddTypeScriptTypeDef(searchCondition.RenderTypeScriptSortableMemberType());
             aggregateFile.AddTypeScriptFunction(searchCondition.RenderNewObjectFunction());
 
             // データ型: 検索条件メッセージ
             var searchConditionMessages = new SearchConditionMessageContainer(rootAggregate);
-            aggregateFile.AddCSharpClass(searchConditionMessages.RenderCSharp());
-            aggregateFile.AddTypeScriptTypeDef(searchConditionMessages.RenderTypeScript());
+            aggregateFile.AddCSharpClass(SearchConditionMessageContainer.RenderCSharpRecursively(rootAggregate));
+            aggregateFile.AddTypeScriptTypeDef(searchConditionMessages.RenderTypeScript()); // ちなみに子孫集約はルート集約の中にレンダリングされる
 
             // 処理: 検索条件クラスのURL変換
             // - URL => TS

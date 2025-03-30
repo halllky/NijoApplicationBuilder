@@ -1,4 +1,3 @@
-using Nijo.Core;
 using Nijo.Util.DotnetEx;
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
@@ -35,17 +34,26 @@ namespace Nijo.Ver1.Models.QueryModelModules {
 
         internal string RenderCSharp(CodeRenderingContext ctx) {
             return $$"""
+                #region 検索条件クラス
                 /// <summary>
-                /// {{_rootAggregate.DisplayName}}の検索時の検索条件クラス。
+                /// {{_rootAggregate.DisplayName}}の一覧検索条件
                 /// </summary>
                 public partial class {{CsClassName}} {
-                    // TODO ver.1
-
+                    /// <summary>絞り込み条件</summary>
+                    [JsonPropertyName("{{FILTER_TS}}")]
+                    public {{FilterRoot.CsClassName}} {{FILTER_CS}} { get; set; } = new();
+                    /// <summary>並び順</summary>
+                    [JsonPropertyName("{{SORT_TS}}")]
+                    public List<string> {{SORT_CS}} { get; set; } = [];
                     /// <summary>ページングに使用。検索結果のうち先頭から何件スキップするか。</summary>
+                    [JsonPropertyName("{{SKIP_TS}}")]
                     public int? {{SKIP_CS}} { get; set; }
                     /// <summary>ページングに使用。検索結果のうち先頭から何件抽出するか。</summary>
+                    [JsonPropertyName("{{TAKE_TS}}")]
                     public int? {{TAKE_CS}} { get; set; }
                 }
+                {{Filter.RenderTree(_rootAggregate, ctx)}}
+                #endregion 検索条件クラス
                 """;
         }
 
@@ -53,91 +61,28 @@ namespace Nijo.Ver1.Models.QueryModelModules {
             return $$"""
                 /** {{_rootAggregate.DisplayName}}の検索時の検索条件の型。 */
                 export type {{TsTypeName}} = {
-                    // TODO ver.1
-                    /** ページングに使用。検索結果のうち先頭から何件スキップするか。 */
-                    {{SKIP_TS}}?: number
-                    /** ページングに使用。検索結果のうち先頭から何件抽出するか。 */
-                    {{TAKE_TS}}?: number
+                  /** 絞り込み条件 */
+                  {{FILTER_TS}}: {
+                {{FilterRoot.RenderTypeScriptDeclaringLiteral(ctx).SelectTextTemplate(source => $$"""
+                    {{WithIndent(source, "    ")}}
+                """)}}
+                  }
+                  /** 並び順 */
+                  {{SORT_TS}}: (`${{{TypeScriptSortableMemberType}}}{{ASC_SUFFIX}}` | `${{{TypeScriptSortableMemberType}}}{{DESC_SUFFIX}}`)[]
+                  /** ページングに使用。検索結果のうち先頭から何件スキップするか。 */
+                  {{SKIP_TS}}?: number
+                  /** ページングに使用。検索結果のうち先頭から何件抽出するか。 */
+                  {{TAKE_TS}}?: number
                 }
                 """;
         }
+
 
         #region フィルタリング
         /// <summary>
         /// フィルタリング
         /// </summary>
         private Filter FilterRoot { get; }
-        #endregion フィルタリング
-
-
-        #region ソート
-        /// <summary>
-        /// 並び順に指定することができるメンバーを、子孫要素や参照先のそれも含めて列挙します。
-        /// </summary>
-        internal IEnumerable<ValueMember> EnumerateSortMembersRecursively() {
-            return EnumerateRecursively(_rootAggregate);
-
-            static IEnumerable<ValueMember> EnumerateRecursively(AggregateBase aggregate) {
-                foreach (var member in aggregate.GetMembers()) {
-                    if (member is ValueMember vm) {
-                        yield return vm;
-
-                    } else if (member is ChildrenAggreagte) {
-                        // 子配列の要素でのソートは論理的に定義できない
-                        continue;
-
-                    } else if (member is IRelationalMember rm) {
-                        // 子集約または参照先
-                        foreach (var vm2 in EnumerateRecursively(rm.MemberAggregate)) {
-                            yield return vm2;
-                        }
-                    }
-                }
-            }
-        }
-        /// <summary>
-        /// '子要素.孫要素.プロパティ名（昇順）' のような並び順候補の文字列の一覧を返します。
-        /// </summary>
-        internal IEnumerable<string> GetSortLiterals() {
-            foreach (var sortMember in EnumerateSortMembersRecursively()) {
-                var fullpath = GetSortLiteral(sortMember);
-                yield return $"{fullpath}{ASC_SUFFIX}";
-                yield return $"{fullpath}{DESC_SUFFIX}";
-            }
-        }
-        /// <summary>
-        /// '子要素.孫要素.プロパティ名（昇順）' のような並び順候補の文字列を返します。
-        /// </summary>
-        internal static string GetSortLiteral(ValueMember vm) {
-            return Filter.GetPathFromEntry(vm, E_CsTs.CSharp)
-                .Skip(1) // "Filter"という名称を除外
-                .Join(".");
-        }
-        internal const string ASC_SUFFIX = "（昇順）";
-        internal const string DESC_SUFFIX = "（降順）";
-        #endregion ソート
-
-
-        #region TypeScript側のオブジェクト新規作成関数
-        /// <summary>
-        /// TypeScriptの新規オブジェクト作成関数の名前
-        /// </summary>
-        internal string TsNewObjectFunction => $"createNew{TsTypeName}";
-        internal string RenderNewObjectFunction() {
-            return $$"""
-                /** {{_rootAggregate.DisplayName}}の検索条件クラスの空オブジェクトを作成して返します。 */
-                export const {{TsNewObjectFunction}} = (): {{TsTypeName}} => ({
-                  {{FILTER_TS}}: {
-                    {{WithIndent(FilterRoot.RenderNewObjectFunctionMemberLiteral(), "    ")}}
-                  },
-                  {{SORT_TS}}: [],
-                  {{SKIP_TS}}: undefined,
-                  {{TAKE_TS}}: undefined,
-                })
-                """;
-        }
-        #endregion TypeScript側のオブジェクト新規作成関数
-
 
         /// <summary>
         /// 検索条件クラスの絞り込み条件部分。
@@ -155,7 +100,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
             /// <summary>
             /// 検索条件のフィルターに指定できるメンバーを列挙する
             /// </summary>
-            private IEnumerable<IAggregateMember> GetSearchConditionMembers() {
+            internal IEnumerable<IAggregateMember> GetSearchConditionMembers() {
                 foreach (var member in _aggregate.GetMembers()) {
                     if (member is ValueMember vm && vm.Type.SearchBehavior != null) {
                         yield return member;
@@ -166,10 +111,49 @@ namespace Nijo.Ver1.Models.QueryModelModules {
                 }
             }
 
+            #region GetFullPath
+            /// <summary>
+            /// エントリーから引数の集約までのパスをRefTargetのルールに従って返す
+            /// </summary>
+            internal static IEnumerable<string> GetPathFromEntry(ValueMember vm, E_CsTs csts) {
+                if (csts == E_CsTs.CSharp) {
+                    yield return FILTER_CS;
+                } else {
+                    yield return FILTER_TS;
+                }
+
+                foreach (var node in vm.GetFullPath()) {
+                    yield return node.XElement.Name.LocalName; // LocalNameでよいかどうかは不明
+                }
+            }
+            /// <summary>
+            /// Refエントリーから引数の集約までのパス
+            /// </summary>
+            internal static IEnumerable<string> GetPathFromRefEntry(DisplayDataRefEntry refDisplayData) {
+                throw new NotImplementedException();
+            }
+            #endregion GetFullPath
+
+            #region レンダリング
+            /// <summary>
+            /// 子孫集約のフィルターも含めてレンダリングする
+            /// </summary>
+            internal static string RenderTree(RootAggregate rootAggregate, CodeRenderingContext ctx) {
+                var tree = rootAggregate
+                    .EnumerateThisAndDescendants()
+                    .Select(agg => new Filter(agg));
+
+                return $$"""
+                    {{tree.SelectTextTemplate(filter => $$"""
+                    {{filter.RenderCSharpDeclaring(ctx)}}
+                    """)}}
+                    """;
+            }
+
             /// <summary>
             /// C#の型定義のレンダリング
             /// </summary>
-            internal string RenderCSharpDeclaring(CodeRenderingContext ctx) {
+            private string RenderCSharpDeclaring(CodeRenderingContext ctx) {
                 return $$"""
                     public partial class {{CsClassName}} {
                     {{GetSearchConditionMembers().SelectTextTemplate(member => $$"""
@@ -244,29 +228,114 @@ namespace Nijo.Ver1.Models.QueryModelModules {
                     }
                 }
             }
-
-            #region GetFullPath
-            /// <summary>
-            /// エントリーから引数の集約までのパスをRefTargetのルールに従って返す
-            /// </summary>
-            internal static IEnumerable<string> GetPathFromEntry(ValueMember vm, E_CsTs csts) {
-                if (csts == E_CsTs.CSharp) {
-                    yield return FILTER_CS;
-                } else {
-                    yield return FILTER_TS;
-                }
-
-                foreach (var node in vm.GetFullPath()) {
-                    yield return node.XElement.Name.LocalName; // LocalNameでよいかどうかは不明
-                }
-            }
-            /// <summary>
-            /// Refエントリーから引数の集約までのパス
-            /// </summary>
-            internal static IEnumerable<string> GetPathFromRefEntry(DisplayDataRefEntry refDisplayData) {
-                throw new NotImplementedException();
-            }
-            #endregion GetFullPath
+            #endregion レンダリング
         }
+        #endregion フィルタリング
+
+
+        #region ソート
+        internal const string ASC_SUFFIX = "（昇順）";
+        internal const string DESC_SUFFIX = "（降順）";
+
+        internal string TypeScriptSortableMemberType => $"SortableMemberOf{_rootAggregate.PhysicalName}";
+        internal string GetTypeScriptSortableMemberType => $"get{TypeScriptSortableMemberType}";
+
+        internal string RenderTypeScriptSortableMemberType() {
+            var sortableMembers = EnumerateSortMembersRecursively().ToArray();
+
+            return $$"""
+                /** {{_rootAggregate.DisplayName}}のメンバーのうちソート可能なものを表すリテラル型 */
+                export type {{TypeScriptSortableMemberType}}
+                {{If(sortableMembers.Length == 0, () => $$"""
+                  = never
+                """)}}
+                {{sortableMembers.SelectTextTemplate((m, i) => $$"""
+                  {{(i == 0 ? "=" : "|")}} '{{m.GetLiteral().Replace("'", "\\'")}}'
+                """)}}
+
+                /** {{_rootAggregate.DisplayName}}のメンバーのうちソート可能なものを文字列で返します。 */
+                export const {{GetTypeScriptSortableMemberType}} = (): {{TypeScriptSortableMemberType}}[] => [
+                {{sortableMembers.SelectTextTemplate(m => $$"""
+                  '{{m.GetLiteral().Replace("'", "\\'")}}',
+                """)}}
+                ]
+                """;
+        }
+
+        /// <summary>
+        /// 並び順に指定することができるメンバーを、子孫要素や参照先のそれも含めて列挙します。
+        /// </summary>
+        internal IEnumerable<SortableMember> EnumerateSortMembersRecursively() {
+            return EnumerateRecursively(_rootAggregate);
+
+            static IEnumerable<SortableMember> EnumerateRecursively(AggregateBase aggregate) {
+                foreach (var member in aggregate.GetMembers()) {
+                    if (member is ValueMember vm) {
+                        yield return new SortableMember(vm);
+
+                    } else if (member is ChildrenAggreagte) {
+                        // 子配列の要素でのソートは論理的に定義できない
+                        continue;
+
+                    } else if (member is IRelationalMember rm) {
+                        // 子集約または参照先
+                        foreach (var vm2 in EnumerateRecursively(rm.MemberAggregate)) {
+                            yield return vm2;
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// ソート可能なメンバー
+        /// </summary>
+        internal class SortableMember {
+            internal SortableMember(ValueMember member) {
+                Member = member;
+            }
+
+            internal ValueMember Member { get; }
+
+            /// <summary>
+            /// '子要素.孫要素.プロパティ名' のような並び順候補の文字列を返します。
+            /// </summary>
+            internal string GetLiteral() {
+                return Filter
+                    .GetPathFromEntry(Member, E_CsTs.CSharp)
+                    .Skip(1) // "Filter"という名称を除外
+                    .Join(".");
+            }
+            /// <summary>
+            /// '子要素.孫要素.プロパティ名（昇順）' のような並び順候補の文字列の一覧を返します。
+            /// </summary>
+            internal IEnumerable<string> GetLiteralWithAscDesc() {
+                var fullpath = GetLiteral();
+                yield return $"{fullpath}{ASC_SUFFIX}";
+                yield return $"{fullpath}{DESC_SUFFIX}";
+            }
+        }
+        #endregion ソート
+
+
+        #region TypeScript側のオブジェクト新規作成関数
+        /// <summary>
+        /// TypeScriptの新規オブジェクト作成関数の名前
+        /// </summary>
+        internal string TsNewObjectFunction => $"createNew{TsTypeName}";
+        internal string RenderNewObjectFunction() {
+            return $$"""
+                /** {{_rootAggregate.DisplayName}}の検索条件クラスの空オブジェクトを作成して返します。 */
+                export const {{TsNewObjectFunction}} = (): {{TsTypeName}} => ({
+                  {{FILTER_TS}}: {
+                    {{WithIndent(FilterRoot.RenderNewObjectFunctionMemberLiteral(), "    ")}}
+                  },
+                  {{SORT_TS}}: [],
+                  {{SKIP_TS}}: undefined,
+                  {{TAKE_TS}}: undefined,
+                })
+                """;
+        }
+        #endregion TypeScript側のオブジェクト新規作成関数
     }
 }
