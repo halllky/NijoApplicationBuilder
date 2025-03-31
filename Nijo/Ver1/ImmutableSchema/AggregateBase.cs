@@ -263,6 +263,11 @@ namespace Nijo.Ver1.ImmutableSchema {
         public AggregateBase Owner => _xElement.Parent == PreviousNode?.XElement
             ? ((AggregateBase?)PreviousNode ?? throw new InvalidOperationException()) // パスの巻き戻しの場合
             : _ctx.ToAggregateBase(_xElement.Parent ?? throw new InvalidOperationException(), this);
+
+        internal const string IS_HAS_LIFECYCLE = "has-lifecycle";
+        /// <summary>画面上で追加削除されるタイミングが親と異なるかどうか</summary>
+        public bool HasLifeCycle => _ctx.ParseIsAttribute(_xElement).Any(attr => attr.Key == IS_HAS_LIFECYCLE);
+
         AggregateBase IRelationalMember.MemberAggregate => this;
 
         public override AggregateBase AsEntry() {

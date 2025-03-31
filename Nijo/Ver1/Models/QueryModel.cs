@@ -55,11 +55,11 @@ namespace Nijo.Ver1.Models {
             // - TS側オブジェクト作成関数
             // - 変換処理: SearchResult => DisplayData
             var displayData = new DisplayData(rootAggregate);
-            aggregateFile.AddCSharpClass(displayData.RenderCSharpDeclaring(ctx));
-            aggregateFile.AddTypeScriptTypeDef(displayData.RenderTypeScriptType(ctx));
+            aggregateFile.AddCSharpClass(DisplayData.RenderCSharpRecursively(rootAggregate, ctx));
+            aggregateFile.AddTypeScriptTypeDef(DisplayData.RenderTypeScriptRecursively(rootAggregate, ctx));
             aggregateFile.AddTypeScriptTypeDef(displayData.RenderUiConstraintType(ctx));
             aggregateFile.AddTypeScriptTypeDef(displayData.RenderUiConstraintValue(ctx));
-            aggregateFile.AddTypeScriptFunction(displayData.RenderTypeScriptObjectCreationFunction(ctx));
+            aggregateFile.AddTypeScriptFunction(DisplayData.RenderTsNewObjectFunctionRecursively(rootAggregate, ctx));
 
             var deepEquals = new DeepEqual(rootAggregate);
             aggregateFile.AddTypeScriptFunction(deepEquals.RenderTypeScript());
