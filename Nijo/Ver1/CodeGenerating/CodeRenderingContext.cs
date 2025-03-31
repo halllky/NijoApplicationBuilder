@@ -1,3 +1,4 @@
+using Nijo.Ver1.ImmutableSchema;
 using Nijo.Ver1.SchemaParsing;
 using System;
 using System.Collections.Generic;
@@ -135,5 +136,56 @@ namespace Nijo.Ver1.CodeGenerating {
             return _handled.Where(path => dir.Path == Path.GetDirectoryName(path));
         }
         #endregion ソースコード自動生成で登場しなかった既存ファイルの削除
+
+
+        #region ToOrderedByDataFlow
+        /// <summary>
+        /// ルート集約を、ref-toによる外部参照の関係性に従い、
+        /// 参照される方を先、参照する方を後、とする順番に並び替えた新しいインスタンスを返します。
+        /// </summary>
+        public IEnumerable<RootAggregate> ToOrderedByDataFlow(IEnumerable<RootAggregate> rootAggregates) {
+            if (_rootAggregateOrderCache == null) {
+                _rootAggregateOrderCache = new();
+
+                // 列挙するたびにこのリストから集約をクリアしていき、
+                // このリストから全ての集約が無くなったら列挙完了
+                var rest = rootAggregates.Select(root => new {
+                    root,
+                    refTargets = root
+                        .EnumerateThisAndDescendants()
+                        .SelectMany(agg => agg.GetMembers())
+                        .OfType<RefToMember>()
+                        .Select(refTo => refTo.RefTo.GetRoot())
+                        .ToHashSet(),
+                }).ToList();
+
+                var index = 0;
+                while (true) {
+                    if (rest.Count == 0) break;
+
+                    var next = rest[index];
+
+                    // 参照先集約が未処理ならば後回し
+                    var notEnumerated = rest.Where(agg => next.refTargets.Contains(agg.root));
+                    if (notEnumerated.Any()) {
+                        // 集約間の循環参照が存在するなどの場合は無限ループが発生するので例外。
+                        // なお循環参照はスキーマ作成時にエラーとする想定
+                        if (index + 1 >= rest.Count) throw new InvalidOperationException("集約間のデータの流れを決定できません。");
+
+                        index++;
+                        continue;
+                    }
+
+                    // 参照先集約が無い == nextは現在のrestの中で再上流の集約
+                    _rootAggregateOrderCache.Add(next.root, _rootAggregateOrderCache.Count);
+
+                    rest.Remove(next);
+                    index = 0;
+                }
+            }
+            return rootAggregates.OrderBy(r => _rootAggregateOrderCache![r]);
+        }
+        private Dictionary<RootAggregate, int>? _rootAggregateOrderCache;
+        #endregion ToOrderedByDataFlow
     }
 }
