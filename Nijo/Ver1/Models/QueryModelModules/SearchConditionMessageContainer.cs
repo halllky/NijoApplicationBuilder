@@ -21,7 +21,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
 
         protected override IEnumerable<IMessageContainerMember> GetMembers() {
             return _filter
-                .GetSearchConditionMembers()
+                .GetOwnMembers()
                 .Select(m => new ContainerMemberImpl {
                     PhysicalName = m.PhysicalName,
                     DisplayName = m.DisplayName,

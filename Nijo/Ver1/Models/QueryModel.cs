@@ -85,11 +85,11 @@ namespace Nijo.Ver1.Models {
             //   - Reactは型マッピングのみ
             //   - ASP.NET Core Controller Action
             //   - ApplicationService
-            var refDisplayData = new DisplayDataRefEntry(rootAggregate);
+            var refDisplayDataEntry = new DisplayDataRef.Entry(rootAggregate);
             var searchRefs = new SearchProcessingRefs(rootAggregate);
-            aggregateFile.AddCSharpClass(refDisplayData.RenderCsClass(ctx));
-            aggregateFile.AddTypeScriptTypeDef(refDisplayData.RenderTsType(ctx));
-            aggregateFile.AddTypeScriptFunction(refDisplayData.RenderTypeScriptObjectCreationFunction(ctx));
+            aggregateFile.AddCSharpClass(DisplayDataRef.RenderCSharpRecursively(rootAggregate, ctx));
+            aggregateFile.AddTypeScriptTypeDef(DisplayDataRef.RenderTypeScriptRecursively(rootAggregate));
+            aggregateFile.AddTypeScriptFunction(refDisplayDataEntry.RenderTypeScriptObjectCreationFunction(ctx));
             aggregateFile.AddAppSrvMethod(searchRefs.RenderAppSrvMethod(ctx));
             aggregateFile.AddWebapiControllerAction(searchRefs.RenderAspNetCoreControllerAction(ctx));
 

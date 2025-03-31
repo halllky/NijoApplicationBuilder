@@ -144,7 +144,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
                     }
 
                     // 画面表示用の型への変換
-                    var converted = query.Select({{TO_DISPLAY_DATA}}).AsQueryable();
+                    var converted = query.Select({{TO_DISPLAY_DATA}}());
 
                     // 検索処理実行
                     {{displayData.CsClassName}}[] loaded;
@@ -185,24 +185,9 @@ namespace Nijo.Ver1.Models.QueryModelModules {
                 /// {{_rootAggregate.DisplayName}}のデータベースへの問い合わせデータ構造（SQLで言うSELECT句とFROM句）を定義する
                 /// </summary>
                 protected abstract IQueryable<{{searchResult.CsClassName}}> {{CREATE_QUERY_SOURCE}}({{searchCondition.CsClassName}} searchCondition, {{PresentationContext.INTERFACE}}<{{searchConditionMessage.CsClassName}}> context);
-                /// <summary>
-                /// {{_rootAggregate.DisplayName}}のクエリに画面で指定された検索条件（SQLで言うWHERE句）を付加する
-                /// </summary>
-                protected virtual IQueryable<{{searchResult.CsClassName}}> {{APPEND_WHERE_CLAUSE}}(IQueryable<{{searchResult.CsClassName}}> query, {{searchCondition.CsClassName}} searchCondition) {
-                    throw new NotImplementedException(); // TODO ver.1
-                }
-                /// <summary>
-                /// {{_rootAggregate.DisplayName}}のクエリに画面で指定された並び順指定（SQLで言うORDER BY句）を付加する
-                /// </summary>
-                protected virtual IQueryable<{{searchResult.CsClassName}}> {{APPEND_ORDERBY_CLAUSE}}(IQueryable<{{searchResult.CsClassName}}> query, {{searchCondition.CsClassName}} searchCondition) {
-                    throw new NotImplementedException(); // TODO ver.1
-                }
-                /// <summary>
-                /// {{_rootAggregate.DisplayName}}の検索結果型を画面表示用の型に変換する
-                /// </summary>
-                protected virtual {{displayData.CsClassName}} {{TO_DISPLAY_DATA}}({{searchResult.CsClassName}} searchResult) {
-                    throw new NotImplementedException(); // TODO ver.1
-                }
+                {{RenderAppendWhereClause(ctx)}}
+                {{RenderAppendOrderByClause()}}
+                {{RenderToDisplayData()}}
                 /// <summary>
                 /// {{_rootAggregate.DisplayName}}の一覧検索の読み込み後処理
                 /// </summary>
@@ -218,6 +203,123 @@ namespace Nijo.Ver1.Models.QueryModelModules {
                 }
                 #endregion 検索
                 """;
+        }
+
+        /// <summary>
+        /// WHERE句
+        /// </summary>
+        private string RenderAppendWhereClause(CodeRenderingContext ctx) {
+            var searchCondition = new SearchCondition(_rootAggregate);
+            var searchResult = new SearchResult(_rootAggregate);
+
+            return $$"""
+                /// <summary>
+                /// {{_rootAggregate.DisplayName}}のクエリに画面で指定された検索条件（SQLで言うWHERE句）を付加する
+                /// </summary>
+                protected virtual IQueryable<{{searchResult.CsClassName}}> {{APPEND_WHERE_CLAUSE}}(IQueryable<{{searchResult.CsClassName}}> query, {{searchCondition.CsClassName}} searchCondition) {
+                {{searchCondition.FilterRoot.GetValueMembersRecursively().SelectTextTemplate(vm => $$"""
+                    // 絞り込み: {{vm.DisplayName}}
+                    {{WithIndent(vm.Type.SearchBehavior!.RenderFiltering(new() { Member = vm, Query = "query", SearchCondition = "searchCondition", CodeRenderingContext = ctx }), "    ")}}
+
+                """)}}
+                    return query;
+                }
+                """;
+        }
+
+        /// <summary>
+        /// ORDER BY 句
+        /// </summary>
+        private string RenderAppendOrderByClause() {
+            var searchCondition = new SearchCondition(_rootAggregate);
+            var searchResult = new SearchResult(_rootAggregate);
+
+            var sortMembers = searchCondition
+                .EnumerateSortMembersRecursively()
+                .Select(m => {
+                    var literal = m.GetLiteral();
+                    return new {
+                        AscLiteral = literal + SearchCondition.ASC_SUFFIX,
+                        DescLiteral = literal + SearchCondition.DESC_SUFFIX,
+                        Path = m.Member.GetFullPath().AsSearchResult().Join("!."),
+                    };
+                })
+                .ToArray();
+
+            return $$"""
+                /// <summary>
+                /// {{_rootAggregate.DisplayName}}のクエリに画面で指定された並び順指定（SQLで言うORDER BY句）を付加する
+                /// </summary>
+                protected virtual IQueryable<{{searchResult.CsClassName}}> {{APPEND_ORDERBY_CLAUSE}}(IQueryable<{{searchResult.CsClassName}}> query, {{searchCondition.CsClassName}} searchCondition) {
+                    IOrderedQueryable<{{searchResult.CsClassName}}>? sorted = null;
+                    foreach (var sortOption in searchCondition.{{SearchCondition.SORT_CS}}) {
+                        sorted = sortOption switch {
+                {{sortMembers.SelectTextTemplate(m => $$"""
+                            "{{m.AscLiteral}}" => sorted == null
+                                ? query.OrderBy(e => e.{{m.Path}})
+                                : sorted.ThenBy(e => e.{{m.Path}}),
+                            "{{m.DescLiteral}}" => sorted == null
+                                ? query.OrderByDescending(e => e.{{m.Path}})
+                                : sorted.ThenByDescending(e => e.{{m.Path}}),
+                """)}}
+                            _ => throw new InvalidOperationException($"ソート条件 '{sortOption}' が不正です。"),
+                        };
+                    }
+                    return sorted ?? query;
+                }
+                """;
+        }
+
+        /// <summary>
+        /// ToDisplayData
+        /// </summary>
+        private string RenderToDisplayData() {
+            var searchResult = new SearchResult(_rootAggregate);
+            var displayData = new DisplayData(_rootAggregate);
+
+            return $$"""
+                /// <summary>
+                /// {{_rootAggregate.DisplayName}}の検索結果型を画面表示用の型に変換する式を返します。
+                /// 検索条件には存在するが画面表示用データには存在しない項目は、この式の結果に含まれません。
+                /// </summary>
+                protected virtual Expression<Func<{{searchResult.CsClassName}}, {{displayData.CsClassName}}>> {{TO_DISPLAY_DATA}}() {
+                    return searchResult => new {{displayData.CsClassName}}() {
+                        {{DisplayData.VALUES_CS}} = new() {
+                {{displayData.GetOwnMembers().SelectTextTemplate(member => $$"""
+                            {{WithIndent(RenderMember(member), "            ")}}
+                """)}}
+                        },
+                {{If(displayData.HasLifeCycle, () => $$"""
+                        {{DisplayData.EXISTS_IN_DB_CS}} = true,
+                        {{DisplayData.WILL_BE_CHANGED_CS}} = false,
+                        {{DisplayData.WILL_BE_DELETED_CS}} = false,
+                """)}}
+                {{If(displayData.HasVersion, () => $$"""
+                        {{DisplayData.VERSION_CS}} = searchResult.{{SearchResult.VERSION}},
+                """)}}
+                    };
+                }
+                """;
+
+            static string RenderMember(DisplayData.DisplayDataMember member) {
+                if (member is DisplayData.DisplayDataValueMember vm) {
+                    return $$"""
+                        {{member.PhysicalName}} = searchResult.{{vm.Member.GetFullPath().AsSearchResult().Join("!.")}},
+                        """;
+
+                }
+                if (member is DisplayData.DisplayDataRefMember refTo) {
+                    return $$"""
+                        {{member.PhysicalName}} = new() {
+                        {{refTo.GetMembers().SelectTextTemplate(m => $$"""
+
+                        """)}}
+                            {{WithIndent(RenderMember(member), "    ")}}
+                        },
+                        """;
+                }
+                throw new NotImplementedException();
+            }
         }
     }
 }

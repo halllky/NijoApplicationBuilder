@@ -1,3 +1,4 @@
+using Nijo.Util.DotnetEx;
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
 using Nijo.Ver1.Models.QueryModelModules;
@@ -22,6 +23,50 @@ namespace Nijo.Ver1.ValueMemberTypes {
             FilterCsTypeName = "FromTo<int?>",
             FilterTsTypeName = "{ from?: number, to?: number }",
             RenderTsNewObjectFunctionValue = () => "{}",
+            RenderFiltering = ctx => {
+                var fullpath = ctx.Member
+                    .GetFullPath()
+                    .ToArray();
+                var strArrayPath = fullpath
+                    .AsSearchConditionFilter(E_CsTs.CSharp)
+                    .ToArray();
+                var nullableFullPathFrom = strArrayPath.Join("?.") + "?.From";
+                var nullableFullPathTo = strArrayPath.Join("?.") + "?.To";
+                var fullPathFrom = strArrayPath.Join(".") + ".From";
+                var fullPathTo = strArrayPath.Join(".") + ".To";
+
+                var isArray = fullpath.Any(node => node is ChildrenAggreagte);
+                var whereFullpath = fullpath.AsSearchResult().ToArray();
+                var query = ctx.Query;
+
+                return $$"""
+                    if ({{nullableFullPathFrom}} != null && {{nullableFullPathTo}} != null) {
+                        var from = {{fullPathFrom}};
+                        var to = {{fullPathTo}};
+                    {{If(isArray, () => $$"""
+                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{ctx.Member.PhysicalName}} >= from && y.{{ctx.Member.PhysicalName}} <= to));
+                    """).Else(() => $$"""
+                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} >= from && x.{{whereFullpath.Join(".")}} <= to);
+                    """)}}
+
+                    } else if ({{nullableFullPathFrom}} != null) {
+                        var from = {{fullPathFrom}};
+                    {{If(isArray, () => $$"""
+                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{ctx.Member.PhysicalName}} >= from));
+                    """).Else(() => $$"""
+                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} >= from);
+                    """)}}
+
+                    } else if ({{nullableFullPathTo}} != null) {
+                        var to = {{fullPathTo}};
+                    {{If(isArray, () => $$"""
+                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{ctx.Member.PhysicalName}} <= to));
+                    """).Else(() => $$"""
+                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} <= to);
+                    """)}}
+                    }
+                    """;
+            },
         };
 
         UiConstraint.E_Type IValueMemberType.UiConstraintType => UiConstraint.E_Type.NumberMemberConstraint;

@@ -70,7 +70,20 @@ namespace Nijo.Ver1.ImmutableSchema {
         /// 検索条件がObjectの場合など、必ずしもundefinedを初期値としてよいわけではないため、型ごとに指定させている。
         /// </summary>
         public required Func<string> RenderTsNewObjectFunctionValue { get; init; }
+        /// <summary>
+        /// EFCoreを使ったWhere句付加処理のレンダリング
+        /// </summary>
+        public required Func<FilterStatementRenderingContext, string> RenderFiltering { get; init; }
+    }
 
-
+    public class FilterStatementRenderingContext {
+        /// <summary>メンバー情報</summary>
+        public required ValueMember Member { get; init; }
+        /// <summary>EFCoreのクエリの変数の名前。検索処理はこの変数に再代入を繰り返して実装していく。</summary>
+        public required string Query { get; init; }
+        /// <summary>検索条件オブジェクトの変数名</summary>
+        public required string SearchCondition { get; init; }
+        /// <inheritdoc cref="Ver1.CodeGenerating.CodeRenderingContext"/>
+        public required CodeRenderingContext CodeRenderingContext { get; init; }
     }
 }

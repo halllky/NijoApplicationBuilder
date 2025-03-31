@@ -82,7 +82,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
         /// <summary>
         /// フィルタリング
         /// </summary>
-        private Filter FilterRoot { get; }
+        internal Filter FilterRoot { get; }
 
         /// <summary>
         /// 検索条件クラスの絞り込み条件部分。
@@ -100,13 +100,33 @@ namespace Nijo.Ver1.Models.QueryModelModules {
             /// <summary>
             /// 検索条件のフィルターに指定できるメンバーを列挙する
             /// </summary>
-            internal IEnumerable<IAggregateMember> GetSearchConditionMembers() {
+            internal IEnumerable<IAggregateMember> GetOwnMembers() {
                 foreach (var member in _aggregate.GetMembers()) {
                     if (member is ValueMember vm && vm.Type.SearchBehavior != null) {
                         yield return member;
 
                     } else if (member is IRelationalMember) {
                         yield return member;
+                    }
+                }
+            }
+
+            /// <summary>
+            /// フィルタリングに使える値を子孫要素のそれも含め再帰的に列挙
+            /// </summary>
+            internal IEnumerable<ValueMember> GetValueMembersRecursively() {
+                return GetRecursively(_aggregate);
+
+                static IEnumerable<ValueMember> GetRecursively(AggregateBase agg) {
+                    foreach (var member in new Filter(agg).GetOwnMembers()) {
+                        if (member is ValueMember vm) {
+                            yield return vm;
+
+                        } else if (member is IRelationalMember rm) {
+                            foreach (var vm2 in GetRecursively(rm.MemberAggregate)) {
+                                yield return vm2;
+                            }
+                        }
                     }
                 }
             }
@@ -129,7 +149,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
             /// <summary>
             /// Refエントリーから引数の集約までのパス
             /// </summary>
-            internal static IEnumerable<string> GetPathFromRefEntry(DisplayDataRefEntry refDisplayData) {
+            internal static IEnumerable<string> GetPathFromRefEntry(DisplayDataRef.Entry refDisplayData) {
                 throw new NotImplementedException();
             }
             #endregion GetFullPath
@@ -156,7 +176,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
             private string RenderCSharpDeclaring(CodeRenderingContext ctx) {
                 return $$"""
                     public partial class {{CsClassName}} {
-                    {{GetSearchConditionMembers().SelectTextTemplate(member => $$"""
+                    {{GetOwnMembers().SelectTextTemplate(member => $$"""
                         {{WithIndent(RenderMember(member), "    ")}}
                     """)}}
                     }
@@ -185,7 +205,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
             /// export const は <see cref="RenderTypeScript"/> 側で行なう
             /// </summary>
             internal IEnumerable<string> RenderTypeScriptDeclaringLiteral(CodeRenderingContext ctx) {
-                foreach (var member in GetSearchConditionMembers()) {
+                foreach (var member in GetOwnMembers()) {
                     if (member is ValueMember vm) {
                         yield return $$"""
                             {{vm.PhysicalName}}?: {{vm.Type.SearchBehavior?.FilterTsTypeName}}
@@ -210,7 +230,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
             /// TypeScriptの新規オブジェクト作成関数のレンダリング
             /// </summary>
             internal IEnumerable<string> RenderNewObjectFunctionMemberLiteral() {
-                foreach (var member in GetSearchConditionMembers()) {
+                foreach (var member in GetOwnMembers()) {
 
                     if (member is ValueMember vm) {
                         yield return $$"""
@@ -337,5 +357,95 @@ namespace Nijo.Ver1.Models.QueryModelModules {
                 """;
         }
         #endregion TypeScript側のオブジェクト新規作成関数
+    }
+}
+
+namespace Nijo.Ver1.CodeGenerating {
+    using Nijo.Ver1.Models.QueryModelModules;
+
+    partial class SchemaPathNodeExtensions {
+
+        /// <summary>
+        /// <see cref="GetFullPath(ISchemaPathNode)"/> の結果を <see cref="SearchCondition.Filter"/> のルールに沿ったパスとして返す
+        /// </summary>
+        public static IEnumerable<string> AsSearchConditionFilter(this IEnumerable<ISchemaPathNode> path, E_CsTs csts) {
+            var entry = path.FirstOrDefault()?.GetEntry();
+            var isOutOfEntryTree = false;
+
+            foreach (var node in path) {
+                if (node.PreviousNode is RefToMember) continue; // refの1つ次の要素の名前はrefで列挙済みのためスキップ
+
+                // フィルターは検索条件オブジェクトの "Filter" という名前のオブジェクトに入っているので
+                if (node == entry) {
+                    yield return csts == E_CsTs.CSharp
+                        ? SearchCondition.FILTER_CS
+                        : SearchCondition.FILTER_TS;
+                    continue;
+                }
+
+                // 親子
+                if (node is ChildAggreagte || node is ChildrenAggreagte) {
+                    var curr = (AggregateBase)node;
+                    var prev = (AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない");
+
+                    // 子から親へ辿るパス
+                    if (curr.IsParentOf(prev)) {
+
+                        //// エントリーの集約内部では子から親へ辿るパターンは無い
+                        //if (!isOutOfEntryTree) throw new InvalidOperationException("エントリーの集約内部では子から親へ辿るパターンは無い");
+
+                        //var parentMember = new SearchCondition.(curr);
+                        //yield return parentMember.PhysicalName;
+                        //continue;
+
+                        throw new NotImplementedException("後で作る（参照先の親の属性で検索したいこと自体はある）");
+                    }
+                    // 親から子へ辿るパス
+                    if (curr.IsChildOf(prev)) {
+
+                        // 参照先のキーの中では親から子へ辿るパターンは無い
+                        if (isOutOfEntryTree) throw new InvalidOperationException("参照先のキーの中では親から子へ辿るパターンは無い");
+
+                        yield return curr.PhysicalName;
+                        continue;
+                    }
+                    throw new InvalidOperationException("必ず 親→子, 子→親 のどちらかになるのでありえない");
+                }
+
+                // 外部参照
+                if (node is RefToMember refTo) {
+                    var previous = (AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("reftoの前は必ず参照元集約か参照先集約になるのでありえない");
+
+                    // 参照元から参照先へ辿るパス
+                    if (previous == refTo.Owner) {
+                        if (!isOutOfEntryTree) {
+                            // エントリーの集約内部から外に出る瞬間の場合
+                            yield return refTo.PhysicalName;
+
+                            isOutOfEntryTree = true;
+                            continue;
+
+                        } else {
+                            // 参照先のキーの中でさらに他の集約への参照が発生した場合
+                            yield return refTo.PhysicalName;
+                            continue;
+                        }
+                    }
+                    // 参照先から参照元へ辿るパス
+                    if (previous == refTo.RefTo) {
+                        throw new InvalidOperationException("更新処理引数クラスでは参照先から参照元へ辿ることはできない");
+                    }
+                    throw new InvalidOperationException("reftoの前は必ず参照元集約か参照先集約になるのでありえない");
+                }
+
+                // 末端のメンバー
+                if (node is ValueMember vm) {
+                    yield return vm.PhysicalName;
+                    continue;
+                }
+
+                throw new InvalidOperationException("予期しない型");
+            }
+        }
     }
 }

@@ -1,3 +1,4 @@
+using Nijo.Util.DotnetEx;
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
 using Nijo.Ver1.Models.QueryModelModules;
@@ -24,16 +25,46 @@ namespace Nijo.Ver1.ValueMemberTypes {
         private readonly XElement _xElement;
         private readonly EnumDefParser _parser;
 
-        string IValueMemberType.SchemaTypeName => _xElement.Name.LocalName;
-        string IValueMemberType.CsDomainTypeName => _parser.CsEnumName;
-        string IValueMemberType.CsPrimitiveTypeName => _parser.CsEnumName;
-        string IValueMemberType.TsTypeName => _parser.TsTypeName;
+        public string SchemaTypeName => _xElement.Name.LocalName;
+        public string CsDomainTypeName => _parser.CsEnumName;
+        public string CsPrimitiveTypeName => _parser.CsEnumName;
+        public string TsTypeName => _parser.TsTypeName;
+
         ValueMemberSearchBehavior? IValueMemberType.SearchBehavior => new() {
             FilterCsTypeName = _parser.CsSearchConditionClassName,
             FilterTsTypeName = _parser.RenderTsSearchConditionType(),
             RenderTsNewObjectFunctionValue = () => "{}",
+            RenderFiltering = ctx => {
+                var fullpath = ctx.Member
+                    .GetFullPath()
+                    .ToArray();
+                var strArrayPath = fullpath
+                    .AsSearchConditionFilter(E_CsTs.CSharp)
+                    .ToArray();
+                var fullpathNullable = strArrayPath.Join("?.");
+                var fullpathNotNull = strArrayPath.Join(".");
+
+                var isArray = fullpath.Any(node => node is ChildrenAggreagte);
+                var whereFullpath = fullpath.AsSearchResult().ToArray();
+                var query = ctx.Query;
+
+                return $$"""
+                    if ({{fullpathNullable}} != null && {{fullpathNotNull}}.AnyChecked()) {
+                        var array = new List<{{CsPrimitiveTypeName}}?>();
+                    {{_parser.GetItemPhysicalNames().SelectTextTemplate(physicalName => $$"""
+                        if ({{fullpathNotNull}}.{{physicalName}}) array.Add({{CsPrimitiveTypeName}}.{{physicalName}});
+                    """)}}
+
+                    {{If(isArray, () => $$"""
+                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => array.Contains(y.{{ctx.Member.PhysicalName}})));
+                    """).Else(() => $$"""
+                        {{query}} = {{query}}.Where(x => array.Contains(x.{{whereFullpath.Join(".")}}));
+                    """)}}
+                    }
+                    """;
+            }
         };
-        UiConstraint.E_Type IValueMemberType.UiConstraintType => throw new NotImplementedException();
+        UiConstraint.E_Type IValueMemberType.UiConstraintType => UiConstraint.E_Type.MemberConstraintBase;
 
         void IValueMemberType.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {
             // 特になし

@@ -26,6 +26,10 @@ namespace Nijo.Ver1.Models.QueryModelModules {
         }
         private readonly AggregateBase _aggregate;
 
+        /// <summary>楽観排他制御用のバージョン</summary>
+        internal const string VERSION = "Version";
+        internal bool HasVersion => _aggregate is RootAggregate;
+
         internal string CsClassName => $"{_aggregate.PhysicalName}SearchResult";
 
         internal IEnumerable<SearchResultMember> GetMembers() {
@@ -76,6 +80,13 @@ namespace Nijo.Ver1.Models.QueryModelModules {
                 public partial class {{sr.CsClassName}} {
                 {{sr.GetMembers().SelectTextTemplate(srm => $$"""
                     {{WithIndent(srm.RenderDeclaration(), "    ")}}
+                """)}}
+                {{If(sr.HasVersion, () => $$"""
+                    /// <summary>
+                    /// 楽観排他制御用のバージョン。
+                    /// null許容でないのは、データベース上に存在する時点で必ずバージョンも存在するため。
+                    /// </summary>
+                    public int {{VERSION}} { get; set; }
                 """)}}
                 }
                 """)}}
@@ -134,5 +145,44 @@ namespace Nijo.Ver1.Models.QueryModelModules {
             }
         }
         #endregion メンバー
+    }
+}
+
+namespace Nijo.Ver1.CodeGenerating {
+    using Nijo.Ver1.Models.QueryModelModules;
+
+    partial class SchemaPathNodeExtensions {
+
+        /// <summary>
+        /// <see cref="GetFullPath(ISchemaPathNode)"/> の結果を <see cref="SearchResult"/> のルールに沿ったパスとして返す
+        /// </summary>
+        public static IEnumerable<string> AsSearchResult(this IEnumerable<ISchemaPathNode> path) {
+            var entry = path.FirstOrDefault()?.GetEntry();
+
+            foreach (var node in path) {
+                if (node == entry) continue; // パスの一番最初（エントリー）はスキップ
+
+                // 検索結果オブジェクトはフラットな構造なので親と1対1の子は表れない
+                if (node is ChildAggreagte) continue;
+                if (node is RefToMember) continue;
+                if (node is RootAggregate) continue; // ref-toでルートを参照しているときパスの途中にRootAggregateが表れる
+
+                // Children
+                if (node is ChildrenAggreagte children) {
+                    var member = new SearchResult.SearchResultChildrenMember(children);
+                    yield return member.PhysicalName;
+                    continue;
+                }
+
+                // 末端のメンバー
+                if (node is ValueMember vm) {
+                    var member = new SearchResult.SearchResultValueMember(vm);
+                    yield return member.PhysicalName;
+                    continue;
+                }
+
+                throw new InvalidOperationException("予期しない型");
+            }
+        }
     }
 }

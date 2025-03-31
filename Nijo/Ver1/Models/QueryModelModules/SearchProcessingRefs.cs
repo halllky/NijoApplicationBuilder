@@ -28,7 +28,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
             var items = queryModels.Select(rootAggregate => {
                 var controller = new AspNetController(rootAggregate);
                 var searchCondition = new SearchCondition(rootAggregate);
-                var displayData = new DisplayDataRefEntry(rootAggregate);
+                var displayData = new DisplayDataRef.Entry(rootAggregate);
 
                 return new {
                     EscapedPhysicalName = rootAggregate.PhysicalName.Replace("'", "\\'"),
@@ -93,7 +93,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
             var searchCondition = new SearchCondition(_rootAggregate);
             var searchConditionMessage = new SearchConditionMessageContainer(_rootAggregate);
             var searchResult = new SearchResult(_rootAggregate);
-            var displayData = new DisplayDataRefEntry(_rootAggregate);
+            var displayData = new DisplayDataRef.Entry(_rootAggregate);
 
             return $$"""
                 #region 参照検索
@@ -121,7 +121,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
                     var sorted = {{SearchProcessing.APPEND_ORDERBY_CLAUSE}}(filtered, searchCondition);
 
                     // ページング(SKIP, TAKE)
-                    var query = (IQueryable<{{searchResult.CsClassName}}>)sorted;
+                    var query = sorted;
                     if (searchCondition.{{SearchCondition.SKIP_CS}} != null) {
                         query = query.Skip(searchCondition.{{SearchCondition.SKIP_CS}}.Value);
                     }
@@ -130,7 +130,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
                     }
 
                     // 画面表示用の型への変換
-                    var converted = query.Select({{TO_REF_TARGET}}).AsQueryable();
+                    var converted = query.Select({{TO_REF_TARGET}}());
 
                     // 検索処理実行
                     {{displayData.CsClassName}}[] loaded;
@@ -163,9 +163,9 @@ namespace Nijo.Ver1.Models.QueryModelModules {
                     };
                 }
                 /// <summary>
-                /// {{_rootAggregate.DisplayName}}の参照検索結果型を画面表示用の型に変換する
+                /// {{_rootAggregate.DisplayName}}の参照検索結果型を画面表示用の型に変換する式を返します。
                 /// </summary>
-                protected virtual {{displayData.CsClassName}} {{TO_REF_TARGET}}({{searchResult.CsClassName}} searchResult) {
+                protected virtual Expression<Func<{{searchResult.CsClassName}}, {{displayData.CsClassName}}>> {{TO_REF_TARGET}}() {
                     throw new NotImplementedException(); // TODO ver.1
                 }
                 /// <summary>

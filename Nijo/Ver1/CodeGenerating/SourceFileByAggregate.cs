@@ -77,6 +77,7 @@ namespace Nijo.Ver1.CodeGenerating {
                 using System.ComponentModel;
                 using System.ComponentModel.DataAnnotations;
                 using System.Linq;
+                using System.Linq.Expressions;
                 using System.Text.Json.Nodes;
                 using System.Text.Json.Serialization;
                 using Microsoft.EntityFrameworkCore;
@@ -144,7 +145,7 @@ namespace Nijo.Ver1.CodeGenerating {
                 .OfType<RefToMember>()
                 .Select(@ref => new {
                     FileName = $"./{@ref.RefTo.GetRoot().PhysicalName}",
-                    RefTo = new Models.QueryModelModules.DisplayDataRefEntry(@ref.RefTo),
+                    RefTo = new Models.QueryModelModules.DisplayDataRef.Entry(@ref.RefTo),
                     RefSC = new Models.QueryModelModules.SearchCondition.Filter(@ref.RefTo),
                 });
 

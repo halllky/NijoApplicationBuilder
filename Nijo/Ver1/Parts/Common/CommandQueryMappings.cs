@@ -84,7 +84,7 @@ namespace Nijo.Ver1.Parts.Common {
             foreach (var rootAggregate in _queryModels) {
                 var searchCondition = new SearchCondition(rootAggregate);
                 var displayData = new DisplayData(rootAggregate);
-                var refTarget = new DisplayDataRefEntry(rootAggregate);
+                var refTarget = new DisplayDataRef.Entry(rootAggregate);
 
                 imports.Add((
                     $"./{rootAggregate.PhysicalName}",
@@ -176,7 +176,7 @@ namespace Nijo.Ver1.Parts.Common {
                     /** RefTarget型一覧 */
                     export interface RefTargetTypeMap {
                     {{_queryModels.SelectTextTemplate(agg => $$"""
-                      '{{agg.PhysicalName}}': {{new DisplayDataRefEntry(agg).TsTypeName}}
+                      '{{agg.PhysicalName}}': {{new DisplayDataRef.Entry(agg).TsTypeName}}
                     """)}}
                     }
 
@@ -207,7 +207,7 @@ namespace Nijo.Ver1.Parts.Common {
                     /** RefTarget新規作成関数 */
                     export const createNewRefTargetFunctions: { [K in {{QUERY_MODEL_TYPE}}]: (() => RefTargetTypeMap[K]) } = {
                     {{_queryModels.SelectTextTemplate(agg => $$"""
-                      '{{agg.PhysicalName}}': {{new DisplayDataRefEntry(agg).TsNewObjectFunction}},
+                      '{{agg.PhysicalName}}': {{new DisplayDataRef.Entry(agg).TsNewObjectFunction}},
                     """)}}
                     }
 

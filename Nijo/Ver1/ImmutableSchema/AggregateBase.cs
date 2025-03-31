@@ -224,7 +224,7 @@ namespace Nijo.Ver1.ImmutableSchema {
 
         public override string ToString() {
             // デバッグ用
-            return this.GetFullPath().Select(x => x.XElement.Name.LocalName).Join(">");
+            return $"{GetType().Name}({this.GetFullPath().Select(x => x.XElement.Name.LocalName).Join(">")})";
         }
     }
 

@@ -49,7 +49,7 @@ internal static class KeyClass {
                 .EnumerateThisAndDescendants()
                 .ToArray();
 
-            // キーのエントリーほかの集約から参照されている場合のみレンダリングする
+            // キーのエントリー。ほかの集約から参照されている場合のみレンダリングする
             var entries = tree
                 .Where(agg => agg.GetRefFroms().Any())
                 .Select(agg => new KeyClassEntry(agg))

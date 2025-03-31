@@ -30,5 +30,14 @@ namespace Nijo.Ver1.SchemaParsing {
                 { '{{_xElement.Elements().Select(el => $"'{_ctx.GetDisplayName(el).Replace("'", "\\'")}'?: boolean").Join(", ")}} }
                 """;
         }
+
+        /// <summary>
+        /// この列挙体に定義されている値の物理名の一覧を返します。
+        /// </summary>
+        internal IEnumerable<string> GetItemPhysicalNames() {
+            foreach (var el in _xElement.Elements()) {
+                yield return el.Name.LocalName;
+            }
+        }
     }
 }

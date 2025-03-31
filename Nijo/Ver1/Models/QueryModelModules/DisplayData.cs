@@ -87,7 +87,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
         /// <summary>
         /// valuesの中に宣言されるメンバーを列挙する。
         /// </summary>
-        private IEnumerable<DisplayDataMember> GetOwnMembers() {
+        internal IEnumerable<DisplayDataMember> GetOwnMembers() {
             foreach (var member in _aggregate.GetMembers()) {
                 if (member is ValueMember vm) {
                     yield return new DisplayDataValueMember(vm);
@@ -102,7 +102,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
         /// <summary>
         /// 子要素を列挙する。
         /// </summary>
-        private IEnumerable<DisplayDataDescendant> GetChildMembers() {
+        internal IEnumerable<DisplayDataDescendant> GetChildMembers() {
             foreach (var member in _aggregate.GetMembers()) {
                 if (member is ChildAggreagte child) {
                     yield return new DisplayDataChildDescendant(child);
@@ -276,29 +276,29 @@ namespace Nijo.Ver1.Models.QueryModelModules {
 
         internal class DisplayDataValueMember : DisplayDataMember {
             internal DisplayDataValueMember(ValueMember vm) {
-                _vm = vm;
+                Member = vm;
             }
-            private readonly ValueMember _vm;
+            internal ValueMember Member { get; }
 
-            internal override string PhysicalName => _vm.PhysicalName;
-            internal override string DisplayName => _vm.DisplayName;
-            internal override UiConstraint.E_Type UiConstraintType => _vm.Type.UiConstraintType;
+            internal override string PhysicalName => Member.PhysicalName;
+            internal override string DisplayName => Member.DisplayName;
+            internal override UiConstraint.E_Type UiConstraintType => Member.Type.UiConstraintType;
 
-            public override bool IsRequired => _vm.IsKey || _vm.IsRequired;
-            public override string? CharacterType => _vm.CharacterType;
-            public override int? MaxLength => _vm.MaxLength;
-            public override int? TotalDigit => _vm.TotalDigit;
-            public override int? DecimalPlace => _vm.DecimalPlace;
+            public override bool IsRequired => Member.IsKey || Member.IsRequired;
+            public override string? CharacterType => Member.CharacterType;
+            public override int? MaxLength => Member.MaxLength;
+            public override int? TotalDigit => Member.TotalDigit;
+            public override int? DecimalPlace => Member.DecimalPlace;
 
             internal override string RenderCsDeclaration() {
                 return $$"""
-                    /// <summary>{{_vm.DisplayName}}</summary>
-                    public {{_vm.Type.CsDomainTypeName}}? {{PhysicalName}} { get; set; }
+                    /// <summary>{{Member.DisplayName}}</summary>
+                    public {{Member.Type.CsDomainTypeName}}? {{PhysicalName}} { get; set; }
                     """;
             }
             internal override string RenderTsDeclaration() {
                 return $$"""
-                    {{PhysicalName}}?: {{_vm.Type.TsTypeName}}
+                    {{PhysicalName}}?: {{Member.Type.TsTypeName}}
                     """;
             }
 
@@ -309,37 +309,40 @@ namespace Nijo.Ver1.Models.QueryModelModules {
 
         internal class DisplayDataRefMember : DisplayDataMember {
             internal DisplayDataRefMember(RefToMember refTo) {
-                _refTo = refTo;
+                Member = refTo;
+                _refTarget = new DisplayDataRef.Entry(refTo.RefTo);
             }
-            private readonly RefToMember _refTo;
+            internal RefToMember Member { get; }
+            private readonly DisplayDataRef.Entry _refTarget;
 
-            internal override string PhysicalName => _refTo.PhysicalName;
-            internal override string DisplayName => _refTo.DisplayName;
+            internal override string PhysicalName => Member.PhysicalName;
+            internal override string DisplayName => Member.DisplayName;
             internal override UiConstraint.E_Type UiConstraintType => UiConstraint.E_Type.MemberConstraintBase;
 
-            public override bool IsRequired => _refTo.IsKey || _refTo.IsRequired;
+            public override bool IsRequired => Member.IsKey || Member.IsRequired;
             public override string? CharacterType => null;
             public override int? MaxLength => null;
             public override int? TotalDigit => null;
             public override int? DecimalPlace => null;
 
             internal override string RenderCsDeclaration() {
-                var displayDataRef = new DisplayDataRefEntry(_refTo.RefTo);
                 return $$"""
-                    /// <summary>{{_refTo.DisplayName}}</summary>
-                    public {{displayDataRef.CsClassName}} {{PhysicalName}} { get; set; } = new();
+                    /// <summary>{{Member.DisplayName}}</summary>
+                    public {{_refTarget.CsClassName}} {{PhysicalName}} { get; set; } = new();
                     """;
             }
             internal override string RenderTsDeclaration() {
-                var displayDataRef = new DisplayDataRefEntry(_refTo.RefTo);
                 return $$"""
-                    {{PhysicalName}}: {{displayDataRef.TsTypeName}}
+                    {{PhysicalName}}: {{_refTarget.TsTypeName}}
                     """;
             }
 
             internal override string RenderNewObjectCreation() {
-                var displayDataRef = new DisplayDataRefEntry(_refTo.RefTo);
-                return $"{displayDataRef.TsNewObjectFunction}()";
+                return $"{_refTarget.TsNewObjectFunction}()";
+            }
+
+            internal IEnumerable<DisplayDataRef.IRefDisplayDataMember> GetMembers() {
+                return _refTarget.GetMembers();
             }
         }
         #endregion Valuesの中に定義されるメンバー
