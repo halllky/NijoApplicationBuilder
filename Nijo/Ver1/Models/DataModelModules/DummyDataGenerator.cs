@@ -1,6 +1,7 @@
 using Nijo.Util.DotnetEx;
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
+using Nijo.Ver1.Parts.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +13,10 @@ namespace Nijo.Ver1.Models.DataModelModules {
 
         internal const string CLASS_NAME = "DummyDataGenerator";
         internal const string GENERATE_ASYNC = "GenerateAsync";
+
+        private static string CreateAggregateMethodName(RootAggregate rootAggregate) => $"CreateRandom{rootAggregate.PhysicalName}";
+        private static string CreatePatternMethodName(RootAggregate rootAggregate) => $"CreatePatternsOf{rootAggregate.PhysicalName}";
+        private static string DummyValueMethodName(IValueMemberType type) => $"GetRandom{type.TypePhysicalName}";
 
         private readonly List<RootAggregate> _rootAggregates = [];
 
@@ -72,28 +77,37 @@ namespace Nijo.Ver1.Models.DataModelModules {
                             var context = new {{DUMMY_DATA_GENERATE_CONTEXT}} {
                                 DbContext = _dbContext,
                                 Random = new Random(0),
+                                Metadata = new(),
                             };
                     {{items.SelectTextTemplate(rootAggregate => $$"""
 
                             // {{rootAggregate.DisplayName}}
-                            {
-                                {{WithIndent(RenderRootAggregate(rootAggregate), "            ")}}
-                            }
+                            {{WithIndent(RenderRootAggregate(rootAggregate), "        ")}}
                     """)}}
                         }
 
-                        #region ステップ1: 機械的にパターンかけあわせ
+
+                        #region ルート集約毎のパターン作成処理
                     {{_rootAggregates.SelectTextTemplate(agg => $$"""
-                        {{WithIndent(RenderCreatingMethod(agg), "    ")}}
+                        {{WithIndent(RenderCreatePatternMethod(agg), "    ")}}
                     """)}}
-                        #endregion ステップ1: 機械的にパターンかけあわせ
+                        #endregion ルート集約毎のパターン作成処理
 
 
-                        #region ステップ2: かけあわせたパターンを手修正
+                        #region ルート集約毎のインスタンス1件作成処理
                     {{_rootAggregates.SelectTextTemplate(agg => $$"""
-                        {{WithIndent(RenderCreatedMethod(agg), "    ")}}
+                        {{WithIndent(RenderCreateRootAggregateMethod(agg), "    ")}}
                     """)}}
-                        #endregion ステップ2: かけあわせたパターンを手修正
+                        #endregion ルート集約毎のインスタンス1件作成処理
+
+
+                        #region 型ごとの標準ダミー値の生成ロジック
+                    {{ctx.SchemaParser.GetValueMemberTypes().SelectTextTemplate(type => $$"""
+                        protected virtual {{type.CsDomainTypeName}}? GetRandom{{type.TypePhysicalName}}({{DUMMY_DATA_GENERATE_CONTEXT}} context, {{Metadata.VALUE_MEMBER_METADATA_CS}} member) {
+                            {{WithIndent(type.RenderCreateDummyDataValueBody(ctx), "        ")}}
+                        }
+                    """)}}
+                        #endregion 型ごとの標準ダミー値の生成ロジック
                     }
                     #endif
                     """,
@@ -101,22 +115,21 @@ namespace Nijo.Ver1.Models.DataModelModules {
 
             static string RenderRootAggregate(RootAggregate rootAggregate) {
 
+                var listVarName = $"createCommands{rootAggregate.PhysicalName}";
                 var tree = rootAggregate.EnumerateThisAndDescendants();
 
                 return $$"""
-                    var patterns = {{GetCreatingMethodName(rootAggregate)}}().Build().ToList();
-                    var createCommands = {{GetCreatedMethodName(rootAggregate)}}(patterns).Select(x => x.{{SaveCommand.TO_DBENTITY}}()).ToArray();
-
+                    var {{listVarName}} = {{CreatePatternMethodName(rootAggregate)}}(context).Select(x => x.{{SaveCommand.TO_DBENTITY}}()).ToArray();
                     {{tree.SelectTextTemplate((agg, ix) => $$"""
                     {{RenderAggregate(agg, ix)}}
                     """)}}
                     """;
 
-                static string RenderAggregate(AggregateBase aggregate, int index) {
+                string RenderAggregate(AggregateBase aggregate, int index) {
                     var selected = new List<string>();
                     foreach (var node in aggregate.GetFullPath()) {
                         if (node is RootAggregate) {
-                            selected.Add("createCommands");
+                            selected.Add(listVarName);
 
                         } else if (node is ChildAggreagte child) {
                             var parent = (AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない");
@@ -136,29 +149,54 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 }
             }
 
-            static string RenderCreatingMethod(RootAggregate rootAggregate) {
+            static string RenderCreatePatternMethod(RootAggregate rootAggregate) {
                 var saveCommand = new SaveCommand(rootAggregate);
 
                 return $$"""
-                    /// <summary>{{rootAggregate.DisplayName}}の属性のパターンを機械的に組み合わせてテストデータのパターンを作成します。</summary>
-                    protected virtual {{I_PATTERN_BUILDER}}<{{saveCommand.CsClassNameCreate}}> {{GetCreatingMethodName(rootAggregate)}}() {
-                        あっちからもってくる;
+                    /// <summary>{{rootAggregate.DisplayName}}のテストデータのパターン作成</summary>
+                    protected virtual IEnumerable<{{saveCommand.CsClassNameCreate}}> {{CreatePatternMethodName(rootAggregate)}}({{DUMMY_DATA_GENERATE_CONTEXT}} context) {
+                        for (var i = 0; i < 20; i++) {
+                            yield return {{CreateAggregateMethodName(rootAggregate)}}(context);
+                        }
                     }
                     """;
             }
 
-            static string RenderCreatedMethod(RootAggregate rootAggregate) {
+            static string RenderCreateRootAggregateMethod(RootAggregate rootAggregate) {
                 var saveCommand = new SaveCommand(rootAggregate);
 
                 return $$"""
-                    /// <summary>テスト毎の細かい需要を反映するため、{{rootAggregate.DisplayName}}の属性のパターンを機械的に組み合わせたあとの結果を手修正します。</summary>
-                    /// <param name="items">パターン掛け合わせ後の配列。自由に中身を編集したり追加したりクリアしたりしてください。</param>
-                    /// <returns>編集結果。itemsをそのまま返しても、全く違う配列を返してもよい</returns>
-                    protected virtual IEnumerable<{{saveCommand.CsClassNameCreate}}> {{GetCreatedMethodName(rootAggregate)}}(List<{{saveCommand.CsClassNameCreate}}> items) {
-                        // テストデータを細かく編集したい場合はこのメソッドをオーバーライドして手修正処理を記述してください。
-                        return items;
+                    /// <summary>{{rootAggregate.DisplayName}}の作成コマンドのインスタンスを作成して返します。</summary>
+                    protected virtual {{saveCommand.CsClassNameCreate}} {{CreateAggregateMethodName(rootAggregate)}}({{DUMMY_DATA_GENERATE_CONTEXT}} context) {
+                        return new {{saveCommand.CsClassNameCreate}} {
+                            {{WithIndent(RenderBody(saveCommand), "        ")}}
+                        };
                     }
                     """;
+
+                static IEnumerable<string> RenderBody(SaveCommand saveCommand) {
+                    foreach (var member in saveCommand.GetCreateCommandMembers()) {
+                        if (member is SaveCommand.SaveCommandValueMember vm) {
+                            var path = vm.ValueMember.Owner
+                                .GetPathFromRoot()
+                                .AsSaveCommand()
+                                .ToList();
+                            path.Insert(0, vm.ValueMember.Owner.GetRoot().PhysicalName);
+                            path.Add(vm.PhysicalName);
+
+                            yield return $$"""
+                                {{member.PhysicalName}} = {{DummyValueMethodName(vm.ValueMember.Type)}}(context, context.Metadata.{{path.Join(".")}}),
+                                """;
+
+                        } else if (member is SaveCommand.SaveCommandRefMember refTo) {
+
+                        } else if (member is SaveCommand.SaveCommandDescendantMember desc) {
+
+                        } else {
+                            throw new NotImplementedException();
+                        }
+                    }
+                }
             }
         }
 
@@ -175,9 +213,10 @@ namespace Nijo.Ver1.Models.DataModelModules {
                     namespace {{ctx.Config.RootNamespace}};
 
                     /// <summary>ダミーデータ作成処理コンテキスト情報</summary>
-                    internal sealed class {{DUMMY_DATA_GENERATE_CONTEXT}} {
+                    public sealed class {{DUMMY_DATA_GENERATE_CONTEXT}} {
                         internal required {{ctx.Config.DbContextName}} DbContext { get; init; }
                         internal required Random Random { get; init; }
+                        internal required {{Metadata.CS_CLASSNAME}} Metadata { get; init; }
                     }
                     """,
             };
@@ -213,25 +252,5 @@ namespace Nijo.Ver1.Models.DataModelModules {
             };
         }
         #endregion DB操作
-
-
-        #region パターンビルダー
-        private const string I_PATTERN_BUILDER = "ITestPatternBuilder";
-        private static string GetCreatingMethodName(RootAggregate rootAggregate) => $"OnPatternCreating{rootAggregate.PhysicalName}";
-        private static string GetCreatedMethodName(RootAggregate rootAggregate) => $"OnPatternCreated{rootAggregate.PhysicalName}";
-
-        internal static SourceFile RenderPatternBuilderInterface(CodeRenderingContext ctx) {
-            return new SourceFile {
-                FileName = "ITestPatternBuilder.cs",
-                Contents = $$"""
-                    namespace {{ctx.Config.RootNamespace}};
-
-                    public interface {{I_PATTERN_BUILDER}}<T> {
-                        あっちからもってくる;
-                    }
-                    """,
-            };
-        }
-        #endregion パターンビルダー
     }
 }

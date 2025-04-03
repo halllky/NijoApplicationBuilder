@@ -141,6 +141,33 @@ namespace Nijo.Ver1.ImmutableSchema {
         }
 
         /// <summary>
+        /// ルート集約からこのメンバーまでのパスを列挙する。
+        /// 経路情報はクリアされ、ルート集約がエントリーになる。
+        /// </summary>
+        public IEnumerable<AggregateBase> GetPathFromRoot() {
+            var ancesotors = _xElement
+                .Ancestors()
+                .Reverse()
+                // ドキュメントルート等も祖先に含まれてしまうので除外
+                .Where(el => el != _xElement.Document?.Root
+                          && el.Parent != _xElement.Document?.Root);
+
+            var prev = (AggregateBase?)null;
+
+            foreach (var el in ancesotors) {
+                var nodeType = _ctx.GetNodeType(el);
+                AggregateBase aggregate = nodeType switch {
+                    SchemaParseContext.E_NodeType.RootAggregate => new RootAggregate(el, _ctx, null),
+                    SchemaParseContext.E_NodeType.ChildAggregate => new ChildAggreagte(el, _ctx, prev),
+                    SchemaParseContext.E_NodeType.ChildrenAggregate => new ChildrenAggreagte(el, _ctx, prev),
+                    _ => throw new InvalidOperationException($"不正なノード種別: {nodeType}({el})"),
+                };
+                yield return aggregate;
+                prev = aggregate;
+            }
+        }
+
+        /// <summary>
         /// 子孫集約を列挙します。
         /// </summary>
         public IEnumerable<AggregateBase> EnumerateDescendants() {

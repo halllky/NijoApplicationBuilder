@@ -13,8 +13,8 @@ namespace Nijo.Ver1.ValueMemberTypes {
     /// 単語型
     /// </summary>
     internal class Word : IValueMemberType {
+        string IValueMemberType.TypePhysicalName => "Word";
         string IValueMemberType.SchemaTypeName => "word";
-
         string IValueMemberType.CsDomainTypeName => "string";
         string IValueMemberType.CsPrimitiveTypeName => "string";
         string IValueMemberType.TsTypeName => "string";
@@ -49,6 +49,13 @@ namespace Nijo.Ver1.ValueMemberTypes {
         void IValueMemberType.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {
             // 特になし
         }
+
+        string IValueMemberType.RenderCreateDummyDataValueBody(CodeRenderingContext ctx) {
+            return $$"""
+                return new string('X', member.MaxLength ?? 12);
+                """;
+        }
+
         void IValueMemberType.RenderStaticSources(CodeRenderingContext ctx) {
             // 特になし
         }

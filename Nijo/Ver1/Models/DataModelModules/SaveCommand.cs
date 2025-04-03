@@ -60,7 +60,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
 
 
         #region CREATE
-        private IEnumerable<SaveCommandMember> GetCreateCommandMembers() {
+        internal IEnumerable<SaveCommandMember> GetCreateCommandMembers() {
             foreach (var member in _aggregate.GetMembers()) {
                 if (member is ValueMember vm) {
                     // 新規登録時に自動採番されるものは新規登録メンバー中に含めない
@@ -210,16 +210,16 @@ namespace Nijo.Ver1.Models.DataModelModules {
         /// </summary>
         internal class SaveCommandValueMember : SaveCommandMember {
             internal SaveCommandValueMember(ValueMember vm) {
-                _vm = vm;
+                ValueMember = vm;
             }
-            private readonly ValueMember _vm;
+            internal ValueMember ValueMember { get; }
+            internal override IAggregateMember Member => ValueMember;
 
-            internal override IAggregateMember Member => _vm;
-            internal override string PhysicalName => _vm.PhysicalName;
-            internal override string DisplayName => _vm.DisplayName;
-            internal override string CsCreateType => _vm.Type.CsDomainTypeName;
-            internal override string CsUpdateType => _vm.Type.CsDomainTypeName;
-            internal override string CsDeleteType => _vm.Type.CsDomainTypeName;
+            internal override string PhysicalName => ValueMember.PhysicalName;
+            internal override string DisplayName => ValueMember.DisplayName;
+            internal override string CsCreateType => ValueMember.Type.CsDomainTypeName;
+            internal override string CsUpdateType => ValueMember.Type.CsDomainTypeName;
+            internal override string CsDeleteType => ValueMember.Type.CsDomainTypeName;
         }
         /// <summary>
         /// 更新処理引数クラスの参照先キー項目

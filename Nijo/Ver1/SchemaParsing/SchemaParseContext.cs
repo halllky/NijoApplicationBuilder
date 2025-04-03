@@ -3,12 +3,12 @@ using Nijo.Util.DotnetEx;
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
 using Nijo.Ver1.Models;
-using Nijo.Ver1.ValueMemberTypes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
 
@@ -22,14 +22,14 @@ namespace Nijo.Ver1.SchemaParsing {
         /// 既定の型解釈ルールでコンテキストを作成します。
         /// </summary>
         /// <returns></returns>
-        public static SchemaParseContext Default() {
+        public static SchemaParseContext Default(XDocument xDocument) {
             var valueMemberTypes = new IValueMemberType[] {
                 new ValueMemberTypes.Word(),
             };
-            return new SchemaParseContext(valueMemberTypes);
+            return new SchemaParseContext(valueMemberTypes, xDocument);
         }
 
-        private SchemaParseContext(IEnumerable<IValueMemberType> valueMemberTypes) {
+        private SchemaParseContext(IEnumerable<IValueMemberType> valueMemberTypes, XDocument xDocument) {
             // スキーマ定義名重複チェック
             var groups = valueMemberTypes
                 .GroupBy(t => t.SchemaTypeName)
@@ -41,8 +41,12 @@ namespace Nijo.Ver1.SchemaParsing {
                 throw new InvalidOperationException($"型名 {string.Join(", ", duplicates.Select(x => x.Key))} が重複しています。");
             }
 
+            _xDocument = xDocument;
             _valueMemberTypes = groups.ToDictionary(g => g.Key, g => g.Single());
         }
+
+        private readonly XDocument _xDocument;
+        private readonly IReadOnlyDictionary<string, IValueMemberType> _valueMemberTypes;
 
         private const string ATTR_IS = "is";
         private const string ATTR_DISPLAY_NAME = "DisplayName";
@@ -91,7 +95,7 @@ namespace Nijo.Ver1.SchemaParsing {
             if (refToAttribute == null) return null;
 
             var xPath = $"//{refToAttribute.Value}";
-            return xElement.Document?.XPathSelectElement(xPath);
+            return _xDocument.XPathSelectElement(xPath);
         }
         /// <summary>
         /// 引数の集約を参照している集約を探して返します。
@@ -99,7 +103,7 @@ namespace Nijo.Ver1.SchemaParsing {
         internal IEnumerable<XElement> FindRefFrom(XElement xElement) {
             // まずパフォーマンスのためXPathで高速に絞り込む
             var physicalName = GetPhysicalName(xElement);
-            var xPathFiltered = xElement.Document?.XPathSelectElements($"//*[@is[contains(., '{IS_REFTO}:{physicalName}')]]") ?? [];
+            var xPathFiltered = _xDocument.XPathSelectElements($"//*[@is[contains(., '{IS_REFTO}:{physicalName}')]]") ?? [];
 
             // 次にis属性を解釈して厳密に絞り込む
             return xPathFiltered.Where(el => ParseIsAttribute(el).Any(attr => attr.Key == IS_REFTO
@@ -109,11 +113,11 @@ namespace Nijo.Ver1.SchemaParsing {
         /// <summary>
         /// 集約ルートを返す。集約ルートは <see cref="XDocument.Root"/> の1つ下。
         /// </summary>
-        internal static XElement GetAggregateRootElement(XElement xElement) {
+        internal XElement GetAggregateRootElement(XElement xElement) {
             var current = xElement;
             while (true) {
                 if (current.Parent == null) throw new InvalidOperationException();
-                if (current.Parent == xElement.Document?.Root) return current;
+                if (current.Parent == _xDocument.Root) return current;
 
                 current = current.Parent;
             }
@@ -163,7 +167,7 @@ namespace Nijo.Ver1.SchemaParsing {
         /// </summary>
         internal E_NodeType GetNodeType(XElement xElement) {
             // ルート要素直下に定義されている場合はルート集約
-            if (xElement.Parent == xElement.Document?.Root) {
+            if (xElement.Parent == _xDocument.Root) {
                 return E_NodeType.RootAggregate;
             }
 
@@ -282,14 +286,29 @@ namespace Nijo.Ver1.SchemaParsing {
 
 
         #region ImmutableSchemaへの変換
-        private readonly IReadOnlyDictionary<string, IValueMemberType> _valueMemberTypes;
+        public IEnumerable<IValueMemberType> GetValueMemberTypes() {
+            // 単語型など予め登録された型
+            foreach (var type in _valueMemberTypes.Values) {
+                yield return type;
+            }
+
+            // 列挙体
+            var staticEnumTypes = _xDocument
+                .Descendants()
+                .Where(el => ParseIsAttribute(el).Any(attr => attr.Key == IS_STATIC_ENUM_MODEL))
+                .Select(el => new ValueMemberTypes.StaticEnumMember(el, this))
+                ?? [];
+            foreach (var type in staticEnumTypes) {
+                yield return type;
+            }
+        }
         /// <summary>
         /// ValueMemberを表すXML要素の種別（日付, 数値, ...等）を判別して返します。
         /// </summary>
         internal bool TryResolveMemberType(XElement xElement, out IValueMemberType valueMemberType) {
             var isAttribute = ParseIsAttribute(xElement).ToArray();
-            var staticEnumTypes = xElement.Document
-                ?.Descendants()
+            var staticEnumTypes = _xDocument
+                .Descendants()
                 .Where(el => ParseIsAttribute(el).Any(attr => attr.Key == IS_STATIC_ENUM_MODEL))
                 .ToDictionary(GetPhysicalName, el => new ValueMemberTypes.StaticEnumMember(el, this))
                 ?? [];

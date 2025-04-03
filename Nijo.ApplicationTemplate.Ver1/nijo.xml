@@ -15,8 +15,8 @@
         <Word2 is="word name" />
       </Items>
     </Parameter>
-    <ReturnType is="child">
-    </ReturnType>
+    <ReturnValue is="child">
+    </ReturnValue>
   </CommandModelテスト>
   <予約 is="data-model" LatinName="Transaction Data 01">
     <予約ID is="word key" />

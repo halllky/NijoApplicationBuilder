@@ -101,6 +101,11 @@ namespace Nijo.Ver1.Models {
             ctx.Use<CommandQueryMappings>()
                 .AddQueryModel(rootAggregate);
 
+            // 定数: メタデータ ※DataModelの場合は全く同じ値になるので割愛
+            if (!rootAggregate.GenerateDefaultQueryModel) {
+                ctx.Use<Metadata>().Add(rootAggregate);
+            }
+
             // 権限
             // TODO ver.1
         }

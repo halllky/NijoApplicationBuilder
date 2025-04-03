@@ -23,8 +23,10 @@ namespace Nijo.Ver1.ValueMemberTypes {
         }
 
         private readonly XElement _xElement;
+        /// <inheritdoc cref="EnumDefParser"/>
         private readonly EnumDefParser _parser;
 
+        public string TypePhysicalName => _xElement.Name.LocalName;
         public string SchemaTypeName => _xElement.Name.LocalName;
         public string CsDomainTypeName => _parser.CsEnumName;
         public string CsPrimitiveTypeName => _parser.CsEnumName;
@@ -71,6 +73,20 @@ namespace Nijo.Ver1.ValueMemberTypes {
         }
         void IValueMemberType.RenderStaticSources(CodeRenderingContext ctx) {
             // 特になし
+        }
+
+        string IValueMemberType.RenderCreateDummyDataValueBody(CodeRenderingContext ctx) {
+            var count = _parser.GetItemPhysicalNames().Count();
+
+            if (count == 0) {
+                return $$"""
+                    return null;
+                    """;
+            } else {
+                return $$"""
+                    return Enum.GetValues<{{_parser.CsEnumName}}>().ElementAt(context.Random.Next(0, {{count - 1}}));
+                    """;
+            }
         }
     }
 }

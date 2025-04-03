@@ -351,6 +351,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
         #region UI用の制約定義
         internal string UiConstraintTypeName => $"{_aggregate.PhysicalName}ConstraintType";
         internal string UiConstraingValueName => $"{_aggregate.PhysicalName}Constraints";
+        [Obsolete("ValueMemberMetadataに変更")]
         internal string RenderUiConstraintType(CodeRenderingContext ctx) {
             if (_aggregate is not RootAggregate) throw new InvalidOperationException();
 

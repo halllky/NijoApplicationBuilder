@@ -13,6 +13,10 @@ namespace Nijo.Ver1.ImmutableSchema {
     /// </summary>
     public interface IValueMemberType {
         /// <summary>
+        /// この型の名前がソースコード中に表れるときの物理名
+        /// </summary>
+        string TypePhysicalName { get; }
+        /// <summary>
         /// XMLスキーマ定義でこの型を指定するときの型名
         /// </summary>
         string SchemaTypeName { get; }
@@ -33,7 +37,6 @@ namespace Nijo.Ver1.ImmutableSchema {
         /// <summary>
         /// 型に由来する生成ソースがある場合はここで登録する
         /// </summary>
-        /// </summary>
         void RegisterDependencies(IMultiAggregateSourceFileManager ctx);
         /// <summary>
         /// 型に由来する生成ソースがある場合はここでレンダリングする
@@ -50,6 +53,12 @@ namespace Nijo.Ver1.ImmutableSchema {
         /// UI上の制約がとりうる型
         /// </summary>
         UiConstraint.E_Type UiConstraintType { get; }
+
+        /// <summary>
+        /// ダミーデータ生成処理の既定の処理をレンダリングします。
+        /// <code>return /* 値 */;</code> の式を返してください。
+        /// </summary>
+        string RenderCreateDummyDataValueBody(CodeRenderingContext ctx);
     }
 
 

@@ -14,6 +14,7 @@ namespace Nijo.Ver1.ValueMemberTypes {
     /// シーケンス。RDBMS登録時にデータベース側で採番処理がなされる整数型。
     /// </summary>
     internal class SequenceMember : IValueMemberType {
+        string IValueMemberType.TypePhysicalName => "Sequence";
         string IValueMemberType.SchemaTypeName => "sequence";
         string IValueMemberType.CsDomainTypeName => "int";
         string IValueMemberType.CsPrimitiveTypeName => "int";
@@ -78,9 +79,14 @@ namespace Nijo.Ver1.ValueMemberTypes {
             // 特になし
         }
 
+        string IValueMemberType.RenderCreateDummyDataValueBody(CodeRenderingContext ctx) {
+            return $$"""
+                return context.Random.Next();
+                """;
+        }
+
         #region 採番処理
         internal const string SET_METHOD = "GenerateAndSetSequenceValue";
-
         #endregion 採番処理
     }
 }

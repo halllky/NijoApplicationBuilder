@@ -37,6 +37,11 @@ namespace Nijo.Ver1.Models {
             // カスタムロジック用モジュール
             ctx.Use<CommandQueryMappings>().AddCommandModel(rootAggregate);
 
+            // 定数: メタデータ
+            ctx.Use<Metadata>()
+                .Add(rootAggregate.GetCommandModelParameterChild())
+                .Add(rootAggregate.GetCommandModelReturnValueChild());
+
             aggregateFile.ExecuteRendering(ctx);
         }
 

@@ -57,6 +57,9 @@ namespace Nijo.Ver1.Models {
             ctx.Use<DummyDataGenerator>()
                 .Add(rootAggregate);
 
+            // 定数: メタデータ
+            ctx.Use<Metadata>().Add(rootAggregate);
+
             // QueryModelと全く同じ型の場合はそれぞれのモデルのソースも生成
             if (rootAggregate.GenerateDefaultQueryModel) {
                 QueryModel.GenerateCode(ctx, rootAggregate, aggregateFile);
