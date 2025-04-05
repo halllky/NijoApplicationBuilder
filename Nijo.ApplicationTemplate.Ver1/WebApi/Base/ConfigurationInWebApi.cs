@@ -55,7 +55,7 @@ internal class ConfigurationInWebApi : DefaultConfigurationInWebApi {
             IgnoreConfirm = blnIgnoreConfirm,
         };
         var presentationContext = new PresentationContextInWebApi<TMessageRoot>(
-            IMessageContainer.GetDefaultClass<TMessageRoot>(),
+            MessageContainer.GetDefaultClass<TMessageRoot>([]),
             presentationContextOptions);
 
         return new() {

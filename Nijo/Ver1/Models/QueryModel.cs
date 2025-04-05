@@ -37,6 +37,7 @@ namespace Nijo.Ver1.Models {
             var searchConditionMessages = new SearchConditionMessageContainer(rootAggregate);
             aggregateFile.AddCSharpClass(SearchConditionMessageContainer.RenderCSharpRecursively(rootAggregate));
             aggregateFile.AddTypeScriptTypeDef(searchConditionMessages.RenderTypeScript()); // ちなみに子孫集約はルート集約の中にレンダリングされる
+            ctx.Use<MessageContainer.BaseClass>().Register(searchConditionMessages.CsClassName, searchConditionMessages.CsClassName);
 
             // 処理: 検索条件クラスのURL変換
             // - URL => TS
@@ -108,6 +109,9 @@ namespace Nijo.Ver1.Models {
 
             // 権限
             // TODO ver.1
+
+            // ユニットテスト
+            ctx.Use<QueryModelUnitTest>().Add(rootAggregate);
         }
 
         public void GenerateCode(CodeRenderingContext ctx) {

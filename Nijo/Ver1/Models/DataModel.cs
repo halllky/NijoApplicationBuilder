@@ -32,7 +32,11 @@ namespace Nijo.Ver1.Models {
             aggregateFile.AddCSharpClass(KeyClass.KeyClassEntry.RenderClassDeclaringRecursively(rootAggregate, ctx));
 
             // データ型: SaveCommandメッセージ
+            var saveCommandMessage = new SaveCommandMessageContainer(rootAggregate);
             aggregateFile.AddCSharpClass(SaveCommandMessageContainer.RenderTree(rootAggregate));
+            ctx.Use<MessageContainer.BaseClass>()
+                .Register(saveCommandMessage.InterfaceName, saveCommandMessage.CsClassName)
+                .Register(saveCommandMessage.CsClassName, saveCommandMessage.CsClassName);
 
             // 処理: 新規登録、更新、削除
             var create = new CreateMethod(rootAggregate);

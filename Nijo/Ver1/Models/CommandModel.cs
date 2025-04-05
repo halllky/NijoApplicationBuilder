@@ -23,6 +23,7 @@ namespace Nijo.Ver1.Models {
             var parameterMessages = new ParameterTypeMessageContainer(rootAggregate);
             aggregateFile.AddCSharpClass(parameterMessages.RenderCSharp());
             aggregateFile.AddTypeScriptTypeDef(parameterMessages.RenderTypeScript());
+            ctx.Use<MessageContainer.BaseClass>().Register(parameterMessages.CsClassName, parameterMessages.CsClassName);
 
             // データ型: 戻り値型定義
             var returnType = new ReturnType(rootAggregate);
