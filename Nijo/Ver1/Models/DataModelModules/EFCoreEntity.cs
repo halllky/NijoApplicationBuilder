@@ -54,7 +54,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
         /// <item>ナビゲーションプロパティ: 列挙しない</item>
         /// </list>
         /// </summary>
-        private IEnumerable<EFCoreEntityColumn> GetColumns() {
+        internal IEnumerable<EFCoreEntityColumn> GetColumns() {
             var parent = _aggregate.GetParent();
             if (parent != null) {
                 foreach (var member in parent.GetKeyVMs()) {

@@ -1,3 +1,4 @@
+using Nijo.Util.DotnetEx;
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
 using Nijo.Ver1.ValueMemberTypes;
@@ -80,8 +81,6 @@ namespace Nijo.Ver1.Models.DataModelModules {
             }
         }
         private string RenderCreateCommandDeclaring(CodeRenderingContext ctx) {
-            var efCoreEntity = new EFCoreEntity(_aggregate);
-
             return $$"""
                 /// <summary>
                 /// {{_aggregate.DisplayName}} の新規登録コマンド引数
@@ -93,12 +92,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 """)}}
                 {{If(_aggregate is RootAggregate, () => $$"""
 
-                    /// <summary>
-                    /// このインスタンスを Entity Framework Core のエンティティに変換します。
-                    /// </summary>
-                    public {{efCoreEntity.CsClassName}} {{TO_DBENTITY}}() {
-                        throw new NotImplementedException(); // TODO ver.1
-                    }
+                    {{WithIndent(RenderToDbEntity(isCreate: true), "    ")}}
                 """)}}
                 }
                 """;
@@ -139,12 +133,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
                     /// <summary>楽観排他制御用のバージョン</summary>
                     public required int? {{VERSION}} { get; set; }
 
-                    /// <summary>
-                    /// このインスタンスを Entity Framework Core のエンティティに変換します。
-                    /// </summary>
-                    public {{efCoreEntity.CsClassName}} {{TO_DBENTITY}}() {
-                        throw new NotImplementedException(); // TODO ver.1
-                    }
+                    {{WithIndent(RenderToDbEntity(isCreate: false), "    ")}}
 
                     /// <summary>
                     /// Entity Framework Core のエンティティからこのクラスのインスタンスを作成します。
@@ -254,6 +243,104 @@ namespace Nijo.Ver1.Models.DataModelModules {
             public string CsDeleteType => _aggregate is ChildrenAggreagte ? $"List<{new SaveCommand(_aggregate).CsClassNameDelete}>" : new SaveCommand(_aggregate).CsClassNameDelete;
         }
         #endregion メンバー
+
+
+        private string RenderToDbEntity(bool isCreate) {
+            var efCoreEntity = new EFCoreEntity(_aggregate);
+
+            return $$"""
+                /// <summary>
+                /// このインスタンスを Entity Framework Core のエンティティに変換します。
+                /// </summary>
+                public {{efCoreEntity.CsClassName}} {{TO_DBENTITY}}() {
+                    return new {{efCoreEntity.CsClassName}} {
+                        {{WithIndent(RenderToDbEntityBody(efCoreEntity), "        ")}}
+                    };
+                }
+                """;
+
+            IEnumerable<string> RenderToDbEntityBody(EFCoreEntity entity) {
+                var rightMembers = isCreate
+                    ? GetCreateCommandMembers().ToArray()
+                    : GetUpdateCommandMembers().ToArray();
+
+                foreach (var col in entity.GetColumns()) {
+                    if (col is EFCoreEntity.OwnColumnMember ownCol) {
+                        var left = ((ISchemaPathNode)ownCol.Member).XElement;
+                        var right = rightMembers.SingleOrDefault(m => m.Member.XElement == left);
+
+                        if (right == null) {
+                            // シーケンス項目など登録と共に採番されるものはこの分岐にくる可能性がある
+                            yield return $$"""
+                                {{col.PhysicalName}} = null,
+                                """;
+                        } else {
+                            // SaveCommand のプロパティを EfCoreEntity に移送
+                            var path = right.Member.Owner
+                                .GetPathFromRoot()
+                                .SinceNearestChildren()
+                                .AsSaveCommand()
+                                .ToList();
+                            path.Add(right.PhysicalName);
+
+                            yield return $$"""
+                                {{col.PhysicalName}} = this.{{path.Join("?.")}},
+                                """;
+                        }
+
+                    } else if (col is EFCoreEntity.ParentKeyMember parentKeyCol) {
+                        // 親のキーメンバーの場合、SaveCommandのParentプロパティを経由して値を取得
+                        var path = new List<string>();
+                        var currentMember = parentKeyCol.Member;
+                        var currentAggregate = _aggregate;
+
+                        // 親への参照パスを構築
+                        while (currentAggregate != null) {
+                            var parent = currentAggregate.GetParent();
+                            if (parent == null) break;
+
+                            path.Insert(0, "Parent");
+                            if (parent == currentMember.Owner) {
+                                path.Add(currentMember.PhysicalName);
+                                break;
+                            }
+                            currentAggregate = parent;
+                        }
+
+                        yield return $$"""
+                            {{col.PhysicalName}} = this.{{path.Join("?.")}},
+                            """;
+
+                    } else if (col is EFCoreEntity.RefKeyMember refKeyCol) {
+                        // 参照先のキーメンバーの場合、SaveCommandの参照プロパティを経由して値を取得
+                        var path = new List<string>();
+                        var currentMember = refKeyCol.Member;
+                        var currentRef = refKeyCol.RefEntry;
+
+                        // 参照パスを構築
+                        while (currentRef != null) {
+                            path.Insert(0, currentRef.PhysicalName);
+                            if (currentRef.RefTo == currentMember.Owner) {
+                                path.Add(currentMember.PhysicalName);
+                                break;
+                            }
+
+                            // 次の参照を探す
+                            var nextRef = currentRef.RefTo.GetMembers()
+                                .OfType<RefToMember>()
+                                .FirstOrDefault(r => r.RefTo.GetKeyVMs().Contains(currentMember));
+                            
+                            if (nextRef == null) break;
+                            currentRef = nextRef;
+                        }
+
+                        yield return $$"""
+                            {{col.PhysicalName}} = this.{{path.Join("?.")}},
+                            """;
+                    }
+                }
+            }
+        }
     }
 }
 
