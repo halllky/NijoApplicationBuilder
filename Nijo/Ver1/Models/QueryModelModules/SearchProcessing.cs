@@ -241,7 +241,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
                     return new {
                         AscLiteral = literal + SearchCondition.ASC_SUFFIX,
                         DescLiteral = literal + SearchCondition.DESC_SUFFIX,
-                        Path = m.Member.GetFullPath().AsSearchResult().Join("!."),
+                        Path = m.Member.GetPathFromEntry().AsSearchResult().Join("!."),
                     };
                 })
                 .ToArray();
@@ -304,7 +304,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
             static string RenderMember(DisplayData.DisplayDataMember member) {
                 if (member is DisplayData.DisplayDataValueMember vm) {
                     return $$"""
-                        {{member.PhysicalName}} = searchResult.{{vm.Member.GetFullPath().AsSearchResult().Join("!.")}},
+                        {{member.PhysicalName}} = searchResult.{{vm.Member.GetPathFromEntry().AsSearchResult().Join("!.")}},
                         """;
 
                 }

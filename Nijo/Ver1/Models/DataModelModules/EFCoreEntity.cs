@@ -517,7 +517,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
         /// </summary>
         internal IEnumerable<string> RenderInclude() {
             foreach (var agg in _aggregate.EnumerateDescendants()) {
-                var fullPath = agg.GetFullPath().Skip(1).ToArray();
+                var fullPath = agg.GetPathFromEntry().Skip(1).ToArray();
 
                 for (int i = 0; i < fullPath.Length; i++) {
                     var parent = (AggregateBase?)fullPath[i].PreviousNode ?? throw new InvalidOperationException("ありえない");
@@ -539,7 +539,7 @@ namespace Nijo.Ver1.CodeGenerating {
     partial class SchemaPathNodeExtensions {
 
         /// <summary>
-        /// <see cref="GetFullPath(ISchemaPathNode)"/> の結果を <see cref="EFCoreEntity"/> のルールに沿ったパスとして返す
+        /// <see cref="GetPathFromEntry(ISchemaPathNode)"/> の結果を <see cref="EFCoreEntity"/> のルールに沿ったパスとして返す
         /// </summary>
         public static IEnumerable<string> AsDbEntity(this IEnumerable<ISchemaPathNode> path) {
             var entry = path.FirstOrDefault()?.GetEntry();

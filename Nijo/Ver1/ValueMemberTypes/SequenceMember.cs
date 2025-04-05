@@ -26,7 +26,7 @@ namespace Nijo.Ver1.ValueMemberTypes {
             RenderTsNewObjectFunctionValue = () => "{}",
             RenderFiltering = ctx => {
                 var fullpath = ctx.Member
-                    .GetFullPath()
+                    .GetPathFromEntry()
                     .ToArray();
                 var strArrayPath = fullpath
                     .AsSearchConditionFilter(E_CsTs.CSharp)

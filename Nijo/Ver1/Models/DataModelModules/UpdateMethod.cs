@@ -31,7 +31,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
             var keys = _rootAggregate
                 .GetKeyVMs()
                 .Select((vm, i) => {
-                    var fullpath = vm.GetFullPath().ToArray();
+                    var fullpath = vm.GetPathFromEntry().ToArray();
                     return new {
                         TempVarName = $"searchKey{i + 1}",
                         vm.PhysicalName,
@@ -241,7 +241,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
 
             for (int i = 0; i < descendantDbEntities.Length; i++) {
                 var builder = new StringBuilder();
-                var paths = descendantDbEntities[i].GetFullPath().ToArray();
+                var paths = descendantDbEntities[i].GetPathFromEntry().ToArray();
                 var before = $"before{descendantDbEntities[i].PhysicalName}_{i}";
                 var after_ = $"after{descendantDbEntities[i].PhysicalName}_{i}";
 
@@ -325,7 +325,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
 
             for (int i = 0; i < descendantDbEntities.Length; i++) {
                 var builder = new StringBuilder();
-                var paths = descendantDbEntities[i].GetFullPath().Skip(1).ToArray();
+                var paths = descendantDbEntities[i].GetPathFromEntry().Skip(1).ToArray();
                 var after_ = $"after{descendantDbEntities[i].PhysicalName}_{i}";
 
                 // before, after それぞれの子孫インスタンスを一次配列に格納する

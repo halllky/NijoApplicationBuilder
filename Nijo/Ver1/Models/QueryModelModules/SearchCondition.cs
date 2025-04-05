@@ -142,7 +142,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
                     yield return FILTER_TS;
                 }
 
-                foreach (var node in vm.GetFullPath()) {
+                foreach (var node in vm.GetPathFromEntry()) {
                     yield return node.XElement.Name.LocalName; // LocalNameでよいかどうかは不明
                 }
             }
@@ -366,7 +366,7 @@ namespace Nijo.Ver1.CodeGenerating {
     partial class SchemaPathNodeExtensions {
 
         /// <summary>
-        /// <see cref="GetFullPath(ISchemaPathNode)"/> の結果を <see cref="SearchCondition.Filter"/> のルールに沿ったパスとして返す
+        /// <see cref="GetPathFromEntry(ISchemaPathNode)"/> の結果を <see cref="SearchCondition.Filter"/> のルールに沿ったパスとして返す
         /// </summary>
         public static IEnumerable<string> AsSearchConditionFilter(this IEnumerable<ISchemaPathNode> path, E_CsTs csts) {
             var entry = path.FirstOrDefault()?.GetEntry();

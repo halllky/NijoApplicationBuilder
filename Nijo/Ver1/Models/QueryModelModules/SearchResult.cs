@@ -109,7 +109,7 @@ namespace Nijo.Ver1.Models.QueryModelModules {
             private readonly ValueMember _valueMember;
 
             internal override string PhysicalName => _physicalName ??= _valueMember
-                .GetFullPath()
+                .GetPathFromEntry()
                 .Skip(1) // エントリーを除外
                 .SinceNearestChildren()
                 .SelectPhysicalName()
@@ -154,7 +154,7 @@ namespace Nijo.Ver1.CodeGenerating {
     partial class SchemaPathNodeExtensions {
 
         /// <summary>
-        /// <see cref="GetFullPath(ISchemaPathNode)"/> の結果を <see cref="SearchResult"/> のルールに沿ったパスとして返す
+        /// <see cref="GetPathFromEntry(ISchemaPathNode)"/> の結果を <see cref="SearchResult"/> のルールに沿ったパスとして返す
         /// </summary>
         public static IEnumerable<string> AsSearchResult(this IEnumerable<ISchemaPathNode> path) {
             var entry = path.FirstOrDefault()?.GetEntry();

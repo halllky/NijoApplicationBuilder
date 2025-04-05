@@ -26,7 +26,7 @@ namespace Nijo.Ver1.ValueMemberTypes {
             RenderTsNewObjectFunctionValue = () => "undefined",
             RenderFiltering = ctx => {
                 // TODO ver.1 範囲検索以外も作る
-                var fullpath = ctx.Member.GetFullPath().ToArray();
+                var fullpath = ctx.Member.GetPathFromEntry().ToArray();
                 var pathFromSearchCondition = fullpath.AsSearchConditionFilter(E_CsTs.CSharp).ToArray();
                 var whereFullpath = fullpath.AsSearchResult().ToArray();
                 var fullpathNullable = $"{ctx.SearchCondition}.{pathFromSearchCondition.Join("?.")}";

@@ -29,7 +29,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
             var keys = _rootAggregate
                 .GetKeyVMs()
                 .Select((vm, i) => {
-                    var fullpath = vm.GetFullPath().ToArray();
+                    var fullpath = vm.GetPathFromEntry().ToArray();
                     return new {
                         TempVarName = $"searchKey{i + 1}",
                         vm.PhysicalName,

@@ -102,7 +102,7 @@ namespace Nijo.Ver1.CodeGenerating {
     partial class SchemaPathNodeExtensions {
 
         /// <summary>
-        /// <see cref="GetFullPath(ISchemaPathNode)"/> の結果を <see cref="SaveCommandMessageContainer"/> のルールに沿ったパスとして返す
+        /// <see cref="GetPathFromEntry(ISchemaPathNode)"/> の結果を <see cref="SaveCommandMessageContainer"/> のルールに沿ったパスとして返す
         /// </summary>
         public static IEnumerable<string> AsSaveCommandMessage(this IEnumerable<ISchemaPathNode> path) {
             var entry = path.FirstOrDefault()?.GetEntry();

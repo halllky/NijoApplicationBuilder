@@ -30,7 +30,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 .GetKeyVMs()
                 .Select((vm, i) => new {
                     LogTemplate = $"{vm.DisplayName.Replace("\"", "\\\"")}: {{key{i}}}",
-                    DbEntityFullPath = vm.GetFullPath().AsDbEntity(),
+                    DbEntityFullPath = vm.GetPathFromEntry().AsDbEntity(),
                 })
                 .ToArray();
 

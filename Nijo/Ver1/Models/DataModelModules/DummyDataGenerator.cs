@@ -111,7 +111,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
             static IEnumerable<string> RenderOutputting(RootAggregate rootAggregate) {
                 foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
                     var selected = new List<string>();
-                    foreach (var node in aggregate.GetFullPath()) {
+                    foreach (var node in aggregate.GetPathFromEntry()) {
                         if (node is RootAggregate) {
                             selected.Add($"context.{GeneratedList(rootAggregate)}.Select(x => x.{SaveCommand.TO_DBENTITY}())");
 
@@ -240,7 +240,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
                                 foreach (var member in keyClassEntry.GetMembers()) {
                                     if (member is KeyClass.KeyClassValueMember vm) {
                                         var path = vm.Member
-                                            .GetFullPath()
+                                            .GetPathFromEntry()
                                             .AsSaveCommand();
                                         yield return $$"""
                                             {{member.PhysicalName}} = cmd.{{path.Join(".")}},
