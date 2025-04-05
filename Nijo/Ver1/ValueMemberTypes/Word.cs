@@ -52,7 +52,7 @@ namespace Nijo.Ver1.ValueMemberTypes {
 
         string IValueMemberType.RenderCreateDummyDataValueBody(CodeRenderingContext ctx) {
             return $$"""
-                return new string('X', member.MaxLength ?? 12);
+                return string.Concat(Enumerable.Range(0, member.MaxLength ?? 12).Select(_ => "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}\\\"|;:,.<>?"[context.Random.Next(0, 63)]));
                 """;
         }
 

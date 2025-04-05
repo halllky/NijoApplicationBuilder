@@ -324,6 +324,12 @@ namespace Nijo.Ver1.Models.DataModelModules {
                             """;
                     }
                 }
+
+                if (entity.Aggregate is RootAggregate) {
+                    yield return $$"""
+                        {{VERSION}} = 0,
+                        """;
+                }
             }
         }
     }
