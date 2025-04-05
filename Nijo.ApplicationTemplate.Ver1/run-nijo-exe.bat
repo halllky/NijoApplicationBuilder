@@ -15,8 +15,11 @@ if not "%errorlevel%"=="0" (
  
 @rem 実行 
 set "NIJO_EXE=%NIJO_ROOT%\Nijo\bin\Debug\net9.0\nijo.exe" 
+pushd %~dp0 
 %NIJO_EXE% %* 
 if not "%errorlevel%"=="0" ( 
   @echo nijo.exeの実行でエラーが発生しました。 
+  popd
   exit /b 1 
 ) 
+popd 
