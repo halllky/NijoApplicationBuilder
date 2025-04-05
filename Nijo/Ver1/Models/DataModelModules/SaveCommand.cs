@@ -289,21 +289,20 @@ namespace Nijo.Ver1.Models.DataModelModules {
                         }
 
                     } else if (col is EFCoreEntity.ParentKeyMember parentKeyCol) {
-                        // 親のキーメンバーの場合、SaveCommandのParentプロパティを経由して値を取得
+                        // 親のキーメンバーの場合、KeyClass.KeyClassParentMemberを使用して値を取得
                         var path = new List<string>();
-                        var currentMember = parentKeyCol.Member;
                         var currentAggregate = _aggregate;
 
-                        // 親への参照パスを構築
                         while (currentAggregate != null) {
                             var parent = currentAggregate.GetParent();
                             if (parent == null) break;
 
-                            path.Insert(0, "Parent");
-                            if (parent == currentMember.Owner) {
-                                path.Add(currentMember.PhysicalName);
+                            if (parent == parentKeyCol.Member.Owner) {
+                                path.Insert(0, parentKeyCol.Member.PhysicalName);
+                                path.Insert(0, "Parent");
                                 break;
                             }
+                            path.Insert(0, "Parent");
                             currentAggregate = parent;
                         }
 
@@ -312,27 +311,13 @@ namespace Nijo.Ver1.Models.DataModelModules {
                             """;
 
                     } else if (col is EFCoreEntity.RefKeyMember refKeyCol) {
-                        // 参照先のキーメンバーの場合、SaveCommandの参照プロパティを経由して値を取得
+                        // 参照先のキーメンバーの場合、KeyClass.KeyClassRefMemberを使用して値を取得
                         var path = new List<string>();
                         var currentMember = refKeyCol.Member;
                         var currentRef = refKeyCol.RefEntry;
 
-                        // 参照パスを構築
-                        while (currentRef != null) {
-                            path.Insert(0, currentRef.PhysicalName);
-                            if (currentRef.RefTo == currentMember.Owner) {
-                                path.Add(currentMember.PhysicalName);
-                                break;
-                            }
-
-                            // 次の参照を探す
-                            var nextRef = currentRef.RefTo.GetMembers()
-                                .OfType<RefToMember>()
-                                .FirstOrDefault(r => r.RefTo.GetKeyVMs().Contains(currentMember));
-                            
-                            if (nextRef == null) break;
-                            currentRef = nextRef;
-                        }
+                        path.Add(currentRef.PhysicalName);
+                        path.Add(currentMember.PhysicalName);
 
                         yield return $$"""
                             {{col.PhysicalName}} = this.{{path.Join("?.")}},
