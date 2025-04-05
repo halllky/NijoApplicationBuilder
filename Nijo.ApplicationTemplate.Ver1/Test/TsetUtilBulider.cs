@@ -6,7 +6,7 @@ namespace MyApp;
 
 public static class TestUtilBuilder {
 
-    public static ITestUtil Build() {
+    public static TestUtilImpl Build() {
         return new TestUtilImpl();
     }
 }
@@ -16,7 +16,10 @@ public static class TestUtilBuilder {
 /// </summary>
 public class TestUtilImpl : ITestUtil {
 
-    ITestScope<TMessageRoot> ITestUtil.CreateScope<TMessageRoot>(IPresentationContextOptions? options) {
+    public ITestScope<MessageContainer> CreateScope(IPresentationContextOptions? options = null) {
+        return CreateScope<MessageContainer>(options);
+    }
+    public ITestScope<TMessageRoot> CreateScope<TMessageRoot>(IPresentationContextOptions? options = null) where TMessageRoot : IMessageContainer {
         // DI機構
         var configure = new OverridedApplicationConfigure();
         var services = new ServiceCollection();
@@ -31,7 +34,7 @@ public class TestUtilImpl : ITestUtil {
         return new TestScopeImpl<TMessageRoot>(provider, presentationContext);
     }
 
-    void IDisposable.Dispose() {
+    public void Dispose() {
         // 特に後処理なし
     }
 

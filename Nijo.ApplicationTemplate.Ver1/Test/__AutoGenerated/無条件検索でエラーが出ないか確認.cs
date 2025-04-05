@@ -12,7 +12,7 @@ partial class DB等入出力あり {
         var searchCondition = new 顧客SearchCondition {
             Take = 10,
         };
-    
+
         Assert.DoesNotThrowAsync(() => scope.App.LoadAsync(searchCondition, scope.PresentationContext));
     }
 }
