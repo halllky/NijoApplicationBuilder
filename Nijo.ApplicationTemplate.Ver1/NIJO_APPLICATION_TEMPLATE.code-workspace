@@ -10,6 +10,10 @@
   "folders": [
     {
       "path": "."
+    },
+    {
+      "name": "ユニットテスト結果",
+      "path": "Test/bin/Debug/net9.0/test-log"
     }
   ],
   "settings": {

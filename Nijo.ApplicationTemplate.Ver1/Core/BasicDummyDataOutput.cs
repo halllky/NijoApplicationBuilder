@@ -18,7 +18,7 @@ public class BasicDummyDataOutput : IDummyDataOutput {
     private readonly MyDbContext _dbContext;
 
     public async Task OutputAsync<TEntity>(IEnumerable<TEntity> entities) {
-        await _dbContext.AddRangeAsync(entities);
+        _dbContext.AddRange(entities.ToArray());
         await _dbContext.SaveChangesAsync();
     }
 }

@@ -72,6 +72,33 @@ namespace Nijo.Ver1.Parts.CSharp {
         }
 
         private SourceFile RenderCore(CodeRenderingContext ctx) {
+            var coreConfigureServices = new List<Func<string, string>>(_coreConfigureServices);
+            var coreMethods = new List<string>(_coreMethods);
+
+            // ApplicationServiceを登録
+            coreConfigureServices.Add(services => $$"""
+                // アプリケーションサービス
+                {{services}}.AddScoped(ConfigureApplicationService);
+                """);
+            coreMethods.Add($$"""
+                /// <summary>
+                /// アプリケーションサービスのインスタンスを定義する
+                /// </summary>
+                protected abstract {{ApplicationService.ABSTRACT_CLASS}} ConfigureApplicationService(IServiceProvider services);
+                """);
+
+            // NLog.Logger を登録
+            coreConfigureServices.Add(services => $$"""
+                // ログ出力
+                {{services}}.AddSingleton(ConfigureLogger);
+                """);
+            coreMethods.Add($$"""
+                /// <summary>
+                /// ログ出力設定
+                /// </summary>
+                protected abstract NLog.Logger ConfigureLogger(IServiceProvider services);
+                """);
+
             return new SourceFile {
                 FileName = "DefaultConfiguration.cs",
                 Contents = $$"""
@@ -86,16 +113,20 @@ namespace Nijo.Ver1.Parts.CSharp {
                     /// </summary>
                     public abstract partial class {{ABSTRACT_CLASS_CORE}} {
 
+                        #region DI設定
                         /// <summary>
-                        /// DI設定
+                        /// DI設定。
+                        /// このメソッドをオーバーライドするときは必ずbaseを呼び出すこと。
                         /// </summary>
-                        public void ConfigureServices(IServiceCollection services) {
-                    {{_coreConfigureServices.SelectTextTemplate(render => $$"""
+                        public virtual void ConfigureServices(IServiceCollection services) {
+                    {{coreConfigureServices.SelectTextTemplate(render => $$"""
 
                             {{WithIndent(render("services"), "        ")}}
                     """)}}
                         }
-                    {{_coreMethods.SelectTextTemplate(source => $$"""
+                        #endregion DI設定
+
+                    {{coreMethods.SelectTextTemplate(source => $$"""
 
                         {{WithIndent(source, "    ")}}
                     """)}}

@@ -13,6 +13,7 @@ namespace Nijo.Ver1.Parts.CSharp {
 
         private const string ON_DBCONTEXT_MODEL_CREATING = "OnModelCreating";
         private const string ON_DBCONTEXT_CONFIGURE_CONVENSIONS = "ConfigureConventions";
+        private const string ON_DBCONTEXT_CONFIGURING = "OnConfiguringDbContext";
 
         private readonly List<EFCoreEntity> _efCoreEntities = [];
         private readonly List<string> _configureConversions = [];
@@ -29,16 +30,25 @@ namespace Nijo.Ver1.Parts.CSharp {
         void IMultiAggregateSourceFile.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {
             ctx.Use<ApplicationConfigure>()
 
+                // 接続先設定
+                .AddCoreMethod($$"""
+                    /// <summary>
+                    /// DBコンテキストの OnConfiguring メソッドから呼ばれる。
+                    /// DB接続先設定などを行なう。
+                    /// </summary>
+                    public abstract void {{ON_DBCONTEXT_CONFIGURING}}(Microsoft.EntityFrameworkCore.DbContextOptionsBuilder optionsBuilder, NLog.Logger logger);
+                    """)
+
                 // DI設定
                 .AddCoreConfigureServices(services => $$"""
-                    // DB接続設定
-                    {{services}}.AddScoped(ConfigureDbContext);
+                    // DBコンテキスト(Entity Framework Core)
+                    {{services}}.AddDbContext<{{ctx.Config.DbContextName}}>(ConfigureDbContext);
                     """)
                 .AddCoreMethod($$"""
                     /// <summary>
-                    /// DB接続設定
+                    /// DBコンテキスト(Entity Framework Core)
                     /// </summary>
-                    protected abstract {{ctx.Config.DbContextName}} ConfigureDbContext(IServiceProvider services);
+                    protected abstract void ConfigureDbContext(IServiceProvider services, Microsoft.EntityFrameworkCore.DbContextOptionsBuilder options);
                     """)
 
                 // 生成後のプロジェクトでOnModelCreating等をカスタマイズできるようにしておく
@@ -91,7 +101,7 @@ namespace Nijo.Ver1.Parts.CSharp {
                         /// <param name="options">EFCoreのオプション</param>
                         /// <param name="nijoConfig">ソースコード自動生成に関するオプション</param>
                         /// <param name="logger">SQLのログ出力用</param>
-                        public {{ctx.Config.DbContextName}}(DbContextOptions<{{ctx.Config.DbContextName}}> options, {{ApplicationConfigure.ABSTRACT_CLASS_CORE}} nijoConfig, NLog.Logger logger) {
+                        public {{ctx.Config.DbContextName}}(DbContextOptions<{{ctx.Config.DbContextName}}> options, {{ApplicationConfigure.ABSTRACT_CLASS_CORE}} nijoConfig, NLog.Logger logger) : base(options) {
                             _nijoConfig = nijoConfig;
                             _logger = logger;
                         }
@@ -128,11 +138,7 @@ namespace Nijo.Ver1.Parts.CSharp {
 
                         /// <inheritdoc />
                         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) {
-                            // SQLのログ出力
-                            optionsBuilder.LogTo(
-                                sql => _logger.Debug(sql),
-                                Microsoft.Extensions.Logging.LogLevel.Debug,
-                                Microsoft.EntityFrameworkCore.Diagnostics.DbContextLoggerOptions.SingleLine);
+                            _nijoConfig.{{ON_DBCONTEXT_CONFIGURING}}(optionsBuilder, _logger);
                         }
 
                     }

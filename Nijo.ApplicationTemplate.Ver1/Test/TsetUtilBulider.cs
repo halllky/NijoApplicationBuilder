@@ -20,16 +20,39 @@ public class TestUtilImpl : ITestUtil {
         return CreateScope<MessageContainer>(options);
     }
     public ITestScope<TMessageRoot> CreateScope<TMessageRoot>(IPresentationContextOptions? options = null) where TMessageRoot : IMessageContainer {
+        var workDirectory = Path.Combine(
+            TestContext.CurrentContext.WorkDirectory,
+            $"test-log",
+            $"テスト結果_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid().ToString().Substring(0, 8)}");
+        Directory.CreateDirectory(workDirectory);
+
         // DI機構
         var configure = new OverridedApplicationConfigure();
         var services = new ServiceCollection();
         configure.ConfigureServices(services);
 
+        // DI機構: 実行時設定
+        services.AddScoped(provider => {
+            var settings = new RuntimeSetting();
+            settings.LogDirectory = workDirectory;
+            settings.CurrentDbProfileName = "SQLITE001";
+            var dbFileName = $"./{Path.GetRelativePath(TestContext.CurrentContext.WorkDirectory, workDirectory).Replace("\\", "/")}/UNITTEST.sqlite3";
+            settings.DbProfiles.Add(new() {
+                Name = "SQLITE001",
+                ConnStr = $"Data Source={dbFileName};Pooling=False",
+            });
+            return settings;
+        });
+
         // PresentationContext
-        var provider = services.BuildServiceProvider();
         var messageRoot = MessageContainer.GetDefaultClass<TMessageRoot>([]);
         var contextOptions = options ?? new PresentationContextOptionsImpl();
         var presentationContext = new PresentationContextInUnitTest<TMessageRoot>(messageRoot, contextOptions);
+
+        // DB作成
+        var provider = services.BuildServiceProvider();
+        var dbContext = provider.GetRequiredService<MyDbContext>();
+        dbContext.Database.EnsureCreated();
 
         return new TestScopeImpl<TMessageRoot>(provider, presentationContext);
     }
