@@ -58,10 +58,9 @@ internal class Metadata : IMultiAggregateSourceFile {
                 /// <summary>
                 /// スキーマ定義で指定されたメンバー毎の属性（必須か否か、文字列の最大桁数、など）を
                 /// 生成された後のカスタマイズ処理で参照したいときに使う構造体。
+                /// あまり使われることが無いので、必要な場合のみメモリ確保されるようにするために、statcやconstにしていない。
                 /// </summary>
                 public sealed class {{CS_CLASSNAME}} {
-                    public {{CS_CLASSNAME}}() {
-                    }
 
                 {{root.SelectTextTemplate(container => $$"""
                     public {{container.CsClassName}} {{container.PhysicalName}} => _cache_{{container.PhysicalName}} ??= new();
@@ -100,14 +99,26 @@ internal class Metadata : IMultiAggregateSourceFile {
     }
 
     private SourceFile RenderTypeScript(CodeRenderingContext ctx) {
+        var root = _aggregates
+            .Select(agg => new Container(agg))
+            .ToArray();
+
+        var characterTypes = ctx.GetCharacterTypes().ToArray();
+        var charTypeLiteral = characterTypes.Length == 0
+            ? "never"
+            : characterTypes.Select(type => $"'{type.Replace("'", "\\'")}'").Join(" | ");
+
         return new SourceFile {
             FileName = "metadata.ts",
             Contents = $$"""
                 /** 
                  * スキーマ定義で指定されたメンバー毎の属性（必須か否か、文字列の最大桁数、など）を
-                 * 生成された後のカスタマイズ処理で参照したいときに使う構造体。
+                 * 生成された後のカスタマイズ処理で参照したいときに使う。
                  */
-                export type {{TS_TYPENAME}} = {
+                export const {{TS_TYPENAME}} = {
+                {{root.SelectTextTemplate(container => $$"""
+                  {{WithIndent(container.RenderTypeScriptRecursively(), "  ")}}
+                """)}}
                 }
 
 
@@ -115,13 +126,13 @@ internal class Metadata : IMultiAggregateSourceFile {
                   /** 表示用名称 */
                   displayName: string
                   /** キーか否か */
-                  isKey: boolean
+                  isKey?: boolean
                   /** 必須か否か */
-                  required: boolean
+                  required?: boolean
                   /** 最大長。文字列型の項目にのみ有効。バイト数でなく文字数でカウントする */
                   maxLength?: number
                   /** この値がとることのできる文字種。文字列型の項目にのみ有効。未指定の場合は制約なし */
-                  characterType?: {{ctx.GetCharacterTypes().Select(type => $"'{type.Replace("'", "\\'")}'").Join(" | ")}}
+                  characterType?: {{charTypeLiteral}}
                   /** 整数部と小数部をあわせた桁数。数値型の項目にのみ有効。 */
                   totalDigit?: number
                   /** 小数部桁数。数値型の項目にのみ有効。 */
@@ -143,7 +154,7 @@ internal class Metadata : IMultiAggregateSourceFile {
 
         internal string PhysicalName => _aggregate.PhysicalName;
         internal string CsClassName => $"{_aggregate.PhysicalName}Metadata";
-        internal string TsTypeName => $"{_aggregate.PhysicalName}Metadata";
+        internal string TsFunctionName => $"get{_aggregate.PhysicalName}Metadata";
 
         internal IEnumerable<IMetadataMember> GetMembers() {
             foreach (var member in _aggregate.GetMembers()) {
@@ -185,19 +196,12 @@ internal class Metadata : IMultiAggregateSourceFile {
         }
 
         internal string RenderTypeScriptRecursively() {
-            // TypeScriptはルート集約直下に書かれるので再帰処理不要
 
             return $$"""
-                //#region {{_aggregate.DisplayName}}
-                /** 
-                 * スキーマ定義で指定されたメンバー毎の属性（必須か否か、文字列の最大桁数、など）を
-                 * 生成された後のカスタマイズ処理で参照したいときに使う構造体。
-                 */
-                export const {{TsTypeName}} = {{RenderTypeScriptBody()}}
-                //#endregion {{_aggregate.DisplayName}}
+                {{TsFunctionName}}: () => ({{RenderTypeScriptBody()}}) as const,
                 """;
         }
-        private string RenderTypeScriptBody() {
+        internal string RenderTypeScriptBody() {
             return $$"""
                 {
                 {{GetMembers().SelectTextTemplate(m => $$"""
@@ -298,8 +302,9 @@ internal class Metadata : IMultiAggregateSourceFile {
         }
 
         public string RenderTypeScript() {
+            var desc = new Container(_aggregate);
             return $$"""
-
+                {{PhysicalName}}: ({{desc.RenderTypeScriptBody()}}),
                 """;
         }
     }
