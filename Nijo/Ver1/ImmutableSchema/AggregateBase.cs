@@ -146,11 +146,10 @@ namespace Nijo.Ver1.ImmutableSchema {
         /// </summary>
         public IEnumerable<AggregateBase> GetPathFromRoot() {
             var ancesotors = _xElement
-                .Ancestors()
+                .AncestorsAndSelf()
                 .Reverse()
-                // ドキュメントルート等も祖先に含まれてしまうので除外
-                .Where(el => el != _xElement.Document?.Root
-                          && el.Parent != _xElement.Document?.Root);
+                // ドキュメントルートも祖先に含まれてしまうので除外
+                .Where(el => el != _xElement.Document?.Root);
 
             var prev = (AggregateBase?)null;
 

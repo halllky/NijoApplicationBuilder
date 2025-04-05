@@ -24,7 +24,7 @@ internal static class KeyClass {
 
         internal string ClassName => $"{_aggregate.PhysicalName}Key";
 
-        private IEnumerable<IKeyClassMember> GetMembers() {
+        internal IEnumerable<IKeyClassMember> GetMembers() {
             var p = _aggregate.GetParent();
             if (p != null) {
                 yield return new KeyClassParentMember(p);
@@ -102,28 +102,28 @@ internal static class KeyClass {
     /// </summary>
     internal class KeyClassValueMember : IKeyClassMember {
         internal KeyClassValueMember(ValueMember vm) {
-            _vm = vm;
+            Member = vm;
         }
-        private readonly ValueMember _vm;
+        internal ValueMember Member { get; }
 
-        public string PhysicalName => _vm.PhysicalName;
-        public string DisplayName => _vm.DisplayName;
-        public string CsType => _vm.Type.CsDomainTypeName;
+        public string PhysicalName => Member.PhysicalName;
+        public string DisplayName => Member.DisplayName;
+        public string CsType => Member.Type.CsDomainTypeName;
     }
     /// <summary>
     /// キー情報の中に出てくる他の集約のキー
     /// </summary>
     internal class KeyClassRefMember : IKeyClassMember {
         internal KeyClassRefMember(RefToMember refTo) {
-            _refTo = refTo;
-            _refToKey = new KeyClassEntry(refTo.RefTo);
+            Member = refTo;
+            MemberKeyClassEntry = new KeyClassEntry(refTo.RefTo);
         }
-        private readonly RefToMember _refTo;
-        private readonly KeyClassEntry _refToKey;
+        internal RefToMember Member { get; }
+        internal KeyClassEntry MemberKeyClassEntry { get; }
 
-        public string PhysicalName => _refTo.PhysicalName;
-        public string DisplayName => _refTo.DisplayName;
-        public string CsType => _refToKey.ClassName;
+        public string PhysicalName => Member.PhysicalName;
+        public string DisplayName => Member.DisplayName;
+        public string CsType => MemberKeyClassEntry.ClassName;
     }
     /// <summary>
     /// 子孫のキー情報の中に出てくる親集約のキー。

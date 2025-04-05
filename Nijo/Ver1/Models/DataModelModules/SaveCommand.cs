@@ -60,7 +60,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
 
 
         #region CREATE
-        internal IEnumerable<SaveCommandMember> GetCreateCommandMembers() {
+        internal IEnumerable<ISaveCommandMember> GetCreateCommandMembers() {
             foreach (var member in _aggregate.GetMembers()) {
                 if (member is ValueMember vm) {
                     // 新規登録時に自動採番されるものは新規登録メンバー中に含めない
@@ -107,7 +107,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
 
 
         #region UPDATE
-        internal IEnumerable<SaveCommandMember> GetUpdateCommandMembers() {
+        internal IEnumerable<ISaveCommandMember> GetUpdateCommandMembers() {
             foreach (var member in _aggregate.GetMembers()) {
                 if (member is ValueMember vm) {
                     yield return new SaveCommandValueMember(vm);
@@ -160,7 +160,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
 
 
         #region DELETE
-        private IEnumerable<SaveCommandMember> GetDeleteCommandMembers() {
+        private IEnumerable<ISaveCommandMember> GetDeleteCommandMembers() {
             foreach (var member in _aggregate.GetMembers()) {
                 if (member is ValueMember vm) {
                     if (!vm.IsKey) continue;
@@ -197,66 +197,61 @@ namespace Nijo.Ver1.Models.DataModelModules {
 
 
         #region メンバー
-        internal abstract class SaveCommandMember {
-            internal abstract IAggregateMember Member { get; }
-            internal abstract string PhysicalName { get; }
-            internal abstract string DisplayName { get; }
-            internal abstract string CsCreateType { get; }
-            internal abstract string CsUpdateType { get; }
-            internal abstract string CsDeleteType { get; }
+        internal interface ISaveCommandMember {
+            IAggregateMember Member { get; }
+            string PhysicalName { get; }
+            string DisplayName { get; }
+            string CsCreateType { get; }
+            string CsUpdateType { get; }
+            string CsDeleteType { get; }
         }
         /// <summary>
         /// 更新処理引数クラスの値メンバー
         /// </summary>
-        internal class SaveCommandValueMember : SaveCommandMember {
+        internal class SaveCommandValueMember : ISaveCommandMember {
             internal SaveCommandValueMember(ValueMember vm) {
-                ValueMember = vm;
+                Member = vm;
             }
-            internal ValueMember ValueMember { get; }
-            internal override IAggregateMember Member => ValueMember;
+            internal ValueMember Member { get; }
+            IAggregateMember ISaveCommandMember.Member => Member;
 
-            internal override string PhysicalName => ValueMember.PhysicalName;
-            internal override string DisplayName => ValueMember.DisplayName;
-            internal override string CsCreateType => ValueMember.Type.CsDomainTypeName;
-            internal override string CsUpdateType => ValueMember.Type.CsDomainTypeName;
-            internal override string CsDeleteType => ValueMember.Type.CsDomainTypeName;
+            public string PhysicalName => Member.PhysicalName;
+            public string DisplayName => Member.DisplayName;
+            public string CsCreateType => Member.Type.CsDomainTypeName;
+            public string CsUpdateType => Member.Type.CsDomainTypeName;
+            public string CsDeleteType => Member.Type.CsDomainTypeName;
         }
         /// <summary>
         /// 更新処理引数クラスの参照先キー項目
         /// </summary>
-        internal class SaveCommandRefMember : SaveCommandMember {
+        internal class SaveCommandRefMember : ISaveCommandMember {
             internal SaveCommandRefMember(RefToMember refTo) {
-                _refTo = refTo;
+                Member = refTo;
                 _refToKey = new KeyClass.KeyClassEntry(refTo.RefTo);
             }
-            private readonly RefToMember _refTo;
+            internal RefToMember Member { get; }
+            IAggregateMember ISaveCommandMember.Member => Member;
             private readonly KeyClass.KeyClassEntry _refToKey;
 
-            internal override IAggregateMember Member => _refTo;
-            internal override string PhysicalName => _refTo.PhysicalName;
-            internal override string DisplayName => _refTo.DisplayName;
-            internal override string CsCreateType => _refToKey.ClassName;
-            internal override string CsUpdateType => _refToKey.ClassName;
-            internal override string CsDeleteType => _refToKey.ClassName;
+            public string PhysicalName => Member.PhysicalName;
+            public string DisplayName => Member.DisplayName;
+            public string CsCreateType => _refToKey.ClassName;
+            public string CsUpdateType => _refToKey.ClassName;
+            public string CsDeleteType => _refToKey.ClassName;
         }
         /// <summary>
         /// 更新処理引数クラスの子孫メンバー
         /// </summary>
-        internal class SaveCommandDescendantMember : SaveCommandMember {
-            internal SaveCommandDescendantMember(ChildAggreagte child) {
-                _aggregate = child;
-            }
-            internal SaveCommandDescendantMember(ChildrenAggreagte children) {
-                _aggregate = children;
-            }
-            private readonly AggregateBase _aggregate;
+        internal class SaveCommandDescendantMember : SaveCommand, ISaveCommandMember {
+            internal SaveCommandDescendantMember(ChildAggreagte child) : base(child) { }
+            internal SaveCommandDescendantMember(ChildrenAggreagte children) : base(children) { }
 
-            internal override IAggregateMember Member => (IAggregateMember)_aggregate;
-            internal override string PhysicalName => _aggregate.PhysicalName;
-            internal override string DisplayName => _aggregate.DisplayName;
-            internal override string CsCreateType => _aggregate is ChildrenAggreagte ? $"List<{new SaveCommand(_aggregate).CsClassNameCreate}>" : new SaveCommand(_aggregate).CsClassNameCreate;
-            internal override string CsUpdateType => _aggregate is ChildrenAggreagte ? $"List<{new SaveCommand(_aggregate).CsClassNameUpdate}>" : new SaveCommand(_aggregate).CsClassNameUpdate;
-            internal override string CsDeleteType => _aggregate is ChildrenAggreagte ? $"List<{new SaveCommand(_aggregate).CsClassNameDelete}>" : new SaveCommand(_aggregate).CsClassNameDelete;
+            IAggregateMember ISaveCommandMember.Member => (IAggregateMember)_aggregate;
+            public string PhysicalName => _aggregate.PhysicalName;
+            public string DisplayName => _aggregate.DisplayName;
+            public string CsCreateType => _aggregate is ChildrenAggreagte ? $"List<{new SaveCommand(_aggregate).CsClassNameCreate}>" : new SaveCommand(_aggregate).CsClassNameCreate;
+            public string CsUpdateType => _aggregate is ChildrenAggreagte ? $"List<{new SaveCommand(_aggregate).CsClassNameUpdate}>" : new SaveCommand(_aggregate).CsClassNameUpdate;
+            public string CsDeleteType => _aggregate is ChildrenAggreagte ? $"List<{new SaveCommand(_aggregate).CsClassNameDelete}>" : new SaveCommand(_aggregate).CsClassNameDelete;
         }
         #endregion メンバー
     }
@@ -271,11 +266,10 @@ namespace Nijo.Ver1.CodeGenerating {
         /// <see cref="GetFullPath(ISchemaPathNode)"/> の結果を <see cref="SaveCommand"/> のルールに沿ったパスとして返す
         /// </summary>
         public static IEnumerable<string> AsSaveCommand(this IEnumerable<ISchemaPathNode> path) {
-            var entry = path.FirstOrDefault()?.GetEntry();
             var isOutOfEntryTree = false;
 
             foreach (var node in path) {
-                if (node == entry) continue; // パスの一番最初（エントリー）はスキップ
+                if (node is RootAggregate && node.PreviousNode == null) continue; // パスの一番最初（エントリー）はスキップ
                 if (node.PreviousNode is RefToMember) continue; // refの1つ次の要素の名前はrefで列挙済みのためスキップ
 
                 // 外部参照のナビゲーションプロパティを辿るパス

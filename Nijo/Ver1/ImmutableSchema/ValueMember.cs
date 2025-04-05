@@ -13,7 +13,7 @@ namespace Nijo.Ver1.ImmutableSchema {
     /// <summary>
     /// モデルの属性のうち、xxxID, xxx名, xxx日付, ... などのような単一の値。
     /// </summary>
-    public sealed class ValueMember : IAggregateMember, ISchemaPathNode, IUiConstraintValue {
+    public sealed class ValueMember : IAggregateMember, IUiConstraintValue {
         internal ValueMember(XElement xElement, SchemaParseContext ctx, ISchemaPathNode? previous) {
             _xElement = xElement;
             _ctx = ctx;

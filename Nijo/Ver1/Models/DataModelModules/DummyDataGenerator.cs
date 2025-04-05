@@ -16,7 +16,8 @@ namespace Nijo.Ver1.Models.DataModelModules {
 
         private static string CreateAggregateMethodName(RootAggregate rootAggregate) => $"CreateRandom{rootAggregate.PhysicalName}";
         private static string CreatePatternMethodName(RootAggregate rootAggregate) => $"CreatePatternsOf{rootAggregate.PhysicalName}";
-        private static string DummyValueMethodName(IValueMemberType type) => $"GetRandom{type.TypePhysicalName}";
+        private static string GetValueMemberValueMethodName(IValueMemberType type) => $"GetRandom{type.TypePhysicalName}";
+        private static string GeneratedList(RootAggregate aggregate) => $"Generated{aggregate.PhysicalName}";
 
         private readonly List<RootAggregate> _rootAggregates = [];
 
@@ -57,32 +58,26 @@ namespace Nijo.Ver1.Models.DataModelModules {
                     /// </summary>
                     public class {{CLASS_NAME}} {
 
-                        public {{CLASS_NAME}}({{ctx.Config.DbContextName}} dbContext, {{I_DUMMY_DATA_IO}} dummyDataIO) {
-                            _dbContext = dbContext;
-                            _dummyDataIO = dummyDataIO;
-                        }
-                        private readonly {{ctx.Config.DbContextName}} _dbContext;
-                        private readonly {{I_DUMMY_DATA_IO}} _dummyDataIO;
-
                         /// <summary>
                         /// ダミーデータ作成処理を実行します。
                         /// 現在登録されているデータは全て削除されます。
                         /// </summary>
-                        public async Task {{GENERATE_ASYNC}}() {
-
-                            // いま登録されているデータは全件削除
-                            await _dummyDataIO.DestroyAllDataAsync();
+                        public async Task {{GENERATE_ASYNC}}({{I_DUMMY_DATA_OUTPUT}} dummyDataOutput) {
 
                             // ランダム値採番等のコンテキスト
                             var context = new {{DUMMY_DATA_GENERATE_CONTEXT}} {
-                                DbContext = _dbContext,
                                 Random = new Random(0),
                                 Metadata = new(),
                             };
-                    {{items.SelectTextTemplate(rootAggregate => $$"""
 
-                            // {{rootAggregate.DisplayName}}
-                            {{WithIndent(RenderRootAggregate(rootAggregate), "        ")}}
+                            // データフローの順番でダミーデータのパターンを作成
+                    {{items.SelectTextTemplate(rootAggregate => $$"""
+                            context.{{GeneratedList(rootAggregate)}} = {{CreatePatternMethodName(rootAggregate)}}(context).ToArray();
+                    """)}}
+
+                            // データフローの順番で登録実行
+                    {{items.SelectTextTemplate(rootAggregate => $$"""
+                            {{WithIndent(RenderOutputting(rootAggregate), "        ")}}
                     """)}}
                         }
 
@@ -113,23 +108,12 @@ namespace Nijo.Ver1.Models.DataModelModules {
                     """,
             };
 
-            static string RenderRootAggregate(RootAggregate rootAggregate) {
-
-                var listVarName = $"createCommands{rootAggregate.PhysicalName}";
-                var tree = rootAggregate.EnumerateThisAndDescendants();
-
-                return $$"""
-                    var {{listVarName}} = {{CreatePatternMethodName(rootAggregate)}}(context).Select(x => x.{{SaveCommand.TO_DBENTITY}}()).ToArray();
-                    {{tree.SelectTextTemplate((agg, ix) => $$"""
-                    {{RenderAggregate(agg, ix)}}
-                    """)}}
-                    """;
-
-                string RenderAggregate(AggregateBase aggregate, int index) {
+            static IEnumerable<string> RenderOutputting(RootAggregate rootAggregate) {
+                foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
                     var selected = new List<string>();
                     foreach (var node in aggregate.GetFullPath()) {
                         if (node is RootAggregate) {
-                            selected.Add(listVarName);
+                            selected.Add($"context.{GeneratedList(rootAggregate)}.Select(x => x.{SaveCommand.TO_DBENTITY}())");
 
                         } else if (node is ChildAggreagte child) {
                             var parent = (AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない");
@@ -143,8 +127,8 @@ namespace Nijo.Ver1.Models.DataModelModules {
                         }
                     }
 
-                    return $$"""
-                        await _dummyDataIO.ExecuteBulkInsertAsync({{selected.Join("")}});
+                    yield return $$"""
+                        await dummyDataOutput.OutputAsync({{selected.Join("")}});
                         """;
                 }
             }
@@ -177,20 +161,117 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 static IEnumerable<string> RenderBody(SaveCommand saveCommand) {
                     foreach (var member in saveCommand.GetCreateCommandMembers()) {
                         if (member is SaveCommand.SaveCommandValueMember vm) {
-                            var path = vm.ValueMember.Owner
+                            var path = new List<string>();
+
+                            var root = vm.Member.Owner.GetRoot();
+                            path.Add(root.PhysicalName);
+
+                            path.AddRange(vm.Member.Owner
                                 .GetPathFromRoot()
-                                .AsSaveCommand()
-                                .ToList();
-                            path.Insert(0, vm.ValueMember.Owner.GetRoot().PhysicalName);
+                                .AsSaveCommand());
+
                             path.Add(vm.PhysicalName);
 
                             yield return $$"""
-                                {{member.PhysicalName}} = {{DummyValueMethodName(vm.ValueMember.Type)}}(context, context.Metadata.{{path.Join(".")}}),
+                                {{member.PhysicalName}} = {{GetValueMemberValueMethodName(vm.Member.Type)}}(context, context.Metadata.{{path.Join(".")}}),
                                 """;
 
                         } else if (member is SaveCommand.SaveCommandRefMember refTo) {
+                            // contextに登録されているインスタンスから適当なものを選んでキーに変換する
+                            var refToRoot = refTo.Member.RefTo.GetRoot();
+                            var keyClass = new KeyClass.KeyClassEntry(refTo.Member.RefTo.AsEntry());
+
+                            // contextの配列から子孫までのパス
+                            var treePath = new List<string>();
+                            foreach (var agg in refTo.Member.RefTo.GetPathFromRoot()) {
+                                if (agg is RootAggregate) {
+                                    continue;
+
+                                } else if (agg is ChildAggreagte child) {
+                                    var saveCommandMember = new SaveCommand.SaveCommandDescendantMember(child);
+                                    treePath.Add($".Select(x => x.{saveCommandMember.PhysicalName})");
+
+                                } else if (agg is ChildrenAggreagte children) {
+                                    var saveCommandMember = new SaveCommand.SaveCommandDescendantMember(children);
+                                    treePath.Add($".SelectMany(x => x.{saveCommandMember.PhysicalName})");
+
+                                } else {
+                                    throw new NotImplementedException();
+                                }
+                            }
+
+                            var owner = refTo.Member.Owner.DisplayName.Replace("\"", "\\\"");
+                            var memberName = refTo.DisplayName.Replace("\"", "\\\"");
+                            var refToName = refTo.Member.RefTo.DisplayName.Replace("\"", "\\\"");
+
+                            if (refTo.Member.IsRequired) {
+                                // 必須の場合はその時点で参照先が1件も無いときに例外を出す
+                                yield return $$"""
+                                    {{member.PhysicalName}} = context.{{GeneratedList(refToRoot)}}.Count == 0
+                                        ? throw new InvalidOperation("{{owner}}の{{memberName}}に設定するためのインスタンスを探そうとしましたが、{{refToName}}が1件も作成されていません。")
+                                        : context.{{GeneratedList(refToRoot)}}
+                                    {{treePath.SelectTextTemplate(path => $$"""
+                                            {{path}}
+                                    """)}}
+                                            .Select(cmd => new {{keyClass.ClassName}} {
+                                                {{WithIndent(RenderKeyClassBodyConverting(keyClass), "            ")}}
+                                            })
+                                            .ElementAt(context.Random.Next(0, context.{{GeneratedList(refToRoot)}}.Count)),
+                                    """;
+
+                            } else {
+                                // 必須でない場合はその時点で参照先が1件も無いときはnull
+                                yield return $$"""
+                                    {{member.PhysicalName}} = context.{{GeneratedList(refToRoot)}}.Count == 0
+                                        ? null
+                                        : context.{{GeneratedList(refToRoot)}}
+                                    {{treePath.SelectTextTemplate(path => $$"""
+                                            {{path}}
+                                    """)}}
+                                            .Select(cmd => new {{keyClass.ClassName}} {
+                                                {{WithIndent(RenderKeyClassBodyConverting(keyClass), "            ")}}
+                                            })
+                                            .ElementAt(context.Random.Next(0, context.{{GeneratedList(refToRoot)}}.Count)),
+                                    """;
+                            }
+
+                            // SaveCommand から KeyClass への変換
+                            static IEnumerable<string> RenderKeyClassBodyConverting(KeyClass.KeyClassEntry keyClassEntry) {
+                                foreach (var member in keyClassEntry.GetMembers()) {
+                                    if (member is KeyClass.KeyClassValueMember vm) {
+                                        var path = vm.Member
+                                            .GetFullPath()
+                                            .AsSaveCommand();
+                                        yield return $$"""
+                                            {{member.PhysicalName}} = cmd.{{path.Join(".")}},
+                                            """;
+
+                                    } else if (member is KeyClass.KeyClassRefMember rm) {
+                                        yield return $$"""
+                                            {{member.PhysicalName}} = new() {
+                                                {{WithIndent(RenderKeyClassBodyConverting(rm.MemberKeyClassEntry), "    ")}}
+                                            },
+                                            """;
+
+                                    } else if (member is KeyClass.KeyClassParentMember pm) {
+                                        yield return $$"""
+                                            {{member.PhysicalName}} = new() {
+                                                {{WithIndent(RenderKeyClassBodyConverting(pm), "    ")}}
+                                            },
+                                            """;
+
+                                    } else {
+                                        throw new NotImplementedException();
+                                    }
+                                }
+                            }
 
                         } else if (member is SaveCommand.SaveCommandDescendantMember desc) {
+                            yield return $$"""
+                                {{member.PhysicalName}} = new() {
+                                    {{WithIndent(RenderBody(desc), "    ")}}
+                                },
+                                """;
 
                         } else {
                             throw new NotImplementedException();
@@ -204,7 +285,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
         #region コンテキスト
         private const string DUMMY_DATA_GENERATE_CONTEXT = "DummyDataGenerateContext";
 
-        private static SourceFile RenderDummyDataGenerateContext(CodeRenderingContext ctx) {
+        private SourceFile RenderDummyDataGenerateContext(CodeRenderingContext ctx) {
             return new SourceFile {
                 FileName = "DummyDataGenerateContext.cs",
                 Contents = $$"""
@@ -214,39 +295,47 @@ namespace Nijo.Ver1.Models.DataModelModules {
 
                     /// <summary>ダミーデータ作成処理コンテキスト情報</summary>
                     public sealed class {{DUMMY_DATA_GENERATE_CONTEXT}} {
-                        internal required {{ctx.Config.DbContextName}} DbContext { get; init; }
-                        internal required Random Random { get; init; }
-                        internal required {{Metadata.CS_CLASSNAME}} Metadata { get; init; }
+                        public required Random Random { get; init; }
+                        public required {{Metadata.CS_CLASSNAME}} Metadata { get; init; }
+
+                    {{_rootAggregates.SelectTextTemplate(agg => $$"""
+                        {{WithIndent(RenderGetRefTo(agg), "    ")}}
+                    """)}}
                     }
                     """,
             };
+
+            static string RenderGetRefTo(RootAggregate aggregate) {
+                var saveCommand = new SaveCommand(aggregate);
+
+                return $$"""
+                    /// <summary>このメソッドが呼ばれた時点で作成済みの{{aggregate.DisplayName}}</summary>
+                    public IReadOnlyList<{{saveCommand.CsClassNameCreate}}> {{GeneratedList(aggregate)}} { get; set; } = [];
+                    """;
+            }
         }
         #endregion コンテキスト
 
 
         #region DB操作
-        private const string I_DUMMY_DATA_IO = "IDummyDataIO";
+        private const string I_DUMMY_DATA_OUTPUT = "IDummyDataOutput";
 
         private static SourceFile RenderBulkInsertInterface(CodeRenderingContext ctx) {
             return new SourceFile {
-                FileName = "IDummyDataIO.cs",
+                FileName = "IDummyDataOutput.cs",
                 Contents = $$"""
                     namespace {{ctx.Config.RootNamespace}};
 
                     /// <summary>
-                    /// デバッグ用機能。
-                    /// 大量のダミーデータを高速に一括更新する機能や、テーブル上の全データを削除する機能を提供します。
+                    /// ダミーデータのインスタンスを実際にデータベースに登録したり何らかのファイルに出力したりする機能を提供します。
                     /// </summary>
-                    public interface {{I_DUMMY_DATA_IO}} {
+                    public interface {{I_DUMMY_DATA_OUTPUT}} {
                         /// <summary>
-                        /// データベース上の全データを削除します。
-                        /// </summary>
-                        Task DestroyAllDataAsync();
-                        /// <summary>
-                        /// 大量データの高速一括更新を実行します。
+                        /// ダミーデータのインスタンスを出力します。
+                        /// データベースに登録したり何らかのファイルに出力したりしてください。
                         /// </summary>
                         /// <param name="entities">登録対象データ。EFCoreのエンティティの配列</param>
-                        Task ExecuteBulkInsertAsync<TEntity>(IEnumerable<TEntity> entities);
+                        Task OutputAsync<TEntity>(IEnumerable<TEntity> entities);
                     }
                     """,
             };
