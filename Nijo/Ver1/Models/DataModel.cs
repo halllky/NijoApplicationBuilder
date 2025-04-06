@@ -3,11 +3,13 @@ using Nijo.Ver1.ImmutableSchema;
 using Nijo.Ver1.Models.DataModelModules;
 using Nijo.Ver1.Parts.Common;
 using Nijo.Ver1.Parts.CSharp;
+using Nijo.Ver1.SchemaParsing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Nijo.Ver1.Models {
 
@@ -17,6 +19,19 @@ namespace Nijo.Ver1.Models {
     /// </summary>
     internal class DataModel : IModel {
         public string SchemaName => "data-model";
+
+        public void Validate(XElement rootAggregateElement, SchemaParseContext context, Action<XElement, string> addError) {
+            // ルートとChildrenはキー必須
+            var rootAndChildren = rootAggregateElement
+                .DescendantsAndSelf()
+                .Where(el => el.Parent == el.Document?.Root
+                          || el.Attribute(SchemaParseContext.ATTR_NODE_TYPE)?.Value == SchemaParseContext.NODE_TYPE_CHILDREN);
+            foreach (var el in rootAndChildren) {
+                if (el.Elements().All(member => member.Attribute(BasicNodeOptions.IsKey.AttributeName) == null)) {
+                    addError(el, "キーが指定されていません。");
+                }
+            }
+        }
 
         public void GenerateCode(CodeRenderingContext ctx, RootAggregate rootAggregate) {
             var aggregateFile = new SourceFileByAggregate(rootAggregate);

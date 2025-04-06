@@ -53,7 +53,7 @@ public class NodeOptionValidateContext {
     /// <summary>ノード種別</summary>
     public required E_NodeType NodeType { get; init; }
     /// <summary>エラーがあったらここに追加</summary>
-    public required ICollection<string> Errors { get; init; }
+    public required Action<string> AddError { get; init; }
     /// <summary>コンテキスト情報</summary>
     public required SchemaParseContext SchemaParseContext { get; init; }
 }
@@ -74,7 +74,7 @@ internal static class BasicNodeOptions {
             """,
         Validate = ctx => {
             // 改行不可
-            if (ctx.Value.Contains('\n')) ctx.Errors.Add("改行を含めることはできません。");
+            if (ctx.Value.Contains('\n')) ctx.AddError("改行を含めることはできません。");
         },
     };
 
@@ -88,7 +88,7 @@ internal static class BasicNodeOptions {
             """,
         Validate = ctx => {
             // 改行不可
-            if (ctx.Value.Contains('\n')) ctx.Errors.Add("改行を含めることはできません。");
+            if (ctx.Value.Contains('\n')) ctx.AddError("改行を含めることはできません。");
         },
     };
 
@@ -102,7 +102,7 @@ internal static class BasicNodeOptions {
             """,
         Validate = ctx => {
             // 改行不可
-            if (ctx.Value.Contains('\n')) ctx.Errors.Add("改行を含めることはできません。");
+            if (ctx.Value.Contains('\n')) ctx.AddError("改行を含めることはできません。");
         },
     };
 

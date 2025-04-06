@@ -95,10 +95,10 @@ public class SchemaParseContext {
     private readonly IReadOnlyDictionary<string, NodeOption> _nodeOptions;
 
     private const string ATTR_IS = "is";
-    private const string ATTR_NODE_TYPE = "Type";
+    internal const string ATTR_NODE_TYPE = "Type";
 
-    private const string NODE_TYPE_CHILD = "child";
-    private const string NODE_TYPE_CHILDREN = "children";
+    internal const string NODE_TYPE_CHILD = "child";
+    internal const string NODE_TYPE_CHILDREN = "children";
     private const string NODE_TYPE_REFTO = "ref-to";
 
     /// <summary>
@@ -294,11 +294,9 @@ public class SchemaParseContext {
     /// <returns>スキーマの作成に成功したかどうか</returns>
     public bool TryBuildSchema(XDocument xDocument, out ApplicationSchema schema, out ICollection<ValidationError> errors) {
         schema = new ApplicationSchema(xDocument, this);
-        var errorsList = new List<ValidationError>();
+        var errorsList = new List<(XElement, string)>();
 
         foreach (var el in xDocument.Root?.Descendants() ?? []) {
-            var thisErrors = new List<string>();
-            errorsList.Add(new() { XElement = el, Errors = thisErrors });
 
             var nodeType = GetNodeType(el);
             var typeAttrValue = el.Attribute(ATTR_NODE_TYPE)?.Value ?? string.Empty;
@@ -307,19 +305,17 @@ public class SchemaParseContext {
             switch (nodeType) {
                 // ノードの種類が不明な場合
                 case E_NodeType.Unknown:
-                    thisErrors.Add($"ノードの種類が不明です。{ATTR_NODE_TYPE}属性が指定されているか確認してください。");
+                    errorsList.Add((el, $"ノードの種類が不明です。{ATTR_NODE_TYPE}属性が指定されているか確認してください。"));
                     break;
 
                 // ルート集約の場合
                 case E_NodeType.RootAggregate:
-                    // モデルがあるか
-                    if (!Models.ContainsKey(typeAttrValue)) {
-                        thisErrors.Add($"{ATTR_NODE_TYPE}属性でモデルが指定されていません。使用できる値は {Models.Keys.Join(", ")} です。");
-                    }
-
-                    // メンバーにIsKey属性がついているかチェック
-                    if (!HasAnyMemberWithIsKeyAttribute(el)) {
-                        thisErrors.Add("ルート集約のメンバーのいずれにもIsKey属性がついていません。少なくとも1つのメンバーにIsKey属性を設定してください。");
+                    var model = Models.GetValueOrDefault(typeAttrValue);
+                    if (model == null) {
+                        errorsList.Add((el, $"{ATTR_NODE_TYPE}属性でモデルが指定されていません。使用できる値は {Models.Keys.Join(", ")} です。"));
+                    } else {
+                        // モデル単位の検証
+                        model.Validate(el, this, (el, err) => errorsList.Add((el, err)));
                     }
                     break;
 
@@ -329,10 +325,6 @@ public class SchemaParseContext {
 
                 // Children
                 case E_NodeType.ChildrenAggregate:
-                    // メンバーにIsKey属性がついているかチェック
-                    if (!HasAnyMemberWithIsKeyAttribute(el)) {
-                        thisErrors.Add("Children集約のメンバーのいずれにもIsKey属性がついていません。少なくとも1つのメンバーにIsKey属性を設定してください。");
-                    }
                     break;
 
                 case E_NodeType.ValueMember:
@@ -357,14 +349,18 @@ public class SchemaParseContext {
                     Value = el.Attribute(opt.AttributeName)!.Value,
                     XElement = el,
                     NodeType = nodeType,
-                    Errors = thisErrors,
+                    AddError = err => errorsList.Add((el, err)),
                     SchemaParseContext = this,
                 });
             }
         }
 
         errors = errorsList
-            .Where(e => e.Errors.Count > 0)
+            .GroupBy(x => x.Item1)
+            .Select(x => new ValidationError {
+                XElement = x.Key,
+                Errors = x.Select(y => y.Item2).ToArray(),
+            })
             .ToArray();
 
         return errors.Count == 0;
@@ -376,26 +372,6 @@ public class SchemaParseContext {
         public override string ToString() {
             return $"{XElement.AncestorsAndSelf().Reverse().Select(el => el.Name.LocalName).Join("/")}: {Errors.Join(", ")}";
         }
-    }
-
-    /// <summary>
-    /// 指定されたXML要素のメンバー（子要素）のいずれかにIsKey属性がついているかをチェックします。
-    /// </summary>
-    /// <param name="xElement">チェック対象のXML要素</param>
-    /// <returns>IsKey属性がついているメンバーが存在する場合はtrue、それ以外はfalse</returns>
-    private bool HasAnyMemberWithIsKeyAttribute(XElement xElement) {
-        // 子要素を取得
-        var children = xElement.Elements();
-
-        // いずれかの子要素にIsKey属性がついているかチェック
-        foreach (var child in children) {
-            var isKeyAttr = child.Attribute(BasicNodeOptions.IsKey.AttributeName);
-            if (isKeyAttr != null && bool.TryParse(isKeyAttr.Value, out bool isKey) && isKey) {
-                return true;
-            }
-        }
-
-        return false;
     }
     #endregion 検証
 }

@@ -1,4 +1,5 @@
 using Nijo.Ver1.ImmutableSchema;
+using Nijo.Ver1.SchemaParsing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,6 +17,11 @@ namespace Nijo.Ver1.CodeGenerating {
         /// スキーマ定義上でこのモデルを指定するときの名前
         /// </summary>
         string SchemaName { get; }
+
+        /// <summary>
+        /// モデルの指定内容の検証を行ないます。
+        /// </summary>
+        public void Validate(XElement rootAggregateElement, SchemaParseContext context, Action<XElement, string> addError);
 
         /// <summary>
         /// ルート集約1個と対応するソースコードを生成します。

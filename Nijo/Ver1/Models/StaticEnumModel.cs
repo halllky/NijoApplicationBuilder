@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Nijo.Ver1.Models {
     /// <summary>
@@ -16,6 +17,9 @@ namespace Nijo.Ver1.Models {
     /// </summary>
     internal class StaticEnumModel : IModel {
         public string SchemaName => EnumDefParser.SCHEMA_NAME;
+
+        public void Validate(XElement rootAggregateElement, SchemaParseContext context, Action<XElement, string> addError) {
+        }
 
         public void GenerateCode(CodeRenderingContext ctx, RootAggregate rootAggregate) {
             var enumFile = ctx.Use<EnumFile>();

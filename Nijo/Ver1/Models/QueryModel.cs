@@ -2,11 +2,13 @@ using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
 using Nijo.Ver1.Models.QueryModelModules;
 using Nijo.Ver1.Parts.Common;
+using Nijo.Ver1.SchemaParsing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Nijo.Ver1.Models {
     /// <summary>
@@ -15,6 +17,13 @@ namespace Nijo.Ver1.Models {
     /// </summary>
     internal class QueryModel : IModel {
         public string SchemaName => "query-model";
+
+        public void Validate(XElement rootAggregateElement, SchemaParseContext context, Action<XElement, string> addError) {
+            // ルート集約はURLにかかわるのでキー必須
+            if (rootAggregateElement.Elements().All(member => member.Attribute(BasicNodeOptions.IsKey.AttributeName) == null)) {
+                addError(rootAggregateElement, "キーが指定されていません。");
+            }
+        }
 
         public void GenerateCode(CodeRenderingContext ctx, RootAggregate rootAggregate) {
             var aggregateFile = new SourceFileByAggregate(rootAggregate);

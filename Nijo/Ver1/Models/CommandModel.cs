@@ -2,15 +2,20 @@ using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
 using Nijo.Ver1.Models.CommandModelModules;
 using Nijo.Ver1.Parts.Common;
+using Nijo.Ver1.SchemaParsing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Nijo.Ver1.Models {
     internal class CommandModel : IModel {
         public string SchemaName => "command-model";
+
+        public void Validate(XElement rootAggregateElement, SchemaParseContext context, Action<XElement, string> addError) {
+        }
 
         public void GenerateCode(CodeRenderingContext ctx, RootAggregate rootAggregate) {
             var aggregateFile = new SourceFileByAggregate(rootAggregate);
