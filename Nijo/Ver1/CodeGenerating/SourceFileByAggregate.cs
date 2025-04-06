@@ -1,4 +1,3 @@
-using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using Nijo.Ver1.ImmutableSchema;
 using Nijo.Ver1.Parts.CSharp;

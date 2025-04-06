@@ -1,3 +1,5 @@
+global using static Nijo.Ver1.CodeGenerating.TemplateTextHelper;
+
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections;
