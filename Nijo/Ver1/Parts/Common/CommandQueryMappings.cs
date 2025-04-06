@@ -158,7 +158,7 @@ namespace Nijo.Ver1.Parts.Common {
                     ]
 
                     /** CommandModel, QuerModel の種類の一覧を文字列として返します。 */
-                    export const getCommandOrQueryModelTypeList = (): QueryOrCommandModelType[] => [
+                    export const getCommandOrQueryModelTypeList = (): CommandOrQueryModelType[] => [
                       ...getQueryModelTypeList(),
                       ...getCommandModelTypeList(),
                     ]

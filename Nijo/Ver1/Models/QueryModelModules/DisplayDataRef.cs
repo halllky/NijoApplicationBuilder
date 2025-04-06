@@ -49,8 +49,15 @@ namespace Nijo.Ver1.Models.QueryModelModules {
         /// 他の集約から参照されているもののみ再帰的にレンダリングする
         /// </summary>
         internal static string RenderTypeScriptRecursively(RootAggregate rootAggregate) {
+            var refDisp = new Entry(rootAggregate);
+
             return $$"""
-                // TODO ver.1
+                /**
+                 * {{rootAggregate.DisplayName}}が他の集約から外部参照されるときの型
+                 */
+                export type {{refDisp.TsTypeName}} = {
+                  // TODO ver.1
+                }
                 """;
         }
         #endregion レンダリング
@@ -109,16 +116,6 @@ namespace Nijo.Ver1.Models.QueryModelModules {
                     /// </summary>
                     public partial class {{CsClassName}} {
                         // TODO ver.1
-                    }
-                    """;
-            }
-            internal string RenderTsType(CodeRenderingContext ctx) {
-                return $$"""
-                    /**
-                     * {{_aggregate.DisplayName}}が他の集約から外部参照されるときの型
-                     */
-                    export type {{TsTypeName}} = {
-                      // TODO ver.1
                     }
                     """;
             }
