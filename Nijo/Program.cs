@@ -102,7 +102,7 @@ namespace Nijo {
                 ? Directory.GetCurrentDirectory()
                 : Path.Combine(Directory.GetCurrentDirectory(), path);
             var logger = ILoggerExtension.CreateConsoleLogger();
-            var project = new Ver1.GeneratedProject(projectRoot, logger);
+            var project = new GeneratedProject(projectRoot, logger);
 
             project.ValidateSchema();
         }
@@ -117,7 +117,7 @@ namespace Nijo {
                 ? Directory.GetCurrentDirectory()
                 : Path.Combine(Directory.GetCurrentDirectory(), path);
             var logger = ILoggerExtension.CreateConsoleLogger();
-            var project = new Ver1.GeneratedProject(projectRoot, logger);
+            var project = new GeneratedProject(projectRoot, logger);
 
             project.GenerateCode();
         }
@@ -133,7 +133,7 @@ namespace Nijo {
                 ? Directory.GetCurrentDirectory()
                 : Path.Combine(Directory.GetCurrentDirectory(), path);
             var logger = ILoggerExtension.CreateConsoleLogger();
-            var project = new Ver1.GeneratedProject(projectRoot, logger);
+            var project = new GeneratedProject(projectRoot, logger);
 
             var firstLaunch = true;
             while (true) {

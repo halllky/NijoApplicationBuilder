@@ -13,7 +13,7 @@
     "Ver1のアプリケーションテンプレート": {
       "commandName": "Project",
       "commandLineArgs": "generate",
-      "workingDirectory": "..\\Nijo.ApplicationTemplate.Ver1"
+      "workingDirectory": "..\\Nijo.ApplicationTemplate"
     }
   }
 }
