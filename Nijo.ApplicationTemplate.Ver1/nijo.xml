@@ -39,7 +39,7 @@
     <血圧下 Type="int" />
     <メモ Type="description" />
     <処方 Type="children">
-      <薬剤ID Type="word" />
+      <薬剤ID Type="word" IsKey="True" />
       <薬剤名 Type="word" />
       <用量 Type="int" />
       <用法 Type="word" />

@@ -366,11 +366,16 @@ public class SchemaParseContext {
         errors = errorsList
             .Where(e => e.Errors.Count > 0)
             .ToArray();
-        return true;
+
+        return errors.Count == 0;
     }
     public class ValidationError {
         public required XElement XElement { get; init; }
         public required IReadOnlyCollection<string> Errors { get; init; }
+
+        public override string ToString() {
+            return $"{XElement.AncestorsAndSelf().Reverse().Select(el => el.Name.LocalName).Join("/")}: {Errors.Join(", ")}";
+        }
     }
 
     /// <summary>

@@ -4,15 +4,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyApp.Core;
+namespace MyApp.Core.Debugging;
 
 /// <summary>
 /// <see cref="IDummyDataOutput"/> のシンプルな実装。
 /// 大量のダミーデータをEFCoreのSaveChanges経由でそのまま登録する。
 /// パフォーマンスが気になる場合はSaveChangesを使う戦略を廃し、SQL発行でのINSERTに切り替えること。
 /// </summary>
-public class BasicDummyDataOutput : IDummyDataOutput {
-    public BasicDummyDataOutput(MyDbContext dbContext) {
+public class DummyDataDbOutput : IDummyDataOutput {
+    public DummyDataDbOutput(MyDbContext dbContext) {
         _dbContext = dbContext;
     }
     private readonly MyDbContext _dbContext;

@@ -1,4 +1,5 @@
 ﻿using MyApp.Core;
+using MyApp.Core.Debugging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,8 +16,21 @@ partial class DB等入出力あり {
         using var scope = util.CreateScope();
 
         var generator = new DummyDataGenerator();
-        var descriptor = new BasicDummyDataOutput(scope.App.DbContext);
+        var dbDescriptor = new DummyDataDbOutput(scope.App.DbContext);
 
-        Assert.DoesNotThrowAsync(() => generator.GenerateAsync(descriptor));
+        Assert.DoesNotThrowAsync(async () => {
+            try {
+                await generator.GenerateAsync(dbDescriptor);
+
+            } catch {
+                // エラーが起きたデータのログ出力
+                using var fs = File.OpenWrite(Path.Combine(scope.WorkDirectory, "作成しようとしたデータ.tsv"));
+                using var sw = new StreamWriter(fs);
+                var tsvDescriptor = new DummyDataTsvOutput(sw);
+                await generator.GenerateAsync(tsvDescriptor);
+
+                throw;
+            }
+        });
     }
 }
