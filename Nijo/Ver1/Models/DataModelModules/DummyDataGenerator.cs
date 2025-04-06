@@ -250,8 +250,8 @@ namespace Nijo.Ver1.Models.DataModelModules {
                             }
 
                             // SaveCommand から KeyClass への変換
-                            static IEnumerable<string> RenderKeyClassBodyConverting(KeyClass.KeyClassEntry keyClassEntry) {
-                                foreach (var member in keyClassEntry.GetMembers()) {
+                            static IEnumerable<string> RenderKeyClassBodyConverting(KeyClass.IKeyClassStructure keyClassStructure) {
+                                foreach (var member in keyClassStructure.GetMembers()) {
                                     if (member is KeyClass.KeyClassValueMember vm) {
                                         var path = vm.Member
                                             .GetPathFromEntry()

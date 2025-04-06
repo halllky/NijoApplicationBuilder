@@ -16,7 +16,7 @@ internal static class KeyClass {
     /// <summary>
     /// キーのエントリー。子孫集約になることもある。
     /// </summary>
-    internal class KeyClassEntry {
+    internal class KeyClassEntry : IKeyClassStructure, SaveCommand.ISaveCommandMember {
         internal KeyClassEntry(AggregateBase aggregate) {
             _aggregate = aggregate.AsEntry();
         }
@@ -24,7 +24,14 @@ internal static class KeyClass {
 
         internal string ClassName => $"{_aggregate.PhysicalName}Key";
 
-        internal IEnumerable<IKeyClassMember> GetMembers() {
+        ISchemaPathNode SaveCommand.ISaveCommandMember.Member => _aggregate;
+        public virtual string PhysicalName => _aggregate.PhysicalName;
+        public virtual string DisplayName => _aggregate.DisplayName;
+        public string CsCreateType => ClassName;
+        public string CsUpdateType => ClassName;
+        public string CsDeleteType => ClassName;
+
+        public IEnumerable<IKeyClassMember> GetMembers() {
             var p = _aggregate.GetParent();
             if (p != null) {
                 yield return new KeyClassParentMember(p);
@@ -92,28 +99,32 @@ internal static class KeyClass {
 
 
     #region メンバー
-    internal interface IKeyClassMember {
-        string PhysicalName { get; }
-        string DisplayName { get; }
+    /// <summary>
+    /// KeyClassのエントリー、Ref, Parent の3種類
+    /// </summary>
+    internal interface IKeyClassStructure {
+        IEnumerable<IKeyClassMember> GetMembers();
+    }
+    internal interface IKeyClassMember : SaveCommand.ISaveCommandMember {
         string CsType { get; }
     }
     /// <summary>
     /// キー情報の値メンバー
     /// </summary>
-    internal class KeyClassValueMember : IKeyClassMember {
-        internal KeyClassValueMember(ValueMember vm) {
-            Member = vm;
-        }
-        internal ValueMember Member { get; }
+        internal class KeyClassValueMember : SaveCommand.SaveCommandValueMember, IKeyClassMember {
+            internal KeyClassValueMember(ValueMember vm) : base(vm) { }
 
-        public string PhysicalName => Member.PhysicalName;
-        public string DisplayName => Member.DisplayName;
         public string CsType => Member.Type.CsDomainTypeName;
+
+        ISchemaPathNode SaveCommand.ISaveCommandMember.Member => Member;
+        string SaveCommand.ISaveCommandMember.CsCreateType => CsType;
+        string SaveCommand.ISaveCommandMember.CsUpdateType => CsType;
+        string SaveCommand.ISaveCommandMember.CsDeleteType => CsType;
     }
     /// <summary>
     /// キー情報の中に出てくる他の集約のキー
     /// </summary>
-    internal class KeyClassRefMember : IKeyClassMember {
+    internal class KeyClassRefMember : IKeyClassStructure, IKeyClassMember {
         internal KeyClassRefMember(RefToMember refTo) {
             Member = refTo;
             MemberKeyClassEntry = new KeyClassEntry(refTo.RefTo);
@@ -124,44 +135,77 @@ internal static class KeyClass {
         public string PhysicalName => Member.PhysicalName;
         public string DisplayName => Member.DisplayName;
         public string CsType => MemberKeyClassEntry.ClassName;
+
+        ISchemaPathNode SaveCommand.ISaveCommandMember.Member => Member;
+        string SaveCommand.ISaveCommandMember.CsCreateType => CsType;
+        string SaveCommand.ISaveCommandMember.CsUpdateType => CsType;
+        string SaveCommand.ISaveCommandMember.CsDeleteType => CsType;
+
+        public IEnumerable<IKeyClassMember> GetMembers() {
+            var p = Member.RefTo.GetParent();
+            if (p != null) {
+                yield return new KeyClassParentMember(p);
+            }
+
+            foreach (var m in Member.RefTo.GetMembers()) {
+                if (m is ValueMember vm && vm.IsKey) {
+                    yield return new KeyClassValueMember(vm);
+
+                } else if (m is RefToMember rm && rm.IsKey) {
+                    yield return new KeyClassRefMember(rm);
+                }
+            }
+        }
     }
     /// <summary>
     /// 子孫のキー情報の中に出てくる親集約のキー。
     /// </summary>
-    internal class KeyClassParentMember : KeyClassEntry, IKeyClassMember {
-        internal KeyClassParentMember(AggregateBase parent) : base(parent) {
+    internal class KeyClassParentMember : IKeyClassStructure, IKeyClassMember {
+        internal KeyClassParentMember(AggregateBase parent) {
             _parent = parent;
-            //_keyClassEntry = keyClassEntry;
         }
         private readonly AggregateBase _parent;
-        //private readonly AggregateBase _keyClassEntry;
 
+        public string ClassName => $"{_parent.PhysicalName}KeyAsParent";
         public string PhysicalName => "Parent";
         public string DisplayName => _parent.DisplayName;
 
         public string CsType => $"{_parent}KeyAsNotEntry";
-        //internal override string CsType {
-        //    get {
-        //        if (_csTypeCache == null) {
-        //            var list = new List<string> {
-        //                $"{_keyClassEntry.PhysicalName}Key"
-        //            };
-        //            foreach (var node in _parent.GetFullPath()) {
-        //                if (node is AggregateBase curr
-        //                 && node.PreviousNode is AggregateBase prev
-        //                 && curr.IsParentOf(prev)) {
-        //                    list.Add("Parent");
 
-        //                } else {
-        //                    list.Add(node.XElement.Name.LocalName);
-        //                }
-        //            }
-        //            _csTypeCache = list.Join("の");
-        //        }
-        //        return _csTypeCache;
-        //    }
-        //}
-        //private string? _csTypeCache;
+        ISchemaPathNode SaveCommand.ISaveCommandMember.Member => _parent;
+        string SaveCommand.ISaveCommandMember.CsCreateType => CsType;
+        string SaveCommand.ISaveCommandMember.CsUpdateType => CsType;
+        string SaveCommand.ISaveCommandMember.CsDeleteType => CsType;
+
+        public IEnumerable<IKeyClassMember> GetMembers() {
+            var p = _parent.GetParent();
+            if (p != null) {
+                yield return new KeyClassParentMember(p);
+            }
+
+            foreach (var m in _parent.GetMembers()) {
+                if (m is ValueMember vm && vm.IsKey) {
+                    yield return new KeyClassValueMember(vm);
+
+                } else if (m is RefToMember rm && rm.IsKey) {
+                    yield return new KeyClassRefMember(rm);
+                }
+            }
+        }
+
+        public string RenderDeclaring() {
+            return $$"""
+                /// <summary>
+                /// {{_parent.DisplayName}} のキー
+                /// </summary>
+                public partial class {{ClassName}} {
+                {{GetMembers().SelectTextTemplate(m => $$"""
+                    /// <summary>{{m.DisplayName}}</summary>
+                    public required {{m.CsType}}? {{m.PhysicalName}} { get; set; }
+                """)}}
+                }
+                """;
+        }
     }
     #endregion メンバー
 }

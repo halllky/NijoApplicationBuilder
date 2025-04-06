@@ -81,6 +81,18 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 }
             }
         }
+        ///// <summary>
+        ///// ValueMemberのみの再帰列挙
+        ///// <list type="bullet">
+        ///// <item>親、参照先のValueMember: 含めます。</item>
+        ///// <item>Child, ChildrenのValueMember: 含めません。</item>
+        ///// </list>
+        ///// </summary>
+        //internal IEnumerable<SaveCommandValueMember> GetCreateCommandValueMembersRecursively() {
+        //    foreach (var member in GetCreateCommandMembers()) {
+
+        //    }
+        //}
         private string RenderCreateCommandDeclaring(CodeRenderingContext ctx) {
             return $$"""
                 /// <summary>
@@ -188,7 +200,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
 
         #region メンバー
         internal interface ISaveCommandMember {
-            IAggregateMember Member { get; }
+            ISchemaPathNode Member { get; }
             string PhysicalName { get; }
             string DisplayName { get; }
             string CsCreateType { get; }
@@ -203,7 +215,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 Member = vm;
             }
             internal ValueMember Member { get; }
-            IAggregateMember ISaveCommandMember.Member => Member;
+            ISchemaPathNode ISaveCommandMember.Member => Member;
 
             public string PhysicalName => Member.PhysicalName;
             public string DisplayName => Member.DisplayName;
@@ -214,20 +226,11 @@ namespace Nijo.Ver1.Models.DataModelModules {
         /// <summary>
         /// 更新処理引数クラスの参照先キー項目
         /// </summary>
-        internal class SaveCommandRefMember : ISaveCommandMember {
-            internal SaveCommandRefMember(RefToMember refTo) {
+        internal class SaveCommandRefMember : KeyClass.KeyClassEntry {
+            internal SaveCommandRefMember(RefToMember refTo) : base(refTo.RefTo) {
                 Member = refTo;
-                _refToKey = new KeyClass.KeyClassEntry(refTo.RefTo);
             }
             internal RefToMember Member { get; }
-            IAggregateMember ISaveCommandMember.Member => Member;
-            private readonly KeyClass.KeyClassEntry _refToKey;
-
-            public string PhysicalName => Member.PhysicalName;
-            public string DisplayName => Member.DisplayName;
-            public string CsCreateType => _refToKey.ClassName;
-            public string CsUpdateType => _refToKey.ClassName;
-            public string CsDeleteType => _refToKey.ClassName;
         }
         /// <summary>
         /// 更新処理引数クラスの子メンバー
@@ -235,7 +238,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
         internal class SaveCommandChildMember : SaveCommand, ISaveCommandMember {
             internal SaveCommandChildMember(ChildAggreagte child) : base(child) { }
 
-            IAggregateMember ISaveCommandMember.Member => (IAggregateMember)_aggregate;
+            ISchemaPathNode ISaveCommandMember.Member => (IAggregateMember)_aggregate;
             public string PhysicalName => _aggregate.PhysicalName;
             public string DisplayName => _aggregate.DisplayName;
             public string CsCreateType => new SaveCommand(_aggregate).CsClassNameCreate;
@@ -248,7 +251,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
         internal class SaveCommandChildrenMember : SaveCommand, ISaveCommandMember {
             internal SaveCommandChildrenMember(ChildrenAggreagte children) : base(children) { }
 
-            IAggregateMember ISaveCommandMember.Member => (IAggregateMember)_aggregate;
+            ISchemaPathNode ISaveCommandMember.Member => (IAggregateMember)_aggregate;
             public string PhysicalName => _aggregate.PhysicalName;
             public string DisplayName => _aggregate.DisplayName;
             public string CsCreateType => $"List<{new SaveCommand(_aggregate).CsClassNameCreate}>";
