@@ -256,7 +256,7 @@ namespace Nijo.Ver1.ImmutableSchema {
             : base(xElement, ctx, previous) { }
 
         public string LatinName => _ctx.GetLatinName(_xElement);
-        public bool IsReadOnly => _ctx.ParseIsAttribute(_xElement).Any(attr => attr.Key == "readonly"); // TODO ver.1
+        public bool IsReadOnly => _xElement.Attribute(BasicNodeOptions.IsReadOnly.AttributeName) != null;
         public IModel Model => _ctx.GetModel(_xElement);
 
         public override AggregateBase AsEntry() {
@@ -264,10 +264,8 @@ namespace Nijo.Ver1.ImmutableSchema {
         }
 
         #region DataModelと全く同じ型のQueryModel, CommandModel を生成するかどうか
-        private const string IS_GENERATE_DEFAULT_QUERY_MODEL = "generate-default-query-model";
-        private const string IS_GENERATE_BATCH_UPDATE_COMMAND = "generate-batch-update-command";
-        public bool GenerateDefaultQueryModel => _ctx.ParseIsAttribute(_xElement).Any(attr => attr.Key == IS_GENERATE_DEFAULT_QUERY_MODEL);
-        public bool GenerateBatchUpdateCommand => _ctx.ParseIsAttribute(_xElement).Any(attr => attr.Key == IS_GENERATE_BATCH_UPDATE_COMMAND);
+        public bool GenerateDefaultQueryModel => _xElement.Attribute(BasicNodeOptions.GenerateDefaultQueryModel.AttributeName) != null;
+        public bool GenerateBatchUpdateCommand => _xElement.Attribute(BasicNodeOptions.GenerateBatchUpdateCommand.AttributeName) != null;
         #endregion DataModelと全く同じ型のQueryModel, CommandModel を生成するかどうか
     }
 
@@ -283,9 +281,8 @@ namespace Nijo.Ver1.ImmutableSchema {
             ? ((AggregateBase?)PreviousNode ?? throw new InvalidOperationException()) // パスの巻き戻しの場合
             : _ctx.ToAggregateBase(_xElement.Parent ?? throw new InvalidOperationException(), this);
 
-        internal const string IS_HAS_LIFECYCLE = "has-lifecycle";
         /// <summary>画面上で追加削除されるタイミングが親と異なるかどうか</summary>
-        public bool HasLifeCycle => _ctx.ParseIsAttribute(_xElement).Any(attr => attr.Key == IS_HAS_LIFECYCLE);
+        public bool HasLifeCycle => _xElement.Attribute(BasicNodeOptions.HasLifeCycle.AttributeName) != null;
 
         AggregateBase IRelationalMember.MemberAggregate => this;
 

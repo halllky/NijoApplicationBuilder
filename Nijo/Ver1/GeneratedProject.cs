@@ -45,16 +45,31 @@ namespace Nijo.Ver1 {
         }
 
         /// <summary>
+        /// スキーマ定義の検証を行ないます。
+        /// </summary>
+        public bool ValidateSchema() {
+            var xDocument = XDocument.Load(Path.Combine(ProjectRoot, XML_FILENAME));
+            var parseContext = SchemaParseContext.Default(xDocument);
+
+            // 検証
+            if (parseContext.TryBuildSchema(xDocument, out var _, out var errors)) {
+                return true;
+
+            } else {
+                foreach (var err in errors) _logger.LogError("- {error}", err);
+                return false;
+            }
+        }
+
+        /// <summary>
         /// コード自動生成を実行します。
         /// </summary>
         internal void GenerateCode() {
             var xDocument = XDocument.Load(Path.Combine(ProjectRoot, XML_FILENAME));
-
-            // スキーマ定義の解釈ルールを決定
             var parseContext = SchemaParseContext.Default(xDocument);
 
             // スキーマ定義のコレクションを作成
-            if (!ApplicationSchema.TryBuild(xDocument, parseContext, out var immutableSchema, out var errors)) {
+            if (!parseContext.TryBuildSchema(xDocument, out var immutableSchema, out var errors)) {
                 _logger.LogError("エラーがある状態でソースコードの自動生成を行なうことはできません。");
                 foreach (var err in errors) _logger.LogError("- {error}", err);
                 return;

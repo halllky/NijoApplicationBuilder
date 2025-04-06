@@ -42,28 +42,20 @@ namespace Nijo.Ver1.ImmutableSchema {
             : throw new InvalidOperationException();
 
         #region メンバー毎に定義される制約
-        internal const string IS_KEY = "key";
-        internal const string IS_REQUIRED = "required";
-        internal const string IS_MAX_LENGTH = "max-length";
-        internal const string IS_CHARACTER_TYPE = "character-type";
-        internal const string IS_TOTAL_DIGIT = "total-digit";
-        internal const string IS_DECIMAL_PLACE = "decimal-place";
-        internal const string IS_SEQUENCE_NAME = "sequence-name";
-
         /// <summary>キー属性か否か</summary>
-        public bool IsKey => _ctx.ParseIsAttribute(_xElement).Any(attr => attr.Key == IS_KEY);
+        public bool IsKey => _xElement.Attribute(BasicNodeOptions.IsKey.AttributeName) != null;
         /// <summary>必須か否か</summary>
-        public bool IsRequired => _ctx.ParseIsAttribute(_xElement).Any(attr => attr.Key == IS_REQUIRED);
+        public bool IsRequired => _xElement.Attribute(BasicNodeOptions.IsRequired.AttributeName) != null;
         /// <summary>文字種。半角、半角英数、など</summary>
-        public string? CharacterType => _ctx.ParseIsAttribute(_xElement).SingleOrDefault(attr => attr.Key == IS_CHARACTER_TYPE)?.Value;
+        public string? CharacterType => _xElement.Attribute(BasicNodeOptions.CharacterType.AttributeName)?.Value;
         /// <summary>文字列系属性の最大長</summary>
-        public int? MaxLength => int.TryParse(_ctx.ParseIsAttribute(_xElement).SingleOrDefault(attr => attr.Key == IS_MAX_LENGTH)?.Value, out var v) ? v : null;
+        public int? MaxLength => int.TryParse(_xElement.Attribute(BasicNodeOptions.MaxLength.AttributeName)?.Value, out var v) ? v : null;
         /// <summary>数値系属性の整数部桁数 + 小数部桁数</summary>
-        public int? TotalDigit => int.TryParse(_ctx.ParseIsAttribute(_xElement).SingleOrDefault(attr => attr.Key == IS_TOTAL_DIGIT)?.Value, out var v) ? v : null;
+        public int? TotalDigit => int.TryParse(_xElement.Attribute(BasicNodeOptions.TotalDigit.AttributeName)?.Value, out var v) ? v : null;
         /// <summary>数値系属性の小数部桁数</summary>
-        public int? DecimalPlace => int.TryParse(_ctx.ParseIsAttribute(_xElement).SingleOrDefault(attr => attr.Key == IS_DECIMAL_PLACE)?.Value, out var v) ? v : null;
+        public int? DecimalPlace => int.TryParse(_xElement.Attribute(BasicNodeOptions.DecimalPlace.AttributeName)?.Value, out var v) ? v : null;
         /// <summary>シーケンス物理名</summary>
-        public string? SequenceName => _ctx.ParseIsAttribute(_xElement).SingleOrDefault(attr => attr.Key == IS_SEQUENCE_NAME)?.Value;
+        public string? SequenceName => _xElement.Attribute(BasicNodeOptions.CharacterType.AttributeName)?.Value;
         #endregion メンバー毎に定義される制約
 
         #region 等価比較

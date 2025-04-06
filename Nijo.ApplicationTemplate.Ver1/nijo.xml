@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <NijoApplicationBuilder RootNamespace="MyApp">
-  <顧客 Type="data-model" is="generate-default-query-model generate-batch-update-command:参照先一括更新" LatinName="Master Data 01">
-    <顧客ID Type="word" is="key" />
-    <顧客名 Type="word" is="name" />
+  <顧客 Type="data-model" GenerateDefaultQueryModel="True" GenerateBatchUpdateCommand="True" LatinName="Master Data 01">
+    <顧客ID Type="word" IsKey="True" />
+    <顧客名 Type="word" />
     <住所 Type="child">
       <都道府県 Type="word"/>
       <市町村 Type="word"/>
@@ -11,22 +11,22 @@
   <CommandModelテスト Type="command-model" LatinName="Batch Update Master Data 01">
     <Parameter Type="child">
       <Items Type="children">
-        <Word1 Type="word" is="key" />
-        <Word2 Type="word" is="name" />
+        <Word1 Type="word" IsKey="True" />
+        <Word2 Type="word" />
       </Items>
     </Parameter>
     <ReturnValue Type="child">
     </ReturnValue>
   </CommandModelテスト>
   <予約 Type="data-model" LatinName="Transaction Data 01">
-    <予約ID Type="word" is="key" />
-    <ひとこと Type="word" is="name" />
+    <予約ID Type="word" IsKey="True" />
+    <ひとこと Type="word" />
     <顧客 Type="ref-to:顧客"/>
     <予約区分 Type="予約区分"/>
   </予約>
   <診察 Type="data-model" LatinName="Transaction Data 02">
-    <予約 Type="ref-to:予約" is="key" />
-    <メモ Type="word" is="name" />
+    <予約 Type="ref-to:予約" IsKey="True" />
+    <メモ Type="word" />
   </診察>
   <予約区分 Type="enum">
     <初診 DisplayName="初診（しょしん）" key="1" />

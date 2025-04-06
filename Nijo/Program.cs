@@ -224,6 +224,14 @@ namespace Nijo {
 
             // *************************** ver.1.0.000 ***************************
 
+            // 検証
+            var validate = new Command(
+                name: "validate",
+                description: "スキーマ定義の検証を行ないます。")
+                { path };
+            validate.SetHandler(Validate, path);
+            rootCommand.AddCommand(validate);
+
             // コード自動生成
             var generate = new Command(
                 name: "generate",
@@ -241,6 +249,21 @@ namespace Nijo {
             rootCommand.AddCommand(run);
 
             return rootCommand;
+        }
+
+
+        /// <summary>
+        /// スキーマ定義の検証を行ないます。
+        /// </summary>
+        /// <param name="path">対象フォルダまでの相対パス</param>
+        private static void Validate(string? path) {
+            var projectRoot = path == null
+                ? Directory.GetCurrentDirectory()
+                : Path.Combine(Directory.GetCurrentDirectory(), path);
+            var logger = ILoggerExtension.CreateConsoleLogger();
+            var project = new Ver1.GeneratedProject(projectRoot, logger);
+
+            project.ValidateSchema();
         }
 
 

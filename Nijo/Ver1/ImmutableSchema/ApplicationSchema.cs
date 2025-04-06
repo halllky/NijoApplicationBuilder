@@ -13,25 +13,7 @@ namespace Nijo.Ver1.ImmutableSchema {
     /// </summary>
     public class ApplicationSchema {
 
-        /// <summary>
-        /// XMLドキュメントがスキーマ定義として不正な状態を持たないかを検証し、
-        /// 検証に成功した場合はアプリケーションスキーマのインスタンスを返します。
-        /// </summary>
-        /// <param name="xDocument">XMLドキュメント</param>
-        /// <param name="parseContext">XML解釈ルール</param>
-        /// <param name="schema">作成完了後のスキーマ</param>
-        /// <param name="errors">エラーがある場合はここにその内容が格納される</param>
-        /// <returns>スキーマの作成に成功したかどうか</returns>
-        internal static bool TryBuild(XDocument xDocument, SchemaParseContext parseContext, out ApplicationSchema schema, out ICollection<string> errors) {
-            schema = new ApplicationSchema(xDocument, parseContext);
-            errors = new List<string>();
-
-            // TODO: ここでバリデーション
-
-            return true;
-        }
-
-        private ApplicationSchema(XDocument xDocument, SchemaParseContext parseContext) {
+        internal ApplicationSchema(XDocument xDocument, SchemaParseContext parseContext) {
             _xDocument = xDocument;
             _parseContext = parseContext;
         }

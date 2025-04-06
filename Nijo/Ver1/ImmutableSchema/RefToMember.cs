@@ -49,13 +49,10 @@ namespace Nijo.Ver1.ImmutableSchema {
         AggregateBase IRelationalMember.MemberAggregate => RefTo;
 
         #region モデル毎に定義される属性
-        internal const string IS_KEY = "key";
-        internal const string IS_REQUIRED = "required";
-
         /// <summary>キー属性か否か</summary>
-        public bool IsKey => _ctx.ParseIsAttribute(_xElement).Any(attr => attr.Key == IS_KEY);
+        public bool IsKey => _xElement.Attribute(BasicNodeOptions.IsKey.AttributeName) != null;
         /// <summary>必須か否か</summary>
-        public bool IsRequired => _ctx.ParseIsAttribute(_xElement).Any(attr => attr.Key == IS_REQUIRED);
+        public bool IsRequired => _xElement.Attribute(BasicNodeOptions.IsRequired.AttributeName) != null;
         #endregion モデル毎に定義される属性
 
         #region 等価比較

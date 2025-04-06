@@ -10,7 +10,7 @@ namespace Nijo.Ver1.SchemaParsing;
 /// XML要素の種類
 /// </summary>
 [Flags]
-internal enum E_NodeType {
+public enum E_NodeType {
     /// <summary>集約</summary>
     Aggregate = 1 << 0,
     /// <summary>集約メンバー</summary>
