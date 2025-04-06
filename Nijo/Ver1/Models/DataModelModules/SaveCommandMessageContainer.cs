@@ -161,12 +161,12 @@ namespace Nijo.Ver1.CodeGenerating {
                         // 参照先のキーの中では親から子へ辿るパターンは無い
                         if (isOutOfEntryTree) throw new InvalidOperationException("参照先のキーの中では親から子へ辿るパターンは無い");
 
-                        var childMember = curr switch {
-                            ChildAggreagte child => new SaveCommand.SaveCommandDescendantMember(child),
-                            ChildrenAggreagte children => new SaveCommand.SaveCommandDescendantMember(children),
+                        var childMemberPhysicalName = curr switch {
+                            ChildAggreagte child => new SaveCommand.SaveCommandChildMember(child).PhysicalName,
+                            ChildrenAggreagte children => new SaveCommand.SaveCommandChildrenMember(children).PhysicalName,
                             _ => throw new InvalidOperationException("ありえない"),
                         };
-                        yield return childMember.PhysicalName;
+                        yield return childMemberPhysicalName;
                         continue;
                     }
                     throw new InvalidOperationException("必ず 親→子, 子→親 のどちらかになるのでありえない");

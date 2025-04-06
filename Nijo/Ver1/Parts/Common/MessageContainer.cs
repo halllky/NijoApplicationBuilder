@@ -56,7 +56,7 @@ namespace Nijo.Ver1.Parts.Common {
                 """).ElseIf(m.NestedObject?._aggregate is not ChildrenAggreagte, () => $$"""
                         this.{{m.PhysicalName}} = new {{m.NestedObject?.CsClassName}}([.. path, "{{m.PhysicalName}}"]);
                 """).Else(() => $$"""
-                        this.{{m.PhysicalName}} = new {{CONCRETE_CLASS_LIST}}([.. path, "{{m.PhysicalName}}"], rowIndex => {
+                        this.{{m.PhysicalName}} = new {{CONCRETE_CLASS_LIST}}<{{m.NestedObject?.CsClassName}}>([.. path, "{{m.PhysicalName}}"], rowIndex => {
                             return new {{m.NestedObject?.CsClassName}}([.. path, "{{m.PhysicalName}}", rowIndex.ToString()]);
                         });
                 """)}}

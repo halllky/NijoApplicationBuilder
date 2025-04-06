@@ -74,10 +74,10 @@ namespace Nijo.Ver1.Models.DataModelModules {
                     yield return new SaveCommandRefMember(rm);
 
                 } else if (member is ChildAggreagte child) {
-                    yield return new SaveCommandDescendantMember(child);
+                    yield return new SaveCommandChildMember(child);
 
                 } else if (member is ChildrenAggreagte children) {
-                    yield return new SaveCommandDescendantMember(children);
+                    yield return new SaveCommandChildrenMember(children);
                 }
             }
         }
@@ -111,10 +111,10 @@ namespace Nijo.Ver1.Models.DataModelModules {
                     yield return new SaveCommandRefMember(rm);
 
                 } else if (member is ChildAggreagte child) {
-                    yield return new SaveCommandDescendantMember(child);
+                    yield return new SaveCommandChildMember(child);
 
                 } else if (member is ChildrenAggreagte children) {
-                    yield return new SaveCommandDescendantMember(children);
+                    yield return new SaveCommandChildrenMember(children);
                 }
             }
         }
@@ -230,18 +230,30 @@ namespace Nijo.Ver1.Models.DataModelModules {
             public string CsDeleteType => _refToKey.ClassName;
         }
         /// <summary>
-        /// 更新処理引数クラスの子孫メンバー
+        /// 更新処理引数クラスの子メンバー
         /// </summary>
-        internal class SaveCommandDescendantMember : SaveCommand, ISaveCommandMember {
-            internal SaveCommandDescendantMember(ChildAggreagte child) : base(child) { }
-            internal SaveCommandDescendantMember(ChildrenAggreagte children) : base(children) { }
+        internal class SaveCommandChildMember : SaveCommand, ISaveCommandMember {
+            internal SaveCommandChildMember(ChildAggreagte child) : base(child) { }
 
             IAggregateMember ISaveCommandMember.Member => (IAggregateMember)_aggregate;
             public string PhysicalName => _aggregate.PhysicalName;
             public string DisplayName => _aggregate.DisplayName;
-            public string CsCreateType => _aggregate is ChildrenAggreagte ? $"List<{new SaveCommand(_aggregate).CsClassNameCreate}>" : new SaveCommand(_aggregate).CsClassNameCreate;
-            public string CsUpdateType => _aggregate is ChildrenAggreagte ? $"List<{new SaveCommand(_aggregate).CsClassNameUpdate}>" : new SaveCommand(_aggregate).CsClassNameUpdate;
-            public string CsDeleteType => _aggregate is ChildrenAggreagte ? $"List<{new SaveCommand(_aggregate).CsClassNameDelete}>" : new SaveCommand(_aggregate).CsClassNameDelete;
+            public string CsCreateType => new SaveCommand(_aggregate).CsClassNameCreate;
+            public string CsUpdateType => new SaveCommand(_aggregate).CsClassNameUpdate;
+            public string CsDeleteType => new SaveCommand(_aggregate).CsClassNameDelete;
+        }
+        /// <summary>
+        /// 更新処理引数クラスの子コレクションメンバー
+        /// </summary>
+        internal class SaveCommandChildrenMember : SaveCommand, ISaveCommandMember {
+            internal SaveCommandChildrenMember(ChildrenAggreagte children) : base(children) { }
+
+            IAggregateMember ISaveCommandMember.Member => (IAggregateMember)_aggregate;
+            public string PhysicalName => _aggregate.PhysicalName;
+            public string DisplayName => _aggregate.DisplayName;
+            public string CsCreateType => $"List<{new SaveCommand(_aggregate).CsClassNameCreate}>";
+            public string CsUpdateType => $"List<{new SaveCommand(_aggregate).CsClassNameUpdate}>";
+            public string CsDeleteType => $"List<{new SaveCommand(_aggregate).CsClassNameDelete}>";
         }
         #endregion メンバー
 
@@ -274,16 +286,16 @@ namespace Nijo.Ver1.Models.DataModelModules {
                     ? source.GetCreateCommandMembers()
                     : source.GetUpdateCommandMembers();
                 foreach (var member in rightSourceMembers) {
-                    var path = member.Member.Owner
+                    var path = member.Member
                         .GetPathFromEntry()
                         .SinceNearestChildren()
-                        .AsSaveCommand()
-                        .ToList();
-                    path.Add(member.PhysicalName);
+                        .AsSaveCommand();
                     var joined = $"{rightInstanceName}.{path.Join("?.")}";
 
+                    // 右辺の候補に追加
                     rightMembers.Add(member.Member.XElement, joined);
 
+                    // キー項目の場合は子孫のレンダリングのために祖先メンバーリストにも追加
                     if (member is SaveCommandValueMember vm && vm.Member.IsKey
                      || member is SaveCommandRefMember rm && rm.Member.IsKey) {
                         ancestorsAndThisKeys.Add(member.Member.XElement, joined);
@@ -332,7 +344,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
                     if (nav.Relevant.ThisSide is ChildAggreagte child) {
                         // Child
                         var childEntity = new EFCoreEntity(nav.Relevant.ThisSide);
-                        var childSaveCommand = new SaveCommandDescendantMember(child);
+                        var childSaveCommand = new SaveCommandChildMember(child);
 
                         yield return $$"""
                             {{nav.Principal.OtherSidePhysicalName}} = new() {
@@ -342,18 +354,17 @@ namespace Nijo.Ver1.Models.DataModelModules {
 
                     } else if (nav.Relevant.ThisSide is ChildrenAggreagte children) {
                         var childrenEntity = new EFCoreEntity(nav.Relevant.ThisSide);
-                        var childrenSaveCommand = new SaveCommandDescendantMember(children);
+                        var childrenSaveCommand = new SaveCommandChildrenMember(children);
                         var x = children.GetLoopVarName();
                         var arrayPath = children
                             .GetPathFromEntry()
                             .SinceNearestChildren()
                             .AsSaveCommand();
-                        var arrayPathJoined = arrayPath.Any() ? $".{arrayPath.Join("?.")}" : "";
 
                         yield return $$"""
-                            {{nav.Principal.OtherSidePhysicalName}} = ({{rightInstanceName}}{{arrayPathJoined}} ?? new List<{{childrenSaveCommand.CsClassNameCreate}}>()).Select({{x}} => new {{childrenEntity.CsClassName}} {
+                            {{nav.Principal.OtherSidePhysicalName}} = {{rightInstanceName}}.{{arrayPath.Join("?.")}}?.Select({{x}} => new {{childrenEntity.CsClassName}} {
                                 {{WithIndent(RenderToDbEntityBody(childrenEntity, childrenSaveCommand, x, ancestorsAndThisKeys), "    ")}}
-                            }).ToHashSet(),
+                            }).ToHashSet() ?? [],
                             """;
 
                     } else {
@@ -434,12 +445,12 @@ namespace Nijo.Ver1.CodeGenerating {
                         // 参照先のキーの中では親から子へ辿るパターンは無い
                         if (isOutOfEntryTree) throw new InvalidOperationException("参照先のキーの中では親から子へ辿るパターンは無い");
 
-                        var childMember = curr switch {
-                            ChildAggreagte child => new SaveCommand.SaveCommandDescendantMember(child),
-                            ChildrenAggreagte children => new SaveCommand.SaveCommandDescendantMember(children),
+                        var childMemberPhysicalName = curr switch {
+                            ChildAggreagte child => new SaveCommand.SaveCommandChildMember(child).PhysicalName,
+                            ChildrenAggreagte children => new SaveCommand.SaveCommandChildrenMember(children).PhysicalName,
                             _ => throw new InvalidOperationException("ありえない"),
                         };
-                        yield return childMember.PhysicalName;
+                        yield return childMemberPhysicalName;
                         continue;
                     }
                     throw new InvalidOperationException("必ず 親→子, 子→親 のどちらかになるのでありえない");

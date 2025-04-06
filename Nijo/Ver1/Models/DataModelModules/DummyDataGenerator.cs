@@ -188,11 +188,11 @@ namespace Nijo.Ver1.Models.DataModelModules {
                                     continue;
 
                                 } else if (agg is ChildAggreagte child) {
-                                    var saveCommandMember = new SaveCommand.SaveCommandDescendantMember(child);
+                                    var saveCommandMember = new SaveCommand.SaveCommandChildMember(child);
                                     treePath.Add($".Select(x => x.{saveCommandMember.PhysicalName})");
 
                                 } else if (agg is ChildrenAggreagte children) {
-                                    var saveCommandMember = new SaveCommand.SaveCommandDescendantMember(children);
+                                    var saveCommandMember = new SaveCommand.SaveCommandChildrenMember(children);
                                     treePath.Add($".SelectMany(x => x.{saveCommandMember.PhysicalName})");
 
                                 } else {
@@ -280,14 +280,22 @@ namespace Nijo.Ver1.Models.DataModelModules {
                                 }
                             }
 
-                        } else if (member is SaveCommand.SaveCommandDescendantMember desc) {
+                        } else if (member is SaveCommand.SaveCommandChildMember child) {
                             yield return $$"""
                                 {{member.PhysicalName}} = new() {
-                                    {{WithIndent(RenderBody(desc), "    ")}}
+                                    {{WithIndent(RenderBody(child), "    ")}}
                                 },
                                 """;
 
+                        } else if (member is SaveCommand.SaveCommandChildrenMember children) {
+                            yield return $$"""
+                                {{member.PhysicalName}} = Enumerable.Range(0, 4).Select(_ => new {{children.CsClassNameCreate}} {
+                                    {{WithIndent(RenderBody(children), "    ")}}
+                                }).ToList(),
+                                """;
+
                         } else {
+
                             throw new NotImplementedException();
                         }
                     }

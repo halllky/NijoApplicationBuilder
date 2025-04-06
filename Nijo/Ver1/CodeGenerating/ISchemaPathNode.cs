@@ -60,14 +60,14 @@ namespace Nijo.Ver1.CodeGenerating {
         /// </summary>
         public static IEnumerable<ISchemaPathNode> SinceNearestChildren(this IEnumerable<ISchemaPathNode> path) {
             var result = new List<ISchemaPathNode>();
+            var previousIsChildren = false;
 
             foreach (var node in path) {
-                if (node is ChildrenAggreagte) {
-                    result.Clear();
+                if (previousIsChildren) result.Clear();
 
-                } else {
-                    result.Add(node);
-                }
+                result.Add(node);
+
+                if (node is ChildrenAggreagte) previousIsChildren = true;
             }
             return result;
         }
