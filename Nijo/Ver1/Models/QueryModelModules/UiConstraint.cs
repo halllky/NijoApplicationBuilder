@@ -43,6 +43,8 @@ public class UiConstraint {
     internal const string MEMBER_DECIMAL_PLACE = "decimalPlace";
 
     internal static SourceFile RenderCommonConstraint(CodeRenderingContext ctx) {
+        var charTypes = ctx.GetCharacterTypes().ToArray();
+
         return new SourceFile {
             FileName = "constraints.ts",
             Contents = $$"""
@@ -57,7 +59,7 @@ public class UiConstraint {
                   /** 最大長。文字数でカウントする */
                   {{MEMBER_MAX_LENGTH}}?: number
                   /** この値がとることのできる文字種。未指定の場合は制約なし */
-                  {{MEMBER_CHARACTER_TYPE}}?: {{ctx.GetCharacterTypes().Select(type => $"'{type}'").Join(" | ")}}
+                  {{MEMBER_CHARACTER_TYPE}}?: {{(charTypes.Length == 0 ? "never" : charTypes.Select(type => $"'{type}'").Join(" | "))}}
                 }
 
                 /** 整数型と実数型の制約 */
