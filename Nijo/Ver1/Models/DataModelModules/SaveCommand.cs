@@ -348,11 +348,12 @@ namespace Nijo.Ver1.Models.DataModelModules {
                             .GetPathFromEntry()
                             .SinceNearestChildren()
                             .AsSaveCommand();
+                        var arrayPathJoined = arrayPath.Any() ? $".{arrayPath.Join("?.")}" : "";
 
                         yield return $$"""
-                            {{nav.Principal.OtherSidePhysicalName}} = {{rightInstanceName}}?.{{arrayPath.Join("?.")}}.Select({{x}} => new {{childrenEntity.CsClassName}} {
+                            {{nav.Principal.OtherSidePhysicalName}} = ({{rightInstanceName}}{{arrayPathJoined}} ?? new List<{{childrenSaveCommand.CsClassNameCreate}}>()).Select({{x}} => new {{childrenEntity.CsClassName}} {
                                 {{WithIndent(RenderToDbEntityBody(childrenEntity, childrenSaveCommand, x, ancestorsAndThisKeys), "    ")}}
-                            }).ToHashSet() ?? [],
+                            }).ToHashSet(),
                             """;
 
                     } else {

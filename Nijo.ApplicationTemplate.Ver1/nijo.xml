@@ -3,10 +3,14 @@
   <顧客 Type="data-model" GenerateDefaultQueryModel="True" GenerateBatchUpdateCommand="True" LatinName="Master Data 01">
     <顧客ID Type="word" IsKey="True" />
     <顧客名 Type="word" />
+    <生年月日 Type="datetime" />
+    <年齢 Type="int" />
     <住所 Type="child">
       <都道府県 Type="word"/>
       <市町村 Type="word"/>
+      <番地以降 Type="word"/>
     </住所>
+    <備考 Type="description" />
   </顧客>
   <CommandModelテスト Type="command-model" LatinName="Batch Update Master Data 01">
     <Parameter Type="child">
@@ -20,13 +24,28 @@
   </CommandModelテスト>
   <予約 Type="data-model" LatinName="Transaction Data 01">
     <予約ID Type="word" IsKey="True" />
+    <予約日時 Type="datetime" />
     <ひとこと Type="word" />
     <顧客 Type="ref-to:顧客"/>
     <予約区分 Type="予約区分"/>
+    <予約メモ Type="description" />
   </予約>
   <診察 Type="data-model" LatinName="Transaction Data 02">
     <予約 Type="ref-to:予約" IsKey="True" />
-    <メモ Type="word" />
+    <診察開始時刻 Type="datetime" />
+    <診察終了時刻 Type="datetime" />
+    <体温 Type="int" />
+    <血圧上 Type="int" />
+    <血圧下 Type="int" />
+    <メモ Type="description" />
+    <処方 Type="children">
+      <薬剤ID Type="word" />
+      <薬剤名 Type="word" />
+      <用量 Type="int" />
+      <用法 Type="word" />
+      <日数 Type="int" />
+      <備考 Type="description" />
+    </処方>
   </診察>
   <予約区分 Type="enum">
     <初診 DisplayName="初診（しょしん）" key="1" />

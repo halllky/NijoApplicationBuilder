@@ -55,7 +55,7 @@
           "generate"
         ],
         "options": {
-          "cwd": "${workspaceFolder}"
+          "cwd": "${workspaceFolder:Nijo.ApplicationTemplate.Ver1}"
         },
         "problemMatcher": []
       },
@@ -67,7 +67,7 @@
           "run"
         ],
         "options": {
-          "cwd": "${workspaceFolder}"
+          "cwd": "${workspaceFolder:Nijo.ApplicationTemplate.Ver1}"
         },
         "problemMatcher": []
       },
@@ -80,7 +80,7 @@
           "--no-build"
         ],
         "options": {
-          "cwd": "${workspaceFolder}"
+          "cwd": "${workspaceFolder:Nijo.ApplicationTemplate.Ver1}"
         },
         "problemMatcher": []
       }

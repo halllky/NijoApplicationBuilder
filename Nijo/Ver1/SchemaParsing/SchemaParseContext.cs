@@ -31,6 +31,9 @@ public class SchemaParseContext {
         };
         var valueMemberTypes = new IValueMemberType[] {
             new ValueMemberTypes.Word(),
+            new ValueMemberTypes.IntMember(),
+            new ValueMemberTypes.DateTimeMember(),
+            new ValueMemberTypes.Description(),
         };
         var nodeOptions = new NodeOption[] {
             BasicNodeOptions.DisplayName,
