@@ -266,12 +266,10 @@ namespace Nijo.Ver1.ImmutableSchema {
 
         public IModel Model {
             get {
-                foreach (var attr in _ctx.ParseIsAttribute(_xElement)) {
-                    if (_ctx.Models.TryGetValue(attr.Key, out var model)) {
-                        return model;
-                    }
-                }
-                throw new InvalidOperationException();
+                var type = _xElement
+                    .Attribute(SchemaParseContext.ATTR_NODE_TYPE)
+                    ?? throw new InvalidOperationException();
+                return _ctx.Models[type.Value];
             }
         }
 

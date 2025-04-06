@@ -59,6 +59,7 @@ namespace Nijo.Ver1.SchemaParsing {
         private readonly IReadOnlyDictionary<string, IValueMemberType> _valueMemberTypes;
 
         private const string ATTR_IS = "is";
+        internal const string ATTR_NODE_TYPE = "Type";
         private const string ATTR_DISPLAY_NAME = "DisplayName";
         private const string ATTR_DB_NAME = "DbName";
         private const string ATTR_LATIN_NAME = "LatinName";
@@ -100,11 +101,8 @@ namespace Nijo.Ver1.SchemaParsing {
         /// 参照先のXML要素を返します。
         /// </summary>
         internal XElement? FindRefTo(XElement xElement) {
-            var isAttribute = ParseIsAttribute(xElement);
-            var refToAttribute = isAttribute.FirstOrDefault(attr => attr.Key == IS_REFTO);
-            if (refToAttribute == null) return null;
-
-            var xPath = $"//{refToAttribute.Value}";
+            var type = xElement.Attribute(ATTR_NODE_TYPE) ?? throw new InvalidOperationException();
+            var xPath = $"//{type.Value.Split(':')[1]}";
             return _xDocument.XPathSelectElement(xPath);
         }
         /// <summary>
@@ -113,11 +111,7 @@ namespace Nijo.Ver1.SchemaParsing {
         internal IEnumerable<XElement> FindRefFrom(XElement xElement) {
             // まずパフォーマンスのためXPathで高速に絞り込む
             var physicalName = GetPhysicalName(xElement);
-            var xPathFiltered = _xDocument.XPathSelectElements($"//*[@is[contains(., '{IS_REFTO}:{physicalName}')]]") ?? [];
-
-            // 次にis属性を解釈して厳密に絞り込む
-            return xPathFiltered.Where(el => ParseIsAttribute(el).Any(attr => attr.Key == IS_REFTO
-                                                                           && attr.Value == physicalName));
+            return _xDocument.XPathSelectElements($"//*[@{ATTR_NODE_TYPE}='{NODE_TYPE_REFTO}:{physicalName}']") ?? [];
         }
 
         /// <summary>
@@ -136,6 +130,10 @@ namespace Nijo.Ver1.SchemaParsing {
 
 
         #region ノード種類
+        private const string NODE_TYPE_CHILD = "child";
+        private const string NODE_TYPE_CHILDREN = "children";
+        private const string NODE_TYPE_REFTO = "ref-to";
+
         /// <summary>
         /// XML要素の種類
         /// </summary>
@@ -180,31 +178,35 @@ namespace Nijo.Ver1.SchemaParsing {
             if (xElement.Parent == _xDocument.Root) {
                 return E_NodeType.RootAggregate;
             }
-
-            // Child
-            var isAttributes = ParseIsAttribute(xElement).ToArray();
-            if (isAttributes.Any(x => x.Key == IS_CHILD)) {
-                return E_NodeType.ChildAggregate;
-            }
-            // Children
-            if (isAttributes.Any(x => x.Key == IS_CHILDREN)) {
-                return E_NodeType.ChildrenAggregate;
-            }
-
-            // RefTo
-            if (isAttributes.Any(x => x.Key == IS_REFTO)) {
-                return E_NodeType.Ref;
-            }
-            // ValueMember
-            if (isAttributes.Any(x => TryResolveMemberType(xElement, out _))) {
-                return E_NodeType.ValueMember;
-            }
-
             // 親がenumなら静的区分の値
-            if (xElement.Parent != null && ParseIsAttribute(xElement.Parent).Any(x => x.Key == EnumDefParser.SCHEMA_NAME)) {
+            if (xElement.Parent != null
+             && xElement.Parent.Parent == _xDocument.Root
+             && xElement.Parent.Attribute(ATTR_NODE_TYPE)?.Value == EnumDefParser.SCHEMA_NAME) {
                 return E_NodeType.StaticEnumValue;
             }
 
+            // 以降はType属性の値で区別
+            var type = xElement.Attribute(ATTR_NODE_TYPE);
+            if (type == null) {
+                return E_NodeType.Unknown;
+            }
+
+            // Child
+            if (type.Value == NODE_TYPE_CHILD) {
+                return E_NodeType.ChildAggregate;
+            }
+            // Children
+            if (type.Value == NODE_TYPE_CHILDREN) {
+                return E_NodeType.ChildrenAggregate;
+            }
+            // RefTo
+            if (type.Value.StartsWith(NODE_TYPE_REFTO)) {
+                return E_NodeType.Ref;
+            }
+            // ValueMember
+            if (TryResolveMemberType(xElement, out _)) {
+                return E_NodeType.ValueMember;
+            }
             return E_NodeType.Unknown;
         }
         #endregion ノード種類
@@ -212,10 +214,6 @@ namespace Nijo.Ver1.SchemaParsing {
 
         #region is属性
         private const string IS_DYNAMIC_ENUM_MODEL = "dynamic-enum";
-
-        private const string IS_CHILD = "child";
-        private const string IS_CHILDREN = "children";
-        private const string IS_REFTO = "ref-to";
 
         /// <summary>
         /// is="" 属性の内容
@@ -271,19 +269,27 @@ namespace Nijo.Ver1.SchemaParsing {
 
 
         #region ImmutableSchemaへの変換
+        /// <summary>
+        /// このスキーマで定義されている静的区分の種類を返します。
+        /// </summary>
+        /// <returns></returns>
+        private IReadOnlyDictionary<string, ValueMemberTypes.StaticEnumMember> GetStaticEnumMembers() {
+            return _xDocument.Root
+                ?.Elements()
+                .Where(el => el.Attribute(ATTR_NODE_TYPE)?.Value == EnumDefParser.SCHEMA_NAME)
+                .ToDictionary(GetPhysicalName, el => new ValueMemberTypes.StaticEnumMember(el, this))
+                ?? [];
+        }
+        /// <summary>
+        /// スキーマ解釈ルールとしてあらかじめ定められた値種別および静的区分の種類の一覧を返します。
+        /// </summary>
         public IEnumerable<IValueMemberType> GetValueMemberTypes() {
             // 単語型など予め登録された型
             foreach (var type in _valueMemberTypes.Values) {
                 yield return type;
             }
-
             // 列挙体
-            var staticEnumTypes = _xDocument
-                .Descendants()
-                .Where(el => ParseIsAttribute(el).Any(attr => attr.Key == EnumDefParser.SCHEMA_NAME))
-                .Select(el => new ValueMemberTypes.StaticEnumMember(el, this))
-                ?? [];
-            foreach (var type in staticEnumTypes) {
+            foreach (var type in GetStaticEnumMembers().Values) {
                 yield return type;
             }
         }
@@ -291,24 +297,22 @@ namespace Nijo.Ver1.SchemaParsing {
         /// ValueMemberを表すXML要素の種別（日付, 数値, ...等）を判別して返します。
         /// </summary>
         internal bool TryResolveMemberType(XElement xElement, out IValueMemberType valueMemberType) {
-            var isAttribute = ParseIsAttribute(xElement).ToArray();
-            var staticEnumTypes = _xDocument
-                .Descendants()
-                .Where(el => ParseIsAttribute(el).Any(attr => attr.Key == EnumDefParser.SCHEMA_NAME))
-                .ToDictionary(GetPhysicalName, el => new ValueMemberTypes.StaticEnumMember(el, this))
-                ?? [];
+            var type = xElement.Attribute(ATTR_NODE_TYPE);
+            if (type == null) {
+                valueMemberType = null!;
+                return false;
+            }
 
-            foreach (var attr in isAttribute) {
-                // 単語型など予め登録された型
-                if (_valueMemberTypes.TryGetValue(attr.Key, out valueMemberType!)) {
-                    return true;
-                }
+            // 単語型など予め登録された型
+            if (_valueMemberTypes.TryGetValue(type.Value, out var vmType)) {
+                valueMemberType = vmType;
+                return true;
+            }
 
-                // 列挙体
-                if (staticEnumTypes.TryGetValue(attr.Key, out var enumMember)) {
-                    valueMemberType = enumMember;
-                    return true;
-                }
+            // 列挙体
+            if (GetStaticEnumMembers().TryGetValue(type.Value, out var enumMember)) {
+                valueMemberType = enumMember;
+                return true;
             }
 
             // 解決できなかった
