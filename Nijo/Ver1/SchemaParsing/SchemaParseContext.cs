@@ -313,6 +313,11 @@ public class SchemaParseContext {
                     if (!Models.ContainsKey(typeAttrValue)) {
                         thisErrors.Add($"{ATTR_NODE_TYPE}属性でモデルが指定されていません。使用できる値は {Models.Keys.Join(", ")} です。");
                     }
+
+                    // メンバーにIsKey属性がついているかチェック
+                    if (!HasAnyMemberWithIsKeyAttribute(el)) {
+                        thisErrors.Add("ルート集約のメンバーのいずれにもIsKey属性がついていません。少なくとも1つのメンバーにIsKey属性を設定してください。");
+                    }
                     break;
 
                 // Child
@@ -321,7 +326,10 @@ public class SchemaParseContext {
 
                 // Children
                 case E_NodeType.ChildrenAggregate:
-                    // キー未指定
+                    // メンバーにIsKey属性がついているかチェック
+                    if (!HasAnyMemberWithIsKeyAttribute(el)) {
+                        thisErrors.Add("Children集約のメンバーのいずれにもIsKey属性がついていません。少なくとも1つのメンバーにIsKey属性を設定してください。");
+                    }
                     break;
 
                 case E_NodeType.ValueMember:
@@ -360,6 +368,26 @@ public class SchemaParseContext {
     public class ValidationError {
         public required XElement XElement { get; init; }
         public required IReadOnlyCollection<string> Errors { get; init; }
+    }
+
+    /// <summary>
+    /// 指定されたXML要素のメンバー（子要素）のいずれかにIsKey属性がついているかをチェックします。
+    /// </summary>
+    /// <param name="xElement">チェック対象のXML要素</param>
+    /// <returns>IsKey属性がついているメンバーが存在する場合はtrue、それ以外はfalse</returns>
+    private bool HasAnyMemberWithIsKeyAttribute(XElement xElement) {
+        // 子要素を取得
+        var children = xElement.Elements();
+
+        // いずれかの子要素にIsKey属性がついているかチェック
+        foreach (var child in children) {
+            var isKeyAttr = child.Attribute(BasicNodeOptions.IsKey.AttributeName);
+            if (isKeyAttr != null && bool.TryParse(isKeyAttr.Value, out bool isKey) && isKey) {
+                return true;
+            }
+        }
+
+        return false;
     }
     #endregion 検証
 }

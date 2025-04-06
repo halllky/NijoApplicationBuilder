@@ -9,6 +9,9 @@
   },
   "folders": [
     {
+      "path": "../Nijo"
+    },
+    {
       "path": "."
     },
     {
@@ -38,7 +41,8 @@
     "xml.format.maxLineWidth": 0,
     "[xml]": {
       "files.trimFinalNewlines": false
-    }
+    },
+    "omnisharp.enableEditorConfigSupport": true
   },
   "tasks": {
     "version": "2.0.0",
