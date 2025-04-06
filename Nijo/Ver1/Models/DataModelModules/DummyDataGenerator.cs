@@ -140,7 +140,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
                     /// <summary>{{rootAggregate.DisplayName}}のテストデータのパターン作成</summary>
                     protected virtual IEnumerable<{{saveCommand.CsClassNameCreate}}> {{CreatePatternMethodName(rootAggregate)}}({{DUMMY_DATA_GENERATE_CONTEXT}} context) {
                         for (var i = 0; i < 20; i++) {
-                            yield return {{CreateAggregateMethodName(rootAggregate)}}(context);
+                            yield return {{CreateAggregateMethodName(rootAggregate)}}(context, i);
                         }
                     }
                     """;
@@ -151,7 +151,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
 
                 return $$"""
                     /// <summary>{{rootAggregate.DisplayName}}の作成コマンドのインスタンスを作成して返します。</summary>
-                    protected virtual {{saveCommand.CsClassNameCreate}} {{CreateAggregateMethodName(rootAggregate)}}({{DUMMY_DATA_GENERATE_CONTEXT}} context) {
+                    protected virtual {{saveCommand.CsClassNameCreate}} {{CreateAggregateMethodName(rootAggregate)}}({{DUMMY_DATA_GENERATE_CONTEXT}} context, int itemIndex) {
                         return new {{saveCommand.CsClassNameCreate}} {
                             {{WithIndent(RenderBody(saveCommand), "        ")}}
                         };
@@ -204,8 +204,22 @@ namespace Nijo.Ver1.Models.DataModelModules {
                             var memberName = refTo.DisplayName.Replace("\"", "\\\"");
                             var refToName = refTo.Member.RefTo.DisplayName.Replace("\"", "\\\"");
 
-                            if (refTo.Member.IsRequired) {
-                                // 必須の場合はその時点で参照先が1件も無いときに例外を出す
+                            if (refTo.Member.IsKey) {
+                                // refがキーの場合はキー重複を防ぐためインデックス順に振る
+                                yield return $$"""
+                                    {{member.PhysicalName}} = context.{{GeneratedList(refToRoot)}}
+                                    {{treePath.SelectTextTemplate(path => $$"""
+                                        {{path}}
+                                    """)}}
+                                        .Select(cmd => new {{keyClass.ClassName}} {
+                                            {{WithIndent(RenderKeyClassBodyConverting(keyClass), "            ")}}
+                                        })
+                                        .ElementAtOrDefault(itemIndex)
+                                        ?? throw new InvalidOperationException($"{{owner}}の{{memberName}}のキー重複を防ぐため{{refToName}}には少なくとも{itemIndex + 1}件のデータがある必要がありますが、{context.{{GeneratedList(refToRoot)}}.Count}件しかありません。"),
+                                    """;
+
+                            } else if (refTo.Member.IsRequired) {
+                                // refが必須の場合はその時点で参照先が1件も無いときに例外を出す
                                 yield return $$"""
                                     {{member.PhysicalName}} = context.{{GeneratedList(refToRoot)}}.Count == 0
                                         ? throw new InvalidOperation("{{owner}}の{{memberName}}に設定するためのインスタンスを探そうとしましたが、{{refToName}}が1件も作成されていません。")

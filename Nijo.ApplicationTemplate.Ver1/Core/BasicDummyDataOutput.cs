@@ -18,7 +18,21 @@ public class BasicDummyDataOutput : IDummyDataOutput {
     private readonly MyDbContext _dbContext;
 
     public async Task OutputAsync<TEntity>(IEnumerable<TEntity> entities) {
-        foreach (var entity in entities) _dbContext.Add(entity!);
+        var entries = entities
+            .Select(e => _dbContext.Entry(e ?? throw new InvalidOperationException("entityがnull")))
+            .ToArray();
+
+        // ナビゲーションプロパティを除いてAddする
+        foreach (var entry in entries) {
+            entry.State = Microsoft.EntityFrameworkCore.EntityState.Added;
+        }
+
+        // 保存
         await _dbContext.SaveChangesAsync();
+
+        // 追跡解除
+        foreach (var entry in entries) {
+            entry.State = Microsoft.EntityFrameworkCore.EntityState.Detached;
+        }
     }
 }
