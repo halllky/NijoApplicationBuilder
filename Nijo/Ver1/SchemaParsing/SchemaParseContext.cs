@@ -374,4 +374,17 @@ public class SchemaParseContext {
         }
     }
     #endregion 検証
+
+
+    /// <summary>
+    /// このスキーマ内で定義されている文字種を列挙する
+    /// </summary>
+    /// <returns></returns>
+    internal IEnumerable<string> GetCharacterTypes() {
+        return _xDocument.XPathSelectElements($"//*[@{BasicNodeOptions.CharacterType.AttributeName}]")
+            .Select(el => el.Attribute(BasicNodeOptions.CharacterType.AttributeName)?.Value ?? string.Empty)
+            .Where(value => !string.IsNullOrEmpty(value))
+            .Distinct()
+            .OrderBy(charType => charType);
+    }
 }
