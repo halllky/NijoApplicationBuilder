@@ -12,6 +12,9 @@
       "path": "../Nijo"
     },
     {
+      "path": "../Nijo.IntegrationTest"
+    },
+    {
       "path": "."
     },
     {
