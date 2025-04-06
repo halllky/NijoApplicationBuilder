@@ -59,10 +59,14 @@ namespace Nijo.Ver1.SchemaParsing {
         private readonly IReadOnlyDictionary<string, IValueMemberType> _valueMemberTypes;
 
         private const string ATTR_IS = "is";
-        internal const string ATTR_NODE_TYPE = "Type";
+        private const string ATTR_NODE_TYPE = "Type";
         private const string ATTR_DISPLAY_NAME = "DisplayName";
         private const string ATTR_DB_NAME = "DbName";
         private const string ATTR_LATIN_NAME = "LatinName";
+
+        private const string NODE_TYPE_CHILD = "child";
+        private const string NODE_TYPE_CHILDREN = "children";
+        private const string NODE_TYPE_REFTO = "ref-to";
 
         /// <summary>
         /// 物理名
@@ -89,85 +93,7 @@ namespace Nijo.Ver1.SchemaParsing {
             return xElement.Attribute(ATTR_LATIN_NAME)?.Value ?? xElement.Name.LocalName.ToHashedString();
         }
 
-        /// <summary>
-        /// 兄弟要素の中で何番目か
-        /// </summary>
-        internal int GetIndexInSiblings(XElement xElement) {
-            return xElement.ElementsBeforeSelf().Count();
-        }
 
-        #region Find系
-        /// <summary>
-        /// 参照先のXML要素を返します。
-        /// </summary>
-        internal XElement? FindRefTo(XElement xElement) {
-            var type = xElement.Attribute(ATTR_NODE_TYPE) ?? throw new InvalidOperationException();
-            var xPath = $"//{type.Value.Split(':')[1]}";
-            return _xDocument.XPathSelectElement(xPath);
-        }
-        /// <summary>
-        /// 引数の集約を参照している集約を探して返します。
-        /// </summary>
-        internal IEnumerable<XElement> FindRefFrom(XElement xElement) {
-            // まずパフォーマンスのためXPathで高速に絞り込む
-            var physicalName = GetPhysicalName(xElement);
-            return _xDocument.XPathSelectElements($"//*[@{ATTR_NODE_TYPE}='{NODE_TYPE_REFTO}:{physicalName}']") ?? [];
-        }
-
-        /// <summary>
-        /// 集約ルートを返す。集約ルートは <see cref="XDocument.Root"/> の1つ下。
-        /// </summary>
-        internal XElement GetAggregateRootElement(XElement xElement) {
-            var current = xElement;
-            while (true) {
-                if (current.Parent == null) throw new InvalidOperationException();
-                if (current.Parent == _xDocument.Root) return current;
-
-                current = current.Parent;
-            }
-        }
-        #endregion Find系
-
-
-        #region ノード種類
-        private const string NODE_TYPE_CHILD = "child";
-        private const string NODE_TYPE_CHILDREN = "children";
-        private const string NODE_TYPE_REFTO = "ref-to";
-
-        /// <summary>
-        /// XML要素の種類
-        /// </summary>
-        [Flags]
-        internal enum E_NodeType {
-            /// <summary>集約</summary>
-            Aggregate = 1 << 0,
-            /// <summary>集約メンバー</summary>
-            AggregateMember = 1 << 1,
-            /// <summary>Child, Children, Ref</summary>
-            RelationMember = 1 << 2,
-
-            /// <summary>ルート集約</summary>
-            RootAggregate = Aggregate | 1 << 3,
-            /// <summary>Child</summary>
-            ChildAggregate = Aggregate | RelationMember | 1 << 4,
-            /// <summary>Children</summary>
-            ChildrenAggregate = Aggregate | RelationMember | 1 << 5,
-
-            /// <summary>値メンバー</summary>
-            ValueMember = AggregateMember | 1 << 6,
-            /// <summary>外部参照（ref-to）</summary>
-            Ref = AggregateMember | RelationMember | 1 << 7,
-
-            /// <summary>静的区分の種類</summary>
-            StaticEnumType = RootAggregate | 1 << 8,
-            /// <summary>静的区分の値</summary>
-            StaticEnumValue = 1 << 9,
-
-            /// <summary>
-            /// 未知の値
-            /// </summary>
-            Unknown = 1 << 20,
-        }
         /// <summary>
         /// XML要素の種類を判定する。
         /// 編集途中の不正な状態であっても入力内容検査等に使う必要があるため、
@@ -209,12 +135,10 @@ namespace Nijo.Ver1.SchemaParsing {
             }
             return E_NodeType.Unknown;
         }
-        #endregion ノード種類
 
 
         #region is属性
         private const string IS_DYNAMIC_ENUM_MODEL = "dynamic-enum";
-
         /// <summary>
         /// is="" 属性の内容
         /// </summary>
@@ -268,7 +192,34 @@ namespace Nijo.Ver1.SchemaParsing {
         #endregion is属性
 
 
-        #region ImmutableSchemaへの変換
+        #region Aggregate
+        /// <summary>
+        /// XML要素と対応するモデルを返します。特定できなかった場合は例外。
+        /// </summary>
+        internal IModel GetModel(XElement xElement) {
+            return Models[xElement.Attribute(ATTR_NODE_TYPE)?.Value ?? throw new InvalidOperationException()];
+        }
+        /// <summary>
+        /// ルート集約や子集約を表すXML要素を <see cref="AggregateBase"/> のインスタンスに変換します。
+        /// XML要素が集約を表すもので無かった場合は例外を送出します。
+        /// </summary>
+        internal AggregateBase ToAggregateBase(XElement xElement, ISchemaPathNode? previous) {
+            var nodeType = GetNodeType(xElement);
+            if (nodeType == E_NodeType.RootAggregate) {
+                return new RootAggregate(xElement, this, previous);
+            }
+            if (nodeType == E_NodeType.ChildAggregate) {
+                return new ChildAggreagte(xElement, this, previous);
+            }
+            if (nodeType == E_NodeType.ChildrenAggregate) {
+                return new ChildrenAggreagte(xElement, this, previous);
+            }
+            throw new InvalidOperationException($"集約ではありません: {xElement}");
+        }
+        #endregion Aggregate
+
+
+        #region ValueMember
         /// <summary>
         /// このスキーマで定義されている静的区分の種類を返します。
         /// </summary>
@@ -319,24 +270,27 @@ namespace Nijo.Ver1.SchemaParsing {
             valueMemberType = null!;
             return false;
         }
+        #endregion ValueMember
+
+
+        #region RefTo
         /// <summary>
-        /// ルート集約や子集約を表すXML要素を <see cref="AggregateBase"/> のインスタンスに変換します。
-        /// XML要素が集約を表すもので無かった場合は例外を送出します。
+        /// 参照先のXML要素を返します。
         /// </summary>
-        internal AggregateBase ToAggregateBase(XElement xElement, ISchemaPathNode? previous) {
-            var nodeType = GetNodeType(xElement);
-            if (nodeType == E_NodeType.RootAggregate) {
-                return new RootAggregate(xElement, this, previous);
-            }
-            if (nodeType == E_NodeType.ChildAggregate) {
-                return new ChildAggreagte(xElement, this, previous);
-            }
-            if (nodeType == E_NodeType.ChildrenAggregate) {
-                return new ChildrenAggreagte(xElement, this, previous);
-            }
-            throw new InvalidOperationException($"集約ではありません: {xElement}");
+        internal XElement? FindRefTo(XElement xElement) {
+            var type = xElement.Attribute(ATTR_NODE_TYPE) ?? throw new InvalidOperationException();
+            var xPath = $"//{type.Value.Split(':')[1]}";
+            return _xDocument.XPathSelectElement(xPath);
         }
-        #endregion ImmutableSchemaへの変換
+        /// <summary>
+        /// 引数の集約を参照している集約を探して返します。
+        /// </summary>
+        internal IEnumerable<XElement> FindRefFrom(XElement xElement) {
+            // まずパフォーマンスのためXPathで高速に絞り込む
+            var physicalName = GetPhysicalName(xElement);
+            return _xDocument.XPathSelectElements($"//*[@{ATTR_NODE_TYPE}='{NODE_TYPE_REFTO}:{physicalName}']") ?? [];
+        }
+        #endregion RefTo
     }
 
 

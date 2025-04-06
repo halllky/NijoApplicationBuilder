@@ -59,11 +59,11 @@ namespace Nijo.Ver1.ImmutableSchema {
 
                 var nodeType = _ctx.GetNodeType(el);
                 yield return nodeType switch {
-                    SchemaParseContext.E_NodeType.ChildAggregate => new ChildAggreagte(el, _ctx, this),
-                    SchemaParseContext.E_NodeType.ChildrenAggregate => new ChildrenAggreagte(el, _ctx, this),
-                    SchemaParseContext.E_NodeType.Ref => new RefToMember(el, _ctx, this),
-                    SchemaParseContext.E_NodeType.ValueMember => new ValueMember(el, _ctx, this),
-                    SchemaParseContext.E_NodeType.StaticEnumValue => new Models.StaticEnumModelModules.StaticEnumValueDef(el, _ctx, this),
+                    E_NodeType.ChildAggregate => new ChildAggreagte(el, _ctx, this),
+                    E_NodeType.ChildrenAggregate => new ChildrenAggreagte(el, _ctx, this),
+                    E_NodeType.Ref => new RefToMember(el, _ctx, this),
+                    E_NodeType.ValueMember => new ValueMember(el, _ctx, this),
+                    E_NodeType.StaticEnumValue => new Models.StaticEnumModelModules.StaticEnumValueDef(el, _ctx, this),
                     _ => throw new InvalidOperationException($"メンバーでない種類: {nodeType}（{el}）"),
                 };
             }
@@ -154,13 +154,7 @@ namespace Nijo.Ver1.ImmutableSchema {
             var prev = (AggregateBase?)null;
 
             foreach (var el in ancesotors) {
-                var nodeType = _ctx.GetNodeType(el);
-                AggregateBase aggregate = nodeType switch {
-                    SchemaParseContext.E_NodeType.RootAggregate => new RootAggregate(el, _ctx, null),
-                    SchemaParseContext.E_NodeType.ChildAggregate => new ChildAggreagte(el, _ctx, prev),
-                    SchemaParseContext.E_NodeType.ChildrenAggregate => new ChildrenAggreagte(el, _ctx, prev),
-                    _ => throw new InvalidOperationException($"不正なノード種別: {nodeType}({el})"),
-                };
+                var aggregate = _ctx.ToAggregateBase(el, prev);
                 yield return aggregate;
                 prev = aggregate;
             }
@@ -263,15 +257,7 @@ namespace Nijo.Ver1.ImmutableSchema {
 
         public string LatinName => _ctx.GetLatinName(_xElement);
         public bool IsReadOnly => _ctx.ParseIsAttribute(_xElement).Any(attr => attr.Key == "readonly"); // TODO ver.1
-
-        public IModel Model {
-            get {
-                var type = _xElement
-                    .Attribute(SchemaParseContext.ATTR_NODE_TYPE)
-                    ?? throw new InvalidOperationException();
-                return _ctx.Models[type.Value];
-            }
-        }
+        public IModel Model => _ctx.GetModel(_xElement);
 
         public override AggregateBase AsEntry() {
             return new RootAggregate(_xElement, _ctx, null);
@@ -292,7 +278,7 @@ namespace Nijo.Ver1.ImmutableSchema {
         internal ChildAggreagte(XElement xElement, SchemaParseContext ctx, ISchemaPathNode? previous)
             : base(xElement, ctx, previous) { }
 
-        public decimal Order => _ctx.GetIndexInSiblings(_xElement);
+        public decimal Order => _xElement.ElementsBeforeSelf().Count();
         public AggregateBase Owner => _xElement.Parent == PreviousNode?.XElement
             ? ((AggregateBase?)PreviousNode ?? throw new InvalidOperationException()) // パスの巻き戻しの場合
             : _ctx.ToAggregateBase(_xElement.Parent ?? throw new InvalidOperationException(), this);
@@ -315,7 +301,7 @@ namespace Nijo.Ver1.ImmutableSchema {
         internal ChildrenAggreagte(XElement xElement, SchemaParseContext ctx, ISchemaPathNode? previous)
             : base(xElement, ctx, previous) { }
 
-        public decimal Order => _ctx.GetIndexInSiblings(_xElement);
+        public decimal Order => _xElement.ElementsBeforeSelf().Count();
         public AggregateBase Owner => _xElement.Parent == PreviousNode?.XElement
             ? ((AggregateBase?)PreviousNode ?? throw new InvalidOperationException()) // パスの巻き戻しの場合
             : _ctx.ToAggregateBase(_xElement.Parent ?? throw new InvalidOperationException(), this);
