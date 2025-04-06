@@ -81,18 +81,6 @@ namespace Nijo.Ver1.Models.DataModelModules {
                 }
             }
         }
-        ///// <summary>
-        ///// ValueMemberのみの再帰列挙
-        ///// <list type="bullet">
-        ///// <item>親、参照先のValueMember: 含めます。</item>
-        ///// <item>Child, ChildrenのValueMember: 含めません。</item>
-        ///// </list>
-        ///// </summary>
-        //internal IEnumerable<SaveCommandValueMember> GetCreateCommandValueMembersRecursively() {
-        //    foreach (var member in GetCreateCommandMembers()) {
-
-        //    }
-        //}
         private string RenderCreateCommandDeclaring(CodeRenderingContext ctx) {
             return $$"""
                 /// <summary>
@@ -198,6 +186,55 @@ namespace Nijo.Ver1.Models.DataModelModules {
         #endregion DELETE
 
 
+        #region ValueMember再帰列挙
+        /// <summary>
+        /// ValueMemberのみの再帰列挙
+        /// <list type="bullet">
+        /// <item>親、参照先のValueMember: 含めます。</item>
+        /// <item>Child, ChildrenのValueMember: 含めません。</item>
+        /// </list>
+        /// </summary>
+        internal IEnumerable<SaveCommandValueMember> GetCreateCommandValueMembersRecursively() {
+            foreach (var member in GetCreateCommandMembers()) {
+                if (member is SaveCommandValueMember vm) {
+                    yield return vm;
+
+                } else if (member is KeyClass.IKeyClassStructure keyClass) {
+                    foreach (var vm2 in keyClass.GetValueMembersRecursively()) {
+                        yield return vm2;
+                    }
+                }
+            }
+        }
+        /// <inheritdoc cref="GetCreateCommandValueMembersRecursively"/>
+        internal IEnumerable<SaveCommandValueMember> GetUpdateCommandValueMembersRecursively() {
+            foreach (var member in GetUpdateCommandMembers()) {
+                if (member is SaveCommandValueMember vm) {
+                    yield return vm;
+
+                } else if (member is KeyClass.IKeyClassStructure keyClass) {
+                    foreach (var vm2 in keyClass.GetValueMembersRecursively()) {
+                        yield return vm2;
+                    }
+                }
+            }
+        }
+        /// <inheritdoc cref="GetCreateCommandValueMembersRecursively"/>
+        internal IEnumerable<SaveCommandValueMember> GetDeleteCommandValueMembersRecursively() {
+            foreach (var member in GetDeleteCommandMembers()) {
+                if (member is SaveCommandValueMember vm) {
+                    yield return vm;
+
+                } else if (member is KeyClass.IKeyClassStructure keyClass) {
+                    foreach (var vm2 in keyClass.GetValueMembersRecursively()) {
+                        yield return vm2;
+                    }
+                }
+            }
+        }
+        #endregion ValueMember再帰列挙
+
+
         #region メンバー
         internal interface ISaveCommandMember {
             ISchemaPathNode Member { get; }
@@ -299,9 +336,18 @@ namespace Nijo.Ver1.Models.DataModelModules {
                     rightMembers.Add(member.Member.XElement, joined);
 
                     // キー項目の場合は子孫のレンダリングのために祖先メンバーリストにも追加
-                    if (member is SaveCommandValueMember vm && vm.Member.IsKey
-                     || member is SaveCommandRefMember rm && rm.Member.IsKey) {
+                    if (member is SaveCommandValueMember vm && vm.Member.IsKey) {
                         ancestorsAndThisKeys.Add(member.Member.XElement, joined);
+
+                    } else if (member is SaveCommandRefMember rm && rm.Member.IsKey) {
+                        foreach (var vm2 in rm.GetValueMembersRecursively()) {
+                            var path2 = vm2.Member
+                                .GetPathFromEntry()
+                                .SinceNearestChildren()
+                                .AsSaveCommand();
+                            var joined2 = $"{rightInstanceName}.{path2.Join("?.")}";
+                            ancestorsAndThisKeys.Add(vm2.Member.XElement, joined2);
+                        }
                     }
                 }
 
