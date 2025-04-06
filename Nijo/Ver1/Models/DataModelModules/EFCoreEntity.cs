@@ -77,7 +77,7 @@ namespace Nijo.Ver1.Models.DataModelModules {
         /// <summary>
         /// ナビゲーションプロパティを列挙する
         /// </summary>
-        private IEnumerable<NavigationProperty> GetNavigationProperties() {
+        internal IEnumerable<NavigationProperty> GetNavigationProperties() {
             var parent = Aggregate.GetParent();
             if (parent != null) {
                 yield return new NavigationOfParentChild(parent, Aggregate);

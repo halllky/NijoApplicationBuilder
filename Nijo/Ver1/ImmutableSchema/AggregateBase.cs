@@ -317,5 +317,17 @@ namespace Nijo.Ver1.ImmutableSchema {
         public override AggregateBase AsEntry() {
             return new ChildrenAggreagte(_xElement, _ctx, null);
         }
+
+        /// <summary>
+        /// Childrenのメンバーに対するループ処理をレンダリングするとき、
+        /// そのループ変数として使うために "x", "x0", "x1", ... という名前を返す。
+        /// 変数は、宣言方法に気を付ければ、同じ深さのChildrenが複数あっても衝突しない名前になる。
+        /// </summary>
+        public string GetLoopVarName() {
+            // 深さ。ルート集約直下のChildrenのとき0になる
+            var depth = _xElement.Ancestors().Count() - 2;
+
+            return depth == 0 ? "x" : $"x{depth}";
+        }
     }
 }
