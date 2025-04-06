@@ -13,6 +13,11 @@ namespace Nijo.Ver1.CodeGenerating {
     public interface IModel {
 
         /// <summary>
+        /// スキーマ定義上でこのモデルを指定するときの名前
+        /// </summary>
+        string SchemaName { get; }
+
+        /// <summary>
         /// ルート集約1個と対応するソースコードを生成します。
         /// </summary>
         void GenerateCode(CodeRenderingContext ctx, RootAggregate rootAggregate);

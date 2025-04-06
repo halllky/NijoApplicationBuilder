@@ -61,23 +61,17 @@ namespace Nijo.Ver1 {
             }
 
             var ctx = new CodeRenderingContext(this, GetConfig(), parseContext, immutableSchema);
-            var appearedModels = new HashSet<IModel>(); // 一度でも登場したモデル
 
             _logger.LogInformation("ソース自動生成開始");
 
             // ルート集約毎のコードを生成
             foreach (var rootAggregate in immutableSchema.GetRootAggregates()) {
                 _logger.LogInformation("レンダリング開始: {name}", rootAggregate.DisplayName);
-                var model = rootAggregate.Model;
-                appearedModels.Add(model);
-                if (model is Models.DataModel && rootAggregate.GenerateDefaultQueryModel) {
-                    appearedModels.Add(parseContext.QueryModel);
-                }
-                model.GenerateCode(ctx, rootAggregate);
+                rootAggregate.Model.GenerateCode(ctx, rootAggregate);
             }
 
             // ルート集約と対応しないコードを生成
-            foreach (var model in appearedModels) {
+            foreach (var model in parseContext.Models.Values) {
                 _logger.LogInformation("レンダリング開始: {name}", model.GetType().Name);
                 model.GenerateCode(ctx);
             }

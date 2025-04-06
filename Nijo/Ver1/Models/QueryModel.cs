@@ -14,6 +14,8 @@ namespace Nijo.Ver1.Models {
     /// <see cref="DataModel"/> を変換して人間や外部システムが閲覧するための形に直した情報の形。
     /// </summary>
     internal class QueryModel : IModel {
+        public string SchemaName => "query-model";
+
         public void GenerateCode(CodeRenderingContext ctx, RootAggregate rootAggregate) {
             var aggregateFile = new SourceFileByAggregate(rootAggregate);
             GenerateCode(ctx, rootAggregate, aggregateFile);

@@ -12,6 +12,11 @@ namespace Nijo.Ver1.SchemaParsing {
     /// スキーマ編集時とコード自動生成時の両方から利用される。
     /// </summary>
     internal class EnumDefParser {
+        /// <summary>
+        /// スキーマ定義XML内部でこの名前で指定されているルート集約は列挙体定義
+        /// </summary>
+        internal const string SCHEMA_NAME = "enum";
+
         internal EnumDefParser(XElement xElement, SchemaParseContext ctx) {
             _xElement = xElement;
             _ctx = ctx;

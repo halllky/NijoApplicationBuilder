@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 
 namespace Nijo.Ver1.Models {
     internal class CommandModel : IModel {
+        public string SchemaName => "command-model";
+
         public void GenerateCode(CodeRenderingContext ctx, RootAggregate rootAggregate) {
             var aggregateFile = new SourceFileByAggregate(rootAggregate);
 

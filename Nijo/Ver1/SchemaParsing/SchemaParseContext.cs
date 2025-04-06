@@ -1,4 +1,3 @@
-using Nijo.Core;
 using Nijo.Util.DotnetEx;
 using Nijo.Ver1.CodeGenerating;
 using Nijo.Ver1.ImmutableSchema;
@@ -23,29 +22,40 @@ namespace Nijo.Ver1.SchemaParsing {
         /// </summary>
         /// <returns></returns>
         public static SchemaParseContext Default(XDocument xDocument) {
+            var models = new IModel[] {
+                new DataModel(),
+                new QueryModel(),
+                new CommandModel(),
+                new StaticEnumModel(),
+            };
             var valueMemberTypes = new IValueMemberType[] {
                 new ValueMemberTypes.Word(),
             };
-            return new SchemaParseContext(valueMemberTypes, xDocument);
+            return new SchemaParseContext(xDocument, models, valueMemberTypes);
         }
 
-        private SchemaParseContext(IEnumerable<IValueMemberType> valueMemberTypes, XDocument xDocument) {
+        private SchemaParseContext(XDocument xDocument, IModel[] models, IValueMemberType[] valueMemberTypes) {
             // スキーマ定義名重複チェック
-            var groups = valueMemberTypes
-                .GroupBy(t => t.SchemaTypeName)
-                .ToArray();
-            var duplicates = groups
-                .Where(group => group.Count() >= 2)
-                .ToArray();
-            if (duplicates.Length > 0) {
-                throw new InvalidOperationException($"型名 {string.Join(", ", duplicates.Select(x => x.Key))} が重複しています。");
+            var appearedName = new HashSet<string>();
+            var duplicates = new HashSet<string>();
+            foreach (var name in models.Select(m => m.SchemaName).Concat(valueMemberTypes.Select(t => t.SchemaTypeName))) {
+                if (appearedName.Contains(name)) {
+                    duplicates.Add(name);
+                } else {
+                    appearedName.Add(name);
+                }
+            }
+            if (duplicates.Count > 0) {
+                throw new InvalidOperationException($"型名 {string.Join(", ", duplicates)} が重複しています。");
             }
 
             _xDocument = xDocument;
-            _valueMemberTypes = groups.ToDictionary(g => g.Key, g => g.Single());
+            Models = models.ToDictionary(m => m.SchemaName);
+            _valueMemberTypes = valueMemberTypes.ToDictionary(m => m.SchemaTypeName);
         }
 
         private readonly XDocument _xDocument;
+        public IReadOnlyDictionary<string, IModel> Models { get; }
         private readonly IReadOnlyDictionary<string, IValueMemberType> _valueMemberTypes;
 
         private const string ATTR_IS = "is";
@@ -191,7 +201,7 @@ namespace Nijo.Ver1.SchemaParsing {
             }
 
             // 親がenumなら静的区分の値
-            if (xElement.Parent != null && ParseIsAttribute(xElement.Parent).Any(x => x.Key == IS_STATIC_ENUM_MODEL)) {
+            if (xElement.Parent != null && ParseIsAttribute(xElement.Parent).Any(x => x.Key == EnumDefParser.SCHEMA_NAME)) {
                 return E_NodeType.StaticEnumValue;
             }
 
@@ -201,10 +211,6 @@ namespace Nijo.Ver1.SchemaParsing {
 
 
         #region is属性
-        private const string IS_DATA_MODEL = "data-model";
-        private const string IS_QUERY_MODEL = "query-model";
-        private const string IS_COMMAND_MODEL = "command-model";
-        private const string IS_STATIC_ENUM_MODEL = "enum";
         private const string IS_DYNAMIC_ENUM_MODEL = "dynamic-enum";
 
         private const string IS_CHILD = "child";
@@ -261,27 +267,6 @@ namespace Nijo.Ver1.SchemaParsing {
                 };
             }
         }
-        /// <summary>
-        /// XML要素がどのモデルに属するか
-        /// </summary>
-        internal IModel? FindModel(XElement xElement) {
-            var root = GetAggregateRootElement(xElement);
-            foreach (var attr in ParseIsAttribute(root)) {
-                if (attr.Key == IS_DATA_MODEL) return DataModel;
-                if (attr.Key == IS_QUERY_MODEL) return QueryModel;
-                if (attr.Key == IS_COMMAND_MODEL) return CommandModel;
-                if (attr.Key == IS_STATIC_ENUM_MODEL) return StaticEnumModel;
-            }
-            return null;
-        }
-        internal IModel DataModel => _dataModel ??= new DataModel();
-        internal IModel QueryModel => _queryModel ??= new QueryModel();
-        internal IModel CommandModel => _commandModel ??= new CommandModel();
-        internal IModel StaticEnumModel => _staticEnumModel ??= new StaticEnumModel();
-        private DataModel? _dataModel;
-        private QueryModel? _queryModel;
-        private CommandModel? _commandModel;
-        private StaticEnumModel? _staticEnumModel;
         #endregion is属性
 
 
@@ -295,7 +280,7 @@ namespace Nijo.Ver1.SchemaParsing {
             // 列挙体
             var staticEnumTypes = _xDocument
                 .Descendants()
-                .Where(el => ParseIsAttribute(el).Any(attr => attr.Key == IS_STATIC_ENUM_MODEL))
+                .Where(el => ParseIsAttribute(el).Any(attr => attr.Key == EnumDefParser.SCHEMA_NAME))
                 .Select(el => new ValueMemberTypes.StaticEnumMember(el, this))
                 ?? [];
             foreach (var type in staticEnumTypes) {
@@ -309,7 +294,7 @@ namespace Nijo.Ver1.SchemaParsing {
             var isAttribute = ParseIsAttribute(xElement).ToArray();
             var staticEnumTypes = _xDocument
                 .Descendants()
-                .Where(el => ParseIsAttribute(el).Any(attr => attr.Key == IS_STATIC_ENUM_MODEL))
+                .Where(el => ParseIsAttribute(el).Any(attr => attr.Key == EnumDefParser.SCHEMA_NAME))
                 .ToDictionary(GetPhysicalName, el => new ValueMemberTypes.StaticEnumMember(el, this))
                 ?? [];
 

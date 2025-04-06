@@ -264,7 +264,16 @@ namespace Nijo.Ver1.ImmutableSchema {
         public string LatinName => _ctx.GetLatinName(_xElement);
         public bool IsReadOnly => _ctx.ParseIsAttribute(_xElement).Any(attr => attr.Key == "readonly"); // TODO ver.1
 
-        public IModel Model => _ctx.FindModel(_xElement) ?? throw new InvalidOperationException();
+        public IModel Model {
+            get {
+                foreach (var attr in _ctx.ParseIsAttribute(_xElement)) {
+                    if (_ctx.Models.TryGetValue(attr.Key, out var model)) {
+                        return model;
+                    }
+                }
+                throw new InvalidOperationException();
+            }
+        }
 
         public override AggregateBase AsEntry() {
             return new RootAggregate(_xElement, _ctx, null);

@@ -15,6 +15,8 @@ namespace Nijo.Ver1.Models {
     /// C#はenumとして、TypeScriptはリテラル型として表れる。
     /// </summary>
     internal class StaticEnumModel : IModel {
+        public string SchemaName => EnumDefParser.SCHEMA_NAME;
+
         public void GenerateCode(CodeRenderingContext ctx, RootAggregate rootAggregate) {
             var enumFile = ctx.Use<EnumFile>();
             var parser = new EnumDefParser(((ISchemaPathNode)rootAggregate).XElement, ctx.SchemaParser);

@@ -16,6 +16,8 @@ namespace Nijo.Ver1.Models {
     /// 永続化され、アプリケーションのデータの整合性を保つ境界。
     /// </summary>
     internal class DataModel : IModel {
+        public string SchemaName => "data-model";
+
         public void GenerateCode(CodeRenderingContext ctx, RootAggregate rootAggregate) {
             var aggregateFile = new SourceFileByAggregate(rootAggregate);
 
