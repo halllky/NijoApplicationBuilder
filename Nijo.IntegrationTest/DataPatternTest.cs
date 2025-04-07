@@ -16,7 +16,6 @@ namespace Nijo.IntegrationTest;
 [NonParallelizable]
 public class DataPatternTest {
     private const string TEST_PROJECT_DIR = "自動テストで作成されたプロジェクト";
-    private const string TEMPLATE_PROJECT_DIR = "Nijo.ApplicationTemplate.Ver1";
     private readonly ILogger _logger = new ConsoleLogger();
 
     /// <summary>
@@ -37,8 +36,8 @@ public class DataPatternTest {
     public void Setup() {
         // テストプロジェクトディレクトリの準備
         var workspaceRoot = Path.GetFullPath(Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", ".."));
-        var testProjectDir = Path.Combine(workspaceRoot, TEST_PROJECT_DIR);
-        var templateProjectDir = Path.Combine(workspaceRoot, TEMPLATE_PROJECT_DIR);
+        var testProjectDir = Path.Combine(workspaceRoot, "..", TEST_PROJECT_DIR);
+        var templateProjectDir = Path.Combine(workspaceRoot, "..", "Nijo.ApplicationTemplate.Ver1");
 
         // 既存のテストプロジェクトを削除
         if (Directory.Exists(testProjectDir)) {
@@ -57,8 +56,8 @@ public class DataPatternTest {
     [TestCaseSource(nameof(GetXmlFilePaths))]
     public void TestXmlPattern(string fileName) {
         var workspaceRoot = Path.GetFullPath(Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", ".."));
-        var testProjectDir = Path.Combine(workspaceRoot, TEST_PROJECT_DIR);
-        var dataPatternsDir = Path.Combine(workspaceRoot, "Nijo.IntegrationTest", "DataPatterns");
+        var testProjectDir = Path.Combine(workspaceRoot, "..", TEST_PROJECT_DIR);
+        var dataPatternsDir = Path.Combine(workspaceRoot, "DataPatterns");
         var targetXmlPath = Path.Combine(testProjectDir, "nijo.xml");
         var sourceXmlPath = Path.Combine(dataPatternsDir, fileName);
 
