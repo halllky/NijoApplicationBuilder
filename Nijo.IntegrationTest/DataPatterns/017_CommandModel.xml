@@ -9,28 +9,27 @@
     3. 変換後のデータを登録する
   -->
 
-  <従業員 is="write-model-2 generate-default-read-model">
-    <内部ID is="uuid key" />
-    <従業員コード is="word" />
-    <名前 is="word name" />
-    <区分 is="従業員区分" />
+  <従業員 Type="data-model" GenerateDefaultQueryModel="True">
+    <内部ID Type="word" IsKey="True" />
+    <従業員コード Type="word" />
+    <名前 Type="word" />
+    <区分 Type="従業員区分" />
   </従業員>
 
-  <従業員区分 is="enum">
+  <従業員区分 Type="enum">
     <ベテラン />
     <ビギナー />
   </従業員区分>
 
-  <従業員データ一括取り込み is="command">
+  <従業員データ一括取り込み Type="command">
+    <取込ファイル Type="word" />
+    <!-- <取込ファイル Type="file" /> -->
 
-    <取込ファイル is="word" />
-    <!-- <取込ファイル is="file" /> -->
-
-    <処理範囲 is="variation">
-      <特定データのみ is="variation-item:1">
-        <従業員 is="ref-to:従業員" />
+    <処理範囲 Type="variation">
+      <特定データのみ Type="variation-item:1">
+        <従業員 Type="ref-to:従業員" />
       </特定データのみ>
-      <全部更新 is="variation-item:2" />
+      <全部更新 Type="variation-item:2" />
     </処理範囲>
   </従業員データ一括取り込み>
 </自動テストで作成されたプロジェクト>

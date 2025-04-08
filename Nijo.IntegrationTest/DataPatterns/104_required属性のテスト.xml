@@ -37,53 +37,53 @@
 
   -->
 
-  <課題 Latin="Issue" is="write-model-2 generate-default-read-model">
-    <課題番号 is="word key" />
-    <概要 is="sentence required name" />
-    <見積工数D DisplayName="見積工数（人日）" is="numeric required" />
-    <種別 is="variation">
-      <プロジェクト全体課題 is="variation-item:2">
-        <結論 is="課題対応方針 required" />
-        <この課題について話し合われたセッションの日付 is="date required" />
+  <課題 Latin="Issue" Type="data-model" GenerateDefaultQueryModel="True">
+    <課題番号 Type="word" IsKey="True" />
+    <概要 Type="description" Required="True" />
+    <見積工数D DisplayName="見積工数（人日）" Type="numeric" Required="True" />
+    <種別 Type="variation">
+      <プロジェクト全体課題 Type="variation-item:2">
+        <結論 Type="課題対応方針" Required="True" />
+        <この課題について話し合われたセッションの日付 Type="date" Required="True" />
       </プロジェクト全体課題>
-      <個別チーム課題 is="variation-item:1">
-        <担当者 is="ref-to:アカウント required" />
-        <チェックポイント is="children required">
-          <ID is="uuid key hidden" />
-          <完了 is="bool required" />
-          <観点 is="word required" />
+      <個別チーム課題 Type="variation-item:1">
+        <担当者 Type="ref-to:アカウント" Required="True" />
+        <チェックポイント Type="children" Required="True">
+          <ID Type="word" IsKey="True" Hidden="True" />
+          <完了 Type="bool" Required="True" />
+          <観点 Type="word" Required="True" />
         </チェックポイント>
       </個別チーム課題>
     </種別>
   </課題>
 
-  <課題対応方針 is="enum">
+  <課題対応方針 Type="enum">
     <通常の保守契約内で対応 />
     <別途契約 />
   </課題対応方針>
 
-  <アカウント Latin="Account" is="write-model-2 generate-default-read-model">
-    <アカウントID is="word key" />
-    <アカウント種別 is="E_アカウント種別 key" />
-    <アカウント名 is="word name required" />
+  <アカウント Latin="Account" Type="data-model" GenerateDefaultQueryModel="True">
+    <アカウントID Type="word" IsKey="True" />
+    <アカウント種別 Type="E_アカウント種別" IsKey="True" />
+    <アカウント名 Type="word" Required="True" />
   </アカウント>
 
-  <課題エクスポート is="command">
-    <対象課題 is="step:1">
-      <課題 is="ref-to:課題 required"/>
+  <課題エクスポート Type="command">
+    <対象課題 Type="step:1">
+      <課題 Type="ref-to:課題" Required="True"/>
     </対象課題>
-    <オプション is="step:2">
-      <形式 is="E_課題エクスポート形式 required"/>
+    <オプション Type="step:2">
+      <形式 Type="E_課題エクスポート形式" Required="True"/>
     </オプション>
   </課題エクスポート>
 
-  <E_課題エクスポート形式 is="enum">
+  <E_課題エクスポート形式 Type="enum">
     <CSV/>
     <Excel/>
     <HTML/>
   </E_課題エクスポート形式>
 
-  <E_アカウント種別 is="enum">
+  <E_アカウント種別 Type="enum">
     <IDパスワード />
     <OAuth2 />
   </E_アカウント種別>

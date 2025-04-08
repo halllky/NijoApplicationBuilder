@@ -2,7 +2,7 @@
 
 <自動テストで作成されたプロジェクト>
 
-  <資産種別 is="enum">
+  <資産種別 Type="enum">
     <PC/>
     <ルーター/>
     <ディスプレイ/>
@@ -11,37 +11,37 @@
     <HDD/>
   </資産種別>
 
-  <従業員 is="write-model-2 generate-default-read-model">
-    <従業員コード is="word key" />
-    <名前 is="word" />
+  <従業員 Type="data-model" GenerateDefaultQueryModel="True">
+    <従業員コード Type="word" IsKey="True" />
+    <名前 Type="word" />
   </従業員>
 
-  <資産取得 is="write-model-2 generate-default-read-model">
-    <資産ID is="uuid key" />
-    <名前 is="word" />
-    <種別 is="資産種別" />
-    <購入日 is="date" />
-    <取得価額 is="int" />
-    <管理者 is="ref-to:従業員" />
+  <資産取得 Type="data-model" GenerateDefaultQueryModel="True">
+    <資産ID Type="word" IsKey="True" />
+    <名前 Type="word" />
+    <種別 Type="資産種別" />
+    <購入日 Type="date" />
+    <取得価額 Type="int" />
+    <管理者 Type="ref-to:従業員" />
   </資産取得>
 
-  <資産移動 is="write-model-2 generate-default-read-model">
-    <ID is="uuid key" />
-    <資産 is="ref-to:資産取得" />
-    <移動日 is="date" />
-    <移動後管理者 is="ref-to:従業員" />
+  <資産移動 Type="data-model" GenerateDefaultQueryModel="True">
+    <ID Type="word" IsKey="True" />
+    <資産 Type="ref-to:資産取得" />
+    <移動日 Type="date" />
+    <移動後管理者 Type="ref-to:従業員" />
   </資産移動>
 
   <!--資産は資産取得と資産移動をもとに算出される-->
-  <資産 is="read-model-2">
-    <資産ID is="uuid key" />
-    <名前 is="word" />
-    <種別 is="資産種別" />
-    <履歴 is="children">
-      <連番 is="int key" />
-      <期間FROM is="date" />
-      <期間TO is="date" />
-      <管理者 is="ref-to:従業員" />
+  <資産 Type="query-model">
+    <資産ID Type="word" IsKey="True" />
+    <名前 Type="word" />
+    <種別 Type="資産種別" />
+    <履歴 Type="children">
+      <連番 Type="int" IsKey="True" />
+      <期間FROM Type="date" />
+      <期間TO Type="date" />
+      <管理者 Type="ref-to:従業員" />
     </履歴>
   </資産>
 

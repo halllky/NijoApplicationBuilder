@@ -1,29 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <自動テストで作成されたプロジェクト DbContextName="MyDbContext">
-  <見積書テンプレート is="write-model-2 generate-default-read-model">
-    <テンプレートID is="uuid key" />
-    <テンプレート名 is="word name" />
-    <セクション is="children">
-      <セクションID is="uuid key" />
-      <セクション名 is="word name" />
+  <見積書テンプレート Type="data-model" GenerateDefaultQueryModel="True">
+    <テンプレートID Type="word" IsKey="True" />
+    <テンプレート名 Type="word" />
+    <セクション Type="children">
+      <セクションID Type="word" IsKey="True" />
+      <セクション名 Type="word" />
     </セクション>
   </見積書テンプレート>
-  <見積書 is="write-model-2 generate-default-read-model">
-    <見積書ID is="uuid key" />
-    <タイトル is="word name" />
-    <発行日時 is="datetime" />
-    <定型欄 is="children">
-      <欄ID is="uuid key" />
-      <セクションテンプレート is="ref-to:見積書テンプレート/セクション" />
-      <文 is="sentence" />
+  <見積書 Type="data-model" GenerateDefaultQueryModel="True">
+    <見積書ID Type="word" IsKey="True" />
+    <タイトル Type="word" />
+    <発行日時 Type="datetime" />
+    <定型欄 Type="children">
+      <欄ID Type="word" IsKey="True" />
+      <セクションテンプレート Type="ref-to:見積書テンプレート/セクション" />
+      <文 Type="description" />
     </定型欄>
   </見積書>
-  <見積回答 is="write-model-2 generate-default-read-model">
-    <見積書 is="ref-to:見積書 key" />
-    <返答日 is="date" />
-    <コメント is="children">
-      <対象 is="ref-to:見積書/定型欄 key" />
-      <コメント文章 is="sentence" />
+  <見積回答 Type="data-model" GenerateDefaultQueryModel="True">
+    <見積書 Type="ref-to:見積書" IsKey="True" />
+    <返答日 Type="datetime" />
+    <コメント Type="children">
+      <対象 Type="ref-to:見積書/定型欄" IsKey="True" />
+      <コメント文章 Type="description" />
     </コメント>
   </見積回答>
 </自動テストで作成されたプロジェクト>

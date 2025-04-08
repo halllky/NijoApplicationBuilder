@@ -1,33 +1,33 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <自動テストで作成されたプロジェクト>
-  <取引先 is="write-model-2 generate-default-read-model">
-    <取引先番号 is="uuid key" />
-    <会社名 is="word name" />
+  <取引先 Type="data-model" GenerateDefaultQueryModel="True">
+    <取引先番号 Type="word" IsKey="True" />
+    <会社名 Type="word" />
   </取引先>
 
-  <取引先営業情報 is="write-model-2 generate-default-read-model">
-    <取引先 is="ref-to:取引先 key" />
-    <関係性 is="関係性 name-like" />
+  <取引先営業情報 Type="data-model" GenerateDefaultQueryModel="True">
+    <取引先 Type="ref-to:取引先" IsKey="True" />
+    <関係性 Type="関係性" />
   </取引先営業情報>
 
-  <お届け先 is="write-model-2 generate-default-read-model">
-    <ID is="uuid key" />
-    <取引先 is="ref-to:取引先 key name-like" />
-    <郵便番号 is="word name-like" />
-    <住所 is="word name-like" />
+  <お届け先 Type="data-model" GenerateDefaultQueryModel="True">
+    <ID Type="word" IsKey="True" />
+    <取引先 Type="ref-to:取引先" IsKey="True" />
+    <郵便番号 Type="word" />
+    <住所 Type="word" />
   </お届け先>
 
-  <配送指示 is="write-model-2 generate-default-read-model">
-    <ID is="uuid key" />
-    <荷物名 is="word" />
-    <配送日 is="date" />
-    <備考 is="sentence name" />
-    <配送先 is="ref-to:お届け先" />
+  <配送指示 Type="data-model" GenerateDefaultQueryModel="True">
+    <ID Type="word" IsKey="True" />
+    <荷物名 Type="word" />
+    <配送日 Type="datetime" />
+    <備考 Type="description" />
+    <配送先 Type="ref-to:お届け先" />
   </配送指示>
 
 
-  <関係性 is="enum">
+  <関係性 Type="enum">
     <良好 />
     <音沙汰なし />
   </関係性>

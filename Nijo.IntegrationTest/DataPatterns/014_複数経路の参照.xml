@@ -1,33 +1,33 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <自動テストで作成されたプロジェクト>
-  <営業区 is="write-model-2 generate-default-read-model">
-    <営業区ID is="uuid key" />
-    <営業区名 is="word name" />
+  <営業区 Type="data-model" GenerateDefaultQueryModel="True">
+    <営業区ID Type="word" IsKey="True" />
+    <営業区名 Type="word" />
 
-    <部署 is="children">
-      <部署ID is="uuid key" />
-      <部署名 is="word name" />
+    <部署 Type="children">
+      <部署ID Type="word" IsKey="True" />
+      <部署名 Type="word" />
     </部署>
   </営業区>
 
-  <依頼 is="write-model-2 generate-default-read-model">
-    <依頼番号 is="uuid key" />
-    <発注部署 is="ref-to:営業区/部署 key" />
+  <依頼 Type="data-model" GenerateDefaultQueryModel="True">
+    <依頼番号 Type="word" IsKey="True" />
+    <発注部署 Type="ref-to:営業区/部署" IsKey="True" />
     <!-- TODO: #24 キーに同じ集約を複数設定できるようになったらコメントアウトを解除 -->
-    <!-- <受注部署 is="ref-to:営業区/部署 key" /> -->
-    <最終承認部署 is="ref-to:営業区/部署" />
-    <監督部署 is="ref-to:営業区/部署" />
-    <依頼内容 is="sentence name" />
+    <!-- <受注部署 Type="ref-to:営業区/部署" IsKey="True" /> -->
+    <最終承認部署 Type="ref-to:営業区/部署" />
+    <監督部署 Type="ref-to:営業区/部署" />
+    <依頼内容 Type="description" />
   </依頼>
 
-  <従業員ステータス is="write-model-2 generate-default-read-model">
-    <従業員ID is="uuid key" />
-    <担当中の作業 is="ref-to:依頼 key" />
+  <従業員ステータス Type="data-model" GenerateDefaultQueryModel="True">
+    <従業員ID Type="word" IsKey="True" />
+    <担当中の作業 Type="ref-to:依頼" IsKey="True" />
     <!-- TODO: #24 キーに同じ集約を複数設定できるようになったらコメントアウトを解除 -->
-    <!-- <直近の作業 is="ref-to:依頼 key" /> -->
-    <来月の作業 is="ref-to:依頼" />
-    <再来月の作業 is="ref-to:依頼" />
+    <!-- <直近の作業 Type="ref-to:依頼" IsKey="True" /> -->
+    <来月の作業 Type="ref-to:依頼" />
+    <再来月の作業 Type="ref-to:依頼" />
   </従業員ステータス>
 
 </自動テストで作成されたプロジェクト>

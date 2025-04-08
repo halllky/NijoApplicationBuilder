@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <自動テストで作成されたプロジェクト>
-  <ユースケース is="write-model-2 generate-default-read-model">
-    <ID is="uuid key" />
-    <ステップ is="children">
-      <ID is="uuid key" />
-      <正常系 is="sentence name" />
-      <異常系 is="children">
-        <ID is="uuid key" />
-        <ケース is="sentence name" />
-        <対応 is="sentence name" />
+  <ユースケース Type="data-model" GenerateDefaultQueryModel="True">
+    <ID Type="word" IsKey="True" />
+    <ステップ Type="children">
+      <ID Type="word" IsKey="True" />
+      <正常系 Type="description" />
+      <異常系 Type="children">
+        <ID Type="word" IsKey="True" />
+        <ケース Type="description" />
+        <対応 Type="description" />
       </異常系>
     </ステップ>
   </ユースケース>
