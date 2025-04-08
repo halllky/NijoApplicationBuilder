@@ -1,4 +1,4 @@
-# 文字コードをUTF-8に設定
+﻿# 文字コードをUTF-8に設定
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 Write-Host "===================================================="
