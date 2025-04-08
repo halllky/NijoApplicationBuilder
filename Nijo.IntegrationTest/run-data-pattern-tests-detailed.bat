@@ -6,6 +6,16 @@ echo DataPatternテスト詳細実行ツール
 echo ====================================================
 echo.
 
+rem 引数の確認
+if "%~1"=="" (
+    set TEST_FILTER=FullyQualifiedName~DataPatternTest
+    echo 全てのデータパターンテストを実行します。
+) else (
+    set TEST_FILTER=FullyQualifiedName~DataPatternTest_%~1
+    echo データパターン '%~1' のテストを実行します。
+)
+echo.
+
 rem テストプロジェクトのビルド
 echo ビルドを実行しています...
 dotnet build %~dp0Nijo.IntegrationTest.csproj -c Debug
@@ -29,7 +39,7 @@ if not exist "%RESULT_DIR%" mkdir "%RESULT_DIR%"
 rem テスト実行（詳細出力とログ記録）
 echo テストを実行しています（詳細モード）...
 echo.
-dotnet test %~dp0Nijo.IntegrationTest.csproj --filter "FullyQualifiedName~DataPatternTest" -v detailed --logger "console;verbosity=detailed" --logger "trx;LogFileName=DataPatternTest_Results.trx" --results-directory "%RESULT_DIR%"
+dotnet test %~dp0Nijo.IntegrationTest.csproj --filter "!TEST_FILTER!" -v detailed --logger "console;verbosity=detailed" --logger "trx;LogFileName=DataPatternTest_Results.trx" --results-directory "%RESULT_DIR%"
 
 if %ERRORLEVEL% neq 0 (
     echo.
