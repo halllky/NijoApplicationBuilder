@@ -10,4 +10,4 @@ alwaysApply: true
 - You can use markdown but dont have to
 
 ## `run-data-pattern-tests-detailed.ps1` 実行時の注意
-- カレントディレクトリがこのbatファイルの場所と一致していないと失敗するため、必ず事前にcdコマンドを実行してこのbatファイルがある場所に移動してから実行してください。
+- カレントディレクトリがこのbatファイルの場所と一致していないと失敗するため、必ず事前にcdコマンドを実行してこのps1ファイルがある場所に移動してから実行してください。

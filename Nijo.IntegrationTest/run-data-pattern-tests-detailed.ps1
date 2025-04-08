@@ -8,12 +8,13 @@ Write-Host ""
 
 # 引数の確認
 if ($args.Count -eq 0) {
-    $testFilter = "FullyQualifiedName~DataPatternTest"
+    $testFilter = "Category=DataPattern"
     Write-Host "全てのデータパターンテストを実行します。"
 } else {
-    $testFilter = "FullyQualifiedName~DataPatternTest_$($args[0])"
+    $testFilter = "Name~TestXmlPattern"
     Write-Host "データパターン '$($args[0])' のテストを実行します。"
 }
+Write-Host "テストフィルター: $testFilter"
 Write-Host ""
 
 # テストプロジェクトのビルド
@@ -41,7 +42,13 @@ if (-not (Test-Path $resultDir)) {
 # テスト実行（詳細出力とログ記録）
 Write-Host "テストを実行しています（詳細モード）..."
 Write-Host ""
-$testResult = dotnet test $PSScriptRoot\Nijo.IntegrationTest.csproj --filter $testFilter -v detailed --logger "console;verbosity=detailed" --logger "trx;LogFileName=DataPatternTest_Results.trx" --results-directory $resultDir
+
+# テストケースの引数を環境変数として設定
+if ($args.Count -gt 0) {
+    $env:TEST_CASE = $args[0]
+}
+
+$testResult = dotnet test $PSScriptRoot\Nijo.IntegrationTest.csproj --filter "$testFilter" -v detailed --logger "console;verbosity=detailed" --logger "trx;LogFileName=DataPatternTest_Results.trx" --results-directory $resultDir
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host ""
@@ -56,11 +63,3 @@ if ($LASTEXITCODE -ne 0) {
     Write-Host "詳細なテスト結果は以下のディレクトリに保存されました:"
     Write-Host $resultDir
 }
-
-Write-Host ""
-$openResults = Read-Host "テスト結果ファイルを開きますか？ (Y/N)"
-if ($openResults -eq "Y" -or $openResults -eq "y") {
-    Start-Process $resultDir
-}
-
-Read-Host "続行するには何かキーを押してください..." 

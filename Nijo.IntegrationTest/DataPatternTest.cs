@@ -26,10 +26,19 @@ public class DataPatternTest {
         string dataPatternDir = Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", "..", "DataPatterns");
         dataPatternDir = Path.GetFullPath(dataPatternDir);
 
-        return Directory
+        var files = Directory
             .GetFiles(dataPatternDir, "*.xml")
-            .Select(f => Path.GetFileName(f))
-            .OrderBy(f => f);
+            .Select(f => Path.GetFileNameWithoutExtension(f))
+            .OrderBy(f => f)
+            .AsEnumerable();
+
+        // 環境変数からテストケースが指定されている場合は、そのファイルのみを返す
+        var testCase = Environment.GetEnvironmentVariable("TEST_CASE");
+        if (!string.IsNullOrEmpty(testCase)) {
+            files = files.Where(f => f == testCase);
+        }
+
+        return files;
     }
 
     [SetUp]
@@ -54,12 +63,13 @@ public class DataPatternTest {
     /// <param name="xmlFileName">XMLファイル名</param>
     [Test]
     [TestCaseSource(nameof(GetXmlFilePaths))]
+    [Category("DataPattern")]
     public void TestXmlPattern(string fileName) {
         var workspaceRoot = Path.GetFullPath(Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", ".."));
         var testProjectDir = Path.Combine(workspaceRoot, "..", TEST_PROJECT_DIR);
         var dataPatternsDir = Path.Combine(workspaceRoot, "DataPatterns");
         var targetXmlPath = Path.Combine(testProjectDir, "nijo.xml");
-        var sourceXmlPath = Path.Combine(dataPatternsDir, fileName);
+        var sourceXmlPath = Path.Combine(dataPatternsDir, $"{fileName}.xml");
 
         Console.WriteLine($"テスト実行: {fileName}");
 
@@ -157,7 +167,7 @@ public class DataPatternTest {
             .Where(i => i != null);
 
         // 対象のXMLファイルに対応する実装を返す
-        return implementors.FirstOrDefault(i => i.TargetXmlFileName == xmlFileName);
+        return implementors.FirstOrDefault(i => i.TargetXmlFileName == $"{xmlFileName}.xml");
     }
 }
 
