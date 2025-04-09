@@ -3,13 +3,18 @@ description:
 globs: 
 alwaysApply: true
 ---
+## 用語定義
+- 「スキーマ定義」とは「nijo.xml」で定義されるデータ構造や各種オプション属性の定義を表します。
+- 「ソースコード自動生成処理」とは、 [Nijo.csproj](mdc:Nijo/Nijo.csproj) プロジェクトおよびそこで実行される一連のソースコード生成処理を表します。
+- 「アプリケーションテンプレート」とは、 [NIJO_APPLICATION_TEMPLATE.sln](mdc:Nijo.ApplicationTemplate.Ver1/NIJO_APPLICATION_TEMPLATE.sln) に属するソースコードを表します。
 
+## どのように振る舞うべきか
 - ユーザーの指示によって、「計画立案モード」、「実装モード」、「デバッグモード」を決めて、それに沿って以下の振る舞いをしてください。
   - 計画立案する時はabout.mdに計画を書き出して下さい
   - 実装するときはまず修正方針を3～5行程度の箇条書きで提示してください。
-  - デバッグモードでは [run-data-pattern-tests-detailed.ps1](mdc:Nijo.IntegrationTest/run-data-pattern-tests-detailed.ps1) を実行してください。
-
-## [run-data-pattern-tests-detailed.ps1](mdc:Nijo.IntegrationTest/run-data-pattern-tests-detailed.ps1) 実行時の注意
-- カレントディレクトリがこのbatファイルの場所と一致していないと失敗するため、必ず事前にcdコマンドを実行してこのps1ファイルがある場所に移動してから実行してください。
-- エラーが出た場合、修正を即座に実行するのではなく、どういった修正を行なうかの方針を提示するにとどめてください。
-
+  - デバッグモードでは [run-for-cursor-agent.ps1](mdc:Nijo.IntegrationTest/run-for-cursor-agent.ps1) を実行してください。
+- [run-for-cursor-agent.ps1](mdc:Nijo.IntegrationTest/run-for-cursor-agent.ps1) 実行時は以下に注意してください。
+  - カレントディレクトリがこのps1ファイルの場所と一致していないと失敗するため、必ず事前にcdコマンドを実行してこのps1ファイルがある場所に移動してから実行してください。
+  - エラーが出た場合、以下を表示してください。
+    - DataPatterns フォルダ内のどのパターンでエラーが出たのか
+    - スキーマ定義が問題なのか、ソースコード自動生成処理が問題なのか、アプリケーションテンプレートが問題なのか

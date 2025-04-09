@@ -1,5 +1,8 @@
 # 改行コードの取り扱いを .editorconfig に合わせる
 *.cs   eol=crlf
+*.xml  eol=crlf
+*.bat  eol=crlf
+*.ps1  eol=crlf
 *.js   eol=lf
 *.jsx  eol=lf
 *.ts   eol=lf
