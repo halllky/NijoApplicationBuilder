@@ -17,27 +17,26 @@ if ($args.Count -eq 0) {
 Write-Host "テストフィルター: $testFilter"
 Write-Host ""
 
+# テスト結果出力ディレクトリ
+$resultDir = Join-Path $PSScriptRoot "TestResults"
+if (-not (Test-Path $resultDir)) {
+    New-Item -ItemType Directory -Path $resultDir | Out-Null
+}
+
 # テストプロジェクトのビルド
 Write-Host "ビルドを実行しています..."
-$buildResult = dotnet build $PSScriptRoot\Nijo.IntegrationTest.csproj -c Debug
+dotnet build $PSScriptRoot\Nijo.IntegrationTest.csproj -c Debug | Out-File "TestResults\DataPatternTest_Results.trx"
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host ""
     Write-Host "★★★ ビルド中にエラーが発生しました ★★★"
     Write-Host ""
-    Read-Host "続行するには何かキーを押してください..."
     exit 1
 }
 
 Write-Host ""
 Write-Host "ビルドが完了しました。"
 Write-Host ""
-
-# テスト結果出力ディレクトリ
-$resultDir = Join-Path $PSScriptRoot "TestResults"
-if (-not (Test-Path $resultDir)) {
-    New-Item -ItemType Directory -Path $resultDir | Out-Null
-}
 
 # テスト実行（詳細出力とログ記録）
 Write-Host "テストを実行しています（詳細モード）..."
