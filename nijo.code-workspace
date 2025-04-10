@@ -21,9 +21,6 @@
     "[sql]": {
       "editor.formatOnSave": false
     },
-    "workbench.editorAssociations": {
-      "*.md": "vscode.markdown.preview.editor"
-    },
     "markdown.preview.breaks": true,
     "extensions.ignoreRecommendations": false,
     "workbench.colorCustomizations": {
