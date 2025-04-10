@@ -14,6 +14,9 @@ NijoApplicationBuilderは、XMLベースのスキーマ定義からアプリケ�
 ## フォルダ構造
 - [`Nijo/`](./Nijo/): コード生成エンジン。XMLスキーマ解析とコード生成を行ないます。
 - [`Nijo.ApplicationTemplate.Ver1/`](./Nijo.ApplicationTemplate.Ver1/): アプリケーションテンプレート。当然ながらアプリケーションはデータ構造だけで完結することはできず、UI、データ構造から一意には決まらない制約、CI/CD用の仕組みなど、種々のカスタマイズを加える必要があります。このテンプレートは、 [`Nijo/`](./Nijo/) が生成したソースコードを利用しながら、実際にユーザが利用できるアプリケーションのサンプルを提供します。このテンプレートは、React.js, ASP.NET Core, SQLite を用いています。
+  - なお、あなたは必ずしもこのテンプレートを用いる必要はなく、ASP.NET Core と TypeScirpt を用いる技術スタックであれば任意の構成を使うことができます。
+  - RDBMSについては、EFCoreが対応可能なものであればそのまま利用できます。これはこのフレームワークではなく Entity Framework Core の制約です。
+  - JavaやKotlinやCOBOLなど、ここで用意されている言語以外での構造体定義が必要な場合、コード生成エンジンの方に改修を加える必要があるため、そのままでは使えません。
 - [`Nijo.IntegrationTest/`](./Nijo.IntegrationTest/): [`Nijo/`](./Nijo/) のユニットテスト。
 
 ## ライセンス
