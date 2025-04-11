@@ -15,10 +15,21 @@ namespace Nijo.Models {
 
     /// <summary>
     /// データモデル。
-    /// 永続化され、アプリケーションのデータの整合性を保つ境界。
+    /// アプリケーションに永続化されるデータの形を表す。
+    /// トランザクションの境界の単位（より強い整合性の範囲）で区切られる。
+    /// データモデルの境界を跨ぐエラーチェックは、一時的に整合性が崩れる可能性がある。
+    /// DDD（ドメイン駆動設計）における集約ルートの概念とほぼ同じ。
     /// </summary>
     internal class DataModel : IModel {
         public string SchemaName => "data-model";
+
+        public string HelpText => $$"""
+            データモデル。
+            アプリケーションに永続化されるデータの形を表す。
+            トランザクションの境界の単位（より強い整合性の範囲）で区切られる。
+            データモデルの境界を跨ぐエラーチェックは、一時的に整合性が崩れる可能性がある。
+            DDD（ドメイン駆動設計）における集約ルートの概念とほぼ同じ。
+            """;
 
         public void Validate(XElement rootAggregateElement, SchemaParseContext context, Action<XElement, string> addError) {
             // ルートとChildrenはキー必須

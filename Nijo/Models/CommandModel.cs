@@ -14,6 +14,15 @@ namespace Nijo.Models {
     internal class CommandModel : IModel {
         public string SchemaName => "command-model";
 
+        public string HelpText => $$"""
+            コマンド。
+            アクター（このアプリケーションのユーザまたは外部システム）がこのアプリケーションの状態やこのアプリケーションの{{nameof(DataModel)}}に何らかの変更を加えるときの操作のデータの形。
+            コマンドが実行されると{{nameof(DataModel)}}に何らかの変更がかかる。
+            CQS, CQRS における Command とほぼ同じ。
+            {{nameof(QueryModel)}} とは対の関係にある。
+            （{{nameof(CommandModel)}}はアクターから{{nameof(DataModel)}}へのデータの流れ、{{nameof(QueryModel)}}は{{nameof(DataModel)}}からアクターへのデータの流れ）
+            """;
+
         public void Validate(XElement rootAggregateElement, SchemaParseContext context, Action<XElement, string> addError) {
         }
 

@@ -18,6 +18,14 @@ namespace Nijo.Models {
     internal class QueryModel : IModel {
         public string SchemaName => "query-model";
 
+        public string HelpText => $$"""
+            クエリモデル。
+            アクター（このアプリケーションのユーザまたは外部システム）が、アプリケーションに蓄積されたデータ（{{nameof(DataModel)}}）を、特定の観点から参照するためのデータの形。
+            CQS, CQRS におけるクエリとほぼ同じもの。
+            {{nameof(CommandModel)}} とは対の関係にある。
+            （{{nameof(CommandModel)}}はアクターから{{nameof(DataModel)}}へのデータの流れ、{{nameof(QueryModel)}}は{{nameof(DataModel)}}からアクターへのデータの流れ）
+            """;
+
         public void Validate(XElement rootAggregateElement, SchemaParseContext context, Action<XElement, string> addError) {
             // ルート集約はURLにかかわるのでキー必須
             if (rootAggregateElement.Elements().All(member => member.Attribute(BasicNodeOptions.IsKey.AttributeName) == null)) {
