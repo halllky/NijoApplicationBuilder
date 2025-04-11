@@ -11,11 +11,12 @@ namespace Nijo.Models.QueryModelModules {
     /// </summary>
     internal static class DisplayDataRef {
 
-        #region レンダリング
         /// <summary>
-        /// 他の集約から参照されているもののみ再帰的にレンダリングする
+        /// <see cref="DisplayDataRef"/> に関連するモジュールは、
+        /// その集約が他のどの集約からも参照されていない場合はレンダリングしないため、
+        /// そのツリー内部で他の集約から参照されているもののみを集めるメソッド。
         /// </summary>
-        internal static string RenderCSharpRecursively(RootAggregate rootAggregate, CodeRenderingContext ctx) {
+        internal static (Entry[] Entries, RefDisplayDataParentMember[] ParentMembers) GetReferedMembersRecursively(RootAggregate rootAggregate) {
             var tree = rootAggregate
                 .EnumerateThisAndDescendants()
                 .ToArray();
@@ -31,6 +32,16 @@ namespace Nijo.Models.QueryModelModules {
                 .Where(agg => entries.Any(entry => agg.IsAncestorOf(entry.Aggregate)))
                 .Select(agg => new RefDisplayDataParentMember(agg))
                 .ToArray();
+
+            return (entries, parentMembers);
+        }
+
+        #region レンダリング
+        /// <summary>
+        /// 他の集約から参照されているもののみ再帰的にレンダリングする
+        /// </summary>
+        internal static string RenderCSharpRecursively(RootAggregate rootAggregate, CodeRenderingContext ctx) {
+            var (entries, parentMembers) = GetReferedMembersRecursively(rootAggregate);
 
             return $$"""
                 #region 他の集約から参照されるときの画面表示用オブジェクト
@@ -60,14 +71,27 @@ namespace Nijo.Models.QueryModelModules {
                 }
                 """;
         }
+
+        internal static string RenderTypeScriptObjectCreationFunctionRecursively(RootAggregate rootAggregate, CodeRenderingContext ctx) {
+            var (entries, _) = GetReferedMembersRecursively(rootAggregate);
+
+            return $$"""
+                #region 他の集約から参照されるときの画面表示用オブジェクトの新規作成関数
+                {{entries.SelectTextTemplate(entry => $$"""
+                {{entry.RenderTypeScriptObjectCreationFunction(ctx)}}
+
+                """)}}
+                #endregion 他の集約から参照されるときの画面表示用オブジェクトの新規作成関数
+                """;
+        }
         #endregion レンダリング
 
 
         /// <summary>
         /// C#のクラスが存在するものたち
         /// </summary>
-        internal abstract class DisplayDataRefBase {
-            private protected DisplayDataRefBase(AggregateBase aggregate) {
+        internal abstract class RefDisplayDataMemberContainer {
+            private protected RefDisplayDataMemberContainer(AggregateBase aggregate) {
                 _aggregate = aggregate;
             }
             private protected AggregateBase _aggregate;
@@ -102,7 +126,7 @@ namespace Nijo.Models.QueryModelModules {
         /// <summary>
         /// エントリー。エントリーが子孫要素になる場合もある。
         /// </summary>
-        internal class Entry : DisplayDataRefBase {
+        internal class Entry : RefDisplayDataMemberContainer {
             internal Entry(AggregateBase aggregate) : base(aggregate) { }
 
             internal AggregateBase Aggregate => _aggregate;
@@ -151,13 +175,13 @@ namespace Nijo.Models.QueryModelModules {
         /// </summary>
         internal class RefDisplayDataValueMember : IRefDisplayDataMember {
             internal RefDisplayDataValueMember(ValueMember member) {
-                _member = member;
+                Member = member;
             }
-            private readonly ValueMember _member;
+            public ValueMember Member { get; }
 
-            public string PhysicalName => _member.PhysicalName;
-            public string DisplayName => _member.DisplayName;
-            public string CsType => _member.Type.CsDomainTypeName;
+            public string PhysicalName => Member.PhysicalName;
+            public string DisplayName => Member.DisplayName;
+            public string CsType => Member.Type.CsDomainTypeName;
         }
 
         /// <summary>
@@ -177,7 +201,7 @@ namespace Nijo.Models.QueryModelModules {
         /// <summary>
         /// Child
         /// </summary>
-        internal class RefDisplayDataChildMember : DisplayDataRefBase, IRefDisplayDataMember {
+        internal class RefDisplayDataChildMember : RefDisplayDataMemberContainer, IRefDisplayDataMember {
             internal RefDisplayDataChildMember(ChildAggreagte member) : base(member) {
                 _member = member;
             }
@@ -192,7 +216,7 @@ namespace Nijo.Models.QueryModelModules {
         /// <summary>
         /// Children
         /// </summary>
-        internal class RefDisplayDataChildrenMember : DisplayDataRefBase, IRefDisplayDataMember {
+        internal class RefDisplayDataChildrenMember : RefDisplayDataMemberContainer, IRefDisplayDataMember {
             internal RefDisplayDataChildrenMember(ChildrenAggreagte member) : base(member) {
                 _member = member;
             }
@@ -207,7 +231,7 @@ namespace Nijo.Models.QueryModelModules {
         /// <summary>
         /// Parent
         /// </summary>
-        internal class RefDisplayDataParentMember : DisplayDataRefBase, IRefDisplayDataMember {
+        internal class RefDisplayDataParentMember : RefDisplayDataMemberContainer, IRefDisplayDataMember {
             internal RefDisplayDataParentMember(AggregateBase parent) : base(parent) {
                 _parent = parent;
             }

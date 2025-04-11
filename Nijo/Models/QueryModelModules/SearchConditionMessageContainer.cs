@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Nijo.Models.QueryModelModules {
     /// <summary>
-    /// <see cref="SearchCondition"/> のデータ構造と対応するメッセージの入れ物
+    /// <see cref="SearchCondition.Entry"/> のデータ構造と対応するメッセージの入れ物
     /// </summary>
     internal class SearchConditionMessageContainer : MessageContainer {
         public SearchConditionMessageContainer(AggregateBase aggregate) : base(aggregate) {

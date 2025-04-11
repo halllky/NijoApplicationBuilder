@@ -87,7 +87,7 @@ namespace Nijo.Models.QueryModelModules {
         /// <summary>
         /// valuesの中に宣言されるメンバーを列挙する。
         /// </summary>
-        internal IEnumerable<DisplayDataMember> GetOwnMembers() {
+        internal IEnumerable<IDisplayDataMember> GetOwnMembers() {
             foreach (var member in _aggregate.GetMembers()) {
                 if (member is ValueMember vm) {
                     yield return new DisplayDataValueMember(vm);
@@ -257,92 +257,86 @@ namespace Nijo.Models.QueryModelModules {
 
 
         #region Valuesの中に定義されるメンバー
-        internal abstract class DisplayDataMember : IUiConstraintValue {
-            internal abstract string PhysicalName { get; }
-            internal abstract string DisplayName { get; }
-            internal abstract UiConstraint.E_Type UiConstraintType { get; }
+        internal interface IDisplayDataMember : IUiConstraintValue {
+            string PhysicalName { get; }
+            string DisplayName { get; }
+            UiConstraint.E_Type UiConstraintType { get; }
 
-            public abstract bool IsRequired { get; }
-            public abstract string? CharacterType { get; }
-            public abstract int? MaxLength { get; }
-            public abstract int? TotalDigit { get; }
-            public abstract int? DecimalPlace { get; }
+            string RenderCsDeclaration();
+            string RenderTsDeclaration();
 
-            internal abstract string RenderCsDeclaration();
-            internal abstract string RenderTsDeclaration();
-
-            internal abstract string RenderNewObjectCreation();
+            string RenderNewObjectCreation();
         }
 
-        internal class DisplayDataValueMember : DisplayDataMember {
+        internal class DisplayDataValueMember : IDisplayDataMember {
             internal DisplayDataValueMember(ValueMember vm) {
                 Member = vm;
             }
             internal ValueMember Member { get; }
 
-            internal override string PhysicalName => Member.PhysicalName;
-            internal override string DisplayName => Member.DisplayName;
-            internal override UiConstraint.E_Type UiConstraintType => Member.Type.UiConstraintType;
+            public string PhysicalName => Member.PhysicalName;
+            public string DisplayName => Member.DisplayName;
+            public UiConstraint.E_Type UiConstraintType => Member.Type.UiConstraintType;
 
-            public override bool IsRequired => Member.IsKey || Member.IsRequired;
-            public override string? CharacterType => Member.CharacterType;
-            public override int? MaxLength => Member.MaxLength;
-            public override int? TotalDigit => Member.TotalDigit;
-            public override int? DecimalPlace => Member.DecimalPlace;
+            public bool IsRequired => Member.IsKey || Member.IsRequired;
+            public string? CharacterType => Member.CharacterType;
+            public int? MaxLength => Member.MaxLength;
+            public int? TotalDigit => Member.TotalDigit;
+            public int? DecimalPlace => Member.DecimalPlace;
 
-            internal override string RenderCsDeclaration() {
+            public string RenderCsDeclaration() {
                 return $$"""
                     /// <summary>{{Member.DisplayName}}</summary>
                     public {{Member.Type.CsDomainTypeName}}? {{PhysicalName}} { get; set; }
                     """;
             }
-            internal override string RenderTsDeclaration() {
+            public string RenderTsDeclaration() {
                 return $$"""
                     {{PhysicalName}}?: {{Member.Type.TsTypeName}}
                     """;
             }
 
-            internal override string RenderNewObjectCreation() {
+            public string RenderNewObjectCreation() {
                 return "undefined";
             }
         }
 
-        internal class DisplayDataRefMember : DisplayDataMember {
+        internal class DisplayDataRefMember : IDisplayDataMember {
             internal DisplayDataRefMember(RefToMember refTo) {
                 Member = refTo;
-                _refTarget = new DisplayDataRef.Entry(refTo.RefTo);
+                RefEntry = new DisplayDataRef.Entry(refTo.RefTo);
             }
             internal RefToMember Member { get; }
-            private readonly DisplayDataRef.Entry _refTarget;
+            internal DisplayDataRef.Entry RefEntry;
 
-            internal override string PhysicalName => Member.PhysicalName;
-            internal override string DisplayName => Member.DisplayName;
-            internal override UiConstraint.E_Type UiConstraintType => UiConstraint.E_Type.MemberConstraintBase;
+            public string PhysicalName => Member.PhysicalName;
+            public string DisplayName => Member.DisplayName;
+            public UiConstraint.E_Type UiConstraintType => UiConstraint.E_Type.MemberConstraintBase;
 
-            public override bool IsRequired => Member.IsKey || Member.IsRequired;
-            public override string? CharacterType => null;
-            public override int? MaxLength => null;
-            public override int? TotalDigit => null;
-            public override int? DecimalPlace => null;
+            public bool IsRequired => Member.IsKey || Member.IsRequired;
+            public string? CharacterType => null;
+            public int? MaxLength => null;
+            public int? TotalDigit => null;
+            public int? DecimalPlace => null;
 
-            internal override string RenderCsDeclaration() {
+            public string RenderCsDeclaration() {
                 return $$"""
                     /// <summary>{{Member.DisplayName}}</summary>
-                    public {{_refTarget.CsClassName}} {{PhysicalName}} { get; set; } = new();
+                    public {{RefEntry.CsClassName}} {{PhysicalName}} { get; set; } = new();
                     """;
             }
-            internal override string RenderTsDeclaration() {
+            public string RenderTsDeclaration() {
                 return $$"""
-                    {{PhysicalName}}: {{_refTarget.TsTypeName}}
+                    {{PhysicalName}}: {{RefEntry.TsTypeName}}
                     """;
             }
 
-            internal override string RenderNewObjectCreation() {
-                return $"{_refTarget.TsNewObjectFunction}()";
+            public string RenderNewObjectCreation() {
+                return $"{RefEntry.TsNewObjectFunction}()";
             }
 
             internal IEnumerable<DisplayDataRef.IRefDisplayDataMember> GetMembers() {
-                return _refTarget.GetMembers();
+                return RefEntry.GetMembers();
             }
         }
         #endregion Valuesの中に定義されるメンバー

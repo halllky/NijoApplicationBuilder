@@ -51,7 +51,7 @@ internal class QueryModelUnitTest : IMultiAggregateSourceFile {
     }
 
     private static string RenderSimpleLoadTest(RootAggregate rootAggregate, int index) {
-        var searchCondition = new SearchCondition(rootAggregate);
+        var searchCondition = new SearchCondition.Entry(rootAggregate);
         var searchConditionMessage = new SearchConditionMessageContainer(rootAggregate);
 
         return $$"""
@@ -60,7 +60,7 @@ internal class QueryModelUnitTest : IMultiAggregateSourceFile {
                 using var util = {{TestUtil.GET_UTIL}};
                 using var scope = util.CreateScope<{{searchConditionMessage.CsClassName}}>();
                 var searchCondition = new {{searchCondition.CsClassName}} {
-                    {{SearchCondition.TAKE_CS}} = 10,
+                    {{SearchCondition.Entry.TAKE_CS}} = 10,
                 };
 
                 Assert.DoesNotThrowAsync(() => scope.App.{{SearchProcessing.LOAD_METHOD}}(searchCondition, scope.PresentationContext));

@@ -82,7 +82,7 @@ namespace Nijo.Parts.Common {
             // import {} from "..." で他ファイルからインポートするモジュールを決める
             var imports = new List<(string ImportFrom, string[] Modules)>();
             foreach (var rootAggregate in _queryModels) {
-                var searchCondition = new SearchCondition(rootAggregate);
+                var searchCondition = new SearchCondition.Entry(rootAggregate);
                 var displayData = new DisplayData(rootAggregate);
                 var refTarget = new DisplayDataRef.Entry(rootAggregate);
 
@@ -183,7 +183,7 @@ namespace Nijo.Parts.Common {
                     /** SearchCondition型一覧 */
                     export interface SearchConditionTypeMap {
                     {{_queryModels.SelectTextTemplate(agg => $$"""
-                      '{{agg.PhysicalName}}': {{new SearchCondition(agg).TsTypeName}}
+                      '{{agg.PhysicalName}}': {{new SearchCondition.Entry(agg).TsTypeName}}
                     """)}}
                     }
 
@@ -214,7 +214,7 @@ namespace Nijo.Parts.Common {
                     /** SearchCondition新規作成関数 */
                     export const createNewSearchConditionFunctions: {[K in {{QUERY_MODEL_TYPE}}]: (() => SearchConditionTypeMap[K]) } = {
                     {{_queryModels.SelectTextTemplate(agg => $$"""
-                      '{{agg.PhysicalName}}': {{new SearchCondition(agg).TsNewObjectFunction}},
+                      '{{agg.PhysicalName}}': {{new SearchCondition.Entry(agg).TsNewObjectFunction}},
                     """)}}
                     }
 

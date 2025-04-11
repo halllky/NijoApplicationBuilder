@@ -1,8 +1,6 @@
 using Nijo.CodeGenerating;
 using Nijo.ImmutableSchema;
-using Nijo.Models.QueryModelModules;
 using Nijo.Util.DotnetEx;
-using Nijo.Parts.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,77 +11,156 @@ namespace Nijo.Models.QueryModelModules {
     /// 検索条件クラス。
     /// 通常の一覧検索と参照先検索とで共通
     /// </summary>
-    internal class SearchCondition {
-        internal SearchCondition(RootAggregate rootAggregate) {
-            _rootAggregate = rootAggregate;
-            FilterRoot = new Filter(_rootAggregate);
-        }
-        private readonly RootAggregate _rootAggregate;
+    internal static class SearchCondition {
+        internal const string ASC_SUFFIX = "（昇順）";
+        internal const string DESC_SUFFIX = "（降順）";
 
-        internal virtual string CsClassName => $"{_rootAggregate.PhysicalName}SearchCondition";
-        internal virtual string TsTypeName => $"{_rootAggregate.PhysicalName}SearchCondition";
-
-
-        internal const string FILTER_CS = "Filter";
-        internal const string FILTER_TS = "filter";
-        internal const string SORT_CS = "Sort";
-        internal const string SORT_TS = "sort";
-        internal const string SKIP_CS = "Skip";
-        internal const string SKIP_TS = "skip";
-        internal const string TAKE_CS = "Take";
-        internal const string TAKE_TS = "take";
-
-        internal string RenderCSharp(CodeRenderingContext ctx) {
-            return $$"""
-                #region 検索条件クラス
-                /// <summary>
-                /// {{_rootAggregate.DisplayName}}の一覧検索条件
-                /// </summary>
-                public partial class {{CsClassName}} {
-                    /// <summary>絞り込み条件</summary>
-                    [JsonPropertyName("{{FILTER_TS}}")]
-                    public {{FilterRoot.CsClassName}} {{FILTER_CS}} { get; set; } = new();
-                    /// <summary>並び順</summary>
-                    [JsonPropertyName("{{SORT_TS}}")]
-                    public List<string> {{SORT_CS}} { get; set; } = [];
-                    /// <summary>ページングに使用。検索結果のうち先頭から何件スキップするか。</summary>
-                    [JsonPropertyName("{{SKIP_TS}}")]
-                    public int? {{SKIP_CS}} { get; set; }
-                    /// <summary>ページングに使用。検索結果のうち先頭から何件抽出するか。</summary>
-                    [JsonPropertyName("{{TAKE_TS}}")]
-                    public int? {{TAKE_CS}} { get; set; }
-                }
-                {{Filter.RenderTree(_rootAggregate, ctx)}}
-                #endregion 検索条件クラス
-                """;
-        }
-
-        internal string RenderTypeScript(CodeRenderingContext ctx) {
-            return $$"""
-                /** {{_rootAggregate.DisplayName}}の検索時の検索条件の型。 */
-                export type {{TsTypeName}} = {
-                  /** 絞り込み条件 */
-                  {{FILTER_TS}}: {
-                {{FilterRoot.RenderTypeScriptDeclaringLiteral(ctx).SelectTextTemplate(source => $$"""
-                    {{WithIndent(source, "    ")}}
-                """)}}
-                  }
-                  /** 並び順 */
-                  {{SORT_TS}}: (`${{{TypeScriptSortableMemberType}}}{{ASC_SUFFIX}}` | `${{{TypeScriptSortableMemberType}}}{{DESC_SUFFIX}}`)[]
-                  /** ページングに使用。検索結果のうち先頭から何件スキップするか。 */
-                  {{SKIP_TS}}?: number
-                  /** ページングに使用。検索結果のうち先頭から何件抽出するか。 */
-                  {{TAKE_TS}}?: number
-                }
-                """;
-        }
-
-
-        #region フィルタリング
         /// <summary>
-        /// フィルタリング
+        /// 検索条件オブジェクトのエントリー。
+        /// フィルタ、ソート、ページングの属性を持つ。
         /// </summary>
-        internal Filter FilterRoot { get; }
+        internal class Entry {
+            internal Entry(AggregateBase entryAggregate) {
+                _entryAggregate = entryAggregate;
+                FilterRoot = new Filter(_entryAggregate);
+            }
+            private readonly AggregateBase _entryAggregate;
+
+            internal virtual string CsClassName => $"{_entryAggregate.PhysicalName}SearchCondition";
+            internal virtual string TsTypeName => $"{_entryAggregate.PhysicalName}SearchCondition";
+
+            /// <summary>フィルタリング</summary>
+            internal Filter FilterRoot { get; }
+
+            internal string TypeScriptSortableMemberType => $"SortableMemberOf{_entryAggregate.PhysicalName}";
+            internal string GetTypeScriptSortableMemberType => $"get{TypeScriptSortableMemberType}";
+
+            internal const string FILTER_CS = "Filter";
+            internal const string FILTER_TS = "filter";
+            internal const string SORT_CS = "Sort";
+            internal const string SORT_TS = "sort";
+            internal const string SKIP_CS = "Skip";
+            internal const string SKIP_TS = "skip";
+            internal const string TAKE_CS = "Take";
+            internal const string TAKE_TS = "take";
+
+            internal string RenderCSharp(CodeRenderingContext ctx) {
+                return $$"""
+                    #region 検索条件クラス
+                    /// <summary>
+                    /// {{_entryAggregate.DisplayName}}の一覧検索条件
+                    /// </summary>
+                    public partial class {{CsClassName}} {
+                        /// <summary>絞り込み条件</summary>
+                        [JsonPropertyName("{{FILTER_TS}}")]
+                        public {{FilterRoot.CsClassName}} {{FILTER_CS}} { get; set; } = new();
+                        /// <summary>並び順</summary>
+                        [JsonPropertyName("{{SORT_TS}}")]
+                        public List<string> {{SORT_CS}} { get; set; } = [];
+                        /// <summary>ページングに使用。検索結果のうち先頭から何件スキップするか。</summary>
+                        [JsonPropertyName("{{SKIP_TS}}")]
+                        public int? {{SKIP_CS}} { get; set; }
+                        /// <summary>ページングに使用。検索結果のうち先頭から何件抽出するか。</summary>
+                        [JsonPropertyName("{{TAKE_TS}}")]
+                        public int? {{TAKE_CS}} { get; set; }
+                    }
+                    {{Filter.RenderTree(_entryAggregate, ctx)}}
+                    #endregion 検索条件クラス
+                    """;
+            }
+
+            internal string RenderTypeScript(CodeRenderingContext ctx) {
+                return $$"""
+                    /** {{_entryAggregate.DisplayName}}の検索時の検索条件の型。 */
+                    export type {{TsTypeName}} = {
+                      /** 絞り込み条件 */
+                      {{FILTER_TS}}: {
+                    {{FilterRoot.RenderTypeScriptDeclaringLiteral(ctx).SelectTextTemplate(source => $$"""
+                        {{WithIndent(source, "    ")}}
+                    """)}}
+                      }
+                      /** 並び順 */
+                      {{SORT_TS}}: (`${{{TypeScriptSortableMemberType}}}{{ASC_SUFFIX}}` | `${{{TypeScriptSortableMemberType}}}{{DESC_SUFFIX}}`)[]
+                      /** ページングに使用。検索結果のうち先頭から何件スキップするか。 */
+                      {{SKIP_TS}}?: number
+                      /** ページングに使用。検索結果のうち先頭から何件抽出するか。 */
+                      {{TAKE_TS}}?: number
+                    }
+                    """;
+            }
+
+
+            #region ソート
+            internal string RenderTypeScriptSortableMemberType() {
+                var sortableMembers = EnumerateSortMembersRecursively().ToArray();
+
+                return $$"""
+                    /** {{_entryAggregate.DisplayName}}のメンバーのうちソート可能なものを表すリテラル型 */
+                    export type {{TypeScriptSortableMemberType}}
+                    {{If(sortableMembers.Length == 0, () => $$"""
+                      = never
+                    """)}}
+                    {{sortableMembers.SelectTextTemplate((m, i) => $$"""
+                      {{(i == 0 ? "=" : "|")}} '{{m.GetLiteral().Replace("'", "\\'")}}'
+                    """)}}
+
+                    /** {{_entryAggregate.DisplayName}}のメンバーのうちソート可能なものを文字列で返します。 */
+                    export const {{GetTypeScriptSortableMemberType}} = (): {{TypeScriptSortableMemberType}}[] => [
+                    {{sortableMembers.SelectTextTemplate(m => $$"""
+                      '{{m.GetLiteral().Replace("'", "\\'")}}',
+                    """)}}
+                    ]
+                    """;
+            }
+
+            /// <summary>
+            /// 並び順に指定することができるメンバーを、子孫要素や参照先のそれも含めて列挙します。
+            /// </summary>
+            internal IEnumerable<SortableMember> EnumerateSortMembersRecursively() {
+                return EnumerateRecursively(_entryAggregate);
+
+                static IEnumerable<SortableMember> EnumerateRecursively(AggregateBase aggregate) {
+                    foreach (var member in aggregate.GetMembers()) {
+                        if (member is ValueMember vm) {
+                            yield return new SortableMember(vm);
+
+                        } else if (member is ChildrenAggreagte) {
+                            // 子配列の要素でのソートは論理的に定義できない
+                            continue;
+
+                        } else if (member is IRelationalMember rm) {
+                            // 子集約または参照先
+                            foreach (var vm2 in EnumerateRecursively(rm.MemberAggregate)) {
+                                yield return vm2;
+                            }
+                        }
+                    }
+                }
+            }
+            #endregion ソート
+
+
+            #region TypeScript側のオブジェクト新規作成関数
+            /// <summary>
+            /// TypeScriptの新規オブジェクト作成関数の名前
+            /// </summary>
+            internal string TsNewObjectFunction => $"createNew{TsTypeName}";
+            internal string RenderNewObjectFunction() {
+                return $$"""
+                    /** {{_entryAggregate.DisplayName}}の検索条件クラスの空オブジェクトを作成して返します。 */
+                    export const {{TsNewObjectFunction}} = (): {{TsTypeName}} => ({
+                      {{FILTER_TS}}: {
+                        {{WithIndent(FilterRoot.RenderNewObjectFunctionMemberLiteral(), "    ")}}
+                      },
+                      {{SORT_TS}}: [],
+                      {{SKIP_TS}}: undefined,
+                      {{TAKE_TS}}: undefined,
+                    })
+                    """;
+            }
+            #endregion TypeScript側のオブジェクト新規作成関数
+        }
+
 
         /// <summary>
         /// 検索条件クラスの絞り込み条件部分。
@@ -138,9 +215,9 @@ namespace Nijo.Models.QueryModelModules {
             /// </summary>
             internal static IEnumerable<string> GetPathFromEntry(ValueMember vm, E_CsTs csts) {
                 if (csts == E_CsTs.CSharp) {
-                    yield return FILTER_CS;
+                    yield return Entry.FILTER_CS;
                 } else {
-                    yield return FILTER_TS;
+                    yield return Entry.FILTER_TS;
                 }
 
                 foreach (var node in vm.GetPathFromEntry()) {
@@ -159,7 +236,7 @@ namespace Nijo.Models.QueryModelModules {
             /// <summary>
             /// 子孫集約のフィルターも含めてレンダリングする
             /// </summary>
-            internal static string RenderTree(RootAggregate rootAggregate, CodeRenderingContext ctx) {
+            internal static string RenderTree(AggregateBase rootAggregate, CodeRenderingContext ctx) {
                 var tree = rootAggregate
                     .EnumerateThisAndDescendants()
                     .Select(agg => new Filter(agg));
@@ -251,62 +328,7 @@ namespace Nijo.Models.QueryModelModules {
             }
             #endregion レンダリング
         }
-        #endregion フィルタリング
 
-
-        #region ソート
-        internal const string ASC_SUFFIX = "（昇順）";
-        internal const string DESC_SUFFIX = "（降順）";
-
-        internal string TypeScriptSortableMemberType => $"SortableMemberOf{_rootAggregate.PhysicalName}";
-        internal string GetTypeScriptSortableMemberType => $"get{TypeScriptSortableMemberType}";
-
-        internal string RenderTypeScriptSortableMemberType() {
-            var sortableMembers = EnumerateSortMembersRecursively().ToArray();
-
-            return $$"""
-                /** {{_rootAggregate.DisplayName}}のメンバーのうちソート可能なものを表すリテラル型 */
-                export type {{TypeScriptSortableMemberType}}
-                {{If(sortableMembers.Length == 0, () => $$"""
-                  = never
-                """)}}
-                {{sortableMembers.SelectTextTemplate((m, i) => $$"""
-                  {{(i == 0 ? "=" : "|")}} '{{m.GetLiteral().Replace("'", "\\'")}}'
-                """)}}
-
-                /** {{_rootAggregate.DisplayName}}のメンバーのうちソート可能なものを文字列で返します。 */
-                export const {{GetTypeScriptSortableMemberType}} = (): {{TypeScriptSortableMemberType}}[] => [
-                {{sortableMembers.SelectTextTemplate(m => $$"""
-                  '{{m.GetLiteral().Replace("'", "\\'")}}',
-                """)}}
-                ]
-                """;
-        }
-
-        /// <summary>
-        /// 並び順に指定することができるメンバーを、子孫要素や参照先のそれも含めて列挙します。
-        /// </summary>
-        internal IEnumerable<SortableMember> EnumerateSortMembersRecursively() {
-            return EnumerateRecursively(_rootAggregate);
-
-            static IEnumerable<SortableMember> EnumerateRecursively(AggregateBase aggregate) {
-                foreach (var member in aggregate.GetMembers()) {
-                    if (member is ValueMember vm) {
-                        yield return new SortableMember(vm);
-
-                    } else if (member is ChildrenAggreagte) {
-                        // 子配列の要素でのソートは論理的に定義できない
-                        continue;
-
-                    } else if (member is IRelationalMember rm) {
-                        // 子集約または参照先
-                        foreach (var vm2 in EnumerateRecursively(rm.MemberAggregate)) {
-                            yield return vm2;
-                        }
-                    }
-                }
-            }
-        }
 
         /// <summary>
         /// ソート可能なメンバー
@@ -336,36 +358,16 @@ namespace Nijo.Models.QueryModelModules {
                 yield return $"{fullpath}{DESC_SUFFIX}";
             }
         }
-        #endregion ソート
-
-
-        #region TypeScript側のオブジェクト新規作成関数
-        /// <summary>
-        /// TypeScriptの新規オブジェクト作成関数の名前
-        /// </summary>
-        internal string TsNewObjectFunction => $"createNew{TsTypeName}";
-        internal string RenderNewObjectFunction() {
-            return $$"""
-                /** {{_rootAggregate.DisplayName}}の検索条件クラスの空オブジェクトを作成して返します。 */
-                export const {{TsNewObjectFunction}} = (): {{TsTypeName}} => ({
-                  {{FILTER_TS}}: {
-                    {{WithIndent(FilterRoot.RenderNewObjectFunctionMemberLiteral(), "    ")}}
-                  },
-                  {{SORT_TS}}: [],
-                  {{SKIP_TS}}: undefined,
-                  {{TAKE_TS}}: undefined,
-                })
-                """;
-        }
-        #endregion TypeScript側のオブジェクト新規作成関数
     }
 }
 
 namespace Nijo.CodeGenerating {
+    using Nijo.Models.QueryModelModules;
+
     partial class SchemaPathNodeExtensions {
 
         /// <summary>
-        /// <see cref="GetPathFromEntry(ISchemaPathNode)"/> の結果を <see cref="SearchCondition.Filter"/> のルールに沿ったパスとして返す
+        /// <see cref="GetPathFromEntry(ISchemaPathNode)"/> の結果を <see cref="SearchCondition.Entry.Filter"/> のルールに沿ったパスとして返す
         /// </summary>
         public static IEnumerable<string> AsSearchConditionFilter(this IEnumerable<ISchemaPathNode> path, E_CsTs csts) {
             var entry = path.FirstOrDefault()?.GetEntry();
@@ -377,8 +379,8 @@ namespace Nijo.CodeGenerating {
                 // フィルターは検索条件オブジェクトの "Filter" という名前のオブジェクトに入っているので
                 if (node == entry) {
                     yield return csts == E_CsTs.CSharp
-                        ? SearchCondition.FILTER_CS
-                        : SearchCondition.FILTER_TS;
+                        ? SearchCondition.Entry.FILTER_CS
+                        : SearchCondition.Entry.FILTER_TS;
                     continue;
                 }
 

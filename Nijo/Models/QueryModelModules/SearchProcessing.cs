@@ -41,7 +41,7 @@ namespace Nijo.Models.QueryModelModules {
 
             var items = queryModels.Select(rootAggregate => {
                 var controller = new AspNetController(rootAggregate);
-                var searchCondition = new SearchCondition(rootAggregate);
+                var searchCondition = new SearchCondition.Entry(rootAggregate);
                 var displayData = new DisplayData(rootAggregate);
 
                 return new {
@@ -81,7 +81,7 @@ namespace Nijo.Models.QueryModelModules {
         #endregion TypeScript用
 
         internal string RenderAspNetCoreControllerAction(CodeRenderingContext ctx) {
-            var searchCondition = new SearchCondition(_rootAggregate);
+            var searchCondition = new SearchCondition.Entry(_rootAggregate);
             var searchConditionMessages = new SearchConditionMessageContainer(_rootAggregate);
 
             return $$"""
@@ -104,7 +104,7 @@ namespace Nijo.Models.QueryModelModules {
         }
 
         internal string RenderAppSrvMethods(CodeRenderingContext ctx) {
-            var searchCondition = new SearchCondition(_rootAggregate);
+            var searchCondition = new SearchCondition.Entry(_rootAggregate);
             var searchConditionMessage = new SearchConditionMessageContainer(_rootAggregate);
             var searchResult = new SearchResult(_rootAggregate);
             var displayData = new DisplayData(_rootAggregate);
@@ -136,11 +136,11 @@ namespace Nijo.Models.QueryModelModules {
 
                     // ページング(SKIP, TAKE)
                     var query = sorted;
-                    if (searchCondition.{{SearchCondition.SKIP_CS}} != null) {
-                        query = query.Skip(searchCondition.{{SearchCondition.SKIP_CS}}.Value);
+                    if (searchCondition.{{SearchCondition.Entry.SKIP_CS}} != null) {
+                        query = query.Skip(searchCondition.{{SearchCondition.Entry.SKIP_CS}}.Value);
                     }
-                    if (searchCondition.{{SearchCondition.TAKE_CS}} != null) {
-                        query = query.Take(searchCondition.{{SearchCondition.TAKE_CS}}.Value);
+                    if (searchCondition.{{SearchCondition.Entry.TAKE_CS}} != null) {
+                        query = query.Take(searchCondition.{{SearchCondition.Entry.TAKE_CS}}.Value);
                     }
 
                     // 画面表示用の型への変換
@@ -209,7 +209,7 @@ namespace Nijo.Models.QueryModelModules {
         /// WHERE句
         /// </summary>
         private string RenderAppendWhereClause(CodeRenderingContext ctx) {
-            var searchCondition = new SearchCondition(_rootAggregate);
+            var searchCondition = new SearchCondition.Entry(_rootAggregate);
             var searchResult = new SearchResult(_rootAggregate);
 
             return $$"""
@@ -231,7 +231,7 @@ namespace Nijo.Models.QueryModelModules {
         /// ORDER BY 句
         /// </summary>
         private string RenderAppendOrderByClause() {
-            var searchCondition = new SearchCondition(_rootAggregate);
+            var searchCondition = new SearchCondition.Entry(_rootAggregate);
             var searchResult = new SearchResult(_rootAggregate);
 
             var sortMembers = searchCondition
@@ -252,7 +252,7 @@ namespace Nijo.Models.QueryModelModules {
                 /// </summary>
                 protected virtual IQueryable<{{searchResult.CsClassName}}> {{APPEND_ORDERBY_CLAUSE}}(IQueryable<{{searchResult.CsClassName}}> query, {{searchCondition.CsClassName}} searchCondition) {
                     IOrderedQueryable<{{searchResult.CsClassName}}>? sorted = null;
-                    foreach (var sortOption in searchCondition.{{SearchCondition.SORT_CS}}) {
+                    foreach (var sortOption in searchCondition.{{SearchCondition.Entry.SORT_CS}}) {
                         sorted = sortOption switch {
                 {{sortMembers.SelectTextTemplate(m => $$"""
                             "{{m.AscLiteral}}" => sorted == null
@@ -285,9 +285,7 @@ namespace Nijo.Models.QueryModelModules {
                 protected virtual Expression<Func<{{searchResult.CsClassName}}, {{displayData.CsClassName}}>> {{TO_DISPLAY_DATA}}() {
                     return searchResult => new {{displayData.CsClassName}}() {
                         {{DisplayData.VALUES_CS}} = new() {
-                {{displayData.GetOwnMembers().SelectTextTemplate(member => $$"""
-                            {{WithIndent(RenderMember(member), "            ")}}
-                """)}}
+                            {{WithIndent(RenderMember(displayData), "            ")}}
                         },
                 {{If(displayData.HasLifeCycle, () => $$"""
                         {{DisplayData.EXISTS_IN_DB_CS}} = true,
@@ -301,24 +299,40 @@ namespace Nijo.Models.QueryModelModules {
                 }
                 """;
 
-            static string RenderMember(DisplayData.DisplayDataMember member) {
-                if (member is DisplayData.DisplayDataValueMember vm) {
-                    return $$"""
-                        {{member.PhysicalName}} = searchResult.{{vm.Member.GetPathFromEntry().AsSearchResult().Join("!.")}},
-                        """;
+            static IEnumerable<string> RenderMember(DisplayData displayData) {
+                foreach (var member in displayData.GetOwnMembers()) {
+                    if (member is DisplayData.DisplayDataValueMember vm) {
+                        yield return $$"""
+                            {{member.PhysicalName}} = searchResult.{{vm.Member.GetPathFromEntry().AsSearchResult().Join("!.")}},
+                            """;
 
-                }
-                if (member is DisplayData.DisplayDataRefMember refTo) {
-                    return $$"""
-                        {{member.PhysicalName}} = new() {
-                        {{refTo.GetMembers().SelectTextTemplate(m => $$"""
+                    } else if (member is DisplayData.DisplayDataRefMember refTo) {
+                        yield return $$"""
+                            {{member.PhysicalName}} = new() {
+                                {{WithIndent(RenderRefMember(refTo.RefEntry), "    ")}}
+                            },
+                            """;
 
-                        """)}}
-                            {{WithIndent(RenderMember(member), "    ")}}
-                        },
-                        """;
+                        static IEnumerable<string> RenderRefMember(DisplayDataRef.RefDisplayDataMemberContainer displayDataRef) {
+                            foreach (var member in displayDataRef.GetMembers()) {
+                                if (member is DisplayDataRef.RefDisplayDataValueMember vm) {
+                                    yield return $$"""
+                                        {{member.PhysicalName}} = {{vm.Member.GetPathFromEntry().AsSearchResult().Join("!.")}},
+                                        """;
+
+                                } else if (member is DisplayDataRef.RefDisplayDataMemberContainer container) {
+                                    yield return $$"""
+                                        {{member.PhysicalName}} = new() {
+                                            {{WithIndent(RenderRefMember(container), "    ")}}
+                                        },
+                                        """;
+                                }
+                            }
+                        }
+                    } else {
+                        throw new NotImplementedException();
+                    }
                 }
-                throw new NotImplementedException();
             }
         }
     }

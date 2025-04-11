@@ -46,7 +46,7 @@ namespace Nijo.Models {
             //   - export type 検索条件型
             //   - export type ソート可能メンバー型
             // - TS側オブジェクト作成関数
-            var searchCondition = new SearchCondition(rootAggregate);
+            var searchCondition = new SearchCondition.Entry(rootAggregate);
             aggregateFile.AddCSharpClass(searchCondition.RenderCSharp(ctx));
             aggregateFile.AddTypeScriptTypeDef(searchCondition.RenderTypeScript(ctx));
             aggregateFile.AddTypeScriptTypeDef(searchCondition.RenderTypeScriptSortableMemberType());
@@ -105,13 +105,11 @@ namespace Nijo.Models {
             //   - Reactは型マッピングのみ
             //   - ASP.NET Core Controller Action
             //   - ApplicationService
-            var refDisplayDataEntry = new DisplayDataRef.Entry(rootAggregate);
-            var searchRefs = new SearchProcessingRefs(rootAggregate);
             aggregateFile.AddCSharpClass(DisplayDataRef.RenderCSharpRecursively(rootAggregate, ctx));
             aggregateFile.AddTypeScriptTypeDef(DisplayDataRef.RenderTypeScriptRecursively(rootAggregate));
-            aggregateFile.AddTypeScriptFunction(refDisplayDataEntry.RenderTypeScriptObjectCreationFunction(ctx));
-            aggregateFile.AddAppSrvMethod(searchRefs.RenderAppSrvMethod(ctx));
-            aggregateFile.AddWebapiControllerAction(searchRefs.RenderAspNetCoreControllerAction(ctx));
+            aggregateFile.AddTypeScriptFunction(DisplayDataRef.RenderTypeScriptObjectCreationFunctionRecursively(rootAggregate, ctx));
+            aggregateFile.AddAppSrvMethod(SearchProcessingRefs.RenderAppSrvMethodRecursively(rootAggregate, ctx));
+            aggregateFile.AddWebapiControllerAction(SearchProcessingRefs.RenderAspNetCoreControllerActionRecursively(rootAggregate, ctx));
 
             // UI用モジュール
             // - DisplayData等のマッピングオブジェクト

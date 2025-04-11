@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using NUnit.Framework;
+using System.Text;
 
 namespace Nijo.IntegrationTest;
 
@@ -95,19 +96,42 @@ public class DataPatternTest {
         }
 
         // C#コンパイルチェック
-        var csprojPath = Path.Combine(testProjectDir, "MyApp.Core.csproj");
+        var solutionPath = Path.Combine(testProjectDir, "NIJO_APPLICATION_TEMPLATE.sln");
         var csBuildProcess = Process.Start(new ProcessStartInfo {
             FileName = "dotnet",
-            Arguments = $"build \"{csprojPath}\" -c Debug",
+            Arguments = $"build \"{solutionPath}\" -c Debug",
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
-        });
-        csBuildProcess.WaitForExit();
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8,
+        })!;
+
+        var outputBuilder = new StringBuilder();
+        var errorBuilder = new StringBuilder();
+
+        csBuildProcess.OutputDataReceived += (sender, e) => {
+            if (e.Data != null) {
+                outputBuilder.AppendLine(e.Data);
+                Console.WriteLine(e.Data);
+            }
+        };
+        csBuildProcess.ErrorDataReceived += (sender, e) => {
+            if (e.Data != null) {
+                errorBuilder.AppendLine(e.Data);
+                Console.WriteLine(e.Data);
+            }
+        };
+        csBuildProcess.BeginOutputReadLine();
+        csBuildProcess.BeginErrorReadLine();
+
+        if (!csBuildProcess.WaitForExit(300000)) { // 5分のタイムアウト
+            csBuildProcess.Kill();
+            Assert.Fail("C#コンパイルがタイムアウトしました。");
+        }
+
         if (csBuildProcess.ExitCode != 0) {
-            var output = csBuildProcess.StandardOutput.ReadToEnd();
-            var error = csBuildProcess.StandardError.ReadToEnd();
-            Assert.Fail($"C#コンパイルに失敗しました。\n出力:\n{output}\nエラー:\n{error}");
+            Assert.Fail($"C#コンパイルに失敗しました。\n出力:\n{outputBuilder}\nエラー:\n{errorBuilder}");
         }
 
         // TypeScriptコンパイルチェック
@@ -119,7 +143,9 @@ public class DataPatternTest {
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
-        });
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8,
+        })!;
         tsBuildProcess.WaitForExit();
         if (tsBuildProcess.ExitCode != 0) {
             var output = tsBuildProcess.StandardOutput.ReadToEnd();
@@ -133,7 +159,9 @@ public class DataPatternTest {
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
-        });
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8,
+        })!;
         testProcess.WaitForExit();
         if (testProcess.ExitCode != 0) {
             var output = testProcess.StandardOutput.ReadToEnd();
@@ -163,11 +191,11 @@ public class DataPatternTest {
         var implementors = AppDomain.CurrentDomain.GetAssemblies()
             .SelectMany(a => a.GetTypes())
             .Where(t => typeof(IApplicationServiceImplementor).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract)
-            .Select(t => Activator.CreateInstance(t) as IApplicationServiceImplementor)
-            .Where(i => i != null);
+            .Select(t => Activator.CreateInstance(t))
+            .OfType<IApplicationServiceImplementor>();
 
         // 対象のXMLファイルに対応する実装を返す
-        return implementors.FirstOrDefault(i => i.TargetXmlFileName == $"{xmlFileName}.xml");
+        return implementors.First(i => i.TargetXmlFileName == $"{xmlFileName}.xml");
     }
 }
 
