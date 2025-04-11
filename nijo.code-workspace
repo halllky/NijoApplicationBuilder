@@ -4,7 +4,8 @@
       "EditorConfig.EditorConfig",
       "yzhang.markdown-all-in-one",
       "redhat.vscode-xml",
-      "bierner.markdown-preview-github-styles"
+      "bierner.markdown-preview-github-styles",
+      "ms-dotnettools.vscode-dotnet-runtime"
     ]
   },
   "folders": [
