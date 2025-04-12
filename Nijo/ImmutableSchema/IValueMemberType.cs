@@ -109,3 +109,28 @@ namespace Nijo.ImmutableSchema {
         public required CodeRenderingContext CodeRenderingContext { get; init; }
     }
 }
+
+namespace Nijo {
+    using Nijo.ImmutableSchema;
+
+    internal static class IValueMemberTypeExtension {
+
+        /// <summary>
+        /// (string?) のようなC#のキャスト処理をレンダリングする
+        /// </summary>
+        internal static string RenderCastToPrimitiveType(this IValueMemberType vmType, bool notNull = false) {
+            return vmType.CsDomainTypeName == vmType.CsPrimitiveTypeName
+                ? string.Empty
+                : $"({vmType.CsPrimitiveTypeName}{(notNull ? "" : "?")})";
+        }
+
+        /// <summary>
+        /// (XxxxxID?) のようなC#のキャスト処理をレンダリングする
+        /// </summary>
+        internal static string RenderCastToDomainType(this IValueMemberType vmType, bool notNull = false) {
+            return vmType.CsDomainTypeName == vmType.CsPrimitiveTypeName
+                ? string.Empty
+                : $"({vmType.CsDomainTypeName}{(notNull ? "" : "?")})";
+        }
+    }
+}

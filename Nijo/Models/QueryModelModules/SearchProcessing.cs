@@ -303,7 +303,7 @@ namespace Nijo.Models.QueryModelModules {
                 foreach (var member in displayData.GetOwnMembers()) {
                     if (member is DisplayData.DisplayDataValueMember vm) {
                         yield return $$"""
-                            {{member.PhysicalName}} = searchResult.{{vm.Member.GetPathFromEntry().AsSearchResult().Join("!.")}},
+                            {{member.PhysicalName}} = {{vm.Member.Type.RenderCastToDomainType()}}searchResult.{{vm.Member.GetPathFromEntry().AsSearchResult().Join("!.")}},
                             """;
 
                     } else if (member is DisplayData.DisplayDataRefMember refTo) {
@@ -317,7 +317,7 @@ namespace Nijo.Models.QueryModelModules {
                             foreach (var member in displayDataRef.GetMembers()) {
                                 if (member is DisplayDataRef.RefDisplayDataValueMember vm) {
                                     yield return $$"""
-                                        {{member.PhysicalName}} = {{vm.Member.GetPathFromEntry().AsSearchResult().Join("!.")}},
+                                        {{member.PhysicalName}} = {{vm.Member.Type.RenderCastToDomainType()}}searchResult.{{vm.Member.GetPathFromEntry().AsSearchResult().Join("!.")}},
                                         """;
 
                                 } else if (member is DisplayDataRef.RefDisplayDataMemberContainer container) {

@@ -43,8 +43,8 @@ namespace Nijo.ValueMemberTypes {
                 var strArrayPath = fullpath
                     .AsSearchConditionFilter(E_CsTs.CSharp)
                     .ToArray();
-                var fullpathNullable = strArrayPath.Join("?.");
-                var fullpathNotNull = strArrayPath.Join(".");
+                var fullpathNullable = $"searchCondition.{strArrayPath.Join("?.")}";
+                var fullpathNotNull = $"searchCondition.{strArrayPath.Join(".")}";
 
                 var isArray = fullpath.Any(node => node is ChildrenAggreagte);
                 var whereFullpath = fullpath.AsSearchResult().ToArray();

@@ -34,6 +34,7 @@ namespace Nijo.Models.DataModelModules {
                         TempVarName = $"searchKey{i + 1}",
                         vm.PhysicalName,
                         vm.DisplayName,
+                        VmType = vm.Type,
                         LogTemplate = $"{vm.DisplayName.Replace("\"", "\\\"")}: {{key{i}}}",
                         SaveCommandFullPath = fullpath.AsSaveCommand().ToArray(),
                         SaveCommandMessageFullPath = fullpath.AsSaveCommandMessage().ToArray(),
@@ -64,7 +65,7 @@ namespace Nijo.Models.DataModelModules {
 
                     // 削除前データ取得
                 {{keys.SelectTextTemplate(vm => $$"""
-                    var {{vm.TempVarName}} = command.{{vm.SaveCommandFullPath.Join("!.")}};
+                    var {{vm.TempVarName}} = {{vm.VmType.RenderCastToPrimitiveType()}}command.{{vm.SaveCommandFullPath.Join("!.")}};
                 """)}}
 
                     var dbEntity = DbContext.{{dbEntity.DbSetName}}
@@ -74,7 +75,7 @@ namespace Nijo.Models.DataModelModules {
                 """)}}
                         .SingleOrDefault(e {{WithIndent(keys.SelectTextTemplate((vm, i) => $$"""
                                            {{(i == 0 ? "=>" : "&&")}} e.{{vm.DbEntityFullPath.Join("!.")}} == {{vm.TempVarName}}
-                                           """), "                        ")}});
+                                           """), "                           ")}});
 
                     if (dbEntity == null) {
                         messages.AddError({{MsgFactory.MSG}}.{{UpdateMethod.ERR_DATA_NOT_FOUND}}());

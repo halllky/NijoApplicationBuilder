@@ -30,7 +30,7 @@ internal class YearMonthMember : IValueMemberType {
     }
 
     ValueMemberSearchBehavior? IValueMemberType.SearchBehavior => new() {
-        FilterCsTypeName = $"{FromTo.CS_CLASS_NAME}<int?>",
+        FilterCsTypeName = $"{FromTo.CS_CLASS_NAME}<YearMonth?>",
         FilterTsTypeName = "{ from?: number; to?: number }",
         RenderTsNewObjectFunctionValue = () => "{ from: undefined, to: undefined }",
         RenderFiltering = ctx => {
@@ -43,22 +43,26 @@ internal class YearMonthMember : IValueMemberType {
 
             return $$"""
                 if ({{fullpathNullable}}?.From != null && {{fullpathNullable}}?.To != null) {
+                    var from = {{this.RenderCastToPrimitiveType(true)}}{{fullpathNotNull}}.From;
+                    var to = {{this.RenderCastToPrimitiveType(true)}}{{fullpathNotNull}}.To;
                 {{If(isArray, () => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{ctx.Member.PhysicalName}}.Value >= {{fullpathNotNull}}.From && y.{{ctx.Member.PhysicalName}}.Value <= {{fullpathNotNull}}.To));
+                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{ctx.Member.PhysicalName}} >= from && y.{{ctx.Member.PhysicalName}} <= to));
                 """).Else(() => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.Join(".")}}.Value >= {{fullpathNotNull}}.From && x.{{whereFullpath.Join(".")}}.Value <= {{fullpathNotNull}}.To);
+                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.Join(".")}} >= from && x.{{whereFullpath.Join(".")}} <= to);
                 """)}}
                 } else if ({{fullpathNullable}}?.From != null) {
+                    var from = {{this.RenderCastToPrimitiveType(true)}}{{fullpathNotNull}}.From;
                 {{If(isArray, () => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{ctx.Member.PhysicalName}}.Value >= {{fullpathNotNull}}.From));
+                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{ctx.Member.PhysicalName}} >= from));
                 """).Else(() => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.Join(".")}}.Value >= {{fullpathNotNull}}.From);
+                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.Join(".")}} >= from);
                 """)}}
                 } else if ({{fullpathNullable}}?.To != null) {
+                    var to = {{this.RenderCastToPrimitiveType(true)}}{{fullpathNotNull}}.To;
                 {{If(isArray, () => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{ctx.Member.PhysicalName}}.Value <= {{fullpathNotNull}}.To));
+                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{ctx.Member.PhysicalName}} <= to));
                 """).Else(() => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.Join(".")}}.Value <= {{fullpathNotNull}}.To);
+                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.Join(".")}} <= to);
                 """)}}
                 }
                 """;
@@ -261,17 +265,16 @@ internal class YearMonthMember : IValueMemberType {
                 /// </summary>
                 public class YearMonthJsonConverter : JsonConverter<YearMonth> {
                     public override YearMonth Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
-                        return reader.TokenType switch {
-                            JsonTokenType.Number => (YearMonth)reader.GetInt32(),
-                            JsonTokenType.String => {
-                                var str = reader.GetString();
-                                if (int.TryParse(str, out var value)) {
-                                    return (YearMonth)value;
-                                }
-                                throw new JsonException("YearMonthの形式が不正です");
-                            },
-                            _ => throw new JsonException("YearMonthの形式が不正です")
-                        };
+                        if (reader.TokenType == JsonTokenType.Number) {
+                            return (YearMonth)reader.GetInt32();
+                        }
+                        if (reader.TokenType == JsonTokenType.String) {
+                            var str = reader.GetString();
+                            return int.TryParse(str, out var value)
+                                ? (YearMonth)value
+                                : throw new JsonException($"YearMonthの形式が不正です: {str}");
+                        }
+                        throw new JsonException("YearMonthの形式が不正です");
                     }
 
                     public override void Write(Utf8JsonWriter writer, YearMonth value, JsonSerializerOptions options) {

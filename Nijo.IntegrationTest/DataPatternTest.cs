@@ -51,7 +51,12 @@ public class DataPatternTest {
 
         // 既存のテストプロジェクトを削除
         if (Directory.Exists(testProjectDir)) {
-            Directory.Delete(testProjectDir, true);
+            foreach (var file in Directory.GetFiles(testProjectDir)) {
+                File.Delete(file);
+            }
+            foreach (var dir in Directory.GetDirectories(testProjectDir)) {
+                Directory.Delete(dir, true);
+            }
         }
 
         // テンプレートプロジェクトをコピー

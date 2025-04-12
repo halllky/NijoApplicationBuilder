@@ -331,7 +331,7 @@ namespace Nijo.Models.DataModelModules {
                         .GetPathFromEntry()
                         .SinceNearestChildren()
                         .AsSaveCommand();
-                    var joined = $"{rightInstanceName}.{path.Join("?.")}";
+                    var joined = $"{(member.Member is ValueMember vm3 ? vm3.Type.RenderCastToPrimitiveType() : "")}{rightInstanceName}.{path.Join("?.")}";
 
                     // 右辺の候補に追加
                     rightMembers.Add(member.Member.XElement, joined);
@@ -350,7 +350,7 @@ namespace Nijo.Models.DataModelModules {
                                 .GetPathFromEntry()
                                 .SinceNearestChildren()
                                 .AsSaveCommand();
-                            var joined2 = $"{rightInstanceName}.{path2.Join("?.")}";
+                            var joined2 = $"{vm2.Member.Type.RenderCastToPrimitiveType()}{rightInstanceName}.{path2.Join("?.")}";
                             ancestorsAndThisKeys.Add(vm2.Member.XElement, joined2);
                         }
                     }

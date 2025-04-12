@@ -39,84 +39,94 @@ namespace Nijo.Models {
         }
 
         public void GenerateCode(CodeRenderingContext ctx, RootAggregate rootAggregate) {
-            var valueObjectFile = new SourceFileByAggregate(rootAggregate);
-
             // 値オブジェクトクラスの生成
-            var csharpCode = RenderCSharp(rootAggregate, ctx);
-            valueObjectFile.AddCSharpClass(csharpCode);
+            ctx.CoreLibrary(dir => {
+                dir.Generate(RenderCSharp(rootAggregate, ctx));
+            });
 
             // TypeScript定義の生成
-            var typeScriptCode = RenderTypeScript(rootAggregate);
-            valueObjectFile.AddTypeScriptTypeDef(typeScriptCode);
-
-            valueObjectFile.ExecuteRendering(ctx);
+            ctx.ReactProject(dir => {
+                dir.Directory("util", utilDir => {
+                    utilDir.Generate(RenderTypeScript(rootAggregate));
+                });
+            });
         }
 
-        private string RenderCSharp(RootAggregate rootAggregate, CodeRenderingContext ctx) {
+        private static SourceFile RenderCSharp(RootAggregate rootAggregate, CodeRenderingContext ctx) {
             var aggregateName = rootAggregate.PhysicalName;
 
-            return $$"""
-                namespace {{ctx.Config.RootNamespace}};
+            return new SourceFile {
+                FileName = $"{rootAggregate.PhysicalName}.cs",
+                Contents = $$"""
+                    using System.Diagnostics.CodeAnalysis;
 
-                /// <summary>
-                /// {{rootAggregate.DisplayName}}。
-                /// 誤って{{rootAggregate.DisplayName}}ではない文字列型の項目に代入してしまったときにエラーで気付けるよう、値オブジェクトで定義している。
-                /// stringと相互に変換するときは明示的に(string)や({{aggregateName}})でキャストする。
-                /// </summary>
-                public partial class {{aggregateName}} : IEquatable<{{aggregateName}}> {
-                    private readonly string _value;
+                    namespace {{ctx.Config.RootNamespace}};
 
-                    public {{aggregateName}}(string value) {
-                        _value = value;
-                    }
+                    /// <summary>
+                    /// {{rootAggregate.DisplayName}}。
+                    /// 誤って{{rootAggregate.DisplayName}}ではない文字列型の項目に代入してしまったときにエラーで気付けるよう、値オブジェクトで定義している。
+                    /// stringと相互に変換するときは明示的に(string)や({{aggregateName}})でキャストする。
+                    /// </summary>
+                    public partial class {{aggregateName}} : IEquatable<{{aggregateName}}> {
+                        private readonly string _value;
 
-                    public override bool Equals(object? obj) {
-                        return obj is {{aggregateName}} other && Equals(other);
-                    }
+                        public {{aggregateName}}(string value) {
+                            _value = value;
+                        }
 
-                    public bool Equals({{aggregateName}}? other) {
-                        if (other is null) return false;
-                        return _value == other._value;
-                    }
+                        public override bool Equals(object? obj) {
+                            return obj is {{aggregateName}} other && Equals(other);
+                        }
 
-                    public override int GetHashCode() {
-                        return _value?.GetHashCode() ?? 0;
-                    }
+                        public bool Equals({{aggregateName}}? other) {
+                            if (other is null) return false;
+                            return _value == other._value;
+                        }
 
-                    public static bool operator ==({{aggregateName}}? left, {{aggregateName}}? right) {
-                        return EqualityComparer<{{aggregateName}}>.Default.Equals(left, right);
-                    }
-                    public static bool operator !=({{aggregateName}}? left, {{aggregateName}}? right) {
-                        return !(left == right);
-                    }
+                        public override int GetHashCode() {
+                            return _value?.GetHashCode() ?? 0;
+                        }
 
-                    // {{aggregateName}}型の変数を (string) でキャストできるようにする
-                    public static explicit operator string({{aggregateName}} value) {
-                        return value._value;
-                    }
-                    // string型の変数を ({{aggregateName}}) でキャストできるようにする
-                    public static explicit operator {{aggregateName}}(string value) {
-                        return new {{aggregateName}}(value);
-                    }
+                        public static bool operator ==({{aggregateName}}? left, {{aggregateName}}? right) {
+                            return EqualityComparer<{{aggregateName}}>.Default.Equals(left, right);
+                        }
+                        public static bool operator !=({{aggregateName}}? left, {{aggregateName}}? right) {
+                            return !(left == right);
+                        }
 
-                    public override string ToString() {
-                        return _value;
+                        // {{aggregateName}}型の変数を (string) でキャストできるようにする
+                        [return: NotNullIfNotNull(nameof(value))]
+                        public static explicit operator string?({{aggregateName}}? value) {
+                            return value?._value;
+                        }
+                        // string型の変数を ({{aggregateName}}) でキャストできるようにする
+                        [return: NotNullIfNotNull(nameof(value))]
+                        public static explicit operator {{aggregateName}}?(string? value) {
+                            return value == null ? null : new {{aggregateName}}(value);
+                        }
+
+                        public override string ToString() {
+                            return _value;
+                        }
                     }
-                }
-                """;
+                    """,
+            };
         }
 
-        private string RenderTypeScript(RootAggregate rootAggregate) {
+        private static SourceFile RenderTypeScript(RootAggregate rootAggregate) {
             var aggregateName = rootAggregate.PhysicalName;
 
-            return $$"""
-                /**
-                 * {{rootAggregate.DisplayName}}。
-                 * 誤って{{rootAggregate.DisplayName}}ではない文字列型の項目に代入してしまったときにエラーで気付けるよう、公称型で定義している。
-                 * stringと相互に変換するときは明示的に as で変換する。
-                 */
-                export type {{aggregateName}} = string & { readonly __brand: unique symbol }
-                """;
+            return new SourceFile {
+                FileName = $"{rootAggregate.PhysicalName}.ts",
+                Contents = $$"""
+                    /**
+                     * {{rootAggregate.DisplayName}}。
+                     * 誤って{{rootAggregate.DisplayName}}ではない文字列型の項目に代入してしまったときにエラーで気付けるよう、公称型で定義している。
+                     * stringと相互に変換するときは明示的に as で変換する。
+                     */
+                    export type {{aggregateName}} = string & { readonly __brand: unique symbol }
+                    """,
+            };
         }
 
         public void GenerateCode(CodeRenderingContext ctx) {
