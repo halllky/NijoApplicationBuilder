@@ -8,14 +8,9 @@ alwaysApply: true
 - 「ソースコード自動生成処理」とは、 [Nijo.csproj](mdc:Nijo/Nijo.csproj) プロジェクトおよびそこで実行される一連のソースコード生成処理を表します。
 - 「アプリケーションテンプレート」とは、 [NIJO_APPLICATION_TEMPLATE.sln](mdc:Nijo.ApplicationTemplate.Ver1/NIJO_APPLICATION_TEMPLATE.sln) に属するソースコードを表します。
 
-## ソースコード修正時
-- @[.editorconfig](mdc:.editorconfig) を参考にしてください。
-
 ## どのように振る舞うべきか
+- ソースコードを修正するときは [.editorconfig](mdc:.editorconfig) を参考にしてください。
+- [Nijo.csproj](mdc:Nijo/Nijo.csproj) プロジェクトおよびそのプロジェクトに含まれるソースコードを修正するときは [CONTRIBUTING.md](mdc:Nijo/CONTRIBUTING.md) を参照してください。
 - 参照しようとしているフォルダに `README.md` という名前のファイルがある場合、 `README.md` を参照してください。
-- ユーザーの指示によって、「計画立案モード」、「実装モード」、「デバッグモード」を決めて、それに沿って以下の振る舞いをしてください。
-  - 計画立案する時はabout.mdに計画を書き出して下さい
-  - 実装するときはまず修正方針を3～5行程度の箇条書きで提示してください。
-  - デバッグモードでは [run-for-cursor-agent.ps1](mdc:Nijo.IntegrationTest/run-for-cursor-agent.ps1) を実行してください。
 - [run-for-cursor-agent.ps1](mdc:Nijo.IntegrationTest/run-for-cursor-agent.ps1) 実行時はカレントディレクトリがこのps1ファイルの場所と一致していないと失敗するため、必ず事前にcdコマンドを実行してこのps1ファイルがある場所に移動してから実行してください。
 - [run-for-cursor-agent.ps1](mdc:Nijo.IntegrationTest/run-for-cursor-agent.ps1) の詳細な結果は [DataPatternTest_Results.trx](mdc:Nijo.IntegrationTest/TestResults/DataPatternTest_Results.trx) に出力されています。エラーの詳細を確認する際はまずこのファイルを確認してください。

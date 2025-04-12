@@ -29,6 +29,7 @@ public class SchemaParseContext {
             new QueryModel(),
             new CommandModel(),
             new StaticEnumModel(),
+            new ValueObjectModel(),
         };
         var valueMemberTypes = new IValueMemberType[] {
             new ValueMemberTypes.Word(),

@@ -1,0 +1,6 @@
+# ValueMemberTypes名前空間
+ここにはnijo.exeで既定で定義されている [IValueMemberType](../ImmutableSchema/IValueMemberType.cs) が列挙されています。
+標準の単語型、日付型、数値型などの仕様はここに記載されたクラスで定義されています。
+
+この名前空間で定義されたコード自動生成をデフォルトの設定で実行した際に使用されます。
+なお、コード自動生成には任意のValueMemberTypeを指定することができ、ここで定義された既定のValueMemberTypeを一切用いないこともできます。

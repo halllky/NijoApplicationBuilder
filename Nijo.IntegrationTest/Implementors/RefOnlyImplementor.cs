@@ -1,0 +1,47 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Xml.Linq;
+
+namespace Nijo.IntegrationTest.Implementors;
+
+public class RefOnlyImplementor : IApplicationServiceImplementor {
+    public string TargetXmlFileName => "001_Refのみ.xml";
+
+    public string GetImplementation(XDocument schemaXml) {
+        return @"
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace MyApp.Core;
+
+public partial class OverridedApplicationService {
+    public override Task<CommandModelテストReturnType> Execute(CommandModelテストParameter param, IPresentationContext<CommandModelテストParameterMessages> context) {
+        throw new NotImplementedException();
+    }
+
+    protected override IQueryable<参照先SearchResult> CreateQuerySource(参照先SearchCondition searchCondition, IPresentationContext<参照先Messages> context) {
+        return DbContext.参照先DbSet.Select(e => new 参照先SearchResult {
+            参照先集約ID = e.参照先集約ID,
+            参照先集約名 = e.参照先集約名,
+            Version = (int)e.Version!,
+        });
+    }
+
+    protected override IQueryable<参照元SearchResult> CreateQuerySource(参照元SearchCondition searchCondition, IPresentationContext<参照元Messages> context) {
+        return DbContext.参照元DbSet.Select(e => new 参照元SearchResult {
+            参照元集約ID = e.参照元集約ID,
+            参照元集約名 = e.参照元集約名,
+            参照_参照先集約ID = e.参照!.参照先集約ID,
+            参照_参照先集約名 = e.参照!.参照先集約名,
+            Version = (int)e.Version!,
+        });
+    }
+}";
+    }
+} 
