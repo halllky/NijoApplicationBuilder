@@ -32,7 +32,7 @@ namespace Nijo.Models.QueryModelModules {
         internal const string APPEND_WHERE_CLAUSE = "AppendWhereClause";
         internal const string APPEND_ORDERBY_CLAUSE = "AppendOrderByClause";
         private const string ON_AFTER_LOADED = "OnAfterLoaded";
-        private const string TO_DISPLAY_DATA = "ToDisplayData";
+        private string ToDisplayData => $"To{_rootAggregate.PhysicalName}DisplayData";
         private const string SET_KEYS_READONLY = "SetKeysReadOnly";
 
 
@@ -144,7 +144,7 @@ namespace Nijo.Models.QueryModelModules {
                     }
 
                     // 画面表示用の型への変換
-                    var converted = query.Select({{TO_DISPLAY_DATA}}());
+                    var converted = query.Select({{ToDisplayData}}());
 
                     // 検索処理実行
                     {{displayData.CsClassName}}[] loaded;
@@ -282,7 +282,7 @@ namespace Nijo.Models.QueryModelModules {
                 /// {{_rootAggregate.DisplayName}}の検索結果型を画面表示用の型に変換する式を返します。
                 /// 検索条件には存在するが画面表示用データには存在しない項目は、この式の結果に含まれません。
                 /// </summary>
-                protected virtual Expression<Func<{{searchResult.CsClassName}}, {{displayData.CsClassName}}>> {{TO_DISPLAY_DATA}}() {
+                protected virtual Expression<Func<{{searchResult.CsClassName}}, {{displayData.CsClassName}}>> {{ToDisplayData}}() {
                     return searchResult => new {{displayData.CsClassName}}() {
                         {{DisplayData.VALUES_CS}} = new() {
                             {{WithIndent(RenderMember(displayData), "            ")}}

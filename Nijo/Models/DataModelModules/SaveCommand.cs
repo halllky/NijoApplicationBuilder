@@ -447,7 +447,7 @@ namespace Nijo.CodeGenerating {
             var isOutOfEntryTree = false;
 
             foreach (var node in path) {
-                if (node is RootAggregate && node.PreviousNode == null) continue; // パスの一番最初（エントリー）はスキップ
+                if (node.PreviousNode == null) continue; // パスの一番最初（エントリー）はスキップ
                 if (node.PreviousNode is RefToMember) continue; // refの1つ次の要素の名前はrefで列挙済みのためスキップ
 
                 // 外部参照のナビゲーションプロパティを辿るパス

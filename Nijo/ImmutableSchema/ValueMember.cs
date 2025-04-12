@@ -69,6 +69,19 @@ namespace Nijo.ImmutableSchema {
         public static bool operator !=(ValueMember? left, ValueMember? right) => !(left == right);
         #endregion 等価比較
 
+        /// <summary>
+        /// ルート集約からこのメンバーまでのパスを列挙する。
+        /// 経路情報はクリアされ、ルート集約がエントリーになる。
+        /// </summary>
+        public IEnumerable<ISchemaPathNode> GetPathFromRoot() {
+            var lastNode = (ISchemaPathNode?)null;
+            foreach (var node in Owner.GetPathFromRoot()) {
+                lastNode = node;
+                yield return node;
+            }
+            yield return new ValueMember(XElement, _ctx, lastNode);
+        }
+
         public override string ToString() {
             // デバッグ用
             return $"{GetType().Name}({this.GetPathFromEntry().Select(x => x.XElement.Name.LocalName).Join(">")})";

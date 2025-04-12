@@ -254,7 +254,7 @@ namespace Nijo.Models.DataModelModules {
                                 foreach (var member in keyClassStructure.GetMembers()) {
                                     if (member is KeyClass.KeyClassValueMember vm) {
                                         var path = vm.Member
-                                            .GetPathFromEntry()
+                                            .GetPathFromRoot()
                                             .AsSaveCommand();
                                         yield return $$"""
                                             {{member.PhysicalName}} = cmd.{{path.Join(".")}},

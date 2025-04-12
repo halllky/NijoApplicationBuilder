@@ -404,8 +404,8 @@ namespace Nijo.CodeGenerating {
                     // 親から子へ辿るパス
                     if (curr.IsChildOf(prev)) {
 
-                        // 参照先のキーの中では親から子へ辿るパターンは無い
-                        if (isOutOfEntryTree) throw new InvalidOperationException("参照先のキーの中では親から子へ辿るパターンは無い");
+                        //// 参照先のキーの中では親から子へ辿るパターンは無い
+                        //if (isOutOfEntryTree) throw new InvalidOperationException("参照先のキーの中では親から子へ辿るパターンは無い");
 
                         yield return curr.PhysicalName;
                         continue;

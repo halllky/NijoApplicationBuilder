@@ -80,13 +80,21 @@ namespace Nijo {
             // ルート集約毎のコードを生成
             foreach (var rootAggregate in immutableSchema.GetRootAggregates()) {
                 logger.LogInformation("レンダリング開始: {name}", rootAggregate.DisplayName);
-                rootAggregate.Model.GenerateCode(ctx, rootAggregate);
+                try {
+                    rootAggregate.Model.GenerateCode(ctx, rootAggregate);
+                } catch (Exception ex) {
+                    throw new InvalidOperationException($"{rootAggregate}のレンダリングで例外が発生", ex);
+                }
             }
 
             // ルート集約と対応しないコードを生成
             foreach (var model in parseContext.Models.Values) {
                 logger.LogInformation("レンダリング開始: {name}", model.GetType().Name);
-                model.GenerateCode(ctx);
+                try {
+                    model.GenerateCode(ctx);
+                } catch (Exception ex) {
+                    throw new InvalidOperationException($"{model.GetType().Name}のレンダリングで例外が発生", ex);
+                }
             }
 
             // IMultiAggregateSourceFile が別の IMultiAggregateSourceFile に依存することがあるので、
@@ -117,7 +125,11 @@ namespace Nijo {
             // IMultiAggregateSourceFile のレンダリング実行
             foreach (var src in ctx.GetMultiAggregateSourceFiles()) {
                 logger.LogInformation("レンダリング開始: {name}", src.GetType().Name);
-                src.Render(ctx);
+                try {
+                    src.Render(ctx);
+                } catch (Exception ex) {
+                    throw new InvalidOperationException($"{src.GetType().Name}のレンダリングで例外が発生", ex);
+                }
             }
 
             // スキーマ定義にかかわらず必ず生成されるモジュールを生成する

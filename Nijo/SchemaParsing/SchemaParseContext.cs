@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Nijo.SchemaParsing;
 
@@ -83,13 +84,13 @@ public class SchemaParseContext {
             throw new InvalidOperationException($"{ATTR_NODE_TYPE} という名前のオプション属性は定義できません。");
         }
 
-        _xDocument = xDocument;
+        Document = xDocument;
         Models = models.ToDictionary(m => m.SchemaName);
         _valueMemberTypes = valueMemberTypes.ToDictionary(m => m.SchemaTypeName);
         _nodeOptions = nodeOptions.ToDictionary(o => o.AttributeName);
     }
 
-    private readonly XDocument _xDocument;
+    public XDocument Document { get; }
     public IReadOnlyDictionary<string, IModel> Models { get; }
     private readonly IReadOnlyDictionary<string, IValueMemberType> _valueMemberTypes;
     private readonly IReadOnlyDictionary<string, NodeOption> _nodeOptions;
@@ -133,13 +134,14 @@ public class SchemaParseContext {
     /// XML要素が不正であっても例外を出さない。
     /// </summary>
     internal E_NodeType GetNodeType(XElement xElement) {
-        // ルート要素直下に定義されている場合はルート集約
-        if (xElement.Parent == _xDocument.Root) {
-            return E_NodeType.RootAggregate;
+        // ルート集約, Child, Children
+        if (TryGetAggregateNodeType(xElement, out var aggregateNodeType)) {
+            return aggregateNodeType.Value;
         }
+
         // 親がenumなら静的区分の値
         if (xElement.Parent != null
-         && xElement.Parent.Parent == _xDocument.Root
+         && xElement.Parent.Parent == Document.Root
          && xElement.Parent.Attribute(ATTR_NODE_TYPE)?.Value == EnumDefParser.SCHEMA_NAME) {
             return E_NodeType.StaticEnumValue;
         }
@@ -150,14 +152,6 @@ public class SchemaParseContext {
             return E_NodeType.Unknown;
         }
 
-        // Child
-        if (type.Value == NODE_TYPE_CHILD) {
-            return E_NodeType.ChildAggregate;
-        }
-        // Children
-        if (type.Value == NODE_TYPE_CHILDREN) {
-            return E_NodeType.ChildrenAggregate;
-        }
         // RefTo
         if (type.Value.StartsWith(NODE_TYPE_REFTO)) {
             return E_NodeType.Ref;
@@ -167,6 +161,32 @@ public class SchemaParseContext {
             return E_NodeType.ValueMember;
         }
         return E_NodeType.Unknown;
+    }
+    /// <summary>
+    /// <see cref="GetNodeType(XElement)"/> のロジックのうちルート集約・Child・Childrenの判定には
+    /// <see cref="SchemaParseContext"/> のインスタンスが要らないのでその部分だけ切り出したもの
+    /// </summary>
+    internal static bool TryGetAggregateNodeType(XElement xElement, [NotNullWhen(true)] out E_NodeType? nodeType) {
+
+        // ルート要素直下に定義されている場合はルート集約
+        if (xElement.Parent == xElement.Document?.Root) {
+            nodeType = E_NodeType.RootAggregate;
+            return true;
+        }
+        // Child
+        var type = xElement.Attribute(ATTR_NODE_TYPE);
+        if (type?.Value == NODE_TYPE_CHILD) {
+            nodeType = E_NodeType.ChildAggregate;
+            return true;
+        }
+        // Children
+        if (type?.Value == NODE_TYPE_CHILDREN) {
+            nodeType = E_NodeType.ChildrenAggregate;
+            return true;
+        }
+
+        nodeType = null;
+        return false;
     }
 
 
@@ -215,7 +235,7 @@ public class SchemaParseContext {
     /// </summary>
     /// <returns></returns>
     private IReadOnlyDictionary<string, ValueMemberTypes.StaticEnumMember> GetStaticEnumMembers() {
-        return _xDocument.Root
+        return Document.Root
             ?.Elements()
             .Where(el => el.Attribute(ATTR_NODE_TYPE)?.Value == EnumDefParser.SCHEMA_NAME)
             .ToDictionary(GetPhysicalName, el => new ValueMemberTypes.StaticEnumMember(el, this))
@@ -270,7 +290,7 @@ public class SchemaParseContext {
     internal XElement? FindRefTo(XElement xElement) {
         var type = xElement.Attribute(ATTR_NODE_TYPE) ?? throw new InvalidOperationException();
         var xPath = $"//{type.Value.Split(':')[1]}";
-        return _xDocument.XPathSelectElement(xPath);
+        return Document.XPathSelectElement(xPath);
     }
     /// <summary>
     /// 引数の集約を参照している集約を探して返します。
@@ -278,7 +298,7 @@ public class SchemaParseContext {
     internal IEnumerable<XElement> FindRefFrom(XElement xElement) {
         // まずパフォーマンスのためXPathで高速に絞り込む
         var physicalName = GetPhysicalName(xElement);
-        return _xDocument.XPathSelectElements($"//*[@{ATTR_NODE_TYPE}='{NODE_TYPE_REFTO}:{physicalName}']") ?? [];
+        return Document.XPathSelectElements($"//*[@{ATTR_NODE_TYPE}='{NODE_TYPE_REFTO}:{physicalName}']") ?? [];
     }
     #endregion RefTo
 
@@ -381,7 +401,7 @@ public class SchemaParseContext {
     /// </summary>
     /// <returns></returns>
     internal IEnumerable<string> GetCharacterTypes() {
-        return _xDocument.XPathSelectElements($"//*[@{BasicNodeOptions.CharacterType.AttributeName}]")
+        return Document.XPathSelectElements($"//*[@{BasicNodeOptions.CharacterType.AttributeName}]")
             .Select(el => el.Attribute(BasicNodeOptions.CharacterType.AttributeName)?.Value ?? string.Empty)
             .Where(value => !string.IsNullOrEmpty(value))
             .Distinct()

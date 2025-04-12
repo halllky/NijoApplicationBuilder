@@ -89,7 +89,7 @@ public class DataPatternTest {
         }
 
         // OverridedApplicationServiceの実装
-        var schemaXml = XDocument.Parse(project.SchemaXmlPath);
+        var schemaXml = XDocument.Load(project.SchemaXmlPath);
         var implementor = GetImplementor(fileName);
         if (implementor != null) {
             var implementation = implementor.GetImplementation(schemaXml);

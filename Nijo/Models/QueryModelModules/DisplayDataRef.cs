@@ -103,20 +103,20 @@ namespace Nijo.Models.QueryModelModules {
             /// </summary>
             internal IEnumerable<IRefDisplayDataMember> GetMembers() {
                 var parent = _aggregate.GetParent();
-                if (parent != null) {
+                if (parent != null && _aggregate.PreviousNode != (ISchemaPathNode)parent) {
                     yield return new RefDisplayDataParentMember(parent);
                 }
                 foreach (var member in _aggregate.GetMembers()) {
                     if (member is ValueMember vm) {
                         yield return new RefDisplayDataValueMember(vm);
 
-                    } else if (member is RefToMember refTo) {
+                    } else if (member is RefToMember refTo && _aggregate.PreviousNode != (ISchemaPathNode)refTo) {
                         yield return new RefDisplayDataRefToMember(refTo);
 
-                    } else if (member is ChildAggreagte child) {
+                    } else if (member is ChildAggreagte child && _aggregate.PreviousNode != (ISchemaPathNode)child) {
                         yield return new RefDisplayDataChildMember(child);
 
-                    } else if (member is ChildrenAggreagte children) {
+                    } else if (member is ChildrenAggreagte children && _aggregate.PreviousNode != (ISchemaPathNode)children) {
                         yield return new RefDisplayDataChildrenMember(children);
                     }
                 }
