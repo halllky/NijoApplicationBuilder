@@ -57,9 +57,9 @@
   </親集約>
 
   <MyEnum Type="enum">
-    <選択肢1 />
-    <選択肢2 />
-    <選択肢3 DisplayName="選択肢3ここから {(! &quot; 選択肢3ここまで" />
+    <選択肢1 key="1" />
+    <選択肢2 key="2" />
+    <選択肢3 key="3" DisplayName="選択肢3ここから {(! &quot; 選択肢3ここまで" />
   </MyEnum>
 
   <参照先 Type="data-model" GenerateDefaultQueryModel="True">
