@@ -76,6 +76,18 @@
           "cwd": "${workspaceFolder:NijoApplicationBuilder}/Nijo.ApplicationTemplate.Ver1"
         },
         "problemMatcher": []
+      },
+      {
+        "label": "Nijo: 「自動テストで作成されたプロジェクト」のコード自動生成をかけなおす",
+        "command": ".\\run-nijo-exe.bat",
+        "type": "shell",
+        "args": [
+          "generate",
+        ],
+        "options": {
+          "cwd": "${workspaceFolder:NijoApplicationBuilder}/自動テストで作成されたプロジェクト"
+        },
+        "problemMatcher": []
       }
     ]
   }

@@ -374,16 +374,12 @@ namespace Nijo.Models.DataModelModules {
                             """;
 
                     } else if (col is EFCoreEntity.RefKeyMember refKeyCol) {
-                        // 参照先のキーメンバーの場合、KeyClass.KeyClassRefMemberを使用して値を取得
-                        var path = new List<string>();
-                        var currentMember = refKeyCol.Member;
-                        var currentRef = refKeyCol.RefEntry;
-
-                        path.Add(currentRef.PhysicalName);
-                        path.Add(currentMember.PhysicalName);
+                        // 参照先のキーメンバーの場合
+                        var right = ancestorsKeys.GetValueOrDefault(refKeyCol.Member.XElement)
+                            ?? throw new InvalidOperationException($"{refKeyCol.RefEntry}の右辺が見つからない。XElement: {refKeyCol.Member.XElement}");
 
                         yield return $$"""
-                            {{col.PhysicalName}} = {{rightInstanceName}}.{{path.Join("?.")}},
+                            {{col.PhysicalName}} = {{right}},
                             """;
                     }
                 }
@@ -450,7 +446,7 @@ namespace Nijo.CodeGenerating {
                 if (node.PreviousNode == null) continue; // パスの一番最初（エントリー）はスキップ
                 if (node.PreviousNode is RefToMember) continue; // refの1つ次の要素の名前はrefで列挙済みのためスキップ
 
-                // 外部参照のナビゲーションプロパティを辿るパス
+                // 外部参照のプロパティを辿るパス
                 if (node is RefToMember refTo) {
                     var previous = (AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("reftoの前は必ず参照元集約か参照先集約になるのでありえない");
 

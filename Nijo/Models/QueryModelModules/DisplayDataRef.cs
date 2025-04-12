@@ -50,7 +50,7 @@ namespace Nijo.Models.QueryModelModules {
 
                 """)}}
                 {{parentMembers.SelectTextTemplate(parent => $$"""
-                {{parent.RenderCsClass()}}
+                {{parent.RenderCsClass(ctx)}}
 
                 """)}}
                 #endregion 他の集約から参照されるときの画面表示用オブジェクト
@@ -121,6 +121,19 @@ namespace Nijo.Models.QueryModelModules {
                     }
                 }
             }
+
+            internal string RenderCsClass(CodeRenderingContext ctx) {
+                return $$"""
+                    /// <summary>
+                    /// {{_aggregate.DisplayName}}が他の集約から外部参照されるときの型
+                    /// </summary>
+                    public partial class {{CsClassName}} {
+                    {{GetMembers().SelectTextTemplate(member => $$"""
+                        public {{member.CsType}}? {{member.PhysicalName}} { get; set; }
+                    """)}}
+                    }
+                    """;
+            }
         }
 
         /// <summary>
@@ -133,17 +146,6 @@ namespace Nijo.Models.QueryModelModules {
             internal override string CsClassName => $"{_aggregate.PhysicalName}RefTarget";
             internal string TsTypeName => $"{_aggregate.PhysicalName}RefTarget";
 
-            internal string RenderCsClass(CodeRenderingContext ctx) {
-                return $$"""
-                    /// <summary>
-                    /// {{_aggregate.DisplayName}}が他の集約から外部参照されるときの型
-                    /// </summary>
-                    public partial class {{CsClassName}} {
-                        // TODO ver.1
-                    }
-                    """;
-            }
-
             #region TypeScript側オブジェクト新規作成関数
             public string TsNewObjectFunction => $"createNew{TsTypeName}";
             internal string RenderTypeScriptObjectCreationFunction(CodeRenderingContext ctx) {
@@ -152,9 +154,29 @@ namespace Nijo.Models.QueryModelModules {
                      * {{_aggregate.DisplayName}}が他の集約から外部参照されるときのオブジェクトを新規作成します。
                      */
                     export const {{TsNewObjectFunction}} = (): {{TsTypeName}} => ({
-                      // TODO ver.1
+                      {{WithIndent(RenderMembersRecursively(this), "  ")}}
                     })
                     """;
+
+                static IEnumerable<string> RenderMembersRecursively(RefDisplayDataMemberContainer obj) {
+                    foreach (var member in obj.GetMembers()) {
+                        if (member is RefDisplayDataValueMember vm) {
+                            yield return $$"""
+                                {{member.PhysicalName}}: undefined,
+                                """;
+
+                        } else if (member is RefDisplayDataMemberContainer container) {
+                            yield return $$"""
+                                {{member.PhysicalName}}: {
+                                  {{WithIndent(RenderMembersRecursively(container), "  ")}}
+                                },
+                                """;
+
+                        } else {
+                            throw new NotImplementedException();
+                        }
+                    }
+                }
             }
             #endregion TypeScript側オブジェクト新規作成関数
         }
@@ -241,14 +263,6 @@ namespace Nijo.Models.QueryModelModules {
             public string DisplayName => _parent.DisplayName;
             public string CsType => $"{_parent.PhysicalName}RefTargetAsParent";
             internal override string CsClassName => CsType;
-
-            internal string RenderCsClass() {
-                return $$"""
-                    public partial class {{CsClassName}} {
-                        // TODO ver.1
-                    }
-                    """;
-            }
         }
         #endregion 子孫メンバー
     }
