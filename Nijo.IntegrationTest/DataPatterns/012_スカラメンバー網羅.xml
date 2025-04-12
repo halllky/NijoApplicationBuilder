@@ -22,15 +22,14 @@
 
     <!--日付系-->
     <日付時刻 Type="datetime" />
-    <日付 Type="datetime" />
-    <年月 Type="datetime" />
-    <年 Type="datetime" />
+    <日付 Type="date" />
+    <年月 Type="yearmonth" />
+    <年 Type="year" />
 
     <!--その他-->
     <参照 Type="ref-to:参照先" />
     <真偽値 Type="bool" />
     <列挙体 Type="MyEnum" />
-    <バイト配列 Type="bytearray" />
 
     <Children Type="children">
       <!--値オブジェクト-->
@@ -46,15 +45,14 @@
 
       <!--日付系-->
       <日付時刻 Type="datetime" />
-      <日付 Type="datetime" />
-      <年月 Type="datetime" />
-      <年 Type="datetime" />
+      <日付 Type="date" />
+      <年月 Type="yearmonth" />
+      <年 Type="year" />
 
       <!--その他-->
       <参照 Type="ref-to:参照先" />
       <真偽値 Type="bool" />
       <列挙体 Type="MyEnum" />
-      <バイト配列 Type="bytearray" />
     </Children>
   </親集約>
 
@@ -68,6 +66,19 @@
     <参照先ID Type="word" IsKey="True" />
     <Name Type="word" />
   </参照先>
+
+  <!-- bytearrayは純粋なDataModelにしか定義できない -->
+  <ユーザーアカウント Type="data-model">
+    <ID Type="word" IsKey="True" />
+    <ユーザー名 Type="word" />
+    <パスワード Type="word" />
+    <SALT Type="bytearray" />
+    <過去の直近のパスワードの履歴 Type="children">
+      <履歴番号 Type="int" IsKey="True" />
+      <パスワード Type="word" />
+      <SALT Type="bytearray" />
+    </過去の直近のパスワードの履歴>
+  </ユーザーアカウント>
 
   <ParentID Type="value-object" />
   <ChildrenID Type="value-object" />
