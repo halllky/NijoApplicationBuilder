@@ -8,7 +8,7 @@ using System.Xml.Linq;
 namespace Nijo.IntegrationTest.Implementors;
 
 public class ChildrenOnlyImplementor : IApplicationServiceImplementor {
-    public string TargetXmlFileName => "children-only.xml";
+    public string TargetXmlFileName => "002_Childrenのみ.xml";
 
     public string GetImplementation(XDocument schemaXml) {
         return @"
