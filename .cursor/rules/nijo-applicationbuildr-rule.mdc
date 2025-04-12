@@ -18,5 +18,15 @@ alwaysApply: true
 ## 動作確認をおこなうとき
 - 実装した結果が正しいかを確認するときは [run-for-cursor-agent.ps1](mdc:Nijo.IntegrationTest/run-for-cursor-agent.ps1) を使用してください。
 - 全パターンではなく `Nijo.IntegrationTest/DataPatterns` にある特定のパターンのみテストする場合は `run-for-cursor-agent.ps1 000_単純な集約` のように拡張子抜きのxmlファイル名を指定してください。
-- [run-for-cursor-agent.ps1](mdc:Nijo.IntegrationTest/run-for-cursor-agent.ps1) 実行時はカレントディレクトリがこのps1ファイルの場所と一致していないと失敗するため、必ず事前にcdコマンドを実行してこのps1ファイルがある場所に移動してから実行してください。
 - [run-for-cursor-agent.ps1](mdc:Nijo.IntegrationTest/run-for-cursor-agent.ps1) の詳細な結果は [DataPatternTest_Results.trx](mdc:Nijo.IntegrationTest/TestResults/DataPatternTest_Results.trx) に出力されています。エラーの詳細を確認する際はまずこのファイルを確認してください。
+- 結果は以下の情報を報告してください。
+  - パターン。 `Nijo.IntegrationTest/DataPatterns` のパターンのXMLごとに、そのXMLのテストが成功したか失敗したかを報告してください。
+  - フェーズ。失敗した場合、以下のどのフェーズで失敗したかを報告してください。
+    1. コード自動生成
+    2. C#のコンパイルエラーチェック
+    3. TypeScriptエラーチェック
+  - 原因の推測。エラーの原因が以下いずれに最も近いかを考えて報告してください。
+    - `Nijo.IntegrationTest/Implementors` の実装が不足、または誤っていることによるエラー
+    - 生成されたソースコードが、そのモデルのモジュールから生成されるオブジェクトのデータ構造と矛盾していることによるエラー
+    - 生成されるソースコードが、そのモデルの `HelpTextMarkdown` に記載されている仕様に違反していることによるエラー
+
