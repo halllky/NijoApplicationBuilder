@@ -115,4 +115,6 @@ string RenderXXX(object root) {
 ```
 
 ## デバッグ
-Nijo.csprojプロジェクトのソースを修正した際は [run-for-cursor-agent.ps1](../Nijo.IntegrationTest/run-for-cursor-agent.ps1) を実行しエラーが出ないことを確認してください。
+Nijo.csprojプロジェクトのソースを修正した際は以下いずれかからユニットテスト(Nijo.IntegrationTestプロジェクト)を実行しエラーが出ないことを確認してください。
+- Visual Studio のテストエクスプローラー
+- [run-for-cursor-agent.ps1](../Nijo.IntegrationTest/run-for-cursor-agent.ps1)
