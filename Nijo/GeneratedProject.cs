@@ -12,6 +12,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Nijo.Util.DotnetEx;
 
 namespace Nijo {
     /// <summary>
@@ -50,13 +51,7 @@ namespace Nijo {
             var parseContext = SchemaParseContext.Default(xDocument);
 
             // 検証
-            if (parseContext.TryBuildSchema(xDocument, out var _, out var errors)) {
-                return true;
-
-            } else {
-                foreach (var err in errors) logger.LogError("- {error}", err);
-                return false;
-            }
+            return parseContext.TryBuildSchema(xDocument, out var _, logger);
         }
 
         /// <summary>
@@ -67,9 +62,8 @@ namespace Nijo {
             var parseContext = SchemaParseContext.Default(xDocument);
 
             // スキーマ定義のコレクションを作成
-            if (!parseContext.TryBuildSchema(xDocument, out var immutableSchema, out var errors)) {
+            if (!parseContext.TryBuildSchema(xDocument, out var immutableSchema, logger)) {
                 logger.LogError("エラーがある状態でソースコードの自動生成を行なうことはできません。");
-                foreach (var err in errors) logger.LogError("- {error}", err);
                 return;
             }
 

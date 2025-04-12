@@ -11,6 +11,7 @@ using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.Extensions.Logging;
 
 namespace Nijo.SchemaParsing;
 
@@ -311,9 +312,9 @@ public class SchemaParseContext {
     /// </summary>
     /// <param name="xDocument">XMLドキュメント</param>
     /// <param name="schema">作成完了後のスキーマ</param>
-    /// <param name="errors">エラーがある場合はここにその内容が格納される</param>
+    /// <param name="logger">エラーがある場合はここにその内容が表示される</param>
     /// <returns>スキーマの作成に成功したかどうか</returns>
-    public bool TryBuildSchema(XDocument xDocument, out ApplicationSchema schema, out ICollection<ValidationError> errors) {
+    public bool TryBuildSchema(XDocument xDocument, out ApplicationSchema schema, ILogger logger) {
         schema = new ApplicationSchema(xDocument, this);
         var errorsList = new List<(XElement, string)>();
 
@@ -326,7 +327,11 @@ public class SchemaParseContext {
             switch (nodeType) {
                 // ノードの種類が不明な場合
                 case E_NodeType.Unknown:
-                    errorsList.Add((el, $"ノードの種類が不明です。{ATTR_NODE_TYPE}属性が指定されているか確認してください。"));
+                    if (string.IsNullOrEmpty(typeAttrValue)) {
+                        errorsList.Add((el, $"ノードの種類が不明です。{ATTR_NODE_TYPE}属性が指定されているか確認してください。"));
+                    } else {
+                        errorsList.Add((el, $"ノードの種類 '{typeAttrValue}' は有効ではありません。"));
+                    }
                     break;
 
                 // ルート集約の場合
@@ -376,15 +381,33 @@ public class SchemaParseContext {
             }
         }
 
-        errors = errorsList
-            .GroupBy(x => x.Item1)
-            .Select(x => new ValidationError {
-                XElement = x.Key,
-                Errors = x.Select(y => y.Item2).ToArray(),
-            })
-            .ToArray();
+        // エラー内容表示
+        if (errorsList.Count > 0) {
+            var errors = errorsList
+                .GroupBy(x => x.Item1)
+                .Select(x => new ValidationError {
+                    XElement = x.Key,
+                    Errors = x.Select(y => y.Item2).ToArray(),
+                });
+            var logBuilder = new StringBuilder();
+            foreach (var err in errors) {
+                var path = err.XElement
+                    .AncestorsAndSelf()
+                    .Reverse()
+                    .Skip(1)
+                    .Select(el => el.Name.LocalName)
+                    .Join("/");
 
-        return errors.Count == 0;
+                logBuilder.AppendLine(path);
+                foreach (var msg in err.Errors) {
+                    logBuilder.AppendLine($"  - {WithIndent(msg, "    ")}");
+                }
+                logBuilder.AppendLine();
+            }
+            logger.LogError(logBuilder.ToString());
+        }
+
+        return errorsList.Count == 0;
     }
     public class ValidationError {
         public required XElement XElement { get; init; }
