@@ -5,7 +5,8 @@
       "yzhang.markdown-all-in-one",
       "redhat.vscode-xml",
       "bierner.markdown-preview-github-styles",
-      "ms-dotnettools.vscode-dotnet-runtime"
+      "ms-dotnettools.vscode-dotnet-runtime",
+      "bierner.markdown-mermaid"
     ]
   },
   "folders": [
