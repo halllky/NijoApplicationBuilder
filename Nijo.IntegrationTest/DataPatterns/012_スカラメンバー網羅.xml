@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
-<自動テストで作成されたプロジェクト CustomizeAllUi="True">
+<自動テストで作成されたプロジェクト RootNamespace="MyApp.Core" CustomizeAllUi="True">
   <親集約 Type="data-model" GenerateDefaultQueryModel="True" FormLabelWidth="5.8" FormDepth="0">
     <!--ID-->
     <ID Type="word" IsKey="True" />

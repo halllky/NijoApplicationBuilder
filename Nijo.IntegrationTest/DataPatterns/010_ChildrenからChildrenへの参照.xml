@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<自動テストで作成されたプロジェクト DbContextName="MyDbContext">
+<自動テストで作成されたプロジェクト RootNamespace="MyApp.Core" DbContextName="MyDbContext">
   <見積書テンプレート Type="data-model" GenerateDefaultQueryModel="True">
     <テンプレートID Type="word" IsKey="True" />
     <テンプレート名 Type="word" />

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
-<自動テストで作成されたプロジェクト>
+<自動テストで作成されたプロジェクト RootNamespace="MyApp.Core">
   <ルート Type="data-model" GenerateDefaultQueryModel="True" DisplayName="#ルート[(&quot;  &apos;)]" DbName="ROOT_TABLE" LatinName="Root Object">
     <ID1 Type="word" IsKey="True" />
     <名前1 Type="word" />

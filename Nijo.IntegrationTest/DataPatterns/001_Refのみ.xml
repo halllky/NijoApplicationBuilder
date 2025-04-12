@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
-<自動テストで作成されたプロジェクト>
+<自動テストで作成されたプロジェクト RootNamespace="MyApp.Core">
   <参照先 Type="data-model" GenerateDefaultQueryModel="True">
     <参照先集約ID Type="word" IsKey="True" />
     <参照先集約名 Type="word" />

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
-<自動テストで作成されたプロジェクト>
+<自動テストで作成されたプロジェクト RootNamespace="MyApp.Core">
   <集約A Type="data-model" GenerateDefaultQueryModel="True">
     <ID Type="word" IsKey="True" />
     <名前 Type="word" />

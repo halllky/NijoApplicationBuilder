@@ -11,7 +11,7 @@ if ($args.Count -eq 0) {
     $testFilter = "Category=DataPattern"
     Write-Host "全てのデータパターンテストを実行します。"
 } else {
-    $testFilter = "Name~TestXmlPattern"
+    $testFilter = "FullyQualifiedName~TestXmlPattern"
     Write-Host "データパターン '$($args[0])' のテストを実行します。"
 }
 Write-Host "テストフィルター: $testFilter"

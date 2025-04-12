@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
-<自動テストで作成されたプロジェクト>
+<自動テストで作成されたプロジェクト RootNamespace="MyApp.Core">
   <取引先 Type="data-model" GenerateDefaultQueryModel="True">
     <取引先番号 Type="word" IsKey="True" />
     <会社名 Type="word" />
