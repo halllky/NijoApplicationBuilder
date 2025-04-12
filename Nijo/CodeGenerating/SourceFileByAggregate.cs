@@ -5,6 +5,7 @@ using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -14,10 +15,17 @@ namespace Nijo.CodeGenerating {
     /// </summary>
     public class SourceFileByAggregate {
 
-        public SourceFileByAggregate(RootAggregate rootAggregate) {
+        public SourceFileByAggregate(
+            RootAggregate rootAggregate,
+            [CallerFilePath] string? callerFilePath = null,
+            [CallerMemberName] string? callerMemberName = null) {
             _rootAggregate = rootAggregate;
+            _callerFilePath = callerFilePath;
+            _callerMemberName = callerMemberName;
         }
         private readonly RootAggregate _rootAggregate;
+        private readonly string? _callerFilePath;
+        private readonly string? _callerMemberName;
 
         private readonly List<string> _appSrvMethods = [];
         private readonly List<string> _csharpClass = [];
@@ -45,7 +53,7 @@ namespace Nijo.CodeGenerating {
 
             ctx.CoreLibrary(dir => {
                 if (_csharpClass.Count > 0 || _appSrvMethods.Count > 0) {
-                    dir.Generate(new SourceFile {
+                    dir.Generate(new SourceFile(_callerFilePath, _callerMemberName) {
                         FileName = $"{_rootAggregate.PhysicalName.ToFileNameSafe()}.cs",
                         Contents = RenderCoreLibrary(ctx),
                     });
@@ -53,7 +61,7 @@ namespace Nijo.CodeGenerating {
             });
             ctx.WebapiProject(dir => {
                 if (_webApiControllerAction.Count > 0) {
-                    dir.Generate(new SourceFile {
+                    dir.Generate(new SourceFile(_callerFilePath, _callerMemberName) {
                         FileName = $"{_rootAggregate.PhysicalName.ToFileNameSafe()}.cs",
                         Contents = RenderWebapi(ctx),
                     });
@@ -61,7 +69,7 @@ namespace Nijo.CodeGenerating {
             });
             ctx.ReactProject(dir => {
                 if (_typeScriptTypeDef.Count > 0 || _typeScriptFunctions.Count > 0) {
-                    dir.Generate(new SourceFile {
+                    dir.Generate(new SourceFile(_callerFilePath, _callerMemberName) {
                         FileName = $"{_rootAggregate.PhysicalName.ToFileNameSafe()}.ts",
                         Contents = RenderNodeJs(ctx),
                     });
