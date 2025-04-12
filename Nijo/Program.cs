@@ -102,9 +102,9 @@ namespace Nijo {
                 ? Directory.GetCurrentDirectory()
                 : Path.Combine(Directory.GetCurrentDirectory(), path);
             var logger = ILoggerExtension.CreateConsoleLogger();
-            var project = new GeneratedProject(projectRoot, logger);
+            var project = new GeneratedProject(projectRoot);
 
-            project.ValidateSchema();
+            project.ValidateSchema(logger);
         }
 
 
@@ -117,9 +117,9 @@ namespace Nijo {
                 ? Directory.GetCurrentDirectory()
                 : Path.Combine(Directory.GetCurrentDirectory(), path);
             var logger = ILoggerExtension.CreateConsoleLogger();
-            var project = new GeneratedProject(projectRoot, logger);
+            var project = new GeneratedProject(projectRoot);
 
-            project.GenerateCode();
+            project.GenerateCode(logger);
         }
 
 
@@ -133,7 +133,7 @@ namespace Nijo {
                 ? Directory.GetCurrentDirectory()
                 : Path.Combine(Directory.GetCurrentDirectory(), path);
             var logger = ILoggerExtension.CreateConsoleLogger();
-            var project = new GeneratedProject(projectRoot, logger);
+            var project = new GeneratedProject(projectRoot);
 
             var firstLaunch = true;
             while (true) {
@@ -144,7 +144,7 @@ namespace Nijo {
                 using var launcher = new Runtime.GeneratedProjectLauncher(project.WebapiProjectRoot, new Uri(reactServerUrl), project.ReactProjectRoot, logger);
                 try {
                     if (!noBuild) {
-                        project.GenerateCode();
+                        project.GenerateCode(logger);
                     }
 
                     launcher.Launch();

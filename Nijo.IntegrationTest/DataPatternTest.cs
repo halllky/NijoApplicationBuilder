@@ -78,16 +78,18 @@ public class DataPatternTest {
         File.Copy(sourceXmlPath, targetXmlPath, true);
 
         // ソースコード自動生成を実行
-        var projectHelper = new GeneratedProjectHelper(testProjectDir, _logger);
+        var project = new GeneratedProject(testProjectDir);
+        if (!project.ValidateSchema(_logger)) {
+            Assert.Fail($"スキーマ定義の検証に失敗しました。");
+        }
         try {
-            projectHelper.ValidateSchema();
-            projectHelper.GenerateCode();
+            project.GenerateCode(_logger);
         } catch (Exception ex) {
             Assert.Fail($"ソースコード自動生成に失敗しました。\n{ex}");
         }
 
         // OverridedApplicationServiceの実装
-        var schemaXml = XDocument.Parse(projectHelper.GetSchemaXml());
+        var schemaXml = XDocument.Parse(project.SchemaXmlPath);
         var implementor = GetImplementor(fileName);
         if (implementor != null) {
             var implementation = implementor.GetImplementation(schemaXml);
@@ -200,9 +202,11 @@ public class DataPatternTest {
 }
 
 public class ConsoleLogger : ILogger {
-    public IDisposable BeginScope<TState>(TState state) => null;
     public bool IsEnabled(LogLevel logLevel) => true;
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter) {
-        Console.WriteLine($"[{logLevel}] {formatter(state, exception)}");
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull {
+        return null;
+    }
+    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) {
+        TestContext.Out.WriteLine($"[{logLevel}] {formatter(state, exception)}");
     }
 }

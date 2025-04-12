@@ -338,10 +338,14 @@ namespace Nijo.Models.DataModelModules {
 
                     // キー項目の場合は子孫のレンダリングのために祖先メンバーリストにも追加
                     if (member is SaveCommandValueMember vm && vm.Member.IsKey) {
+                        if (ancestorsAndThisKeys.ContainsKey(member.Member.XElement)) continue;
+
                         ancestorsAndThisKeys.Add(member.Member.XElement, joined);
 
                     } else if (member is SaveCommandRefMember rm && rm.Member.IsKey) {
                         foreach (var vm2 in rm.GetValueMembersRecursively()) {
+                            if (ancestorsAndThisKeys.ContainsKey(vm2.Member.XElement)) continue;
+
                             var path2 = vm2.Member
                                 .GetPathFromEntry()
                                 .SinceNearestChildren()
