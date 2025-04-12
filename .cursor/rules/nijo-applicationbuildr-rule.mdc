@@ -8,9 +8,15 @@ alwaysApply: true
 - 「ソースコード自動生成処理」とは、 [Nijo.csproj](mdc:Nijo/Nijo.csproj) プロジェクトおよびそこで実行される一連のソースコード生成処理を表します。
 - 「アプリケーションテンプレート」とは、 [NIJO_APPLICATION_TEMPLATE.sln](mdc:Nijo.ApplicationTemplate.Ver1/NIJO_APPLICATION_TEMPLATE.sln) に属するソースコードを表します。
 
-## どのように振る舞うべきか
-- ソースコードを修正するときは [.editorconfig](mdc:.editorconfig) を参考にしてください。
-- [Nijo.csproj](mdc:Nijo/Nijo.csproj) プロジェクトおよびそのプロジェクトに含まれるソースコードを修正するときは [CONTRIBUTING.md](mdc:Nijo/CONTRIBUTING.md) を参照してください。
+## 全般
 - 参照しようとしているフォルダに `README.md` という名前のファイルがある場合、 `README.md` を参照してください。
+
+## ソースコードを修正するとき
+- ソースコードを修正するときは @.editorconfig を参考にしてください。
+- @Nijo.csproj プロジェクトおよびそのプロジェクトに含まれるソースコードを修正するときは @CONTRIBUTING.md を参照してください。
+
+## 動作確認をおこなうとき
+- 実装した結果が正しいかを確認するときは [run-for-cursor-agent.ps1](mdc:Nijo.IntegrationTest/run-for-cursor-agent.ps1) を使用してください。
+- 全パターンではなく `Nijo.IntegrationTest/DataPatterns` にある特定のパターンのみテストする場合は `run-for-cursor-agent.ps1 000_単純な集約` のように拡張子抜きのxmlファイル名を指定してください。
 - [run-for-cursor-agent.ps1](mdc:Nijo.IntegrationTest/run-for-cursor-agent.ps1) 実行時はカレントディレクトリがこのps1ファイルの場所と一致していないと失敗するため、必ず事前にcdコマンドを実行してこのps1ファイルがある場所に移動してから実行してください。
 - [run-for-cursor-agent.ps1](mdc:Nijo.IntegrationTest/run-for-cursor-agent.ps1) の詳細な結果は [DataPatternTest_Results.trx](mdc:Nijo.IntegrationTest/TestResults/DataPatternTest_Results.trx) に出力されています。エラーの詳細を確認する際はまずこのファイルを確認してください。

@@ -68,6 +68,12 @@ namespace Nijo.ValueMemberTypes {
         };
         UiConstraint.E_Type IValueMemberType.UiConstraintType => UiConstraint.E_Type.MemberConstraintBase;
 
+        void IValueMemberType.Validate(XElement element, SchemaParseContext context, Action<XElement, string> addError) {
+            // 列挙型の定義が正しいことを検証
+            // EnumDefParserは既に初期化時に基本的な検証を行っているため、
+            // 追加の検証が必要な場合はここに実装します
+        }
+
         void IValueMemberType.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {
             // 特になし
         }

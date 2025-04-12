@@ -13,19 +13,29 @@ using System.Xml.Linq;
 namespace Nijo.ValueMemberTypes;
 
 /// <summary>
-/// 単語型
+/// 値オブジェクト型
+/// 値オブジェクトを表すC#のクラスを参照する型
 /// </summary>
-internal class Word : IValueMemberType {
-    string IValueMemberType.TypePhysicalName => "Word";
-    string IValueMemberType.SchemaTypeName => "word";
-    string IValueMemberType.CsDomainTypeName => "string";
+internal class ValueObjectMember : IValueMemberType {
+    string IValueMemberType.TypePhysicalName => "ValueObject";
+    string IValueMemberType.SchemaTypeName => "value-object-member";
+    string IValueMemberType.CsDomainTypeName => _valueObjectName;
     string IValueMemberType.CsPrimitiveTypeName => "string";
-    string IValueMemberType.TsTypeName => "string";
+    string IValueMemberType.TsTypeName => _valueObjectName;
     UiConstraint.E_Type IValueMemberType.UiConstraintType => UiConstraint.E_Type.StringMemberConstraint;
 
+    private readonly string _valueObjectName;
+    private readonly SchemaParseContext _ctx;
+
+    public ValueObjectMember(XElement xElement, SchemaParseContext ctx) {
+        var type = xElement.Attribute(SchemaParseContext.ATTR_NODE_TYPE)?.Value;
+        _valueObjectName = type ?? throw new InvalidOperationException("Type属性が指定されていません");
+        _ctx = ctx;
+    }
+
     void IValueMemberType.Validate(XElement element, SchemaParseContext context, Action<XElement, string> addError) {
-        // 特に追加の検証はありません。
-        // 必要に応じて、属性の最大長や最小長などの制約を検証するコードをここに追加できます。
+        // 値オブジェクト型の検証
+        // 必要に応じて値オブジェクトの存在確認などを検証するコードをここに追加できます
     }
 
     ValueMemberSearchBehavior? IValueMemberType.SearchBehavior => new() {
@@ -33,7 +43,7 @@ internal class Word : IValueMemberType {
         FilterTsTypeName = "string",
         RenderTsNewObjectFunctionValue = () => "undefined",
         RenderFiltering = ctx => {
-            // TODO ver.1 部分一致検索以外も作る
+            // TODO 部分一致検索以外も作る
             var fullpath = ctx.Member.GetPathFromEntry().ToArray();
             var pathFromSearchCondition = fullpath.AsSearchConditionFilter(E_CsTs.CSharp).ToArray();
             var whereFullpath = fullpath.AsSearchResult().ToArray();
@@ -60,7 +70,7 @@ internal class Word : IValueMemberType {
 
     string IValueMemberType.RenderCreateDummyDataValueBody(CodeRenderingContext ctx) {
         return $$"""
-            return string.Concat(Enumerable.Range(0, member.MaxLength ?? 12).Select(_ => "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}\\\"|;:,.<>?"[context.Random.Next(0, 63)]));
+            return new {{_valueObjectName}}(string.Concat(Enumerable.Range(0, member.MaxLength ?? 12).Select(_ => "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"[context.Random.Next(0, 36)])));
             """;
     }
 

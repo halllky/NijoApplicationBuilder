@@ -1,10 +1,12 @@
 using Nijo.CodeGenerating;
 using Nijo.Models.QueryModelModules;
+using Nijo.SchemaParsing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Nijo.ImmutableSchema {
     /// <summary>
@@ -12,14 +14,24 @@ namespace Nijo.ImmutableSchema {
     /// 単語型、日付型、整数型、…など
     /// </summary>
     public interface IValueMemberType {
-        /// <summary>
-        /// この型の名前がソースコード中に表れるときの物理名
-        /// </summary>
-        string TypePhysicalName { get; }
+        #region SchemaParsing
         /// <summary>
         /// XMLスキーマ定義でこの型を指定するときの型名
         /// </summary>
         string SchemaTypeName { get; }
+
+        /// <summary>
+        /// モデルの指定内容の検証を行ないます。
+        /// </summary>
+        public void Validate(XElement element, SchemaParseContext context, Action<XElement, string> addError);
+        #endregion SchemaParsing
+
+
+        #region CodeGenerating
+        /// <summary>
+        /// この型の名前がソースコード中に表れるときの物理名
+        /// </summary>
+        string TypePhysicalName { get; }
 
         /// <summary>
         /// C#型名（ドメインロジック用）
@@ -59,6 +71,7 @@ namespace Nijo.ImmutableSchema {
         /// <code>return /* 値 */;</code> の式を返してください。
         /// </summary>
         string RenderCreateDummyDataValueBody(CodeRenderingContext ctx);
+        #endregion CodeGenerating
     }
 
 

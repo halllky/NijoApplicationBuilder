@@ -16,7 +16,8 @@ namespace Nijo.Models {
     /// 主に集約のキーとして使用される。
     /// </summary>
     internal class ValueObjectModel : IModel {
-        public string SchemaName => "value-object";
+        internal const string SCHEMA_NAME = "value-object";
+        public string SchemaName => SCHEMA_NAME;
 
         public string HelpTextMarkdown => $$"""
             # ValueObject 値オブジェクト

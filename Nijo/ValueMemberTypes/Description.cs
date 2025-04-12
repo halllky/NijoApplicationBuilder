@@ -1,12 +1,14 @@
 using Nijo.CodeGenerating;
 using Nijo.ImmutableSchema;
 using Nijo.Models.QueryModelModules;
+using Nijo.SchemaParsing;
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Nijo.ValueMemberTypes {
     /// <summary>
@@ -19,6 +21,11 @@ namespace Nijo.ValueMemberTypes {
         string IValueMemberType.CsPrimitiveTypeName => "string";
         string IValueMemberType.TsTypeName => "string";
         UiConstraint.E_Type IValueMemberType.UiConstraintType => UiConstraint.E_Type.StringMemberConstraint;
+
+        void IValueMemberType.Validate(XElement element, SchemaParseContext context, Action<XElement, string> addError) {
+            // 文章型の検証
+            // 必要に応じて最大長などの制約を検証するコードをここに追加できます
+        }
 
         ValueMemberSearchBehavior? IValueMemberType.SearchBehavior => new() {
             FilterCsTypeName = "string",

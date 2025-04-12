@@ -2,12 +2,14 @@ using Nijo.CodeGenerating;
 using Nijo.ImmutableSchema;
 using Nijo.Models.QueryModelModules;
 using Nijo.Parts.CSharp;
+using Nijo.SchemaParsing;
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Nijo.ValueMemberTypes;
 
@@ -21,6 +23,11 @@ internal class IntMember : IValueMemberType {
     string IValueMemberType.CsPrimitiveTypeName => "int";
     string IValueMemberType.TsTypeName => "number";
     UiConstraint.E_Type IValueMemberType.UiConstraintType => UiConstraint.E_Type.NumberMemberConstraint;
+
+    void IValueMemberType.Validate(XElement element, SchemaParseContext context, Action<XElement, string> addError) {
+        // 整数型の検証
+        // 必要に応じて最小値や最大値の制約を検証するコードをここに追加できます
+    }
 
     ValueMemberSearchBehavior? IValueMemberType.SearchBehavior => new() {
         FilterCsTypeName = $"{FromTo.CS_CLASS_NAME}<int?>",

@@ -1,6 +1,7 @@
 using Nijo.CodeGenerating;
 using Nijo.ImmutableSchema;
 using Nijo.Models.QueryModelModules;
+using Nijo.SchemaParsing;
 using Nijo.Util.DotnetEx;
 using Nijo.Parts.CSharp;
 using System;
@@ -8,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Nijo.ValueMemberTypes {
     /// <summary>
@@ -19,6 +21,11 @@ namespace Nijo.ValueMemberTypes {
         string IValueMemberType.CsDomainTypeName => "int";
         string IValueMemberType.CsPrimitiveTypeName => "int";
         string IValueMemberType.TsTypeName => "number";
+
+        void IValueMemberType.Validate(XElement element, SchemaParseContext context, Action<XElement, string> addError) {
+            // シーケンス型の検証
+            // シーケンス型は通常データベース側で自動的に値が設定されるため、特別な検証は不要です
+        }
 
         ValueMemberSearchBehavior? IValueMemberType.SearchBehavior => new() {
             FilterCsTypeName = "FromTo<int?>",

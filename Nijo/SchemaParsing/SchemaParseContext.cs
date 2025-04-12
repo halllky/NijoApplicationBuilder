@@ -37,6 +37,9 @@ public class SchemaParseContext {
             new ValueMemberTypes.IntMember(),
             new ValueMemberTypes.DateTimeMember(),
             new ValueMemberTypes.Description(),
+            new ValueMemberTypes.DecimalMember(),
+            new ValueMemberTypes.BoolMember(),
+            new ValueMemberTypes.ByteArrayMember(),
         };
         var nodeOptions = new NodeOption[] {
             BasicNodeOptions.DisplayName,
@@ -206,10 +209,21 @@ public class SchemaParseContext {
 
     #region Aggregate
     /// <summary>
-    /// XML要素と対応するモデルを返します。特定できなかった場合は例外。
+    /// XML要素と対応するモデルを返します。
     /// </summary>
-    internal IModel GetModel(XElement xElement) {
-        return Models[xElement.Attribute(ATTR_NODE_TYPE)?.Value ?? throw new InvalidOperationException()];
+    internal bool TryGetModel(XElement xElement, [NotNullWhen(true)] out IModel? model) {
+        var root = xElement.AncestorsAndSelf().Reverse().Skip(1).FirstOrDefault();
+        if (root == null) {
+            model = null;
+            return false;
+
+        }
+        var modelName = root.Attribute(ATTR_NODE_TYPE)?.Value;
+        if (modelName == null) {
+            model = null;
+            return false;
+        }
+        return Models.TryGetValue(modelName, out model);
     }
     /// <summary>
     /// ルート集約や子集約を表すXML要素を <see cref="AggregateBase"/> のインスタンスに変換します。
@@ -275,6 +289,15 @@ public class SchemaParseContext {
         // 列挙体
         if (GetStaticEnumMembers().TryGetValue(type.Value, out var enumMember)) {
             valueMemberType = enumMember;
+            return true;
+        }
+
+        // 値オブジェクト型
+        var valueObjectElement = Document.Root?.Elements()
+            .FirstOrDefault(el => el.Attribute(ATTR_NODE_TYPE)?.Value == ValueObjectModel.SCHEMA_NAME
+                               && el.Name.LocalName == type.Value);
+        if (valueObjectElement != null) {
+            valueMemberType = new ValueMemberTypes.ValueObjectMember(xElement, this);
             return true;
         }
 
@@ -353,7 +376,13 @@ public class SchemaParseContext {
                 case E_NodeType.ChildrenAggregate:
                     break;
 
+                // ValueMember単位の検証
                 case E_NodeType.ValueMember:
+                    if (TryResolveMemberType(el, out var vmType)) {
+                        vmType.Validate(el, this, (el, err) => errorsList.Add((el, err)));
+                    } else {
+                        errorsList.Add((el, $"種類'{el.Attribute(ATTR_NODE_TYPE)?.Value}'を特定できません。"));
+                    }
                     break;
 
                 case E_NodeType.Ref:

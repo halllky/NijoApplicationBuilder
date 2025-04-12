@@ -14,24 +14,24 @@ using System.Xml.Linq;
 namespace Nijo.ValueMemberTypes;
 
 /// <summary>
-/// 日付時刻型
+/// 実数型
 /// </summary>
-internal class DateTimeMember : IValueMemberType {
-    string IValueMemberType.TypePhysicalName => "DateTime";
-    string IValueMemberType.SchemaTypeName => "datetime";
-    string IValueMemberType.CsDomainTypeName => "DateTime";
-    string IValueMemberType.CsPrimitiveTypeName => "DateTime";
-    string IValueMemberType.TsTypeName => "string";
-    UiConstraint.E_Type IValueMemberType.UiConstraintType => UiConstraint.E_Type.MemberConstraintBase;
+internal class DecimalMember : IValueMemberType {
+    string IValueMemberType.TypePhysicalName => "Decimal";
+    string IValueMemberType.SchemaTypeName => "decimal";
+    string IValueMemberType.CsDomainTypeName => "decimal";
+    string IValueMemberType.CsPrimitiveTypeName => "decimal";
+    string IValueMemberType.TsTypeName => "number";
+    UiConstraint.E_Type IValueMemberType.UiConstraintType => UiConstraint.E_Type.NumberMemberConstraint;
 
     void IValueMemberType.Validate(XElement element, SchemaParseContext context, Action<XElement, string> addError) {
-        // 日付時刻型の検証
-        // 必要に応じて日付範囲の制約などを検証するコードをここに追加できます
+        // 実数型の検証
+        // 必要に応じて最小値や最大値、小数点以下の桁数などの制約を検証するコードをここに追加できます
     }
 
     ValueMemberSearchBehavior? IValueMemberType.SearchBehavior => new() {
-        FilterCsTypeName = $"{FromTo.CS_CLASS_NAME}<DateTime?>",
-        FilterTsTypeName = "{ from?: string; to?: string }",
+        FilterCsTypeName = $"{FromTo.CS_CLASS_NAME}<decimal?>",
+        FilterTsTypeName = "{ from?: number; to?: number }",
         RenderTsNewObjectFunctionValue = () => "{ from: undefined, to: undefined }",
         RenderFiltering = ctx => {
             var fullpath = ctx.Member.GetPathFromEntry().ToArray();
@@ -71,7 +71,7 @@ internal class DateTimeMember : IValueMemberType {
 
     string IValueMemberType.RenderCreateDummyDataValueBody(CodeRenderingContext ctx) {
         return $$"""
-            return DateTime.Now.AddDays(context.Random.Next(-365, 365)).AddHours(context.Random.Next(-24, 24));
+            return (decimal)(context.Random.NextDouble() * 1000);
             """;
     }
 

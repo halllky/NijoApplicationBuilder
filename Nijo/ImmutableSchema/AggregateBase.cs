@@ -257,7 +257,7 @@ namespace Nijo.ImmutableSchema {
 
         public string LatinName => _ctx.GetLatinName(_xElement);
         public bool IsReadOnly => _xElement.Attribute(BasicNodeOptions.IsReadOnly.AttributeName) != null;
-        public IModel Model => _ctx.GetModel(_xElement);
+        public IModel Model => _ctx.TryGetModel(_xElement, out var model) ? model : throw new InvalidOperationException("ありえない");
 
         public override AggregateBase AsEntry() {
             return new RootAggregate(_xElement, _ctx, null);
