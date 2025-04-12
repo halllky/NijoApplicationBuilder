@@ -18,7 +18,7 @@ namespace Nijo.Models {
     internal class QueryModel : IModel {
         public string SchemaName => "query-model";
 
-        public string HelpText => $$"""
+        public string HelpTextMarkdown => $$"""
             クエリモデル。
             アクター（このアプリケーションのユーザまたは外部システム）が、アプリケーションに蓄積されたデータ（{{nameof(DataModel)}}）を、特定の観点から参照するためのデータの形。
             CQS, CQRS におけるクエリとほぼ同じもの。

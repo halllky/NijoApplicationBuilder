@@ -14,7 +14,7 @@ namespace Nijo.Models {
     internal class CommandModel : IModel {
         public string SchemaName => "command-model";
 
-        public string HelpText => $$"""
+        public string HelpTextMarkdown => $$"""
             コマンド。
             アクター（このアプリケーションのユーザまたは外部システム）がこのアプリケーションの状態やこのアプリケーションの{{nameof(DataModel)}}に何らかの変更を加えるときの操作のデータの形。
             コマンドが実行されると{{nameof(DataModel)}}に何らかの変更がかかる。

@@ -21,7 +21,7 @@ namespace Nijo.CodeGenerating {
         /// <summary>
         /// このモデルがどういった責務を負っているか、このモデルからどういったソースコードが生成されるかの概要
         /// </summary>
-        string HelpText { get; }
+        string HelpTextMarkdown { get; }
 
         /// <summary>
         /// モデルの指定内容の検証を行ないます。
