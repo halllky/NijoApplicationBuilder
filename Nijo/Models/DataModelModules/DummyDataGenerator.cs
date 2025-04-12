@@ -212,7 +212,7 @@ namespace Nijo.Models.DataModelModules {
                                         {{path}}
                                     """)}}
                                         .Select(cmd => new {{keyClass.ClassName}} {
-                                            {{WithIndent(RenderKeyClassBodyConverting(keyClass), "            ")}}
+                                            {{WithIndent(RenderKeyClassBodyConverting(keyClass), "        ")}}
                                         })
                                         .ElementAtOrDefault(itemIndex)
                                         ?? throw new InvalidOperationException($"{{owner}}の{{memberName}}のキー重複を防ぐため{{refToName}}には少なくとも{itemIndex + 1}件のデータがある必要がありますが、{context.{{GeneratedList(refToRoot)}}.Count}件しかありません。"),

@@ -58,7 +58,7 @@ internal class Metadata : IMultiAggregateSourceFile {
                 /// <summary>
                 /// スキーマ定義で指定されたメンバー毎の属性（必須か否か、文字列の最大桁数、など）を
                 /// 生成された後のカスタマイズ処理で参照したいときに使う構造体。
-                /// あまり使われることが無いので、必要な場合のみメモリ確保されるようにするために、statcやconstにしていない。
+                /// あまり使われることが無いので、必要な場合のみメモリ確保されるようにするために、staticやconstにはしていない。
                 /// </summary>
                 public sealed class {{CS_CLASSNAME}} {
 
