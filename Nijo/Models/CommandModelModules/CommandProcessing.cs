@@ -2,7 +2,6 @@ using Nijo.CodeGenerating;
 using Nijo.ImmutableSchema;
 using Nijo.Parts.Common;
 using Nijo.Parts.CSharp;
-using Nijo.Models.CommandModelModules;
 using System;
 using System.Collections.Generic;
 using System.Linq;

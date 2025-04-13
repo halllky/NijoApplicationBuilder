@@ -16,7 +16,7 @@ namespace Nijo.Models.QueryModelModules {
         /// その集約が他のどの集約からも参照されていない場合はレンダリングしないため、
         /// そのツリー内部で他の集約から参照されているもののみを集めるメソッド。
         /// </summary>
-        internal static (Entry[] Entries, RefDisplayDataParentMember[] ParentMembers) GetReferedMembersRecursively(RootAggregate rootAggregate) {
+        internal static (Entry[] Entries, RefDisplayDataMemberContainer[] NotEntries) GetReferedMembersRecursively(RootAggregate rootAggregate) {
             var tree = rootAggregate
                 .EnumerateThisAndDescendants()
                 .ToArray();
@@ -27,13 +27,19 @@ namespace Nijo.Models.QueryModelModules {
                 .Select(agg => new Entry(agg))
                 .ToArray();
 
-            // エントリーに含まれる集約の祖先はAsParentをレンダリングする
-            var parentMembers = tree
+            // エントリーに含まれる集約の祖先および子孫はAsParentをレンダリングする
+            var asParent = tree
                 .Where(agg => entries.Any(entry => agg.IsAncestorOf(entry.Aggregate)))
-                .Select(agg => new RefDisplayDataParentMember(agg))
-                .ToArray();
+                .Select(agg => new RefDisplayDataParentMember(agg));
+            var asDescendant = tree
+                .Where(agg => entries.Any(entry => agg.IsDescendantOf(entry.Aggregate)))
+                .Select<AggregateBase, RefDisplayDataMemberContainer>(agg => agg switch {
+                    ChildAggreagte child => new RefDisplayDataChildMember(child),
+                    ChildrenAggreagte children => new RefDisplayDataChildrenMember(children),
+                    _ => throw new NotImplementedException(),
+                });
 
-            return (entries, parentMembers);
+            return (entries, [.. asParent, .. asDescendant]);
         }
 
         #region レンダリング
@@ -41,7 +47,7 @@ namespace Nijo.Models.QueryModelModules {
         /// 他の集約から参照されているもののみ再帰的にレンダリングする
         /// </summary>
         internal static string RenderCSharpRecursively(RootAggregate rootAggregate, CodeRenderingContext ctx) {
-            var (entries, parentMembers) = GetReferedMembersRecursively(rootAggregate);
+            var (entries, notEntries) = GetReferedMembersRecursively(rootAggregate);
 
             return $$"""
                 #region 他の集約から参照されるときの画面表示用オブジェクト
@@ -49,7 +55,7 @@ namespace Nijo.Models.QueryModelModules {
                 {{entry.RenderCsClass(ctx)}}
 
                 """)}}
-                {{parentMembers.SelectTextTemplate(parent => $$"""
+                {{notEntries.SelectTextTemplate(parent => $$"""
                 {{parent.RenderCsClass(ctx)}}
 
                 """)}}
