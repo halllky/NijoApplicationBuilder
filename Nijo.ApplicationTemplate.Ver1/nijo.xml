@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<NijoApplicationBuilder RootNamespace="MyApp">
+<NijoApplicationBuilder RootNamespace="MyApp.Core">
   <顧客 Type="data-model" GenerateDefaultQueryModel="True" GenerateBatchUpdateCommand="True" LatinName="Master Data 01">
     <顧客ID Type="word" IsKey="True" />
     <顧客名 Type="word" />
