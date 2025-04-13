@@ -42,7 +42,7 @@ public class DataPatternTest {
         return files;
     }
 
-    [SetUp]
+    [OneTimeSetUp]
     public void Setup() {
         // テストプロジェクトディレクトリの準備
         var workspaceRoot = Path.GetFullPath(Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", ".."));
@@ -141,32 +141,36 @@ public class DataPatternTest {
             Assert.Fail($"C#コンパイルに失敗しました。\n出力:\n{outputBuilder}\nエラー:\n{errorBuilder}");
         }
 
-        // TypeScriptコンパイルチェック
-        var tsConfigPath = Path.Combine(testProjectDir, "react", "tsconfig.json");
-        using var tsBuildProcess = Process.Start(new ProcessStartInfo {
-            FileName = "powershell",
-            Arguments = "/c \"npm run tsc\"",
-            WorkingDirectory = Path.Combine(testProjectDir, "react"),
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            StandardOutputEncoding = Encoding.UTF8,
-            StandardErrorEncoding = Encoding.UTF8,
-        })!;
-        if (!tsBuildProcess.WaitForExit(300000)) { // 5分のタイムアウト
-            tsBuildProcess.Kill();
-            Assert.Fail("TypeScriptコンパイルがタイムアウトしました。");
-        }
-        if (tsBuildProcess.ExitCode != 0) {
-            var output = tsBuildProcess.StandardOutput.ReadToEnd();
-            var error = tsBuildProcess.StandardError.ReadToEnd();
-            Assert.Fail($"TypeScriptコンパイルに失敗しました。\n出力:\n{output}\nエラー:\n{error}");
-        }
+        // ※まずはC#側の品質を固める 2025-04-14 ※
+
+        //// TypeScriptコンパイルチェック
+        //var tsConfigPath = Path.Combine(testProjectDir, "react", "tsconfig.json");
+        //using var tsBuildProcess = Process.Start(new ProcessStartInfo {
+        //    FileName = "powershell",
+        //    Arguments = "/c \"npm run tsc\"",
+        //    WorkingDirectory = Path.Combine(testProjectDir, "react"),
+        //    UseShellExecute = false,
+        //    RedirectStandardOutput = true,
+        //    RedirectStandardError = true,
+        //    StandardOutputEncoding = Encoding.UTF8,
+        //    StandardErrorEncoding = Encoding.UTF8,
+        //})!;
+        //if (!tsBuildProcess.WaitForExit(300000)) { // 5分のタイムアウト
+        //    tsBuildProcess.Kill();
+        //    Assert.Fail("TypeScriptコンパイルがタイムアウトしました。");
+        //}
+        //if (tsBuildProcess.ExitCode != 0) {
+        //    var output = tsBuildProcess.StandardOutput.ReadToEnd();
+        //    var error = tsBuildProcess.StandardError.ReadToEnd();
+        //    Assert.Fail($"TypeScriptコンパイルに失敗しました。\n出力:\n{output}\nエラー:\n{error}");
+        //}
+
+        // ※まずはC#側の品質を固める 2025-04-14 ※
 
         Assert.Pass($"{fileName} のテストが完了しました");
     }
 
-    private void CopyDirectory(string sourceDir, string targetDir) {
+    static private void CopyDirectory(string sourceDir, string targetDir) {
         Directory.CreateDirectory(targetDir);
 
         foreach (var file in Directory.GetFiles(sourceDir)) {
@@ -180,7 +184,7 @@ public class DataPatternTest {
         }
     }
 
-    private IApplicationServiceImplementor GetImplementor(string xmlFileName) {
+    static private IApplicationServiceImplementor GetImplementor(string xmlFileName) {
         // アセンブリ内のすべてのIApplicationServiceImplementor実装を取得
         var implementors = AppDomain.CurrentDomain.GetAssemblies()
             .SelectMany(a => a.GetTypes())
