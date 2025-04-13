@@ -3,12 +3,12 @@
 <自動テストで作成されたプロジェクト RootNamespace="MyApp.Core">
 
   <資産種別 Type="enum">
-    <PC/>
-    <ルーター/>
-    <ディスプレイ/>
-    <マウス/>
-    <キーボード/>
-    <HDD/>
+    <PC key="1" />
+    <ルーター key="2" />
+    <ディスプレイ key="3" />
+    <マウス key="4" />
+    <キーボード key="5" />
+    <HDD key="6" />
   </資産種別>
 
   <従業員 Type="data-model" GenerateDefaultQueryModel="True">
