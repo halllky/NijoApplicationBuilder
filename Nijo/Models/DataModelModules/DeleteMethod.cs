@@ -21,7 +21,7 @@ namespace Nijo.Models.DataModelModules {
         internal string OnAfterMethodName => $"OnAfterDelete{_rootAggregate.PhysicalName}Async";
 
         internal string Render(CodeRenderingContext ctx) {
-            var command = new SaveCommand(_rootAggregate);
+            var command = new SaveCommand(_rootAggregate, SaveCommand.E_Type.Delete);
             var dbEntity = new EFCoreEntity(_rootAggregate);
             var messages = new SaveCommandMessageContainer(_rootAggregate);
 

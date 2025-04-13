@@ -134,7 +134,7 @@ namespace Nijo.Models.DataModelModules {
             }
 
             static string RenderCreatePatternMethod(RootAggregate rootAggregate) {
-                var saveCommand = new SaveCommand(rootAggregate);
+                var saveCommand = new SaveCommand(rootAggregate, SaveCommand.E_Type.Create);
 
                 return $$"""
                     /// <summary>{{rootAggregate.DisplayName}}のテストデータのパターン作成</summary>
@@ -147,7 +147,7 @@ namespace Nijo.Models.DataModelModules {
             }
 
             static string RenderCreateRootAggregateMethod(RootAggregate rootAggregate) {
-                var saveCommand = new SaveCommand(rootAggregate);
+                var saveCommand = new SaveCommand(rootAggregate, SaveCommand.E_Type.Create);
 
                 return $$"""
                     /// <summary>{{rootAggregate.DisplayName}}の作成コマンドのインスタンスを作成して返します。</summary>
@@ -188,11 +188,11 @@ namespace Nijo.Models.DataModelModules {
                                     continue;
 
                                 } else if (agg is ChildAggreagte child) {
-                                    var saveCommandMember = new SaveCommand.SaveCommandChildMember(child);
+                                    var saveCommandMember = new SaveCommand.SaveCommandChildMember(child, SaveCommand.E_Type.Create);
                                     treePath.Add($".Select(x => x.{saveCommandMember.PhysicalName})");
 
                                 } else if (agg is ChildrenAggreagte children) {
-                                    var saveCommandMember = new SaveCommand.SaveCommandChildrenMember(children);
+                                    var saveCommandMember = new SaveCommand.SaveCommandChildrenMember(children, SaveCommand.E_Type.Create);
                                     treePath.Add($".SelectMany(x => x.{saveCommandMember.PhysicalName})");
 
                                 } else {
@@ -328,7 +328,7 @@ namespace Nijo.Models.DataModelModules {
             };
 
             static string RenderGetRefTo(RootAggregate aggregate) {
-                var saveCommand = new SaveCommand(aggregate);
+                var saveCommand = new SaveCommand(aggregate, SaveCommand.E_Type.Create);
 
                 return $$"""
                     /// <summary>このメソッドが呼ばれた時点で作成済みの{{aggregate.DisplayName}}</summary>

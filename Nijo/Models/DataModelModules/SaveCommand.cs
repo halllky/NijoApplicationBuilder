@@ -15,12 +15,16 @@ namespace Nijo.Models.DataModelModules {
     /// <summary>
     /// データモデルの登録更新処理の引数
     /// </summary>
-    internal class SaveCommand {
+    internal class SaveCommand : IInstancePropertyOwnerMetadata {
 
-        internal SaveCommand(AggregateBase aggregate) {
+        internal SaveCommand(AggregateBase aggregate, E_Type type) {
             _aggregate = aggregate;
+            Type = type;
         }
         private readonly AggregateBase _aggregate;
+
+        internal enum E_Type { Create, Update, Delete }
+        internal E_Type Type { get; }
 
         internal string CsClassNameCreate => $"{_aggregate.PhysicalName}CreateCommand";
         internal string CsClassNameUpdate => $"{_aggregate.PhysicalName}UpdateCommand";
@@ -33,33 +37,37 @@ namespace Nijo.Models.DataModelModules {
         /// <summary>
         /// 新規・更新・削除のすべてのコマンドを、子孫要素の分も含めて再帰的にレンダリングします。
         /// </summary>
-        internal string RenderAll(CodeRenderingContext ctx) {
-            if (_aggregate is not RootAggregate) throw new InvalidOperationException();
+        internal static string RenderAll(RootAggregate rootAggregate, CodeRenderingContext ctx) {
 
-            var descendants = _aggregate.EnumerateDescendants().Select(agg => new SaveCommand(agg));
-            var tree = new[] { this }.Concat(descendants).ToArray();
+            var tree = rootAggregate.EnumerateThisAndDescendants().ToArray();
 
             return $$"""
                 #region 新規登録時引数
                 {{tree.SelectTextTemplate(agg => $$"""
-                {{agg.RenderCreateCommandDeclaring(ctx)}}
+                {{new SaveCommand(agg, E_Type.Create).RenderCreateCommandDeclaring(ctx)}}
                 """)}}
                 #endregion 新規登録時引数
 
 
                 #region 更新時引数
                 {{tree.SelectTextTemplate(agg => $$"""
-                {{agg.RenderUpdateCommandDeclaring(ctx)}}
+                {{new SaveCommand(agg, E_Type.Update).RenderUpdateCommandDeclaring(ctx)}}
                 """)}}
                 #endregion 更新時引数
 
 
                 #region 物理削除時引数
                 {{tree.SelectTextTemplate(agg => $$"""
-                {{agg.RenderDeleteCommandDeclaring(ctx)}}
+                {{new SaveCommand(agg, E_Type.Delete).RenderDeleteCommandDeclaring(ctx)}}
                 """)}}
                 #endregion 物理削除時引数
                 """;
+        }
+
+
+
+        IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
+            throw new NotImplementedException();
         }
 
 
@@ -76,10 +84,10 @@ namespace Nijo.Models.DataModelModules {
                     yield return new SaveCommandRefMember(rm);
 
                 } else if (member is ChildAggreagte child) {
-                    yield return new SaveCommandChildMember(child);
+                    yield return new SaveCommandChildMember(child, Type);
 
                 } else if (member is ChildrenAggreagte children) {
-                    yield return new SaveCommandChildrenMember(children);
+                    yield return new SaveCommandChildrenMember(children, Type);
                 }
             }
         }
@@ -113,10 +121,10 @@ namespace Nijo.Models.DataModelModules {
                     yield return new SaveCommandRefMember(rm);
 
                 } else if (member is ChildAggreagte child) {
-                    yield return new SaveCommandChildMember(child);
+                    yield return new SaveCommandChildMember(child, Type);
 
                 } else if (member is ChildrenAggreagte children) {
-                    yield return new SaveCommandChildrenMember(children);
+                    yield return new SaveCommandChildrenMember(children, Type);
                 }
             }
         }
@@ -275,27 +283,27 @@ namespace Nijo.Models.DataModelModules {
         /// 更新処理引数クラスの子メンバー
         /// </summary>
         internal class SaveCommandChildMember : SaveCommand, ISaveCommandMember {
-            internal SaveCommandChildMember(ChildAggreagte child) : base(child) { }
+            internal SaveCommandChildMember(ChildAggreagte child, E_Type type) : base(child, type) { }
 
             ISchemaPathNode ISaveCommandMember.Member => (IAggregateMember)_aggregate;
             public string PhysicalName => _aggregate.PhysicalName;
             public string DisplayName => _aggregate.DisplayName;
-            public string CsCreateType => new SaveCommand(_aggregate).CsClassNameCreate;
-            public string CsUpdateType => new SaveCommand(_aggregate).CsClassNameUpdate;
-            public string CsDeleteType => new SaveCommand(_aggregate).CsClassNameDelete;
+            public string CsCreateType => new SaveCommand(_aggregate, SaveCommand.E_Type.Create).CsClassNameCreate;
+            public string CsUpdateType => new SaveCommand(_aggregate, SaveCommand.E_Type.Update).CsClassNameUpdate;
+            public string CsDeleteType => new SaveCommand(_aggregate, SaveCommand.E_Type.Delete).CsClassNameDelete;
         }
         /// <summary>
         /// 更新処理引数クラスの子コレクションメンバー
         /// </summary>
         internal class SaveCommandChildrenMember : SaveCommand, ISaveCommandMember {
-            internal SaveCommandChildrenMember(ChildrenAggreagte children) : base(children) { }
+            internal SaveCommandChildrenMember(ChildrenAggreagte children, E_Type type) : base(children, type) { }
 
             ISchemaPathNode ISaveCommandMember.Member => (IAggregateMember)_aggregate;
             public string PhysicalName => _aggregate.PhysicalName;
             public string DisplayName => _aggregate.DisplayName;
-            public string CsCreateType => $"List<{new SaveCommand(_aggregate).CsClassNameCreate}>";
-            public string CsUpdateType => $"List<{new SaveCommand(_aggregate).CsClassNameUpdate}>";
-            public string CsDeleteType => $"List<{new SaveCommand(_aggregate).CsClassNameDelete}>";
+            public string CsCreateType => $"List<{new SaveCommand(_aggregate, SaveCommand.E_Type.Create).CsClassNameCreate}>";
+            public string CsUpdateType => $"List<{new SaveCommand(_aggregate, SaveCommand.E_Type.Update).CsClassNameUpdate}>";
+            public string CsDeleteType => $"List<{new SaveCommand(_aggregate, SaveCommand.E_Type.Delete).CsClassNameDelete}>";
         }
         #endregion メンバー
 
@@ -373,7 +381,7 @@ namespace Nijo.Models.DataModelModules {
 
                         // 辞書に、ラムダ式内部で右辺に使用できるプロパティを加える
                         var dict2 = new Dictionary<SchemaNodeIdentity, IInstanceProperty_old>(rigthMembers);
-                        var saveCommand = new SaveCommandChildrenMember(children);
+                        var saveCommand = new SaveCommandChildrenMember(children, Type);
                         var loopVar = new Variable_old(children.GetLoopVarName(), () => GetProperties(saveCommand, isCreate));
                         foreach (var descendant in loopVar.EnumerateOneToOnePropertiesRecursively()) {
                             dict2.Add(descendant.Key, descendant);
@@ -491,8 +499,8 @@ namespace Nijo.CodeGenerating {
                         if (isOutOfEntryTree) throw new InvalidOperationException("参照先のキーの中では親から子へ辿るパターンは無い");
 
                         var childMemberPhysicalName = curr switch {
-                            ChildAggreagte child => new SaveCommand.SaveCommandChildMember(child).PhysicalName,
-                            ChildrenAggreagte children => new SaveCommand.SaveCommandChildrenMember(children).PhysicalName,
+                            ChildAggreagte child => new SaveCommand.SaveCommandChildMember(child, SaveCommand.E_Type.Create).PhysicalName, // CUD全部名前同じなのでCにしている
+                            ChildrenAggreagte children => new SaveCommand.SaveCommandChildrenMember(children, SaveCommand.E_Type.Create).PhysicalName, // CUD全部名前同じなのでCにしている
                             _ => throw new InvalidOperationException("ありえない"),
                         };
                         yield return childMemberPhysicalName;

@@ -26,7 +26,7 @@ namespace Nijo.Models.DataModelModules {
         protected override IEnumerable<IMessageContainerMember> GetMembers() {
             // SaveCommandと同じデータ型になるのでSaveCommandの処理を流用する。
             // Updateを使っているのは、Create, Update, Delete のうちUpdateが最も多くの項目を持っているため
-            return new SaveCommand(_aggregate)
+            return new SaveCommand(_aggregate, SaveCommand.E_Type.Create) // CUD全部名前同じなのでCにしている
                 .GetUpdateCommandMembers()
                 .Select(m => new MessageContainerMemberImpl {
                     PhysicalName = m.PhysicalName,
@@ -162,8 +162,8 @@ namespace Nijo.CodeGenerating {
                         if (isOutOfEntryTree) throw new InvalidOperationException("参照先のキーの中では親から子へ辿るパターンは無い");
 
                         var childMemberPhysicalName = curr switch {
-                            ChildAggreagte child => new SaveCommand.SaveCommandChildMember(child).PhysicalName,
-                            ChildrenAggreagte children => new SaveCommand.SaveCommandChildrenMember(children).PhysicalName,
+                            ChildAggreagte child => new SaveCommand.SaveCommandChildMember(child, SaveCommand.E_Type.Create).PhysicalName, // CUD全部名前同じなのでCにしている
+                            ChildrenAggreagte children => new SaveCommand.SaveCommandChildrenMember(children, SaveCommand.E_Type.Create).PhysicalName, // CUD全部名前同じなのでCにしている
                             _ => throw new InvalidOperationException("ありえない"),
                         };
                         yield return childMemberPhysicalName;

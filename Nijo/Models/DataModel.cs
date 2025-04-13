@@ -151,8 +151,7 @@ namespace Nijo.Models {
             ctx.Use<DbContextClass>().AddEntities(efCoreEntity.EnumerateThisAndDescendants());
 
             // データ型: SaveCommand
-            var saveCommand = new SaveCommand(rootAggregate);
-            aggregateFile.AddCSharpClass(saveCommand.RenderAll(ctx));
+            aggregateFile.AddCSharpClass(SaveCommand.RenderAll(rootAggregate, ctx));
 
             // データ型: ほかの集約から参照されるときのキー
             aggregateFile.AddCSharpClass(KeyClass.KeyClassEntry.RenderClassDeclaringRecursively(rootAggregate, ctx));
