@@ -1,4 +1,5 @@
 using Nijo.CodeGenerating;
+using Nijo.CodeGenerating.Helpers;
 using Nijo.ImmutableSchema;
 using Nijo.Models.DataModelModules;
 using Nijo.Util.DotnetEx;
@@ -298,8 +299,29 @@ namespace Nijo.Models.DataModelModules {
         }
         #endregion メンバー
 
-
         private string RenderToDbEntity(bool isCreate) {
+
+            // 右辺の定義
+            var rootInstance = new Variable("this", () => {
+                var members = isCreate
+                    ? GetCreateCommandMembers()
+                    : GetUpdateCommandMembers();
+                var props = members.Select(m => new InstancePropertyWithoutOwner {
+                    IsNullable = true,
+                    IsMany = m is SaveCommandChildrenMember,
+                    Key = m.Member.ToIdentifier(),
+                    PropertyName = m.PhysicalName,
+                    GetProperties = m is SaveCommandValueMember || m is KeyClass.KeyClassValueMember
+                        ? null
+                        : () => GetProperties(m, isCreate),
+                });
+                return props;
+            });
+
+            var rightDictOfRootInstance = rootInstance
+                .EnumerateOneToOnePropertiesRecursively()
+                .ToDictionary(x => x.Key);
+
             var efCoreEntity = new EFCoreEntity(_aggregate);
 
             return $$"""
@@ -308,112 +330,58 @@ namespace Nijo.Models.DataModelModules {
                 /// </summary>
                 public {{efCoreEntity.CsClassName}} {{TO_DBENTITY}}() {
                     return new {{efCoreEntity.CsClassName}} {
-                        {{WithIndent(RenderToDbEntityBody(efCoreEntity, this, "this", new Dictionary<XElement, string>()), "        ")}}
+                        {{WithIndent(RenderToDbEntityBody(efCoreEntity, rootInstance, rightDictOfRootInstance), "        ")}}
+                        {{EFCoreEntity.VERSION}} = {{(isCreate ? "0" : $"{rootInstance.VariableName}.{VERSION}")}},
                     };
                 }
                 """;
 
-            IEnumerable<string> RenderToDbEntityBody(
-                EFCoreEntity entity,
-                SaveCommand source,
-                string rightInstanceName,
-                IReadOnlyDictionary<XElement, string> ancestorsKeys) {
-
-                // 右辺
-                var rightMembers = new Dictionary<XElement, string>();
-                var ancestorsAndThisKeys = new Dictionary<XElement, string>(ancestorsKeys);
-
-                var rightSourceMembers = isCreate
-                    ? source.GetCreateCommandMembers()
-                    : source.GetUpdateCommandMembers();
-                foreach (var member in rightSourceMembers) {
-                    var path = member.Member
-                        .GetPathFromEntry()
-                        .SinceNearestChildren()
-                        .AsSaveCommand();
-                    var joined = $"{(member.Member is ValueMember vm3 ? vm3.Type.RenderCastToPrimitiveType() : "")}{rightInstanceName}.{path.Join("?.")}";
-
-                    // 右辺の候補に追加
-                    rightMembers.Add(member.Member.XElement, joined);
-
-                    // キー項目の場合は子孫のレンダリングのために祖先メンバーリストにも追加
-                    if (member is SaveCommandValueMember vm && vm.Member.IsKey) {
-                        if (ancestorsAndThisKeys.ContainsKey(member.Member.XElement)) continue;
-
-                        ancestorsAndThisKeys.Add(member.Member.XElement, joined);
-
-                    } else if (member is SaveCommandRefMember rm && rm.Member.IsKey) {
-                        foreach (var vm2 in rm.GetValueMembersRecursively()) {
-                            if (ancestorsAndThisKeys.ContainsKey(vm2.Member.XElement)) continue;
-
-                            var path2 = vm2.Member
-                                .GetPathFromEntry()
-                                .SinceNearestChildren()
-                                .AsSaveCommand();
-                            var joined2 = $"{vm2.Member.Type.RenderCastToPrimitiveType()}{rightInstanceName}.{path2.Join("?.")}";
-                            ancestorsAndThisKeys.Add(vm2.Member.XElement, joined2);
-                        }
-                    }
-                }
+            IEnumerable<string> RenderToDbEntityBody(EFCoreEntity left, Variable right, IReadOnlyDictionary<SchemaNodeIdentity, IInstanceProperty> rigthMembers) {
 
                 // 自身のカラム、外部参照のキー、親のキー
-                foreach (var col in entity.GetColumns()) {
-                    if (col is EFCoreEntity.OwnColumnMember ownCol) {
-                        // シーケンス項目など登録と共に採番されるものはnullになる可能性がある
-                        var right = rightMembers.GetValueOrDefault(ownCol.Member.XElement);
-                        yield return $$"""
-                            {{col.PhysicalName}} = {{right ?? "null"}},
-                            """;
-
-                    } else if (col is EFCoreEntity.ParentKeyMember parentKeyCol) {
-                        // 親のキーメンバーの場合。
-                        // シーケンス項目など登録と共に採番されるものはnullになる可能性がある
-                        var right = ancestorsKeys.GetValueOrDefault(parentKeyCol.Member.XElement);
-                        yield return $$"""
-                            {{col.PhysicalName}} = {{right ?? "null"}},
-                            """;
-
-                    } else if (col is EFCoreEntity.RefKeyMember refKeyCol) {
-                        // 参照先のキーメンバーの場合
-                        var right = ancestorsKeys.GetValueOrDefault(refKeyCol.Member.XElement)
-                            ?? throw new InvalidOperationException($"{refKeyCol.RefEntry}の右辺が見つからない。XElement: {refKeyCol.Member.XElement}");
-
-                        yield return $$"""
-                            {{col.PhysicalName}} = {{right}},
-                            """;
-                    }
+                foreach (var col in left.GetColumns()) {
+                    // シーケンス項目など登録と共に採番されるものはnullになる可能性がある
+                    var sourcePath = rigthMembers.TryGetValue(col.Member.ToIdentifier(), out var source)
+                        ? source.GetJoinedPathFromInstance("?.")
+                        : "null";
+                    yield return $$"""
+                        {{col.PhysicalName}} = {{col.Member.Type.RenderCastToPrimitiveType()}}{{sourcePath}},
+                        """;
                 }
 
                 // 子
-                var childAndChildren = entity
+                var childAndChildren = left
                     .GetNavigationProperties()
                     .OfType<EFCoreEntity.NavigationOfParentChild>()
-                    .Where(nav => nav.Principal.ThisSide == entity.Aggregate);
-
+                    .Where(nav => nav.Principal.ThisSide == left.Aggregate);
                 foreach (var nav in childAndChildren) {
                     if (nav.Relevant.ThisSide is ChildAggreagte child) {
                         // Child
                         var childEntity = new EFCoreEntity(nav.Relevant.ThisSide);
-                        var childSaveCommand = new SaveCommandChildMember(child);
 
                         yield return $$"""
                             {{nav.Principal.OtherSidePhysicalName}} = new() {
-                                {{WithIndent(RenderToDbEntityBody(childEntity, childSaveCommand, rightInstanceName, ancestorsAndThisKeys), "    ")}}
+                                {{WithIndent(RenderToDbEntityBody(childEntity, right, rigthMembers), "    ")}}
                             },
                             """;
 
                     } else if (nav.Relevant.ThisSide is ChildrenAggreagte children) {
                         var childrenEntity = new EFCoreEntity(nav.Relevant.ThisSide);
-                        var childrenSaveCommand = new SaveCommandChildrenMember(children);
-                        var x = children.GetLoopVarName();
-                        var arrayPath = children
-                            .GetPathFromEntry()
-                            .SinceNearestChildren()
-                            .AsSaveCommand();
+                        var arrayPath = rigthMembers.TryGetValue(children.ToIdentifier(), out var source)
+                            ? source.GetJoinedPathFromInstance("?.")
+                            : throw new InvalidOperationException($"右辺にChildrenのXElementが無い: {children}");
+
+                        // 辞書に、ラムダ式内部で右辺に使用できるプロパティを加える
+                        var dict2 = new Dictionary<SchemaNodeIdentity, IInstanceProperty>(rigthMembers);
+                        var saveCommand = new SaveCommandChildrenMember(children);
+                        var loopVar = new Variable(children.GetLoopVarName(), () => GetProperties(saveCommand, isCreate));
+                        foreach (var descendant in loopVar.EnumerateOneToOnePropertiesRecursively()) {
+                            dict2.Add(descendant.Key, descendant);
+                        }
 
                         yield return $$"""
-                            {{nav.Principal.OtherSidePhysicalName}} = {{rightInstanceName}}.{{arrayPath.Join("?.")}}?.Select({{x}} => new {{childrenEntity.CsClassName}} {
-                                {{WithIndent(RenderToDbEntityBody(childrenEntity, childrenSaveCommand, x, ancestorsAndThisKeys), "    ")}}
+                            {{nav.Principal.OtherSidePhysicalName}} = {{arrayPath}}?.Select({{loopVar.VariableName}} => new {{childrenEntity.CsClassName}} {
+                                {{WithIndent(RenderToDbEntityBody(childrenEntity, loopVar, dict2), "    ")}}
                             }).ToHashSet() ?? [],
                             """;
 
@@ -421,12 +389,41 @@ namespace Nijo.Models.DataModelModules {
                         throw new NotImplementedException();
                     }
                 }
+            }
 
-                // バージョン
-                if (entity.Aggregate is RootAggregate) {
-                    yield return $$"""
-                        {{VERSION}} = 0,
-                        """;
+            // 右辺のメンバーのプロパティ定義
+            static IEnumerable<InstancePropertyWithoutOwner> GetProperties(ISaveCommandMember member, bool isCreate) {
+                if (member is SaveCommand container) {
+                    var members = isCreate
+                        ? container.GetCreateCommandMembers()
+                        : container.GetUpdateCommandMembers();
+                    var props = members.Select(m => new InstancePropertyWithoutOwner {
+                        Key = m.Member.ToIdentifier(),
+                        PropertyName = m.PhysicalName,
+                        IsMany = m is SaveCommandChildrenMember,
+                        IsNullable = true,
+                        GetProperties = m is SaveCommandValueMember || m is KeyClass.KeyClassValueMember
+                            ? null
+                            : () => GetProperties(m, isCreate),
+                    });
+                    return props;
+
+                } else if (member is KeyClass.IKeyClassStructure keyClass) {
+                    var props = keyClass
+                        .GetMembers()
+                        .Select(m => new InstancePropertyWithoutOwner {
+                            Key = m.Member.ToIdentifier(),
+                            PropertyName = m.PhysicalName,
+                            IsMany = m is SaveCommandChildrenMember,
+                            IsNullable = true,
+                            GetProperties = m is SaveCommandValueMember || m is KeyClass.KeyClassValueMember
+                                ? null
+                                : () => GetProperties(m, isCreate),
+                        });
+                    return props;
+
+                } else {
+                    return [];
                 }
             }
         }
