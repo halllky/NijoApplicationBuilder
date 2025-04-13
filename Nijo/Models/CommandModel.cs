@@ -156,25 +156,25 @@ namespace Nijo.Models {
 
             // データ型: パラメータ型定義
             var parameterType = new ParameterType(rootAggregate);
-            aggregateFile.AddCSharpClass(parameterType.RenderCSharp(ctx));
+            aggregateFile.AddCSharpClass(parameterType.RenderCSharp(ctx), "Class_Parameter");
             aggregateFile.AddTypeScriptTypeDef(parameterType.RenderTypeScript(ctx));
             aggregateFile.AddTypeScriptFunction(parameterType.RenderNewObjectFn());
 
             // データ型: パラメータ型メッセージ
             var parameterMessages = new ParameterTypeMessageContainer(rootAggregate);
-            aggregateFile.AddCSharpClass(parameterMessages.RenderCSharp());
+            aggregateFile.AddCSharpClass(parameterMessages.RenderCSharp(), "Class_ParameterMessage");
             aggregateFile.AddTypeScriptTypeDef(parameterMessages.RenderTypeScript());
             ctx.Use<MessageContainer.BaseClass>().Register(parameterMessages.CsClassName, parameterMessages.CsClassName);
 
             // データ型: 戻り値型定義
             var returnType = new ReturnValue(rootAggregate);
-            aggregateFile.AddCSharpClass(returnType.RenderCSharp(ctx));
+            aggregateFile.AddCSharpClass(returnType.RenderCSharp(ctx), "Class_ReturnValue");
             aggregateFile.AddTypeScriptTypeDef(returnType.RenderTypeScript(ctx));
 
             // 処理: TypeScript用マッピング、Webエンドポイント、本処理抽象メソッド
             var commandProcessing = new CommandProcessing(rootAggregate);
             aggregateFile.AddWebapiControllerAction(commandProcessing.RenderAspNetCoreControllerAction(ctx));
-            aggregateFile.AddAppSrvMethod(commandProcessing.RenderAppSrvMethods(ctx));
+            aggregateFile.AddAppSrvMethod(commandProcessing.RenderAppSrvMethods(ctx), "コマンド処理");
 
             // カスタムロジック用モジュール
             ctx.Use<CommandQueryMappings>().AddCommandModel(rootAggregate);

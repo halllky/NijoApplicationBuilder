@@ -41,30 +41,30 @@ namespace Nijo.Models {
                 participant db as DB
 
                 ts_custom->>ts_autogen: 検索条件オブジェクトの<br/>新規作成関数(自動生成)を呼ぶ
-                ts_autogen-->>ts_custom:　
+                ts_autogen-->>ts_custom:
                 ts_custom->>ts_custom:UI操作等で<br/>検索条件オブジェクトの<br/>内容を編集
                 ts_custom->>ts_autogen: 検索条件オブジェクトを渡して<br/>検索処理実行関数(自動生成)<br/>を呼ぶ
                 ts_autogen->>aspcore: 検索処理エンドポイント<br/>呼び出し(HTTP POST)
                 aspcore->>cs_autogen: アプリケーションサービスの<br/>検索メソッド呼び出し
                 cs_autogen->>cs_custom: エラーチェック。検索条件の<br/>エラーの有無を検査
-                cs_custom-->>cs_autogen:　
+                cs_custom-->>cs_autogen:
 
                 alt 検索条件に入力エラーが無い場合
                     cs_autogen->>cs_custom: CreateQuerySource<br/>メソッド呼び出し ※1
-                    cs_custom-->>cs_autogen:　
+                    cs_custom-->>cs_autogen:
                     cs_autogen->>cs_autogen: フィルタリング ※2
                     cs_autogen->>db: トータル検索結果件数カウントSQL発行
-                    db-->>cs_autogen:　
+                    db-->>cs_autogen:
                     cs_autogen->>cs_autogen: ソート ※3
                     cs_autogen->>cs_autogen: ページング ※4
                     cs_autogen->>db: 検索SQL発行
                     cs_autogen->>cs_autogen: 検索結果(SearchResult)を画面表示用型(DisplayData)に変換
-                    db-->>cs_autogen:　
+                    db-->>cs_autogen:
                 end
 
                 cs_autogen-->>aspcore: 処理結果返却
-                aspcore-->>ts_autogen:　
-                ts_autogen-->>ts_custom:　
+                aspcore-->>ts_autogen:
+                ts_autogen-->>ts_custom:
             ```
 
             ※1: 開発者はここでDbContextを用いて任意のテーブルからQuerySourceを作成する。
@@ -264,14 +264,14 @@ namespace Nijo.Models {
             //   - export type ソート可能メンバー型
             // - TS側オブジェクト作成関数
             var searchCondition = new SearchCondition.Entry(rootAggregate);
-            aggregateFile.AddCSharpClass(searchCondition.RenderCSharp(ctx));
+            aggregateFile.AddCSharpClass(searchCondition.RenderCSharp(ctx), "Class_SearchCondition");
             aggregateFile.AddTypeScriptTypeDef(searchCondition.RenderTypeScript(ctx));
             aggregateFile.AddTypeScriptTypeDef(searchCondition.RenderTypeScriptSortableMemberType());
             aggregateFile.AddTypeScriptFunction(searchCondition.RenderNewObjectFunction());
 
             // データ型: 検索条件メッセージ
             var searchConditionMessages = new SearchConditionMessageContainer(rootAggregate);
-            aggregateFile.AddCSharpClass(SearchConditionMessageContainer.RenderCSharpRecursively(rootAggregate));
+            aggregateFile.AddCSharpClass(SearchConditionMessageContainer.RenderCSharpRecursively(rootAggregate), "Class_SearchConditionMessage");
             aggregateFile.AddTypeScriptTypeDef(searchConditionMessages.RenderTypeScript()); // ちなみに子孫集約はルート集約の中にレンダリングされる
             ctx.Use<MessageContainer.BaseClass>().Register(searchConditionMessages.CsClassName, searchConditionMessages.CsClassName);
 
@@ -283,7 +283,7 @@ namespace Nijo.Models {
             aggregateFile.AddTypeScriptFunction(urlConversion.ConvertTypeScriptToUrl(ctx));
 
             // データ型: 検索結果クラス
-            aggregateFile.AddCSharpClass(SearchResult.RenderTree(rootAggregate));
+            aggregateFile.AddCSharpClass(SearchResult.RenderTree(rootAggregate), "Class_SearchResult");
 
             // データ型: 画面表示用型 DisplayData
             // - 定義(CS, TS): 値 + 状態(existsInDB, willBeChanged, willBeDeleted) + ReadOnly(画面の自動生成の一機能と位置づけるべきかも)
@@ -292,7 +292,7 @@ namespace Nijo.Models {
             // - TS側オブジェクト作成関数
             // - 変換処理: SearchResult => DisplayData
             var displayData = new DisplayData(rootAggregate);
-            aggregateFile.AddCSharpClass(DisplayData.RenderCSharpRecursively(rootAggregate, ctx));
+            aggregateFile.AddCSharpClass(DisplayData.RenderCSharpRecursively(rootAggregate, ctx), "Class_DisplayData");
             aggregateFile.AddTypeScriptTypeDef(DisplayData.RenderTypeScriptRecursively(rootAggregate, ctx));
             aggregateFile.AddTypeScriptTypeDef(displayData.RenderUiConstraintType(ctx));
             aggregateFile.AddTypeScriptTypeDef(displayData.RenderUiConstraintValue(ctx));
@@ -312,7 +312,7 @@ namespace Nijo.Models {
             // - 以上がload, count それぞれ
             var searchProcessing = new SearchProcessing(rootAggregate);
             aggregateFile.AddWebapiControllerAction(searchProcessing.RenderAspNetCoreControllerAction(ctx));
-            aggregateFile.AddAppSrvMethod(searchProcessing.RenderAppSrvMethods(ctx));
+            aggregateFile.AddAppSrvMethod(searchProcessing.RenderAppSrvMethods(ctx), "検索処理");
 
             // RefToモジュール
             // - データ型
@@ -322,10 +322,10 @@ namespace Nijo.Models {
             //   - Reactは型マッピングのみ
             //   - ASP.NET Core Controller Action
             //   - ApplicationService
-            aggregateFile.AddCSharpClass(DisplayDataRef.RenderCSharpRecursively(rootAggregate, ctx));
+            aggregateFile.AddCSharpClass(DisplayDataRef.RenderCSharpRecursively(rootAggregate, ctx), "Class_DisplayDataRef");
             aggregateFile.AddTypeScriptTypeDef(DisplayDataRef.RenderTypeScriptRecursively(rootAggregate));
             aggregateFile.AddTypeScriptFunction(DisplayDataRef.RenderTypeScriptObjectCreationFunctionRecursively(rootAggregate, ctx));
-            aggregateFile.AddAppSrvMethod(SearchProcessingRefs.RenderAppSrvMethodRecursively(rootAggregate, ctx));
+            aggregateFile.AddAppSrvMethod(SearchProcessingRefs.RenderAppSrvMethodRecursively(rootAggregate, ctx), "参照検索処理");
             aggregateFile.AddWebapiControllerAction(SearchProcessingRefs.RenderAspNetCoreControllerActionRecursively(rootAggregate, ctx));
 
             // UI用モジュール

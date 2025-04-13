@@ -147,18 +147,18 @@ namespace Nijo.Models {
 
             // データ型: EFCore Entity
             var efCoreEntity = new EFCoreEntity(rootAggregate);
-            aggregateFile.AddCSharpClass(EFCoreEntity.RenderClassDeclaring(efCoreEntity, ctx));
+            aggregateFile.AddCSharpClass(EFCoreEntity.RenderClassDeclaring(efCoreEntity, ctx), "Class_EFCoreEntity");
             ctx.Use<DbContextClass>().AddEntities(efCoreEntity.EnumerateThisAndDescendants());
 
             // データ型: SaveCommand
-            aggregateFile.AddCSharpClass(SaveCommand.RenderAll(rootAggregate, ctx));
+            aggregateFile.AddCSharpClass(SaveCommand.RenderAll(rootAggregate, ctx), "Class_SaveCommand");
 
             // データ型: ほかの集約から参照されるときのキー
-            aggregateFile.AddCSharpClass(KeyClass.KeyClassEntry.RenderClassDeclaringRecursively(rootAggregate, ctx));
+            aggregateFile.AddCSharpClass(KeyClass.KeyClassEntry.RenderClassDeclaringRecursively(rootAggregate, ctx), "Class_KeyClass");
 
             // データ型: SaveCommandメッセージ
             var saveCommandMessage = new SaveCommandMessageContainer(rootAggregate);
-            aggregateFile.AddCSharpClass(SaveCommandMessageContainer.RenderTree(rootAggregate));
+            aggregateFile.AddCSharpClass(SaveCommandMessageContainer.RenderTree(rootAggregate), "Class_SaveCommandMessage");
             ctx.Use<MessageContainer.BaseClass>()
                 .Register(saveCommandMessage.InterfaceName, saveCommandMessage.CsClassName)
                 .Register(saveCommandMessage.CsClassName, saveCommandMessage.CsClassName);
@@ -167,9 +167,9 @@ namespace Nijo.Models {
             var create = new CreateMethod(rootAggregate);
             var update = new UpdateMethod(rootAggregate);
             var delete = new DeleteMethod(rootAggregate);
-            aggregateFile.AddAppSrvMethod(create.Render(ctx));
-            aggregateFile.AddAppSrvMethod(update.Render(ctx));
-            aggregateFile.AddAppSrvMethod(delete.Render(ctx));
+            aggregateFile.AddAppSrvMethod(create.Render(ctx), "新規登録処理");
+            aggregateFile.AddAppSrvMethod(update.Render(ctx), "更新処理");
+            aggregateFile.AddAppSrvMethod(delete.Render(ctx), "物理削除処理");
 
             // 処理: 自動生成されるバリデーションエラーチェック
             aggregateFile.AddAppSrvMethod($$"""
@@ -180,7 +180,7 @@ namespace Nijo.Models {
                 {{CheckDigitsAndScales.Render(rootAggregate, ctx)}}
                 {{DynamicEnum.RenderAppSrvCheckMethod(rootAggregate, ctx)}}
                 #endregion 自動生成されるバリデーション処理
-                """);
+                """, "バリデーション処理");
 
             // 処理: ダミーデータ作成関数
             ctx.Use<DummyDataGenerator>()
