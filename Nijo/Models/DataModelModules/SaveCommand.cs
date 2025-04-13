@@ -327,25 +327,10 @@ namespace Nijo.Models.DataModelModules {
         private string RenderToDbEntity(bool isCreate) {
 
             // 右辺の定義
-            var rootInstance = new Variable_old("this", () => {
-                var members = isCreate
-                    ? GetCreateCommandMembers()
-                    : GetUpdateCommandMembers();
-                var props = members.Select(m => new InstancePropertyWithoutOwner_old {
-                    IsNullable = true,
-                    IsMany = m is SaveCommandChildrenMember,
-                    Key = m.Member.ToIdentifier(),
-                    PropertyName = m.PhysicalName,
-                    GetProperties = m is SaveCommandValueMember || m is KeyClass.KeyClassValueMember
-                        ? null
-                        : () => GetProperties(m, isCreate),
-                });
-                return props;
-            });
-
-            var rightDictOfRootInstance = rootInstance
-                .EnumerateOneToOnePropertiesRecursively()
-                .ToDictionary(x => x.Key);
+            var rootInstance = new Variable("this");
+            var rightDictOfRootInstance = this
+                .Get1To1ValuePropertiesRecursively(rootInstance)
+                .ToDictionary(x => x.MappingKey);
 
             var efCoreEntity = new EFCoreEntity(_aggregate);
 
@@ -356,12 +341,12 @@ namespace Nijo.Models.DataModelModules {
                 public {{efCoreEntity.CsClassName}} {{TO_DBENTITY}}() {
                     return new {{efCoreEntity.CsClassName}} {
                         {{WithIndent(RenderToDbEntityBody(efCoreEntity, rootInstance, rightDictOfRootInstance), "        ")}}
-                        {{EFCoreEntity.VERSION}} = {{(isCreate ? "0" : $"{rootInstance.VariableName}.{VERSION}")}},
+                        {{EFCoreEntity.VERSION}} = {{(isCreate ? "0" : $"{rootInstance.Name}.{VERSION}")}},
                     };
                 }
                 """;
 
-            IEnumerable<string> RenderToDbEntityBody(EFCoreEntity left, Variable_old right, IReadOnlyDictionary<SchemaNodeIdentity, IInstanceProperty_old> rigthMembers) {
+            IEnumerable<string> RenderToDbEntityBody(EFCoreEntity left, IInstancePropertyOwner right, IReadOnlyDictionary<SchemaNodeIdentity, IInstanceProperty> rigthMembers) {
 
                 // 自身のカラム、外部参照のキー、親のキー
                 foreach (var col in left.GetColumns()) {
@@ -397,15 +382,15 @@ namespace Nijo.Models.DataModelModules {
                             : throw new InvalidOperationException($"右辺にChildrenのXElementが無い: {children}");
 
                         // 辞書に、ラムダ式内部で右辺に使用できるプロパティを加える
-                        var dict2 = new Dictionary<SchemaNodeIdentity, IInstanceProperty_old>(rigthMembers);
+                        var dict2 = new Dictionary<SchemaNodeIdentity, IInstanceProperty>(rigthMembers);
                         var saveCommand = new SaveCommandChildrenMember(children, Type);
-                        var loopVar = new Variable_old(children.GetLoopVarName(), () => GetProperties(saveCommand, isCreate));
-                        foreach (var descendant in loopVar.EnumerateOneToOnePropertiesRecursively()) {
-                            dict2.Add(descendant.Key, descendant);
+                        var loopVar = new Variable(children.GetLoopVarName());
+                        foreach (var descendant in saveCommand.Get1To1ValuePropertiesRecursively(loopVar)) {
+                            dict2.Add(descendant.MappingKey, descendant);
                         }
 
                         yield return $$"""
-                            {{nav.Principal.OtherSidePhysicalName}} = {{arrayPath}}?.Select({{loopVar.VariableName}} => new {{childrenEntity.CsClassName}} {
+                            {{nav.Principal.OtherSidePhysicalName}} = {{arrayPath}}?.Select({{loopVar.Name}} => new {{childrenEntity.CsClassName}} {
                                 {{WithIndent(RenderToDbEntityBody(childrenEntity, loopVar, dict2), "    ")}}
                             }).ToHashSet() ?? [],
                             """;
@@ -413,42 +398,6 @@ namespace Nijo.Models.DataModelModules {
                     } else {
                         throw new NotImplementedException();
                     }
-                }
-            }
-
-            // 右辺のメンバーのプロパティ定義
-            static IEnumerable<InstancePropertyWithoutOwner_old> GetProperties(ISaveCommandMember member, bool isCreate) {
-                if (member is SaveCommand container) {
-                    var members = isCreate
-                        ? container.GetCreateCommandMembers()
-                        : container.GetUpdateCommandMembers();
-                    var props = members.Select(m => new InstancePropertyWithoutOwner_old {
-                        Key = m.Member.ToIdentifier(),
-                        PropertyName = m.PhysicalName,
-                        IsMany = m is SaveCommandChildrenMember,
-                        IsNullable = true,
-                        GetProperties = m is SaveCommandValueMember || m is KeyClass.KeyClassValueMember
-                            ? null
-                            : () => GetProperties(m, isCreate),
-                    });
-                    return props;
-
-                } else if (member is KeyClass.IKeyClassStructure keyClass) {
-                    var props = keyClass
-                        .GetOwnMembers()
-                        .Select(m => new InstancePropertyWithoutOwner_old {
-                            Key = m.Member.ToIdentifier(),
-                            PropertyName = m.PhysicalName,
-                            IsMany = m is SaveCommandChildrenMember,
-                            IsNullable = true,
-                            GetProperties = m is SaveCommandValueMember || m is KeyClass.KeyClassValueMember
-                                ? null
-                                : () => GetProperties(m, isCreate),
-                        });
-                    return props;
-
-                } else {
-                    return [];
                 }
             }
         }

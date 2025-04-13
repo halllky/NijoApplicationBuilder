@@ -95,7 +95,7 @@ public sealed class InstanceStructureProperty : IInstanceProperty, IInstanceProp
 
 // ------------------------------------------
 
-partial class CodeGeneratingHelperExtensions {
+public static partial class CodeGeneratingHelperExtensions {
 
     /// <summary>
     /// このインスタンスの、大元のインスタンスからのパスを列挙します。
@@ -145,10 +145,10 @@ partial class CodeGeneratingHelperExtensions {
     }
 
     /// <summary>
-    /// この構造体の子孫の値メンバーのうち、この構造体と1対1の多重度を持つもののみを再帰的に列挙します。
+    /// この構造体の子孫のメンバーのうち、この構造体と1対1の多重度を持つもののみを再帰的に列挙します。
     /// ToDbEntityなどのマッピングで使用。
     /// </summary>
-    public static IEnumerable<InstanceValueProperty> Get1To1ValuePropertiesRecursively(this IInstancePropertyOwnerMetadata ownerMetadata, IInstancePropertyOwner owner) {
+    public static IEnumerable<IInstanceProperty> Get1To1ValuePropertiesRecursively(this IInstancePropertyOwnerMetadata ownerMetadata, IInstancePropertyOwner owner) {
         foreach (var member in ownerMetadata.GetMembers()) {
             if (member is IInstanceValuePropertyMetadata valueMetadata) {
                 yield return new InstanceValueProperty {
@@ -165,8 +165,14 @@ partial class CodeGeneratingHelperExtensions {
                     PropertyName = structMetadata.PropertyName,
                     IsArray = structMetadata.IsArray,
                 };
-                foreach (var vp in structMetadata.Get1To1ValuePropertiesRecursively(prop)) {
-                    yield return vp;
+
+                yield return prop;
+
+                // 多重度1対1のメンバーのみを列挙するためarrayでない場合は子孫を辿らない
+                if (!structMetadata.IsArray) {
+                    foreach (var vp in structMetadata.Get1To1ValuePropertiesRecursively(prop)) {
+                        yield return vp;
+                    }
                 }
 
             } else {
