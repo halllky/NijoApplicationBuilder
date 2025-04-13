@@ -67,7 +67,12 @@ namespace Nijo.Models.DataModelModules {
 
 
         IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
-            throw new NotImplementedException();
+            return Type switch {
+                E_Type.Create => GetCreateCommandMembers(),
+                E_Type.Update => GetUpdateCommandMembers(),
+                E_Type.Delete => GetDeleteCommandMembers(),
+                _ => throw new NotImplementedException(),
+            };
         }
 
 
@@ -246,7 +251,7 @@ namespace Nijo.Models.DataModelModules {
 
 
         #region メンバー
-        internal interface ISaveCommandMember {
+        internal interface ISaveCommandMember : IInstancePropertyMetadata {
             ISchemaPathNode Member { get; }
             string PhysicalName { get; }
             string DisplayName { get; }
@@ -257,7 +262,7 @@ namespace Nijo.Models.DataModelModules {
         /// <summary>
         /// 更新処理引数クラスの値メンバー
         /// </summary>
-        internal class SaveCommandValueMember : ISaveCommandMember {
+        internal class SaveCommandValueMember : ISaveCommandMember, IInstanceValuePropertyMetadata {
             internal SaveCommandValueMember(ValueMember vm) {
                 Member = vm;
             }
@@ -269,6 +274,9 @@ namespace Nijo.Models.DataModelModules {
             public string CsCreateType => Member.Type.CsDomainTypeName;
             public string CsUpdateType => Member.Type.CsDomainTypeName;
             public string CsDeleteType => Member.Type.CsDomainTypeName;
+
+            IValueMemberType IInstanceValuePropertyMetadata.Type => Member.Type;
+            string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
         /// <summary>
         /// 更新処理引数クラスの参照先キー項目
@@ -282,7 +290,7 @@ namespace Nijo.Models.DataModelModules {
         /// <summary>
         /// 更新処理引数クラスの子メンバー
         /// </summary>
-        internal class SaveCommandChildMember : SaveCommand, ISaveCommandMember {
+        internal class SaveCommandChildMember : SaveCommand, ISaveCommandMember, IInstanceStructurePropertyMetadata {
             internal SaveCommandChildMember(ChildAggreagte child, E_Type type) : base(child, type) { }
 
             ISchemaPathNode ISaveCommandMember.Member => (IAggregateMember)_aggregate;
@@ -291,11 +299,14 @@ namespace Nijo.Models.DataModelModules {
             public string CsCreateType => new SaveCommand(_aggregate, SaveCommand.E_Type.Create).CsClassNameCreate;
             public string CsUpdateType => new SaveCommand(_aggregate, SaveCommand.E_Type.Update).CsClassNameUpdate;
             public string CsDeleteType => new SaveCommand(_aggregate, SaveCommand.E_Type.Delete).CsClassNameDelete;
+
+            bool IInstanceStructurePropertyMetadata.IsArray => false;
+            string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
         /// <summary>
         /// 更新処理引数クラスの子コレクションメンバー
         /// </summary>
-        internal class SaveCommandChildrenMember : SaveCommand, ISaveCommandMember {
+        internal class SaveCommandChildrenMember : SaveCommand, ISaveCommandMember, IInstanceStructurePropertyMetadata {
             internal SaveCommandChildrenMember(ChildrenAggreagte children, E_Type type) : base(children, type) { }
 
             ISchemaPathNode ISaveCommandMember.Member => (IAggregateMember)_aggregate;
@@ -304,6 +315,9 @@ namespace Nijo.Models.DataModelModules {
             public string CsCreateType => $"List<{new SaveCommand(_aggregate, SaveCommand.E_Type.Create).CsClassNameCreate}>";
             public string CsUpdateType => $"List<{new SaveCommand(_aggregate, SaveCommand.E_Type.Update).CsClassNameUpdate}>";
             public string CsDeleteType => $"List<{new SaveCommand(_aggregate, SaveCommand.E_Type.Delete).CsClassNameDelete}>";
+
+            bool IInstanceStructurePropertyMetadata.IsArray => true;
+            string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
         #endregion メンバー
 
@@ -418,7 +432,7 @@ namespace Nijo.Models.DataModelModules {
 
                 } else if (member is KeyClass.IKeyClassStructure keyClass) {
                     var props = keyClass
-                        .GetMembers()
+                        .GetOwnMembers()
                         .Select(m => new InstancePropertyWithoutOwner_old {
                             Key = m.Member.ToIdentifier(),
                             PropertyName = m.PhysicalName,

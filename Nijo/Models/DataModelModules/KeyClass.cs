@@ -1,4 +1,5 @@
 using Nijo.CodeGenerating;
+using Nijo.CodeGenerating.Helpers;
 using Nijo.ImmutableSchema;
 using Nijo.Util.DotnetEx;
 using System;
@@ -16,7 +17,7 @@ namespace Nijo.Models.DataModelModules {
         /// <summary>
         /// キーのエントリー。子孫集約になることもある。
         /// </summary>
-        internal class KeyClassEntry : IKeyClassStructure, SaveCommand.ISaveCommandMember {
+        internal class KeyClassEntry : IKeyClassStructure, SaveCommand.ISaveCommandMember, IInstanceStructurePropertyMetadata {
             internal KeyClassEntry(AggregateBase aggregate) {
                 _aggregate = aggregate;
             }
@@ -31,7 +32,7 @@ namespace Nijo.Models.DataModelModules {
             public string CsUpdateType => ClassName;
             public string CsDeleteType => ClassName;
 
-            public IEnumerable<IKeyClassMember> GetMembers() {
+            public IEnumerable<IKeyClassMember> GetOwnMembers() {
                 var p = _aggregate.GetParent();
                 if (p != null) {
                     yield return new KeyClassParentMember(p);
@@ -89,13 +90,17 @@ namespace Nijo.Models.DataModelModules {
                     /// {{_aggregate.DisplayName}} のキー
                     /// </summary>
                     public partial class {{ClassName}} {
-                    {{GetMembers().SelectTextTemplate(m => $$"""
+                    {{GetOwnMembers().SelectTextTemplate(m => $$"""
                         /// <summary>{{m.DisplayName}}</summary>
                         public required {{m.CsType}}? {{m.PhysicalName}} { get; set; }
                     """)}}
                     }
                     """;
             }
+
+            bool IInstanceStructurePropertyMetadata.IsArray => false;
+            string IInstancePropertyMetadata.PropertyName => PhysicalName;
+            IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetOwnMembers();
         }
 
 
@@ -103,8 +108,8 @@ namespace Nijo.Models.DataModelModules {
         /// <summary>
         /// KeyClassのエントリー、Ref, Parent の3種類
         /// </summary>
-        internal interface IKeyClassStructure {
-            IEnumerable<IKeyClassMember> GetMembers();
+        internal interface IKeyClassStructure : IInstancePropertyOwnerMetadata {
+            IEnumerable<IKeyClassMember> GetOwnMembers();
         }
         internal interface IKeyClassMember : SaveCommand.ISaveCommandMember {
             string CsType { get; }
@@ -125,7 +130,7 @@ namespace Nijo.Models.DataModelModules {
         /// <summary>
         /// キー情報の中に出てくる他の集約のキー
         /// </summary>
-        internal class KeyClassRefMember : IKeyClassStructure, IKeyClassMember {
+        internal class KeyClassRefMember : IKeyClassStructure, IKeyClassMember, IInstanceStructurePropertyMetadata {
             internal KeyClassRefMember(RefToMember refTo) {
                 Member = refTo;
                 MemberKeyClassEntry = new KeyClassEntry(refTo.RefTo);
@@ -142,7 +147,7 @@ namespace Nijo.Models.DataModelModules {
             string SaveCommand.ISaveCommandMember.CsUpdateType => CsType;
             string SaveCommand.ISaveCommandMember.CsDeleteType => CsType;
 
-            public IEnumerable<IKeyClassMember> GetMembers() {
+            public IEnumerable<IKeyClassMember> GetOwnMembers() {
                 var p = Member.RefTo.GetParent();
                 if (p != null) {
                     yield return new KeyClassParentMember(p);
@@ -157,11 +162,15 @@ namespace Nijo.Models.DataModelModules {
                     }
                 }
             }
+
+            bool IInstanceStructurePropertyMetadata.IsArray => false;
+            string IInstancePropertyMetadata.PropertyName => PhysicalName;
+            IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetOwnMembers();
         }
         /// <summary>
         /// 子孫のキー情報の中に出てくる親集約のキー。
         /// </summary>
-        internal class KeyClassParentMember : IKeyClassStructure, IKeyClassMember {
+        internal class KeyClassParentMember : IKeyClassStructure, IKeyClassMember, IInstanceStructurePropertyMetadata {
             internal KeyClassParentMember(AggregateBase parent) {
                 _parent = parent;
             }
@@ -178,7 +187,7 @@ namespace Nijo.Models.DataModelModules {
             string SaveCommand.ISaveCommandMember.CsUpdateType => CsType;
             string SaveCommand.ISaveCommandMember.CsDeleteType => CsType;
 
-            public IEnumerable<IKeyClassMember> GetMembers() {
+            public IEnumerable<IKeyClassMember> GetOwnMembers() {
                 var p = _parent.GetParent();
                 if (p != null) {
                     yield return new KeyClassParentMember(p);
@@ -200,13 +209,17 @@ namespace Nijo.Models.DataModelModules {
                     /// {{_parent.DisplayName}} のキー
                     /// </summary>
                     public partial class {{ClassName}} {
-                    {{GetMembers().SelectTextTemplate(m => $$"""
+                    {{GetOwnMembers().SelectTextTemplate(m => $$"""
                         /// <summary>{{m.DisplayName}}</summary>
                         public required {{m.CsType}}? {{m.PhysicalName}} { get; set; }
                     """)}}
                     }
                     """;
             }
+
+            bool IInstanceStructurePropertyMetadata.IsArray => false;
+            string IInstancePropertyMetadata.PropertyName => PhysicalName;
+            IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetOwnMembers();
         }
         #endregion メンバー
     }
@@ -217,7 +230,7 @@ namespace Nijo.CodeGenerating {
 
     partial class SchemaPathNodeExtensions {
         internal static IEnumerable<SaveCommand.SaveCommandValueMember> GetValueMembersRecursively(this KeyClass.IKeyClassStructure keyClass) {
-            foreach (var member in keyClass.GetMembers()) {
+            foreach (var member in keyClass.GetOwnMembers()) {
                 if (member is SaveCommand.SaveCommandValueMember vm) {
                     yield return vm;
 
