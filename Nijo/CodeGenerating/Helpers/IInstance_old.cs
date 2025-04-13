@@ -10,7 +10,7 @@ namespace Nijo.CodeGenerating.Helpers;
 /// <summary>
 /// レンダリング後のソースコードに出てくる変数やプロパティといった何らかの実体を表す抽象。
 /// </summary>
-public interface IInstance {
+public interface IInstance_old {
     /// <summary>
     /// このインスタンス自身のソースコード上の名前。祖先のパスは含まない。
     /// </summary>
@@ -21,9 +21,9 @@ public interface IInstance {
     bool IsNullable { get; }
 }
 
-public interface IInstanceProperty : IInstance {
+public interface IInstanceProperty_old : IInstance_old {
     /// <summary>このプロパティを保持しているインスタンス</summary>
-    public IInstance Owner { get; }
+    public IInstance_old Owner { get; }
     /// <summary>
     /// クラス間の変換処理をレンダリングする際、左辺のインスタンスと対応する右辺のインスタンスがそのコンテキスト中のどれかを特定する必要がある。
     /// その特定に使われるキー。
@@ -34,26 +34,26 @@ public interface IInstanceProperty : IInstance {
 /// <summary>
 /// レンダリング後のソースコードに出てくる変数を表す。
 /// </summary>
-public class Variable : IInstance {
-    public Variable(string name, Func<IEnumerable<InstancePropertyWithoutOwner>> getProperties) {
+public class Variable_old : IInstance_old {
+    public Variable_old(string name, Func<IEnumerable<InstancePropertyWithoutOwner_old>> getProperties) {
         VariableName = name;
         GetProperties = getProperties;
     }
 
     /// <summary>変数の名前</summary>
     public string VariableName { get; }
-    string IInstance.Name => VariableName;
+    string IInstance_old.Name => VariableName;
 
     public bool IsNullable => false;
-    public Func<IEnumerable<InstancePropertyWithoutOwner>> GetProperties { get; }
+    public Func<IEnumerable<InstancePropertyWithoutOwner_old>> GetProperties { get; }
 }
 
 /// <summary>
 /// レンダリング後のソースコードに出てくる変数やプロパティのメンバーであるプロパティを表す。
 /// これ自身はさらに子孫要素をもたない。
 /// </summary>
-public class ValueProperty : IInstanceProperty {
-    public ValueProperty(IInstance owner, InstancePropertyWithoutOwner propInfo) {
+public class ValueProperty_old : IInstanceProperty_old {
+    public ValueProperty_old(IInstance_old owner, InstancePropertyWithoutOwner_old propInfo) {
         if (propInfo.GetProperties != null) throw new ArgumentException();
         if (propInfo.IsMany) throw new ArgumentException();
 
@@ -64,10 +64,10 @@ public class ValueProperty : IInstanceProperty {
     }
 
     /// <summary>このプロパティを保持しているインスタンス</summary>
-    public IInstance Owner { get; }
+    public IInstance_old Owner { get; }
     /// <summary>プロパティ名</summary>
     public string PropertyName { get; }
-    string IInstance.Name => PropertyName;
+    string IInstance_old.Name => PropertyName;
 
     public bool IsNullable { get; }
     public SchemaNodeIdentity Key { get; }
@@ -78,8 +78,8 @@ public class ValueProperty : IInstanceProperty {
 /// さらに子要素をもつオブジェクト。
 /// 親との多重度は「親 : 子 = 1 : (0 or 1)」
 /// </summary>
-public class ContainerProperty : IInstanceProperty {
-    public ContainerProperty(IInstance owner, InstancePropertyWithoutOwner propInfo) {
+public class ContainerProperty_old : IInstanceProperty_old {
+    public ContainerProperty_old(IInstance_old owner, InstancePropertyWithoutOwner_old propInfo) {
         if (propInfo.GetProperties == null) throw new ArgumentException();
         if (propInfo.IsMany) throw new ArgumentException();
 
@@ -91,14 +91,14 @@ public class ContainerProperty : IInstanceProperty {
     }
 
     /// <summary>このプロパティを保持しているインスタンス</summary>
-    public IInstance Owner { get; }
+    public IInstance_old Owner { get; }
     /// <summary>プロパティ名</summary>
     public string PropertyName { get; }
-    string IInstance.Name => PropertyName;
+    string IInstance_old.Name => PropertyName;
 
     public bool IsNullable { get; }
     public SchemaNodeIdentity Key { get; }
-    public Func<IEnumerable<InstancePropertyWithoutOwner>> GetProperties { get; }
+    public Func<IEnumerable<InstancePropertyWithoutOwner_old>> GetProperties { get; }
 }
 
 /// <summary>
@@ -106,8 +106,8 @@ public class ContainerProperty : IInstanceProperty {
 /// 配列。
 /// 親との多重度は「親 : 子 = 1 : N」
 /// </summary>
-public class ArrayProperty : IInstanceProperty {
-    public ArrayProperty(IInstance owner, InstancePropertyWithoutOwner propInfo) {
+public class ArrayProperty_old : IInstanceProperty_old {
+    public ArrayProperty_old(IInstance_old owner, InstancePropertyWithoutOwner_old propInfo) {
         if (propInfo.GetProperties == null) throw new ArgumentException();
         if (!propInfo.IsMany) throw new ArgumentException();
 
@@ -119,25 +119,25 @@ public class ArrayProperty : IInstanceProperty {
     }
 
     /// <summary>このプロパティを保持しているインスタンス</summary>
-    public IInstance Owner { get; }
+    public IInstance_old Owner { get; }
     /// <summary>プロパティ名</summary>
     public string PropertyName { get; }
-    string IInstance.Name => PropertyName;
+    string IInstance_old.Name => PropertyName;
 
     public bool IsNullable { get; }
     public SchemaNodeIdentity Key { get; }
-    public Func<IEnumerable<InstancePropertyWithoutOwner>> GetProperties { get; }
+    public Func<IEnumerable<InstancePropertyWithoutOwner_old>> GetProperties { get; }
 }
 
 /// <summary>
-/// <see cref="ContainerProperty"/> の初期化に用いられる
+/// <see cref="ContainerProperty_old"/> の初期化に用いられる
 /// </summary>
-public class InstancePropertyWithoutOwner {
+public class InstancePropertyWithoutOwner_old {
     public required string PropertyName { get; init; }
     public required bool IsNullable { get; init; }
     public required SchemaNodeIdentity Key { get; init; }
     public required bool IsMany { get; init; }
-    public required Func<IEnumerable<InstancePropertyWithoutOwner>>? GetProperties { get; init; }
+    public required Func<IEnumerable<InstancePropertyWithoutOwner_old>>? GetProperties { get; init; }
 }
 
 
@@ -148,10 +148,10 @@ public static partial class CodeGeneratingHelperExtensions {
     /// <c>x.Prop1?.Prop2?.Prop3?.Prop4</c> のような数珠つなぎのソースコードのレンダリングに使用します。
     /// </summary>
     /// <param name="nullableSeparator">null許容メンバーのパスの結合に使われる。 "?." または "!." を代入</param>
-    public static string GetJoinedPathFromInstance(this IInstance instance, string nullableSeparator = ".") {
-        var stack = new Stack<IInstance>();
+    public static string GetJoinedPathFromInstance(this IInstance_old instance, string nullableSeparator = ".") {
+        var stack = new Stack<IInstance_old>();
         var current = instance;
-        while (current is IInstanceProperty property) {
+        while (current is IInstanceProperty_old property) {
             stack.Push(property);
             current = property.Owner;
         }
@@ -159,7 +159,7 @@ public static partial class CodeGeneratingHelperExtensions {
 
         // パスの結合
         var path = new StringBuilder();
-        var previous = (IInstance?)null;
+        var previous = (IInstance_old?)null;
         while (stack.TryPop(out var node)) {
             // セパレータ
             if (previous == null) {
@@ -199,16 +199,16 @@ public static partial class CodeGeneratingHelperExtensions {
     /// }
     /// </code>
     /// </remarks>
-    public static IEnumerable<IInstanceProperty> EnumerateOneToOnePropertiesRecursively(this Variable variable) {
+    public static IEnumerable<IInstanceProperty_old> EnumerateOneToOnePropertiesRecursively(this Variable_old variable) {
         foreach (var propInfo in variable.GetProperties()) {
             if (propInfo.GetProperties == null) {
-                yield return new ValueProperty(variable, propInfo);
+                yield return new ValueProperty_old(variable, propInfo);
 
             } else if (propInfo.IsMany) {
-                yield return new ArrayProperty(variable, propInfo);
+                yield return new ArrayProperty_old(variable, propInfo);
 
             } else {
-                var container = new ContainerProperty(variable, propInfo);
+                var container = new ContainerProperty_old(variable, propInfo);
                 yield return container;
 
                 foreach (var instance in EnumerateRecursively(container)) {
@@ -217,16 +217,16 @@ public static partial class CodeGeneratingHelperExtensions {
             }
         }
 
-        static IEnumerable<IInstanceProperty> EnumerateRecursively(ContainerProperty container) {
+        static IEnumerable<IInstanceProperty_old> EnumerateRecursively(ContainerProperty_old container) {
             foreach (var propInfo in container.GetProperties()) {
                 if (propInfo.GetProperties == null) {
-                    yield return new ValueProperty(container, propInfo);
+                    yield return new ValueProperty_old(container, propInfo);
 
                 } else if (propInfo.IsMany) {
-                    yield return new ArrayProperty(container, propInfo);
+                    yield return new ArrayProperty_old(container, propInfo);
 
                 } else {
-                    var descendant = new ContainerProperty(container, propInfo);
+                    var descendant = new ContainerProperty_old(container, propInfo);
                     yield return descendant;
 
                     foreach (var instance in EnumerateRecursively(descendant)) {

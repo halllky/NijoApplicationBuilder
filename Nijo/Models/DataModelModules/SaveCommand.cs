@@ -302,11 +302,11 @@ namespace Nijo.Models.DataModelModules {
         private string RenderToDbEntity(bool isCreate) {
 
             // 右辺の定義
-            var rootInstance = new Variable("this", () => {
+            var rootInstance = new Variable_old("this", () => {
                 var members = isCreate
                     ? GetCreateCommandMembers()
                     : GetUpdateCommandMembers();
-                var props = members.Select(m => new InstancePropertyWithoutOwner {
+                var props = members.Select(m => new InstancePropertyWithoutOwner_old {
                     IsNullable = true,
                     IsMany = m is SaveCommandChildrenMember,
                     Key = m.Member.ToIdentifier(),
@@ -336,7 +336,7 @@ namespace Nijo.Models.DataModelModules {
                 }
                 """;
 
-            IEnumerable<string> RenderToDbEntityBody(EFCoreEntity left, Variable right, IReadOnlyDictionary<SchemaNodeIdentity, IInstanceProperty> rigthMembers) {
+            IEnumerable<string> RenderToDbEntityBody(EFCoreEntity left, Variable_old right, IReadOnlyDictionary<SchemaNodeIdentity, IInstanceProperty_old> rigthMembers) {
 
                 // 自身のカラム、外部参照のキー、親のキー
                 foreach (var col in left.GetColumns()) {
@@ -372,9 +372,9 @@ namespace Nijo.Models.DataModelModules {
                             : throw new InvalidOperationException($"右辺にChildrenのXElementが無い: {children}");
 
                         // 辞書に、ラムダ式内部で右辺に使用できるプロパティを加える
-                        var dict2 = new Dictionary<SchemaNodeIdentity, IInstanceProperty>(rigthMembers);
+                        var dict2 = new Dictionary<SchemaNodeIdentity, IInstanceProperty_old>(rigthMembers);
                         var saveCommand = new SaveCommandChildrenMember(children);
-                        var loopVar = new Variable(children.GetLoopVarName(), () => GetProperties(saveCommand, isCreate));
+                        var loopVar = new Variable_old(children.GetLoopVarName(), () => GetProperties(saveCommand, isCreate));
                         foreach (var descendant in loopVar.EnumerateOneToOnePropertiesRecursively()) {
                             dict2.Add(descendant.Key, descendant);
                         }
@@ -392,12 +392,12 @@ namespace Nijo.Models.DataModelModules {
             }
 
             // 右辺のメンバーのプロパティ定義
-            static IEnumerable<InstancePropertyWithoutOwner> GetProperties(ISaveCommandMember member, bool isCreate) {
+            static IEnumerable<InstancePropertyWithoutOwner_old> GetProperties(ISaveCommandMember member, bool isCreate) {
                 if (member is SaveCommand container) {
                     var members = isCreate
                         ? container.GetCreateCommandMembers()
                         : container.GetUpdateCommandMembers();
-                    var props = members.Select(m => new InstancePropertyWithoutOwner {
+                    var props = members.Select(m => new InstancePropertyWithoutOwner_old {
                         Key = m.Member.ToIdentifier(),
                         PropertyName = m.PhysicalName,
                         IsMany = m is SaveCommandChildrenMember,
@@ -411,7 +411,7 @@ namespace Nijo.Models.DataModelModules {
                 } else if (member is KeyClass.IKeyClassStructure keyClass) {
                     var props = keyClass
                         .GetMembers()
-                        .Select(m => new InstancePropertyWithoutOwner {
+                        .Select(m => new InstancePropertyWithoutOwner_old {
                             Key = m.Member.ToIdentifier(),
                             PropertyName = m.PhysicalName,
                             IsMany = m is SaveCommandChildrenMember,
