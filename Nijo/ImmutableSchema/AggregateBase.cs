@@ -116,7 +116,16 @@ namespace Nijo.ImmutableSchema {
         /// 祖先集約を列挙します。ルート集約が先
         /// </summary>
         public IEnumerable<AggregateBase> EnumerateAncestors() {
-            throw new NotImplementedException();
+            var ancestors = new List<AggregateBase>();
+            var current = GetParent();
+
+            while (current != null) {
+                ancestors.Add(current);
+                current = current.GetParent();
+            }
+
+            // ルート集約が先になるよう逆順にして返す
+            return ancestors.AsEnumerable().Reverse();
         }
         /// <summary>
         /// この集約と祖先集約を列挙します。ルート集約が先
@@ -164,7 +173,12 @@ namespace Nijo.ImmutableSchema {
         /// 子孫集約を列挙します。
         /// </summary>
         public IEnumerable<AggregateBase> EnumerateDescendants() {
-            return GetMembers().OfType<AggregateBase>();
+            foreach (var child in GetMembers().OfType<AggregateBase>()) {
+                yield return child;
+                foreach (var descendant in child.EnumerateDescendants()) {
+                    yield return descendant;
+                }
+            }
         }
         /// <summary>
         /// この集約と子孫集約を列挙します。
@@ -197,7 +211,7 @@ namespace Nijo.ImmutableSchema {
             return aggregate._xElement.Ancestors().Contains(_xElement);
         }
         /// <summary>
-        /// この集約が引数の集約のか否かを返します。
+        /// この集約が引数の集約の子孫か否かを返します。
         /// </summary>
         public bool IsDescendantOf(AggregateBase aggregate) {
             return aggregate._xElement.Descendants().Contains(_xElement);

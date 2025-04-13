@@ -53,7 +53,6 @@ namespace Nijo.ImmutableSchema {
         /// <summary>
         /// 型に由来する生成ソースがある場合はここでレンダリングする
         /// </summary>
-        /// </summary>
         void RenderStaticSources(CodeRenderingContext ctx);
 
         /// <summary>

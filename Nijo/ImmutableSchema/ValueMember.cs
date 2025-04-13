@@ -54,7 +54,7 @@ namespace Nijo.ImmutableSchema {
         /// <summary>数値系属性の小数部桁数</summary>
         public int? DecimalPlace => int.TryParse(XElement.Attribute(BasicNodeOptions.DecimalPlace.AttributeName)?.Value, out var v) ? v : null;
         /// <summary>シーケンス物理名</summary>
-        public string? SequenceName => XElement.Attribute(BasicNodeOptions.CharacterType.AttributeName)?.Value;
+        public string? SequenceName => XElement.Attribute(BasicNodeOptions.SequenceName.AttributeName)?.Value;
         #endregion メンバー毎に定義される制約
 
         #region 等価比較
