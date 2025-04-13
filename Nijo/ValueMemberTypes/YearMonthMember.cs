@@ -76,7 +76,7 @@ internal class YearMonthMember : IValueMemberType {
     string IValueMemberType.RenderCreateDummyDataValueBody(CodeRenderingContext ctx) {
         return $$"""
             var now = DateTime.Now;
-            return (int)new YearMonth(now.Year, now.Month);
+            return new YearMonth(now.Year, now.Month);
             """;
     }
 

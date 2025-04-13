@@ -260,6 +260,19 @@ public class SchemaParseContext {
             .ToDictionary(GetPhysicalName, el => new ValueMemberTypes.StaticEnumMember(el, this))
             ?? [];
     }
+
+    /// <summary>
+    /// このスキーマで定義されている値オブジェクト型を返します。
+    /// </summary>
+    /// <returns></returns>
+    private IReadOnlyDictionary<string, ValueMemberTypes.ValueObjectMember> GetValueObjectMembers() {
+        return Document.Root
+            ?.Elements()
+            .Where(el => el.Attribute(ATTR_NODE_TYPE)?.Value == ValueObjectModel.SCHEMA_NAME)
+            .ToDictionary(GetPhysicalName, el => new ValueMemberTypes.ValueObjectMember(el, this))
+            ?? [];
+    }
+
     /// <summary>
     /// スキーマ解釈ルールとしてあらかじめ定められた値種別および静的区分の種類の一覧を返します。
     /// </summary>
@@ -272,7 +285,12 @@ public class SchemaParseContext {
         foreach (var type in GetStaticEnumMembers().Values) {
             yield return type;
         }
+        // 値オブジェクト型
+        foreach (var type in GetValueObjectMembers().Values) {
+            yield return type;
+        }
     }
+
     /// <summary>
     /// ValueMemberを表すXML要素の種別（日付, 数値, ...等）を判別して返します。
     /// </summary>
@@ -296,11 +314,8 @@ public class SchemaParseContext {
         }
 
         // 値オブジェクト型
-        var valueObjectElement = Document.Root?.Elements()
-            .FirstOrDefault(el => el.Attribute(ATTR_NODE_TYPE)?.Value == ValueObjectModel.SCHEMA_NAME
-                               && el.Name.LocalName == type.Value);
-        if (valueObjectElement != null) {
-            valueMemberType = new ValueMemberTypes.ValueObjectMember(xElement, this);
+        if (GetValueObjectMembers().TryGetValue(type.Value, out var valueObjectMember)) {
+            valueMemberType = valueObjectMember;
             return true;
         }
 

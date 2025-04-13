@@ -17,19 +17,18 @@ namespace Nijo.ValueMemberTypes;
 /// 値オブジェクトを表すC#のクラスを参照する型
 /// </summary>
 internal class ValueObjectMember : IValueMemberType {
-    string IValueMemberType.TypePhysicalName => "ValueObject";
-    string IValueMemberType.SchemaTypeName => "value-object-member";
-    string IValueMemberType.CsDomainTypeName => _valueObjectName;
+    string IValueMemberType.TypePhysicalName => _ctx.GetPhysicalName(_xElement);
+    string IValueMemberType.SchemaTypeName => _ctx.GetPhysicalName(_xElement);
+    string IValueMemberType.CsDomainTypeName => _ctx.GetPhysicalName(_xElement);
     string IValueMemberType.CsPrimitiveTypeName => "string";
-    string IValueMemberType.TsTypeName => _valueObjectName;
+    string IValueMemberType.TsTypeName => _ctx.GetPhysicalName(_xElement);
     UiConstraint.E_Type IValueMemberType.UiConstraintType => UiConstraint.E_Type.StringMemberConstraint;
 
-    private readonly string _valueObjectName;
+    private readonly XElement _xElement;
     private readonly SchemaParseContext _ctx;
 
     public ValueObjectMember(XElement xElement, SchemaParseContext ctx) {
-        var type = xElement.Attribute(SchemaParseContext.ATTR_NODE_TYPE)?.Value;
-        _valueObjectName = type ?? throw new InvalidOperationException("Type属性が指定されていません");
+        _xElement = xElement;
         _ctx = ctx;
     }
 
@@ -70,7 +69,7 @@ internal class ValueObjectMember : IValueMemberType {
 
     string IValueMemberType.RenderCreateDummyDataValueBody(CodeRenderingContext ctx) {
         return $$"""
-            return new {{_valueObjectName}}(string.Concat(Enumerable.Range(0, member.MaxLength ?? 12).Select(_ => "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"[context.Random.Next(0, 36)])));
+            return new {{_ctx.GetPhysicalName(_xElement)}}(string.Concat(Enumerable.Range(0, member.MaxLength ?? 12).Select(_ => "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"[context.Random.Next(0, 36)])));
             """;
     }
 
