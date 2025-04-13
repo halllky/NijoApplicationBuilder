@@ -46,6 +46,7 @@ public interface IInstancePropertyMetadata {
 /// オーナーへの参照を持つ。
 /// </summary>
 public interface IInstanceProperty {
+    SchemaNodeIdentity MappingKey { get; }
     IInstancePropertyOwner Owner { get; }
     string PropertyName { get; }
     bool IsNullable { get; }
@@ -73,6 +74,7 @@ public sealed class Variable : IInstancePropertyOwner {
 /// 自動生成されるソースコードの中に表れる変数のプロパティのうち、子孫をもたない値メンバーのプロパティ。
 /// </summary>
 public sealed class InstanceValueProperty : IInstanceProperty {
+    public required SchemaNodeIdentity MappingKey { get; init; }
     public required IInstancePropertyOwner Owner { get; init; }
     public required string PropertyName { get; init; }
     public required IValueMemberType Type { get; init; }
@@ -82,6 +84,7 @@ public sealed class InstanceValueProperty : IInstanceProperty {
 /// 自動生成されるソースコードの中に表れる変数のプロパティのうち、子孫をもつ構造体メンバーのプロパティ。
 /// </summary>
 public sealed class InstanceStructureProperty : IInstanceProperty, IInstancePropertyOwner {
+    public required SchemaNodeIdentity MappingKey { get; init; }
     public required IInstancePropertyOwner Owner { get; init; }
     public required string PropertyName { get; init; }
     public required bool IsArray { get; init; }
@@ -149,6 +152,7 @@ partial class CodeGeneratingHelperExtensions {
         foreach (var member in ownerMetadata.GetMembers()) {
             if (member is IInstanceValuePropertyMetadata valueMetadata) {
                 yield return new InstanceValueProperty {
+                    MappingKey = valueMetadata.MappingKey,
                     Owner = owner,
                     PropertyName = valueMetadata.PropertyName,
                     Type = valueMetadata.Type,
@@ -156,6 +160,7 @@ partial class CodeGeneratingHelperExtensions {
 
             } else if (member is IInstanceStructurePropertyMetadata structMetadata) {
                 var prop = new InstanceStructureProperty {
+                    MappingKey = structMetadata.MappingKey,
                     Owner = owner,
                     PropertyName = structMetadata.PropertyName,
                     IsArray = structMetadata.IsArray,
