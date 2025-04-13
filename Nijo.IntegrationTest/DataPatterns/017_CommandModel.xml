@@ -25,11 +25,9 @@
     <取込ファイル Type="word" />
     <!-- <取込ファイル Type="file" /> -->
 
-    <処理範囲 Type="variation">
-      <特定データのみ Type="variation-item:1">
-        <従業員 Type="ref-to:従業員" />
-      </特定データのみ>
-      <全部更新 Type="variation-item:2" />
-    </処理範囲>
+    <特定データのみ Type="child">
+      <従業員 Type="ref-to:従業員" />
+    </特定データのみ>
+    <全部更新 Type="child" />
   </従業員データ一括取り込み>
 </自動テストで作成されたプロジェクト>

@@ -5,13 +5,11 @@
   <アクター Type="data-model" GenerateDefaultQueryModel="True">
     <アクターID Type="word" IsKey="True" />
     <アクター名 Type="word" />
-    <種別 Type="variation">
-      <人 Type="variation-item:1">
-        <自社か社外か Type="word" />
-      </人>
-      <外部システム Type="variation-item:2">
-      </外部システム>
-    </種別>
+    <人 Type="child">
+      <自社か社外か Type="word" />
+    </人>
+    <外部システム Type="child">
+    </外部システム>
   </アクター>
 
   <ユースケース Type="data-model" GenerateDefaultQueryModel="True">

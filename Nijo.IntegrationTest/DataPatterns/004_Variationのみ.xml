@@ -4,12 +4,10 @@
   <親集約 Type="data-model" GenerateDefaultQueryModel="True">
     <親集約ID Type="word" IsKey="True" />
     <親集約名 Type="word" />
-    <種別 Type="variation">
-      <種別A Type="variation-item" key="1">
-        <種別Aのみに存在する属性 Type="word" />
-      </種別A>
-      <種別B Type="variation-item" key="2">
-      </種別B>
-    </種別>
+    <種別A Type="child">
+      <種別Aのみに存在する属性 Type="word" />
+    </種別A>
+    <種別B Type="child">
+    </種別B>
   </親集約>
 </自動テストで作成されたプロジェクト>

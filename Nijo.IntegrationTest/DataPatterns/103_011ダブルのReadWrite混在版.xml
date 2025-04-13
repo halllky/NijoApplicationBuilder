@@ -17,16 +17,14 @@
         <ID4 Type="word" IsKey="True" />
         <名前4 Type="word" />
       </子の子配列>
-      <子の子バリエーション Type="variation">
-        <子の子バリエーションA Type="variation-item:1">
-          <ID5 Type="word" Hidden="True" Required="True" />
-          <名前5 Type="word" />
-        </子の子バリエーションA>
-        <子の子バリエーションB Type="variation-item:2">
-          <ID6 Type="word" Hidden="True" Required="True" />
-          <名前6 Type="word" />
-        </子の子バリエーションB>
-      </子の子バリエーション>
+      <子の子バリエーションA Type="child">
+        <ID5 Type="word" Hidden="True" Required="True" />
+        <名前5 Type="word" />
+      </子の子バリエーションA>
+      <子の子バリエーションB Type="child">
+        <ID6 Type="word" Hidden="True" Required="True" />
+        <名前6 Type="word" />
+      </子の子バリエーションB>
     </子>
 
     <子配列 Type="children">
@@ -41,67 +39,59 @@
         <ID9 Type="word" IsKey="True" />
         <名前9 Type="word" />
       </子配列の子配列>
-      <子配列の子バリエーション Type="variation">
-        <子配列の子バリエーションA Type="variation-item:1">
-          <ID10 Type="word" Hidden="True" Required="True" />
-          <名前10 Type="word" />
-        </子配列の子バリエーションA>
-        <子配列の子バリエーションB Type="variation-item:2">
-          <ID11 Type="word" Hidden="True" Required="True" />
-          <名前11 Type="word" />
-        </子配列の子バリエーションB>
-      </子配列の子バリエーション>
+      <子配列の子バリエーションA Type="child">
+        <ID10 Type="word" Hidden="True" Required="True" />
+        <名前10 Type="word" />
+      </子配列の子バリエーションA>
+      <子配列の子バリエーションB Type="child">
+        <ID11 Type="word" Hidden="True" Required="True" />
+        <名前11 Type="word" />
+      </子配列の子バリエーションB>
     </子配列>
 
-    <子バリエーション Type="variation">
-      <子バリエーション種別A Type="variation-item:1">
-        <ID12 Type="word" Hidden="True" Required="True" />
-        <名前12 Type="word" />
+    <子バリエーション種別A Type="child">
+      <ID12 Type="word" Hidden="True" Required="True" />
+      <名前12 Type="word" />
 
-        <子バリエーション種別Aの子 Type="child">
-          <ID13 Type="word" Hidden="True" Required="True" />
-          <名前13 Type="word" />
-        </子バリエーション種別Aの子>
-        <子バリエーション種別Aの子配列 Type="children">
-          <ID14 Type="word" IsKey="True" />
-          <名前14 Type="word" />
-        </子バリエーション種別Aの子配列>
-        <子バリエーション種別Aの子バリエーション Type="variation">
-          <子バリエーション種別Aの子バリエーションA Type="variation-item:1">
-            <ID15 Type="word" Hidden="True" Required="True" />
-            <名前15 Type="word" />
-          </子バリエーション種別Aの子バリエーションA>
-          <子バリエーション種別Aの子バリエーションB Type="variation-item:2">
-            <ID16 Type="word" Hidden="True" Required="True" />
-            <名前16 Type="word" />
-          </子バリエーション種別Aの子バリエーションB>
-        </子バリエーション種別Aの子バリエーション>
-      </子バリエーション種別A>
+      <子バリエーション種別Aの子 Type="child">
+        <ID13 Type="word" Hidden="True" Required="True" />
+        <名前13 Type="word" />
+      </子バリエーション種別Aの子>
+      <子バリエーション種別Aの子配列 Type="children">
+        <ID14 Type="word" IsKey="True" />
+        <名前14 Type="word" />
+      </子バリエーション種別Aの子配列>
+      <子バリエーション種別Aの子バリエーションA Type="child">
+        <ID15 Type="word" Hidden="True" Required="True" />
+        <名前15 Type="word" />
+      </子バリエーション種別Aの子バリエーションA>
+      <子バリエーション種別Aの子バリエーションB Type="child">
+        <ID16 Type="word" Hidden="True" Required="True" />
+        <名前16 Type="word" />
+      </子バリエーション種別Aの子バリエーションB>
+    </子バリエーション種別A>
 
-      <子バリエーション種別B Type="variation-item:2">
-        <ID17 Type="word" Hidden="True" Required="True" />
-        <名前17 Type="word" />
+    <子バリエーション種別B Type="child">
+      <ID17 Type="word" Hidden="True" Required="True" />
+      <名前17 Type="word" />
 
-        <子バリエーション種別Bの子 Type="child">
-          <ID18 Type="word" Hidden="True" Required="True" />
-          <名前18 Type="word" />
-        </子バリエーション種別Bの子>
-        <子バリエーション種別Bの子配列 Type="children">
-          <ID19 Type="word" IsKey="True" />
-          <名前19 Type="word" />
-        </子バリエーション種別Bの子配列>
-        <子バリエーション種別Bの子バリエーション Type="variation">
-          <子バリエーション種別Bの子バリエーションA Type="variation-item:1">
-            <ID20 Type="word" Hidden="True" Required="True" />
-            <名前20 Type="word" />
-          </子バリエーション種別Bの子バリエーションA>
-          <子バリエーション種別Bの子バリエーションB Type="variation-item:2">
-            <ID21 Type="word" Hidden="True" Required="True" />
-            <名前21 Type="word" />
-          </子バリエーション種別Bの子バリエーションB>
-        </子バリエーション種別Bの子バリエーション>
-      </子バリエーション種別B>
-    </子バリエーション>
+      <子バリエーション種別Bの子 Type="child">
+        <ID18 Type="word" Hidden="True" Required="True" />
+        <名前18 Type="word" />
+      </子バリエーション種別Bの子>
+      <子バリエーション種別Bの子配列 Type="children">
+        <ID19 Type="word" IsKey="True" />
+        <名前19 Type="word" />
+      </子バリエーション種別Bの子配列>
+      <子バリエーション種別Bの子バリエーションA Type="child">
+        <ID20 Type="word" Hidden="True" Required="True" />
+        <名前20 Type="word" />
+      </子バリエーション種別Bの子バリエーションA>
+      <子バリエーション種別Bの子バリエーションB Type="child">
+        <ID21 Type="word" Hidden="True" Required="True" />
+        <名前21 Type="word" />
+      </子バリエーション種別Bの子バリエーションB>
+    </子バリエーション種別B>
 
   </ルート>
 

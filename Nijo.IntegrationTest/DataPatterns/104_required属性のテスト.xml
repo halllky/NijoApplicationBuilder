@@ -41,20 +41,18 @@
     <課題番号 Type="word" IsKey="True" />
     <概要 Type="description" Required="True" />
     <見積工数D DisplayName="見積工数（人日）" Type="numeric" Required="True" />
-    <種別 Type="variation">
-      <プロジェクト全体課題 Type="variation-item:2">
-        <結論 Type="課題対応方針" Required="True" />
-        <この課題について話し合われたセッションの日付 Type="date" Required="True" />
-      </プロジェクト全体課題>
-      <個別チーム課題 Type="variation-item:1">
-        <担当者 Type="ref-to:アカウント" Required="True" />
-        <チェックポイント Type="children" Required="True">
-          <ID Type="word" IsKey="True" Hidden="True" />
-          <完了 Type="bool" Required="True" />
-          <観点 Type="word" Required="True" />
-        </チェックポイント>
-      </個別チーム課題>
-    </種別>
+    <プロジェクト全体課題 Type="child">
+      <結論 Type="課題対応方針" Required="True" />
+      <この課題について話し合われたセッションの日付 Type="date" Required="True" />
+    </プロジェクト全体課題>
+    <個別チーム課題 Type="child">
+      <担当者 Type="ref-to:アカウント" Required="True" />
+      <チェックポイント Type="children" Required="True">
+        <ID Type="word" IsKey="True" Hidden="True" />
+        <完了 Type="bool" Required="True" />
+        <観点 Type="word" Required="True" />
+      </チェックポイント>
+    </個別チーム課題>
   </課題>
 
   <課題対応方針 Type="enum">
