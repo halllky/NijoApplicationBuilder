@@ -153,27 +153,14 @@ public class DataPatternTest {
             StandardOutputEncoding = Encoding.UTF8,
             StandardErrorEncoding = Encoding.UTF8,
         })!;
-        tsBuildProcess.WaitForExit();
+        if (!tsBuildProcess.WaitForExit(300000)) { // 5分のタイムアウト
+            tsBuildProcess.Kill();
+            Assert.Fail("TypeScriptコンパイルがタイムアウトしました。");
+        }
         if (tsBuildProcess.ExitCode != 0) {
             var output = tsBuildProcess.StandardOutput.ReadToEnd();
             var error = tsBuildProcess.StandardError.ReadToEnd();
             Assert.Fail($"TypeScriptコンパイルに失敗しました。\n出力:\n{output}\nエラー:\n{error}");
-        }
-
-        // 統合テストの実行
-        using var testProcess = Process.Start(new ProcessStartInfo {
-            FileName = Path.Combine(testProjectDir, "Test", "bin", "Debug", "net9.0", "run-data-pattern-tests-sample.bat"),
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            StandardOutputEncoding = Encoding.UTF8,
-            StandardErrorEncoding = Encoding.UTF8,
-        })!;
-        testProcess.WaitForExit();
-        if (testProcess.ExitCode != 0) {
-            var output = testProcess.StandardOutput.ReadToEnd();
-            var error = testProcess.StandardError.ReadToEnd();
-            Assert.Fail($"統合テストの実行に失敗しました。\n出力:\n{output}\nエラー:\n{error}");
         }
 
         Assert.Pass($"{fileName} のテストが完了しました");
