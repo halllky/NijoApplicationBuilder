@@ -104,7 +104,7 @@ public class DataPatternTest {
 
         // C#コンパイルチェック
         var solutionPath = Path.Combine(testProjectDir, "NIJO_APPLICATION_TEMPLATE.sln");
-        var csBuildProcess = Process.Start(new ProcessStartInfo {
+        using var csBuildProcess = Process.Start(new ProcessStartInfo {
             FileName = "dotnet",
             Arguments = $"build \"{solutionPath}\" -c Debug",
             UseShellExecute = false,
@@ -143,9 +143,9 @@ public class DataPatternTest {
 
         // TypeScriptコンパイルチェック
         var tsConfigPath = Path.Combine(testProjectDir, "react", "tsconfig.json");
-        var tsBuildProcess = Process.Start(new ProcessStartInfo {
-            FileName = "npm",
-            Arguments = "run tsc",
+        using var tsBuildProcess = Process.Start(new ProcessStartInfo {
+            FileName = "powershell",
+            Arguments = "/c \"npm run tsc\"",
             WorkingDirectory = Path.Combine(testProjectDir, "react"),
             UseShellExecute = false,
             RedirectStandardOutput = true,
@@ -161,7 +161,7 @@ public class DataPatternTest {
         }
 
         // 統合テストの実行
-        var testProcess = Process.Start(new ProcessStartInfo {
+        using var testProcess = Process.Start(new ProcessStartInfo {
             FileName = Path.Combine(testProjectDir, "Test", "bin", "Debug", "net9.0", "run-data-pattern-tests-sample.bat"),
             UseShellExecute = false,
             RedirectStandardOutput = true,

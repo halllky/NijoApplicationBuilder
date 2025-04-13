@@ -82,12 +82,12 @@ namespace Nijo.Models.QueryModelModules {
             var (entries, _) = GetReferedMembersRecursively(rootAggregate);
 
             return $$"""
-                #region 他の集約から参照されるときの画面表示用オブジェクトの新規作成関数
+                //#region 他の集約から参照されるときの画面表示用オブジェクトの新規作成関数
                 {{entries.SelectTextTemplate(entry => $$"""
                 {{entry.RenderTypeScriptObjectCreationFunction(ctx)}}
 
                 """)}}
-                #endregion 他の集約から参照されるときの画面表示用オブジェクトの新規作成関数
+                //#endregion 他の集約から参照されるときの画面表示用オブジェクトの新規作成関数
                 """;
         }
         #endregion レンダリング
