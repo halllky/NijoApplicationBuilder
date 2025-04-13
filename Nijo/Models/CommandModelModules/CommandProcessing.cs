@@ -28,7 +28,7 @@ namespace Nijo.Models.CommandModelModules {
             var items = commandModels.Select(rootAggregate => {
                 var controller = new AspNetController(rootAggregate);
                 var param = new ParameterType(rootAggregate);
-                var returnValue = new ReturnType(rootAggregate);
+                var returnValue = new ReturnValue(rootAggregate);
 
                 return new {
                     EscapedPhysicalName = rootAggregate.PhysicalName.Replace("'", "\\'"),
@@ -69,7 +69,7 @@ namespace Nijo.Models.CommandModelModules {
         internal string RenderAspNetCoreControllerAction(CodeRenderingContext ctx) {
             var param = new ParameterType(_rootAggregate);
             var paramMessages = new ParameterTypeMessageContainer(_rootAggregate);
-            var returnValue = new ReturnType(_rootAggregate);
+            var returnValue = new ReturnValue(_rootAggregate);
 
             return $$"""
                 /// <summary>
@@ -86,7 +86,7 @@ namespace Nijo.Models.CommandModelModules {
         internal string RenderAppSrvMethods(CodeRenderingContext ctx) {
             var param = new ParameterType(_rootAggregate);
             var paramMessage = new ParameterTypeMessageContainer(_rootAggregate);
-            var returnValue = new ReturnType(_rootAggregate);
+            var returnValue = new ReturnValue(_rootAggregate);
 
             return $$"""
                 /// <summary>

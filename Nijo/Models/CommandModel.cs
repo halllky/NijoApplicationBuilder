@@ -35,15 +35,15 @@ namespace Nijo.Models {
                 participant cs_autogen as C#35;側Execute<br/>メソッド(骨組みのみ自動生成)
 
                 ts_custom->>ts_autogen: パラメータオブジェクトの<br/>新規作成関数(自動生成)を呼ぶ
-                ts_autogen-->>ts_custom:　
+                ts_autogen-->>ts_custom:
                 ts_custom->>ts_custom:UI操作等で<br/>パラメータオブジェクトの<br/>内容を編集
                 ts_custom->>ts_autogen: パラメータオブジェクトを渡して<br/>コマンド実行関数(自動生成)<br/>を呼ぶ
                 ts_autogen->>aspcore: コマンド実行エンドポイント<br/>呼び出し(HTTP POST)
                 aspcore->>cs_autogen: アプリケーションサービスの<br/>Executeメソッド呼び出し<br/>(開発者が実装する必要がある)
 
                 cs_autogen-->>aspcore: 処理結果返却
-                aspcore-->>ts_autogen:　
-                ts_autogen-->>ts_custom:　
+                aspcore-->>ts_autogen:
+                ts_autogen-->>ts_custom:
             ```
 
             ## 重要な特性
@@ -55,7 +55,7 @@ namespace Nijo.Models {
                 * ReturnValue子集約がコマンドからの戻り値となる
 
             ## パラメータクラス（Parameter）
-            コマンドのパラメータオブジェクトは、スキーマ定義で「Parameter」という物理名を持つ子集約として定義する。
+            コマンドのパラメータオブジェクトは、スキーマ定義で「xxxxxParameter」という物理名を持つ子集約として定義する。
             このパラメータオブジェクトの構造がそのままC#とTypeScriptの型として生成される。
 
             ```ts
@@ -83,7 +83,7 @@ namespace Nijo.Models {
             ```
 
             ## 戻り値クラス（ReturnValue）
-            コマンドの戻り値オブジェクトは、スキーマ定義で「ReturnValue」という物理名を持つ子集約として定義する。
+            コマンドの戻り値オブジェクトは、スキーマ定義で「xxxxxReturnValue」という物理名を持つ子集約として定義する。
             この戻り値オブジェクトの構造がそのままC#とTypeScriptの型として生成される。
 
             ```ts
@@ -121,6 +121,34 @@ namespace Nijo.Models {
             """;
 
         public void Validate(XElement rootAggregateElement, SchemaParseContext context, Action<XElement, string> addError) {
+            // コマンドモデルの物理名を取得
+            var rootAggregateName = context.GetPhysicalName(rootAggregateElement);
+            if (string.IsNullOrEmpty(rootAggregateName)) {
+                addError(rootAggregateElement, "コマンドモデルの物理名が指定されていません。");
+                return;
+            }
+
+            // 引数の物理名チェック
+            var expectedParameterName = $"{rootAggregateName}{CommandModelExtensions.PARAMETER_PHYSICAL_NAME}";
+            var correctParameterElement = rootAggregateElement
+                .Elements()
+                .FirstOrDefault(e => context.GetPhysicalName(e) == expectedParameterName);
+            if (correctParameterElement == null) {
+                addError(rootAggregateElement, $"引数の物理名「{expectedParameterName}」を持つ子集約が見つかりません。");
+            } else if (context.GetNodeType(correctParameterElement) != E_NodeType.ChildAggregate) {
+                addError(correctParameterElement, $"{SchemaParseContext.NODE_TYPE_CHILD} 型である必要があります。");
+            }
+
+            // 戻り値の物理名チェック
+            var expectedReturnValueName = $"{rootAggregateName}{CommandModelExtensions.RETURN_VALUE_PHYSICAL_NAME}";
+            var correctReturnValueElement = rootAggregateElement
+                .Elements()
+                .FirstOrDefault(e => context.GetPhysicalName(e) == expectedReturnValueName);
+            if (correctReturnValueElement == null) {
+                addError(rootAggregateElement, $"戻り値の物理名「{expectedReturnValueName}」を持つ子集約が見つかりません。");
+            } else if (context.GetNodeType(correctReturnValueElement) != E_NodeType.ChildAggregate) {
+                addError(correctReturnValueElement, $"{SchemaParseContext.NODE_TYPE_CHILD} 型である必要があります。");
+            }
         }
 
         public void GenerateCode(CodeRenderingContext ctx, RootAggregate rootAggregate) {
@@ -139,7 +167,7 @@ namespace Nijo.Models {
             ctx.Use<MessageContainer.BaseClass>().Register(parameterMessages.CsClassName, parameterMessages.CsClassName);
 
             // データ型: 戻り値型定義
-            var returnType = new ReturnType(rootAggregate);
+            var returnType = new ReturnValue(rootAggregate);
             aggregateFile.AddCSharpClass(returnType.RenderCSharp(ctx));
             aggregateFile.AddTypeScriptTypeDef(returnType.RenderTypeScript(ctx));
 
@@ -175,9 +203,11 @@ namespace Nijo.Models {
         /// 定義されていない場合は例外になります。
         /// </summary>
         internal static ChildAggreagte GetCommandModelParameterChild(this RootAggregate rootAggregate) {
+            var rootAggregateName = rootAggregate.PhysicalName;
+            var expectedParameterName = $"{rootAggregateName}{PARAMETER_PHYSICAL_NAME}";
             var param = rootAggregate
                 .GetMembers()
-                .Single(m => m is ChildAggreagte && m.PhysicalName == PARAMETER_PHYSICAL_NAME);
+                .Single(m => m is ChildAggreagte && m.PhysicalName == expectedParameterName);
             return (ChildAggreagte)param;
         }
 
@@ -186,9 +216,11 @@ namespace Nijo.Models {
         /// 定義されていない場合は例外になります。
         /// </summary>
         internal static ChildAggreagte GetCommandModelReturnValueChild(this RootAggregate rootAggregate) {
+            var rootAggregateName = rootAggregate.PhysicalName;
+            var expectedReturnValueName = $"{rootAggregateName}{RETURN_VALUE_PHYSICAL_NAME}";
             var param = rootAggregate
                 .GetMembers()
-                .Single(m => m is ChildAggreagte && m.PhysicalName == RETURN_VALUE_PHYSICAL_NAME);
+                .Single(m => m is ChildAggreagte && m.PhysicalName == expectedReturnValueName);
             return (ChildAggreagte)param;
         }
     }

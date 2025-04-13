@@ -99,7 +99,7 @@ namespace Nijo.Parts.Common {
             }
             foreach (var rootAggregate in _commandModels) {
                 var param = new ParameterType(rootAggregate);
-                var returnType = new ReturnType(rootAggregate);
+                var returnType = new ReturnValue(rootAggregate);
 
                 imports.Add((
                     $"./{rootAggregate.PhysicalName}",

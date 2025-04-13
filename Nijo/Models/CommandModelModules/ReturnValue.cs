@@ -7,14 +7,14 @@ namespace Nijo.Models.CommandModelModules {
     /// <summary>
     /// コマンドの戻り値型定義
     /// </summary>
-    internal class ReturnType {
-        internal ReturnType(RootAggregate aggregate) {
+    internal class ReturnValue {
+        internal ReturnValue(RootAggregate aggregate) {
             _rootAggregate = aggregate;
         }
         private readonly RootAggregate _rootAggregate;
 
-        internal string CsClassName => $"{_rootAggregate.PhysicalName}ReturnType";
-        internal string TsTypeName => $"{_rootAggregate.PhysicalName}ReturnType";
+        internal string CsClassName => $"{_rootAggregate.PhysicalName}ReturnValue";
+        internal string TsTypeName => $"{_rootAggregate.PhysicalName}ReturnValue";
 
         internal string RenderCSharp(CodeRenderingContext ctx) {
             var returnType = _rootAggregate.GetCommandModelParameterChild();

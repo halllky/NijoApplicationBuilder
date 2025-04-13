@@ -13,14 +13,14 @@
     <備考 Type="description" />
   </顧客>
   <CommandModelテスト Type="command-model" LatinName="Batch Update Master Data 01">
-    <Parameter Type="child">
+    <CommandModelテストParameter Type="child">
       <Items Type="children">
         <Word1 Type="word" IsKey="True" />
         <Word2 Type="word" />
       </Items>
-    </Parameter>
-    <ReturnValue Type="child">
-    </ReturnValue>
+    </CommandModelテストParameter>
+    <CommandModelテストReturnValue Type="child">
+    </CommandModelテストReturnValue>
   </CommandModelテスト>
   <予約 Type="data-model" LatinName="Transaction Data 01">
     <予約ID Type="word" IsKey="True" />
