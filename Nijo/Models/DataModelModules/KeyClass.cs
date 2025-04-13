@@ -98,6 +98,7 @@ namespace Nijo.Models.DataModelModules {
                     """;
             }
 
+            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => _aggregate.ToIdentifier();
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetOwnMembers();
@@ -163,6 +164,7 @@ namespace Nijo.Models.DataModelModules {
                 }
             }
 
+            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => Member.ToIdentifier();
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetOwnMembers();
@@ -217,6 +219,7 @@ namespace Nijo.Models.DataModelModules {
                     """;
             }
 
+            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => _parent.ToIdentifier();
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetOwnMembers();

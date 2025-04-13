@@ -275,6 +275,7 @@ namespace Nijo.Models.DataModelModules {
             public string CsUpdateType => Member.Type.CsDomainTypeName;
             public string CsDeleteType => Member.Type.CsDomainTypeName;
 
+            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => Member.ToIdentifier();
             IValueMemberType IInstanceValuePropertyMetadata.Type => Member.Type;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
@@ -300,6 +301,7 @@ namespace Nijo.Models.DataModelModules {
             public string CsUpdateType => new SaveCommand(_aggregate, SaveCommand.E_Type.Update).CsClassNameUpdate;
             public string CsDeleteType => new SaveCommand(_aggregate, SaveCommand.E_Type.Delete).CsClassNameDelete;
 
+            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => _aggregate.ToIdentifier();
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
@@ -316,6 +318,7 @@ namespace Nijo.Models.DataModelModules {
             public string CsUpdateType => $"List<{new SaveCommand(_aggregate, SaveCommand.E_Type.Update).CsClassNameUpdate}>";
             public string CsDeleteType => $"List<{new SaveCommand(_aggregate, SaveCommand.E_Type.Delete).CsClassNameDelete}>";
 
+            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => _aggregate.ToIdentifier();
             bool IInstanceStructurePropertyMetadata.IsArray => true;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }

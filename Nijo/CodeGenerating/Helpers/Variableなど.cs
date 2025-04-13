@@ -34,6 +34,7 @@ public interface IInstanceStructurePropertyMetadata : IInstancePropertyMetadata,
 /// <see cref="IInstanceValuePropertyMetadata"/> or <see cref="IInstanceStructurePropertyMetadata"/>
 /// </summary>
 public interface IInstancePropertyMetadata {
+    SchemaNodeIdentity MappingKey { get; }
     string PropertyName { get; }
 }
 
