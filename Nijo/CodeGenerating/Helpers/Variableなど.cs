@@ -88,7 +88,7 @@ public sealed class InstanceStructureProperty : IInstanceProperty, IInstanceProp
     public required IInstancePropertyOwner Owner { get; init; }
     public required string PropertyName { get; init; }
     public required bool IsArray { get; init; }
-    public bool IsNullable => false;
+    public bool IsNullable => true;
 
     string IInstancePropertyOwner.Name => PropertyName;
 }
