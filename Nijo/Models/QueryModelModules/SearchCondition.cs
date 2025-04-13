@@ -1,4 +1,5 @@
 using Nijo.CodeGenerating;
+using Nijo.CodeGenerating.Helpers;
 using Nijo.ImmutableSchema;
 using Nijo.Util.DotnetEx;
 using System;
@@ -162,11 +163,12 @@ namespace Nijo.Models.QueryModelModules {
         }
 
 
+        #region フィルター
         /// <summary>
         /// 検索条件クラスの絞り込み条件部分。
         /// 通常の一覧検索と参照先検索とで共通
         /// </summary>
-        internal class Filter {
+        internal class Filter : IInstancePropertyOwnerMetadata {
             internal Filter(AggregateBase aggregate) {
                 _aggregate = aggregate;
             }
@@ -205,6 +207,16 @@ namespace Nijo.Models.QueryModelModules {
                                 yield return vm2;
                             }
                         }
+                    }
+                }
+            }
+
+            IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
+                foreach (var member in GetOwnMembers()) {
+                    if (member is ValueMember vm) {
+                        yield return new FilterValueMember(vm);
+                    } else if (member is IRelationalMember rm) {
+                        yield return new FilterRelationalMember(rm);
                     }
                 }
             }
@@ -328,6 +340,43 @@ namespace Nijo.Models.QueryModelModules {
             }
             #endregion レンダリング
         }
+
+        /// <summary>
+        /// 文字列や数値など単一の値に対するフィルター
+        /// </summary>
+        internal class FilterValueMember : IInstanceValuePropertyMetadata {
+            internal FilterValueMember(ValueMember member) {
+                Member = member;
+            }
+
+            internal ValueMember Member { get; }
+
+            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => Member.ToIdentifier();
+            string IInstancePropertyMetadata.PropertyName => Member.PhysicalName;
+            IValueMemberType IInstanceValuePropertyMetadata.Type => Member.Type;
+        }
+
+        /// <summary>
+        /// Child, Children, Ref 部分のフィルターのコンテナ
+        /// </summary>
+        internal class FilterRelationalMember : IInstanceStructurePropertyMetadata {
+            internal FilterRelationalMember(IRelationalMember member) {
+                Member = member;
+                ChildFilter = new Filter(member.MemberAggregate);
+            }
+
+            internal IRelationalMember Member { get; }
+            internal Filter ChildFilter { get; }
+
+            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => Member.ToIdentifier();
+            string IInstancePropertyMetadata.PropertyName => Member.PhysicalName;
+            bool IInstanceStructurePropertyMetadata.IsArray => Member is ChildrenAggreagte;
+
+            IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
+                return ((IInstancePropertyOwnerMetadata)ChildFilter).GetMembers();
+            }
+        }
+        #endregion フィルター
 
 
         /// <summary>

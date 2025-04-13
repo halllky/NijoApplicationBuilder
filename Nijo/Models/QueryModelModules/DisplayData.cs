@@ -1,4 +1,5 @@
 using Nijo.CodeGenerating;
+using Nijo.CodeGenerating.Helpers;
 using Nijo.ImmutableSchema;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ namespace Nijo.Models.QueryModelModules {
     /// <summary>
     /// ReadModelの画面表示用データ
     /// </summary>
-    internal class DisplayData {
+    internal class DisplayData : IInstancePropertyOwnerMetadata {
 
         internal DisplayData(AggregateBase aggregate) {
             _aggregate = aggregate;
@@ -114,6 +115,11 @@ namespace Nijo.Models.QueryModelModules {
             }
         }
 
+        IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
+            var ownMembers = GetOwnMembers().Cast<IInstancePropertyMetadata>();
+            var childMemberes = GetChildMembers().Cast<IInstancePropertyMetadata>();
+            return ownMembers.Concat(childMemberes);
+        }
 
 
         #region レンダリング
@@ -257,7 +263,7 @@ namespace Nijo.Models.QueryModelModules {
 
 
         #region Valuesの中に定義されるメンバー
-        internal interface IDisplayDataMember : IUiConstraintValue {
+        internal interface IDisplayDataMember : IUiConstraintValue, IInstancePropertyMetadata {
             string PhysicalName { get; }
             string DisplayName { get; }
             UiConstraint.E_Type UiConstraintType { get; }
@@ -268,7 +274,7 @@ namespace Nijo.Models.QueryModelModules {
             string RenderNewObjectCreation();
         }
 
-        internal class DisplayDataValueMember : IDisplayDataMember {
+        internal class DisplayDataValueMember : IDisplayDataMember, IInstanceValuePropertyMetadata {
             internal DisplayDataValueMember(ValueMember vm) {
                 Member = vm;
             }
@@ -277,6 +283,10 @@ namespace Nijo.Models.QueryModelModules {
             public string PhysicalName => Member.PhysicalName;
             public string DisplayName => Member.DisplayName;
             public UiConstraint.E_Type UiConstraintType => Member.Type.UiConstraintType;
+
+            IValueMemberType IInstanceValuePropertyMetadata.Type => Member.Type;
+            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => Member.ToIdentifier();
+            string IInstancePropertyMetadata.PropertyName => PhysicalName;
 
             public bool IsRequired => Member.IsKey || Member.IsRequired;
             public string? CharacterType => Member.CharacterType;
@@ -301,7 +311,7 @@ namespace Nijo.Models.QueryModelModules {
             }
         }
 
-        internal class DisplayDataRefMember : IDisplayDataMember {
+        internal class DisplayDataRefMember : IDisplayDataMember, IInstanceStructurePropertyMetadata {
             internal DisplayDataRefMember(RefToMember refTo) {
                 Member = refTo;
                 RefEntry = new DisplayDataRef.Entry(refTo.RefTo);
@@ -338,6 +348,11 @@ namespace Nijo.Models.QueryModelModules {
             internal IEnumerable<DisplayDataRef.IRefDisplayDataMember> GetMembers() {
                 return RefEntry.GetMembers();
             }
+
+            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => Member.ToIdentifier();
+            bool IInstanceStructurePropertyMetadata.IsArray => false;
+            string IInstancePropertyMetadata.PropertyName => PhysicalName;
+            IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetMembers();
         }
         #endregion Valuesの中に定義されるメンバー
 
@@ -477,7 +492,7 @@ namespace Nijo.Models.QueryModelModules {
             internal abstract string RenderNewObjectCreation();
         }
 
-        internal class DisplayDataChildDescendant : DisplayDataDescendant {
+        internal class DisplayDataChildDescendant : DisplayDataDescendant, IInstanceStructurePropertyMetadata {
             internal DisplayDataChildDescendant(ChildAggreagte child) : base(child) {
                 _child = child;
             }
@@ -490,9 +505,13 @@ namespace Nijo.Models.QueryModelModules {
             internal override string RenderNewObjectCreation() {
                 return $"{TsNewObjectFunction}()";
             }
+
+            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => _child.ToIdentifier();
+            bool IInstanceStructurePropertyMetadata.IsArray => false;
+            string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
 
-        internal class DisplayDataChildrenDescendant : DisplayDataDescendant {
+        internal class DisplayDataChildrenDescendant : DisplayDataDescendant, IInstanceStructurePropertyMetadata {
             internal DisplayDataChildrenDescendant(ChildrenAggreagte children) : base(children) { }
 
             internal override string CsClassNameAsMember => $"List<{CsClassName}>";
@@ -502,6 +521,10 @@ namespace Nijo.Models.QueryModelModules {
             internal override string RenderNewObjectCreation() {
                 return "[]";
             }
+
+            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => _aggregate.ToIdentifier();
+            bool IInstanceStructurePropertyMetadata.IsArray => true;
+            string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
         #endregion Valuesの外に定義されるメンバー（Child, Children）
     }

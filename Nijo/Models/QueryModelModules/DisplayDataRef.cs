@@ -1,4 +1,5 @@
 using Nijo.CodeGenerating;
+using Nijo.CodeGenerating.Helpers;
 using Nijo.ImmutableSchema;
 using Nijo.Util.DotnetEx;
 using System;
@@ -96,7 +97,7 @@ namespace Nijo.Models.QueryModelModules {
         /// <summary>
         /// C#のクラスが存在するものたち
         /// </summary>
-        internal abstract class RefDisplayDataMemberContainer {
+        internal abstract class RefDisplayDataMemberContainer : IInstancePropertyOwnerMetadata {
             private protected RefDisplayDataMemberContainer(AggregateBase aggregate) {
                 _aggregate = aggregate;
             }
@@ -126,6 +127,10 @@ namespace Nijo.Models.QueryModelModules {
                         yield return new RefDisplayDataChildrenMember(children);
                     }
                 }
+            }
+
+            IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
+                return GetMembers();
             }
 
             internal string RenderCsClass(CodeRenderingContext ctx) {
@@ -192,7 +197,7 @@ namespace Nijo.Models.QueryModelModules {
         /// <summary>
         /// <see cref="DisplayDataRef"/>のメンバー
         /// </summary>
-        internal interface IRefDisplayDataMember {
+        internal interface IRefDisplayDataMember : IInstancePropertyMetadata {
             string PhysicalName { get; }
             string DisplayName { get; }
             string CsType { get; }
@@ -201,7 +206,7 @@ namespace Nijo.Models.QueryModelModules {
         /// <summary>
         /// ValueMember
         /// </summary>
-        internal class RefDisplayDataValueMember : IRefDisplayDataMember {
+        internal class RefDisplayDataValueMember : IRefDisplayDataMember, IInstanceValuePropertyMetadata {
             internal RefDisplayDataValueMember(ValueMember member) {
                 Member = member;
             }
@@ -210,12 +215,16 @@ namespace Nijo.Models.QueryModelModules {
             public string PhysicalName => Member.PhysicalName;
             public string DisplayName => Member.DisplayName;
             public string CsType => Member.Type.CsDomainTypeName;
+
+            IValueMemberType IInstanceValuePropertyMetadata.Type => Member.Type;
+            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => Member.ToIdentifier();
+            string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
 
         /// <summary>
         /// Ref
         /// </summary>
-        internal class RefDisplayDataRefToMember : Entry, IRefDisplayDataMember {
+        internal class RefDisplayDataRefToMember : Entry, IRefDisplayDataMember, IInstanceStructurePropertyMetadata {
             internal RefDisplayDataRefToMember(RefToMember member) : base(member.RefTo) {
                 _member = member;
             }
@@ -224,12 +233,16 @@ namespace Nijo.Models.QueryModelModules {
             public string PhysicalName => _member.PhysicalName;
             public string DisplayName => _member.DisplayName;
             public string CsType => CsClassName;
+
+            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => _member.ToIdentifier();
+            bool IInstanceStructurePropertyMetadata.IsArray => false;
+            string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
 
         /// <summary>
         /// Child
         /// </summary>
-        internal class RefDisplayDataChildMember : RefDisplayDataMemberContainer, IRefDisplayDataMember {
+        internal class RefDisplayDataChildMember : RefDisplayDataMemberContainer, IRefDisplayDataMember, IInstanceStructurePropertyMetadata {
             internal RefDisplayDataChildMember(ChildAggreagte member) : base(member) {
                 _member = member;
             }
@@ -239,12 +252,16 @@ namespace Nijo.Models.QueryModelModules {
             public string DisplayName => _member.DisplayName;
             public string CsType => $"{_member.PhysicalName}RefTargetAsNotEntry";
             internal override string CsClassName => CsType;
+
+            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => _member.ToIdentifier();
+            bool IInstanceStructurePropertyMetadata.IsArray => false;
+            string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
 
         /// <summary>
         /// Children
         /// </summary>
-        internal class RefDisplayDataChildrenMember : RefDisplayDataMemberContainer, IRefDisplayDataMember {
+        internal class RefDisplayDataChildrenMember : RefDisplayDataMemberContainer, IRefDisplayDataMember, IInstanceStructurePropertyMetadata {
             internal RefDisplayDataChildrenMember(ChildrenAggreagte member) : base(member) {
                 _member = member;
             }
@@ -254,12 +271,16 @@ namespace Nijo.Models.QueryModelModules {
             public string DisplayName => _member.DisplayName;
             public string CsType => $"{_member.PhysicalName}RefTargetAsNotEntry";
             internal override string CsClassName => CsType;
+
+            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => _member.ToIdentifier();
+            bool IInstanceStructurePropertyMetadata.IsArray => true;
+            string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
 
         /// <summary>
         /// Parent
         /// </summary>
-        internal class RefDisplayDataParentMember : RefDisplayDataMemberContainer, IRefDisplayDataMember {
+        internal class RefDisplayDataParentMember : RefDisplayDataMemberContainer, IRefDisplayDataMember, IInstanceStructurePropertyMetadata {
             internal RefDisplayDataParentMember(AggregateBase parent) : base(parent) {
                 _parent = parent;
             }
@@ -269,6 +290,10 @@ namespace Nijo.Models.QueryModelModules {
             public string DisplayName => _parent.DisplayName;
             public string CsType => $"{_parent.PhysicalName}RefTargetAsParent";
             internal override string CsClassName => CsType;
+
+            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => _parent.ToIdentifier();
+            bool IInstanceStructurePropertyMetadata.IsArray => false;
+            string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
         #endregion 子孫メンバー
     }

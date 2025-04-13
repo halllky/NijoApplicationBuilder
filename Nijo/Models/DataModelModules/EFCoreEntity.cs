@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Nijo.CodeGenerating;
+using Nijo.CodeGenerating.Helpers;
 using Nijo.ImmutableSchema;
 using Nijo.Models.DataModelModules;
 using Nijo.Parts.CSharp;
@@ -15,7 +16,7 @@ namespace Nijo.Models.DataModelModules {
     /// <summary>
     /// Entity Framework Core のエンティティ
     /// </summary>
-    internal class EFCoreEntity {
+    internal class EFCoreEntity : IInstancePropertyOwnerMetadata {
 
         internal EFCoreEntity(AggregateBase aggregate) {
             Aggregate = aggregate;
@@ -107,6 +108,12 @@ namespace Nijo.Models.DataModelModules {
         /// </summary>
         internal IEnumerable<EFCoreEntity> EnumerateThisAndDescendants() {
             return new[] { this }.Concat(Aggregate.EnumerateDescendants().Select(e => new EFCoreEntity(e)));
+        }
+
+        IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
+            var cols = GetColumns().Cast<IInstancePropertyMetadata>();
+            var navs = GetNavigationProperties().Cast<IInstancePropertyMetadata>();
+            return cols.Concat(navs);
         }
 
 
@@ -322,13 +329,17 @@ namespace Nijo.Models.DataModelModules {
 
 
         #region メンバー
-        internal abstract class EFCoreEntityColumn {
+        internal abstract class EFCoreEntityColumn : IInstanceValuePropertyMetadata {
             internal abstract ValueMember Member { get; }
             internal abstract string CsType { get; }
             internal abstract string PhysicalName { get; }
             internal abstract string DisplayName { get; }
             internal abstract string DbName { get; }
             internal abstract bool IsKey { get; }
+
+            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => Member.ToIdentifier();
+            string IInstancePropertyMetadata.PropertyName => PhysicalName;
+            IValueMemberType IInstanceValuePropertyMetadata.Type => Member.Type;
 
             public override string ToString() {
                 // デバッグ用
@@ -404,11 +415,19 @@ namespace Nijo.Models.DataModelModules {
                 return $"Principal = {Principal.ThisSide}, Relevant = {Relevant.ThisSide}";
             }
         }
-        internal class PrincipalOrRelevant {
+        internal class PrincipalOrRelevant : IInstanceStructurePropertyMetadata {
             internal required AggregateBase ThisSide { get; init; }
             internal required AggregateBase OtherSide { get; init; }
             internal required string OtherSidePhysicalName { get; init; }
             internal required bool OtherSideIsMany { get; init; }
+
+            bool IInstanceStructurePropertyMetadata.IsArray => OtherSideIsMany;
+            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => OtherSide.ToIdentifier();
+            string IInstancePropertyMetadata.PropertyName => OtherSidePhysicalName;
+            IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
+                var otherSideEfCoreEntity = new EFCoreEntity(OtherSide);
+                return ((IInstancePropertyOwnerMetadata)otherSideEfCoreEntity).GetMembers();
+            }
 
             /// <summary>C#型名</summary>
             /// <param name="withNullable">末尾にNull許容演算子をつけるかどうか</param>

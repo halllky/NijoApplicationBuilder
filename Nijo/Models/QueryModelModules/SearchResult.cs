@@ -1,4 +1,5 @@
 using Nijo.CodeGenerating;
+using Nijo.CodeGenerating.Helpers;
 using Nijo.ImmutableSchema;
 using Nijo.Models.QueryModelModules;
 using Nijo.Util.DotnetEx;
@@ -16,7 +17,7 @@ namespace Nijo.Models.QueryModelModules {
     /// ChildやRefToがあっても入れ子にならずフラットなデータ構造になる。
     /// <see cref="DisplayData"/> が持つ項目は全て検索結果型にも存在する。
     /// </summary>
-    internal class SearchResult {
+    internal class SearchResult : IInstancePropertyOwnerMetadata {
 
         // Childは親の一部としてレンダリングされるので定義できない
         internal SearchResult(RootAggregate aggregate) {
@@ -61,6 +62,10 @@ namespace Nijo.Models.QueryModelModules {
             }
         }
 
+        IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
+            return GetMembers();
+        }
+
         internal static string RenderTree(RootAggregate rootAggregate) {
             var tree = rootAggregate
                 .EnumerateThisAndDescendants()
@@ -97,13 +102,17 @@ namespace Nijo.Models.QueryModelModules {
 
 
         #region メンバー
-        internal abstract class SearchResultMember {
+        internal abstract class SearchResultMember : IInstancePropertyMetadata {
             internal abstract string PhysicalName { get; }
+            internal abstract SchemaNodeIdentity MappingKey { get; }
 
             internal abstract string RenderDeclaration();
+
+            string IInstancePropertyMetadata.PropertyName => PhysicalName;
+            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => MappingKey;
         }
 
-        internal class SearchResultValueMember : SearchResultMember {
+        internal class SearchResultValueMember : SearchResultMember, IInstanceValuePropertyMetadata {
             internal SearchResultValueMember(ValueMember valueMember) {
                 _valueMember = valueMember;
             }
@@ -118,6 +127,9 @@ namespace Nijo.Models.QueryModelModules {
 
             private string? _physicalName;
 
+            internal override SchemaNodeIdentity MappingKey => _valueMember.ToIdentifier();
+            IValueMemberType IInstanceValuePropertyMetadata.Type => _valueMember.Type;
+
             internal override string RenderDeclaration() {
                 var type = _valueMember.Type.CsPrimitiveTypeName;
 
@@ -128,13 +140,21 @@ namespace Nijo.Models.QueryModelModules {
             }
         }
 
-        internal class SearchResultChildrenMember : SearchResultMember {
+        internal class SearchResultChildrenMember : SearchResultMember, IInstanceStructurePropertyMetadata {
             internal SearchResultChildrenMember(ChildrenAggreagte children) {
                 _children = children;
             }
             private readonly ChildrenAggreagte _children;
 
             internal override string PhysicalName => _children.PhysicalName;
+            internal override SchemaNodeIdentity MappingKey => _children.ToIdentifier();
+
+            bool IInstanceStructurePropertyMetadata.IsArray => true;
+
+            IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
+                // Childrenの要素型（内部のSearchResult）のメンバーを返す
+                return new SearchResult(_children).GetMembers();
+            }
 
             internal override string RenderDeclaration() {
                 var sr = new SearchResult(_children);
