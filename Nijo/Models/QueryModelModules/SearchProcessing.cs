@@ -219,7 +219,7 @@ namespace Nijo.Models.QueryModelModules {
                 protected virtual IQueryable<{{searchResult.CsClassName}}> {{APPEND_WHERE_CLAUSE}}(IQueryable<{{searchResult.CsClassName}}> query, {{searchCondition.CsClassName}} searchCondition) {
                 {{searchCondition.FilterRoot.GetValueMembersRecursively().SelectTextTemplate(vm => $$"""
                     // 絞り込み: {{vm.DisplayName}}
-                    {{WithIndent(vm.Type.SearchBehavior!.RenderFiltering(new() { Member = vm, Query = "query", SearchCondition = "searchCondition", CodeRenderingContext = ctx }), "    ")}}
+                    {{WithIndent(vm.SearchBehavior.RenderFiltering(new() { Member = vm.Member, Query = "query", SearchCondition = "searchCondition", CodeRenderingContext = ctx }), "    ")}}
 
                 """)}}
                     return query;

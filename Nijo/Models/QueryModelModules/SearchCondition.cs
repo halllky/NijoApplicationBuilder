@@ -76,7 +76,7 @@ namespace Nijo.Models.QueryModelModules {
                     export type {{TsTypeName}} = {
                       /** 絞り込み条件 */
                       {{FILTER_TS}}: {
-                    {{FilterRoot.RenderTypeScriptDeclaringLiteral(ctx).SelectTextTemplate(source => $$"""
+                    {{FilterRoot.RenderTypeScriptDeclaringLiteral().SelectTextTemplate(source => $$"""
                         {{WithIndent(source, "    ")}}
                     """)}}
                       }
@@ -180,13 +180,13 @@ namespace Nijo.Models.QueryModelModules {
             /// <summary>
             /// 検索条件のフィルターに指定できるメンバーを列挙する
             /// </summary>
-            internal IEnumerable<IAggregateMember> GetOwnMembers() {
+            internal IEnumerable<IFilterMember> GetOwnMembers() {
                 foreach (var member in _aggregate.GetMembers()) {
                     if (member is ValueMember vm && vm.Type.SearchBehavior != null) {
-                        yield return member;
+                        yield return new FilterValueMember(vm);
 
-                    } else if (member is IRelationalMember) {
-                        yield return member;
+                    } else if (member is IRelationalMember rm) {
+                        yield return new FilterRelationalMember(rm);
                     }
                 }
             }
@@ -194,31 +194,28 @@ namespace Nijo.Models.QueryModelModules {
             /// <summary>
             /// フィルタリングに使える値を子孫要素のそれも含め再帰的に列挙
             /// </summary>
-            internal IEnumerable<ValueMember> GetValueMembersRecursively() {
-                return GetRecursively(_aggregate);
+            internal IEnumerable<FilterValueMember> GetValueMembersRecursively() {
+                return GetRecursively(this);
 
-                static IEnumerable<ValueMember> GetRecursively(AggregateBase agg) {
-                    foreach (var member in new Filter(agg).GetOwnMembers()) {
-                        if (member is ValueMember vm) {
+                static IEnumerable<FilterValueMember> GetRecursively(Filter filter) {
+                    foreach (var member in filter.GetOwnMembers()) {
+                        if (member is FilterValueMember vm) {
                             yield return vm;
 
-                        } else if (member is IRelationalMember rm) {
-                            foreach (var vm2 in GetRecursively(rm.MemberAggregate)) {
+                        } else if (member is FilterRelationalMember rm) {
+                            foreach (var vm2 in rm.ChildFilter.GetValueMembersRecursively()) {
                                 yield return vm2;
                             }
+
+                        } else {
+                            throw new NotImplementedException();
                         }
                     }
                 }
             }
 
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
-                foreach (var member in GetOwnMembers()) {
-                    if (member is ValueMember vm) {
-                        yield return new FilterValueMember(vm);
-                    } else if (member is IRelationalMember rm) {
-                        yield return new FilterRelationalMember(rm);
-                    }
-                }
+                return GetOwnMembers();
             }
 
             #region GetFullPath
@@ -267,52 +264,19 @@ namespace Nijo.Models.QueryModelModules {
                 return $$"""
                     public partial class {{CsClassName}} {
                     {{GetOwnMembers().SelectTextTemplate(member => $$"""
-                        {{WithIndent(RenderMember(member), "    ")}}
+                        {{WithIndent(member.RenderCSharpDeclaring(), "    ")}}
                     """)}}
                     }
                     """;
-
-                string RenderMember(IAggregateMember member) {
-                    if (member is ValueMember vm) {
-                        return $$"""
-                            public {{vm.Type.SearchBehavior?.FilterCsTypeName}}? {{vm.PhysicalName}} { get; set; }
-                            """;
-
-                    } else if (member is IRelationalMember rm) {
-                        var filter = new Filter(rm.MemberAggregate);
-                        return $$"""
-                            public {{filter.CsClassName}} {{rm.PhysicalName}} { get; set; } = new();
-                            """;
-
-                    } else {
-                        throw new NotImplementedException();
-                    }
-                }
             }
 
             /// <summary>
             /// TypeScriptの型定義のレンダリング。
             /// export const は <see cref="RenderTypeScript"/> 側で行なう
             /// </summary>
-            internal IEnumerable<string> RenderTypeScriptDeclaringLiteral(CodeRenderingContext ctx) {
+            internal IEnumerable<string> RenderTypeScriptDeclaringLiteral() {
                 foreach (var member in GetOwnMembers()) {
-                    if (member is ValueMember vm) {
-                        yield return $$"""
-                            {{vm.PhysicalName}}?: {{vm.Type.SearchBehavior?.FilterTsTypeName}}
-                            """;
-
-                    } else if (member is IRelationalMember rm) {
-                        var filter = new Filter(rm.MemberAggregate);
-                        yield return $$"""
-                            {{rm.PhysicalName}}: {
-                              {{WithIndent(filter.RenderTypeScriptDeclaringLiteral(ctx), "  ")}}
-                            }
-                            """;
-
-                    } else {
-                        throw new NotImplementedException();
-                    }
-
+                    yield return member.RenderTypeScriptDeclaring();
                 }
             }
 
@@ -321,56 +285,88 @@ namespace Nijo.Models.QueryModelModules {
             /// </summary>
             internal IEnumerable<string> RenderNewObjectFunctionMemberLiteral() {
                 foreach (var member in GetOwnMembers()) {
-
-                    if (member is ValueMember vm) {
-                        yield return $$"""
-                            {{member.PhysicalName}}: {{vm.Type.SearchBehavior?.RenderTsNewObjectFunctionValue()}},
-                            """;
-
-                    } else if (member is IRelationalMember rm) {
-                        var filter = new Filter(rm.MemberAggregate);
-
-                        yield return $$"""
-                            {{member.PhysicalName}}: {
-                              {{WithIndent(filter.RenderNewObjectFunctionMemberLiteral(), "  ")}}
-                            },
-                            """;
-                    }
+                    yield return $$"""
+                        {{member.PropertyName}}: {{member.RenderTsNewObjectFunctionValue()}},
+                        """;
                 }
             }
             #endregion レンダリング
         }
 
         /// <summary>
+        /// <see cref="Filter"/> のメンバー
+        /// </summary>
+        internal interface IFilterMember : IInstancePropertyMetadata {
+            string DisplayName { get; }
+            string RenderCSharpDeclaring();
+            string RenderTypeScriptDeclaring();
+            string RenderTsNewObjectFunctionValue();
+        }
+        /// <summary>
         /// 文字列や数値など単一の値に対するフィルター
         /// </summary>
-        internal class FilterValueMember : IInstanceValuePropertyMetadata {
+        internal class FilterValueMember : IFilterMember, IInstanceValuePropertyMetadata {
             internal FilterValueMember(ValueMember member) {
+                if (member.Type.SearchBehavior == null) throw new ArgumentException();
                 Member = member;
             }
 
             internal ValueMember Member { get; }
+            public string DisplayName => Member.DisplayName;
+            internal ValueMemberSearchBehavior SearchBehavior => Member.Type.SearchBehavior!;
+
+            string IFilterMember.RenderCSharpDeclaring() {
+                return $$"""
+                    public {{Member.Type.SearchBehavior?.FilterCsTypeName}}? {{Member.PhysicalName}} { get; set; }
+                    """;
+            }
+            string IFilterMember.RenderTypeScriptDeclaring() {
+                return $$"""
+                    {{Member.PhysicalName}}?: {{Member.Type.SearchBehavior?.FilterTsTypeName}}
+                    """;
+            }
+            string IFilterMember.RenderTsNewObjectFunctionValue() => Member.Type.SearchBehavior!.RenderTsNewObjectFunctionValue();
 
             SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => Member.ToIdentifier();
             string IInstancePropertyMetadata.PropertyName => Member.PhysicalName;
             IValueMemberType IInstanceValuePropertyMetadata.Type => Member.Type;
         }
-
         /// <summary>
         /// Child, Children, Ref 部分のフィルターのコンテナ
         /// </summary>
-        internal class FilterRelationalMember : IInstanceStructurePropertyMetadata {
+        internal class FilterRelationalMember : IFilterMember, IInstanceStructurePropertyMetadata {
             internal FilterRelationalMember(IRelationalMember member) {
-                Member = member;
+                _rm = member;
                 ChildFilter = new Filter(member.MemberAggregate);
             }
 
-            internal IRelationalMember Member { get; }
+            private readonly IRelationalMember _rm;
             internal Filter ChildFilter { get; }
+            public string DisplayName => _rm.DisplayName;
 
-            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => Member.ToIdentifier();
-            string IInstancePropertyMetadata.PropertyName => Member.PhysicalName;
-            bool IInstanceStructurePropertyMetadata.IsArray => Member is ChildrenAggreagte;
+            string IFilterMember.RenderCSharpDeclaring() {
+                return $$"""
+                    public {{ChildFilter.CsClassName}} {{_rm.PhysicalName}} { get; set; } = new();
+                    """;
+            }
+            string IFilterMember.RenderTypeScriptDeclaring() {
+                return $$"""
+                    {{_rm.PhysicalName}}: {
+                      {{WithIndent(ChildFilter.RenderTypeScriptDeclaringLiteral(), "  ")}}
+                    }
+                    """;
+            }
+            string IFilterMember.RenderTsNewObjectFunctionValue() {
+                return $$"""
+                    {
+                      {{WithIndent(ChildFilter.RenderNewObjectFunctionMemberLiteral(), "  ")}}
+                    }
+                    """;
+            }
+
+            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => _rm.ToIdentifier();
+            string IInstancePropertyMetadata.PropertyName => _rm.PhysicalName;
+            bool IInstanceStructurePropertyMetadata.IsArray => _rm is ChildrenAggreagte;
 
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
                 return ((IInstancePropertyOwnerMetadata)ChildFilter).GetMembers();

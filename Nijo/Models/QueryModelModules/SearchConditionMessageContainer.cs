@@ -23,7 +23,7 @@ namespace Nijo.Models.QueryModelModules {
             return _filter
                 .GetOwnMembers()
                 .Select(m => new ContainerMemberImpl {
-                    PhysicalName = m.PhysicalName,
+                    PhysicalName = m.PropertyName,
                     DisplayName = m.DisplayName,
                     NestedObject = m is IRelationalMember rm
                         ? new SearchConditionMessageContainer(rm.MemberAggregate)
