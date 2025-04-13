@@ -341,9 +341,6 @@ namespace Nijo.Models {
                 ctx.Use<Metadata>().Add(rootAggregate);
             }
 
-            // 権限
-            // TODO ver.1
-
             // ユニットテスト
             ctx.Use<QueryModelUnitTest>().Add(rootAggregate);
         }

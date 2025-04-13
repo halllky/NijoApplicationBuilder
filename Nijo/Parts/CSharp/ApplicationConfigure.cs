@@ -178,7 +178,8 @@ namespace Nijo.Parts.CSharp {
 
                             }).AddJsonOptions(option => {
                                 // JSON日本語設定
-                                // TODO ver.1: ここでJSON日本語設定
+                                option.JsonSerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+                                option.JsonSerializerOptions.PropertyNamingPolicy = null;
                             });
                         }
 
