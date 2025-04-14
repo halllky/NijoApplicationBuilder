@@ -18,29 +18,27 @@ namespace Nijo.Models.QueryModelModules {
         /// そのツリー内部で他の集約から参照されているもののみを集めるメソッド。
         /// </summary>
         internal static (Entry[] Entries, RefDisplayDataMemberContainer[] NotEntries) GetReferedMembersRecursively(RootAggregate rootAggregate) {
-            var tree = rootAggregate
-                .EnumerateThisAndDescendants()
-                .ToArray();
 
-            // エントリー。ほかの集約から参照されている場合のみレンダリングする
-            var entries = tree
-                .Where(agg => agg.GetRefFroms().Any())
-                .Select(agg => new Entry(agg))
-                .ToArray();
+            // ほかの集約から参照されている集約のエントリーと、その祖先・子孫を再帰的に列挙する。
+            var entries = new List<Entry>();
+            var notEntries = new Dictionary<(AggregateBase Agg, ISchemaPathNode? Prev), RefDisplayDataMemberContainer>();
+            foreach (var agg in rootAggregate.EnumerateThisAndDescendants()) {
+                if (!agg.GetRefFroms().Any()) continue;
 
-            // エントリーに含まれる集約の祖先および子孫はAsParentをレンダリングする
-            var asParent = tree
-                .Where(agg => entries.Any(entry => agg.IsAncestorOf(entry.Aggregate)))
-                .Select(agg => new RefDisplayDataParentMember(agg));
-            var asDescendant = tree
-                .Where(agg => entries.Any(entry => agg.IsDescendantOf(entry.Aggregate)))
-                .Select<AggregateBase, RefDisplayDataMemberContainer>(agg => agg switch {
-                    ChildAggreagte child => new RefDisplayDataChildMember(child),
-                    ChildrenAggreagte children => new RefDisplayDataChildrenMember(children),
-                    _ => throw new NotImplementedException(),
-                });
+                var entry = new Entry(agg.AsEntry());
+                entries.Add(entry);
 
-            return (entries, [.. asParent, .. asDescendant]);
+                var members = entry
+                    .GetMembersRecursively()
+                    .OfType<RefDisplayDataMemberContainer>()
+                    .Where(member => member.Aggregate.GetRoot() == rootAggregate);
+                foreach (var member in members) {
+                    // エントリー以外のクラスは集約とその1個前の集約の組み合わせで一意
+                    notEntries[(member.Aggregate, member.Aggregate.PreviousNode)] = member;
+                }
+            }
+
+            return (entries.ToArray(), notEntries.Values.ToArray());
         }
 
         #region レンダリング
@@ -99,31 +97,31 @@ namespace Nijo.Models.QueryModelModules {
         /// </summary>
         internal abstract class RefDisplayDataMemberContainer : IInstancePropertyOwnerMetadata {
             private protected RefDisplayDataMemberContainer(AggregateBase aggregate) {
-                _aggregate = aggregate;
+                Aggregate = aggregate;
             }
-            private protected AggregateBase _aggregate;
+            internal AggregateBase Aggregate { get; }
 
             internal abstract string CsClassName { get; }
 
             /// <summary>
-            /// 直近の子を列挙する
+            /// 直近のメンバーを列挙する
             /// </summary>
             internal IEnumerable<IRefDisplayDataMember> GetMembers() {
-                var parent = _aggregate.GetParent();
-                if (parent != null && _aggregate.PreviousNode != (ISchemaPathNode)parent) {
+                var parent = Aggregate.GetParent();
+                if (parent != null && Aggregate.PreviousNode != (ISchemaPathNode)parent) {
                     yield return new RefDisplayDataParentMember(parent);
                 }
-                foreach (var member in _aggregate.GetMembers()) {
+                foreach (var member in Aggregate.GetMembers()) {
                     if (member is ValueMember vm) {
                         yield return new RefDisplayDataValueMember(vm);
 
-                    } else if (member is RefToMember refTo && _aggregate.PreviousNode != (ISchemaPathNode)refTo) {
+                    } else if (member is RefToMember refTo && Aggregate.PreviousNode != (ISchemaPathNode)refTo) {
                         yield return new RefDisplayDataRefToMember(refTo);
 
-                    } else if (member is ChildAggreagte child && _aggregate.PreviousNode != (ISchemaPathNode)child) {
+                    } else if (member is ChildAggreagte child && Aggregate.PreviousNode != (ISchemaPathNode)child) {
                         yield return new RefDisplayDataChildMember(child);
 
-                    } else if (member is ChildrenAggreagte children && _aggregate.PreviousNode != (ISchemaPathNode)children) {
+                    } else if (member is ChildrenAggreagte children && Aggregate.PreviousNode != (ISchemaPathNode)children) {
                         yield return new RefDisplayDataChildrenMember(children);
                     }
                 }
@@ -136,7 +134,7 @@ namespace Nijo.Models.QueryModelModules {
             internal string RenderCsClass(CodeRenderingContext ctx) {
                 return $$"""
                     /// <summary>
-                    /// {{_aggregate.DisplayName}}が他の集約から外部参照されるときの型
+                    /// {{((AggregateBase)Aggregate.GetEntry()).DisplayName}}が他の集約から外部参照されるときの{{Aggregate.DisplayName}}の型
                     /// </summary>
                     public partial class {{CsClassName}} {
                     {{GetMembers().SelectTextTemplate(member => $$"""
@@ -153,16 +151,16 @@ namespace Nijo.Models.QueryModelModules {
         internal class Entry : RefDisplayDataMemberContainer {
             internal Entry(AggregateBase aggregate) : base(aggregate) { }
 
-            internal AggregateBase Aggregate => _aggregate;
-            internal override string CsClassName => $"{_aggregate.PhysicalName}RefTarget";
-            internal string TsTypeName => $"{_aggregate.PhysicalName}RefTarget";
+            internal AggregateBase Aggregate => base.Aggregate;
+            internal override string CsClassName => $"{base.Aggregate.PhysicalName}RefTarget";
+            internal string TsTypeName => $"{base.Aggregate.PhysicalName}RefTarget";
 
             #region TypeScript側オブジェクト新規作成関数
             public string TsNewObjectFunction => $"createNew{TsTypeName}";
             internal string RenderTypeScriptObjectCreationFunction(CodeRenderingContext ctx) {
                 return $$"""
                     /**
-                     * {{_aggregate.DisplayName}}が他の集約から外部参照されるときのオブジェクトを新規作成します。
+                     * {{base.Aggregate.DisplayName}}が他の集約から外部参照されるときのオブジェクトを新規作成します。
                      */
                     export const {{TsNewObjectFunction}} = (): {{TsTypeName}} => ({
                       {{WithIndent(RenderMembersRecursively(this), "  ")}}
@@ -193,7 +191,7 @@ namespace Nijo.Models.QueryModelModules {
         }
 
 
-        #region 子孫メンバー
+        #region Entry以外のメンバー
         /// <summary>
         /// <see cref="DisplayDataRef"/>のメンバー
         /// </summary>
@@ -250,7 +248,7 @@ namespace Nijo.Models.QueryModelModules {
 
             public string PhysicalName => _member.PhysicalName;
             public string DisplayName => _member.DisplayName;
-            public string CsType => $"{_member.PhysicalName}RefTargetAsNotEntry";
+            public string CsType => $"{_member.PhysicalName}RefTargetVia{_member.PreviousNode!.XElement.Name.LocalName.ToCSharpSafe()}";
             internal override string CsClassName => CsType;
 
             SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => _member.ToIdentifier();
@@ -269,7 +267,7 @@ namespace Nijo.Models.QueryModelModules {
 
             public string PhysicalName => _member.PhysicalName;
             public string DisplayName => _member.DisplayName;
-            public string CsType => $"{_member.PhysicalName}RefTargetAsNotEntry";
+            public string CsType => $"{_member.PhysicalName}RefTargetVia{_member.PreviousNode!.XElement.Name.LocalName.ToCSharpSafe()}";
             internal override string CsClassName => CsType;
 
             SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => _member.ToIdentifier();
@@ -288,13 +286,13 @@ namespace Nijo.Models.QueryModelModules {
 
             public string PhysicalName => "Parent";
             public string DisplayName => _parent.DisplayName;
-            public string CsType => $"{_parent.PhysicalName}RefTargetAsParent";
+            public string CsType => $"{_parent.PhysicalName}RefTargetVia{_parent.PreviousNode!.XElement.Name.LocalName.ToCSharpSafe()}";
             internal override string CsClassName => CsType;
 
             SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => _parent.ToIdentifier();
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
-        #endregion 子孫メンバー
+        #endregion Entry以外のメンバー
     }
 }

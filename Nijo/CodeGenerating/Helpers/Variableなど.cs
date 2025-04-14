@@ -98,6 +98,21 @@ public sealed class InstanceStructureProperty : IInstanceProperty, IInstanceProp
 public static partial class CodeGeneratingHelperExtensions {
 
     /// <summary>
+    /// メンバーを再帰的に列挙します。
+    /// </summary>
+    public static IEnumerable<IInstancePropertyMetadata> GetMembersRecursively(this IInstancePropertyOwnerMetadata ownerMetadata) {
+        foreach (var member in ownerMetadata.GetMembers()) {
+            yield return member;
+
+            if (member is IInstancePropertyOwnerMetadata owner) {
+                foreach (var member2 in owner.GetMembersRecursively()) {
+                    yield return member2;
+                }
+            }
+        }
+    }
+
+    /// <summary>
     /// このインスタンスの、大元のインスタンスからのパスを列挙します。
     /// <c>x.Prop1?.Prop2?.Prop3?.Prop4</c> のような数珠つなぎのソースコードのレンダリングに使用します。
     /// </summary>

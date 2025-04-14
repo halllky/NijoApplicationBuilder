@@ -45,49 +45,91 @@ namespace Nijo.Models.QueryModelModules {
             internal const string TAKE_CS = "Take";
             internal const string TAKE_TS = "take";
 
-            internal string RenderCSharp(CodeRenderingContext ctx) {
+            /// <summary>
+            /// ルート集約またはほかの集約から参照されている子孫集約の検索条件エントリークラスをレンダリングします。
+            /// </summary>
+            internal static string RenderCSharpRecursively(RootAggregate rootAggregate, CodeRenderingContext ctx) {
+                var entries = new List<AggregateBase>();
+                entries.Add(rootAggregate);
+                entries.AddRange(rootAggregate
+                    .EnumerateDescendants()
+                    .Where(agg => agg.GetRefFroms().Any()));
+
                 return $$"""
-                    #region 検索条件クラス
-                    /// <summary>
-                    /// {{_entryAggregate.DisplayName}}の一覧検索条件
-                    /// </summary>
-                    public partial class {{CsClassName}} {
-                        /// <summary>絞り込み条件</summary>
-                        [JsonPropertyName("{{FILTER_TS}}")]
-                        public {{FilterRoot.CsClassName}} {{FILTER_CS}} { get; set; } = new();
-                        /// <summary>並び順</summary>
-                        [JsonPropertyName("{{SORT_TS}}")]
-                        public List<string> {{SORT_CS}} { get; set; } = [];
-                        /// <summary>ページングに使用。検索結果のうち先頭から何件スキップするか。</summary>
-                        [JsonPropertyName("{{SKIP_TS}}")]
-                        public int? {{SKIP_CS}} { get; set; }
-                        /// <summary>ページングに使用。検索結果のうち先頭から何件抽出するか。</summary>
-                        [JsonPropertyName("{{TAKE_TS}}")]
-                        public int? {{TAKE_CS}} { get; set; }
-                    }
-                    {{Filter.RenderTree(_entryAggregate, ctx)}}
-                    #endregion 検索条件クラス
+                    #region 検索条件エントリーポイント
+                    {{entries.SelectTextTemplate(agg => $$"""
+                    {{RenderEntry(agg)}}
+
+                    """)}}
+                    #endregion 検索条件エントリーポイント
+
+                    #region 検索条件フィルター
+                    {{Filter.RenderTree(rootAggregate, ctx)}}
+                    #endregion 検索条件フィルター
                     """;
+
+                static string RenderEntry(AggregateBase aggregate) {
+                    var entry = new Entry(aggregate);
+
+                    return $$"""
+                        /// <summary>
+                        /// {{aggregate.DisplayName}}の一覧検索条件
+                        /// </summary>
+                        public partial class {{entry.CsClassName}} {
+                            /// <summary>絞り込み条件</summary>
+                            [JsonPropertyName("{{FILTER_TS}}")]
+                            public {{entry.FilterRoot.CsClassName}} {{FILTER_CS}} { get; set; } = new();
+                            /// <summary>並び順</summary>
+                            [JsonPropertyName("{{SORT_TS}}")]
+                            public List<string> {{SORT_CS}} { get; set; } = [];
+                            /// <summary>ページングに使用。検索結果のうち先頭から何件スキップするか。</summary>
+                            [JsonPropertyName("{{SKIP_TS}}")]
+                            public int? {{SKIP_CS}} { get; set; }
+                            /// <summary>ページングに使用。検索結果のうち先頭から何件抽出するか。</summary>
+                            [JsonPropertyName("{{TAKE_TS}}")]
+                            public int? {{TAKE_CS}} { get; set; }
+                        }
+                        """;
+                }
             }
 
-            internal string RenderTypeScript(CodeRenderingContext ctx) {
+            /// <summary>
+            /// ルート集約またはほかの集約から参照されている子孫集約の検索条件エントリークラスをレンダリングします。
+            /// </summary>
+            internal string RenderTypeScriptRecursively(RootAggregate rootAggregate, CodeRenderingContext ctx) {
+                var entries = new List<AggregateBase>();
+                entries.Add(rootAggregate);
+                entries.AddRange(rootAggregate
+                    .EnumerateDescendants()
+                    .Where(agg => agg.GetRefFroms().Any()));
+
                 return $$"""
-                    /** {{_entryAggregate.DisplayName}}の検索時の検索条件の型。 */
-                    export type {{TsTypeName}} = {
-                      /** 絞り込み条件 */
-                      {{FILTER_TS}}: {
-                    {{FilterRoot.RenderTypeScriptDeclaringLiteral().SelectTextTemplate(source => $$"""
-                        {{WithIndent(source, "    ")}}
+                    {{entries.SelectTextTemplate(agg => $$"""
+                    {{RenderEntry(agg)}}
                     """)}}
-                      }
-                      /** 並び順 */
-                      {{SORT_TS}}: (`${{{TypeScriptSortableMemberType}}}{{ASC_SUFFIX}}` | `${{{TypeScriptSortableMemberType}}}{{DESC_SUFFIX}}`)[]
-                      /** ページングに使用。検索結果のうち先頭から何件スキップするか。 */
-                      {{SKIP_TS}}?: number
-                      /** ページングに使用。検索結果のうち先頭から何件抽出するか。 */
-                      {{TAKE_TS}}?: number
-                    }
                     """;
+
+                static string RenderEntry(AggregateBase aggregate) {
+                    var entry = new Entry(aggregate);
+
+                    return $$"""
+                        /** {{aggregate.DisplayName}}の検索時の検索条件の型。 */
+                        export type {{entry.TsTypeName}} = {
+                          /** 絞り込み条件 */
+                          {{FILTER_TS}}: {
+                        {{entry.FilterRoot.RenderTypeScriptDeclaringLiteral().SelectTextTemplate(source => $$"""
+                            {{WithIndent(source, "    ")}}
+                        """)}}
+                          }
+                          /** 並び順 */
+                          {{SORT_TS}}: (`${{{entry.TypeScriptSortableMemberType}}}{{ASC_SUFFIX}}` | `${{{entry.TypeScriptSortableMemberType}}}{{DESC_SUFFIX}}`)[]
+                          /** ページングに使用。検索結果のうち先頭から何件スキップするか。 */
+                          {{SKIP_TS}}?: number
+                          /** ページングに使用。検索結果のうち先頭から何件抽出するか。 */
+                          {{TAKE_TS}}?: number
+                        }
+                        """;
+                }
             }
 
 
