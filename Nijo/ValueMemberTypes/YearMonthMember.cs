@@ -33,40 +33,7 @@ internal class YearMonthMember : IValueMemberType {
         FilterCsTypeName = $"{FromTo.CS_CLASS_NAME}<YearMonth?>",
         FilterTsTypeName = "{ from?: number; to?: number }",
         RenderTsNewObjectFunctionValue = () => "{ from: undefined, to: undefined }",
-        RenderFiltering = ctx => {
-            var fullpath = ctx.Member.GetPathFromEntry().ToArray();
-            var pathFromSearchCondition = fullpath.AsSearchConditionFilter(E_CsTs.CSharp).ToArray();
-            var whereFullpath = fullpath.AsSearchResult().ToArray();
-            var fullpathNullable = $"{ctx.SearchCondition}.{pathFromSearchCondition.Join("?.")}";
-            var fullpathNotNull = $"{ctx.SearchCondition}.{pathFromSearchCondition.Join(".")}";
-            var isArray = fullpath.Any(node => node is ChildrenAggreagte);
-
-            return $$"""
-                if ({{fullpathNullable}}?.From != null && {{fullpathNullable}}?.To != null) {
-                    var from = {{this.RenderCastToPrimitiveType(true)}}{{fullpathNotNull}}.From;
-                    var to = {{this.RenderCastToPrimitiveType(true)}}{{fullpathNotNull}}.To;
-                {{If(isArray, () => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{ctx.Member.PhysicalName}} >= from && y.{{ctx.Member.PhysicalName}} <= to));
-                """).Else(() => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.Join(".")}} >= from && x.{{whereFullpath.Join(".")}} <= to);
-                """)}}
-                } else if ({{fullpathNullable}}?.From != null) {
-                    var from = {{this.RenderCastToPrimitiveType(true)}}{{fullpathNotNull}}.From;
-                {{If(isArray, () => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{ctx.Member.PhysicalName}} >= from));
-                """).Else(() => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.Join(".")}} >= from);
-                """)}}
-                } else if ({{fullpathNullable}}?.To != null) {
-                    var to = {{this.RenderCastToPrimitiveType(true)}}{{fullpathNotNull}}.To;
-                {{If(isArray, () => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{ctx.Member.PhysicalName}} <= to));
-                """).Else(() => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.Join(".")}} <= to);
-                """)}}
-                }
-                """;
-        },
+        RenderFiltering = ctx => RangeSearchRenderer.RenderRangeSearchFiltering(ctx, "(int)"),
     };
 
     void IValueMemberType.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {
@@ -250,38 +217,52 @@ internal class YearMonthMember : IValueMemberType {
                     }
 
                     /// <summary>
-                    /// 数値から明示的に変換
+                    /// 明示的な型変換演算子（int -> YearMonth）
                     /// </summary>
-                    public static explicit operator YearMonth(int value) => new(value);
+                    public static explicit operator YearMonth(int value) {
+                        return new YearMonth(value);
+                    }
 
                     /// <summary>
-                    /// 数値へ明示的に変換
+                    /// 明示的な型変換演算子（YearMonth -> int）
                     /// </summary>
-                    public static explicit operator int(YearMonth yearMonth) => yearMonth._value;
-                }
-
-                /// <summary>
-                /// YearMonth型のJsonコンバーター
-                /// </summary>
-                public class YearMonthJsonConverter : JsonConverter<YearMonth> {
-                    public override YearMonth Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
-                        if (reader.TokenType == JsonTokenType.Number) {
-                            return (YearMonth)reader.GetInt32();
-                        }
-                        if (reader.TokenType == JsonTokenType.String) {
-                            var str = reader.GetString();
-                            return int.TryParse(str, out var value)
-                                ? (YearMonth)value
-                                : throw new JsonException($"YearMonthの形式が不正です: {str}");
-                        }
-                        throw new JsonException("YearMonthの形式が不正です");
+                    public static explicit operator int(YearMonth yearMonth) {
+                        return yearMonth._value;
                     }
 
-                    public override void Write(Utf8JsonWriter writer, YearMonth value, JsonSerializerOptions options) {
-                        writer.WriteNumberValue((int)value);
+                    /// <summary>
+                    /// JSON変換用のコンバーター
+                    /// </summary>
+                    [JsonConverter(typeof(YearMonthJsonConverter))]
+                    public class YearMonthJsonConverter : JsonConverter<YearMonth> {
+                        public override YearMonth Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
+                            if (reader.TokenType == JsonTokenType.Number) {
+                                return new YearMonth(reader.GetInt32());
+                            } else if (reader.TokenType == JsonTokenType.String) {
+                                string value = reader.GetString() ?? throw new JsonException();
+                                if (int.TryParse(value, out int result)) {
+                                    return new YearMonth(result);
+                                }
+
+                                // YYYY/MM形式の場合
+                                if (value.Length == 7 && value[4] == '/') {
+                                    int year = int.Parse(value.Substring(0, 4));
+                                    int month = int.Parse(value.Substring(5, 2));
+                                    return new YearMonth(year, month);
+                                }
+
+                                throw new JsonException($"不正な年月形式です: {value}");
+                            }
+
+                            throw new JsonException();
+                        }
+
+                        public override void Write(Utf8JsonWriter writer, YearMonth value, JsonSerializerOptions options) {
+                            writer.WriteNumberValue(value.Value);
+                        }
                     }
                 }
-                """
+                """,
             });
         });
     }

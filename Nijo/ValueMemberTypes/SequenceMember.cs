@@ -28,53 +28,10 @@ namespace Nijo.ValueMemberTypes {
         }
 
         ValueMemberSearchBehavior? IValueMemberType.SearchBehavior => new() {
-            FilterCsTypeName = "FromTo<int?>",
-            FilterTsTypeName = "{ from?: number, to?: number }",
-            RenderTsNewObjectFunctionValue = () => "{}",
-            RenderFiltering = ctx => {
-                var fullpath = ctx.Member
-                    .GetPathFromEntry()
-                    .ToArray();
-                var strArrayPath = fullpath
-                    .AsSearchConditionFilter(E_CsTs.CSharp)
-                    .ToArray();
-                var nullableFullPathFrom = strArrayPath.Join("?.") + "?.From";
-                var nullableFullPathTo = strArrayPath.Join("?.") + "?.To";
-                var fullPathFrom = strArrayPath.Join(".") + ".From";
-                var fullPathTo = strArrayPath.Join(".") + ".To";
-
-                var isArray = fullpath.Any(node => node is ChildrenAggreagte);
-                var whereFullpath = fullpath.AsSearchResult().ToArray();
-                var query = ctx.Query;
-
-                return $$"""
-                    if ({{nullableFullPathFrom}} != null && {{nullableFullPathTo}} != null) {
-                        var from = {{fullPathFrom}};
-                        var to = {{fullPathTo}};
-                    {{If(isArray, () => $$"""
-                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{ctx.Member.PhysicalName}} >= from && y.{{ctx.Member.PhysicalName}} <= to));
-                    """).Else(() => $$"""
-                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} >= from && x.{{whereFullpath.Join(".")}} <= to);
-                    """)}}
-
-                    } else if ({{nullableFullPathFrom}} != null) {
-                        var from = {{fullPathFrom}};
-                    {{If(isArray, () => $$"""
-                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{ctx.Member.PhysicalName}} >= from));
-                    """).Else(() => $$"""
-                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} >= from);
-                    """)}}
-
-                    } else if ({{nullableFullPathTo}} != null) {
-                        var to = {{fullPathTo}};
-                    {{If(isArray, () => $$"""
-                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{ctx.Member.PhysicalName}} <= to));
-                    """).Else(() => $$"""
-                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} <= to);
-                    """)}}
-                    }
-                    """;
-            },
+            FilterCsTypeName = $"{FromTo.CS_CLASS_NAME}<int?>",
+            FilterTsTypeName = "{ from?: number; to?: number }",
+            RenderTsNewObjectFunctionValue = () => "{ from: undefined, to: undefined }",
+            RenderFiltering = ctx => RangeSearchRenderer.RenderRangeSearchFiltering(ctx),
         };
 
         UiConstraint.E_Type IValueMemberType.UiConstraintType => UiConstraint.E_Type.NumberMemberConstraint;
@@ -88,7 +45,7 @@ namespace Nijo.ValueMemberTypes {
 
         string IValueMemberType.RenderCreateDummyDataValueBody(CodeRenderingContext ctx) {
             return $$"""
-                return context.Random.Next();
+                return context.Random.Next(0, 1000);
                 """;
         }
 

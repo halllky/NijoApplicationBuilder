@@ -33,36 +33,7 @@ internal class DecimalMember : IValueMemberType {
         FilterCsTypeName = $"{FromTo.CS_CLASS_NAME}<decimal?>",
         FilterTsTypeName = "{ from?: number; to?: number }",
         RenderTsNewObjectFunctionValue = () => "{ from: undefined, to: undefined }",
-        RenderFiltering = ctx => {
-            var fullpath = ctx.Member.GetPathFromEntry().ToArray();
-            var pathFromSearchCondition = fullpath.AsSearchConditionFilter(E_CsTs.CSharp).ToArray();
-            var whereFullpath = fullpath.AsSearchResult().ToArray();
-            var fullpathNullable = $"{ctx.SearchCondition}.{pathFromSearchCondition.Join("?.")}";
-            var fullpathNotNull = $"{ctx.SearchCondition}.{pathFromSearchCondition.Join(".")}";
-            var isArray = fullpath.Any(node => node is ChildrenAggreagte);
-
-            return $$"""
-                if ({{fullpathNullable}}?.From != null && {{fullpathNullable}}?.To != null) {
-                {{If(isArray, () => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{ctx.Member.PhysicalName}} >= {{fullpathNotNull}}.From && y.{{ctx.Member.PhysicalName}} <= {{fullpathNotNull}}.To));
-                """).Else(() => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.Join(".")}} >= {{fullpathNotNull}}.From && x.{{whereFullpath.Join(".")}} <= {{fullpathNotNull}}.To);
-                """)}}
-                } else if ({{fullpathNullable}}?.From != null) {
-                {{If(isArray, () => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{ctx.Member.PhysicalName}} >= {{fullpathNotNull}}.From));
-                """).Else(() => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.Join(".")}} >= {{fullpathNotNull}}.From);
-                """)}}
-                } else if ({{fullpathNullable}}?.To != null) {
-                {{If(isArray, () => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{ctx.Member.PhysicalName}} <= {{fullpathNotNull}}.To));
-                """).Else(() => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.Join(".")}} <= {{fullpathNotNull}}.To);
-                """)}}
-                }
-                """;
-        },
+        RenderFiltering = ctx => RangeSearchRenderer.RenderRangeSearchFiltering(ctx),
     };
 
     void IValueMemberType.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {
