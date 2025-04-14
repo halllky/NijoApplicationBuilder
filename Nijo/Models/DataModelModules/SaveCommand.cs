@@ -328,9 +328,9 @@ namespace Nijo.Models.DataModelModules {
 
             // 右辺の定義
             var rootInstance = new Variable("this");
-            var rightDictOfRootInstance = this
-                .Get1To1ValuePropertiesRecursively(rootInstance)
-                .ToDictionary(x => x.MappingKey);
+            var rightDictOfRootInstance = rootInstance
+                .Get1To1PropertiesRecursively(this)
+                .ToDictionary(x => x.Metadata.MappingKey);
 
             var efCoreEntity = new EFCoreEntity(_aggregate);
 
@@ -385,8 +385,8 @@ namespace Nijo.Models.DataModelModules {
                         var dict2 = new Dictionary<SchemaNodeIdentity, IInstanceProperty>(rigthMembers);
                         var saveCommand = new SaveCommandChildrenMember(children, Type);
                         var loopVar = new Variable(children.GetLoopVarName());
-                        foreach (var descendant in saveCommand.Get1To1ValuePropertiesRecursively(loopVar)) {
-                            dict2.Add(descendant.MappingKey, descendant);
+                        foreach (var descendant in loopVar.Get1To1PropertiesRecursively(saveCommand)) {
+                            dict2.Add(descendant.Metadata.MappingKey, descendant);
                         }
 
                         yield return $$"""
