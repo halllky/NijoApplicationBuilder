@@ -20,18 +20,11 @@ using System.Threading.Tasks;
 
 namespace MyApp.Core;
 
-public partial class OverridedApplicationService {
-    public override Task<CommandModelテストReturnType> Execute(CommandModelテストParameter param, IPresentationContext<CommandModelテストParameterMessages> context) {
-        throw new NotImplementedException();
-    }
-
-    protected override IQueryable<顧客SearchResult> CreateQuerySource(顧客SearchCondition searchCondition, IPresentationContext<顧客Messages> context) {
-        return DbContext.顧客DbSet.Select(e => new 顧客SearchResult {
-            顧客ID = e.顧客ID,
-            顧客名 = e.顧客名,
-            住所_市町村 = e.住所!.市町村,
-            住所_都道府県 = e.住所!.都道府県,
-            Version = (int)e.Version!,
+partial class OverridedApplicationService {
+    protected override IQueryable<親集約SearchResult> CreateQuerySource(親集約SearchCondition searchCondition, IPresentationContext<親集約Messages> context) {
+        return DbContext.親集約DbSet.Select(e => new 親集約SearchResult {
+            親集約ID = e.親集約ID,
+            親集約名 = e.親集約名,
         });
     }
 }";
