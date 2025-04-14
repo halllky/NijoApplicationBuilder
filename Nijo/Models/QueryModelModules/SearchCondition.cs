@@ -257,7 +257,20 @@ namespace Nijo.Models.QueryModelModules {
             }
 
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
-                return GetOwnMembers();
+                yield return new FilterObjectMetadata(GetOwnMembers().ToArray());
+            }
+
+            /// <summary>Filterオブジェクトそれ自体</summary>
+            private class FilterObjectMetadata : IInstanceStructurePropertyMetadata, IInstancePropertyOwnerMetadata {
+                public FilterObjectMetadata(IInstancePropertyMetadata[] members) {
+                    _members = members;
+                }
+                private readonly IInstancePropertyMetadata[] _members;
+
+                SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => SchemaNodeIdentity.None;
+                string IInstancePropertyMetadata.PropertyName => Entry.FILTER_CS;
+                bool IInstanceStructurePropertyMetadata.IsArray => false;
+                IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => _members;
             }
 
             #region GetFullPath

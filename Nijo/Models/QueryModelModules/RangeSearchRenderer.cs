@@ -19,34 +19,34 @@ namespace Nijo.Models.QueryModelModules {
             var query = ctx.Query.Root.Name;
             var cast = ctx.SearchCondition.Metadata.Type.RenderCastToPrimitiveType();
 
-            var pathFromSearchCondition = ctx.SearchCondition.GetPathFromInstance().Select(p => p.Metadata.PropertyName).ToArray();
-            var fullpathNullable = $"{ctx.SearchCondition.Root.Name}.{pathFromSearchCondition.Join("?.")}";
-            var fullpathNotNull = $"{ctx.SearchCondition.Root.Name}.{pathFromSearchCondition.Join(".")}";
+            var fullpathNullable = ctx.SearchCondition.GetJoinedPathFromInstance("?.");
+            var fullpathNotNull = ctx.SearchCondition.GetJoinedPathFromInstance(".");
 
-            var whereFullpath = ctx.Query.GetFlattenArrayPath(E_CsTs.CSharp, out var isMany);
+            var queryFullPath = ctx.Query.GetFlattenArrayPath(E_CsTs.CSharp, out var isMany);
+            var queryOwnerFullPath = queryFullPath.SkipLast(1);
 
             return $$"""
                 if ({{fullpathNullable}}?.From != null && {{fullpathNullable}}?.To != null) {
                     var from = {{cast}}{{fullpathNotNull}}.From;
                     var to = {{cast}}{{fullpathNotNull}}.To;
                 {{If(isMany, () => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} >= from && y.{{ctx.Query.Metadata.PropertyName}} <= to));
+                    {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} >= from && y.{{ctx.Query.Metadata.PropertyName}} <= to));
                 """).Else(() => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} >= from && x.{{whereFullpath.Join(".")}} <= to);
+                    {{query}} = {{query}}.Where(x => x.{{queryFullPath.Join(".")}} >= from && x.{{queryFullPath.Join(".")}} <= to);
                 """)}}
                 } else if ({{fullpathNullable}}?.From != null) {
                     var from = {{cast}}{{fullpathNotNull}}.From;
                 {{If(isMany, () => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} >= from));
+                    {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} >= from));
                 """).Else(() => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} >= from);
+                    {{query}} = {{query}}.Where(x => x.{{queryFullPath.Join(".")}} >= from);
                 """)}}
                 } else if ({{fullpathNullable}}?.To != null) {
                     var to = {{cast}}{{fullpathNotNull}}.To;
                 {{If(isMany, () => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} <= to));
+                    {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} <= to));
                 """).Else(() => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} <= to);
+                    {{query}} = {{query}}.Where(x => x.{{queryFullPath.Join(".")}} <= to);
                 """)}}
                 }
                 """;

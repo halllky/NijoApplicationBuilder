@@ -36,26 +36,27 @@ internal class BoolMember : IValueMemberType {
         RenderTsNewObjectFunctionValue = () => "{ trueのみ: false, falseのみ: false }",
         RenderFiltering = ctx => {
             var query = ctx.Query.Root.Name;
+            var cast = ctx.SearchCondition.Metadata.Type.RenderCastToPrimitiveType();
 
-            var pathFromSearchCondition = ctx.SearchCondition.GetPathFromInstance().Select(p => p.Metadata.PropertyName).ToArray();
-            var fullpathNullable = $"{ctx.SearchCondition.Root.Name}.{pathFromSearchCondition.Join("?.")}";
-            var fullpathNotNull = $"{ctx.SearchCondition.Root.Name}.{pathFromSearchCondition.Join(".")}";
+            var fullpathNullable = ctx.SearchCondition.GetJoinedPathFromInstance("?.");
+            var fullpathNotNull = ctx.SearchCondition.GetJoinedPathFromInstance(".");
 
-            var whereFullpath = ctx.Query.GetFlattenArrayPath(E_CsTs.CSharp, out var isMany);
+            var queryFullPath = ctx.Query.GetFlattenArrayPath(E_CsTs.CSharp, out var isMany);
+            var queryOwnerFullPath = queryFullPath.SkipLast(1);
 
             return $$"""
-                if ({{fullpathNullable}} != null && ({{fullpathNotNull}}.Trueのみ || {{fullpathNotNull}}.Falseのみ)) {
-                    if ({{fullpathNotNull}}.Trueのみ && !{{fullpathNotNull}}.Falseのみ) {
+                if ({{fullpathNullable}} != null && {{fullpathNotNull}}.Trueのみ != {{fullpathNotNull}}.Falseのみ) {
+                    if ({{fullpathNotNull}}.Trueのみ) {
                     {{If(isMany, () => $$"""
-                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} == true));
+                        {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} == true));
                     """).Else(() => $$"""
-                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} == true);
+                        {{query}} = {{query}}.Where(x => x.{{queryFullPath.Join(".")}} == true);
                     """)}}
-                    } else if (!{{fullpathNotNull}}.Trueのみ && {{fullpathNotNull}}.Falseのみ) {
+                    } else {
                     {{If(isMany, () => $$"""
-                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} == false));
+                        {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} != true));
                     """).Else(() => $$"""
-                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} == false);
+                        {{query}} = {{query}}.Where(x => x.{{queryFullPath.Join(".")}} != true);
                     """)}}
                     }
                 }

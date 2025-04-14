@@ -39,24 +39,22 @@ namespace Nijo.ValueMemberTypes {
             RenderTsNewObjectFunctionValue = () => "{}",
             RenderFiltering = ctx => {
                 var query = ctx.Query.Root.Name;
+                var fullpathNullable = ctx.SearchCondition.GetJoinedPathFromInstance("?.");
+                var fullpathNotNull = ctx.SearchCondition.GetJoinedPathFromInstance(".");
 
-                var pathFromSearchCondition = ctx.SearchCondition.GetPathFromInstance().Select(p => p.Metadata.PropertyName).ToArray();
-                var fullpathNullable = $"{ctx.SearchCondition.Root.Name}.{pathFromSearchCondition.Join("?.")}";
-                var fullpathNotNull = $"{ctx.SearchCondition.Root.Name}.{pathFromSearchCondition.Join(".")}";
-
-                var whereFullpath = ctx.Query.GetFlattenArrayPath(E_CsTs.CSharp, out var isMany);
+                var queryFullPath = ctx.Query.GetFlattenArrayPath(E_CsTs.CSharp, out var isMany);
+                var queryOwnerFullPath = queryFullPath.SkipLast(1);
 
                 return $$"""
-                    if ({{fullpathNullable}} != null && {{fullpathNotNull}}.AnyChecked()) {
-                        var array = new List<{{CsPrimitiveTypeName}}?>();
+                    if ({{fullpathNullable}}?.{{StaticEnumSearchCondition.ANY_CHECKED}}() == true) {
+                        var array = new List<{{CsPrimitiveTypeName}}>();
                     {{_parser.GetItemPhysicalNames().SelectTextTemplate(physicalName => $$"""
                         if ({{fullpathNotNull}}.{{physicalName}}) array.Add({{CsPrimitiveTypeName}}.{{physicalName}});
                     """)}}
-
                     {{If(isMany, () => $$"""
-                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}}.Any(y => array.Contains(y.{{ctx.Query.Metadata.PropertyName}})));
+                        {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join("!.")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} != null && array.Contains(y.{{ctx.Query.Metadata.PropertyName}}.Value)));
                     """).Else(() => $$"""
-                        {{query}} = {{query}}.Where(x => array.Contains(x.{{whereFullpath.Join(".")}}));
+                        {{query}} = {{query}}.Where(x => x.{{queryFullPath.Join("!.")}} != null && array.Contains(x.{{queryFullPath.Join("!.")}}.Value));
                     """)}}
                     }
                     """;

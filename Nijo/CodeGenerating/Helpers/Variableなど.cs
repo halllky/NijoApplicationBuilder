@@ -286,5 +286,15 @@ public static partial class CodeGeneratingHelperExtensions {
 
         return path.ToArray();
     }
+    /// <inheritdoc cref="GetFlattenArrayPath(IInstanceProperty, E_CsTs, out bool)"/>
+    public static string[] GetFlattenArrayPath(this IInstancePropertyOwner owner, E_CsTs csts, out bool isMany) {
+        if (owner is IInstanceProperty prop) {
+            return prop.GetFlattenArrayPath(csts, out isMany);
+        } else {
+            // ownerがVariableの場合
+            isMany = false;
+            return [];
+        }
+    }
     #endregion GetPath系メソッド
 }

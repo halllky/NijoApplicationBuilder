@@ -43,22 +43,20 @@ internal class ValueObjectMember : IValueMemberType {
         FilterTsTypeName = "string",
         RenderTsNewObjectFunctionValue = () => "undefined",
         RenderFiltering = ctx => {
-            // TODO 部分一致検索以外も作る
             var query = ctx.Query.Root.Name;
+            var fullpathNullable = ctx.SearchCondition.GetJoinedPathFromInstance("?.");
+            var fullpathNotNull = ctx.SearchCondition.GetJoinedPathFromInstance(".");
 
-            var pathFromSearchCondition = ctx.SearchCondition.GetPathFromInstance().Select(p => p.Metadata.PropertyName).ToArray();
-            var fullpathNullable = $"{ctx.SearchCondition.Root.Name}.{pathFromSearchCondition.Join("?.")}";
-            var fullpathNotNull = $"{ctx.SearchCondition.Root.Name}.{pathFromSearchCondition.Join(".")}";
-
-            var whereFullpath = ctx.Query.GetFlattenArrayPath(E_CsTs.CSharp, out var isMany);
+            var queryFullPath = ctx.Query.GetFlattenArrayPath(E_CsTs.CSharp, out var isMany);
+            var queryOwnerFullPath = queryFullPath.SkipLast(1);
 
             return $$"""
                 if (!string.IsNullOrWhiteSpace({{fullpathNullable}})) {
                     var trimmed = {{fullpathNotNull}}.Trim();
                 {{If(isMany, () => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}}!.Contains(trimmed)));
+                    {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join("!.")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}}!.Contains(trimmed)));
                 """).Else(() => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}}!.Contains(trimmed));
+                    {{query}} = {{query}}.Where(x => x.{{queryFullPath.Join("!.")}}!.Contains(trimmed));
                 """)}}
                 }
                 """;

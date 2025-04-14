@@ -23,7 +23,7 @@ namespace Nijo.Models.StaticEnumModelModules {
         internal string CsClassName => _parser.CsSearchConditionClassName;
         internal string TsTypeName => _parser.CsSearchConditionClassName;
 
-        internal string ANY_CHECKED = "AnyChecked";
+        internal const string ANY_CHECKED = "AnyChecked";
 
         internal string RenderCSharp() {
             return $$"""
