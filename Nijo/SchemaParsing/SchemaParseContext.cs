@@ -20,33 +20,8 @@ namespace Nijo.SchemaParsing;
 /// </summary>
 public class SchemaParseContext {
     public SchemaParseContext(XDocument xDocument, SchemaParseRule rule) {
-        // スキーマ定義名重複チェック
-        var appearedName = new HashSet<string>();
-        var duplicates = new HashSet<string>();
-        foreach (var name in rule.Models.Select(m => m.SchemaName).Concat(rule.ValueMemberTypes.Select(t => t.SchemaTypeName))) {
-            if (appearedName.Contains(name)) {
-                duplicates.Add(name);
-            } else {
-                appearedName.Add(name);
-            }
-        }
-        if (duplicates.Count > 0) {
-            throw new InvalidOperationException($"型名 {string.Join(", ", duplicates)} が重複しています。");
-        }
-
-        // オプション属性のキー重複チェック
-        var groupedOptions = rule.NodeOptions
-            .GroupBy(opt => opt.AttributeName)
-            .Where(group => group.Count() >= 2)
-            .ToArray();
-        if (groupedOptions.Length > 0) {
-            throw new InvalidOperationException($"オプション属性名 {groupedOptions.Select(g => g.Key).Join(", ")} が重複しています。");
-        }
-
-        // 予約語
-        if (rule.NodeOptions.Any(opt => opt.AttributeName == ATTR_NODE_TYPE)) {
-            throw new InvalidOperationException($"{ATTR_NODE_TYPE} という名前のオプション属性は定義できません。");
-        }
+        // ルールの検証
+        rule.ThrowIfInvalid();
 
         Document = xDocument;
         Models = rule.Models.ToDictionary(m => m.SchemaName);

@@ -73,4 +73,38 @@ public class SchemaParseRule {
             NodeOptions = nodeOptions,
         };
     }
+
+    /// <summary>
+    /// このルールの整合性を検証します。
+    /// </summary>
+    /// <exception cref="InvalidOperationException">ルールに問題がある場合</exception>
+    public void ThrowIfInvalid() {
+        // スキーマ定義名重複チェック
+        var appearedName = new HashSet<string>();
+        var duplicates = new HashSet<string>();
+        foreach (var name in Models.Select(m => m.SchemaName).Concat(ValueMemberTypes.Select(t => t.SchemaTypeName))) {
+            if (appearedName.Contains(name)) {
+                duplicates.Add(name);
+            } else {
+                appearedName.Add(name);
+            }
+        }
+        if (duplicates.Count > 0) {
+            throw new InvalidOperationException($"型名 {string.Join(", ", duplicates)} が重複しています。");
+        }
+
+        // オプション属性のキー重複チェック
+        var groupedOptions = NodeOptions
+            .GroupBy(opt => opt.AttributeName)
+            .Where(group => group.Count() >= 2)
+            .ToArray();
+        if (groupedOptions.Length > 0) {
+            throw new InvalidOperationException($"オプション属性名 {groupedOptions.Select(g => g.Key).Join(", ")} が重複しています。");
+        }
+
+        // 予約語
+        if (NodeOptions.Any(opt => opt.AttributeName == SchemaParseContext.ATTR_NODE_TYPE)) {
+            throw new InvalidOperationException($"{SchemaParseContext.ATTR_NODE_TYPE} という名前のオプション属性は定義できません。");
+        }
+    }
 }
