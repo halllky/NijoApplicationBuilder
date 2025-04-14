@@ -151,7 +151,6 @@ namespace Nijo.Models.QueryModelModules {
         internal class Entry : RefDisplayDataMemberContainer {
             internal Entry(AggregateBase aggregate) : base(aggregate) { }
 
-            internal AggregateBase Aggregate => base.Aggregate;
             internal override string CsClassName => $"{base.Aggregate.PhysicalName}RefTarget";
             internal string TsTypeName => $"{base.Aggregate.PhysicalName}RefTarget";
 
