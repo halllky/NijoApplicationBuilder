@@ -55,15 +55,22 @@ namespace Nijo {
         private static RootCommand DefineCommand(CancellationTokenSource cancellationTokenSource) {
             var rootCommand = new RootCommand("nijo");
 
-            // 引数定義
+            // ---------------------------------------------------
+            // ** 引数定義 **
+
+            // プロジェクト相対パス
             var path = new Argument<string?>(
                 name: "project path",
                 getDefaultValue: () => string.Empty,
                 description: "カレントディレクトリから操作対象のnijoプロジェクトへの相対パス");
 
+            // ビルドスキップ
             var noBuild = new Option<bool>(
                 ["-n", "--no-build"],
                 description: "デバッグ開始時にコード自動生成をせず、アプリケーションの起動のみ行います。");
+
+            // ---------------------------------------------------
+            // ** コマンド **
 
             // 検証
             var validate = new Command(
