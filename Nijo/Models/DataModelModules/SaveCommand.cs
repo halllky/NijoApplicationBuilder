@@ -329,7 +329,7 @@ namespace Nijo.Models.DataModelModules {
             // 右辺の定義
             var rootInstance = new Variable("this");
             var rightDictOfRootInstance = rootInstance
-                .Get1To1PropertiesRecursively(this)
+                .Create1To1PropertiesRecursively(this)
                 .ToDictionary(x => x.Metadata.MappingKey);
 
             var efCoreEntity = new EFCoreEntity(_aggregate);
@@ -352,7 +352,7 @@ namespace Nijo.Models.DataModelModules {
                 foreach (var col in left.GetColumns()) {
                     // シーケンス項目など登録と共に採番されるものはnullになる可能性がある
                     var sourcePath = rigthMembers.TryGetValue(col.Member.ToIdentifier(), out var source)
-                        ? source.GetJoinedPathFromInstance("?.")
+                        ? $"{source.Root.Name}.{source.GetPathFromInstance().Select(p => p.Metadata.PropertyName).Join("?.")}"
                         : "null";
                     yield return $$"""
                         {{col.PhysicalName}} = {{col.Member.Type.RenderCastToPrimitiveType()}}{{sourcePath}},
@@ -378,14 +378,14 @@ namespace Nijo.Models.DataModelModules {
                     } else if (nav.Relevant.ThisSide is ChildrenAggregate children) {
                         var childrenEntity = new EFCoreEntity(nav.Relevant.ThisSide);
                         var arrayPath = rigthMembers.TryGetValue(children.ToIdentifier(), out var source)
-                            ? source.GetJoinedPathFromInstance("?.")
+                            ? $"{source.Root.Name}.{source.GetPathFromInstance().Select(p => p.Metadata.PropertyName).Join("?.")}"
                             : throw new InvalidOperationException($"右辺にChildrenのXElementが無い: {children}");
 
                         // 辞書に、ラムダ式内部で右辺に使用できるプロパティを加える
                         var dict2 = new Dictionary<SchemaNodeIdentity, IInstanceProperty>(rigthMembers);
                         var saveCommand = new SaveCommandChildrenMember(children, Type);
                         var loopVar = new Variable(children.GetLoopVarName());
-                        foreach (var descendant in loopVar.Get1To1PropertiesRecursively(saveCommand)) {
+                        foreach (var descendant in loopVar.Create1To1PropertiesRecursively(saveCommand)) {
                             dict2.Add(descendant.Metadata.MappingKey, descendant);
                         }
 

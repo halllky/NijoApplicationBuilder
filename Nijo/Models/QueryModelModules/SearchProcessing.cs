@@ -1,4 +1,5 @@
 using Nijo.CodeGenerating;
+using Nijo.CodeGenerating.Helpers;
 using Nijo.ImmutableSchema;
 using Nijo.Parts.Common;
 using Nijo.Parts.CSharp;
@@ -212,14 +213,37 @@ namespace Nijo.Models.QueryModelModules {
             var searchCondition = new SearchCondition.Entry(_rootAggregate);
             var searchResult = new SearchResult(_rootAggregate);
 
+            var queryVar = new Variable("query");
+            var scVar = new Variable("searchCondition");
+
+            var queryVarMemberes = queryVar
+                .CreatePropertiesRecursively(searchResult)
+                .OfType<InstanceValueProperty>()
+                .ToDictionary(p => p.Metadata.MappingKey);
+            var searchConditionMembers = scVar
+                .CreatePropertiesRecursively(searchCondition.FilterRoot)
+                .OfType<InstanceValueProperty>()
+                .Where(prop => prop.Metadata.Type.SearchBehavior != null)
+                .ToArray();
+
+            FilterStatementRenderingContext CreateContext(InstanceValueProperty searchConditionProp) {
+                var query = queryVarMemberes.GetValueOrDefault(searchConditionProp.Metadata.MappingKey)
+                    ?? throw new InvalidOperationException($"{searchConditionProp.Metadata.MappingKey}と対応するクエリのメンバーが見つからない");
+                return new() {
+                    Query = query,
+                    SearchCondition = searchConditionProp,
+                    CodeRenderingContext = ctx,
+                };
+            }
+
             return $$"""
                 /// <summary>
                 /// {{_rootAggregate.DisplayName}}のクエリに画面で指定された検索条件（SQLで言うWHERE句）を付加する
                 /// </summary>
-                protected virtual IQueryable<{{searchResult.CsClassName}}> {{APPEND_WHERE_CLAUSE}}(IQueryable<{{searchResult.CsClassName}}> query, {{searchCondition.CsClassName}} searchCondition) {
-                {{searchCondition.FilterRoot.GetValueMembersRecursively().SelectTextTemplate(vm => $$"""
-                    // 絞り込み: {{vm.DisplayName}}
-                    {{WithIndent(vm.SearchBehavior.RenderFiltering(new() { Member = vm.Member, Query = "query", SearchCondition = "searchCondition", CodeRenderingContext = ctx }), "    ")}}
+                protected virtual IQueryable<{{searchResult.CsClassName}}> {{APPEND_WHERE_CLAUSE}}(IQueryable<{{searchResult.CsClassName}}> {{queryVar.Name}}, {{searchCondition.CsClassName}} {{scVar.Name}}) {
+                {{searchConditionMembers.SelectTextTemplate(prop => $$"""
+                    // 絞り込み: {{prop.Metadata.DisplayName}}
+                    {{WithIndent(prop.Metadata.Type.SearchBehavior!.RenderFiltering(CreateContext(prop)), "    ")}}
 
                 """)}}
                     return query;

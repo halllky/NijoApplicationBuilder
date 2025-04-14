@@ -1,4 +1,5 @@
 using Nijo.CodeGenerating;
+using Nijo.CodeGenerating.Helpers;
 using Nijo.ImmutableSchema;
 using Nijo.Util.DotnetEx;
 using System;
@@ -13,70 +14,42 @@ namespace Nijo.Models.QueryModelModules {
         /// 範囲検索のレンダリングを行う
         /// </summary>
         /// <param name="ctx">フィルタリングのレンダリングコンテキスト</param>
-        /// <param name="castToPrimitiveType">プリミティブ型へのキャスト処理（必要な場合のみ）</param>
         /// <returns>レンダリングされたC#コード</returns>
-        public static string RenderRangeSearchFiltering(FilterStatementRenderingContext ctx, string castToPrimitiveType = "") {
-            var fullpath = ctx.Member.GetPathFromEntry().ToArray();
-            var pathFromSearchCondition = fullpath.AsSearchConditionFilter(E_CsTs.CSharp).ToArray();
-            var whereFullpath = fullpath.AsSearchResult().ToArray();
-            var fullpathNullable = $"{ctx.SearchCondition}.{pathFromSearchCondition.Join("?.")}";
-            var fullpathNotNull = $"{ctx.SearchCondition}.{pathFromSearchCondition.Join(".")}";
-            var isArray = fullpath.Any(node => node is ChildrenAggregate);
+        public static string RenderRangeSearchFiltering(FilterStatementRenderingContext ctx) {
+            var query = ctx.Query.Root.Name;
+            var cast = ctx.SearchCondition.Metadata.Type.RenderCastToPrimitiveType();
+
+            var pathFromSearchCondition = ctx.SearchCondition.GetPathFromInstance().Select(p => p.Metadata.PropertyName).ToArray();
+            var fullpathNullable = $"{ctx.SearchCondition.Root.Name}.{pathFromSearchCondition.Join("?.")}";
+            var fullpathNotNull = $"{ctx.SearchCondition.Root.Name}.{pathFromSearchCondition.Join(".")}";
+
+            var whereFullpath = ((IInstanceProperty)ctx.Query.Owner).GetFlattenArrayPath(E_CsTs.CSharp, out var isMany);
 
             return $$"""
                 if ({{fullpathNullable}}?.From != null && {{fullpathNullable}}?.To != null) {
-                    {{GetCastStatements(castToPrimitiveType, fullpathNotNull)}}
-                {{If(isArray, () => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{ctx.Member.PhysicalName}} >= from && y.{{ctx.Member.PhysicalName}} <= to));
+                    var from = {{cast}}{{fullpathNotNull}}.From;
+                    var to = {{cast}}{{fullpathNotNull}}.To;
+                {{If(isMany, () => $$"""
+                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} >= from && y.{{ctx.Query.Metadata.PropertyName}} <= to));
                 """).Else(() => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.Join(".")}} >= from && x.{{whereFullpath.Join(".")}} <= to);
+                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} >= from && x.{{whereFullpath.Join(".")}} <= to);
                 """)}}
                 } else if ({{fullpathNullable}}?.From != null) {
-                    {{GetFromCastStatement(castToPrimitiveType, fullpathNotNull)}}
-                {{If(isArray, () => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{ctx.Member.PhysicalName}} >= from));
+                    var from = {{cast}}{{fullpathNotNull}}.From;
+                {{If(isMany, () => $$"""
+                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} >= from));
                 """).Else(() => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.Join(".")}} >= from);
+                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} >= from);
                 """)}}
                 } else if ({{fullpathNullable}}?.To != null) {
-                    {{GetToCastStatement(castToPrimitiveType, fullpathNotNull)}}
-                {{If(isArray, () => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{ctx.Member.PhysicalName}} <= to));
+                    var to = {{cast}}{{fullpathNotNull}}.To;
+                {{If(isMany, () => $$"""
+                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} <= to));
                 """).Else(() => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.Join(".")}} <= to);
+                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} <= to);
                 """)}}
                 }
                 """;
-        }
-
-        private static string GetCastStatements(string castToPrimitiveType, string fullpathNotNull) {
-            if (string.IsNullOrEmpty(castToPrimitiveType)) {
-                return $$"""
-                    var from = {{fullpathNotNull}}.From;
-                    var to = {{fullpathNotNull}}.To;
-                """;
-            } else {
-                return $$"""
-                    var from = {{castToPrimitiveType}}{{fullpathNotNull}}.From;
-                    var to = {{castToPrimitiveType}}{{fullpathNotNull}}.To;
-                """;
-            }
-        }
-
-        private static string GetFromCastStatement(string castToPrimitiveType, string fullpathNotNull) {
-            if (string.IsNullOrEmpty(castToPrimitiveType)) {
-                return $"var from = {fullpathNotNull}.From;";
-            } else {
-                return $"var from = {castToPrimitiveType}{fullpathNotNull}.From;";
-            }
-        }
-
-        private static string GetToCastStatement(string castToPrimitiveType, string fullpathNotNull) {
-            if (string.IsNullOrEmpty(castToPrimitiveType)) {
-                return $"var to = {fullpathNotNull}.To;";
-            } else {
-                return $"var to = {castToPrimitiveType}{fullpathNotNull}.To;";
-            }
         }
     }
 }

@@ -29,7 +29,7 @@ namespace Nijo.Models.QueryModelModules {
                 entries.Add(entry);
 
                 var members = entry
-                    .GetMembersRecursively()
+                    .GetMetadataRecursively()
                     .OfType<RefDisplayDataMemberContainer>()
                     .Where(member => member.Aggregate.GetRoot() == rootAggregate);
                 foreach (var member in members) {

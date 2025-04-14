@@ -36,6 +36,7 @@ public interface IInstanceStructurePropertyMetadata : IInstancePropertyMetadata,
 public interface IInstancePropertyMetadata {
     SchemaNodeIdentity MappingKey { get; }
     string PropertyName { get; }
+    string DisplayName => PropertyName; // TODO ver.1
 }
 
 // ------------------------------------------
@@ -46,7 +47,11 @@ public interface IInstancePropertyMetadata {
 /// オーナーへの参照を持つ。
 /// </summary>
 public interface IInstanceProperty {
+    /// <summary>このプロパティの親の親の一番大元の変数</summary>
+    Variable Root { get; }
+    /// <summary>このプロパティの親</summary>
     IInstancePropertyOwner Owner { get; }
+    /// <inheritdoc cref="IInstancePropertyMetadata"/>
     IInstancePropertyMetadata Metadata { get; }
     bool IsNullable { get; }
 }
@@ -54,6 +59,7 @@ public interface IInstanceProperty {
 /// <see cref="IInstanceProperty"/> のオーナー
 /// </summary>
 public interface IInstancePropertyOwner {
+    /// <summary>変数名 or プロパティ名</summary>
     string Name { get; }
 }
 
@@ -73,6 +79,7 @@ public sealed class Variable : IInstancePropertyOwner {
 /// 自動生成されるソースコードの中に表れる変数のプロパティのうち、子孫をもたない値メンバーのプロパティ。
 /// </summary>
 public sealed class InstanceValueProperty : IInstanceProperty {
+    public required Variable Root { get; init; }
     public required IInstancePropertyOwner Owner { get; init; }
     public required IInstanceValuePropertyMetadata Metadata { get; init; }
     public bool IsNullable => true;
@@ -83,6 +90,7 @@ public sealed class InstanceValueProperty : IInstanceProperty {
 /// 自動生成されるソースコードの中に表れる変数のプロパティのうち、子孫をもつ構造体メンバーのプロパティ。
 /// </summary>
 public sealed class InstanceStructureProperty : IInstanceProperty, IInstancePropertyOwner {
+    public required Variable Root { get; init; }
     public required IInstancePropertyOwner Owner { get; init; }
     public required IInstanceStructurePropertyMetadata Metadata { get; init; }
     public bool IsNullable => true;
@@ -95,18 +103,27 @@ public sealed class InstanceStructureProperty : IInstanceProperty, IInstanceProp
 
 public static partial class CodeGeneratingHelperExtensions {
 
+    #region CreateProperties系メソッド
     /// <summary>
     /// 引数の変数のプロパティを定義します。
     /// </summary>
-    public static IEnumerable<IInstanceProperty> GetProperties(this IInstancePropertyOwner owner, IInstancePropertyOwnerMetadata metadata) {
+    public static IEnumerable<IInstanceProperty> CreateProperties(this IInstancePropertyOwner owner, IInstancePropertyOwnerMetadata metadata) {
+        var variable = owner switch {
+            Variable v => v,
+            InstanceStructureProperty s => s.Root,
+            _ => throw new NotImplementedException(),
+        };
+
         foreach (var memberMetadata in metadata.GetMembers()) {
             if (memberMetadata is IInstanceValuePropertyMetadata valueMetadata) {
                 yield return new InstanceValueProperty {
+                    Root = variable,
                     Owner = owner,
                     Metadata = valueMetadata,
                 };
             } else if (memberMetadata is IInstanceStructurePropertyMetadata structMetadata) {
                 yield return new InstanceStructureProperty {
+                    Root = variable,
                     Owner = owner,
                     Metadata = structMetadata,
                 };
@@ -117,21 +134,37 @@ public static partial class CodeGeneratingHelperExtensions {
     }
 
     /// <summary>
-    /// この構造体の子孫のメンバーのうち、この構造体と1対1の多重度を持つもののみを再帰的に列挙します。
-    /// ToDbEntityなどのマッピングで使用。
+    /// この構造体の子孫のプロパティを再帰的に列挙します。
     /// </summary>
-    public static IEnumerable<IInstanceProperty> Get1To1PropertiesRecursively(this IInstancePropertyOwner owner, IInstancePropertyOwnerMetadata metadata) {
-        foreach (var prop in owner.GetProperties(metadata)) {
+    public static IEnumerable<IInstanceProperty> CreatePropertiesRecursively(this IInstancePropertyOwner owner, IInstancePropertyOwnerMetadata metadata) {
+        foreach (var prop in owner.CreateProperties(metadata)) {
             yield return prop;
 
-            // 多重度1対1のメンバーのみを列挙するためarrayでない場合は子孫を辿らない
-            if (prop is InstanceStructureProperty structureProperty && !structureProperty.Metadata.IsArray) {
-                foreach (var vp in structureProperty.Get1To1PropertiesRecursively(structureProperty.Metadata)) {
+            if (prop is InstanceStructureProperty structureProperty) {
+                foreach (var vp in structureProperty.CreatePropertiesRecursively(structureProperty.Metadata)) {
                     yield return vp;
                 }
             }
         }
     }
+
+    /// <summary>
+    /// この構造体の子孫のメンバーのうち、この構造体と1対1の多重度を持つもののみを再帰的に列挙します。
+    /// ToDbEntityなどのマッピングで使用。
+    /// </summary>
+    public static IEnumerable<IInstanceProperty> Create1To1PropertiesRecursively(this IInstancePropertyOwner owner, IInstancePropertyOwnerMetadata metadata) {
+        foreach (var prop in owner.CreateProperties(metadata)) {
+            yield return prop;
+
+            // 多重度1対1のメンバーのみを列挙するためarrayでない場合は子孫を辿らない
+            if (prop is InstanceStructureProperty structureProperty && !structureProperty.Metadata.IsArray) {
+                foreach (var vp in structureProperty.Create1To1PropertiesRecursively(structureProperty.Metadata)) {
+                    yield return vp;
+                }
+            }
+        }
+    }
+    #endregion CreateProperties系メソッド
 
     /// <summary>
     /// このプロパティの、大元の変数からのパス情報を返します。
@@ -140,13 +173,11 @@ public static partial class CodeGeneratingHelperExtensions {
     public static IEnumerable<IInstanceProperty> GetPathFromInstance(this IInstanceProperty property) {
         var stack = new Stack<IInstanceProperty>();
         var current = property;
-        var rootVariable = (Variable?)null;
         while (true) {
             if (current is not IInstanceProperty prop) break;
             stack.Push(prop);
 
             if (prop.Owner is not IInstanceProperty owner) {
-                rootVariable = prop.Owner as Variable;
                 break;
             }
             current = owner;
@@ -157,33 +188,21 @@ public static partial class CodeGeneratingHelperExtensions {
     }
 
     /// <summary>
-    /// 大元の変数を返します。大元の変数が <see cref="Variable"/> でない場合は例外が送出されます。
-    /// </summary>
-    public static Variable GetRootInstance(this IInstanceProperty property) {
-        var count = 0; // 一応無限ループ防止
-        while (count < 1000) {
-            var owner = property.Owner;
-            if (owner is Variable variable) return variable;
-            count++;
-        }
-        throw new InvalidOperationException($"オーナーを辿っても {nameof(Variable)} 型の変数にたどり着きません: {property.Metadata}");
-    }
-
-    /// <summary>
     /// メンバーを再帰的に列挙します。
     /// </summary>
-    public static IEnumerable<IInstancePropertyMetadata> GetMembersRecursively(this IInstancePropertyOwnerMetadata ownerMetadata) {
+    public static IEnumerable<IInstancePropertyMetadata> GetMetadataRecursively(this IInstancePropertyOwnerMetadata ownerMetadata) {
         foreach (var member in ownerMetadata.GetMembers()) {
             yield return member;
 
             if (member is IInstancePropertyOwnerMetadata owner) {
-                foreach (var member2 in owner.GetMembersRecursively()) {
+                foreach (var member2 in owner.GetMetadataRecursively()) {
                     yield return member2;
                 }
             }
         }
     }
 
+    #region GetPath系メソッド
     /// <summary>
     /// このインスタンスの、大元のインスタンスからのパスを列挙します。
     /// <c>x.Prop1?.Prop2?.Prop3?.Prop4</c> のような数珠つなぎのソースコードのレンダリングに使用します。
@@ -193,7 +212,7 @@ public static partial class CodeGeneratingHelperExtensions {
         var path = new StringBuilder();
 
         // パス作成（変数部分）
-        path.Append(property.GetRootInstance().Name);
+        path.Append(property.Root.Name);
 
         // パス作成（プロパティ部分）
         var previous = (IInstanceProperty?)null;
@@ -217,4 +236,55 @@ public static partial class CodeGeneratingHelperExtensions {
         }
         return path.ToString();
     }
+
+    /// <summary>
+    /// 大元の変数より後ろのパスをフラットな配列にして返す。
+    /// C#はLinqの Select, SelectMany を使う。TypeScriptはmap, flatMapを使う。
+    ///
+    /// <code>
+    /// // C#の場合の戻り値の例のイメージ
+    /// .Child1.Child2.Children3.Select(x => x.Child4).SelectMany(x => x.Children5)
+    ///
+    /// // TypeScriptの場合の戻り値の例のイメージ
+    /// .Child1.Child2.Children3.map(x => x.Child4).flatMap(x => x.Children5)
+    /// </code>
+    /// </summary>
+    /// <param name="csts">C# or TypeScript</param>
+    /// <param name="isMany">大元の変数との多重度。パスの途中にChildrenが含まれていたか否か。</param>
+    public static string[] GetFlattenArrayPath(this IInstanceProperty property, E_CsTs csts, out bool isMany) {
+        var path = new List<string>();
+        isMany = false;
+
+        // パスを構築
+        foreach (var prop in property.GetPathFromInstance()) {
+
+            // 配列の場合は多重度を考慮
+            if (prop.Metadata is IInstanceStructurePropertyMetadata structMeta && structMeta.IsArray) {
+
+                if (csts == E_CsTs.CSharp) {
+                    path.Add(isMany
+                        ? $"SelectMany(x => x.{prop.Metadata.PropertyName})"
+                        : $"Select(x => x.{prop.Metadata.PropertyName})");
+                } else {
+                    path.Add(isMany
+                        ? $"flatMap(x => x.{prop.Metadata.PropertyName})"
+                        : $"map(x => x.{prop.Metadata.PropertyName})");
+                }
+                isMany = true;
+
+            } else if (isMany) {
+                // 単一のプロパティかつここまでに配列が登場している場合
+                path.Add(csts == E_CsTs.CSharp
+                    ? $"Select(x => x.{prop.Metadata.PropertyName})"
+                    : $"map(x => x.{prop.Metadata.PropertyName})");
+
+            } else {
+                // 単一のプロパティかつここまでに配列が登場していない場合
+                path.Add(prop.Metadata.PropertyName);
+            }
+        }
+
+        return path.ToArray();
+    }
+    #endregion GetPath系メソッド
 }

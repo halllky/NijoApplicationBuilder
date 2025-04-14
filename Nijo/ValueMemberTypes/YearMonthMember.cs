@@ -33,7 +33,7 @@ internal class YearMonthMember : IValueMemberType {
         FilterCsTypeName = $"{FromTo.CS_CLASS_NAME}<YearMonth?>",
         FilterTsTypeName = "{ from?: number; to?: number }",
         RenderTsNewObjectFunctionValue = () => "{ from: undefined, to: undefined }",
-        RenderFiltering = ctx => RangeSearchRenderer.RenderRangeSearchFiltering(ctx, "(int)"),
+        RenderFiltering = ctx => RangeSearchRenderer.RenderRangeSearchFiltering(ctx),
     };
 
     void IValueMemberType.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {

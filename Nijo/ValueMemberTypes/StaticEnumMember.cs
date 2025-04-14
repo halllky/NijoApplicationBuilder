@@ -4,6 +4,7 @@ using Nijo.Models.QueryModelModules;
 using Nijo.SchemaParsing;
 using Nijo.Util.DotnetEx;
 using Nijo.Models.StaticEnumModelModules;
+using Nijo.CodeGenerating.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,18 +38,13 @@ namespace Nijo.ValueMemberTypes {
             FilterTsTypeName = _parser.RenderTsSearchConditionType(),
             RenderTsNewObjectFunctionValue = () => "{}",
             RenderFiltering = ctx => {
-                var fullpath = ctx.Member
-                    .GetPathFromEntry()
-                    .ToArray();
-                var strArrayPath = fullpath
-                    .AsSearchConditionFilter(E_CsTs.CSharp)
-                    .ToArray();
-                var fullpathNullable = $"searchCondition.{strArrayPath.Join("?.")}";
-                var fullpathNotNull = $"searchCondition.{strArrayPath.Join(".")}";
+                var query = ctx.Query.Root.Name;
 
-                var isArray = fullpath.Any(node => node is ChildrenAggregate);
-                var whereFullpath = fullpath.AsSearchResult().ToArray();
-                var query = ctx.Query;
+                var pathFromSearchCondition = ctx.SearchCondition.GetPathFromInstance().Select(p => p.Metadata.PropertyName).ToArray();
+                var fullpathNullable = $"{ctx.SearchCondition.Root.Name}.{pathFromSearchCondition.Join("?.")}";
+                var fullpathNotNull = $"{ctx.SearchCondition.Root.Name}.{pathFromSearchCondition.Join(".")}";
+
+                var whereFullpath = ((IInstanceProperty)ctx.Query.Owner).GetFlattenArrayPath(E_CsTs.CSharp, out var isMany);
 
                 return $$"""
                     if ({{fullpathNullable}} != null && {{fullpathNotNull}}.AnyChecked()) {
@@ -57,8 +53,8 @@ namespace Nijo.ValueMemberTypes {
                         if ({{fullpathNotNull}}.{{physicalName}}) array.Add({{CsPrimitiveTypeName}}.{{physicalName}});
                     """)}}
 
-                    {{If(isArray, () => $$"""
-                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => array.Contains(y.{{ctx.Member.PhysicalName}})));
+                    {{If(isMany, () => $$"""
+                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}}.Any(y => array.Contains(y.{{ctx.Query.Metadata.PropertyName}})));
                     """).Else(() => $$"""
                         {{query}} = {{query}}.Where(x => array.Contains(x.{{whereFullpath.Join(".")}}));
                     """)}}

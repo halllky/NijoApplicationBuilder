@@ -1,4 +1,5 @@
 using Nijo.CodeGenerating;
+using Nijo.CodeGenerating.Helpers;
 using Nijo.ImmutableSchema;
 using Nijo.Models.QueryModelModules;
 using Nijo.SchemaParsing;
@@ -33,21 +34,21 @@ internal class Word : IValueMemberType {
         FilterTsTypeName = "string",
         RenderTsNewObjectFunctionValue = () => "undefined",
         RenderFiltering = ctx => {
-            // TODO ver.1 部分一致検索以外も作る
-            var fullpath = ctx.Member.GetPathFromEntry().ToArray();
-            var pathFromSearchCondition = fullpath.AsSearchConditionFilter(E_CsTs.CSharp).ToArray();
-            var whereFullpath = fullpath.AsSearchResult().ToArray();
-            var fullpathNullable = $"{ctx.SearchCondition}.{pathFromSearchCondition.Join("?.")}";
-            var fullpathNotNull = $"{ctx.SearchCondition}.{pathFromSearchCondition.Join(".")}";
-            var isArray = fullpath.Any(node => node is ChildrenAggregate);
+            var query = ctx.Query.Root.Name;
+
+            var pathFromSearchCondition = ctx.SearchCondition.GetPathFromInstance().Select(p => p.Metadata.PropertyName).ToArray();
+            var fullpathNullable = $"{ctx.SearchCondition.Root.Name}.{pathFromSearchCondition.Join("?.")}";
+            var fullpathNotNull = $"{ctx.SearchCondition.Root.Name}.{pathFromSearchCondition.Join(".")}";
+
+            var whereFullpath = ((IInstanceProperty)ctx.Query.Owner).GetFlattenArrayPath(E_CsTs.CSharp, out var isMany);
 
             return $$"""
                 if (!string.IsNullOrWhiteSpace({{fullpathNullable}})) {
                     var trimmed = {{fullpathNotNull}}.Trim();
-                {{If(isArray, () => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{ctx.Member.PhysicalName}}!.Contains(trimmed)));
+                {{If(isMany, () => $$"""
+                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}}!.Contains(trimmed)));
                 """).Else(() => $$"""
-                    {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.Join("!.")}}!.Contains(trimmed));
+                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}}!.Contains(trimmed));
                 """)}}
                 }
                 """;

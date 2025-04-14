@@ -1,4 +1,5 @@
 using Nijo.CodeGenerating;
+using Nijo.CodeGenerating.Helpers;
 using Nijo.Models.QueryModelModules;
 using Nijo.SchemaParsing;
 using System;
@@ -97,13 +98,18 @@ namespace Nijo.ImmutableSchema {
         public required Func<FilterStatementRenderingContext, string> RenderFiltering { get; init; }
     }
 
+    /// <summary>
+    /// QueryModelの検索条件による絞り込み処理のレンダリングに渡されるコンテキスト情報
+    /// </summary>
     public class FilterStatementRenderingContext {
-        /// <summary>メンバー情報</summary>
-        public required ValueMember Member { get; init; }
-        /// <summary>EFCoreのクエリの変数の名前。検索処理はこの変数に再代入を繰り返して実装していく。</summary>
-        public required string Query { get; init; }
-        /// <summary>検索条件オブジェクトの変数名</summary>
-        public required string SearchCondition { get; init; }
+        /// <summary>
+        /// <see cref="Models.QueryModelModules.SearchResult"/> の変数の情報
+        /// </summary>
+        public required InstanceValueProperty Query { get; init; }
+        /// <summary>
+        /// <see cref="Models.QueryModelModules.SearchCondition.Filter"/> の変数の情報
+        /// </summary>
+        public required InstanceValueProperty SearchCondition { get; init; }
         /// <inheritdoc cref="CodeGenerating.CodeRenderingContext"/>
         public required CodeRenderingContext CodeRenderingContext { get; init; }
     }

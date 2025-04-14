@@ -4,6 +4,7 @@ using Nijo.Models.QueryModelModules;
 using Nijo.Parts.CSharp;
 using Nijo.SchemaParsing;
 using Nijo.Util.DotnetEx;
+using Nijo.CodeGenerating.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,26 +35,27 @@ internal class BoolMember : IValueMemberType {
         FilterTsTypeName = "{ trueのみ?: boolean; falseのみ?: boolean }",
         RenderTsNewObjectFunctionValue = () => "{ trueのみ: false, falseのみ: false }",
         RenderFiltering = ctx => {
-            var fullpath = ctx.Member.GetPathFromEntry().ToArray();
-            var pathFromSearchCondition = fullpath.AsSearchConditionFilter(E_CsTs.CSharp).ToArray();
-            var whereFullpath = fullpath.AsSearchResult().ToArray();
-            var fullpathNullable = $"{ctx.SearchCondition}.{pathFromSearchCondition.Join("?.")}";
-            var fullpathNotNull = $"{ctx.SearchCondition}.{pathFromSearchCondition.Join(".")}";
-            var isArray = fullpath.Any(node => node is ChildrenAggregate);
+            var query = ctx.Query.Root.Name;
+
+            var pathFromSearchCondition = ctx.SearchCondition.GetPathFromInstance().Select(p => p.Metadata.PropertyName).ToArray();
+            var fullpathNullable = $"{ctx.SearchCondition.Root.Name}.{pathFromSearchCondition.Join("?.")}";
+            var fullpathNotNull = $"{ctx.SearchCondition.Root.Name}.{pathFromSearchCondition.Join(".")}";
+
+            var whereFullpath = ((IInstanceProperty)ctx.Query.Owner).GetFlattenArrayPath(E_CsTs.CSharp, out var isMany);
 
             return $$"""
                 if ({{fullpathNullable}} != null && ({{fullpathNotNull}}.Trueのみ || {{fullpathNotNull}}.Falseのみ)) {
                     if ({{fullpathNotNull}}.Trueのみ && !{{fullpathNotNull}}.Falseのみ) {
-                    {{If(isArray, () => $$"""
-                        {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{ctx.Member.PhysicalName}} == true));
+                    {{If(isMany, () => $$"""
+                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} == true));
                     """).Else(() => $$"""
-                        {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.Join(".")}} == true);
+                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} == true);
                     """)}}
                     } else if (!{{fullpathNotNull}}.Trueのみ && {{fullpathNotNull}}.Falseのみ) {
-                    {{If(isArray, () => $$"""
-                        {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{ctx.Member.PhysicalName}} == false));
+                    {{If(isMany, () => $$"""
+                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} == false));
                     """).Else(() => $$"""
-                        {{ctx.Query}} = {{ctx.Query}}.Where(x => x.{{whereFullpath.Join(".")}} == false);
+                        {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} == false);
                     """)}}
                     }
                 }
