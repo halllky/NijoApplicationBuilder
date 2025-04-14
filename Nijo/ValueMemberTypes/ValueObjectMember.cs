@@ -50,7 +50,7 @@ internal class ValueObjectMember : IValueMemberType {
             var fullpathNullable = $"{ctx.SearchCondition.Root.Name}.{pathFromSearchCondition.Join("?.")}";
             var fullpathNotNull = $"{ctx.SearchCondition.Root.Name}.{pathFromSearchCondition.Join(".")}";
 
-            var whereFullpath = ((IInstanceProperty)ctx.Query.Owner).GetFlattenArrayPath(E_CsTs.CSharp, out var isMany);
+            var whereFullpath = ctx.Query.GetFlattenArrayPath(E_CsTs.CSharp, out var isMany);
 
             return $$"""
                 if (!string.IsNullOrWhiteSpace({{fullpathNullable}})) {
