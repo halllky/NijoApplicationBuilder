@@ -16,6 +16,8 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Policy;
+using Nijo.SchemaParsing;
+using System.Xml.Linq;
 
 [assembly: InternalsVisibleTo("Nijo.IntegrationTest")]
 
@@ -110,8 +112,10 @@ namespace Nijo {
                 : Path.Combine(Directory.GetCurrentDirectory(), path);
             var logger = ILoggerExtension.CreateConsoleLogger();
             var project = new GeneratedProject(projectRoot);
+            var rule = SchemaParseRule.Default();
+            var parseContext = new SchemaParseContext(XDocument.Load(project.SchemaXmlPath), rule);
 
-            project.ValidateSchema(logger);
+            project.ValidateSchema(parseContext, logger);
         }
 
 
@@ -125,8 +129,10 @@ namespace Nijo {
                 : Path.Combine(Directory.GetCurrentDirectory(), path);
             var logger = ILoggerExtension.CreateConsoleLogger();
             var project = new GeneratedProject(projectRoot);
+            var rule = SchemaParseRule.Default();
+            var parseContext = new SchemaParseContext(XDocument.Load(projectRoot), rule);
 
-            project.GenerateCode(logger);
+            project.GenerateCode(parseContext, logger);
         }
 
 
@@ -151,7 +157,9 @@ namespace Nijo {
                 using var launcher = new Runtime.GeneratedProjectLauncher(project.WebapiProjectRoot, new Uri(reactServerUrl), project.ReactProjectRoot, logger);
                 try {
                     if (!noBuild) {
-                        project.GenerateCode(logger);
+                        var rule = SchemaParseRule.Default();
+                        var parseContext = new SchemaParseContext(XDocument.Load(project.SchemaXmlPath), rule);
+                        project.GenerateCode(parseContext, logger);
                     }
 
                     launcher.Launch();

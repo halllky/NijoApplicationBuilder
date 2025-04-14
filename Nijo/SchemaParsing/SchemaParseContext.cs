@@ -19,55 +19,11 @@ namespace Nijo.SchemaParsing;
 /// XML要素をこのアプリケーションのルールに従って解釈する
 /// </summary>
 public class SchemaParseContext {
-
-    /// <summary>
-    /// 既定の型解釈ルールでコンテキストを作成します。
-    /// </summary>
-    /// <returns></returns>
-    public static SchemaParseContext Default(XDocument xDocument) {
-        var models = new IModel[] {
-            new DataModel(),
-            new QueryModel(),
-            new CommandModel(),
-            new StaticEnumModel(),
-            new ValueObjectModel(),
-        };
-        var valueMemberTypes = new IValueMemberType[] {
-            new ValueMemberTypes.Word(),
-            new ValueMemberTypes.IntMember(),
-            new ValueMemberTypes.DateTimeMember(),
-            new ValueMemberTypes.DateMember(),
-            new ValueMemberTypes.YearMonthMember(),
-            new ValueMemberTypes.YearMember(),
-            new ValueMemberTypes.Description(),
-            new ValueMemberTypes.DecimalMember(),
-            new ValueMemberTypes.BoolMember(),
-            new ValueMemberTypes.ByteArrayMember(),
-        };
-        var nodeOptions = new NodeOption[] {
-            BasicNodeOptions.DisplayName,
-            BasicNodeOptions.DbName,
-            BasicNodeOptions.LatinName,
-            BasicNodeOptions.IsKey,
-            BasicNodeOptions.IsRequired,
-            BasicNodeOptions.GenerateDefaultQueryModel,
-            BasicNodeOptions.GenerateBatchUpdateCommand,
-            BasicNodeOptions.IsReadOnly,
-            BasicNodeOptions.HasLifeCycle,
-            BasicNodeOptions.MaxLength,
-            BasicNodeOptions.CharacterType,
-            BasicNodeOptions.TotalDigit,
-            BasicNodeOptions.DecimalPlace,
-            BasicNodeOptions.SequenceName,
-        };
-        return new SchemaParseContext(xDocument, models, valueMemberTypes, nodeOptions);
-    }
-
-    private SchemaParseContext(XDocument xDocument, IModel[] models, IValueMemberType[] valueMemberTypes, NodeOption[] nodeOptions) {
+    public SchemaParseContext(XDocument xDocument, SchemaParseRule rule) {
         // スキーマ定義名重複チェック
         var appearedName = new HashSet<string>();
         var duplicates = new HashSet<string>();
-        foreach (var name in models.Select(m => m.SchemaName).Concat(valueMemberTypes.Select(t => t.SchemaTypeName))) {
+        foreach (var name in rule.Models.Select(m => m.SchemaName).Concat(rule.ValueMemberTypes.Select(t => t.SchemaTypeName))) {
             if (appearedName.Contains(name)) {
                 duplicates.Add(name);
             } else {
@@ -79,7 +35,7 @@ public class SchemaParseContext {
         }
 
         // オプション属性のキー重複チェック
-        var groupedOptions = nodeOptions
+        var groupedOptions = rule.NodeOptions
             .GroupBy(opt => opt.AttributeName)
             .Where(group => group.Count() >= 2)
             .ToArray();
@@ -88,14 +44,14 @@ public class SchemaParseContext {
         }
 
         // 予約語
-        if (nodeOptions.Any(opt => opt.AttributeName == ATTR_NODE_TYPE)) {
+        if (rule.NodeOptions.Any(opt => opt.AttributeName == ATTR_NODE_TYPE)) {
             throw new InvalidOperationException($"{ATTR_NODE_TYPE} という名前のオプション属性は定義できません。");
         }
 
         Document = xDocument;
-        Models = models.ToDictionary(m => m.SchemaName);
-        _valueMemberTypes = valueMemberTypes.ToDictionary(m => m.SchemaTypeName);
-        _nodeOptions = nodeOptions.ToDictionary(o => o.AttributeName);
+        Models = rule.Models.ToDictionary(m => m.SchemaName);
+        _valueMemberTypes = rule.ValueMemberTypes.ToDictionary(m => m.SchemaTypeName);
+        _nodeOptions = rule.NodeOptions.ToDictionary(o => o.AttributeName);
     }
 
     public XDocument Document { get; }

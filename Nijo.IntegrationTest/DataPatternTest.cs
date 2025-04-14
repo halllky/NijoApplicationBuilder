@@ -7,6 +7,7 @@ using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using NUnit.Framework;
 using System.Text;
+using Nijo.SchemaParsing;
 
 namespace Nijo.IntegrationTest;
 
@@ -84,17 +85,19 @@ public class DataPatternTest {
 
         // ソースコード自動生成を実行
         var project = new GeneratedProject(testProjectDir);
-        if (!project.ValidateSchema(_logger)) {
+        var schemaXml = XDocument.Load(project.SchemaXmlPath);
+        var parseContext = new SchemaParseContext(schemaXml, SchemaParseRule.Default());
+
+        if (!project.ValidateSchema(parseContext, _logger)) {
             Assert.Fail($"スキーマ定義の検証に失敗しました。");
         }
         try {
-            project.GenerateCode(_logger);
+            project.GenerateCode(parseContext, _logger);
         } catch (Exception ex) {
             Assert.Fail($"ソースコード自動生成に失敗しました。\n{ex}");
         }
 
         // OverridedApplicationServiceの実装
-        var schemaXml = XDocument.Load(project.SchemaXmlPath);
         var implementor = GetImplementor(fileName);
         if (implementor != null) {
             var implementation = implementor.GetImplementation(schemaXml);
