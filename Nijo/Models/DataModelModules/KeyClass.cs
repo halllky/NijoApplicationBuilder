@@ -182,7 +182,7 @@ namespace Nijo.Models.DataModelModules {
             public string PhysicalName => "Parent";
             public string DisplayName => _parent.DisplayName;
 
-            public string CsType => $"{_parent}KeyAsNotEntry";
+            public string CsType => ClassName;
 
             ISchemaPathNode SaveCommand.ISaveCommandMember.Member => _parent;
             string SaveCommand.ISaveCommandMember.CsCreateType => CsType;
