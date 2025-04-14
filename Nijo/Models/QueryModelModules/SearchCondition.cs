@@ -96,7 +96,7 @@ namespace Nijo.Models.QueryModelModules {
             /// <summary>
             /// ルート集約またはほかの集約から参照されている子孫集約の検索条件エントリークラスをレンダリングします。
             /// </summary>
-            internal string RenderTypeScriptRecursively(RootAggregate rootAggregate, CodeRenderingContext ctx) {
+            internal static string RenderTypeScriptRecursively(RootAggregate rootAggregate, CodeRenderingContext ctx) {
                 var entries = new List<AggregateBase>();
                 entries.Add(rootAggregate);
                 entries.AddRange(rootAggregate

@@ -264,8 +264,8 @@ namespace Nijo.Models {
             //   - export type ソート可能メンバー型
             // - TS側オブジェクト作成関数
             var searchCondition = new SearchCondition.Entry(rootAggregate);
-            aggregateFile.AddCSharpClass(searchCondition.RenderCSharp(ctx), "Class_SearchCondition");
-            aggregateFile.AddTypeScriptTypeDef(searchCondition.RenderTypeScript(ctx));
+            aggregateFile.AddCSharpClass(SearchCondition.Entry.RenderCSharpRecursively(rootAggregate, ctx), "Class_SearchCondition");
+            aggregateFile.AddTypeScriptTypeDef(SearchCondition.Entry.RenderTypeScriptRecursively(rootAggregate, ctx));
             aggregateFile.AddTypeScriptTypeDef(searchCondition.RenderTypeScriptSortableMemberType());
             aggregateFile.AddTypeScriptFunction(searchCondition.RenderNewObjectFunction());
 
