@@ -67,7 +67,7 @@ namespace Nijo.CodeGenerating {
 
                 result.Add(node);
 
-                if (node is ChildrenAggreagte) previousIsChildren = true;
+                if (node is ChildrenAggregate) previousIsChildren = true;
             }
             return result;
         }

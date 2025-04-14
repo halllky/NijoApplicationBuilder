@@ -115,12 +115,12 @@ namespace Nijo.Models.DataModelModules {
                         if (node is RootAggregate) {
                             selected.Add($"context.{GeneratedList(rootAggregate)}.Select(x => x.{SaveCommand.TO_DBENTITY}())");
 
-                        } else if (node is ChildAggreagte child) {
+                        } else if (node is ChildAggregate child) {
                             var parent = (AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない");
                             var nav = new EFCoreEntity.NavigationOfParentChild(parent, child);
                             selected.Add($".Select(e => e.{nav.Principal.OtherSidePhysicalName})");
 
-                        } else if (node is ChildrenAggreagte children) {
+                        } else if (node is ChildrenAggregate children) {
                             var parent = (AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない");
                             var nav = new EFCoreEntity.NavigationOfParentChild(parent, children);
                             selected.Add($".SelectMany(e => e.{nav.Principal.OtherSidePhysicalName})");
@@ -187,11 +187,11 @@ namespace Nijo.Models.DataModelModules {
                                 if (agg is RootAggregate) {
                                     continue;
 
-                                } else if (agg is ChildAggreagte child) {
+                                } else if (agg is ChildAggregate child) {
                                     var saveCommandMember = new SaveCommand.SaveCommandChildMember(child, SaveCommand.E_Type.Create);
                                     treePath.Add($".Select(x => x.{saveCommandMember.PhysicalName})");
 
-                                } else if (agg is ChildrenAggreagte children) {
+                                } else if (agg is ChildrenAggregate children) {
                                     var saveCommandMember = new SaveCommand.SaveCommandChildrenMember(children, SaveCommand.E_Type.Create);
                                     treePath.Add($".SelectMany(x => x.{saveCommandMember.PhysicalName})");
 

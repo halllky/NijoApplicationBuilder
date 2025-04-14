@@ -39,7 +39,7 @@ internal class BoolMember : IValueMemberType {
             var whereFullpath = fullpath.AsSearchResult().ToArray();
             var fullpathNullable = $"{ctx.SearchCondition}.{pathFromSearchCondition.Join("?.")}";
             var fullpathNotNull = $"{ctx.SearchCondition}.{pathFromSearchCondition.Join(".")}";
-            var isArray = fullpath.Any(node => node is ChildrenAggreagte);
+            var isArray = fullpath.Any(node => node is ChildrenAggregate);
 
             return $$"""
                 if ({{fullpathNullable}} != null && ({{fullpathNotNull}}.Trueのみ || {{fullpathNotNull}}.Falseのみ)) {

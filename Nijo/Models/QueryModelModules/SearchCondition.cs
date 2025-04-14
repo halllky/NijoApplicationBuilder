@@ -167,7 +167,7 @@ namespace Nijo.Models.QueryModelModules {
                         if (member is ValueMember vm) {
                             yield return new SortableMember(vm);
 
-                        } else if (member is ChildrenAggreagte) {
+                        } else if (member is ChildrenAggregate) {
                             // 子配列の要素でのソートは論理的に定義できない
                             continue;
 
@@ -408,7 +408,7 @@ namespace Nijo.Models.QueryModelModules {
 
             SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => _rm.ToIdentifier();
             string IInstancePropertyMetadata.PropertyName => _rm.PhysicalName;
-            bool IInstanceStructurePropertyMetadata.IsArray => _rm is ChildrenAggreagte;
+            bool IInstanceStructurePropertyMetadata.IsArray => _rm is ChildrenAggregate;
 
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
                 return ((IInstancePropertyOwnerMetadata)ChildFilter).GetMembers();
@@ -472,7 +472,7 @@ namespace Nijo.CodeGenerating {
                 }
 
                 // 親子
-                if (node is ChildAggreagte || node is ChildrenAggreagte) {
+                if (node is ChildAggregate || node is ChildrenAggregate) {
                     var curr = (AggregateBase)node;
                     var prev = (AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない");
 

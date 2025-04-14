@@ -48,7 +48,7 @@ internal class ValueObjectMember : IValueMemberType {
             var whereFullpath = fullpath.AsSearchResult().ToArray();
             var fullpathNullable = $"{ctx.SearchCondition}.{pathFromSearchCondition.Join("?.")}";
             var fullpathNotNull = $"{ctx.SearchCondition}.{pathFromSearchCondition.Join(".")}";
-            var isArray = fullpath.Any(node => node is ChildrenAggreagte);
+            var isArray = fullpath.Any(node => node is ChildrenAggregate);
 
             return $$"""
                 if (!string.IsNullOrWhiteSpace({{fullpathNullable}})) {

@@ -161,10 +161,10 @@ internal class Metadata : IMultiAggregateSourceFile {
                 if (member is ValueMember vm) {
                     yield return new MetadataValueMember(vm);
 
-                } else if (member is ChildAggreagte child) {
+                } else if (member is ChildAggregate child) {
                     yield return new MetadataDescendantMember(child);
 
-                } else if (member is ChildrenAggreagte children) {
+                } else if (member is ChildrenAggregate children) {
                     yield return new MetadataDescendantMember(children);
                 }
             }
@@ -281,10 +281,10 @@ internal class Metadata : IMultiAggregateSourceFile {
     }
 
     internal class MetadataDescendantMember : IMetadataMember {
-        internal MetadataDescendantMember(ChildAggreagte child) {
+        internal MetadataDescendantMember(ChildAggregate child) {
             _aggregate = child;
         }
-        internal MetadataDescendantMember(ChildrenAggreagte children) {
+        internal MetadataDescendantMember(ChildrenAggregate children) {
             _aggregate = children;
         }
         private readonly AggregateBase _aggregate;

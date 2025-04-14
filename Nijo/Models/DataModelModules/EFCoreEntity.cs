@@ -87,10 +87,10 @@ namespace Nijo.Models.DataModelModules {
             }
 
             foreach (var member in Aggregate.GetMembers()) {
-                if (member is ChildAggreagte child) {
+                if (member is ChildAggregate child) {
                     yield return new NavigationOfParentChild(Aggregate, child);
 
-                } else if (member is ChildrenAggreagte children) {
+                } else if (member is ChildrenAggregate children) {
                     yield return new NavigationOfParentChild(Aggregate, children);
 
                 } else if (member is RefToMember refTo) {
@@ -463,7 +463,7 @@ namespace Nijo.Models.DataModelModules {
                 Principal = new() {
                     ThisSide = parent,
                     OtherSide = child,
-                    OtherSideIsMany = child is ChildrenAggreagte,
+                    OtherSideIsMany = child is ChildrenAggregate,
                     OtherSidePhysicalName = child.PhysicalName,
                 };
                 Relevant = new() {

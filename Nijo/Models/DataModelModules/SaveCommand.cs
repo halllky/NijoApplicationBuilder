@@ -88,10 +88,10 @@ namespace Nijo.Models.DataModelModules {
                 } else if (member is RefToMember rm) {
                     yield return new SaveCommandRefMember(rm);
 
-                } else if (member is ChildAggreagte child) {
+                } else if (member is ChildAggregate child) {
                     yield return new SaveCommandChildMember(child, Type);
 
-                } else if (member is ChildrenAggreagte children) {
+                } else if (member is ChildrenAggregate children) {
                     yield return new SaveCommandChildrenMember(children, Type);
                 }
             }
@@ -125,10 +125,10 @@ namespace Nijo.Models.DataModelModules {
                 } else if (member is RefToMember rm) {
                     yield return new SaveCommandRefMember(rm);
 
-                } else if (member is ChildAggreagte child) {
+                } else if (member is ChildAggregate child) {
                     yield return new SaveCommandChildMember(child, Type);
 
-                } else if (member is ChildrenAggreagte children) {
+                } else if (member is ChildrenAggregate children) {
                     yield return new SaveCommandChildrenMember(children, Type);
                 }
             }
@@ -292,7 +292,7 @@ namespace Nijo.Models.DataModelModules {
         /// 更新処理引数クラスの子メンバー
         /// </summary>
         internal class SaveCommandChildMember : SaveCommand, ISaveCommandMember, IInstanceStructurePropertyMetadata {
-            internal SaveCommandChildMember(ChildAggreagte child, E_Type type) : base(child, type) { }
+            internal SaveCommandChildMember(ChildAggregate child, E_Type type) : base(child, type) { }
 
             ISchemaPathNode ISaveCommandMember.Member => (IAggregateMember)_aggregate;
             public string PhysicalName => _aggregate.PhysicalName;
@@ -309,7 +309,7 @@ namespace Nijo.Models.DataModelModules {
         /// 更新処理引数クラスの子コレクションメンバー
         /// </summary>
         internal class SaveCommandChildrenMember : SaveCommand, ISaveCommandMember, IInstanceStructurePropertyMetadata {
-            internal SaveCommandChildrenMember(ChildrenAggreagte children, E_Type type) : base(children, type) { }
+            internal SaveCommandChildrenMember(ChildrenAggregate children, E_Type type) : base(children, type) { }
 
             ISchemaPathNode ISaveCommandMember.Member => (IAggregateMember)_aggregate;
             public string PhysicalName => _aggregate.PhysicalName;
@@ -365,7 +365,7 @@ namespace Nijo.Models.DataModelModules {
                     .OfType<EFCoreEntity.NavigationOfParentChild>()
                     .Where(nav => nav.Principal.ThisSide == left.Aggregate);
                 foreach (var nav in childAndChildren) {
-                    if (nav.Relevant.ThisSide is ChildAggreagte child) {
+                    if (nav.Relevant.ThisSide is ChildAggregate child) {
                         // Child
                         var childEntity = new EFCoreEntity(nav.Relevant.ThisSide);
 
@@ -375,7 +375,7 @@ namespace Nijo.Models.DataModelModules {
                             },
                             """;
 
-                    } else if (nav.Relevant.ThisSide is ChildrenAggreagte children) {
+                    } else if (nav.Relevant.ThisSide is ChildrenAggregate children) {
                         var childrenEntity = new EFCoreEntity(nav.Relevant.ThisSide);
                         var arrayPath = rigthMembers.TryGetValue(children.ToIdentifier(), out var source)
                             ? source.GetJoinedPathFromInstance("?.")
@@ -465,8 +465,8 @@ namespace Nijo.CodeGenerating {
                         if (isOutOfEntryTree) throw new InvalidOperationException("参照先のキーの中では親から子へ辿るパターンは無い");
 
                         var childMemberPhysicalName = curr switch {
-                            ChildAggreagte child => new SaveCommand.SaveCommandChildMember(child, SaveCommand.E_Type.Create).PhysicalName, // CUD全部名前同じなのでCにしている
-                            ChildrenAggreagte children => new SaveCommand.SaveCommandChildrenMember(children, SaveCommand.E_Type.Create).PhysicalName, // CUD全部名前同じなのでCにしている
+                            ChildAggregate child => new SaveCommand.SaveCommandChildMember(child, SaveCommand.E_Type.Create).PhysicalName, // CUD全部名前同じなのでCにしている
+                            ChildrenAggregate children => new SaveCommand.SaveCommandChildrenMember(children, SaveCommand.E_Type.Create).PhysicalName, // CUD全部名前同じなのでCにしている
                             _ => throw new InvalidOperationException("ありえない"),
                         };
                         yield return childMemberPhysicalName;

@@ -202,26 +202,26 @@ namespace Nijo.Models {
         /// CommandModelの引数の型が定義された集約を返します。
         /// 定義されていない場合は例外になります。
         /// </summary>
-        internal static ChildAggreagte GetCommandModelParameterChild(this RootAggregate rootAggregate) {
+        internal static ChildAggregate GetCommandModelParameterChild(this RootAggregate rootAggregate) {
             var rootAggregateName = rootAggregate.PhysicalName;
             var expectedParameterName = $"{rootAggregateName}{PARAMETER_PHYSICAL_NAME}";
             var param = rootAggregate
                 .GetMembers()
-                .Single(m => m is ChildAggreagte && m.PhysicalName == expectedParameterName);
-            return (ChildAggreagte)param;
+                .Single(m => m is ChildAggregate && m.PhysicalName == expectedParameterName);
+            return (ChildAggregate)param;
         }
 
         /// <summary>
         /// CommandModelの戻り値の型が定義された集約を返します。
         /// 定義されていない場合は例外になります。
         /// </summary>
-        internal static ChildAggreagte GetCommandModelReturnValueChild(this RootAggregate rootAggregate) {
+        internal static ChildAggregate GetCommandModelReturnValueChild(this RootAggregate rootAggregate) {
             var rootAggregateName = rootAggregate.PhysicalName;
             var expectedReturnValueName = $"{rootAggregateName}{RETURN_VALUE_PHYSICAL_NAME}";
             var param = rootAggregate
                 .GetMembers()
-                .Single(m => m is ChildAggreagte && m.PhysicalName == expectedReturnValueName);
-            return (ChildAggreagte)param;
+                .Single(m => m is ChildAggregate && m.PhysicalName == expectedReturnValueName);
+            return (ChildAggregate)param;
         }
     }
 }

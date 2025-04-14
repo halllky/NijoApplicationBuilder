@@ -21,7 +21,7 @@ namespace Nijo.Models.QueryModelModules {
             var whereFullpath = fullpath.AsSearchResult().ToArray();
             var fullpathNullable = $"{ctx.SearchCondition}.{pathFromSearchCondition.Join("?.")}";
             var fullpathNotNull = $"{ctx.SearchCondition}.{pathFromSearchCondition.Join(".")}";
-            var isArray = fullpath.Any(node => node is ChildrenAggreagte);
+            var isArray = fullpath.Any(node => node is ChildrenAggregate);
 
             return $$"""
                 if ({{fullpathNullable}}?.From != null && {{fullpathNullable}}?.To != null) {

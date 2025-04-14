@@ -59,8 +59,8 @@ namespace Nijo.ImmutableSchema {
 
                 var nodeType = _ctx.GetNodeType(el);
                 yield return nodeType switch {
-                    E_NodeType.ChildAggregate => new ChildAggreagte(el, _ctx, this),
-                    E_NodeType.ChildrenAggregate => new ChildrenAggreagte(el, _ctx, this),
+                    E_NodeType.ChildAggregate => new ChildAggregate(el, _ctx, this),
+                    E_NodeType.ChildrenAggregate => new ChildrenAggregate(el, _ctx, this),
                     E_NodeType.Ref => new RefToMember(el, _ctx, this),
                     E_NodeType.ValueMember => new ValueMember(el, _ctx, this),
                     E_NodeType.StaticEnumValue => new Models.StaticEnumModelModules.StaticEnumValueDef(el, _ctx, this),
@@ -199,7 +199,7 @@ namespace Nijo.ImmutableSchema {
         }
         /// <summary>
         /// この集約が引数の集約の子か否かを返します。
-        /// （<see cref="ChildAggreagte"/> または <see cref="ChildrenAggreagte"/> のいずれでもtrue）
+        /// （<see cref="ChildAggregate"/> または <see cref="ChildrenAggregate"/> のいずれでもtrue）
         /// </summary>
         public bool IsChildOf(AggregateBase aggregate) {
             return _xElement.Parent == aggregate._xElement;
@@ -292,8 +292,8 @@ namespace Nijo.ImmutableSchema {
     /// <summary>
     /// 親集約と1対1で対応する子集約。
     /// </summary>
-    public class ChildAggreagte : AggregateBase, IRelationalMember {
-        internal ChildAggreagte(XElement xElement, SchemaParseContext ctx, ISchemaPathNode? previous)
+    public class ChildAggregate : AggregateBase, IRelationalMember {
+        internal ChildAggregate(XElement xElement, SchemaParseContext ctx, ISchemaPathNode? previous)
             : base(xElement, ctx, previous) { }
 
         public decimal Order => _xElement.ElementsBeforeSelf().Count();
@@ -307,15 +307,15 @@ namespace Nijo.ImmutableSchema {
         AggregateBase IRelationalMember.MemberAggregate => this;
 
         public override AggregateBase AsEntry() {
-            return new ChildAggreagte(_xElement, _ctx, null);
+            return new ChildAggregate(_xElement, _ctx, null);
         }
     }
 
     /// <summary>
     /// 親集約と1対多で対応する子集約。
     /// </summary>
-    public class ChildrenAggreagte : AggregateBase, IRelationalMember {
-        internal ChildrenAggreagte(XElement xElement, SchemaParseContext ctx, ISchemaPathNode? previous)
+    public class ChildrenAggregate : AggregateBase, IRelationalMember {
+        internal ChildrenAggregate(XElement xElement, SchemaParseContext ctx, ISchemaPathNode? previous)
             : base(xElement, ctx, previous) { }
 
         public decimal Order => _xElement.ElementsBeforeSelf().Count();
@@ -325,7 +325,7 @@ namespace Nijo.ImmutableSchema {
         AggregateBase IRelationalMember.MemberAggregate => this;
 
         public override AggregateBase AsEntry() {
-            return new ChildrenAggreagte(_xElement, _ctx, null);
+            return new ChildrenAggregate(_xElement, _ctx, null);
         }
 
         /// <summary>

@@ -31,15 +31,15 @@ namespace Nijo.Models.DataModelModules {
                 .Select(m => new MessageContainerMemberImpl {
                     PhysicalName = m.PhysicalName,
                     DisplayName = m.DisplayName,
-                    NestedObjectIsArray = m.Member is ChildrenAggreagte,
+                    NestedObjectIsArray = m.Member is ChildrenAggregate,
                     NestedObject = m.Member switch {
-                        ChildAggreagte child => new SaveCommandMessageContainer(child),
-                        ChildrenAggreagte children => new SaveCommandMessageContainer(children),
+                        ChildAggregate child => new SaveCommandMessageContainer(child),
+                        ChildrenAggregate children => new SaveCommandMessageContainer(children),
                         _ => null,
                     },
                     CsType = m.Member switch {
-                        ChildAggreagte child => new SaveCommandMessageContainer(child).InterfaceName,
-                        ChildrenAggreagte children => $"{INTERFACE_LIST}<{new SaveCommandMessageContainer(children).InterfaceName}>",
+                        ChildAggregate child => new SaveCommandMessageContainer(child).InterfaceName,
+                        ChildrenAggregate children => $"{INTERFACE_LIST}<{new SaveCommandMessageContainer(children).InterfaceName}>",
                         _ => null,
                     },
                 });
@@ -162,8 +162,8 @@ namespace Nijo.CodeGenerating {
                         if (isOutOfEntryTree) throw new InvalidOperationException("参照先のキーの中では親から子へ辿るパターンは無い");
 
                         var childMemberPhysicalName = curr switch {
-                            ChildAggreagte child => new SaveCommand.SaveCommandChildMember(child, SaveCommand.E_Type.Create).PhysicalName, // CUD全部名前同じなのでCにしている
-                            ChildrenAggreagte children => new SaveCommand.SaveCommandChildrenMember(children, SaveCommand.E_Type.Create).PhysicalName, // CUD全部名前同じなのでCにしている
+                            ChildAggregate child => new SaveCommand.SaveCommandChildMember(child, SaveCommand.E_Type.Create).PhysicalName, // CUD全部名前同じなのでCにしている
+                            ChildrenAggregate children => new SaveCommand.SaveCommandChildrenMember(children, SaveCommand.E_Type.Create).PhysicalName, // CUD全部名前同じなのでCにしている
                             _ => throw new InvalidOperationException("ありえない"),
                         };
                         yield return childMemberPhysicalName;

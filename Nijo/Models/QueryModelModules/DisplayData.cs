@@ -105,10 +105,10 @@ namespace Nijo.Models.QueryModelModules {
         /// </summary>
         internal IEnumerable<DisplayDataDescendant> GetChildMembers() {
             foreach (var member in _aggregate.GetMembers()) {
-                if (member is ChildAggreagte child) {
+                if (member is ChildAggregate child) {
                     yield return new DisplayDataChildDescendant(child);
 
-                } else if (member is ChildrenAggreagte children) {
+                } else if (member is ChildrenAggregate children) {
                     yield return new DisplayDataChildrenDescendant(children);
 
                 }
@@ -128,8 +128,8 @@ namespace Nijo.Models.QueryModelModules {
                 .EnumerateThisAndDescendants()
                 .Select(agg => agg switch {
                     RootAggregate root => new DisplayData(root),
-                    ChildAggreagte child => new DisplayDataChildDescendant(child),
-                    ChildrenAggreagte children => new DisplayDataChildrenDescendant(children),
+                    ChildAggregate child => new DisplayDataChildDescendant(child),
+                    ChildrenAggregate children => new DisplayDataChildrenDescendant(children),
                     _ => throw new InvalidOperationException(),
                 });
 
@@ -146,8 +146,8 @@ namespace Nijo.Models.QueryModelModules {
                 .EnumerateThisAndDescendants()
                 .Select(agg => agg switch {
                     RootAggregate root => new DisplayData(root),
-                    ChildAggreagte child => new DisplayDataChildDescendant(child),
-                    ChildrenAggreagte children => new DisplayDataChildrenDescendant(children),
+                    ChildAggregate child => new DisplayDataChildDescendant(child),
+                    ChildrenAggregate children => new DisplayDataChildrenDescendant(children),
                     _ => throw new InvalidOperationException(),
                 });
 
@@ -440,8 +440,8 @@ namespace Nijo.Models.QueryModelModules {
                 .EnumerateThisAndDescendants()
                 .Select(agg => agg switch {
                     RootAggregate root => new DisplayData(root),
-                    ChildAggreagte child => new DisplayDataChildDescendant(child),
-                    ChildrenAggreagte children => new DisplayDataChildrenDescendant(children),
+                    ChildAggregate child => new DisplayDataChildDescendant(child),
+                    ChildrenAggregate children => new DisplayDataChildrenDescendant(children),
                     _ => throw new InvalidOperationException(),
                 });
 
@@ -493,10 +493,10 @@ namespace Nijo.Models.QueryModelModules {
         }
 
         internal class DisplayDataChildDescendant : DisplayDataDescendant, IInstanceStructurePropertyMetadata {
-            internal DisplayDataChildDescendant(ChildAggreagte child) : base(child) {
+            internal DisplayDataChildDescendant(ChildAggregate child) : base(child) {
                 _child = child;
             }
-            private readonly ChildAggreagte _child;
+            private readonly ChildAggregate _child;
 
             internal override string CsClassNameAsMember => CsClassName;
             internal override string TsTypeNameAsMember => TsTypeName;
@@ -512,7 +512,7 @@ namespace Nijo.Models.QueryModelModules {
         }
 
         internal class DisplayDataChildrenDescendant : DisplayDataDescendant, IInstanceStructurePropertyMetadata {
-            internal DisplayDataChildrenDescendant(ChildrenAggreagte children) : base(children) { }
+            internal DisplayDataChildrenDescendant(ChildrenAggregate children) : base(children) { }
 
             internal override string CsClassNameAsMember => $"List<{CsClassName}>";
             internal override string TsTypeNameAsMember => $"{TsTypeName}[]";

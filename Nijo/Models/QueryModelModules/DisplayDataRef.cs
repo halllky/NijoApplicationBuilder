@@ -118,10 +118,10 @@ namespace Nijo.Models.QueryModelModules {
                     } else if (member is RefToMember refTo && Aggregate.PreviousNode != (ISchemaPathNode)refTo) {
                         yield return new RefDisplayDataRefToMember(refTo);
 
-                    } else if (member is ChildAggreagte child && Aggregate.PreviousNode != (ISchemaPathNode)child) {
+                    } else if (member is ChildAggregate child && Aggregate.PreviousNode != (ISchemaPathNode)child) {
                         yield return new RefDisplayDataChildMember(child);
 
-                    } else if (member is ChildrenAggreagte children && Aggregate.PreviousNode != (ISchemaPathNode)children) {
+                    } else if (member is ChildrenAggregate children && Aggregate.PreviousNode != (ISchemaPathNode)children) {
                         yield return new RefDisplayDataChildrenMember(children);
                     }
                 }
@@ -241,10 +241,10 @@ namespace Nijo.Models.QueryModelModules {
         /// Child
         /// </summary>
         internal class RefDisplayDataChildMember : RefDisplayDataMemberContainer, IRefDisplayDataMember, IInstanceStructurePropertyMetadata {
-            internal RefDisplayDataChildMember(ChildAggreagte member) : base(member) {
+            internal RefDisplayDataChildMember(ChildAggregate member) : base(member) {
                 _member = member;
             }
-            private readonly ChildAggreagte _member;
+            private readonly ChildAggregate _member;
 
             public string PhysicalName => _member.PhysicalName;
             public string DisplayName => _member.DisplayName;
@@ -260,10 +260,10 @@ namespace Nijo.Models.QueryModelModules {
         /// Children
         /// </summary>
         internal class RefDisplayDataChildrenMember : RefDisplayDataMemberContainer, IRefDisplayDataMember, IInstanceStructurePropertyMetadata {
-            internal RefDisplayDataChildrenMember(ChildrenAggreagte member) : base(member) {
+            internal RefDisplayDataChildrenMember(ChildrenAggregate member) : base(member) {
                 _member = member;
             }
-            private readonly ChildrenAggreagte _member;
+            private readonly ChildrenAggregate _member;
 
             public string PhysicalName => _member.PhysicalName;
             public string DisplayName => _member.DisplayName;

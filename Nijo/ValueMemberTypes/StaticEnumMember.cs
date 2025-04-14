@@ -46,7 +46,7 @@ namespace Nijo.ValueMemberTypes {
                 var fullpathNullable = $"searchCondition.{strArrayPath.Join("?.")}";
                 var fullpathNotNull = $"searchCondition.{strArrayPath.Join(".")}";
 
-                var isArray = fullpath.Any(node => node is ChildrenAggreagte);
+                var isArray = fullpath.Any(node => node is ChildrenAggregate);
                 var whereFullpath = fullpath.AsSearchResult().ToArray();
                 var query = ctx.Query;
 

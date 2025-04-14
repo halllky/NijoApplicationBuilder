@@ -23,7 +23,7 @@ namespace Nijo.Models.QueryModelModules {
         internal SearchResult(RootAggregate aggregate) {
             _aggregate = aggregate;
         }
-        internal SearchResult(ChildrenAggreagte aggregate) {
+        internal SearchResult(ChildrenAggregate aggregate) {
             _aggregate = aggregate;
         }
         private readonly AggregateBase _aggregate;
@@ -42,7 +42,7 @@ namespace Nijo.Models.QueryModelModules {
                     if (member is ValueMember vm) {
                         yield return new SearchResultValueMember(vm);
 
-                    } else if (member is ChildrenAggreagte children) {
+                    } else if (member is ChildrenAggregate children) {
                         yield return new SearchResultChildrenMember(children);
 
                     } else if (member is RefToMember refTo) {
@@ -50,7 +50,7 @@ namespace Nijo.Models.QueryModelModules {
                             yield return srm;
                         }
 
-                    } else if (member is ChildAggreagte child) {
+                    } else if (member is ChildAggregate child) {
                         foreach (var srm in GetMembersRecursively(child)) {
                             yield return srm;
                         }
@@ -69,10 +69,10 @@ namespace Nijo.Models.QueryModelModules {
         internal static string RenderTree(RootAggregate rootAggregate) {
             var tree = rootAggregate
                 .EnumerateThisAndDescendants()
-                .Where(agg => agg is RootAggregate || agg is ChildrenAggreagte)
+                .Where(agg => agg is RootAggregate || agg is ChildrenAggregate)
                 .Select(agg => agg switch {
                     RootAggregate root => new SearchResult(root),
-                    ChildrenAggreagte children => new SearchResult(children),
+                    ChildrenAggregate children => new SearchResult(children),
                     _ => throw new InvalidOperationException(),
                 });
 
@@ -141,10 +141,10 @@ namespace Nijo.Models.QueryModelModules {
         }
 
         internal class SearchResultChildrenMember : SearchResultMember, IInstanceStructurePropertyMetadata {
-            internal SearchResultChildrenMember(ChildrenAggreagte children) {
+            internal SearchResultChildrenMember(ChildrenAggregate children) {
                 _children = children;
             }
-            private readonly ChildrenAggreagte _children;
+            private readonly ChildrenAggregate _children;
 
             internal override string PhysicalName => _children.PhysicalName;
             internal override SchemaNodeIdentity MappingKey => _children.ToIdentifier();
@@ -182,12 +182,12 @@ namespace Nijo.CodeGenerating {
                 if (node == entry) continue; // パスの一番最初（エントリー）はスキップ
 
                 // 検索結果オブジェクトはフラットな構造なので親と1対1の子は表れない
-                if (node is ChildAggreagte) continue;
+                if (node is ChildAggregate) continue;
                 if (node is RefToMember) continue;
                 if (node is RootAggregate) continue; // ref-toでルートを参照しているときパスの途中にRootAggregateが表れる
 
                 // Children
-                if (node is ChildrenAggreagte children) {
+                if (node is ChildrenAggregate children) {
                     var member = new SearchResult.SearchResultChildrenMember(children);
                     yield return member.PhysicalName;
                     continue;

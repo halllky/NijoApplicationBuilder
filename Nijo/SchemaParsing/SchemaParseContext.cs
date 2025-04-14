@@ -238,10 +238,10 @@ public class SchemaParseContext {
             return new RootAggregate(xElement, this, previous);
         }
         if (nodeType == E_NodeType.ChildAggregate) {
-            return new ChildAggreagte(xElement, this, previous);
+            return new ChildAggregate(xElement, this, previous);
         }
         if (nodeType == E_NodeType.ChildrenAggregate) {
-            return new ChildrenAggreagte(xElement, this, previous);
+            return new ChildrenAggregate(xElement, this, previous);
         }
         throw new InvalidOperationException($"集約ではありません: {xElement}");
     }

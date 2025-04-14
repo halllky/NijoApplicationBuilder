@@ -250,7 +250,7 @@ namespace Nijo.Models.DataModelModules {
                 void RenderEntityArray(bool renderBefore) {
                     var tempVar = renderBefore ? before : after_;
 
-                    if (paths.Any(node => node is ChildrenAggreagte)) {
+                    if (paths.Any(node => node is ChildrenAggregate)) {
                         // 子集約までの経路の途中に配列が含まれる場合
                         builder.Append(renderBefore
                             ? $"var {tempVar} = beforeDbEntity"
@@ -259,7 +259,7 @@ namespace Nijo.Models.DataModelModules {
                         var select = false;
                         foreach (var node in paths) {
                             // Children
-                            if (node is ChildrenAggreagte children) {
+                            if (node is ChildrenAggregate children) {
                                 var nav = new EFCoreEntity.NavigationOfParentChild((AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない"), children);
                                 builder.Append(select
                                     ? $".SelectMany(x => x.{nav.Principal.OtherSidePhysicalName})"
@@ -268,7 +268,7 @@ namespace Nijo.Models.DataModelModules {
                                 continue;
                             }
                             // Child
-                            if (node is ChildAggreagte child) {
+                            if (node is ChildAggregate child) {
                                 var nav = new EFCoreEntity.NavigationOfParentChild((AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない"), child);
                                 builder.Append(select
                                     ? $".Select(x => x.{nav.Principal.OtherSidePhysicalName})"
@@ -333,14 +333,14 @@ namespace Nijo.Models.DataModelModules {
                 void RenderEntityArray() {
                     var tempVar = after_;
 
-                    if (paths.Any(path => path is ChildrenAggreagte)) {
+                    if (paths.Any(path => path is ChildrenAggregate)) {
                         // 子集約までの経路の途中に配列が含まれる場合
                         builder.Append($"var {tempVar} = {rootEntityName}");
 
                         var select = false;
                         foreach (var node in paths) {
                             // Children
-                            if (node is ChildrenAggreagte children) {
+                            if (node is ChildrenAggregate children) {
                                 var nav = new EFCoreEntity.NavigationOfParentChild((AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない"), children);
                                 builder.Append(select
                                     ? $".SelectMany(x => x.{nav.Principal.OtherSidePhysicalName})"
@@ -349,7 +349,7 @@ namespace Nijo.Models.DataModelModules {
                                 continue;
                             }
                             // Child
-                            if (node is ChildAggreagte child) {
+                            if (node is ChildAggregate child) {
                                 var nav = new EFCoreEntity.NavigationOfParentChild((AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない"), child);
                                 builder.Append(select
                                     ? $".Select(x => x.{nav.Principal.OtherSidePhysicalName})"
