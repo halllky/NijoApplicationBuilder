@@ -254,7 +254,6 @@ namespace Nijo.Models.DataModelModules {
         internal interface ISaveCommandMember : IInstancePropertyMetadata {
             ISchemaPathNode Member { get; }
             string PhysicalName { get; }
-            string DisplayName { get; }
             string CsCreateType { get; }
             string CsUpdateType { get; }
             string CsDeleteType { get; }

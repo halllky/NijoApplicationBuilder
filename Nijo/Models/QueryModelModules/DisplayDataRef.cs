@@ -196,7 +196,6 @@ namespace Nijo.Models.QueryModelModules {
         /// </summary>
         internal interface IRefDisplayDataMember : IInstancePropertyMetadata {
             string PhysicalName { get; }
-            string DisplayName { get; }
             string CsType { get; }
         }
 

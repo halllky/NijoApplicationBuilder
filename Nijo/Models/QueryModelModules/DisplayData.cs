@@ -265,7 +265,6 @@ namespace Nijo.Models.QueryModelModules {
         #region Valuesの中に定義されるメンバー
         internal interface IDisplayDataMember : IUiConstraintValue, IInstancePropertyMetadata {
             string PhysicalName { get; }
-            string DisplayName { get; }
             UiConstraint.E_Type UiConstraintType { get; }
 
             string RenderCsDeclaration();
