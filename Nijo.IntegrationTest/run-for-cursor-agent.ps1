@@ -25,7 +25,7 @@ if (-not (Test-Path $resultDir)) {
 
 # テストプロジェクトのビルド
 Write-Host "ビルドを実行しています..."
-dotnet build $PSScriptRoot\Nijo.IntegrationTest.csproj -c Debug | Out-File "TestResults\DataPatternTest_Results.trx"
+dotnet build $PSScriptRoot\Nijo.IntegrationTest.csproj -c Debug | Out-File "$resultDir\DataPatternTest_Results.trx"
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host ""
