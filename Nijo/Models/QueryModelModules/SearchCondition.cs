@@ -20,7 +20,7 @@ namespace Nijo.Models.QueryModelModules {
         /// 検索条件オブジェクトのエントリー。
         /// フィルタ、ソート、ページングの属性を持つ。
         /// </summary>
-        internal class Entry {
+        internal class Entry : IInstancePropertyOwnerMetadata {
             internal Entry(AggregateBase entryAggregate) {
                 _entryAggregate = entryAggregate;
                 FilterRoot = new Filter(_entryAggregate);
@@ -202,6 +202,10 @@ namespace Nijo.Models.QueryModelModules {
                     """;
             }
             #endregion TypeScript側のオブジェクト新規作成関数
+
+            IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
+                yield return FilterRoot;
+            }
         }
 
 
@@ -210,7 +214,7 @@ namespace Nijo.Models.QueryModelModules {
         /// 検索条件クラスの絞り込み条件部分。
         /// 通常の一覧検索と参照先検索とで共通
         /// </summary>
-        internal class Filter : IInstancePropertyOwnerMetadata {
+        internal class Filter : IInstanceStructurePropertyMetadata, IInstancePropertyOwnerMetadata {
             internal Filter(AggregateBase aggregate) {
                 _aggregate = aggregate;
             }
@@ -218,6 +222,11 @@ namespace Nijo.Models.QueryModelModules {
 
             internal virtual string CsClassName => $"{_aggregate.PhysicalName}SearchConditionFilter";
             internal virtual string TsTypeName => $"{_aggregate.PhysicalName}SearchConditionFilter";
+
+            bool IInstanceStructurePropertyMetadata.IsArray => false;
+            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => SchemaNodeIdentity.None;
+            string IInstancePropertyMetadata.PropertyName => Entry.FILTER_CS;
+            IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetOwnMembers();
 
             /// <summary>
             /// 検索条件のフィルターに指定できるメンバーを列挙する
@@ -254,23 +263,6 @@ namespace Nijo.Models.QueryModelModules {
                         }
                     }
                 }
-            }
-
-            IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
-                yield return new FilterObjectMetadata(GetOwnMembers().ToArray());
-            }
-
-            /// <summary>Filterオブジェクトそれ自体</summary>
-            private class FilterObjectMetadata : IInstanceStructurePropertyMetadata, IInstancePropertyOwnerMetadata {
-                public FilterObjectMetadata(IInstancePropertyMetadata[] members) {
-                    _members = members;
-                }
-                private readonly IInstancePropertyMetadata[] _members;
-
-                SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => SchemaNodeIdentity.None;
-                string IInstancePropertyMetadata.PropertyName => Entry.FILTER_CS;
-                bool IInstanceStructurePropertyMetadata.IsArray => false;
-                IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => _members;
             }
 
             #region GetFullPath
