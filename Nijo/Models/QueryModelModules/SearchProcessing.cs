@@ -221,7 +221,7 @@ namespace Nijo.Models.QueryModelModules {
                 .OfType<InstanceValueProperty>()
                 .ToDictionary(p => p.Metadata.MappingKey);
             var searchConditionMembers = scVar
-                .CreatePropertiesRecursively(searchCondition.FilterRoot)
+                .CreatePropertiesRecursively(searchCondition)
                 .OfType<InstanceValueProperty>()
                 .Where(prop => prop.Metadata.Type.SearchBehavior != null)
                 .ToArray();

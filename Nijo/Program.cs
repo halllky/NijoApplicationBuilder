@@ -142,7 +142,7 @@ namespace Nijo {
             var logger = ILoggerExtension.CreateConsoleLogger();
             var project = new GeneratedProject(projectRoot);
             var rule = SchemaParseRule.Default();
-            var parseContext = new SchemaParseContext(XDocument.Load(projectRoot), rule);
+            var parseContext = new SchemaParseContext(XDocument.Load(project.SchemaXmlPath), rule);
 
             project.GenerateCode(parseContext, logger);
         }

@@ -45,19 +45,19 @@ internal class BoolMember : IValueMemberType {
             var queryOwnerFullPath = queryFullPath.SkipLast(1);
 
             return $$"""
-                if ({{fullpathNullable}} != null && {{fullpathNotNull}}.Trueのみ != {{fullpathNotNull}}.Falseのみ) {
+                if ({{fullpathNullable}}?.AnyChecked() == true) {
                     if ({{fullpathNotNull}}.Trueのみ) {
-                    {{If(isMany, () => $$"""
+                {{If(isMany, () => $$"""
                         {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} == true));
-                    """).Else(() => $$"""
+                """).Else(() => $$"""
                         {{query}} = {{query}}.Where(x => x.{{queryFullPath.Join(".")}} == true);
-                    """)}}
+                """)}}
                     } else {
-                    {{If(isMany, () => $$"""
+                {{If(isMany, () => $$"""
                         {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} != true));
-                    """).Else(() => $$"""
+                """).Else(() => $$"""
                         {{query}} = {{query}}.Where(x => x.{{queryFullPath.Join(".")}} != true);
-                    """)}}
+                """)}}
                     }
                 }
                 """;
@@ -79,19 +79,17 @@ internal class BoolMember : IValueMemberType {
             dir.Generate(new SourceFile {
                 FileName = "BooleanSearchCondition.cs",
                 Contents = $$"""
-                using System;
+                    using System;
 
-                namespace MyApp.Core
-                {
-                    public class BooleanSearchCondition
-                    {
-                        public bool Trueのみ { get; set; }
-                        public bool Falseのみ { get; set; }
+                    namespace {{ctx.Config.RootNamespace}} {
+                        public class BooleanSearchCondition {
+                            public bool Trueのみ { get; set; }
+                            public bool Falseのみ { get; set; }
 
-                        public bool AnyChecked() => Trueのみ || Falseのみ;
+                            public bool AnyChecked() => Trueのみ || Falseのみ;
+                        }
                     }
-                }
-                """
+                    """,
             });
         });
     }
