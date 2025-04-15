@@ -21,16 +21,13 @@ using System.Threading.Tasks;
 namespace MyApp.Core;
 
 public partial class OverridedApplicationService {
-    public override Task<CommandModelテストReturnType> Execute(CommandModelテストParameter param, IPresentationContext<CommandModelテストParameterMessages> context) {
-        throw new NotImplementedException();
-    }
 
-    protected override IQueryable<親SearchResult> CreateQuerySource(親SearchCondition searchCondition, IPresentationContext<親Messages> context) {
-        return DbContext.親DbSet.Select(e => new 親SearchResult {
-            親ID = e.親ID,
-            親名 = e.親名,
-            子_子ID = e.子!.子ID,
-            子_子名 = e.子!.子名,
+    protected override IQueryable<親集約SearchResult> CreateQuerySource(親集約SearchCondition searchCondition, IPresentationContext<親集約Messages> context) {
+        return DbContext.親集約DbSet.Select(e => new 親集約SearchResult {
+            親集約ID = e.親集約ID,
+            親集約名 = e.親集約名,
+            子集約_子集約ID = e.子集約!.子集約ID,
+            子集約_子集約名 = e.子集約!.子集約名,
             Version = (int)e.Version!,
         });
     }

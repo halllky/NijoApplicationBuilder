@@ -13,7 +13,6 @@ alwaysApply: true
 
 ## 動作確認をおこなうときの必須事項
 - 実装した結果が正しいかを確認するときは [run-for-cursor-agent.ps1](mdc:Nijo.IntegrationTest/run-for-cursor-agent.ps1) を使用してください。
-- Cursorエージェントが [run-for-cursor-agent.ps1](mdc:Nijo.IntegrationTest/run-for-cursor-agent.ps1) を実行するときはこのファイルを絶対パスで呼び出してください。
 - 全パターンではなく `Nijo.IntegrationTest/DataPatterns` にある特定のパターンのみテストする場合は `run-for-cursor-agent.ps1 000_単純な集約` のように拡張子抜きのxmlファイル名を指定してください。
 - [run-for-cursor-agent.ps1](mdc:Nijo.IntegrationTest/run-for-cursor-agent.ps1) の詳細な結果は [DataPatternTest_Results.trx](mdc:Nijo.IntegrationTest/TestResults/DataPatternTest_Results.trx) に出力されています。エラーの詳細を確認する際はまずこのファイルを確認してください。
 
