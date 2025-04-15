@@ -6,11 +6,6 @@ Write-Host "スキーマダンプツール（Cursor Agent用）"
 Write-Host "===================================================="
 Write-Host ""
 
-# カレントディレクトリの取得
-$currentDir = Get-Location
-Write-Host "カレントディレクトリ: $currentDir"
-Write-Host ""
-
 # 出力ファイルの設定
 $outputDir = Join-Path $PSScriptRoot "SchemaOutput"
 $outputFile = Join-Path $outputDir "schema_dump.md"
@@ -27,7 +22,7 @@ if (Test-Path $outputFile) {
 }
 
 # Nijoプロジェクトのパスを特定
-$nijoProjectDir = Join-Path $PSScriptRoot ".." "Nijo"
+$nijoProjectDir = Join-Path $PSScriptRoot ".." | Join-Path -ChildPath "Nijo"
 if (-not (Test-Path $nijoProjectDir)) {
     Write-Host "エラー: Nijoプロジェクトが見つかりません: $nijoProjectDir" -ForegroundColor Red
     exit 1
@@ -56,23 +51,15 @@ try {
     # 結果をファイルに保存
     $dumpResult | Out-File -FilePath $outputFile -Encoding utf8
     
-    # カレントディレクトリを元に戻す
-    Set-Location $currentDir
-    
     Write-Host ""
     Write-Host "★★★ スキーマダンプが正常に完了しました ★★★"
     Write-Host ""
     Write-Host "ダンプ結果は以下のファイルに保存されました:"
     Write-Host $outputFile
 } catch {
-    # カレントディレクトリを元に戻す
-    Set-Location $currentDir
     
     Write-Host ""
     Write-Host "★★★ スキーマダンプ中にエラーが発生しました ★★★" -ForegroundColor Red
     Write-Host ""
     Write-Host "エラー詳細: $_" -ForegroundColor Red
 }
-
-# スクリプト終了時に元のディレクトリに戻る
-Set-Location $currentDir 
