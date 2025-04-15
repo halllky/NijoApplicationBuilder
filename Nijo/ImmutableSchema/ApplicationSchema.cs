@@ -10,6 +10,8 @@ using Nijo.Models.DataModelModules;
 using Nijo.Models.QueryModelModules;
 using Nijo.CodeGenerating.Helpers;
 using Nijo.Util.DotnetEx;
+using Nijo.Models;
+using Nijo.Models.CommandModelModules;
 
 namespace Nijo.ImmutableSchema {
     /// <summary>
@@ -61,9 +63,21 @@ namespace Nijo.ImmutableSchema {
                 ```
 
                 ## メンバー情報
+                説明
+
+                - 集約: そのメンバーを保有している集約
+                - メンバー: メンバー名
+                - 種類: 以下いずれか
+                  - 配列(Children または 被Ref)
+                  - 構造体(Child または Ref)
+                  - 値(ValueMember)
+                - GetFlattenArrayPathの結果: あるルート集約の変数xの配下にあるそのメンバーをすべて列挙するソースコード
+                - null許容: メンバーがnull許容か否か
+                - メタデータクラス名: ソースコード自動生成処理(Nijo.csproj)の中でこのメンバーの定義を司っているクラスの名前
+                - MappingKey: 変換処理をレンダリングする際の右辺左辺の紐づけのために相手方を一意に識別する値
 
                 {{GeneratePropertyPaths(rootAggregates)}}
-                """;
+                """.Replace(SKIP_MARKER, "");
         }
 
         /// <summary>
@@ -136,16 +150,25 @@ namespace Nijo.ImmutableSchema {
 
         private static IEnumerable<string> RenderRootAggregate(RootAggregate rootAggregate) {
 
-            var structures = new IInstancePropertyOwnerMetadata[] {
-                new EFCoreEntity(rootAggregate),
-                new SearchCondition.Filter(rootAggregate),
-                new DisplayData(rootAggregate),
-                new SaveCommand(rootAggregate, SaveCommand.E_Type.Create),
-                new SaveCommand(rootAggregate, SaveCommand.E_Type.Update),
-                new SaveCommand(rootAggregate, SaveCommand.E_Type.Delete),
-                new KeyClass.KeyClassEntry(rootAggregate),
-                new DisplayDataRef.Entry(rootAggregate),
-            };
+            var structures = new List<IInstancePropertyOwnerMetadata>();
+            if (rootAggregate.Model is DataModel) {
+                structures.Add(new EFCoreEntity(rootAggregate));
+                structures.Add(new SaveCommand(rootAggregate, SaveCommand.E_Type.Update));
+                structures.Add(new KeyClass.KeyClassEntry(rootAggregate));
+            }
+            if (rootAggregate.Model is QueryModel || rootAggregate.Model is DataModel && rootAggregate.GenerateDefaultQueryModel) {
+                structures.Add(new DisplayData(rootAggregate));
+                structures.Add(new SearchCondition.Filter(rootAggregate));
+                structures.Add(new DisplayDataRef.Entry(rootAggregate));
+            }
+            if (rootAggregate.Model is CommandModel) {
+                structures.Add(new ParameterType(rootAggregate));
+                structures.Add(new ReturnValue(rootAggregate));
+            }
+
+            if (structures.Count == 0) {
+                return ["この集約から生成される構造体はありません。"];
+            }
 
             return structures.Select(rootStructure => {
                 var rootVariable = new Variable("x");
@@ -154,8 +177,8 @@ namespace Nijo.ImmutableSchema {
                 return $$"""
                     #### {{rootAggregate.DisplayName}}: {{rootStructure.GetType().FullName}}
 
-                    | Owner | DisplayName | GetFlattenArrayPathの結果 | 種類 | null許容 | メタデータクラス名 |
-                    | :-- | :-- | :-- | :-- | :-- | :-- |
+                    | 集約 | メンバー | 種類 | GetFlattenArrayPathの結果 | null許容 | メタデータクラス名 | MappingKey |
+                    | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
                     {{properties.SelectTextTemplate(property => $$"""
                     | {{RenderProperty(property).Join(" | ")}} |
                     """)}}
@@ -165,14 +188,15 @@ namespace Nijo.ImmutableSchema {
                 IEnumerable<string> RenderProperty(IInstanceProperty property) {
                     yield return property.Owner == rootVariable ? "-" : property.Owner.Name;
                     yield return property.Metadata.DisplayName;
-                    yield return $"`x.{property.GetFlattenArrayPath(E_CsTs.CSharp, out _).Join(".")}`"; // プロパティパス
                     yield return property switch {
                         InstanceValueProperty v => $"値 ({v.Metadata.Type.GetType().Name})",
                         InstanceStructureProperty s => s.Metadata.IsArray ? "配列" : "構造体",
                         _ => throw new NotImplementedException(),
                     };
+                    yield return $"`x.{property.GetFlattenArrayPath(E_CsTs.CSharp, out _).Join(".")}`"; // プロパティパス
                     yield return property.IsNullable.ToString();
                     yield return property.Metadata.GetType().Name ?? "";
+                    yield return property.Metadata.MappingKey.ToString();
                 }
             });
         }

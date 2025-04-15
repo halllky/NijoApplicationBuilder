@@ -261,15 +261,14 @@ public static partial class CodeGeneratingHelperExtensions {
             // 配列の場合は多重度を考慮
             if (prop.Metadata is IInstanceStructurePropertyMetadata structMeta && structMeta.IsArray) {
 
-                if (csts == E_CsTs.CSharp) {
-                    path.Add(isMany
+                if (isMany) {
+                    path.Add(csts == E_CsTs.CSharp
                         ? $"SelectMany(x => x.{prop.Metadata.PropertyName})"
-                        : $"Select(x => x.{prop.Metadata.PropertyName})");
+                        : $"flatMap(x => x.{prop.Metadata.PropertyName})");
                 } else {
-                    path.Add(isMany
-                        ? $"flatMap(x => x.{prop.Metadata.PropertyName})"
-                        : $"map(x => x.{prop.Metadata.PropertyName})");
+                    path.Add(prop.Metadata.PropertyName);
                 }
+
                 isMany = true;
 
             } else if (isMany) {
