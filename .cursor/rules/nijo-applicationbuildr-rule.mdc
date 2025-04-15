@@ -10,36 +10,20 @@ alwaysApply: true
 
 ## 全般
 - 参照しようとしているフォルダに `README.md` という名前のファイルがある場合、 `README.md` を参照してください。
-- フレンドリーな口調で応答してください。ユーザーを楽しませるために口調を変えるだけで、思考能力は落とさないでください。
-- powershellで複数のコマンドを一度に実行するとき、ステートメントの区切りに `&&` は使えないので `;` を使用してください。
-- 動作確認、不具合原因調査、ソース修正のいずれかのタスクを行う際は、それぞれ以下のように振る舞ってください。
 
-## 動作確認をおこなうとき
+## 動作確認をおこなうときの必須事項
 - 実装した結果が正しいかを確認するときは [run-for-cursor-agent.ps1](mdc:Nijo.IntegrationTest/run-for-cursor-agent.ps1) を使用してください。
-- [run-for-cursor-agent.ps1](mdc:Nijo.IntegrationTest/run-for-cursor-agent.ps1) を実行するときは、まずカレントディレクトリをこのps1ファイルがある場所に移動させてから実行してください。
+- Cursorエージェントが [run-for-cursor-agent.ps1](mdc:Nijo.IntegrationTest/run-for-cursor-agent.ps1) を実行するときはこのファイルを絶対パスで呼び出してください。
 - 全パターンではなく `Nijo.IntegrationTest/DataPatterns` にある特定のパターンのみテストする場合は `run-for-cursor-agent.ps1 000_単純な集約` のように拡張子抜きのxmlファイル名を指定してください。
 - [run-for-cursor-agent.ps1](mdc:Nijo.IntegrationTest/run-for-cursor-agent.ps1) の詳細な結果は [DataPatternTest_Results.trx](mdc:Nijo.IntegrationTest/TestResults/DataPatternTest_Results.trx) に出力されています。エラーの詳細を確認する際はまずこのファイルを確認してください。
-- 結果は以下の情報を後述の表形式で報告してください。
-  - パターン。 `Nijo.IntegrationTest/DataPatterns` のパターンのXMLごとに、そのXMLのテストが成功したか失敗したかを報告してください。
-  - フェーズ。失敗した場合、以下のどのフェーズで失敗したかを報告してください。
-    1. コード自動生成
-    2. C#のコンパイルエラーチェック
-    3. TypeScriptエラーチェック
-  - 原因の推測。エラーの原因が以下いずれに最も近いかを考えて報告してください。
-    - `Nijo.IntegrationTest/Implementors` の実装が不足、または誤っていることによるエラー
-    - 生成されたソースコードが、そのモデルのモジュールから生成されるオブジェクトのデータ構造と矛盾していることによるエラー
-    - 生成されるソースコードが、そのモデルの `HelpTextMarkdown` に記載されている仕様に違反していることによるエラー
 
-| パターン | フェーズ | 原因の推測 |
-| :-- | :-- | :-- |
-| 000_単純な集約 | C#のコンパイルで失敗 | `Nijo.IntegrationTest/Implementors` の実装が誤っている |
-| 001_Refのみ | コード自動生成で失敗 | `DisplayData.cs` にて再帰処理でスタックオーバーフローの可能性 |
-| ... | ... | ... |
-
-## 不具合の原因を調査するとき
+## エラー原因調査するときの注意事項
+- コンパイルエラーが出ているファイルが [OverridedApplicationService.cs](mdc:自動テストで作成されたプロジェクト/Core/OverridedApplicationService.cs) の場合
+  - このファイルはユニットテスト実行時に [Implementors](mdc:Nijo.IntegrationTest/Implementors) フォルダ内部のソースから生成されます。Implementors内部の記述が [DataPatterns](mdc:Nijo.IntegrationTest/DataPatterns) におけるスキーマ定義と齟齬を起こしていないかを疑ってください。
+  - それが原因の場合は [Implementors](mdc:Nijo.IntegrationTest/Implementors) フォルダ内部のソースをスキーマ定義に合うよう修正してください。
 - コンパイルエラーが出ているファイルの先頭に `このファイルは自動生成されました。このファイルの内容を直接書き換えても、次回の自動生成処理で上書きされるのでご注意ください。` という文字があるとき、そのファイル自身だけでなく、そのファイルを自動生成する箇所も調査してください。
 
-## ソースコードを修正するとき
-- ソースコードを修正するときは @.editorconfig を参考にしてください。
-- @Nijo.csproj プロジェクトおよびそのプロジェクトに含まれるソースコードを修正するときは @CONTRIBUTING.md を参照してください。
+## ソースコードを修正するときの必須事項
+- ソースコードを修正するときは [.editorconfig](mdc:.editorconfig) を参考にしてください。
+- [Nijo.csproj](mdc:Nijo/Nijo.csproj) プロジェクトおよびそのプロジェクトに含まれるソースコードを修正するときは [CONTRIBUTING.md](mdc:Nijo/CONTRIBUTING.md) を参照してください。
 - コンパイルエラーが出ているファイルの先頭に `このファイルは自動生成されました。このファイルの内容を直接書き換えても、次回の自動生成処理で上書きされるのでご注意ください。` という文字があるとき、そのファイル自身ではなく、そのファイルを自動生成する箇所を修正してください。
