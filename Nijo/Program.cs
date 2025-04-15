@@ -18,6 +18,10 @@ using System.Runtime.InteropServices;
 using System.Security.Policy;
 using Nijo.SchemaParsing;
 using System.Xml.Linq;
+using Nijo.CodeGenerating.Helpers;
+using Nijo.Models.DataModelModules;
+using Nijo.Models.QueryModelModules;
+using Nijo.ImmutableSchema;
 
 [assembly: InternalsVisibleTo("Nijo.IntegrationTest")]
 
@@ -97,6 +101,14 @@ namespace Nijo {
                 { path, noBuild };
             run.SetHandler(Run, path, noBuild);
             rootCommand.AddCommand(run);
+
+            // スキーマダンプ
+            var dump = new Command(
+                name: "dump",
+                description: "スキーマ定義とプロパティパスの情報をMarkdown形式で出力します。")
+                { path };
+            dump.SetHandler(Dump, path);
+            rootCommand.AddCommand(dump);
 
             return rootCommand;
         }
@@ -190,6 +202,33 @@ namespace Nijo {
                 // キー入力待機
                 var input = Console.ReadKey(true);
                 if (input.Key == ConsoleKey.Q) break;
+            }
+        }
+
+        /// <summary>
+        /// スキーマ定義とプロパティパスの情報をMarkdown形式で出力します。
+        /// </summary>
+        /// <param name="path">対象フォルダまでの相対パス</param>
+        private static void Dump(string? path) {
+            var projectRoot = path == null
+                ? Directory.GetCurrentDirectory()
+                : Path.Combine(Directory.GetCurrentDirectory(), path);
+            var project = new GeneratedProject(projectRoot);
+            var logger = ILoggerExtension.CreateConsoleLogger();
+
+            var rule = SchemaParseRule.Default();
+            var xDocument = XDocument.Load(project.SchemaXmlPath);
+            var parseContext = new SchemaParseContext(xDocument, rule);
+
+            // TryBuildSchemaメソッドを使用してApplicationSchemaのインスタンスを生成
+            if (parseContext.TryBuildSchema(xDocument, out var appSchema, logger)) {
+                // ApplicationSchemaクラスのGenerateMarkdownDumpメソッドを使用
+                var markdownContent = appSchema.GenerateMarkdownDump();
+
+                // 標準出力に出力
+                Console.WriteLine(markdownContent);
+            } else {
+                logger.LogError("スキーマのビルドに失敗したため、ダンプを生成できませんでした。");
             }
         }
     }

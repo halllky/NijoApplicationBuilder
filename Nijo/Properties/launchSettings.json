@@ -14,6 +14,11 @@
       "commandName": "Project",
       "commandLineArgs": "generate",
       "workingDirectory": "..\\Nijo.ApplicationTemplate.Ver1"
+    },
+    "Ver1のアプリケーションテンプレートのdump": {
+      "commandName": "Project",
+      "commandLineArgs": "dump",
+      "workingDirectory": "..\\Nijo.ApplicationTemplate.Ver1"
     }
   }
 }

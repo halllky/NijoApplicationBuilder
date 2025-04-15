@@ -111,9 +111,13 @@ namespace Nijo.Models.DataModelModules {
         }
 
         IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
-            var cols = GetColumns().Cast<IInstancePropertyMetadata>();
-            var navs = GetNavigationProperties().Cast<IInstancePropertyMetadata>();
-            return cols.Concat(navs);
+            foreach (var col in GetColumns()) {
+                yield return col;
+            }
+            foreach (var nav in GetNavigationProperties()) {
+                if (nav.Principal.ThisSide == Aggregate) yield return nav.Principal;
+                if (nav.Relevant.ThisSide == Aggregate) yield return nav.Relevant;
+            }
         }
 
 
@@ -425,8 +429,13 @@ namespace Nijo.Models.DataModelModules {
             SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => OtherSide.ToIdentifier();
             string IInstancePropertyMetadata.PropertyName => OtherSidePhysicalName;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
-                var otherSideEfCoreEntity = new EFCoreEntity(OtherSide);
-                return ((IInstancePropertyOwnerMetadata)otherSideEfCoreEntity).GetMembers();
+                IInstancePropertyOwnerMetadata otherSideEfCoreEntity = new EFCoreEntity(OtherSide);
+                foreach (var member in otherSideEfCoreEntity.GetMembers()) {
+                    // 無限ループに陥るのでこのインスタンス自身は列挙しない
+                    if (member is PrincipalOrRelevant por && (por.OtherSide == this.ThisSide || por.ThisSide == this.OtherSide)) continue;
+
+                    yield return member;
+                }
             }
 
             /// <summary>C#型名</summary>
