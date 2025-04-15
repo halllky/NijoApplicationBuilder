@@ -76,68 +76,72 @@ namespace Nijo.ImmutableSchema {
                 - メタデータクラス名: ソースコード自動生成処理(Nijo.csproj)の中でこのメンバーの定義を司っているクラスの名前
                 - MappingKey: 変換処理をレンダリングする際の右辺左辺の紐づけのために相手方を一意に識別する値
 
-                {{GeneratePropertyPaths(rootAggregates)}}
+                {{GenerateStructuresInfo(rootAggregates)}}
                 """.Replace(SKIP_MARKER, "");
         }
 
         /// <summary>
         /// クラス図を生成します
         /// </summary>
-        private string GenerateClassDiagram(IEnumerable<AggregateBase> allAggregates) {
-            var classDefinitions = allAggregates.SelectTextTemplate(aggregate => {
-                return $$"""
-                    class {{aggregate.PhysicalName}} {
-                {{GenerateClassMembers(aggregate)}}
-                    }
-                """;
-            });
+        private static string GenerateClassDiagram(IEnumerable<AggregateBase> allAggregates) {
 
-            var relationships = allAggregates.SelectTextTemplate(aggregate => {
-                var parent = aggregate.GetParent();
-                var parentRelation = parent != null
-                    ? $"    {parent.PhysicalName} <|-- {aggregate.PhysicalName} : Parent"
-                    : "";
-
-                var memberRelations = aggregate.GetMembers().SelectTextTemplate(member => {
-                    if (member is RefToMember refTo) {
-                        return $"    {aggregate.PhysicalName} --> {refTo.RefTo.PhysicalName} : {refTo.PhysicalName}";
-                    } else if (member is ChildAggregate child) {
-                        return $"    {aggregate.PhysicalName} *-- {child.PhysicalName} : {child.PhysicalName}";
-                    } else if (member is ChildrenAggregate children) {
-                        return $"    {aggregate.PhysicalName} *-- \"{children.PhysicalName}[]\" {children.PhysicalName} : {children.PhysicalName}[]";
-                    }
-                    return "";
-                });
-
-                return $"""
-                {parentRelation}
-                {memberRelations}
-                """;
-            });
-
-            return $"""
-            {classDefinitions}
-            {relationships}
-            """;
-        }
-
-        /// <summary>
-        /// クラスメンバー定義を生成します
-        /// </summary>
-        private string GenerateClassMembers(AggregateBase aggregate) {
-            return aggregate.GetMembers().SelectTextTemplate(member => {
-                if (member is ValueMember vm) {
-                    string keyMarker = vm.IsKey ? "PK" : "";
-                    return $"        {vm.PhysicalName}: {vm.Type.CsPrimitiveTypeName} {keyMarker}";
+            return $$"""
+            {{allAggregates.SelectTextTemplate(aggregate => $$"""
+                class {{aggregate.PhysicalName}} {
+                    {{WithIndent(GenerateClassMembers(aggregate), "        ")}}
                 }
-                return "";
-            });
+            """)}}
+            {{allAggregates.SelectTextTemplate(aggregate => $$"""
+                {{WithIndent(GenerateRelationShips(aggregate), "    ")}}
+            """)}}
+            """;
+
+            static IEnumerable<string> GenerateClassMembers(AggregateBase aggregate) {
+                var classMembers = aggregate
+                    .GetMembers()
+                    .OfType<ValueMember>();
+
+                foreach (var vm in classMembers) {
+                    string pk = vm.IsKey ? "PK" : "";
+
+                    yield return $$"""
+                        {{vm.PhysicalName}}: {{vm.Type.CsPrimitiveTypeName}} {{pk}}
+                        """;
+                }
+            }
+
+            static IEnumerable<string> GenerateRelationShips(AggregateBase aggregate) {
+                var parent = aggregate.GetParent();
+                if (parent != null) {
+                    yield return $$"""
+                        {{parent.PhysicalName}} <|-- {{aggregate.PhysicalName}} : Parent
+                        """;
+                }
+
+                foreach (var member in aggregate.GetMembers()) {
+                    if (member is RefToMember refTo) {
+                        yield return $$"""
+                            {{aggregate.PhysicalName}} --> {{refTo.RefTo.PhysicalName}} : {{refTo.PhysicalName}}
+                            """;
+
+                    } else if (member is ChildAggregate child) {
+                        yield return $$"""
+                            {{aggregate.PhysicalName}} *-- {{child.PhysicalName}} : {{child.PhysicalName}}
+                            """;
+
+                    } else if (member is ChildrenAggregate children) {
+                        yield return $$"""
+                            {{aggregate.PhysicalName}} *-- "{{children.PhysicalName}}[]" {{children.PhysicalName}} : {{children.PhysicalName}}[]
+                            """;
+                    }
+                }
+            }
         }
 
         /// <summary>
-        /// プロパティパスのセクションを生成します
+        /// 生成される構造体の情報を生成します
         /// </summary>
-        private string GeneratePropertyPaths(IEnumerable<RootAggregate> rootAggregates) {
+        private static string GenerateStructuresInfo(IEnumerable<RootAggregate> rootAggregates) {
             return $$"""
                 {{rootAggregates.SelectTextTemplate(rootAggregate => $$"""
                 ### {{rootAggregate.DisplayName}}
@@ -146,59 +150,72 @@ namespace Nijo.ImmutableSchema {
 
                 """)}}
                 """;
-        }
 
-        private static IEnumerable<string> RenderRootAggregate(RootAggregate rootAggregate) {
+            static IEnumerable<string> RenderRootAggregate(RootAggregate rootAggregate) {
 
-            var structures = new List<IInstancePropertyOwnerMetadata>();
-            if (rootAggregate.Model is DataModel) {
-                structures.Add(new EFCoreEntity(rootAggregate));
-                structures.Add(new SaveCommand(rootAggregate, SaveCommand.E_Type.Update));
-                structures.Add(new KeyClass.KeyClassEntry(rootAggregate));
-            }
-            if (rootAggregate.Model is QueryModel || rootAggregate.Model is DataModel && rootAggregate.GenerateDefaultQueryModel) {
-                structures.Add(new DisplayData(rootAggregate));
-                structures.Add(new SearchCondition.Filter(rootAggregate));
-                structures.Add(new DisplayDataRef.Entry(rootAggregate));
-            }
-            if (rootAggregate.Model is CommandModel) {
-                structures.Add(new ParameterType(rootAggregate));
-                structures.Add(new ReturnValue(rootAggregate));
-            }
-
-            if (structures.Count == 0) {
-                return ["この集約から生成される構造体はありません。"];
-            }
-
-            return structures.Select(rootStructure => {
-                var rootVariable = new Variable("x");
-                var properties = rootVariable.CreatePropertiesRecursively(rootStructure);
-
-                return $$"""
-                    #### {{rootAggregate.DisplayName}}: {{rootStructure.GetType().FullName}}
-
-                    | 集約 | メンバー | 種類 | GetFlattenArrayPathの結果 | null許容 | メタデータクラス名 | MappingKey |
-                    | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
-                    {{properties.SelectTextTemplate(property => $$"""
-                    | {{RenderProperty(property).Join(" | ")}} |
-                    """)}}
-
-                    """;
-
-                IEnumerable<string> RenderProperty(IInstanceProperty property) {
-                    yield return property.Owner == rootVariable ? "-" : property.Owner.Name;
-                    yield return property.Metadata.DisplayName;
-                    yield return property switch {
-                        InstanceValueProperty v => $"値 ({v.Metadata.Type.GetType().Name})",
-                        InstanceStructureProperty s => s.Metadata.IsArray ? "配列" : "構造体",
-                        _ => throw new NotImplementedException(),
-                    };
-                    yield return $"`x.{property.GetFlattenArrayPath(E_CsTs.CSharp, out _).Join(".")}`"; // プロパティパス
-                    yield return property.IsNullable.ToString();
-                    yield return property.Metadata.GetType().Name ?? "";
-                    yield return property.Metadata.MappingKey.ToString();
+                var structures = new List<IInstancePropertyOwnerMetadata>();
+                if (rootAggregate.Model is DataModel) {
+                    structures.Add(new EFCoreEntity(rootAggregate));
+                    structures.Add(new SaveCommand(rootAggregate, SaveCommand.E_Type.Update));
+                    structures.Add(new KeyClass.KeyClassEntry(rootAggregate));
                 }
-            });
+                if (rootAggregate.Model is QueryModel || rootAggregate.Model is DataModel && rootAggregate.GenerateDefaultQueryModel) {
+                    structures.Add(new DisplayData(rootAggregate));
+                    structures.Add(new SearchCondition.Filter(rootAggregate));
+                    structures.Add(new DisplayDataRef.Entry(rootAggregate));
+                }
+                if (rootAggregate.Model is CommandModel) {
+                    structures.Add(new ParameterType(rootAggregate));
+                    structures.Add(new ReturnValue(rootAggregate));
+                }
+
+                if (structures.Count == 0) {
+                    return ["この集約から生成される構造体はありません。"];
+                }
+
+                return structures.Select(rootStructure => {
+                    var rootVariable = new Variable("x");
+                    var properties = rootVariable.CreatePropertiesRecursively(rootStructure);
+
+                    return $$"""
+                        #### {{rootAggregate.DisplayName}}: {{rootStructure.GetType().FullName}}
+
+                        | 集約 | メンバー | 種類 | GetFlattenArrayPathの結果 | null許容 | メタデータクラス名 | MappingKey |
+                        | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
+                        {{properties.SelectTextTemplate(property => $$"""
+                        | {{RenderProperty(property).Join(" | ")}} |
+                        """)}}
+
+                        """;
+
+                    IEnumerable<string> RenderProperty(IInstanceProperty property) {
+                        // 集約
+                        yield return property.Owner == rootVariable ? "-" : property.Owner.Name;
+
+                        // メンバー
+                        yield return property.Metadata.DisplayName;
+
+                        // 種類
+                        yield return property switch {
+                            InstanceValueProperty v => $"値 ({v.Metadata.Type.GetType().Name})",
+                            InstanceStructureProperty s => s.Metadata.IsArray ? "配列" : "構造体",
+                            _ => throw new NotImplementedException(),
+                        };
+
+                        // GetFlattenArrayPathの結果
+                        yield return $"`x.{property.GetFlattenArrayPath(E_CsTs.CSharp, out _).Join(".")}`";
+
+                        // null許容
+                        yield return property.IsNullable.ToString();
+
+                        // メタデータクラス名
+                        yield return property.Metadata.GetType().Name ?? "";
+
+                        // MappingKey
+                        yield return property.Metadata.MappingKey.ToString();
+                    }
+                });
+            }
         }
     }
 }
