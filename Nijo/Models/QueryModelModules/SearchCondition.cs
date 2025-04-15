@@ -352,7 +352,6 @@ namespace Nijo.Models.QueryModelModules {
         /// <see cref="Filter"/> のメンバー
         /// </summary>
         internal interface IFilterMember : IInstancePropertyMetadata {
-            string DisplayName { get; }
             string RenderCSharpDeclaring();
             string RenderTypeScriptDeclaring();
             string RenderTsNewObjectFunctionValue();
