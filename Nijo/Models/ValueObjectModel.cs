@@ -19,12 +19,13 @@ namespace Nijo.Models {
         internal const string SCHEMA_NAME = "value-object";
         public string SchemaName => SCHEMA_NAME;
 
-        public string HelpTextMarkdown => $$"""
-            # ValueObject 値オブジェクト
-            識別子や複合値を表すためのオブジェクト。
-            主に集約のキーとして使用される。
+        public string GenerateDocumentMarkdown(RootAggregate rootAggregate) => $$"""
+            # {{rootAggregate.DisplayName}}
+            識別子や複合値といった特殊な値を表すためのオブジェクト。
+            値オブジェクト（ValueObject）として定義される。値オブジェクトは主に集約のキーとして使用されたり、
+            特定の業務ルールを集約した値を表現する形で使用されたりする。
             
-            ValueObjectの定義からは以下のモジュールが生成される。
+            {{rootAggregate.DisplayName}}の定義からは以下のモジュールが生成される。
             
             ## C#の値オブジェクトクラス
             値オブジェクトを表すC#のクラスが生成される。

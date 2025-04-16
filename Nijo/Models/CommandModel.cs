@@ -14,10 +14,13 @@ namespace Nijo.Models {
     internal class CommandModel : IModel {
         public string SchemaName => "command-model";
 
-        public string HelpTextMarkdown => $$"""
-            # CommandModel コマンドモデル
-            アクター（このアプリケーションのユーザまたは外部システム）がこのアプリケーションの状態やこのアプリケーションのDataModelに何らかの変更を加えるときの操作のデータの形。
-            コマンドが実行されるとDataModelに何らかの変更がかかる。
+        public string GenerateDocumentMarkdown(RootAggregate rootAggregate) => $$"""
+            # {{rootAggregate.DisplayName}} CommandModel コマンドモデル
+            アクター（このアプリケーションのユーザまたは外部システム）がこのアプリケーションの状態や
+            このアプリケーションのDataModelに何らかの変更を加えるときの操作のデータの形。
+            基本的にはコマンドが実行されるとDataModelに何らかの変更がかかるが、
+            DataModelに何の変更も加えないCommandModelも許容される。（例えば、Excel出力のようなダンプ処理など）
+
             CQS, CQRS における Command とほぼ同じ。
             QueryModel とは対の関係にある。（CommandModelはアクターからDataModelへのデータの流れ、QueryModelはDataModelからアクターへのデータの流れ）
 

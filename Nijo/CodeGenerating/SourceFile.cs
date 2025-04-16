@@ -47,12 +47,14 @@ namespace Nijo.CodeGenerating {
                 NewLine = newLine,
             };
 
-            sw.WriteLine($$"""
-                {{comment}} このファイルは自動生成されました。このファイルの内容を直接書き換えても、次回の自動生成処理で上書きされるのでご注意ください。
-                {{(CallerFilePath != null ? $"{comment} ※ このファイルを生成したクラス  : {Path.GetFileName(CallerFilePath)}" : "")}}
-                {{(CallerMemberName != null ? $"{comment} ※ このファイルを生成したメソッド: {CallerMemberName}" : "")}}
+            if (ext != ".md") {
+                sw.WriteLine($$"""
+                    {{comment}} このファイルは自動生成されました。このファイルの内容を直接書き換えても、次回の自動生成処理で上書きされるのでご注意ください。
+                    {{(CallerFilePath != null ? $"{comment} ※ このファイルを生成したクラス  : {Path.GetFileName(CallerFilePath)}" : "")}}
+                    {{(CallerMemberName != null ? $"{comment} ※ このファイルを生成したメソッド: {CallerMemberName}" : "")}}
 
-                """);
+                    """);
+            }
 
             foreach (var line in Contents.Split(Environment.NewLine)) {
                 if (line.Contains(SKIP_MARKER)) continue;

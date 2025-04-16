@@ -13,6 +13,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Nijo.Util.DotnetEx;
+using Nijo.Parts.Document;
 
 namespace Nijo {
     /// <summary>
@@ -34,6 +35,7 @@ namespace Nijo {
         public string WebapiProjectRoot => Path.Combine(ProjectRoot, "webapi");
         public string ReactProjectRoot => Path.Combine(ProjectRoot, "react");
         public string UnitTestProjectRoot => Path.Combine(ProjectRoot, "Test");
+        public string DocumentRoot => Path.Combine(ProjectRoot, "Document");
 
         /// <summary>
         /// このプロジェクトのソースコード自動生成設定を返します。
@@ -72,6 +74,9 @@ namespace Nijo {
                 } catch (Exception ex) {
                     throw new InvalidOperationException($"{rootAggregate}のレンダリングで例外が発生", ex);
                 }
+
+                // 自動生成ドキュメント
+                ctx.Use<MarkdownDocument>().AddToIndexReadme(rootAggregate);
             }
 
             // ルート集約と対応しないコードを生成

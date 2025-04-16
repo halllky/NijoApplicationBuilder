@@ -18,9 +18,10 @@ namespace Nijo.Models {
     internal class QueryModel : IModel {
         public string SchemaName => "query-model";
 
-        public string HelpTextMarkdown => $$"""
-            # QueryModel クエリモデル
-            アクター（このアプリケーションのユーザまたは外部システム）が、アプリケーションに蓄積されたデータ（DataModel）を、特定の観点から参照するためのデータの形。
+        public string GenerateDocumentMarkdown(RootAggregate rootAggregate) => $$"""
+            # {{rootAggregate.DisplayName}} QueryModel クエリモデル
+            アクター（このアプリケーションのユーザまたは外部システム）が、アプリケーションに蓄積されたデータ（DataModel）を、
+            特定の観点（{{rootAggregate.DisplayName}}）から参照するためのデータの形。
             CQS, CQRS におけるクエリとほぼ同じもの。
             CommandModel とは対の関係にある。
             （CommandModel はアクターから DataModel へのデータの流れ、QueryModel は DataModel からアクターへのデータの流れ）

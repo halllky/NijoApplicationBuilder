@@ -19,9 +19,9 @@ namespace Nijo.CodeGenerating {
         string SchemaName { get; }
 
         /// <summary>
-        /// このモデルがどういった責務を負っているか、このモデルからどういったソースコードが生成されるかの概要
+        /// このモデルがどういった責務を負っているか、このモデルからどういったソースコードが生成されるかの概要をmarkdownで記載
         /// </summary>
-        string HelpTextMarkdown { get; }
+        string GenerateDocumentMarkdown(RootAggregate rootAggregate);
 
         /// <summary>
         /// モデルの指定内容の検証を行ないます。

@@ -23,9 +23,9 @@ namespace Nijo.Models {
     internal class DataModel : IModel {
         public string SchemaName => "data-model";
 
-        public string HelpTextMarkdown => $$"""
-            # DataModel データモデル
-            アプリケーションに永続化されるデータの形を表す。
+        public string GenerateDocumentMarkdown(RootAggregate rootAggregate) => $$"""
+            # {{rootAggregate.DisplayName}} DataModel データモデル
+            {{rootAggregate.DisplayName}}がアプリケーションに永続化されるデータの形を表す。
             トランザクションの境界の単位（より強い整合性の範囲）で区切られる。
             データモデルの境界を跨ぐエラーチェックは、一時的に整合性が崩れる可能性がある。
             DDD（ドメイン駆動設計）における集約ルートの概念とほぼ同じ。
