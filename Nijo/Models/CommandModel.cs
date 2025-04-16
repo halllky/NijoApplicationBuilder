@@ -14,8 +14,8 @@ namespace Nijo.Models {
     internal class CommandModel : IModel {
         public string SchemaName => "command-model";
 
-        public string GenerateDocumentMarkdown(RootAggregate rootAggregate) => $$"""
-            # {{rootAggregate.DisplayName}} CommandModel コマンドモデル
+        public string RenderRuleMarkdown() => $$"""
+            # CommandModel コマンドモデル
             アクター（このアプリケーションのユーザまたは外部システム）がこのアプリケーションの状態や
             このアプリケーションのDataModelに何らかの変更を加えるときの操作のデータの形。
             基本的にはコマンドが実行されるとDataModelに何らかの変更がかかるが、

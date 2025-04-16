@@ -18,9 +18,9 @@ namespace Nijo.Models {
     internal class StaticEnumModel : IModel {
         public string SchemaName => EnumDefParser.SCHEMA_NAME;
 
-        public string GenerateDocumentMarkdown(RootAggregate rootAggregate) => $$"""
-            # {{rootAggregate.DisplayName}}
-            静的区分値。値がソースコード上にハードコードされる区分値。
+        public string RenderRuleMarkdown() => $$"""
+            # 静的区分値（列挙値）
+            値がソースコード上にハードコードされる区分値。
             C#はenumとして、TypeScriptはリテラル型として表れる。
             """;
 

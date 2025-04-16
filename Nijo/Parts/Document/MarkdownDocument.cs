@@ -31,13 +31,13 @@ public class MarkdownDocument : IMultiAggregateSourceFile {
             // README.md
             dir.Generate(RenderIndexReadme(ctx));
 
-            // 集約ごとの説明ファイル
-            foreach (var rootAggregate in _rootAggregates) {
-                dir.Generate(new SourceFile {
-                    FileName = ToFileName(rootAggregate),
-                    Contents = rootAggregate.Model.GenerateDocumentMarkdown(rootAggregate),
-                });
-            }
+            //// 集約ごとの説明ファイル
+            //foreach (var rootAggregate in _rootAggregates) {
+            //    dir.Generate(new SourceFile {
+            //        FileName = ToFileName(rootAggregate),
+            //        Contents = rootAggregate.Model.RenderRuleMarkdown(rootAggregate),
+            //    });
+            //}
 
             // 追加ドキュメント
             dir.Generate(RenderDataModelDiagram(ctx));
