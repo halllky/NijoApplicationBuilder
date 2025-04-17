@@ -2,22 +2,23 @@ using System.ComponentModel;
 
 namespace Nijo.Ui {
     public partial class ProjectForm : Form {
-        private string _folderPath;
+        /// <summary>
+        /// 開かれているプロジェクト
+        /// </summary>
+        private readonly GeneratedProject _project;
 
         /// <summary>
         /// 表示しているフォルダのパス
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public string FolderPath {
-            get => _folderPath;
+            get => _project.ProjectRoot;
             private set {
-                _folderPath = value;
-                UpdateTitle();
             }
         }
 
-        public ProjectForm(string folderPath) {
-            _folderPath = folderPath; // 初期化時に直接設定
+        public ProjectForm(GeneratedProject project) {
+            _project = project;
             InitializeComponent();
             UpdateTitle(); // 初期化後にタイトルを更新
         }

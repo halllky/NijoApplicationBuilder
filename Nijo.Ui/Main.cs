@@ -33,6 +33,13 @@ namespace Nijo.Ui {
         }
 
         private void OpenFolderView(string folderPath) {
+
+            // パスの検査
+            if (!GeneratedProject.TryOpen(folderPath, out var project, out var error)) {
+                MessageBox.Show(error);
+                return;
+            }
+
             // すでに開いているフォルダがあれば閉じる
             CloseFolderView();
 
@@ -40,8 +47,7 @@ namespace Nijo.Ui {
             CurrentFolderPath = folderPath;
             EnableCloseFolderMenuItem(true);
 
-            // フォルダ表示用のフォームを開く
-            _currentFolderForm = new ProjectForm(folderPath);
+            _currentFolderForm = new ProjectForm(project);
             _currentFolderForm.FolderClosed += FolderViewForm_FolderClosed;
 
             // メインフォームを非表示にする

@@ -130,7 +130,11 @@ namespace Nijo {
                 ? Directory.GetCurrentDirectory()
                 : Path.Combine(Directory.GetCurrentDirectory(), path);
             var logger = ILoggerExtension.CreateConsoleLogger();
-            var project = new GeneratedProject(projectRoot);
+
+            if (!GeneratedProject.TryOpen(projectRoot, out var project, out var error)) {
+                logger.LogError(error);
+                return;
+            }
             var rule = SchemaParseRule.Default();
             var parseContext = new SchemaParseContext(XDocument.Load(project.SchemaXmlPath), rule);
 
@@ -147,7 +151,11 @@ namespace Nijo {
                 ? Directory.GetCurrentDirectory()
                 : Path.Combine(Directory.GetCurrentDirectory(), path);
             var logger = ILoggerExtension.CreateConsoleLogger();
-            var project = new GeneratedProject(projectRoot);
+
+            if (!GeneratedProject.TryOpen(projectRoot, out var project, out var error)) {
+                logger.LogError(error);
+                return;
+            }
             var rule = SchemaParseRule.Default();
             var parseContext = new SchemaParseContext(XDocument.Load(project.SchemaXmlPath), rule);
 
@@ -165,7 +173,11 @@ namespace Nijo {
                 ? Directory.GetCurrentDirectory()
                 : Path.Combine(Directory.GetCurrentDirectory(), path);
             var logger = ILoggerExtension.CreateConsoleLogger();
-            var project = new GeneratedProject(projectRoot);
+
+            if (!GeneratedProject.TryOpen(projectRoot, out var project, out var error)) {
+                logger.LogError(error);
+                return;
+            }
 
             var firstLaunch = true;
             while (true) {
@@ -220,8 +232,12 @@ namespace Nijo {
             var projectRoot = path == null
                 ? Directory.GetCurrentDirectory()
                 : Path.Combine(Directory.GetCurrentDirectory(), path);
-            var project = new GeneratedProject(projectRoot);
             var logger = ILoggerExtension.CreateConsoleLogger();
+
+            if (!GeneratedProject.TryOpen(projectRoot, out var project, out var error)) {
+                logger.LogError(error);
+                return;
+            }
 
             var rule = SchemaParseRule.Default();
             var xDocument = XDocument.Load(project.SchemaXmlPath);
