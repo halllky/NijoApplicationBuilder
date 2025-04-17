@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace Nijo.Ui;
+namespace Nijo.Ui.Views;
 
 /// <summary>
 /// ルート集約1件と対応する。

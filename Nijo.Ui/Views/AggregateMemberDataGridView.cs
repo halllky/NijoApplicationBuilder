@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace Nijo.Ui {
+namespace Nijo.Ui.Views {
     /// <summary>
     /// 集約のメンバーを表示・編集するグリッドのUI。
     /// </summary>

@@ -8,7 +8,7 @@ using Nijo.SchemaParsing;
 using System.Text.Json;
 using System.Data;
 
-namespace Nijo.Ui;
+namespace Nijo.Ui.Views;
 
 /// <summary>
 /// NijoApplicationBuilderで構築されるプロジェクト1件と対応する。
@@ -94,7 +94,7 @@ public class ProjectFormViewModel {
         var availableOptions = schemaContext
             .GetOptions(element)
             .Where(opt => opt.IsAvailableModel == null ||
-                   (dataModelType.Value != null && opt.IsAvailableModel(dataModelType.Value)))
+                   dataModelType.Value != null && opt.IsAvailableModel(dataModelType.Value))
             .ToArray();
 
         // 動的にNodeOptionsの属性に対応する列を追加

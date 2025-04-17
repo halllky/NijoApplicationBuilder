@@ -1,3 +1,4 @@
+using Nijo.Ui.Views;
 using System.ComponentModel;
 using System.Text.Json;
 

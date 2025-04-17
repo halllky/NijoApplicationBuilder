@@ -1,4 +1,4 @@
-namespace Nijo.Ui {
+namespace Nijo.Ui.Views {
     partial class ProjectForm {
         /// <summary>
         ///  Required designer variable.

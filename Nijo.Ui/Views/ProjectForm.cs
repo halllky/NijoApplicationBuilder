@@ -3,7 +3,7 @@ using System.Data;
 using System.Xml.Linq;
 using Nijo.SchemaParsing;
 
-namespace Nijo.Ui {
+namespace Nijo.Ui.Views {
 
     /// <summary>
     /// NijoApplicationBuilderで構築されるプロジェクト1個を表す画面のUI

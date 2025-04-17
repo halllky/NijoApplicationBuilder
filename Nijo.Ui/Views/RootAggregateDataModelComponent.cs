@@ -10,7 +10,7 @@ using System.Windows.Forms;
 using System.Xml.Linq;
 using Nijo.SchemaParsing;
 
-namespace Nijo.Ui {
+namespace Nijo.Ui.Views {
 
     /// <summary>
     /// ルート集約1件と対応するUIコンポーネント（DataModel）
