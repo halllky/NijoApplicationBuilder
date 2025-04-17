@@ -222,7 +222,7 @@ namespace Nijo.Models.DataModelModules {
                                 // refが必須の場合はその時点で参照先が1件も無いときに例外を出す
                                 yield return $$"""
                                     {{member.PhysicalName}} = context.{{GeneratedList(refToRoot)}}.Count == 0
-                                        ? throw new InvalidOperation("{{owner}}の{{memberName}}に設定するためのインスタンスを探そうとしましたが、{{refToName}}が1件も作成されていません。")
+                                        ? throw new InvalidOperationException("{{owner}}の{{memberName}}に設定するためのインスタンスを探そうとしましたが、{{refToName}}が1件も作成されていません。")
                                         : context.{{GeneratedList(refToRoot)}}
                                     {{treePath.SelectTextTemplate(path => $$"""
                                             {{path}}

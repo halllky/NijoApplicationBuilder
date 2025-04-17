@@ -84,7 +84,10 @@ public class DataPatternTest {
         File.Copy(sourceXmlPath, targetXmlPath, true);
 
         // ソースコード自動生成を実行
-        var project = new GeneratedProject(testProjectDir);
+        if (!GeneratedProject.TryOpen(testProjectDir, out var project, out var error)) {
+            Assert.Fail($"プロジェクトフォルダを開くのに失敗しました: {error}");
+            return;
+        }
         var schemaXml = XDocument.Load(project.SchemaXmlPath);
         var parseContext = new SchemaParseContext(schemaXml, SchemaParseRule.Default());
 
