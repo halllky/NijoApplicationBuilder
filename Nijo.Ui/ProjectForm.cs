@@ -21,6 +21,11 @@ namespace Nijo.Ui {
         private XElement? _selectedAggregateNode;
 
         /// <summary>
+        /// データグリッド用のBindingSource
+        /// </summary>
+        private readonly BindingSource _bindingSource = new BindingSource();
+
+        /// <summary>
         /// 表示しているフォルダのパス
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -37,6 +42,9 @@ namespace Nijo.Ui {
             // スキーマ定義のロード
             var rule = SchemaParseRule.Default();
             _schemaContext = new SchemaParseContext(XDocument.Load(_project.SchemaXmlPath), rule);
+
+            // DataGridViewの初期設定
+            _aggregateDetailView.DataSource = _bindingSource;
 
             // 初期化
             UpdateTitle();
@@ -56,7 +64,7 @@ namespace Nijo.Ui {
         private void InitializeSchemaExplorer() {
             // スキーマ定義のルート集約をTreeViewに表示
             _schemaExplorer.Nodes.Clear();
-            foreach (var element in _schemaContext.Document.Root.Elements()) {
+            foreach (var element in _schemaContext.Document.Root?.Elements() ?? []) {
                 // ルート集約を判定（Type属性の値で判断）
                 var typeAttr = element.Attribute("Type")?.Value;
                 if (typeAttr == "data-model" || typeAttr == "command-model" || typeAttr == "query-model" || typeAttr == "enum") {
@@ -93,7 +101,7 @@ namespace Nijo.Ui {
                 DisplayDataModelDetail(element);
             } else {
                 // 他のモデルタイプは未実装
-                _aggregateDetailView.DataSource = null;
+                _bindingSource.DataSource = null;
                 _aggregateDetailLabel.Text = $"{element.Name.LocalName} (未対応のモデルタイプ: {typeName})";
             }
         }
@@ -161,8 +169,14 @@ namespace Nijo.Ui {
                 }
             }
 
-            // DataGridViewに設定
-            _aggregateDetailView.DataSource = dataTable;
+            // BindingSourceを使用してDataGridViewに設定
+            _bindingSource.DataSource = dataTable;
+
+            // 列のソートを無効化
+            foreach (DataGridViewColumn column in _aggregateDetailView.Columns) {
+                column.SortMode = DataGridViewColumnSortMode.NotSortable;
+            }
+
             _aggregateDetailLabel.Text = $"{element.Name.LocalName} (データモデル)";
         }
 
@@ -184,6 +198,6 @@ namespace Nijo.Ui {
         /// <summary>
         /// フォームが閉じられたときに発火するイベント
         /// </summary>
-        public event EventHandler FolderClosed;
+        public event EventHandler? FolderClosed;
     }
 }
