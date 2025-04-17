@@ -16,6 +16,8 @@ namespace Nijo.Models {
 
         public string RenderRuleMarkdown() => $$"""
             # CommandModel コマンドモデル
+            スキーマ定義での指定方法: '{{SchemaName}}'
+
             アクター（このアプリケーションのユーザまたは外部システム）がこのアプリケーションの状態や
             このアプリケーションのDataModelに何らかの変更を加えるときの操作のデータの形。
             基本的にはコマンドが実行されるとDataModelに何らかの変更がかかるが、

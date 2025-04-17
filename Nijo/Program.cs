@@ -110,6 +110,13 @@ namespace Nijo {
             dump.SetHandler(Dump, path);
             rootCommand.AddCommand(dump);
 
+            // スキーマ定義ルール
+            var rule = new Command(
+                name: "rule",
+                description: "スキーマ定義ルールを説明するドキュメントをMarkdown形式で出力します。");
+            rule.SetHandler(Rule);
+            rootCommand.AddCommand(rule);
+
             return rootCommand;
         }
 
@@ -230,6 +237,17 @@ namespace Nijo {
             } else {
                 logger.LogError("スキーマのビルドに失敗したため、ダンプを生成できませんでした。");
             }
+        }
+
+        /// <summary>
+        /// スキーマ定義ルールを説明するドキュメントをMarkdown形式で出力します。
+        /// </summary>
+        private static void Rule() {
+            var rule = SchemaParseRule.Default();
+            var markdownContent = rule.RenderMarkdownDocument();
+
+            // 標準出力に出力
+            Console.WriteLine(markdownContent);
         }
     }
 }

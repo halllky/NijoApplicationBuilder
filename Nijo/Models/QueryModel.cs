@@ -20,6 +20,8 @@ namespace Nijo.Models {
 
         public string RenderRuleMarkdown() => $$"""
             # QueryModel クエリモデル
+            スキーマ定義での指定方法: '{{SchemaName}}'
+
             アクター（このアプリケーションのユーザまたは外部システム）が、アプリケーションに蓄積されたデータ（DataModel）を、特定の観点から参照するためのデータの形。
             CQS, CQRS におけるクエリとほぼ同じもの。
             CommandModel とは対の関係にある。
