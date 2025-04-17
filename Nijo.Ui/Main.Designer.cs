@@ -1,27 +1,19 @@
-namespace Nijo.Ui
-{
-    partial class Main
-    {
+namespace Nijo.Ui {
+    partial class Main {
         /// <summary>
         ///  Required designer variable.
         /// </summary>
         private System.ComponentModel.IContainer components = null;
-
-        // UIコンポーネント
-        private Label _pathLabel;
-        private MenuStrip _menuStrip;
-        private ToolStripMenuItem _fileMenu;
-        private ToolStripMenuItem _openFolderMenuItem;
-        private ToolStripMenuItem _closeFolderMenuItem;
+        private Button _openFolderButton;
+        private ListBox _recentFoldersListBox;
+        private Label _recentFoldersLabel;
 
         /// <summary>
         ///  Clean up any resources being used.
         /// </summary>
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing && (components != null))
-            {
+        protected override void Dispose(bool disposing) {
+            if (disposing && (components != null)) {
                 components.Dispose();
             }
             base.Dispose(disposing);
@@ -33,72 +25,54 @@ namespace Nijo.Ui
         ///  Required method for Designer support - do not modify
         ///  the contents of this method with the code editor.
         /// </summary>
-        private void InitializeComponent()
-        {
-            _menuStrip = new MenuStrip();
-            _fileMenu = new ToolStripMenuItem();
-            _openFolderMenuItem = new ToolStripMenuItem();
-            _closeFolderMenuItem = new ToolStripMenuItem();
-            _pathLabel = new Label();
-            _menuStrip.SuspendLayout();
+        private void InitializeComponent() {
+            _openFolderButton = new Button();
+            _recentFoldersListBox = new ListBox();
+            _recentFoldersLabel = new Label();
             SuspendLayout();
             //
-            // _menuStrip
+            // _openFolderButton
             //
-            _menuStrip.ImageScalingSize = new Size(32, 32);
-            _menuStrip.Items.AddRange(new ToolStripItem[] { _fileMenu });
-            _menuStrip.Location = new Point(0, 0);
-            _menuStrip.Name = "_menuStrip";
-            _menuStrip.Size = new Size(800, 42);
-            _menuStrip.TabIndex = 0;
+            _openFolderButton.Location = new Point(6, 6);
+            _openFolderButton.Name = "_openFolderButton";
+            _openFolderButton.Size = new Size(120, 23);
+            _openFolderButton.TabIndex = 0;
+            _openFolderButton.Text = "フォルダを開く";
+            _openFolderButton.UseVisualStyleBackColor = true;
+            _openFolderButton.Click += OpenFolderMenuItem_Click;
             //
-            // _fileMenu
+            // _recentFoldersListBox
             //
-            _fileMenu.DropDownItems.AddRange(new ToolStripItem[] { _openFolderMenuItem, _closeFolderMenuItem });
-            _fileMenu.Name = "_fileMenu";
-            _fileMenu.Size = new Size(102, 38);
-            _fileMenu.Text = "ファイル";
+            _recentFoldersListBox.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            _recentFoldersListBox.FormattingEnabled = true;
+            _recentFoldersListBox.Location = new Point(6, 50);
+            _recentFoldersListBox.Margin = new Padding(2, 1, 2, 1);
+            _recentFoldersListBox.Name = "_recentFoldersListBox";
+            _recentFoldersListBox.Size = new Size(420, 154);
+            _recentFoldersListBox.TabIndex = 3;
+            _recentFoldersListBox.DoubleClick += RecentFoldersListBox_DoubleClick;
             //
-            // _openFolderMenuItem
+            // _recentFoldersLabel
             //
-            _openFolderMenuItem.Name = "_openFolderMenuItem";
-            _openFolderMenuItem.Size = new Size(359, 44);
-            _openFolderMenuItem.Text = "フォルダを開く";
-            _openFolderMenuItem.Click += OpenFolderMenuItem_Click;
-            //
-            // _closeFolderMenuItem
-            //
-            _closeFolderMenuItem.Enabled = false;
-            _closeFolderMenuItem.Name = "_closeFolderMenuItem";
-            _closeFolderMenuItem.Size = new Size(359, 44);
-            _closeFolderMenuItem.Text = "フォルダを閉じる";
-            _closeFolderMenuItem.Click += CloseFolderMenuItem_Click;
-            //
-            // _pathLabel
-            //
-            _pathLabel.AutoSize = false;
-            _pathLabel.Dock = DockStyle.Top;
-            _pathLabel.TextAlign = ContentAlignment.MiddleLeft;
-            _pathLabel.BorderStyle = BorderStyle.Fixed3D;
-            _pathLabel.Location = new Point(0, 42);
-            _pathLabel.Name = "_pathLabel";
-            _pathLabel.Size = new Size(800, 30);
-            _pathLabel.Padding = new Padding(5, 0, 0, 0);
-            _pathLabel.TabIndex = 1;
-            _pathLabel.Text = "フォルダが開かれていません";
+            _recentFoldersLabel.AutoSize = true;
+            _recentFoldersLabel.Location = new Point(6, 35);
+            _recentFoldersLabel.Margin = new Padding(2, 0, 2, 0);
+            _recentFoldersLabel.Name = "_recentFoldersLabel";
+            _recentFoldersLabel.Size = new Size(100, 15);
+            _recentFoldersLabel.TabIndex = 2;
+            _recentFoldersLabel.Text = "最近開いたフォルダ:";
             //
             // Main
             //
-            AutoScaleDimensions = new SizeF(13F, 32F);
+            AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
-            Controls.Add(_pathLabel);
-            Controls.Add(_menuStrip);
-            MainMenuStrip = _menuStrip;
+            ClientSize = new Size(431, 211);
+            Controls.Add(_openFolderButton);
+            Controls.Add(_recentFoldersListBox);
+            Controls.Add(_recentFoldersLabel);
+            Margin = new Padding(2, 1, 2, 1);
             Name = "Main";
             Text = "Nijo";
-            _menuStrip.ResumeLayout(false);
-            _menuStrip.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
         }
