@@ -112,59 +112,62 @@ namespace Nijo.Ui {
         private void DisplayDataModelDetail(XElement element) {
             var dataTable = new DataTable(element.Name.LocalName);
 
-            // 列の定義
+            // 基本列の定義
             dataTable.Columns.Add("項目定義", typeof(string));
             dataTable.Columns.Add("種類", typeof(string));
             dataTable.Columns.Add("物理名", typeof(string));
-            dataTable.Columns.Add("DB名", typeof(string));
-            dataTable.Columns.Add("キー", typeof(string));
-            dataTable.Columns.Add("必須", typeof(string));
-            dataTable.Columns.Add("MaxLength", typeof(string));
-            dataTable.Columns.Add("文字種", typeof(string));
-            dataTable.Columns.Add("トータル桁数", typeof(string));
-            dataTable.Columns.Add("小数部桁数", typeof(string));
-            dataTable.Columns.Add("添付可能な拡張子", typeof(string));
+
+            // SchemaParseRuleからNodeOptionsを取得し、データモデルに適用可能な属性のみをフィルタリング
+            // "data-model"に対応するモデルを取得
+            var dataModelType = _schemaContext.Models
+                .FirstOrDefault(m => m.Value.SchemaName == "data-model");
+
+            var availableOptions = _schemaContext
+                .GetOptions(element)
+                .Where(opt => opt.IsAvailableModel == null ||
+                       (dataModelType.Value != null && opt.IsAvailableModel(dataModelType.Value)))
+                .ToArray();
+
+            // 動的にNodeOptionsの属性に対応する列を追加
+            var optionColumns = new Dictionary<string, string>();
+            foreach (var option in availableOptions) {
+                // DisplayNameを列名として使用
+                dataTable.Columns.Add(option.DisplayName, typeof(string));
+                optionColumns.Add(option.AttributeName, option.DisplayName);
+            }
+
+            // 追加の列（NodeOptionsに含まれない特別な列）
+            if (!dataTable.Columns.Contains("添付可能な拡張子")) {
+                dataTable.Columns.Add("添付可能な拡張子", typeof(string));
+            }
 
             // モデル自身の行を追加
             var modelRow = dataTable.NewRow();
             modelRow["項目定義"] = element.Name.LocalName;
             modelRow["種類"] = "DataModel";
             modelRow["物理名"] = "-";
-            modelRow["DB名"] = element.Attribute("DbName")?.Value ?? element.Name.LocalName;
-            modelRow["キー"] = "-";
-            modelRow["必須"] = "-";
+
+            // 動的に属性値を設定
+            foreach (var attr in element.Attributes()) {
+                if (optionColumns.TryGetValue(attr.Name.LocalName, out var columnName)) {
+                    if (attr.Value.ToLower() == "true" || attr.Value.ToLower() == "false") {
+                        modelRow[columnName] = GetBoolAttributeValue(element, attr.Name.LocalName);
+                    } else {
+                        modelRow[columnName] = attr.Value;
+                    }
+                }
+            }
+
             dataTable.Rows.Add(modelRow);
 
             // 各メンバーの行を追加
             foreach (var member in element.Elements()) {
-                var row = dataTable.NewRow();
-                row["項目定義"] = member.Name.LocalName;
-                row["種類"] = member.Attribute("Type")?.Value ?? "-";
-                row["物理名"] = member.Attribute("PhysicalName")?.Value ?? "-";
-                row["DB名"] = member.Attribute("DbName")?.Value ?? member.Name.LocalName;
-                row["キー"] = GetBoolAttributeValue(member, "IsKey");
-                row["必須"] = GetBoolAttributeValue(member, "IsRequired");
-                row["MaxLength"] = member.Attribute("MaxLength")?.Value ?? "-";
-                row["文字種"] = member.Attribute("CharacterType")?.Value ?? "-";
-                row["トータル桁数"] = member.Attribute("TotalDigit")?.Value ?? "-";
-                row["小数部桁数"] = member.Attribute("DecimalPlace")?.Value ?? "-";
-                dataTable.Rows.Add(row);
+                AddMemberRow(dataTable, member, "", optionColumns);
 
                 // Childrenタイプの場合は子要素も追加
                 if (member.Attribute("Type")?.Value == "children" || member.Attribute("Type")?.Value == "child") {
                     foreach (var childMember in member.Elements()) {
-                        var childRow = dataTable.NewRow();
-                        childRow["項目定義"] = "    " + childMember.Name.LocalName;
-                        childRow["種類"] = childMember.Attribute("Type")?.Value ?? "-";
-                        childRow["物理名"] = childMember.Attribute("PhysicalName")?.Value ?? "-";
-                        childRow["DB名"] = childMember.Attribute("DbName")?.Value ?? childMember.Name.LocalName;
-                        childRow["キー"] = GetBoolAttributeValue(childMember, "IsKey");
-                        childRow["必須"] = GetBoolAttributeValue(childMember, "IsRequired");
-                        childRow["MaxLength"] = childMember.Attribute("MaxLength")?.Value ?? "-";
-                        childRow["文字種"] = childMember.Attribute("CharacterType")?.Value ?? "-";
-                        childRow["トータル桁数"] = childMember.Attribute("TotalDigit")?.Value ?? "-";
-                        childRow["小数部桁数"] = childMember.Attribute("DecimalPlace")?.Value ?? "-";
-                        dataTable.Rows.Add(childRow);
+                        AddMemberRow(dataTable, childMember, "    ", optionColumns);
                     }
                 }
             }
@@ -178,6 +181,29 @@ namespace Nijo.Ui {
             }
 
             _aggregateDetailLabel.Text = $"{element.Name.LocalName} (データモデル)";
+        }
+
+        /// <summary>
+        /// データテーブルにメンバー行を追加
+        /// </summary>
+        private void AddMemberRow(DataTable dataTable, XElement member, string indent, Dictionary<string, string> optionColumns) {
+            var row = dataTable.NewRow();
+            row["項目定義"] = indent + member.Name.LocalName;
+            row["種類"] = member.Attribute("Type")?.Value ?? "-";
+            row["物理名"] = member.Attribute("PhysicalName")?.Value ?? "-";
+
+            // 動的に属性値を設定
+            foreach (var attr in member.Attributes()) {
+                if (optionColumns.TryGetValue(attr.Name.LocalName, out var columnName)) {
+                    if (attr.Value.ToLower() == "true" || attr.Value.ToLower() == "false") {
+                        row[columnName] = GetBoolAttributeValue(member, attr.Name.LocalName);
+                    } else {
+                        row[columnName] = attr.Value;
+                    }
+                }
+            }
+
+            dataTable.Rows.Add(row);
         }
 
         /// <summary>

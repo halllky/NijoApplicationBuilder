@@ -134,7 +134,7 @@ public class SchemaParseContext {
     /// <summary>
     /// XML要素に定義されているオプション属性を返します。
     /// </summary>
-    internal IEnumerable<NodeOption> GetOptions(XElement xElement) {
+    public IEnumerable<NodeOption> GetOptions(XElement xElement) {
         var attrs = xElement.Attributes().Select(attr => attr.Name.LocalName).ToHashSet();
         return _nodeOptions.Values.Where(opt => attrs.Contains(opt.AttributeName));
     }
