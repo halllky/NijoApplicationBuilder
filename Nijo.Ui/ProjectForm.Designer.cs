@@ -13,7 +13,6 @@ namespace Nijo.Ui
         private TreeView _schemaExplorer;
         private Label _schemaExplorerLabel;
         private Panel _aggregateDetailPanel;
-        private DataGridView _aggregateDetailView;
         private Label _aggregateDetailLabel;
 
         /// <summary>
@@ -35,14 +34,12 @@ namespace Nijo.Ui
         ///  Required method for Designer support - do not modify
         ///  the contents of this method with the code editor.
         /// </summary>
-        private void InitializeComponent()
-        {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ProjectForm));
+        private void InitializeComponent() {
             _folderPathLabel = new Label();
             _splitContainer = new SplitContainer();
             _schemaExplorerPanel = new Panel();
-            _schemaExplorerLabel = new Label();
             _schemaExplorer = new TreeView();
+            _schemaExplorerLabel = new Label();
             _aggregateDetailPanel = new Panel();
             _aggregateDetailLabel = new Label();
             _aggregateDetailView = new DataGridView();
@@ -54,9 +51,9 @@ namespace Nijo.Ui
             _aggregateDetailPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)_aggregateDetailView).BeginInit();
             SuspendLayout();
-            //
+            // 
             // _folderPathLabel
-            //
+            // 
             _folderPathLabel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             _folderPathLabel.AutoEllipsis = true;
             _folderPathLabel.Location = new Point(12, 9);
@@ -64,26 +61,26 @@ namespace Nijo.Ui
             _folderPathLabel.Size = new Size(776, 23);
             _folderPathLabel.TabIndex = 0;
             _folderPathLabel.Text = "フォルダパス";
-            //
+            // 
             // _splitContainer
-            //
+            // 
             _splitContainer.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             _splitContainer.Location = new Point(12, 35);
             _splitContainer.Name = "_splitContainer";
-            //
+            // 
             // _splitContainer.Panel1
-            //
+            // 
             _splitContainer.Panel1.Controls.Add(_schemaExplorerPanel);
-            //
+            // 
             // _splitContainer.Panel2
-            //
+            // 
             _splitContainer.Panel2.Controls.Add(_aggregateDetailPanel);
             _splitContainer.Size = new Size(776, 403);
             _splitContainer.SplitterDistance = 250;
             _splitContainer.TabIndex = 1;
-            //
+            // 
             // _schemaExplorerPanel
-            //
+            // 
             _schemaExplorerPanel.Controls.Add(_schemaExplorer);
             _schemaExplorerPanel.Controls.Add(_schemaExplorerLabel);
             _schemaExplorerPanel.Dock = DockStyle.Fill;
@@ -91,9 +88,18 @@ namespace Nijo.Ui
             _schemaExplorerPanel.Name = "_schemaExplorerPanel";
             _schemaExplorerPanel.Size = new Size(250, 403);
             _schemaExplorerPanel.TabIndex = 0;
-            //
+            // 
+            // _schemaExplorer
+            // 
+            _schemaExplorer.Dock = DockStyle.Fill;
+            _schemaExplorer.Location = new Point(0, 23);
+            _schemaExplorer.Name = "_schemaExplorer";
+            _schemaExplorer.Size = new Size(250, 380);
+            _schemaExplorer.TabIndex = 1;
+            _schemaExplorer.AfterSelect += SchemaExplorer_AfterSelect;
+            // 
             // _schemaExplorerLabel
-            //
+            // 
             _schemaExplorerLabel.Dock = DockStyle.Top;
             _schemaExplorerLabel.Location = new Point(0, 0);
             _schemaExplorerLabel.Name = "_schemaExplorerLabel";
@@ -101,18 +107,9 @@ namespace Nijo.Ui
             _schemaExplorerLabel.TabIndex = 0;
             _schemaExplorerLabel.Text = "スキーマ定義エクスプローラー";
             _schemaExplorerLabel.TextAlign = ContentAlignment.MiddleLeft;
-            //
-            // _schemaExplorer
-            //
-            _schemaExplorer.Dock = DockStyle.Fill;
-            _schemaExplorer.Location = new Point(0, 23);
-            _schemaExplorer.Name = "_schemaExplorer";
-            _schemaExplorer.Size = new Size(250, 380);
-            _schemaExplorer.TabIndex = 1;
-            _schemaExplorer.AfterSelect += SchemaExplorer_AfterSelect;
-            //
+            // 
             // _aggregateDetailPanel
-            //
+            // 
             _aggregateDetailPanel.Controls.Add(_aggregateDetailView);
             _aggregateDetailPanel.Controls.Add(_aggregateDetailLabel);
             _aggregateDetailPanel.Dock = DockStyle.Fill;
@@ -120,9 +117,9 @@ namespace Nijo.Ui
             _aggregateDetailPanel.Name = "_aggregateDetailPanel";
             _aggregateDetailPanel.Size = new Size(522, 403);
             _aggregateDetailPanel.TabIndex = 0;
-            //
+            // 
             // _aggregateDetailLabel
-            //
+            // 
             _aggregateDetailLabel.Dock = DockStyle.Top;
             _aggregateDetailLabel.Location = new Point(0, 0);
             _aggregateDetailLabel.Name = "_aggregateDetailLabel";
@@ -130,23 +127,18 @@ namespace Nijo.Ui
             _aggregateDetailLabel.TabIndex = 0;
             _aggregateDetailLabel.Text = "集約詳細";
             _aggregateDetailLabel.TextAlign = ContentAlignment.MiddleLeft;
-            //
+            // 
             // _aggregateDetailView
-            //
-            _aggregateDetailView.AllowUserToAddRows = false;
-            _aggregateDetailView.AllowUserToDeleteRows = false;
-            _aggregateDetailView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
+            // 
             _aggregateDetailView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             _aggregateDetailView.Dock = DockStyle.Fill;
             _aggregateDetailView.Location = new Point(0, 23);
             _aggregateDetailView.Name = "_aggregateDetailView";
-            _aggregateDetailView.ReadOnly = true;
-            _aggregateDetailView.RowTemplate.Height = 25;
             _aggregateDetailView.Size = new Size(522, 380);
             _aggregateDetailView.TabIndex = 1;
-            //
+            // 
             // ProjectForm
-            //
+            // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 450);
@@ -166,5 +158,7 @@ namespace Nijo.Ui
         }
 
         #endregion
+
+        private DataGridView _aggregateDetailView;
     }
 }
