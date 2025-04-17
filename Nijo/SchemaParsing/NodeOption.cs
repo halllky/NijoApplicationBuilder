@@ -1,3 +1,5 @@
+using Nijo.CodeGenerating;
+using Nijo.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,6 +34,10 @@ public class NodeOption {
     /// この属性に対する入力検証
     /// </summary>
     public required Action<NodeOptionValidateContext> Validate { get; init; }
+    /// <summary>
+    /// あるモデルがこの属性を指定することができるかどうか。このプロパティがnullの場合、そのモデルは使用可能と判定されます。
+    /// </summary>
+    public Func<IModel, bool>? IsAvailableModel { get; init; }
 }
 
 /// <summary>
@@ -90,6 +96,10 @@ internal static class BasicNodeOptions {
             // 改行不可
             if (ctx.Value.Contains('\n')) ctx.AddError("改行を含めることはできません。");
         },
+        IsAvailableModel = model => {
+            if (model is DataModel) return true;
+            return false;
+        },
     };
 
     internal static NodeOption LatinName = new() {
@@ -117,6 +127,11 @@ internal static class BasicNodeOptions {
             """,
         Validate = ctx => {
 
+        },
+        IsAvailableModel = model => {
+            if (model is DataModel) return true;
+            if (model is QueryModel) return true;
+            return false;
         },
     };
 
@@ -147,6 +162,10 @@ internal static class BasicNodeOptions {
         Validate = ctx => {
 
         },
+        IsAvailableModel = model => {
+            if (model is DataModel) return true;
+            return false;
+        },
     };
     internal static NodeOption GenerateBatchUpdateCommand = new() {
         AttributeName = "GenerateBatchUpdateCommand",
@@ -157,6 +176,10 @@ internal static class BasicNodeOptions {
             """,
         Validate = ctx => {
 
+        },
+        IsAvailableModel = model => {
+            if (model is DataModel) return true;
+            return false;
         },
     };
     #endregion DataModel用
@@ -173,6 +196,10 @@ internal static class BasicNodeOptions {
         Validate = ctx => {
 
         },
+        IsAvailableModel = model => {
+            if (model is QueryModel) return true;
+            return false;
+        },
     };
     internal static NodeOption HasLifeCycle = new() {
         AttributeName = "HasLifeCycle",
@@ -183,6 +210,10 @@ internal static class BasicNodeOptions {
             """,
         Validate = ctx => {
 
+        },
+        IsAvailableModel = model => {
+            if (model is QueryModel) return true;
+            return false;
         },
     };
     #endregion QueryModel用
