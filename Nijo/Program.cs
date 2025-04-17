@@ -24,6 +24,7 @@ using Nijo.Models.QueryModelModules;
 using Nijo.ImmutableSchema;
 
 [assembly: InternalsVisibleTo("Nijo.IntegrationTest")]
+[assembly: InternalsVisibleTo("Nijo.Ui")]
 
 namespace Nijo {
     public class Program {

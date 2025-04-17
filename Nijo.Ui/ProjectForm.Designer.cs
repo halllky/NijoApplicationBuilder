@@ -29,60 +29,46 @@ namespace Nijo.Ui {
             _splitContainer = new SplitContainer();
             _schemaExplorerPanel = new Panel();
             _schemaExplorer = new TreeView();
-            projectFormDataModelView1 = new ProjectFormDataModelView();
             ((System.ComponentModel.ISupportInitialize)_splitContainer).BeginInit();
             _splitContainer.Panel1.SuspendLayout();
-            _splitContainer.Panel2.SuspendLayout();
             _splitContainer.SuspendLayout();
             _schemaExplorerPanel.SuspendLayout();
             SuspendLayout();
-            // 
+            //
             // _splitContainer
-            // 
+            //
             _splitContainer.Dock = DockStyle.Fill;
             _splitContainer.FixedPanel = FixedPanel.Panel1;
             _splitContainer.Location = new Point(0, 0);
             _splitContainer.Name = "_splitContainer";
-            // 
+            //
             // _splitContainer.Panel1
-            // 
+            //
             _splitContainer.Panel1.Controls.Add(_schemaExplorerPanel);
-            // 
-            // _splitContainer.Panel2
-            // 
-            _splitContainer.Panel2.Controls.Add(projectFormDataModelView1);
             _splitContainer.Size = new Size(800, 450);
             _splitContainer.SplitterDistance = 250;
             _splitContainer.TabIndex = 1;
-            // 
+            //
             // _schemaExplorerPanel
-            // 
+            //
             _schemaExplorerPanel.Controls.Add(_schemaExplorer);
             _schemaExplorerPanel.Dock = DockStyle.Fill;
             _schemaExplorerPanel.Location = new Point(0, 0);
             _schemaExplorerPanel.Name = "_schemaExplorerPanel";
             _schemaExplorerPanel.Size = new Size(250, 450);
             _schemaExplorerPanel.TabIndex = 0;
-            // 
+            //
             // _schemaExplorer
-            // 
+            //
             _schemaExplorer.Dock = DockStyle.Fill;
             _schemaExplorer.Location = new Point(0, 0);
             _schemaExplorer.Name = "_schemaExplorer";
             _schemaExplorer.Size = new Size(250, 450);
             _schemaExplorer.TabIndex = 1;
             _schemaExplorer.AfterSelect += SchemaExplorer_AfterSelect;
-            // 
-            // projectFormDataModelView1
-            // 
-            projectFormDataModelView1.Dock = DockStyle.Fill;
-            projectFormDataModelView1.Location = new Point(0, 0);
-            projectFormDataModelView1.Name = "projectFormDataModelView1";
-            projectFormDataModelView1.Size = new Size(546, 450);
-            projectFormDataModelView1.TabIndex = 0;
-            // 
+            //
             // ProjectForm
-            // 
+            //
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 450);
@@ -91,7 +77,6 @@ namespace Nijo.Ui {
             Text = "フォルダビュー";
             FormClosing += FolderViewForm_FormClosing;
             _splitContainer.Panel1.ResumeLayout(false);
-            _splitContainer.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)_splitContainer).EndInit();
             _splitContainer.ResumeLayout(false);
             _schemaExplorerPanel.ResumeLayout(false);
@@ -99,7 +84,5 @@ namespace Nijo.Ui {
         }
 
         #endregion
-
-        private ProjectFormDataModelView projectFormDataModelView1;
     }
 }

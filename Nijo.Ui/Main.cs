@@ -3,27 +3,25 @@ using System.Text.Json;
 
 namespace Nijo.Ui {
     public partial class Main : Form {
-        private string? _currentFolderPath;
         private ProjectForm? _currentFolderForm;
-        private readonly List<string> _recentFolders = new List<string>();
-        private const int MaxRecentFolders = 10;
-        private const string RecentFoldersFilePath = "recent_folders.json";
+        private ProjectFormViewModel? _viewModel;
+        private readonly RecentFoldersManager _recentFoldersManager;
 
         public Main() {
             InitializeComponent();
 
-            // 最近開いたフォルダのリストを読み込む
-            LoadRecentFolders();
+            // RecentFoldersManagerの初期化
+            _recentFoldersManager = new RecentFoldersManager();
 
             // 最近開いたフォルダリストを表示
-            UpdateRecentFoldersList();
+            UpdateRecentFoldersListUI();
 
             // フォーム終了時のイベントハンドラ
             this.FormClosing += Main_FormClosing;
         }
 
         private void Main_FormClosing(object? sender, FormClosingEventArgs e) {
-            SaveRecentFolders();
+            _recentFoldersManager.SaveRecentFolders();
         }
 
         private void OpenFolderMenuItem_Click(object? sender, EventArgs e) {
@@ -35,20 +33,24 @@ namespace Nijo.Ui {
         }
 
         private void OpenFolderView(string folderPath) {
-            // パスの検査
-            if (!GeneratedProject.TryOpen(folderPath, out var project, out var error)) {
-                MessageBox.Show(error);
+            // ViewModelを使ってフォルダを開く
+            if (!GeneratedProject.TryOpen(folderPath, out var project, out var errorMessage)) {
+                MessageBox.Show(errorMessage);
                 return;
             }
+
+            // 最近開いたフォルダのリストを更新
+            _recentFoldersManager.UpdateRecentFolders(folderPath);
 
             // すでに開いているフォルダがあれば閉じる
             CloseFolderView();
 
-            // 最近開いたフォルダのリストを更新
-            UpdateRecentFolders(folderPath);
+            // UIの更新
+            UpdateRecentFoldersListUI();
 
             // 新しいフォルダを開く
-            _currentFolderForm = new ProjectForm(project);
+            _viewModel = new ProjectFormViewModel(project);
+            _currentFolderForm = new ProjectForm(_viewModel);
             _currentFolderForm.FolderClosed += FolderViewForm_FolderClosed;
 
             // メインフォームを非表示にする
@@ -59,6 +61,8 @@ namespace Nijo.Ui {
         }
 
         private void CloseFolderView() {
+            _viewModel = null;
+
             if (_currentFolderForm != null) {
                 _currentFolderForm.FolderClosed -= FolderViewForm_FolderClosed;
                 _currentFolderForm.Close();
@@ -82,32 +86,12 @@ namespace Nijo.Ui {
         }
 
         /// <summary>
-        /// 最近開いたフォルダのリストを更新
-        /// </summary>
-        private void UpdateRecentFolders(string folderPath) {
-            // すでにリストに存在する場合は削除して先頭に追加
-            _recentFolders.Remove(folderPath);
-            _recentFolders.Insert(0, folderPath);
-
-            // 最大数を超えた場合は古いものを削除
-            if (_recentFolders.Count > MaxRecentFolders) {
-                _recentFolders.RemoveAt(_recentFolders.Count - 1);
-            }
-
-            // リストを保存
-            SaveRecentFolders();
-
-            // UI更新
-            UpdateRecentFoldersList();
-        }
-
-        /// <summary>
         /// 最近開いたフォルダリストをUIに表示
         /// </summary>
-        private void UpdateRecentFoldersList() {
+        private void UpdateRecentFoldersListUI() {
             _recentFoldersListBox.Items.Clear();
 
-            foreach (var folderPath in _recentFolders) {
+            foreach (var folderPath in _recentFoldersManager.RecentFolders) {
                 string displayName = Path.GetFileName(folderPath);
                 if (string.IsNullOrEmpty(displayName)) {
                     displayName = folderPath; // ルートドライブの場合はそのまま表示
@@ -115,38 +99,6 @@ namespace Nijo.Ui {
 
                 // 項目にフルパスを保持しつつ、表示名はフォルダ名のみに
                 _recentFoldersListBox.Items.Add(new RecentFolderItem(folderPath, displayName));
-            }
-        }
-
-        /// <summary>
-        /// 最近開いたフォルダのリストを読み込む
-        /// </summary>
-        private void LoadRecentFolders() {
-            try {
-                if (File.Exists(RecentFoldersFilePath)) {
-                    string json = File.ReadAllText(RecentFoldersFilePath);
-                    var folders = JsonSerializer.Deserialize<List<string>>(json);
-                    if (folders != null) {
-                        _recentFolders.Clear();
-                        _recentFolders.AddRange(folders);
-                    }
-                }
-            } catch (Exception ex) {
-                // 読み込みに失敗した場合はエラーメッセージを表示
-                MessageBox.Show($"最近開いたフォルダのリストの読み込みに失敗しました: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// 最近開いたフォルダのリストを保存
-        /// </summary>
-        private void SaveRecentFolders() {
-            try {
-                string json = JsonSerializer.Serialize(_recentFolders);
-                File.WriteAllText(RecentFoldersFilePath, json);
-            } catch (Exception ex) {
-                // 保存に失敗した場合はエラーメッセージを表示
-                MessageBox.Show($"最近開いたフォルダのリストの保存に失敗しました: {ex.Message}");
             }
         }
 

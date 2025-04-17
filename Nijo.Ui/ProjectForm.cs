@@ -4,43 +4,30 @@ using System.Xml.Linq;
 using Nijo.SchemaParsing;
 
 namespace Nijo.Ui {
+
+    /// <summary>
+    /// NijoApplicationBuilderで構築されるプロジェクト1個を表す画面のUI
+    /// </summary>
     public partial class ProjectForm : Form {
         /// <summary>
-        /// 開かれているプロジェクト
+        /// ViewModel
         /// </summary>
-        private readonly GeneratedProject _project;
-
+        private readonly ProjectFormViewModel _viewModel;
         /// <summary>
-        /// スキーマ定義解釈コンテキスト
+        /// スキーマ定義エクスプローラーで選択されている要素
         /// </summary>
-        private SchemaParseContext _schemaContext;
-
-        /// <summary>
-        /// 現在選択されている集約ノード
-        /// </summary>
-        private XElement? _selectedAggregateNode;
+        private XElement? _selectedRootAggregate;
 
         /// <summary>
         /// 表示しているフォルダのパス
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public string FolderPath {
-            get => _project.ProjectRoot;
-            private set {
-            }
-        }
+        public string FolderPath => _viewModel.ProjectRoot;
 
-        public ProjectForm(GeneratedProject project) {
-            _project = project;
+        public ProjectForm(ProjectFormViewModel viewModel) {
+            _viewModel = viewModel;
+
             InitializeComponent();
-
-            // スキーマ定義のロード
-            var rule = SchemaParseRule.Default();
-            _schemaContext = new SchemaParseContext(XDocument.Load(_project.SchemaXmlPath), rule);
-
-            // データモデル詳細表示用コントロールの初期化
-            _dataModelView = projectFormDataModelView1;
-            _dataModelView.Dock = DockStyle.Fill;
 
             // 初期化
             Text = Path.GetFileName(FolderPath);
@@ -53,14 +40,10 @@ namespace Nijo.Ui {
         private void InitializeSchemaExplorer() {
             // スキーマ定義のルート集約をTreeViewに表示
             _schemaExplorer.Nodes.Clear();
-            foreach (var element in _schemaContext.Document.Root?.Elements() ?? []) {
-                // ルート集約を判定（Type属性の値で判断）
-                var typeAttr = element.Attribute("Type")?.Value;
-                if (typeAttr == "data-model" || typeAttr == "command-model" || typeAttr == "query-model" || typeAttr == "enum") {
-                    var node = new TreeNode(element.Name.LocalName);
-                    node.Tag = element;
-                    _schemaExplorer.Nodes.Add(node);
-                }
+            foreach (var element in _viewModel.GetRootAggregates()) {
+                var node = new TreeNode(element.Name.LocalName);
+                node.Tag = element;
+                _schemaExplorer.Nodes.Add(node);
             }
 
             // 最初の集約を選択
@@ -74,7 +57,7 @@ namespace Nijo.Ui {
         /// </summary>
         private void SchemaExplorer_AfterSelect(object sender, TreeViewEventArgs e) {
             if (e.Node?.Tag is XElement element) {
-                _selectedAggregateNode = element;
+                _selectedRootAggregate = element;
                 DisplayAggregateDetail(element);
             }
         }
@@ -83,15 +66,23 @@ namespace Nijo.Ui {
         /// 選択された集約の詳細を表示
         /// </summary>
         private void DisplayAggregateDetail(XElement element) {
-            string typeName = element.Attribute("Type")?.Value ?? string.Empty;
+            var (dataTable, label) = _viewModel.GetDataModelDetail(element);
 
-            // データモデルの場合はデータモデル詳細表示用コントロールで表示
-            if (typeName == "data-model") {
-                _dataModelView.DisplayDataModelDetail(element, _schemaContext);
-            } else {
-                // 他のモデルタイプは未実装
-                _dataModelView.DisplayNonDataModelInfo(element.Name.LocalName, typeName);
+            // 既存のコントロールを明示的にDisposeする
+            foreach (Control control in _splitContainer.Panel2.Controls) {
+                control.Dispose();
             }
+
+            // 既存のコントロールをクリア
+            _splitContainer.Panel2.Controls.Clear();
+
+            // 新しいRootAggregateDataModelComponentを作成
+            var dataModelView = new RootAggregateDataModelComponent();
+            dataModelView.Dock = DockStyle.Fill;
+            dataModelView.DisplayModel(dataTable, label);
+
+            // パネルに追加
+            _splitContainer.Panel2.Controls.Add(dataModelView);
         }
 
         private void FolderViewForm_FormClosing(object sender, FormClosingEventArgs e) {
@@ -103,10 +94,5 @@ namespace Nijo.Ui {
         /// フォームが閉じられたときに発火するイベント
         /// </summary>
         public event EventHandler? FolderClosed;
-
-        /// <summary>
-        /// データモデル詳細表示用コントロール
-        /// </summary>
-        private ProjectFormDataModelView _dataModelView;
     }
 }

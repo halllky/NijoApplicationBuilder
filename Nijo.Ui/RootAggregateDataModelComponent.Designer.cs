@@ -1,5 +1,5 @@
 namespace Nijo.Ui {
-    partial class ProjectFormDataModelView {
+    partial class RootAggregateDataModelComponent {
         /// <summary> 
         /// 必要なデザイナー変数です。
         /// </summary>
@@ -24,15 +24,14 @@ namespace Nijo.Ui {
         /// </summary>
         private void InitializeComponent() {
             _aggregateDetailPanel = new Panel();
-            _aggregateDetailView = new DataGridView();
+            aggregateMemberDataGridView1 = new AggregateMemberDataGridView();
             _aggregateDetailLabel = new Label();
             _aggregateDetailPanel.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)_aggregateDetailView).BeginInit();
             SuspendLayout();
             // 
             // _aggregateDetailPanel
             // 
-            _aggregateDetailPanel.Controls.Add(_aggregateDetailView);
+            _aggregateDetailPanel.Controls.Add(aggregateMemberDataGridView1);
             _aggregateDetailPanel.Controls.Add(_aggregateDetailLabel);
             _aggregateDetailPanel.Dock = DockStyle.Fill;
             _aggregateDetailPanel.Location = new Point(0, 0);
@@ -40,14 +39,13 @@ namespace Nijo.Ui {
             _aggregateDetailPanel.Size = new Size(150, 150);
             _aggregateDetailPanel.TabIndex = 1;
             // 
-            // _aggregateDetailView
+            // aggregateMemberDataGridView1
             // 
-            _aggregateDetailView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            _aggregateDetailView.Dock = DockStyle.Fill;
-            _aggregateDetailView.Location = new Point(0, 23);
-            _aggregateDetailView.Name = "_aggregateDetailView";
-            _aggregateDetailView.Size = new Size(150, 127);
-            _aggregateDetailView.TabIndex = 1;
+            aggregateMemberDataGridView1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            aggregateMemberDataGridView1.Location = new Point(0, 26);
+            aggregateMemberDataGridView1.Name = "aggregateMemberDataGridView1";
+            aggregateMemberDataGridView1.Size = new Size(150, 124);
+            aggregateMemberDataGridView1.TabIndex = 1;
             // 
             // _aggregateDetailLabel
             // 
@@ -59,21 +57,20 @@ namespace Nijo.Ui {
             _aggregateDetailLabel.Text = "集約詳細";
             _aggregateDetailLabel.TextAlign = ContentAlignment.MiddleLeft;
             // 
-            // ProjectFormDataModelView
+            // RootAggregateDataModelComponent
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             Controls.Add(_aggregateDetailPanel);
-            Name = "ProjectFormDataModelView";
+            Name = "RootAggregateDataModelComponent";
             _aggregateDetailPanel.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)_aggregateDetailView).EndInit();
             ResumeLayout(false);
         }
 
         #endregion
 
         private Panel _aggregateDetailPanel;
-        private DataGridView _aggregateDetailView;
         private Label _aggregateDetailLabel;
+        private AggregateMemberDataGridView aggregateMemberDataGridView1;
     }
 }
