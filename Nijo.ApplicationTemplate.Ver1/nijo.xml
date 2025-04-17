@@ -47,6 +47,21 @@
       <備考 Type="description" />
     </処方>
   </診察>
+  <部署 Type="data-model" DbName="BUSHO">
+    <部署コード Type="word" IsKey="True" IsRequired="True" DbName="BUSHO_CD" />
+    <部署名 Type="word" IsRequired="True" DbName="BUSHO_NAME" MaxLength="40" />
+  </部署>
+  <従業員 Type="data-model" DbName="EMPLOYEE">
+    <従業員ID Type="従業員ID" IsKey="True" IsRequired="True" DbName="ID" />
+    <氏名 Type="word" IsRequired="True" DbName="NAME" MaxLength="40" />
+    <氏名カナ Type="word" DbName="NAME_KANA" MaxLength="40" />
+    <所属部署 Type="children" DbName="SHOZOKU">
+      <年度 Type="year" IsKey="True" IsRequired="True" DbName="NENDO" />
+      <部署 Type="ref-to:部署" IsRequired="True" DbName="BUSHO_CD" />
+    </所属部署>
+    <退職日 Type="date" DbName="TAISHOKU" />
+  </従業員>
+  <従業員ID Type="value-object" />
   <予約区分 Type="enum">
     <初診 DisplayName="初診（しょしん）" key="1" />
     <再診 DisplayName="再診（さいしん）" key="2" />
