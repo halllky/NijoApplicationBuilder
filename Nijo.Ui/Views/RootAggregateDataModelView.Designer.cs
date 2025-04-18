@@ -1,11 +1,11 @@
 namespace Nijo.Ui.Views {
     partial class RootAggregateDataModelView {
-        /// <summary> 
+        /// <summary>
         /// 必要なデザイナー変数です。
         /// </summary>
         private System.ComponentModel.IContainer components = null;
 
-        /// <summary> 
+        /// <summary>
         /// 使用中のリソースをすべてクリーンアップします。
         /// </summary>
         /// <param name="disposing">マネージド リソースを破棄する場合は true を指定し、その他の場合は false を指定します。</param>
@@ -18,8 +18,8 @@ namespace Nijo.Ui.Views {
 
         #region コンポーネント デザイナーで生成されたコード
 
-        /// <summary> 
-        /// デザイナー サポートに必要なメソッドです。このメソッドの内容を 
+        /// <summary>
+        /// デザイナー サポートに必要なメソッドです。このメソッドの内容を
         /// コード エディターで変更しないでください。
         /// </summary>
         private void InitializeComponent() {
@@ -28,9 +28,9 @@ namespace Nijo.Ui.Views {
             _aggregateDetailLabel = new Label();
             _aggregateDetailPanel.SuspendLayout();
             SuspendLayout();
-            // 
+            //
             // _aggregateDetailPanel
-            // 
+            //
             _aggregateDetailPanel.Controls.Add(aggregateMemberDataGridView1);
             _aggregateDetailPanel.Controls.Add(_aggregateDetailLabel);
             _aggregateDetailPanel.Dock = DockStyle.Fill;
@@ -38,17 +38,18 @@ namespace Nijo.Ui.Views {
             _aggregateDetailPanel.Name = "_aggregateDetailPanel";
             _aggregateDetailPanel.Size = new Size(150, 150);
             _aggregateDetailPanel.TabIndex = 1;
-            // 
+            //
             // aggregateMemberDataGridView1
-            // 
+            //
             aggregateMemberDataGridView1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            aggregateMemberDataGridView1.Location = new Point(0, 26);
+            aggregateMemberDataGridView1.Location = new Point(0, 0);
             aggregateMemberDataGridView1.Name = "aggregateMemberDataGridView1";
-            aggregateMemberDataGridView1.Size = new Size(150, 124);
+            aggregateMemberDataGridView1.Size = new Size(150, 150);
             aggregateMemberDataGridView1.TabIndex = 1;
-            // 
+            //
             // _aggregateDetailLabel
-            // 
+            //
+            _aggregateDetailLabel.Visible = false;
             _aggregateDetailLabel.Dock = DockStyle.Top;
             _aggregateDetailLabel.Location = new Point(0, 0);
             _aggregateDetailLabel.Name = "_aggregateDetailLabel";
@@ -56,9 +57,9 @@ namespace Nijo.Ui.Views {
             _aggregateDetailLabel.TabIndex = 0;
             _aggregateDetailLabel.Text = "集約詳細";
             _aggregateDetailLabel.TextAlign = ContentAlignment.MiddleLeft;
-            // 
+            //
             // RootAggregateDataModelComponent
-            // 
+            //
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             Controls.Add(_aggregateDetailPanel);

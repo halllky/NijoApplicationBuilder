@@ -1,4 +1,5 @@
 using Nijo.CodeGenerating;
+using Nijo.Models;
 using Nijo.SchemaParsing;
 using System;
 using System.Collections.Generic;
@@ -32,6 +33,9 @@ public partial class AggregateMemberDataGridView : UserControl {
         dataGridView1.CellFormatting += DataGridView1_CellFormatting;
         // データバインディング完了時のイベントを追加
         dataGridView1.DataBindingComplete += DataGridView1_DataBindingComplete;
+
+        // コンボボックスのデータソースに無い値が指定されていたとしても例外を出さない
+        dataGridView1.DataError += DataGridView1_DataError;
     }
 
     /// <summary>
@@ -58,6 +62,11 @@ public partial class AggregateMemberDataGridView : UserControl {
             dataGridView1.Rows[0].DefaultCellStyle.BackColor = Color.LightGray;
             dataGridView1.Rows[0].DefaultCellStyle.Font = new Font(dataGridView1.Font, FontStyle.Bold);
         }
+    }
+
+    private void DataGridView1_DataError(object? sender, DataGridViewDataErrorEventArgs e) {
+        // コンボボックスの値エラーを無視
+        e.ThrowException = false;
     }
 
     /// <summary>
@@ -218,6 +227,7 @@ public partial class AggregateMemberDataGridView : UserControl {
     /// モデルの詳細を表示
     /// </summary>
     public void DisplayMembers(XElement rootAggregateElement, IModel model, SchemaParseContext schemaParseContext) {
+        SuspendLayout();
 
         // BindingSourceを使用してDataGridViewに設定
         var list = AggregateMemberDataGridViewRow
@@ -241,6 +251,22 @@ public partial class AggregateMemberDataGridView : UserControl {
             Frozen = true,
         };
         dataGridView1.Columns.Add(physicalNameColumn);
+
+        // 種類の列を追加（コンボボックスとして）
+        var typeColumn = new DataGridViewComboBoxColumn {
+            Name = "Type",
+            DataPropertyName = "Type",
+            HeaderText = "種類",
+            Width = 150,
+            Frozen = true,
+            ValueMember = "Key",
+            DisplayMember = "Value",
+        };
+        typeColumn.Items.AddRange(EnumerateTypeComboSource(model, schemaParseContext)
+            .Select(kvp => new { kvp.Key, kvp.Value })
+            .ToArray());
+
+        dataGridView1.Columns.Add(typeColumn);
 
         // オプション属性を使って列を追加
         foreach (var option in options) {
@@ -277,8 +303,34 @@ public partial class AggregateMemberDataGridView : UserControl {
 
         // 先頭行の外観を変更するため、DataGridViewの更新を強制
         dataGridView1.Refresh();
+
+        ResumeLayout();
     }
 
+    /// <summary>
+    /// 種類コンボボックスのデータソースを列挙する
+    /// </summary>
+    /// <param name="schemaParseContext"></param>
+    /// <returns></returns>
+    private IEnumerable<KeyValuePair<string, string>> EnumerateTypeComboSource(IModel gridOwnerModel, SchemaParseContext schemaParseContext) {
+        // 値型の種類
+        var vmTypes = schemaParseContext.GetValueMemberTypes();
+        foreach (var vmType in vmTypes) {
+            yield return KeyValuePair.Create(vmType.SchemaTypeName, vmType.TypePhysicalName);
+        }
+
+        // Child, Children
+        yield return KeyValuePair.Create(SchemaParseContext.NODE_TYPE_CHILD, "Child");
+        yield return KeyValuePair.Create(SchemaParseContext.NODE_TYPE_CHILDREN, "Children");
+
+        // ref-to
+        var refToAvailableAggregates = schemaParseContext.EnumerateModelElements(gridOwnerModel.SchemaName);
+        foreach (var refToAggregate in refToAvailableAggregates) {
+            var type = $"{SchemaParseContext.ATTR_NODE_TYPE}:{schemaParseContext.GetPhysicalName(refToAggregate)}";
+            var displayName = $"ref-to:{schemaParseContext.GetDisplayName(refToAggregate)}";
+            yield return KeyValuePair.Create(type, displayName);
+        }
+    }
     /// <summary>
     /// DataGridViewのプロパティ
     /// </summary>
@@ -298,6 +350,7 @@ public class AggregateMemberDataGridViewRow {
         yield return new AggregateMemberDataGridViewRow {
             Indent = indent,
             PhysicalName = schemaParseContext.GetPhysicalName(el),
+            Type = el.Attribute(SchemaParseContext.ATTR_NODE_TYPE)?.Value,
             Attributes = el
                 .Attributes()
                 .ToDictionary(attr => attr.Name.LocalName, attr => attr.Value),
@@ -318,6 +371,10 @@ public class AggregateMemberDataGridViewRow {
     /// XML要素の名前
     /// </summary>
     public string? PhysicalName { get; set; }
+    /// <summary>
+    /// XML要素の種類
+    /// </summary>
+    public string? Type { get; set; }
     /// <summary>
     /// XML要素の属性と値。
     /// キーは <see cref="SchemaParsing.NodeOption.AttributeName"/> と対応する。

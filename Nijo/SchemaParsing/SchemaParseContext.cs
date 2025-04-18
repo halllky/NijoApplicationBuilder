@@ -184,6 +184,22 @@ public class SchemaParseContext {
         }
         throw new InvalidOperationException($"集約ではありません: {xElement}");
     }
+    /// <summary>
+    /// 指定されたモデルのうち、ルート集約、Child、Childrenを列挙します。
+    /// </summary>
+    internal IEnumerable<XElement> EnumerateModelElements(string modelSchemaName) {
+        foreach (var rootElement in Document.Root?.Elements() ?? []) {
+            if (rootElement.Attribute(ATTR_NODE_TYPE)?.Value != modelSchemaName) continue;
+
+            yield return rootElement;
+
+            // 子孫のうちType="child"またはType="children"の要素を抽出する
+            var descendantChildren = rootElement.XPathSelectElements($"descendant::*[@{ATTR_NODE_TYPE}='{NODE_TYPE_CHILD}' or @{ATTR_NODE_TYPE}='{NODE_TYPE_CHILDREN}']");
+            foreach (var descendantElement in descendantChildren) {
+                yield return descendantElement;
+            }
+        }
+    }
     #endregion Aggregate
 
 

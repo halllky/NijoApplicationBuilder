@@ -29,8 +29,6 @@ namespace Nijo.Ui.Views {
             // AggregateMemberDataGridViewにデータを表示
             var model = schemaParseContext.Models.Values.OfType<DataModel>().Single();
             aggregateMemberDataGridView1.DisplayMembers(rootAggregateElement, model, schemaParseContext);
-
-            _aggregateDetailLabel.Text = schemaParseContext.GetDisplayName(rootAggregateElement);
         }
     }
 }
