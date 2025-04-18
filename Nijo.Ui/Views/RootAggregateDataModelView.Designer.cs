@@ -1,5 +1,5 @@
 namespace Nijo.Ui.Views {
-    partial class RootAggregateDataModelComponent {
+    partial class RootAggregateDataModelView {
         /// <summary> 
         /// 必要なデザイナー変数です。
         /// </summary>

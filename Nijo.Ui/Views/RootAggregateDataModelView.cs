@@ -16,9 +16,9 @@ namespace Nijo.Ui.Views {
     /// <summary>
     /// ルート集約1件と対応するUIコンポーネント（DataModel）
     /// </summary>
-    public partial class RootAggregateDataModelComponent : UserControl {
+    public partial class RootAggregateDataModelView : UserControl {
 
-        public RootAggregateDataModelComponent() {
+        public RootAggregateDataModelView() {
             InitializeComponent();
         }
 

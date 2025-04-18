@@ -10,8 +10,9 @@ using System.Data;
 using System.Windows.Forms;
 using Nijo.Models;
 using Nijo.CodeGenerating;
+using Nijo.Ui.Views;
 
-namespace Nijo.Ui.Views;
+namespace Nijo.Ui;
 
 /// <summary>
 /// NijoApplicationBuilderで構築されるプロジェクト1件と対応する。
@@ -120,7 +121,7 @@ public class ProjectFormViewModel {
 
             // データモデルの場合の処理
             if (model is DataModel) {
-                var component = new RootAggregateDataModelComponent();
+                var component = new RootAggregateDataModelView();
                 component.DisplayRootAggregateInfo(xElement, _schemaParseContext);
                 return component;
             }
