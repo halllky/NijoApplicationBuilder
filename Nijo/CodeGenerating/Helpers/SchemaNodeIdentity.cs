@@ -13,9 +13,9 @@ namespace Nijo.CodeGenerating.Helpers;
 /// マッピング処理の文脈で値メンバーを一意に識別する。
 /// 単に <see cref="XElement"/> で識別すると、同じ集約が別の集約に複数経路でref-toしたときに
 /// 誤って別のプロパティの値からマッピングしてしまう、という問題を解決する。
-/// 
+///
 /// 「末端のValueMemberのXML要素」と「ref-toのエントリーポイント」の情報で識別すれば一意になる。
-/// 
+///
 /// <code>
 /// // スキーマ定義の例
 /// - 従業員
@@ -92,6 +92,15 @@ public class SchemaNodeIdentity {
     public override string ToString() {
         return _pathForDebug;
     }
+    public static bool operator ==(SchemaNodeIdentity? left, SchemaNodeIdentity? right) {
+        if (left is null && right is null) return true;
+        if (left is null || right is null) return false;
+        return left._hashCode == right._hashCode;
+    }
+    public static bool operator !=(SchemaNodeIdentity? left, SchemaNodeIdentity? right) {
+        return !(left == right);
+    }
+
 }
 
 partial class CodeGeneratingHelperExtensions {
