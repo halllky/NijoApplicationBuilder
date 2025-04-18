@@ -60,15 +60,19 @@ public class ProjectFormViewModel {
         var rootNode = new TreeNode(ProjectName);
         rootNode.Tag = MENU_TAG_ROOT;
 
+        // 属性種類定義
+        var memberTypesNode = new TreeNode("属性種類定義");
+        rootNode.Nodes.Add(memberTypesNode);
+
         // 列挙体一覧ノード
-        var enumNode = new TreeNode("列挙体一覧");
+        var enumNode = new TreeNode("列挙体");
         enumNode.Tag = MENU_TAG_ENUMS;
-        rootNode.Nodes.Add(enumNode);
+        memberTypesNode.Nodes.Add(enumNode);
 
         // 値オブジェクト一覧ノード
-        var valueObjectNode = new TreeNode("値オブジェクト一覧");
+        var valueObjectNode = new TreeNode("値オブジェクト");
         valueObjectNode.Tag = MENU_TAG_VALUE_OJECTS;
-        rootNode.Nodes.Add(valueObjectNode);
+        memberTypesNode.Nodes.Add(valueObjectNode);
 
         // データモデル、コマンドモデル、クエリモデルをそれぞれ個別ノードとして追加
         foreach (var el in _schemaParseContext.Document.Root.Elements()) {
@@ -80,6 +84,8 @@ public class ProjectFormViewModel {
                 rootNode.Nodes.Add(node);
             }
         }
+
+        rootNode.ExpandAll();
 
         return [rootNode];
     }
@@ -132,9 +138,9 @@ public class ProjectFormViewModel {
             return label;
         }
 
-        // その他の場合
+        // その他の場合（何も表示しない）
         var unknownLabel = new Label();
-        unknownLabel.Text = "選択された項目の情報がありません";
+        unknownLabel.Text = "";
         return unknownLabel;
     }
 }
