@@ -27,6 +27,38 @@ namespace Nijo.Ui.Views {
             // 初期化
             Text = Path.GetFileName(FolderPath);
             InitializeSchemaExplorer();
+
+            // キーボードショートカットの設定
+            KeyPreview = true;
+            KeyDown += ProjectForm_KeyDown;
+        }
+
+        /// <summary>
+        /// キーボードショートカット処理
+        /// </summary>
+        private void ProjectForm_KeyDown(object? sender, KeyEventArgs e) {
+            // Ctrl+S による保存
+            if (e.Control && e.KeyCode == Keys.S) {
+                SaveChanges();
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+            }
+        }
+
+        /// <summary>
+        /// 変更内容を保存
+        /// </summary>
+        public void SaveChanges() {
+            try {
+                if (_viewModel.SaveChanges()) {
+                    // 保存成功時のステータス表示
+                    MessageBox.Show("変更内容を保存しました。", "保存完了",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            } catch (Exception ex) {
+                MessageBox.Show($"保存時にエラーが発生しました。\n{ex.Message}",
+                    "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         /// <summary>
@@ -79,8 +111,36 @@ namespace Nijo.Ui.Views {
         }
 
         private void FolderViewForm_FormClosing(object sender, FormClosingEventArgs e) {
-            // フォームが閉じられたときにイベントを発火する
-            FolderClosed?.Invoke(this, EventArgs.Empty);
+            // 変更があれば保存するか確認
+            try {
+                DialogResult result = MessageBox.Show(
+                    "変更内容を保存しますか？",
+                    "保存確認",
+                    MessageBoxButtons.YesNoCancel,
+                    MessageBoxIcon.Question);
+
+                if (result == DialogResult.Yes) {
+                    if (!_viewModel.SaveChanges()) {
+                        // 保存に失敗した場合、フォームを閉じるのをキャンセル
+                        e.Cancel = true;
+                        return;
+                    }
+                } else if (result == DialogResult.Cancel) {
+                    // キャンセルしたらフォームを閉じない
+                    e.Cancel = true;
+                    return;
+                }
+
+                // ビューモデルのリソースを解放
+                _viewModel.Dispose();
+
+                // フォームが閉じられたときにイベントを発火する
+                FolderClosed?.Invoke(this, EventArgs.Empty);
+            } catch (Exception ex) {
+                MessageBox.Show($"エラーが発生しました。\n{ex.Message}",
+                    "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                e.Cancel = true;
+            }
         }
 
         /// <summary>

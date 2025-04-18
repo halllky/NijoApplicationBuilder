@@ -11,6 +11,7 @@ using System.Windows.Forms;
 using Nijo.Models;
 using Nijo.CodeGenerating;
 using Nijo.Ui.Views;
+using System.IO;
 
 namespace Nijo.Ui;
 
@@ -22,6 +23,7 @@ public class ProjectFormViewModel {
 
     internal ProjectFormViewModel(GeneratedProject project) {
         _project = project;
+
         _schemaParseContext = new SchemaParseContext(
             XDocument.Load(_project.SchemaXmlPath),
             SchemaParseRule.Default());
@@ -44,6 +46,44 @@ public class ProjectFormViewModel {
     /// プロジェクト名
     /// </summary>
     public string ProjectName => Path.GetFileName(_project.ProjectRoot);
+
+    /// <summary>
+    /// スキーマXMLのパス
+    /// </summary>
+    public string SchemaXmlPath => _project.SchemaXmlPath;
+
+    /// <summary>
+    /// 現在のXDocumentを取得
+    /// </summary>
+    public XDocument Document => _schemaParseContext.Document;
+
+    /// <summary>
+    /// データを保存する
+    /// </summary>
+    /// <returns>保存に成功したかどうか</returns>
+    public bool SaveChanges() {
+        try {
+            var lockFileStream = new FileStream(
+                _project.SchemaXmlPath,
+                FileMode.Open,
+                FileAccess.ReadWrite,
+                FileShare.Read);
+
+            // ストリームをクリアして先頭に戻す
+            lockFileStream.SetLength(0);
+            lockFileStream.Position = 0;
+
+            // XDocumentを保存
+            _schemaParseContext.Document.Save(lockFileStream);
+            lockFileStream.Flush();
+
+            return true;
+        } catch (Exception ex) {
+            MessageBox.Show($"保存中にエラーが発生しました。\n{ex.Message}",
+                "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return false;
+        }
+    }
 
     #region サイドメニュー
     private const string MENU_TAG_ROOT = "ROOT";
