@@ -227,7 +227,6 @@ public partial class AggregateMemberDataGridView : UserControl {
     /// モデルの詳細を表示
     /// </summary>
     public void DisplayMembers(XElement rootAggregateElement, IModel model, SchemaParseContext schemaParseContext) {
-        SuspendLayout();
 
         // BindingSourceを使用してDataGridViewに設定
         var list = AggregateMemberDataGridViewRow
@@ -303,8 +302,6 @@ public partial class AggregateMemberDataGridView : UserControl {
 
         // 先頭行の外観を変更するため、DataGridViewの更新を強制
         dataGridView1.Refresh();
-
-        ResumeLayout();
     }
 
     /// <summary>

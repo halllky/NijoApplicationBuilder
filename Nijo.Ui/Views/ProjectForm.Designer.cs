@@ -34,41 +34,45 @@ namespace Nijo.Ui.Views {
             _splitContainer.SuspendLayout();
             _schemaExplorerPanel.SuspendLayout();
             SuspendLayout();
-            //
+            // 
             // _splitContainer
-            //
+            // 
             _splitContainer.Dock = DockStyle.Fill;
             _splitContainer.FixedPanel = FixedPanel.Panel1;
             _splitContainer.Location = new Point(0, 0);
             _splitContainer.Name = "_splitContainer";
-            //
+            // 
             // _splitContainer.Panel1
-            //
+            // 
             _splitContainer.Panel1.Controls.Add(_schemaExplorerPanel);
+            // 
+            // _splitContainer.Panel2
+            // 
+            _splitContainer.Panel2.BackColor = SystemColors.ControlDark;
             _splitContainer.Size = new Size(800, 450);
             _splitContainer.SplitterDistance = 250;
             _splitContainer.TabIndex = 1;
-            //
+            // 
             // _schemaExplorerPanel
-            //
+            // 
             _schemaExplorerPanel.Controls.Add(_schemaExplorer);
             _schemaExplorerPanel.Dock = DockStyle.Fill;
             _schemaExplorerPanel.Location = new Point(0, 0);
             _schemaExplorerPanel.Name = "_schemaExplorerPanel";
             _schemaExplorerPanel.Size = new Size(250, 450);
             _schemaExplorerPanel.TabIndex = 0;
-            //
+            // 
             // _schemaExplorer
-            //
+            // 
             _schemaExplorer.Dock = DockStyle.Fill;
             _schemaExplorer.Location = new Point(0, 0);
             _schemaExplorer.Name = "_schemaExplorer";
             _schemaExplorer.Size = new Size(250, 450);
             _schemaExplorer.TabIndex = 1;
             _schemaExplorer.AfterSelect += SchemaExplorer_AfterSelect;
-            //
+            // 
             // ProjectForm
-            //
+            // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 450);

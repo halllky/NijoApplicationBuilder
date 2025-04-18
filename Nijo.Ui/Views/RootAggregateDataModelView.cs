@@ -20,6 +20,8 @@ namespace Nijo.Ui.Views {
 
         public RootAggregateDataModelView() {
             InitializeComponent();
+
+            _aggregateDetailPanel.BackColor = SystemColors.Control;
         }
 
         /// <summary>

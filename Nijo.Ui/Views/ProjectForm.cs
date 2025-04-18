@@ -58,6 +58,8 @@ namespace Nijo.Ui.Views {
         /// </summary>
         private void SchemaExplorer_AfterSelect(object sender, TreeViewEventArgs e) {
             if (e.Node != null) {
+                SuspendLayout();
+
                 // 既存のコントロールを明示的にDisposeする
                 foreach (Control control in _splitContainer.Panel2.Controls) {
                     control.Dispose();
@@ -72,6 +74,8 @@ namespace Nijo.Ui.Views {
 
                 // パネルに追加
                 _splitContainer.Panel2.Controls.Add(dataModelView);
+
+                ResumeLayout();
             }
         }
 

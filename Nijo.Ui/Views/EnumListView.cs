@@ -29,6 +29,8 @@ namespace Nijo.Ui.Views {
             InitializeComponent();
             InitializeDataGridView();
             LoadEnums();
+
+            _panel.BackColor = SystemColors.Control;
         }
 
         /// <summary>
