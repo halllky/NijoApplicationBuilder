@@ -33,22 +33,45 @@ public partial class AggregateMemberDataGridView : UserControl {
         dataGridView1.CellFormatting += DataGridView1_CellFormatting;
         // データバインディング完了時のイベントを追加
         dataGridView1.DataBindingComplete += DataGridView1_DataBindingComplete;
+        // 編集開始時のイベントを追加
+        dataGridView1.CellBeginEdit += DataGridView1_CellBeginEdit;
 
         // コンボボックスのデータソースに無い値が指定されていたとしても例外を出さない
         dataGridView1.DataError += DataGridView1_DataError;
     }
 
     /// <summary>
+    /// セル編集開始時のイベントハンドラ
+    /// </summary>
+    private void DataGridView1_CellBeginEdit(object? sender, DataGridViewCellCancelEventArgs e) {
+        // Type列のみ処理
+        if (dataGridView1.Columns[e.ColumnIndex].Name == "Type" && e.RowIndex >= 0) {
+            var list = _bindingSource.DataSource as List<AggregateMemberDataGridViewRow>;
+            if (list != null && e.RowIndex < list.Count) {
+                var row = list[e.RowIndex];
+                // 削除不可の行は種類の変更を禁止
+                if (row.CannotDelete) {
+                    e.Cancel = true;
+                }
+            }
+        }
+    }
+
+    /// <summary>
     /// セルの書式設定イベントハンドラ
     /// </summary>
     private void DataGridView1_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e) {
-        // PhysicalName列のみ処理
-        if (dataGridView1.Columns[e.ColumnIndex].Name == "PhysicalName" && e.RowIndex >= 0) {
-            var row = dataGridView1.Rows[e.RowIndex].DataBoundItem as AggregateMemberDataGridViewRow;
-            if (row != null && row.Indent.HasValue) {
-                // インデントに基づいてパディングを設定
-                int indentSize = row.Indent.Value * 20; // インデント1つあたり20ピクセル
-                e.CellStyle.Padding = new Padding(indentSize, 0, 0, 0);
+        if (e.RowIndex >= 0) {
+            var list = _bindingSource.DataSource as List<AggregateMemberDataGridViewRow>;
+            if (list != null && e.RowIndex < list.Count) {
+                var row = list[e.RowIndex];
+
+                // PhysicalName列の処理
+                if (dataGridView1.Columns[e.ColumnIndex].Name == "PhysicalName" && row.Indent.HasValue) {
+                    // インデントに基づいてパディングを設定
+                    int indentSize = row.Indent.Value * 20; // インデント1つあたり20ピクセル
+                    e.CellStyle.Padding = new Padding(indentSize, 0, 0, 0);
+                }
             }
         }
     }
@@ -57,10 +80,20 @@ public partial class AggregateMemberDataGridView : UserControl {
     /// データバインディング完了時のイベントハンドラ
     /// </summary>
     private void DataGridView1_DataBindingComplete(object? sender, DataGridViewBindingCompleteEventArgs e) {
-        // 先頭行は集約ルートなので特別なスタイルを適用
-        if (dataGridView1.Rows.Count > 0) {
-            dataGridView1.Rows[0].DefaultCellStyle.BackColor = Color.LightGray;
-            dataGridView1.Rows[0].DefaultCellStyle.Font = new Font(dataGridView1.Font, FontStyle.Bold);
+        // CannotDeleteプロパティに基づいてスタイルを適用
+        var list = _bindingSource.DataSource as List<AggregateMemberDataGridViewRow>;
+        if (list != null) {
+            for (int i = 0; i < dataGridView1.Rows.Count && i < list.Count; i++) {
+                if (list[i].CannotDelete) {
+                    // 行全体のスタイルを適用
+                    dataGridView1.Rows[i].DefaultCellStyle.BackColor = Color.LightGray;
+                    dataGridView1.Rows[i].DefaultCellStyle.Font = new Font(dataGridView1.Font, FontStyle.Bold);
+
+                    // Type列を読み取り専用に設定
+                    int typeColumnIndex = dataGridView1.Columns["Type"].Index;
+                    dataGridView1.Rows[i].Cells[typeColumnIndex].ReadOnly = true;
+                }
+            }
         }
     }
 
@@ -191,7 +224,8 @@ public partial class AggregateMemberDataGridView : UserControl {
             var newRow = new AggregateMemberDataGridViewRow {
                 Indent = indent,
                 PhysicalName = "",
-                Attributes = new Dictionary<string, string>()
+                Attributes = new Dictionary<string, string>(),
+                CannotDelete = false
             };
             list.Insert(insertIndex + i, newRow);
         }
@@ -232,6 +266,12 @@ public partial class AggregateMemberDataGridView : UserControl {
         var list = AggregateMemberDataGridViewRow
             .FromXElementRecursively(rootAggregateElement, 0, schemaParseContext)
             .ToList();
+
+        // デフォルトでは、ルート集約行のみ削除不可に設定
+        if (list.Count > 0) {
+            list[0].CannotDelete = true;
+        }
+
         _bindingSource.DataSource = list;
 
         // 列設定
@@ -257,9 +297,9 @@ public partial class AggregateMemberDataGridView : UserControl {
             DataPropertyName = "Type",
             HeaderText = "種類",
             Width = 150,
-            Frozen = true,
             ValueMember = "Key",
             DisplayMember = "Value",
+            FlatStyle = FlatStyle.Flat, // フラットスタイルに設定して視覚効果を強化
         };
         typeColumn.Items.AddRange(EnumerateTypeComboSource(model, schemaParseContext)
             .Select(kvp => new { kvp.Key, kvp.Value })
@@ -351,6 +391,7 @@ public class AggregateMemberDataGridViewRow {
             Attributes = el
                 .Attributes()
                 .ToDictionary(attr => attr.Name.LocalName, attr => attr.Value),
+            CannotDelete = false,
         };
 
         foreach (var child in el.Elements()) {
@@ -379,4 +420,8 @@ public class AggregateMemberDataGridViewRow {
     /// なお1つのXML要素に同じ名前の属性が複数定義されることは無い前提。
     /// </summary>
     public Dictionary<string, string> Attributes { get; set; } = [];
+    /// <summary>
+    /// この行が削除不可かどうか。削除不可の場合、表示時に太字・灰色で表示される。
+    /// </summary>
+    public bool CannotDelete { get; set; }
 }

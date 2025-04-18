@@ -132,6 +132,20 @@ public class ProjectFormViewModel {
                 return component;
             }
 
+            // クエリモデルの場合の処理
+            if (model is QueryModel) {
+                var component = new RootAggregateQueryModelView();
+                component.DisplayRootAggregateInfo(xElement, _schemaParseContext);
+                return component;
+            }
+
+            // コマンドモデルの場合の処理
+            if (model is CommandModel) {
+                var component = new RootAggregateCommandModelView();
+                component.DisplayRootAggregateInfo(xElement, _schemaParseContext);
+                return component;
+            }
+
             // 画面が無い場合
             var label = new Label();
             label.Text = $"この集約({model.SchemaName})を表示できる画面がありません。";

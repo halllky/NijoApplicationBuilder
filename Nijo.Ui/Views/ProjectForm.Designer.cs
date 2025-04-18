@@ -49,7 +49,7 @@ namespace Nijo.Ui.Views {
             // _splitContainer.Panel2
             // 
             _splitContainer.Panel2.BackColor = SystemColors.ControlDark;
-            _splitContainer.Size = new Size(800, 450);
+            _splitContainer.Size = new Size(1274, 723);
             _splitContainer.SplitterDistance = 250;
             _splitContainer.TabIndex = 1;
             // 
@@ -59,7 +59,7 @@ namespace Nijo.Ui.Views {
             _schemaExplorerPanel.Dock = DockStyle.Fill;
             _schemaExplorerPanel.Location = new Point(0, 0);
             _schemaExplorerPanel.Name = "_schemaExplorerPanel";
-            _schemaExplorerPanel.Size = new Size(250, 450);
+            _schemaExplorerPanel.Size = new Size(250, 723);
             _schemaExplorerPanel.TabIndex = 0;
             // 
             // _schemaExplorer
@@ -67,7 +67,7 @@ namespace Nijo.Ui.Views {
             _schemaExplorer.Dock = DockStyle.Fill;
             _schemaExplorer.Location = new Point(0, 0);
             _schemaExplorer.Name = "_schemaExplorer";
-            _schemaExplorer.Size = new Size(250, 450);
+            _schemaExplorer.Size = new Size(250, 723);
             _schemaExplorer.TabIndex = 1;
             _schemaExplorer.AfterSelect += SchemaExplorer_AfterSelect;
             // 
@@ -75,7 +75,7 @@ namespace Nijo.Ui.Views {
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
+            ClientSize = new Size(1274, 723);
             Controls.Add(_splitContainer);
             Name = "ProjectForm";
             Text = "フォルダビュー";
