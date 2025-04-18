@@ -204,19 +204,31 @@ namespace Nijo.CodeGenerating {
                 .EnumerateThisAndDescendants()
                 .SelectMany(agg => agg.GetMembers())
                 .OfType<RefToMember>()
-                .Select(@ref => new {
-                    FileName = $"./{@ref.RefTo.GetRoot().PhysicalName}",
-                    RefTo = new Models.QueryModelModules.DisplayDataRef.Entry(@ref.RefTo),
-                    RefSC = new Models.QueryModelModules.SearchCondition.Filter(@ref.RefTo),
-                });
+                .Select(@ref => @ref.RefTo)
+                .Distinct()
+                .GroupBy(agg => agg.GetRoot());
+
+            var refToModules = new Dictionary<string, List<string>>();
+            foreach (var group in refTos) {
+                var fileName = $"./{group.Key.PhysicalName}";
+                var refEntries = group.Select(agg => new Models.QueryModelModules.DisplayDataRef.Entry(agg));
+
+                var modules = new List<string>();
+                foreach (var refEntry in refEntries) {
+                    modules.Add(refEntry.TsTypeName);
+                    modules.Add(refEntry.TsNewObjectFunction);
+                }
+
+                refToModules.Add(fileName, modules);
+            }
 
             return $$"""
                 import React from "react"
                 import * as ReactRouter from "react-router-dom"
                 import { UUID } from "uuidjs"
                 import * as Util from "./util"
-                {{refTos.SelectTextTemplate(r => $$"""
-                import { {{r.RefTo.TsTypeName}}, {{r.RefTo.TsNewObjectFunction}}, {{r.RefSC.TsTypeName}} } from "{{r.FileName}}"
+                {{refToModules.SelectTextTemplate(modules => $$"""
+                import { {{modules.Value.Join(", ")}} } from "{{modules.Key}}"
                 """)}}
 
                 //#region 型定義
