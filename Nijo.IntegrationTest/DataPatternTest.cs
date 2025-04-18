@@ -101,11 +101,7 @@ public class DataPatternTest {
 
         // ダンプ出力先ファイルを決める
         var logDirRoot = Path.Combine(workspaceRoot, "..", "Nijo.IntegrationTest.Log");
-        if (!Directory.Exists(logDirRoot)) {
-            Directory.CreateDirectory(logDirRoot);
-            var gitignore = Path.Combine(logDirRoot, ".gitignore");
-            File.WriteAllText(gitignore, "*");
-        }
+        if (!Directory.Exists(logDirRoot)) Directory.CreateDirectory(logDirRoot);
 
         // ダンプファイルに出力
         var logDirOfThisTest = Path.Combine(logDirRoot, DateTime.Now.ToString("yyyyMMdd_HHmmss"));
