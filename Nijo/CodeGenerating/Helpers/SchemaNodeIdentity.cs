@@ -99,7 +99,7 @@ partial class CodeGeneratingHelperExtensions {
     /// <summary>
     /// マッピング処理の文脈で値メンバーを一意に識別するための識別子に変換する
     /// </summary>
-    public static SchemaNodeIdentity ToIdentifier(this ISchemaPathNode node) {
+    public static SchemaNodeIdentity ToMappingKey(this ISchemaPathNode node) {
         return SchemaNodeIdentity.Create(node);
     }
 

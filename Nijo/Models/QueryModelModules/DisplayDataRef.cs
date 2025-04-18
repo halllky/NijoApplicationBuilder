@@ -213,7 +213,7 @@ namespace Nijo.Models.QueryModelModules {
             public string CsType => Member.Type.CsDomainTypeName;
 
             IValueMemberType IInstanceValuePropertyMetadata.Type => Member.Type;
-            ISchemaPathNode IInstancePropertyMetadata.MappingKey => Member;
+            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Member;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
 
@@ -230,7 +230,7 @@ namespace Nijo.Models.QueryModelModules {
             public string DisplayName => _member.DisplayName;
             public string CsType => CsClassName;
 
-            ISchemaPathNode IInstancePropertyMetadata.MappingKey => _member;
+            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _member;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
@@ -249,7 +249,7 @@ namespace Nijo.Models.QueryModelModules {
             public string CsType => $"{_member.PhysicalName}RefTargetVia{_member.PreviousNode!.XElement.Name.LocalName.ToCSharpSafe()}";
             internal override string CsClassName => CsType;
 
-            ISchemaPathNode IInstancePropertyMetadata.MappingKey => _member;
+            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _member;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
@@ -268,7 +268,7 @@ namespace Nijo.Models.QueryModelModules {
             public string CsType => $"{_member.PhysicalName}RefTargetVia{_member.PreviousNode!.XElement.Name.LocalName.ToCSharpSafe()}";
             internal override string CsClassName => CsType;
 
-            ISchemaPathNode IInstancePropertyMetadata.MappingKey => _member;
+            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _member;
             bool IInstanceStructurePropertyMetadata.IsArray => true;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
@@ -287,7 +287,7 @@ namespace Nijo.Models.QueryModelModules {
             public string CsType => $"{_parent.PhysicalName}RefTargetVia{_parent.PreviousNode!.XElement.Name.LocalName.ToCSharpSafe()}";
             internal override string CsClassName => CsType;
 
-            ISchemaPathNode IInstancePropertyMetadata.MappingKey => _parent;
+            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _parent;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }

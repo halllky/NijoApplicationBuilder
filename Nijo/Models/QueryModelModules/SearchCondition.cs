@@ -224,7 +224,7 @@ namespace Nijo.Models.QueryModelModules {
             internal virtual string TsTypeName => $"{_aggregate.PhysicalName}SearchConditionFilter";
 
             bool IInstanceStructurePropertyMetadata.IsArray => false;
-            ISchemaPathNode IInstancePropertyMetadata.MappingKey => ISchemaPathNode.Empty;
+            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => ISchemaPathNode.Empty;
             string IInstancePropertyMetadata.PropertyName => Entry.FILTER_CS;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetOwnMembers();
 
@@ -373,7 +373,7 @@ namespace Nijo.Models.QueryModelModules {
             }
             string IFilterMember.RenderTsNewObjectFunctionValue() => Member.Type.SearchBehavior!.RenderTsNewObjectFunctionValue();
 
-            ISchemaPathNode IInstancePropertyMetadata.MappingKey => Member;
+            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Member;
             string IInstancePropertyMetadata.PropertyName => Member.PhysicalName;
             IValueMemberType IInstanceValuePropertyMetadata.Type => Member.Type;
         }
@@ -410,7 +410,7 @@ namespace Nijo.Models.QueryModelModules {
                     """;
             }
 
-            ISchemaPathNode IInstancePropertyMetadata.MappingKey => _rm;
+            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _rm;
             string IInstancePropertyMetadata.PropertyName => _rm.PhysicalName;
             bool IInstanceStructurePropertyMetadata.IsArray => _rm is ChildrenAggregate;
 

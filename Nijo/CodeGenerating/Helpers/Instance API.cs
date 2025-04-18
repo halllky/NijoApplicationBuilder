@@ -34,7 +34,7 @@ public interface IInstanceStructurePropertyMetadata : IInstancePropertyMetadata,
 /// <see cref="IInstanceValuePropertyMetadata"/> or <see cref="IInstanceStructurePropertyMetadata"/>
 /// </summary>
 public interface IInstancePropertyMetadata {
-    ISchemaPathNode MappingKey { get; }
+    ISchemaPathNode SchemaPathNode { get; }
     string PropertyName { get; }
     string DisplayName => PropertyName; // TODO ver.1
 }

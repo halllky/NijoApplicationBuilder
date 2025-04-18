@@ -341,7 +341,7 @@ namespace Nijo.Models.DataModelModules {
             internal abstract string DbName { get; }
             internal abstract bool IsKey { get; }
 
-            ISchemaPathNode IInstancePropertyMetadata.MappingKey => Member;
+            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Member;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
             IValueMemberType IInstanceValuePropertyMetadata.Type => Member.Type;
 
@@ -426,7 +426,7 @@ namespace Nijo.Models.DataModelModules {
             internal required bool OtherSideIsMany { get; init; }
 
             bool IInstanceStructurePropertyMetadata.IsArray => OtherSideIsMany;
-            ISchemaPathNode IInstancePropertyMetadata.MappingKey => OtherSide;
+            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => OtherSide;
             string IInstancePropertyMetadata.PropertyName => OtherSidePhysicalName;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
                 IInstancePropertyOwnerMetadata otherSideEfCoreEntity = new EFCoreEntity(OtherSide);

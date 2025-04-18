@@ -219,7 +219,7 @@ namespace Nijo.Models.QueryModelModules {
             var queryVarMemberes = queryVar
                 .CreatePropertiesRecursively(searchResult)
                 .OfType<InstanceValueProperty>()
-                .ToDictionary(p => p.Metadata.MappingKey.ToIdentifier());
+                .ToDictionary(p => p.Metadata.SchemaPathNode.ToMappingKey());
             var searchConditionMembers = scVar
                 .CreatePropertiesRecursively(searchCondition)
                 .OfType<InstanceValueProperty>()
@@ -227,8 +227,8 @@ namespace Nijo.Models.QueryModelModules {
                 .ToArray();
 
             FilterStatementRenderingContext CreateContext(InstanceValueProperty searchConditionProp) {
-                var query = queryVarMemberes.GetValueOrDefault(searchConditionProp.Metadata.MappingKey.ToIdentifier())
-                    ?? throw new InvalidOperationException($"{searchConditionProp.Metadata.MappingKey.ToIdentifier()}と対応するクエリのメンバーが見つからない");
+                var query = queryVarMemberes.GetValueOrDefault(searchConditionProp.Metadata.SchemaPathNode.ToMappingKey())
+                    ?? throw new InvalidOperationException($"{searchConditionProp.Metadata.SchemaPathNode.ToMappingKey()}と対応するクエリのメンバーが見つからない");
                 return new() {
                     Query = query,
                     SearchCondition = searchConditionProp,

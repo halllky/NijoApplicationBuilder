@@ -274,7 +274,7 @@ namespace Nijo.Models.DataModelModules {
             public string CsUpdateType => Member.Type.CsDomainTypeName;
             public string CsDeleteType => Member.Type.CsDomainTypeName;
 
-            ISchemaPathNode IInstancePropertyMetadata.MappingKey => Member;
+            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Member;
             IValueMemberType IInstanceValuePropertyMetadata.Type => Member.Type;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
@@ -300,7 +300,7 @@ namespace Nijo.Models.DataModelModules {
             public string CsUpdateType => new SaveCommand(_aggregate, SaveCommand.E_Type.Update).CsClassNameUpdate;
             public string CsDeleteType => new SaveCommand(_aggregate, SaveCommand.E_Type.Delete).CsClassNameDelete;
 
-            ISchemaPathNode IInstancePropertyMetadata.MappingKey => _aggregate;
+            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _aggregate;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
@@ -317,7 +317,7 @@ namespace Nijo.Models.DataModelModules {
             public string CsUpdateType => $"List<{new SaveCommand(_aggregate, SaveCommand.E_Type.Update).CsClassNameUpdate}>";
             public string CsDeleteType => $"List<{new SaveCommand(_aggregate, SaveCommand.E_Type.Delete).CsClassNameDelete}>";
 
-            ISchemaPathNode IInstancePropertyMetadata.MappingKey => _aggregate;
+            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _aggregate;
             bool IInstanceStructurePropertyMetadata.IsArray => true;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
@@ -329,7 +329,7 @@ namespace Nijo.Models.DataModelModules {
             var rootInstance = new Variable("this");
             var rightDictOfRootInstance = rootInstance
                 .Create1To1PropertiesRecursively(this)
-                .ToDictionary(x => x.Metadata.MappingKey.ToIdentifier());
+                .ToDictionary(x => x.Metadata.SchemaPathNode.ToMappingKey());
 
             var efCoreEntity = new EFCoreEntity(_aggregate);
 
@@ -350,7 +350,7 @@ namespace Nijo.Models.DataModelModules {
                 // 自身のカラム、外部参照のキー、親のキー
                 foreach (var col in left.GetColumns()) {
                     // シーケンス項目など登録と共に採番されるものはnullになる可能性がある
-                    var sourcePath = rigthMembers.TryGetValue(col.Member.ToIdentifier(), out var source)
+                    var sourcePath = rigthMembers.TryGetValue(col.Member.ToMappingKey(), out var source)
                         ? $"{source.Root.Name}.{source.GetPathFromInstance().Select(p => p.Metadata.PropertyName).Join("?.")}"
                         : "null";
                     yield return $$"""
@@ -376,7 +376,7 @@ namespace Nijo.Models.DataModelModules {
 
                     } else if (nav.Relevant.ThisSide is ChildrenAggregate children) {
                         var childrenEntity = new EFCoreEntity(nav.Relevant.ThisSide);
-                        var arrayPath = rigthMembers.TryGetValue(children.ToIdentifier(), out var source)
+                        var arrayPath = rigthMembers.TryGetValue(children.ToMappingKey(), out var source)
                             ? $"{source.Root.Name}.{source.GetPathFromInstance().Select(p => p.Metadata.PropertyName).Join("?.")}"
                             : throw new InvalidOperationException($"右辺にChildrenのXElementが無い: {children}");
 
@@ -385,7 +385,7 @@ namespace Nijo.Models.DataModelModules {
                         var saveCommand = new SaveCommandChildrenMember(children, Type);
                         var loopVar = new Variable(children.GetLoopVarName());
                         foreach (var descendant in loopVar.Create1To1PropertiesRecursively(saveCommand)) {
-                            dict2.Add(descendant.Metadata.MappingKey.ToIdentifier(), descendant);
+                            dict2.Add(descendant.Metadata.SchemaPathNode.ToMappingKey(), descendant);
                         }
 
                         yield return $$"""

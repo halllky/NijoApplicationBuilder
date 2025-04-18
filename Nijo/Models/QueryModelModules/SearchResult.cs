@@ -109,7 +109,7 @@ namespace Nijo.Models.QueryModelModules {
             internal abstract string RenderDeclaration();
 
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
-            ISchemaPathNode IInstancePropertyMetadata.MappingKey => MappingKey;
+            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => MappingKey;
         }
 
         internal class SearchResultValueMember : SearchResultMember, IInstanceValuePropertyMetadata {

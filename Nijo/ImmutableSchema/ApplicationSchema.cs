@@ -212,7 +212,7 @@ namespace Nijo.ImmutableSchema {
                         yield return property.Metadata.GetType().Name ?? "";
 
                         // MappingKey
-                        yield return property.Metadata.MappingKey.ToIdentifier().ToString();
+                        yield return property.Metadata.SchemaPathNode.ToMappingKey().ToString();
                     }
                 });
             }
