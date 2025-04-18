@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Data;
 using System.Windows.Forms;
 using Nijo.Models;
+using Nijo.CodeGenerating;
 
 namespace Nijo.Ui.Views;
 
@@ -84,6 +85,13 @@ public class ProjectFormViewModel {
     #endregion サイドメニュー
 
     /// <summary>
+    /// アプリケーション設定を取得
+    /// </summary>
+    public CodeRenderingConfig GetAppConfig() {
+        return new CodeRenderingConfig(_schemaParseContext.Document);
+    }
+
+    /// <summary>
     /// データモデルの詳細情報を取得
     /// </summary>
     /// <returns>新たに選択された要素の画面</returns>
@@ -91,9 +99,8 @@ public class ProjectFormViewModel {
 
         // アプリケーション全体設定
         if (node.Tag as string == MENU_TAG_ROOT) {
-            var label = new Label();
-            label.Text = $"アプリケーション全体設定";
-            return label;
+            // アプリケーション設定画面を返す
+            return new AppConfigView(GetAppConfig());
         }
 
         // 列挙体一覧
