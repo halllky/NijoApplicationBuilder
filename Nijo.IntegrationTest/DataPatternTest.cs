@@ -147,31 +147,27 @@ public class DataPatternTest {
             Assert.Fail($"C#コンパイルに失敗しました。\n出力:\n{outputBuilder}\nエラー:\n{errorBuilder}");
         }
 
-        // ※まずはC#側の品質を固める 2025-04-14 ※
-
-        //// TypeScriptコンパイルチェック
-        //var tsConfigPath = Path.Combine(testProjectDir, "react", "tsconfig.json");
-        //using var tsBuildProcess = Process.Start(new ProcessStartInfo {
-        //    FileName = "powershell",
-        //    Arguments = "/c \"npm run tsc\"",
-        //    WorkingDirectory = Path.Combine(testProjectDir, "react"),
-        //    UseShellExecute = false,
-        //    RedirectStandardOutput = true,
-        //    RedirectStandardError = true,
-        //    StandardOutputEncoding = Encoding.UTF8,
-        //    StandardErrorEncoding = Encoding.UTF8,
-        //})!;
-        //if (!tsBuildProcess.WaitForExit(300000)) { // 5分のタイムアウト
-        //    tsBuildProcess.Kill();
-        //    Assert.Fail("TypeScriptコンパイルがタイムアウトしました。");
-        //}
-        //if (tsBuildProcess.ExitCode != 0) {
-        //    var output = tsBuildProcess.StandardOutput.ReadToEnd();
-        //    var error = tsBuildProcess.StandardError.ReadToEnd();
-        //    Assert.Fail($"TypeScriptコンパイルに失敗しました。\n出力:\n{output}\nエラー:\n{error}");
-        //}
-
-        // ※まずはC#側の品質を固める 2025-04-14 ※
+        // TypeScriptコンパイルチェック
+        var tsConfigPath = Path.Combine(testProjectDir, "react", "tsconfig.json");
+        using var tsBuildProcess = Process.Start(new ProcessStartInfo {
+            FileName = "powershell",
+            Arguments = "/c \"npm run tsc\"",
+            WorkingDirectory = Path.Combine(testProjectDir, "react"),
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8,
+        })!;
+        if (!tsBuildProcess.WaitForExit(300000)) { // 5分のタイムアウト
+            tsBuildProcess.Kill();
+            Assert.Fail("TypeScriptコンパイルがタイムアウトしました。");
+        }
+        if (tsBuildProcess.ExitCode != 0) {
+            var output = tsBuildProcess.StandardOutput.ReadToEnd();
+            var error2 = tsBuildProcess.StandardError.ReadToEnd();
+            Assert.Fail($"TypeScriptコンパイルに失敗しました。\n出力:\n{output}\nエラー:\n{error2}");
+        }
 
         Assert.Pass($"{fileName} のテストが完了しました");
     }

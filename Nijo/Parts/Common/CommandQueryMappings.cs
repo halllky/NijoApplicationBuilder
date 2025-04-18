@@ -20,6 +20,10 @@ namespace Nijo.Parts.Common {
         /// </summary>
         internal const string QUERY_MODEL_TYPE = "QueryModelType";
         /// <summary>
+        /// JavaScript用: ほかの集約から参照されているQueryModelの型名のリテラル型
+        /// </summary>
+        internal const string REFERED_QUERY_MODEL_TYPE = "ReferedQueryModelType";
+        /// <summary>
         /// JavaScript用: CommandModelの型名のリテラル型
         /// </summary>
         internal const string COMMAND_MODEL_TYPE = "CommandModelType";
@@ -79,23 +83,35 @@ namespace Nijo.Parts.Common {
 
         private SourceFile RenderTypeScript(CodeRenderingContext ctx) {
 
+            // Ref関連モジュールは他の集約から参照されているもののみ使用可能
+            var referedRefEntires = new Dictionary<RootAggregate, DisplayDataRef.Entry[]>();
+            foreach (var rootAggregate in _queryModels) {
+                var (refEntries, _) = DisplayDataRef.GetReferedMembersRecursively(rootAggregate);
+                referedRefEntires[rootAggregate] = refEntries;
+            }
+
             // import {} from "..." で他ファイルからインポートするモジュールを決める
             var imports = new List<(string ImportFrom, string[] Modules)>();
             foreach (var rootAggregate in _queryModels) {
                 var searchCondition = new SearchCondition.Entry(rootAggregate);
                 var displayData = new DisplayData(rootAggregate);
-                var refTarget = new DisplayDataRef.Entry(rootAggregate);
 
-                imports.Add((
-                    $"./{rootAggregate.PhysicalName}",
-                    new[] {
-                        searchCondition.TsTypeName,
-                        searchCondition.TsNewObjectFunction,
-                        displayData.TsTypeName,
-                        displayData.TsNewObjectFunction,
-                        refTarget.TsTypeName,
-                        refTarget.TsNewObjectFunction,
-                    }));
+                var modules = new List<string> {
+                    searchCondition.TsTypeName,
+                    searchCondition.TsNewObjectFunction,
+                    displayData.TsTypeName,
+                    displayData.TsNewObjectFunction,
+                };
+
+                // Ref関連モジュールは他から参照されているもののみを追加
+                if (referedRefEntires.TryGetValue(rootAggregate, out var refEntries)) {
+                    foreach (var entry in refEntries) {
+                        modules.Add(entry.TsTypeName);
+                        modules.Add(entry.TsNewObjectFunction);
+                    }
+                }
+
+                imports.Add(($"./{rootAggregate.PhysicalName}", modules.ToArray()));
             }
             foreach (var rootAggregate in _commandModels) {
                 var param = new ParameterType(rootAggregate);
@@ -130,6 +146,16 @@ namespace Nijo.Parts.Common {
                     """)}}
                     """)}}
 
+                    /** ほかの集約から参照されているQueryModelの種類の一覧 */
+                    export type {{REFERED_QUERY_MODEL_TYPE}}
+                    {{If(referedRefEntires.Values.SelectMany(x => x).Any(), () => $$"""
+                    {{referedRefEntires.Values.SelectMany(x => x).SelectTextTemplate((refEntry, i) => $$"""
+                      {{(i == 0 ? "=" : "|")}} '{{refEntry.Aggregate.PhysicalName}}'
+                    """)}}
+                    """).Else(() => $$"""
+                      = never
+                    """)}}
+
                     /** CommandModelの種類の一覧 */
                     export type {{COMMAND_MODEL_TYPE}}
                     {{If(_commandModels.Count == 0, () => $$"""
@@ -143,7 +169,7 @@ namespace Nijo.Parts.Common {
                     /** CommandModel, QuerModel の種類の一覧 */
                     export type CommandOrQueryModelType = {{QUERY_MODEL_TYPE}} | {{COMMAND_MODEL_TYPE}}
 
-                    /** QueryModelの種類の一覧を文字列として返します。 */     
+                    /** QueryModelの種類の一覧を文字列として返します。 */
                     export const getQueryModelTypeList = (): {{QUERY_MODEL_TYPE}}[] => [
                     {{_queryModels.SelectTextTemplate((agg, i) => $$"""
                       '{{agg.PhysicalName}}',
@@ -175,8 +201,8 @@ namespace Nijo.Parts.Common {
 
                     /** RefTarget型一覧 */
                     export interface RefTargetTypeMap {
-                    {{_queryModels.SelectTextTemplate(agg => $$"""
-                      '{{agg.PhysicalName}}': {{new DisplayDataRef.Entry(agg).TsTypeName}}
+                    {{referedRefEntires.Values.SelectMany(x => x).SelectTextTemplate(refEntry => $$"""
+                      '{{refEntry.Aggregate.PhysicalName}}': {{refEntry.TsTypeName}}
                     """)}}
                     }
 
@@ -205,9 +231,9 @@ namespace Nijo.Parts.Common {
                     }
 
                     /** RefTarget新規作成関数 */
-                    export const createNewRefTargetFunctions: { [K in {{QUERY_MODEL_TYPE}}]: (() => RefTargetTypeMap[K]) } = {
-                    {{_queryModels.SelectTextTemplate(agg => $$"""
-                      '{{agg.PhysicalName}}': {{new DisplayDataRef.Entry(agg).TsNewObjectFunction}},
+                    export const createNewRefTargetFunctions: { [K in {{REFERED_QUERY_MODEL_TYPE}}]: (() => RefTargetTypeMap[K]) } = {
+                    {{referedRefEntires.Values.SelectMany(x => x).SelectTextTemplate(refEntry => $$"""
+                      '{{refEntry.Aggregate.PhysicalName}}': {{refEntry.TsNewObjectFunction}},
                     """)}}
                     }
 
@@ -243,7 +269,7 @@ namespace Nijo.Parts.Common {
 
 
                     //#region 参照検索
-                    {{SearchProcessingRefs.RenderTsTypeMap(_queryModels)}}
+                    {{SearchProcessingRefs.RenderTsTypeMap(referedRefEntires.Values.SelectMany(x => x))}}
                     //#endregion 参照検索
 
 

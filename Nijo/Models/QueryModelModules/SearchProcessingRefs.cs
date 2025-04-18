@@ -24,18 +24,18 @@ namespace Nijo.Models.QueryModelModules {
 
 
         #region TypeScript用
-        internal static string RenderTsTypeMap(IEnumerable<RootAggregate> queryModels) {
+        internal static string RenderTsTypeMap(IEnumerable<DisplayDataRef.Entry> refEntries) {
 
-            var items = queryModels.Select(rootAggregate => {
+            var items = refEntries.Select(refEntry => {
+                var rootAggregate = refEntry.Aggregate.GetRoot();
                 var controller = new AspNetController(rootAggregate);
                 var searchCondition = new SearchCondition.Entry(rootAggregate);
-                var displayData = new DisplayDataRef.Entry(rootAggregate);
 
                 return new {
                     EscapedPhysicalName = rootAggregate.PhysicalName.Replace("'", "\\'"),
                     Endpoint = controller.GetActionNameForClient(CONTROLLER_ACTION_LOAD),
                     ParamType = searchCondition.TsTypeName,
-                    ReturnType = $"Util.{SearchProcessingReturn.TYPE_TS}<{displayData.TsTypeName}>",
+                    ReturnType = $"Util.{SearchProcessingReturn.TYPE_TS}<{refEntry.TsTypeName}>",
                 };
             }).ToArray();
 
@@ -43,7 +43,7 @@ namespace Nijo.Models.QueryModelModules {
                 /** 参照検索処理 */
                 export namespace LoadRefFeature {
                   /** 参照検索処理のURLエンドポイントの一覧 */
-                  export const Endpoint: { [key in {{CommandQueryMappings.QUERY_MODEL_TYPE}}]: string } = {
+                  export const Endpoint: { [key in {{CommandQueryMappings.REFERED_QUERY_MODEL_TYPE}}]: string } = {
                 {{items.SelectTextTemplate(x => $$"""
                     '{{x.EscapedPhysicalName}}': '{{x.Endpoint}}',
                 """)}}

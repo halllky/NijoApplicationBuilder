@@ -88,6 +88,18 @@
           "cwd": "${workspaceFolder:NijoApplicationBuilder}/自動テストで作成されたプロジェクト"
         },
         "problemMatcher": []
+      },
+      {
+        "label": "Nijo: 「自動テストで作成されたプロジェクト」のコンパイルエラーチェック",
+        "command": ".\\build-and-error-check.bat",
+        "type": "shell",
+        "args": [
+          "generate",
+        ],
+        "options": {
+          "cwd": "${workspaceFolder:NijoApplicationBuilder}/自動テストで作成されたプロジェクト"
+        },
+        "problemMatcher": []
       }
     ]
   }

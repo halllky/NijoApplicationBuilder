@@ -131,9 +131,6 @@ namespace Nijo.Ui.Views {
                     return;
                 }
 
-                // ビューモデルのリソースを解放
-                _viewModel.Dispose();
-
                 // フォームが閉じられたときにイベントを発火する
                 FolderClosed?.Invoke(this, EventArgs.Empty);
             } catch (Exception ex) {
