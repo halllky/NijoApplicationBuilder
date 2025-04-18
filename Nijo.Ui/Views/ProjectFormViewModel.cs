@@ -105,16 +105,14 @@ public class ProjectFormViewModel {
 
         // 列挙体一覧
         if (node.Tag as string == MENU_TAG_ENUMS) {
-            var label = new Label();
-            label.Text = $"{node.Text}";
-            return label;
+            // 列挙体一覧の編集画面を返す
+            return new EnumListView(_schemaParseContext);
         }
 
         // 値オブジェクト一覧
         if (node.Tag as string == MENU_TAG_VALUE_OJECTS) {
-            var label = new Label();
-            label.Text = $"{node.Text}";
-            return label;
+            // 値オブジェクト一覧の編集画面を返す
+            return new ValueObjectListView(_schemaParseContext);
         }
 
         // モデル1個単位の詳細画面

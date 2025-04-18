@@ -51,15 +51,61 @@ namespace Nijo.Ui.Views {
         /// <summary>
         /// 「行挿入」ボタンのクリックイベントハンドラ
         /// </summary>
-        private void insertRowButton_Click(object sender, EventArgs e) {
+        private void InsertRowButton_Click(object sender, EventArgs e) {
             InsertRowsAtSelection();
         }
 
         /// <summary>
         /// 「下挿入」ボタンのクリックイベントハンドラ
         /// </summary>
-        private void insertBelowButton_Click(object sender, EventArgs e) {
+        private void InsertBelowButton_Click(object sender, EventArgs e) {
             InsertRowsBelowSelection();
+        }
+
+        /// <summary>
+        /// 「インデントを下げる」ボタンのクリックイベントハンドラ
+        /// </summary>
+        private void DecreaseIndentButton_Click(object sender, EventArgs e) {
+            ChangeIndentForSelectedRows(-1);
+        }
+
+        /// <summary>
+        /// 「インデントを上げる」ボタンのクリックイベントハンドラ
+        /// </summary>
+        private void IncreaseIndentButton_Click(object sender, EventArgs e) {
+            ChangeIndentForSelectedRows(1);
+        }
+
+        /// <summary>
+        /// 選択された行のインデントを変更する
+        /// </summary>
+        /// <param name="delta">インデント変更量</param>
+        private void ChangeIndentForSelectedRows(int delta) {
+            if (dataGridView1.SelectedRows.Count == 0 && dataGridView1.SelectedCells.Count == 0) {
+                return;
+            }
+
+            var rows = GetSelectedRows();
+            if (rows.Count == 0) {
+                return;
+            }
+
+            var list = _bindingSource.DataSource as List<AggregateMemberDataGridViewRow>;
+            if (list == null) {
+                return;
+            }
+
+            // 選択された各行のインデントを変更
+            foreach (var row in rows) {
+                if (row.Index < list.Count) {
+                    var item = list[row.Index];
+                    // インデントは0以上の値を維持する
+                    item.Indent = Math.Max(0, (item.Indent ?? 0) + delta);
+                }
+            }
+
+            // DataGridViewを更新
+            _bindingSource.ResetBindings(false);
         }
 
         /// <summary>
