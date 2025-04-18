@@ -37,8 +37,7 @@ namespace Nijo.Ui.Views {
         private void InitializeDataGridView() {
             _enumsGrid.AutoGenerateColumns = false;
             _enumsGrid.AllowUserToAddRows = false;
-            _enumsGrid.AllowUserToDeleteRows = false;
-            _enumsGrid.EditMode = DataGridViewEditMode.EditOnEnter;
+            _enumsGrid.AllowUserToResizeRows = false;
             _enumsGrid.SelectionMode = DataGridViewSelectionMode.CellSelect;
         }
 
@@ -122,11 +121,6 @@ namespace Nijo.Ui.Views {
             if (rows.Count == 0) return;
 
             foreach (var row in rows) {
-                // 列挙体の親行は編集不可
-                if (row.Tag is XElement element && element.Parent == _ctx.Document.Root) {
-                    continue;
-                }
-
                 // 現在のインデント値を取得
                 if (!_rowIndents.TryGetValue(row.Index, out int currentIndent)) {
                     currentIndent = 0;
@@ -136,8 +130,18 @@ namespace Nijo.Ui.Views {
                 int newIndent = Math.Max(0, currentIndent + delta);
                 _rowIndents[row.Index] = newIndent;
 
-                // 行にインデントを適用
+                // インデントが変更された場合、見た目を更新
                 ApplyIndentToRow(row, newIndent);
+
+                // インデントが0になった場合は列挙体の種類行として扱う
+                if (newIndent == 0) {
+                    row.DefaultCellStyle.BackColor = Color.LightGray;
+                    row.DefaultCellStyle.Font = new Font(_enumsGrid.Font, FontStyle.Bold);
+                } else {
+                    // インデントが0より大きい場合は通常の値行として扱う
+                    row.DefaultCellStyle.BackColor = Color.White;
+                    row.DefaultCellStyle.Font = new Font(_enumsGrid.Font, FontStyle.Regular);
+                }
             }
         }
 
@@ -167,7 +171,7 @@ namespace Nijo.Ui.Views {
                     }
                 } else if (e.ColumnIndex == _keyColumn.Index) {
                     // キー値の更新（値の行のみ）
-                    if (element.Parent != null && element.Parent.Attribute(ATTR_TYPE)?.Value == NODE_TYPE_ENUM) {
+                    if (!IsEnumTypeRow(e.RowIndex)) {
                         if (string.IsNullOrEmpty(newValue)) {
                             element.Attribute(ATTR_KEY)?.Remove();
                         } else {
@@ -183,6 +187,16 @@ namespace Nijo.Ui.Views {
                 // 注：物理名（要素名）の変更はXML構造を変更するため、
                 // ここでは実装していません。より複雑な処理が必要です。
             }
+        }
+
+        /// <summary>
+        /// 指定された行が列挙体の種類行かどうかを判定する
+        /// </summary>
+        /// <param name="rowIndex">行インデックス</param>
+        /// <returns>列挙体の種類行の場合はtrue</returns>
+        private bool IsEnumTypeRow(int rowIndex) {
+            // インデントが0の行を列挙体の種類行と判定
+            return _rowIndents.TryGetValue(rowIndex, out int indent) && indent == 0;
         }
 
         /// <summary>
@@ -215,8 +229,8 @@ namespace Nijo.Ui.Views {
             // 選択された最初の行のインデックスを取得
             int insertIndex = rows.Min(r => r.Index);
 
-            // 選択された行の数だけ新しい行を追加
-            InsertNewEnumValue(insertIndex);
+            // 新しい行を追加
+            InsertNewRow(insertIndex);
         }
 
         /// <summary>
@@ -236,7 +250,108 @@ namespace Nijo.Ui.Views {
             int insertIndex = rows.Max(r => r.Index) + 1;
 
             // 新しい行を追加
-            InsertNewEnumValue(insertIndex);
+            InsertNewRow(insertIndex);
+        }
+
+        /// <summary>
+        /// 指定された位置に新しい行を挿入する
+        /// </summary>
+        private void InsertNewRow(int insertIndex) {
+            if (insertIndex < 0 || insertIndex > _enumsGrid.Rows.Count) return;
+
+            // 挿入する行が列挙体の種類になるかどうかを判断
+            bool insertAsEnumType = false;
+
+            if (insertIndex == 0) {
+                // 先頭に挿入する場合は、新しい列挙体の種類として扱う
+                insertAsEnumType = true;
+            } else if (insertIndex == _enumsGrid.Rows.Count) {
+                // 最後に追加する場合、直前の行のインデントを確認
+                insertAsEnumType = IsEnumTypeRow(insertIndex - 1);
+            } else {
+                // 間に挿入する場合、前後の行のインデントを確認
+                insertAsEnumType = IsEnumTypeRow(insertIndex - 1) && IsEnumTypeRow(insertIndex);
+            }
+
+            if (insertAsEnumType) {
+                // 新しい列挙体の種類を挿入
+                InsertNewEnumType(insertIndex);
+            } else {
+                // 列挙体の値を挿入
+                InsertNewEnumValue(insertIndex);
+            }
+        }
+
+        /// <summary>
+        /// 新しい列挙体の種類を指定された位置に挿入する
+        /// </summary>
+        private void InsertNewEnumType(int insertIndex) {
+            // 新しい列挙体の名前を生成
+            string baseName = "NewEnum";
+            int counter = 1;
+            string newName = $"{baseName}{counter}";
+
+            // 既存の列挙体と重複しないように名前を設定
+            while (_ctx.Document.Root.Elements().Any(e => e.Name.LocalName == newName)) {
+                counter++;
+                newName = $"{baseName}{counter}";
+            }
+
+            // 新しい列挙体要素を作成
+            var newElement = new XElement(newName);
+            newElement.Add(new XAttribute(ATTR_TYPE, NODE_TYPE_ENUM));
+
+            // XML要素を追加
+            if (_ctx.Document.Root.Elements().Any()) {
+                if (insertIndex == 0) {
+                    // 先頭に挿入
+                    _ctx.Document.Root.Elements().First().AddBeforeSelf(newElement);
+                } else if (insertIndex == _enumsGrid.Rows.Count) {
+                    // 最後に追加
+                    _ctx.Document.Root.Add(newElement);
+                } else {
+                    // 特定の位置に挿入
+                    int enumIndex = GetEnumIndexForRowIndex(insertIndex);
+                    var enumElements = _ctx.Document.Root.Elements()
+                        .Where(el => el.Attribute(ATTR_TYPE)?.Value == NODE_TYPE_ENUM)
+                        .ToList();
+
+                    if (enumIndex >= 0 && enumIndex < enumElements.Count) {
+                        enumElements[enumIndex].AddBeforeSelf(newElement);
+                    } else {
+                        _ctx.Document.Root.Add(newElement);
+                    }
+                }
+            } else {
+                // 最初の要素として追加
+                _ctx.Document.Root.Add(newElement);
+            }
+
+            // DataGridViewを更新
+            LoadEnums();
+
+            // 新しく追加した行を選択
+            for (int i = 0; i < _enumsGrid.Rows.Count; i++) {
+                if (_enumsGrid.Rows[i].Tag == newElement) {
+                    _enumsGrid.ClearSelection();
+                    _enumsGrid.Rows[i].Selected = true;
+                    _enumsGrid.CurrentCell = _enumsGrid.Rows[i].Cells[0];
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 行インデックスから対応する列挙体のインデックスを取得
+        /// </summary>
+        private int GetEnumIndexForRowIndex(int rowIndex) {
+            int enumCount = -1;
+            for (int i = 0; i <= rowIndex; i++) {
+                if (IsEnumTypeRow(i)) {
+                    enumCount++;
+                }
+            }
+            return enumCount;
         }
 
         /// <summary>
@@ -249,22 +364,20 @@ namespace Nijo.Ui.Views {
             XElement? parentEnum = null;
             int parentRowIndex = -1;
 
-            // 選択された行から親の列挙体を見つける
+            // 挿入位置から上に遡って最も近い列挙体の種類行を探す
             for (int i = insertIndex - 1; i >= 0; i--) {
-                var rowTag = _enumsGrid.Rows[i].Tag as XElement;
-                if (rowTag != null && rowTag.Parent == _ctx.Document.Root) {
-                    parentEnum = rowTag;
+                if (IsEnumTypeRow(i)) {
+                    parentEnum = _enumsGrid.Rows[i].Tag as XElement;
                     parentRowIndex = i;
                     break;
                 }
             }
 
-            // 親が見つからなかった場合は、次の列挙体を探す
+            // 親が見つからなかった場合は、下方向に探す
             if (parentEnum == null) {
                 for (int i = insertIndex; i < _enumsGrid.Rows.Count; i++) {
-                    var rowTag = _enumsGrid.Rows[i].Tag as XElement;
-                    if (rowTag != null && rowTag.Parent == _ctx.Document.Root) {
-                        parentEnum = rowTag;
+                    if (IsEnumTypeRow(i)) {
+                        parentEnum = _enumsGrid.Rows[i].Tag as XElement;
                         parentRowIndex = i;
                         break;
                     }

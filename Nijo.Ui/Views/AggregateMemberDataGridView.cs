@@ -30,6 +30,8 @@ public partial class AggregateMemberDataGridView : UserControl {
         dataGridView1.AllowUserToResizeRows = false;
         dataGridView1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
         dataGridView1.CellFormatting += DataGridView1_CellFormatting;
+        // データバインディング完了時のイベントを追加
+        dataGridView1.DataBindingComplete += DataGridView1_DataBindingComplete;
     }
 
     /// <summary>
@@ -44,6 +46,17 @@ public partial class AggregateMemberDataGridView : UserControl {
                 int indentSize = row.Indent.Value * 20; // インデント1つあたり20ピクセル
                 e.CellStyle.Padding = new Padding(indentSize, 0, 0, 0);
             }
+        }
+    }
+
+    /// <summary>
+    /// データバインディング完了時のイベントハンドラ
+    /// </summary>
+    private void DataGridView1_DataBindingComplete(object? sender, DataGridViewBindingCompleteEventArgs e) {
+        // 先頭行は集約ルートなので特別なスタイルを適用
+        if (dataGridView1.Rows.Count > 0) {
+            dataGridView1.Rows[0].DefaultCellStyle.BackColor = Color.LightGray;
+            dataGridView1.Rows[0].DefaultCellStyle.Font = new Font(dataGridView1.Font, FontStyle.Bold);
         }
     }
 
@@ -261,6 +274,9 @@ public partial class AggregateMemberDataGridView : UserControl {
             // レンダリングのパフォーマンス改善
             column.AutoSizeMode = DataGridViewAutoSizeColumnMode.NotSet;
         }
+
+        // 先頭行の外観を変更するため、DataGridViewの更新を強制
+        dataGridView1.Refresh();
     }
 
     /// <summary>
