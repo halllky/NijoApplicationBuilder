@@ -8,6 +8,11 @@ using Microsoft.Extensions.Logging;
 using NUnit.Framework;
 using System.Text;
 using Nijo.SchemaParsing;
+using Nijo.CodeGenerating;
+using Nijo.ImmutableSchema;
+using Nijo.Models.DataModelModules;
+using Nijo.Models.QueryModelModules;
+using Nijo.CodeGenerating.Helpers;
 
 namespace Nijo.IntegrationTest;
 
@@ -65,13 +70,63 @@ public class DataPatternTest {
     }
 
     /// <summary>
+    /// コード自動生成に使われる各種メソッドの動作確認の目検用ファイルのダンプ
+    /// </summary>
+    /// <param name="xmlFileName">XMLファイル名</param>
+    [Test]
+    [TestCaseSource(nameof(GetXmlFilePaths))]
+    [Category("DataPattern")]
+    public void 各種中間出力ダンプ(string fileName) {
+        var workspaceRoot = Path.GetFullPath(Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", ".."));
+        var testProjectDir = Path.Combine(workspaceRoot, "..", TEST_PROJECT_DIR);
+        var dataPatternsDir = Path.Combine(workspaceRoot, "DataPatterns");
+        var targetXmlPath = Path.Combine(testProjectDir, "nijo.xml");
+        var sourceXmlPath = Path.Combine(dataPatternsDir, $"{fileName}.xml");
+
+        // XMLファイルをコピー
+        File.Copy(sourceXmlPath, targetXmlPath, true);
+
+        if (!GeneratedProject.TryOpen(testProjectDir, out var project, out var error)) {
+            Assert.Fail($"プロジェクトフォルダを開くのに失敗しました: {error}");
+            return;
+        }
+        var schemaXml = XDocument.Load(project.SchemaXmlPath);
+        var parseContext = new SchemaParseContext(schemaXml, SchemaParseRule.Default());
+
+        // TryBuildSchemaメソッドを使用してApplicationSchemaのインスタンスを生成
+        if (!parseContext.TryBuildSchema(schemaXml, out var appSchema, _logger)) {
+            Assert.Fail("スキーマのビルドに失敗したため、ダンプを生成できませんでした。");
+            return;
+        }
+
+        // ダンプ出力先ファイルを決める
+        var logDirRoot = Path.Combine(workspaceRoot, "..", "Nijo.IntegrationTest.Log");
+        if (!Directory.Exists(logDirRoot)) {
+            Directory.CreateDirectory(logDirRoot);
+            var gitignore = Path.Combine(logDirRoot, ".gitignore");
+            File.WriteAllText(gitignore, "*");
+        }
+
+        // ダンプファイルに出力
+        var logDirOfThisTest = Path.Combine(logDirRoot, DateTime.Now.ToString("yyyyMMdd_HHmmss"));
+        if (!Directory.Exists(logDirOfThisTest)) Directory.CreateDirectory(logDirOfThisTest);
+        using (var logWriterOfThisTest = new StreamWriter(Path.Combine(logDirOfThisTest, $"{fileName}.md"), append: false, encoding: Encoding.UTF8)) {
+            var dump = appSchema.GenerateMarkdownDump();
+
+            logWriterOfThisTest.WriteLine(dump);
+        }
+
+        Assert.Pass($"{fileName} のテストが完了しました");
+    }
+
+    /// <summary>
     /// XMLファイルごとのテスト
     /// </summary>
     /// <param name="xmlFileName">XMLファイル名</param>
     [Test]
     [TestCaseSource(nameof(GetXmlFilePaths))]
     [Category("DataPattern")]
-    public void TestXmlPattern(string fileName) {
+    public void コンパイルエラーチェック(string fileName) {
         var workspaceRoot = Path.GetFullPath(Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", ".."));
         var testProjectDir = Path.Combine(workspaceRoot, "..", TEST_PROJECT_DIR);
         var dataPatternsDir = Path.Combine(workspaceRoot, "DataPatterns");

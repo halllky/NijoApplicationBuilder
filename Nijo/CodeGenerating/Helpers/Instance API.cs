@@ -115,36 +115,44 @@ public static partial class CodeGeneratingHelperExtensions {
 
     #region CreateProperties系メソッド
     /// <summary>
-    /// 引数の変数のプロパティを定義します。
+    /// この構造体のプロパティを定義します。
+    /// レンダリング処理のパフォーマンスのため、引数のプロパティがこの構造体で定義されているか否かのチェックは行なっていないので注意。
     /// </summary>
-    public static IEnumerable<IInstanceProperty> CreateProperties(this IInstancePropertyOwner owner) {
+    public static IInstanceProperty CreateProperty(this IInstancePropertyOwner owner, IInstancePropertyMetadata propertyMetadata) {
         var variable = owner switch {
             Variable v => v,
             InstanceStructureProperty s => s.Root,
             _ => throw new NotImplementedException(),
         };
 
-        foreach (var memberMetadata in owner.Metadata.GetMembers()) {
-            if (memberMetadata is IInstanceValuePropertyMetadata valueMetadata) {
-                yield return new InstanceValueProperty {
-                    Root = variable,
-                    Owner = owner,
-                    Metadata = valueMetadata,
-                };
-            } else if (memberMetadata is IInstanceStructurePropertyMetadata structMetadata) {
-                yield return new InstanceStructureProperty {
-                    Root = variable,
-                    Owner = owner,
-                    Metadata = structMetadata,
-                };
-            } else {
-                throw new NotImplementedException("上2種類以外はありえない");
-            }
+        if (propertyMetadata is IInstanceValuePropertyMetadata valueMetadata) {
+            return new InstanceValueProperty {
+                Root = variable,
+                Owner = owner,
+                Metadata = valueMetadata,
+            };
+        } else if (propertyMetadata is IInstanceStructurePropertyMetadata structMetadata) {
+            return new InstanceStructureProperty {
+                Root = variable,
+                Owner = owner,
+                Metadata = structMetadata,
+            };
+        } else {
+            throw new NotImplementedException("上2種類以外はありえない");
         }
     }
 
     /// <summary>
-    /// この構造体の子孫のプロパティを再帰的に列挙します。
+    /// この構造体のプロパティを列挙します。
+    /// </summary>
+    public static IEnumerable<IInstanceProperty> CreateProperties(this IInstancePropertyOwner owner) {
+        foreach (var propertyMetadata in owner.Metadata.GetMembers()) {
+            yield return owner.CreateProperty(propertyMetadata);
+        }
+    }
+
+    /// <summary>
+    /// この構造体およびその子孫のプロパティを再帰的に列挙します。
     /// </summary>
     public static IEnumerable<IInstanceProperty> CreatePropertiesRecursively(this IInstancePropertyOwner owner) {
         foreach (var prop in owner.CreateProperties()) {
@@ -159,7 +167,7 @@ public static partial class CodeGeneratingHelperExtensions {
     }
 
     /// <summary>
-    /// この構造体の子孫のメンバーのうち、この構造体と1対1の多重度を持つもののみを再帰的に列挙します。
+    /// この構造体およびその子孫のメンバーのうち、この構造体と1対1の多重度を持つもののみを再帰的に列挙します。
     /// ToDbEntityなどのマッピングで使用。
     /// </summary>
     public static IEnumerable<IInstanceProperty> Create1To1PropertiesRecursively(this IInstancePropertyOwner owner) {
