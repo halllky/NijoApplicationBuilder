@@ -124,32 +124,9 @@ public class ProjectFormViewModel {
 
         // モデル1個単位の詳細画面
         if (node.Tag is XElement xElement && _schemaParseContext.TryGetModel(xElement, out var model)) {
-
-            // データモデルの場合の処理
-            if (model is DataModel) {
-                var component = new RootAggregateDataModelView();
-                component.DisplayRootAggregateInfo(xElement, _schemaParseContext);
-                return component;
-            }
-
-            // クエリモデルの場合の処理
-            if (model is QueryModel) {
-                var component = new RootAggregateQueryModelView();
-                component.DisplayRootAggregateInfo(xElement, _schemaParseContext);
-                return component;
-            }
-
-            // コマンドモデルの場合の処理
-            if (model is CommandModel) {
-                var component = new RootAggregateCommandModelView();
-                component.DisplayRootAggregateInfo(xElement, _schemaParseContext);
-                return component;
-            }
-
-            // 画面が無い場合
-            var label = new Label();
-            label.Text = $"この集約({model.SchemaName})を表示できる画面がありません。";
-            return label;
+            var component = new RootAggregateView();
+            component.DisplayRootAggregateInfo(xElement, model, _schemaParseContext);
+            return component;
         }
 
         // その他の場合（何も表示しない）

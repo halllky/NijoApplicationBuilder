@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using System.Data;
 using System.Xml.Linq;
-using Nijo.SchemaParsing;
 
 namespace Nijo.Ui.Views {
 

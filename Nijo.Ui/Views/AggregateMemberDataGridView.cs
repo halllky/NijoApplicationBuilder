@@ -260,19 +260,9 @@ public partial class AggregateMemberDataGridView : UserControl {
     /// <summary>
     /// モデルの詳細を表示
     /// </summary>
-    public void DisplayMembers(XElement rootAggregateElement, IModel model, SchemaParseContext schemaParseContext) {
-
+    public void DisplayMembers(List<AggregateMemberDataGridViewRow> rows, IModel model, SchemaParseContext schemaParseContext) {
         // BindingSourceを使用してDataGridViewに設定
-        var list = AggregateMemberDataGridViewRow
-            .FromXElementRecursively(rootAggregateElement, 0, schemaParseContext)
-            .ToList();
-
-        // デフォルトでは、ルート集約行のみ削除不可に設定
-        if (list.Count > 0) {
-            list[0].CannotDelete = true;
-        }
-
-        _bindingSource.DataSource = list;
+        _bindingSource.DataSource = rows;
 
         // 列設定
         var options = schemaParseContext.GetAvailableOptionsFor(model);

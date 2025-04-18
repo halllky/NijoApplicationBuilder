@@ -1,5 +1,5 @@
 namespace Nijo.Ui.Views {
-    partial class RootAggregateDataModelView {
+    partial class RootAggregateView {
         /// <summary>
         /// 必要なデザイナー変数です。
         /// </summary>
@@ -30,34 +30,38 @@ namespace Nijo.Ui.Views {
             // 
             // _aggregateDetailPanel
             // 
+            _aggregateDetailPanel.BackColor = SystemColors.Control;
             _aggregateDetailPanel.Controls.Add(aggregateMemberDataGridView1);
             _aggregateDetailPanel.Dock = DockStyle.Fill;
             _aggregateDetailPanel.Location = new Point(0, 0);
             _aggregateDetailPanel.Name = "_aggregateDetailPanel";
-            _aggregateDetailPanel.Size = new Size(150, 150);
-            _aggregateDetailPanel.TabIndex = 1;
+            _aggregateDetailPanel.Size = new Size(800, 600);
+            _aggregateDetailPanel.TabIndex = 0;
             // 
             // aggregateMemberDataGridView1
             // 
-            aggregateMemberDataGridView1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            aggregateMemberDataGridView1.Dock = DockStyle.Fill;
+            aggregateMemberDataGridView1.ForeColor = SystemColors.ControlText;
             aggregateMemberDataGridView1.Location = new Point(0, 0);
             aggregateMemberDataGridView1.Name = "aggregateMemberDataGridView1";
-            aggregateMemberDataGridView1.Size = new Size(150, 150);
-            aggregateMemberDataGridView1.TabIndex = 1;
+            aggregateMemberDataGridView1.Size = new Size(800, 600);
+            aggregateMemberDataGridView1.TabIndex = 0;
             // 
-            // RootAggregateDataModelView
+            // RootAggregateView
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
+            BackColor = SystemColors.ControlDark;
             Controls.Add(_aggregateDetailPanel);
-            Name = "RootAggregateDataModelView";
+            Name = "RootAggregateView";
+            Size = new Size(800, 600);
             _aggregateDetailPanel.ResumeLayout(false);
             ResumeLayout(false);
         }
 
         #endregion
 
-        private Panel _aggregateDetailPanel;
+        private System.Windows.Forms.Panel _aggregateDetailPanel;
         private AggregateMemberDataGridView aggregateMemberDataGridView1;
     }
 }
