@@ -49,6 +49,114 @@ namespace Nijo.Ui.Views {
         }
 
         /// <summary>
+        /// 「行挿入」ボタンのクリックイベントハンドラ
+        /// </summary>
+        private void insertRowButton_Click(object sender, EventArgs e) {
+            InsertRowsAtSelection();
+        }
+
+        /// <summary>
+        /// 「下挿入」ボタンのクリックイベントハンドラ
+        /// </summary>
+        private void insertBelowButton_Click(object sender, EventArgs e) {
+            InsertRowsBelowSelection();
+        }
+
+        /// <summary>
+        /// 選択した行の位置に新しい行を挿入する
+        /// </summary>
+        private void InsertRowsAtSelection() {
+            if (dataGridView1.SelectedRows.Count == 0 && dataGridView1.SelectedCells.Count == 0) {
+                return;
+            }
+
+            var rows = GetSelectedRows();
+            if (rows.Count == 0) {
+                return;
+            }
+
+            // 選択された最初の行のインデックスを取得
+            int insertIndex = rows.Min(r => r.Index);
+
+            // 選択された行の数だけ新しい行を追加
+            InsertNewRows(insertIndex, rows.Count);
+        }
+
+        /// <summary>
+        /// 選択した行の下に新しい行を挿入する
+        /// </summary>
+        private void InsertRowsBelowSelection() {
+            if (dataGridView1.SelectedRows.Count == 0 && dataGridView1.SelectedCells.Count == 0) {
+                return;
+            }
+
+            var rows = GetSelectedRows();
+            if (rows.Count == 0) {
+                return;
+            }
+
+            // 選択された最後の行のインデックス+1の位置に挿入
+            int insertIndex = rows.Max(r => r.Index) + 1;
+
+            // 選択された行の数だけ新しい行を追加
+            InsertNewRows(insertIndex, rows.Count);
+        }
+
+        /// <summary>
+        /// 新しい行を指定された位置に挿入する
+        /// </summary>
+        /// <param name="insertIndex">挿入位置のインデックス</param>
+        /// <param name="count">挿入する行数</param>
+        private void InsertNewRows(int insertIndex, int count) {
+            var list = _bindingSource.DataSource as List<AggregateMemberDataGridViewRow>;
+            if (list == null) {
+                return;
+            }
+
+            // 挿入する行のインデントを決定（前の行があればそのインデントを継承）
+            int indent = 0;
+            if (insertIndex > 0 && insertIndex <= list.Count) {
+                indent = list[insertIndex - 1].Indent ?? 0;
+            }
+
+            // 新しい行を作成して挿入
+            for (int i = 0; i < count; i++) {
+                var newRow = new AggregateMemberDataGridViewRow {
+                    Indent = indent,
+                    PhysicalName = "",
+                    Attributes = new Dictionary<string, string>()
+                };
+                list.Insert(insertIndex + i, newRow);
+            }
+
+            // DataGridViewを更新
+            _bindingSource.ResetBindings(false);
+        }
+
+        /// <summary>
+        /// 選択されている行のリストを取得する
+        /// </summary>
+        private List<DataGridViewRow> GetSelectedRows() {
+            var rows = new List<DataGridViewRow>();
+
+            if (dataGridView1.SelectedRows.Count > 0) {
+                // 行選択モードの場合
+                foreach (DataGridViewRow row in dataGridView1.SelectedRows) {
+                    rows.Add(row);
+                }
+            } else if (dataGridView1.SelectedCells.Count > 0) {
+                // セル選択モードの場合、選択されたセルの行を抽出（重複なし）
+                foreach (DataGridViewCell cell in dataGridView1.SelectedCells) {
+                    if (!rows.Any(r => r.Index == cell.RowIndex)) {
+                        rows.Add(dataGridView1.Rows[cell.RowIndex]);
+                    }
+                }
+            }
+
+            return rows;
+        }
+
+        /// <summary>
         /// モデルの詳細を表示
         /// </summary>
         public void DisplayMembers(XElement rootAggregateElement, IModel model, SchemaParseContext schemaParseContext) {
