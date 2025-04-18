@@ -21,6 +21,14 @@ namespace Nijo.Ui {
             this.FormClosing += Main_FormClosing;
         }
 
+        private void Main_Load(object sender, EventArgs e) {
+            // 先頭のプロジェクトを選択
+            if (_recentFoldersListBox.Items.Count > 0) {
+                _recentFoldersListBox.Select();
+                _recentFoldersListBox.SelectedIndex = 0;
+            }
+        }
+
         private void Main_FormClosing(object? sender, FormClosingEventArgs e) {
             _recentFoldersManager.SaveRecentFolders();
         }
@@ -109,6 +117,17 @@ namespace Nijo.Ui {
         private void RecentFoldersListBox_DoubleClick(object sender, EventArgs e) {
             if (_recentFoldersListBox.SelectedItem is RecentFolderItem selectedItem) {
                 OpenFolderView(selectedItem.FullPath);
+            }
+        }
+
+        /// <summary>
+        /// 最近開いたフォルダのリストからフォルダを開く（Enter or Space）
+        /// </summary>
+        private void RecentFoldersListBox_KeyDown(object sender, KeyEventArgs e) {
+            if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Space) {
+                if (_recentFoldersListBox.SelectedItem is RecentFolderItem selectedItem) {
+                    OpenFolderView(selectedItem.FullPath);
+                }
             }
         }
     }

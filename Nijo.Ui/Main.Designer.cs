@@ -30,9 +30,9 @@ namespace Nijo.Ui {
             _recentFoldersListBox = new ListBox();
             _recentFoldersLabel = new Label();
             SuspendLayout();
-            //
+            // 
             // _openFolderButton
-            //
+            // 
             _openFolderButton.Location = new Point(6, 6);
             _openFolderButton.Name = "_openFolderButton";
             _openFolderButton.Size = new Size(120, 23);
@@ -40,9 +40,9 @@ namespace Nijo.Ui {
             _openFolderButton.Text = "フォルダを開く";
             _openFolderButton.UseVisualStyleBackColor = true;
             _openFolderButton.Click += OpenFolderMenuItem_Click;
-            //
+            // 
             // _recentFoldersListBox
-            //
+            // 
             _recentFoldersListBox.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             _recentFoldersListBox.FormattingEnabled = true;
             _recentFoldersListBox.Location = new Point(6, 50);
@@ -51,9 +51,10 @@ namespace Nijo.Ui {
             _recentFoldersListBox.Size = new Size(420, 154);
             _recentFoldersListBox.TabIndex = 3;
             _recentFoldersListBox.DoubleClick += RecentFoldersListBox_DoubleClick;
-            //
+            _recentFoldersListBox.KeyDown += RecentFoldersListBox_KeyDown;
+            // 
             // _recentFoldersLabel
-            //
+            // 
             _recentFoldersLabel.AutoSize = true;
             _recentFoldersLabel.Location = new Point(6, 35);
             _recentFoldersLabel.Margin = new Padding(2, 0, 2, 0);
@@ -61,9 +62,9 @@ namespace Nijo.Ui {
             _recentFoldersLabel.Size = new Size(100, 15);
             _recentFoldersLabel.TabIndex = 2;
             _recentFoldersLabel.Text = "最近開いたフォルダ:";
-            //
+            // 
             // Main
-            //
+            // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(431, 211);
@@ -73,6 +74,7 @@ namespace Nijo.Ui {
             Margin = new Padding(2, 1, 2, 1);
             Name = "Main";
             Text = "Nijo";
+            Load += Main_Load;
             ResumeLayout(false);
             PerformLayout();
         }
