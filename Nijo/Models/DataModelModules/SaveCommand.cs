@@ -326,9 +326,9 @@ namespace Nijo.Models.DataModelModules {
         private string RenderToDbEntity(bool isCreate) {
 
             // 右辺の定義
-            var rootInstance = new Variable("this");
+            var rootInstance = new Variable("this", this);
             var rightDictOfRootInstance = rootInstance
-                .Create1To1PropertiesRecursively(this)
+                .Create1To1PropertiesRecursively()
                 .ToDictionary(x => x.Metadata.SchemaPathNode.ToMappingKey());
 
             var efCoreEntity = new EFCoreEntity(_aggregate);
@@ -383,8 +383,8 @@ namespace Nijo.Models.DataModelModules {
                         // 辞書に、ラムダ式内部で右辺に使用できるプロパティを加える
                         var dict2 = new Dictionary<SchemaNodeIdentity, IInstanceProperty>(rigthMembers);
                         var saveCommand = new SaveCommandChildrenMember(children, Type);
-                        var loopVar = new Variable(children.GetLoopVarName());
-                        foreach (var descendant in loopVar.Create1To1PropertiesRecursively(saveCommand)) {
+                        var loopVar = new Variable(children.GetLoopVarName(), saveCommand);
+                        foreach (var descendant in loopVar.Create1To1PropertiesRecursively()) {
                             dict2.Add(descendant.Metadata.SchemaPathNode.ToMappingKey(), descendant);
                         }
 

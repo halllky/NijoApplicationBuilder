@@ -174,8 +174,8 @@ namespace Nijo.ImmutableSchema {
                 }
 
                 return structures.Select(rootStructure => {
-                    var rootVariable = new Variable("x");
-                    var properties = rootVariable.CreatePropertiesRecursively(rootStructure);
+                    var rootVariable = new Variable("x", rootStructure);
+                    var properties = rootVariable.CreatePropertiesRecursively();
 
                     return $$"""
                         #### {{rootAggregate.DisplayName}}: {{rootStructure.GetType().FullName}}

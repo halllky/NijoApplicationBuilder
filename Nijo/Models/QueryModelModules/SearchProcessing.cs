@@ -213,15 +213,15 @@ namespace Nijo.Models.QueryModelModules {
             var searchCondition = new SearchCondition.Entry(_rootAggregate);
             var searchResult = new SearchResult(_rootAggregate);
 
-            var queryVar = new Variable("query");
-            var scVar = new Variable("searchCondition");
+            var queryVar = new Variable("query", searchResult);
+            var scVar = new Variable("searchCondition", searchCondition);
 
             var queryVarMemberes = queryVar
-                .CreatePropertiesRecursively(searchResult)
+                .CreatePropertiesRecursively()
                 .OfType<InstanceValueProperty>()
                 .ToDictionary(p => p.Metadata.SchemaPathNode.ToMappingKey());
             var searchConditionMembers = scVar
-                .CreatePropertiesRecursively(searchCondition)
+                .CreatePropertiesRecursively()
                 .OfType<InstanceValueProperty>()
                 .Where(prop => prop.Metadata.Type.SearchBehavior != null)
                 .ToArray();

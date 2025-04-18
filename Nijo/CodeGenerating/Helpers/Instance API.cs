@@ -61,6 +61,8 @@ public interface IInstanceProperty {
 public interface IInstancePropertyOwner {
     /// <summary>変数名 or プロパティ名</summary>
     string Name { get; }
+    /// <inheritdoc cref="IInstancePropertyMetadata"/>
+    IInstancePropertyOwnerMetadata Metadata { get; }
 }
 
 // ------------------------------------------
@@ -70,10 +72,17 @@ public interface IInstancePropertyOwner {
 /// 自動生成されるソースコードの中に表れる変数
 /// </summary>
 public sealed class Variable : IInstancePropertyOwner {
-    public Variable(string name) {
+    /// <summary>
+    /// 自動生成されるソースコードの中に表れる変数を表すインスタンスを作成します。
+    /// </summary>
+    /// <param name="name">変数名</param>
+    /// <param name="metadata">変数の型</param>
+    public Variable(string name, IInstancePropertyOwnerMetadata metadata) {
         Name = name;
+        Metadata = metadata;
     }
     public string Name { get; }
+    public IInstancePropertyOwnerMetadata Metadata { get; }
 }
 /// <summary>
 /// 自動生成されるソースコードの中に表れる変数のプロパティのうち、子孫をもたない値メンバーのプロパティ。
@@ -96,6 +105,7 @@ public sealed class InstanceStructureProperty : IInstanceProperty, IInstanceProp
     public bool IsNullable => true;
 
     IInstancePropertyMetadata IInstanceProperty.Metadata => Metadata;
+    IInstancePropertyOwnerMetadata IInstancePropertyOwner.Metadata => Metadata;
     string IInstancePropertyOwner.Name => Metadata.PropertyName;
 }
 
@@ -107,14 +117,14 @@ public static partial class CodeGeneratingHelperExtensions {
     /// <summary>
     /// 引数の変数のプロパティを定義します。
     /// </summary>
-    public static IEnumerable<IInstanceProperty> CreateProperties(this IInstancePropertyOwner owner, IInstancePropertyOwnerMetadata metadata) {
+    public static IEnumerable<IInstanceProperty> CreateProperties(this IInstancePropertyOwner owner) {
         var variable = owner switch {
             Variable v => v,
             InstanceStructureProperty s => s.Root,
             _ => throw new NotImplementedException(),
         };
 
-        foreach (var memberMetadata in metadata.GetMembers()) {
+        foreach (var memberMetadata in owner.Metadata.GetMembers()) {
             if (memberMetadata is IInstanceValuePropertyMetadata valueMetadata) {
                 yield return new InstanceValueProperty {
                     Root = variable,
@@ -136,12 +146,12 @@ public static partial class CodeGeneratingHelperExtensions {
     /// <summary>
     /// この構造体の子孫のプロパティを再帰的に列挙します。
     /// </summary>
-    public static IEnumerable<IInstanceProperty> CreatePropertiesRecursively(this IInstancePropertyOwner owner, IInstancePropertyOwnerMetadata metadata) {
-        foreach (var prop in owner.CreateProperties(metadata)) {
+    public static IEnumerable<IInstanceProperty> CreatePropertiesRecursively(this IInstancePropertyOwner owner) {
+        foreach (var prop in owner.CreateProperties()) {
             yield return prop;
 
             if (prop is InstanceStructureProperty structureProperty) {
-                foreach (var vp in structureProperty.CreatePropertiesRecursively(structureProperty.Metadata)) {
+                foreach (var vp in structureProperty.CreatePropertiesRecursively()) {
                     yield return vp;
                 }
             }
@@ -152,13 +162,13 @@ public static partial class CodeGeneratingHelperExtensions {
     /// この構造体の子孫のメンバーのうち、この構造体と1対1の多重度を持つもののみを再帰的に列挙します。
     /// ToDbEntityなどのマッピングで使用。
     /// </summary>
-    public static IEnumerable<IInstanceProperty> Create1To1PropertiesRecursively(this IInstancePropertyOwner owner, IInstancePropertyOwnerMetadata metadata) {
-        foreach (var prop in owner.CreateProperties(metadata)) {
+    public static IEnumerable<IInstanceProperty> Create1To1PropertiesRecursively(this IInstancePropertyOwner owner) {
+        foreach (var prop in owner.CreateProperties()) {
             yield return prop;
 
             // 多重度1対1のメンバーのみを列挙するためarrayでない場合は子孫を辿らない
             if (prop is InstanceStructureProperty structureProperty && !structureProperty.Metadata.IsArray) {
-                foreach (var vp in structureProperty.Create1To1PropertiesRecursively(structureProperty.Metadata)) {
+                foreach (var vp in structureProperty.Create1To1PropertiesRecursively()) {
                     yield return vp;
                 }
             }
