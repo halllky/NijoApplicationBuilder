@@ -34,17 +34,22 @@ namespace Nijo.Ui.Views {
         /// スキーマ定義エクスプローラーの初期化
         /// </summary>
         private void InitializeSchemaExplorer() {
-            // スキーマ定義のルート集約をTreeViewに表示
+            // メニュー項目をTreeViewに表示
             _schemaExplorer.Nodes.Clear();
-            foreach (var element in _viewModel.GetRootAggregates()) {
-                var node = new TreeNode(element.Name.LocalName);
-                node.Tag = element;
-                _schemaExplorer.Nodes.Add(node);
+            foreach (var rootNode in _viewModel.GetMenuItems()) {
+                _schemaExplorer.Nodes.Add(rootNode);
             }
 
-            // 最初の集約を選択
+            // ツリーを展開
             if (_schemaExplorer.Nodes.Count > 0) {
-                _schemaExplorer.SelectedNode = _schemaExplorer.Nodes[0];
+                _schemaExplorer.Nodes[0].Expand();
+
+                // 最初の子ノードがあれば選択
+                if (_schemaExplorer.Nodes[0].Nodes.Count > 0) {
+                    _schemaExplorer.SelectedNode = _schemaExplorer.Nodes[0].Nodes[0];
+                } else {
+                    _schemaExplorer.SelectedNode = _schemaExplorer.Nodes[0];
+                }
             }
         }
 
@@ -52,8 +57,7 @@ namespace Nijo.Ui.Views {
         /// スキーマ定義エクスプローラーで選択が変更されたときの処理
         /// </summary>
         private void SchemaExplorer_AfterSelect(object sender, TreeViewEventArgs e) {
-            if (e.Node?.Tag is XElement element) {
-
+            if (e.Node != null) {
                 // 既存のコントロールを明示的にDisposeする
                 foreach (Control control in _splitContainer.Panel2.Controls) {
                     control.Dispose();
@@ -62,8 +66,8 @@ namespace Nijo.Ui.Views {
                 // 既存のコントロールをクリア
                 _splitContainer.Panel2.Controls.Clear();
 
-                // 新しいRootAggregateComponentを作成
-                var dataModelView = _viewModel.ChangeSelectedElement(element);
+                // 選択されたノードに対応する画面を取得
+                var dataModelView = _viewModel.ChangeSelectedElement(e.Node);
                 dataModelView.Dock = DockStyle.Fill;
 
                 // パネルに追加

@@ -7,6 +7,8 @@ using System.Xml.Linq;
 using Nijo.SchemaParsing;
 using System.Text.Json;
 using System.Data;
+using System.Windows.Forms;
+using Nijo.Models;
 
 namespace Nijo.Ui.Views;
 
@@ -41,45 +43,92 @@ public class ProjectFormViewModel {
     /// </summary>
     public string ProjectName => Path.GetFileName(_project.ProjectRoot);
 
-    /// <summary>
-    /// 画面左側で選択されているルート集約
-    /// </summary>
-    private XElement? _selectedElement;
+    #region サイドメニュー
+    private const string MENU_TAG_ROOT = "ROOT";
+    private const string MENU_TAG_ENUMS = "ENUMS";
+    private const string MENU_TAG_VALUE_OJECTS = "VALUE-OBJECTS";
 
     /// <summary>
-    /// ルート集約の一覧を取得
+    /// メニュー項目の一覧を取得
     /// </summary>
-    public IEnumerable<XElement> GetRootAggregates() {
-        if (_schemaParseContext.Document.Root == null) return Enumerable.Empty<XElement>();
+    public IEnumerable<TreeNode> GetMenuItems() {
+        if (_schemaParseContext.Document.Root == null) return [];
 
-        return _schemaParseContext.Document.Root.Elements()
-            .Where(e => {
-                var typeAttr = e.Attribute("Type")?.Value;
-                return typeAttr == "data-model" || typeAttr == "command-model" ||
-                       typeAttr == "query-model" || typeAttr == "enum";
-            });
+        // アプリケーション名をルートノードとして作成
+        var rootNode = new TreeNode(ProjectName);
+        rootNode.Tag = MENU_TAG_ROOT;
+
+        // 列挙体一覧ノード
+        var enumNode = new TreeNode("列挙体一覧");
+        enumNode.Tag = MENU_TAG_ENUMS;
+        rootNode.Nodes.Add(enumNode);
+
+        // 値オブジェクト一覧ノード
+        var valueObjectNode = new TreeNode("値オブジェクト一覧");
+        valueObjectNode.Tag = MENU_TAG_VALUE_OJECTS;
+        rootNode.Nodes.Add(valueObjectNode);
+
+        // データモデル、コマンドモデル、クエリモデルをそれぞれ個別ノードとして追加
+        foreach (var el in _schemaParseContext.Document.Root.Elements()) {
+            if (!_schemaParseContext.TryGetModel(el, out var model)) continue;
+
+            if (model is DataModel || model is QueryModel || model is CommandModel) {
+                var node = new TreeNode($"{el.Name.LocalName} ({model.SchemaName})");
+                node.Tag = el;
+                rootNode.Nodes.Add(node);
+            }
+        }
+
+        return [rootNode];
     }
+    #endregion サイドメニュー
 
     /// <summary>
     /// データモデルの詳細情報を取得
     /// </summary>
     /// <returns>新たに選択された要素の画面</returns>
-    public Control ChangeSelectedElement(XElement xElement) {
-        _selectedElement = xElement;
+    public Control ChangeSelectedElement(TreeNode node) {
 
-        string typeName = xElement.Attribute("Type")?.Value ?? string.Empty;
-
-        if (typeName == "data-model") {
-            // データモデルの場合の処理
-            var component = new RootAggregateDataModelComponent();
-            component.DisplayRootAggregateInfo(xElement, _schemaParseContext);
-            return component;
-
-        } else {
-            // 非データモデルの場合
+        // アプリケーション全体設定
+        if (node.Tag as string == MENU_TAG_ROOT) {
             var label = new Label();
-            label.Text = $" (未対応のモデルタイプ: {typeName})";
+            label.Text = $"アプリケーション全体設定";
             return label;
         }
+
+        // 列挙体一覧
+        if (node.Tag as string == MENU_TAG_ENUMS) {
+            var label = new Label();
+            label.Text = $"{node.Text}";
+            return label;
+        }
+
+        // 値オブジェクト一覧
+        if (node.Tag as string == MENU_TAG_VALUE_OJECTS) {
+            var label = new Label();
+            label.Text = $"{node.Text}";
+            return label;
+        }
+
+        // モデル1個単位の詳細画面
+        if (node.Tag is XElement xElement && _schemaParseContext.TryGetModel(xElement, out var model)) {
+
+            // データモデルの場合の処理
+            if (model is DataModel) {
+                var component = new RootAggregateDataModelComponent();
+                component.DisplayRootAggregateInfo(xElement, _schemaParseContext);
+                return component;
+            }
+
+            // 画面が無い場合
+            var label = new Label();
+            label.Text = $"この集約({model.SchemaName})を表示できる画面がありません。";
+            return label;
+        }
+
+        // その他の場合
+        var unknownLabel = new Label();
+        unknownLabel.Text = "選択された項目の情報がありません";
+        return unknownLabel;
     }
 }
