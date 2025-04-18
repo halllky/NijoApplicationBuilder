@@ -267,7 +267,7 @@ namespace Nijo.Models.DataModelModules {
                                             },
                                             """;
 
-                                    } else if (member is KeyClass.KeyClassParentMember pm) {
+                                    } else if (member is KeyClass.KeyClassEntry pm) {
                                         yield return $$"""
                                             {{member.PhysicalName}} = new() {
                                                 {{WithIndent(RenderKeyClassBodyConverting(pm), "    ")}}

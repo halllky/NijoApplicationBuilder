@@ -16,14 +16,17 @@ namespace Nijo.Models.DataModelModules {
 
         /// <summary>
         /// キーのエントリー。子孫集約になることもある。
+        /// <see cref="IKeyClassMember"/> インターフェースを備えている理由は、
+        /// エントリーが子孫かつこのクラスがその子孫の親の場合、このクラスは子孫のキーのメンバーになりうるため。
         /// </summary>
-        internal class KeyClassEntry : IKeyClassStructure, SaveCommand.ISaveCommandMember, IInstanceStructurePropertyMetadata {
+        internal class KeyClassEntry : IKeyClassMember, IKeyClassStructure, SaveCommand.ISaveCommandMember, IInstanceStructurePropertyMetadata {
             internal KeyClassEntry(AggregateBase aggregate) {
                 _aggregate = aggregate;
             }
             private readonly AggregateBase _aggregate;
 
             internal string ClassName => $"{_aggregate.PhysicalName}Key";
+            string IKeyClassMember.CsType => ClassName;
 
             ISchemaPathNode SaveCommand.ISaveCommandMember.Member => _aggregate;
             public virtual string PhysicalName => _aggregate.PhysicalName;
@@ -35,7 +38,7 @@ namespace Nijo.Models.DataModelModules {
             public IEnumerable<IKeyClassMember> GetOwnMembers() {
                 var p = _aggregate.GetParent();
                 if (p != null) {
-                    yield return new KeyClassParentMember(p);
+                    yield return new KeyClassEntry(p);
                 }
 
                 foreach (var m in _aggregate.GetMembers()) {
@@ -64,20 +67,10 @@ namespace Nijo.Models.DataModelModules {
                     .Select(agg => new KeyClassEntry(agg))
                     .ToArray();
 
-                // entriesに含まれる集約の祖先はAsParentをレンダリングする
-                var parentMembers = tree
-                    .Where(agg => entries.Any(entry => agg.IsAncestorOf(entry._aggregate)))
-                    .Select(agg => new KeyClassParentMember(agg))
-                    .ToArray();
-
                 return $$"""
                     #region キー項目のみのオブジェクト
                     {{entries.SelectTextTemplate(entry => $$"""
                     {{entry.RenderDeclaring()}}
-
-                    """)}}
-                    {{parentMembers.SelectTextTemplate(parent => $$"""
-                    {{parent.RenderDeclaring()}}
 
                     """)}}
                     #endregion キー項目のみのオブジェクト
@@ -107,7 +100,7 @@ namespace Nijo.Models.DataModelModules {
 
         #region メンバー
         /// <summary>
-        /// KeyClassのエントリー、Ref, Parent の3種類
+        /// KeyClassのエントリー、Ref の2種類
         /// </summary>
         internal interface IKeyClassStructure : IInstancePropertyOwnerMetadata {
             IEnumerable<IKeyClassMember> GetOwnMembers();
@@ -151,7 +144,7 @@ namespace Nijo.Models.DataModelModules {
             public IEnumerable<IKeyClassMember> GetOwnMembers() {
                 var p = Member.RefTo.GetParent();
                 if (p != null) {
-                    yield return new KeyClassParentMember(p);
+                    yield return new KeyClassEntry(p);
                 }
 
                 foreach (var m in Member.RefTo.GetMembers()) {
@@ -165,61 +158,6 @@ namespace Nijo.Models.DataModelModules {
             }
 
             SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => Member.ToIdentifier();
-            bool IInstanceStructurePropertyMetadata.IsArray => false;
-            string IInstancePropertyMetadata.PropertyName => PhysicalName;
-            IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetOwnMembers();
-        }
-        /// <summary>
-        /// 子孫のキー情報の中に出てくる親集約のキー。
-        /// </summary>
-        internal class KeyClassParentMember : IKeyClassStructure, IKeyClassMember, IInstanceStructurePropertyMetadata {
-            internal KeyClassParentMember(AggregateBase parent) {
-                _parent = parent;
-            }
-            private readonly AggregateBase _parent;
-
-            public string ClassName => $"{_parent.PhysicalName}KeyAsParent";
-            public string PhysicalName => "Parent";
-            public string DisplayName => _parent.DisplayName;
-
-            public string CsType => ClassName;
-
-            ISchemaPathNode SaveCommand.ISaveCommandMember.Member => _parent;
-            string SaveCommand.ISaveCommandMember.CsCreateType => CsType;
-            string SaveCommand.ISaveCommandMember.CsUpdateType => CsType;
-            string SaveCommand.ISaveCommandMember.CsDeleteType => CsType;
-
-            public IEnumerable<IKeyClassMember> GetOwnMembers() {
-                var p = _parent.GetParent();
-                if (p != null) {
-                    yield return new KeyClassParentMember(p);
-                }
-
-                foreach (var m in _parent.GetMembers()) {
-                    if (m is ValueMember vm && vm.IsKey) {
-                        yield return new KeyClassValueMember(vm);
-
-                    } else if (m is RefToMember rm && rm.IsKey) {
-                        yield return new KeyClassRefMember(rm);
-                    }
-                }
-            }
-
-            public string RenderDeclaring() {
-                return $$"""
-                    /// <summary>
-                    /// {{_parent.DisplayName}} のキー
-                    /// </summary>
-                    public partial class {{ClassName}} {
-                    {{GetOwnMembers().SelectTextTemplate(m => $$"""
-                        /// <summary>{{m.DisplayName}}</summary>
-                        public required {{m.CsType}}? {{m.PhysicalName}} { get; set; }
-                    """)}}
-                    }
-                    """;
-            }
-
-            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => _parent.ToIdentifier();
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetOwnMembers();

@@ -151,7 +151,7 @@ namespace Nijo.CodeGenerating {
                         // エントリーの集約内部では子から親へ辿るパターンは無い
                         if (!isOutOfEntryTree) throw new InvalidOperationException("エントリーの集約内部では子から親へ辿るパターンは無い");
 
-                        var parentMember = new KeyClass.KeyClassParentMember(curr);
+                        var parentMember = new KeyClass.KeyClassEntry(curr);
                         yield return parentMember.PhysicalName;
                         continue;
                     }

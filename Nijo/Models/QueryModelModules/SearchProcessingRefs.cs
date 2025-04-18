@@ -32,7 +32,7 @@ namespace Nijo.Models.QueryModelModules {
                 var searchCondition = new SearchCondition.Entry(rootAggregate);
 
                 return new {
-                    EscapedPhysicalName = rootAggregate.PhysicalName.Replace("'", "\\'"),
+                    EscapedPhysicalName = refEntry.Aggregate.PhysicalName.Replace("'", "\\'"),
                     Endpoint = controller.GetActionNameForClient(CONTROLLER_ACTION_LOAD),
                     ParamType = searchCondition.TsTypeName,
                     ReturnType = $"Util.{SearchProcessingReturn.TYPE_TS}<{refEntry.TsTypeName}>",
