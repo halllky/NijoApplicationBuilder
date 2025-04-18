@@ -42,6 +42,11 @@ public class ProjectFormViewModel {
     public string ProjectName => Path.GetFileName(_project.ProjectRoot);
 
     /// <summary>
+    /// 画面左側で選択されているルート集約
+    /// </summary>
+    private XElement? _selectedElement;
+
+    /// <summary>
     /// ルート集約の一覧を取得
     /// </summary>
     public IEnumerable<XElement> GetRootAggregates() {
@@ -56,9 +61,25 @@ public class ProjectFormViewModel {
     }
 
     /// <summary>
-    /// スキーマ定義解釈コンテキストを取得
+    /// データモデルの詳細情報を取得
     /// </summary>
-    public SchemaParseContext GetSchemaParseContext() {
-        return _schemaParseContext;
+    /// <returns>新たに選択された要素の画面</returns>
+    public Control ChangeSelectedElement(XElement xElement) {
+        _selectedElement = xElement;
+
+        string typeName = xElement.Attribute("Type")?.Value ?? string.Empty;
+
+        if (typeName == "data-model") {
+            // データモデルの場合の処理
+            var component = new RootAggregateDataModelComponent();
+            component.DisplayRootAggregateInfo(xElement, _schemaParseContext);
+            return component;
+
+        } else {
+            // 非データモデルの場合
+            var label = new Label();
+            label.Text = $" (未対応のモデルタイプ: {typeName})";
+            return label;
+        }
     }
 }

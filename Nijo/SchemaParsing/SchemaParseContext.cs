@@ -138,6 +138,14 @@ public class SchemaParseContext {
         var attrs = xElement.Attributes().Select(attr => attr.Name.LocalName).ToHashSet();
         return _nodeOptions.Values.Where(opt => attrs.Contains(opt.AttributeName));
     }
+    /// <summary>
+    /// 特定のモデルで使用可能なオプショナル属性を列挙します。
+    /// </summary>
+    public IEnumerable<NodeOption> GetAvailableOptionsFor(IModel model) {
+        return _nodeOptions.Values
+            .Where(opt => opt.IsAvailableModelMembers == null
+                       || opt.IsAvailableModelMembers(model));
+    }
     #endregion オプション属性
 
 

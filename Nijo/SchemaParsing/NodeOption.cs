@@ -35,9 +35,10 @@ public class NodeOption {
     /// </summary>
     public required Action<NodeOptionValidateContext> Validate { get; init; }
     /// <summary>
-    /// あるモデルがこの属性を指定することができるかどうか。このプロパティがnullの場合、そのモデルは使用可能と判定されます。
+    /// あるモデルのメンバーがこの属性を指定することができるかどうか。
+    /// nullの場合は指定可能と判定されます。
     /// </summary>
-    public Func<IModel, bool>? IsAvailableModel { get; init; }
+    public Func<IModel, bool>? IsAvailableModelMembers { get; init; }
 }
 
 /// <summary>
@@ -96,7 +97,7 @@ internal static class BasicNodeOptions {
             // 改行不可
             if (ctx.Value.Contains('\n')) ctx.AddError("改行を含めることはできません。");
         },
-        IsAvailableModel = model => {
+        IsAvailableModelMembers = model => {
             if (model is DataModel) return true;
             return false;
         },
@@ -128,7 +129,7 @@ internal static class BasicNodeOptions {
         Validate = ctx => {
 
         },
-        IsAvailableModel = model => {
+        IsAvailableModelMembers = model => {
             if (model is DataModel) return true;
             if (model is QueryModel) return true;
             return false;
@@ -162,8 +163,7 @@ internal static class BasicNodeOptions {
         Validate = ctx => {
 
         },
-        IsAvailableModel = model => {
-            if (model is DataModel) return true;
+        IsAvailableModelMembers = model => {
             return false;
         },
     };
@@ -177,8 +177,7 @@ internal static class BasicNodeOptions {
         Validate = ctx => {
 
         },
-        IsAvailableModel = model => {
-            if (model is DataModel) return true;
+        IsAvailableModelMembers = model => {
             return false;
         },
     };
@@ -196,7 +195,7 @@ internal static class BasicNodeOptions {
         Validate = ctx => {
 
         },
-        IsAvailableModel = model => {
+        IsAvailableModelMembers = model => {
             if (model is QueryModel) return true;
             return false;
         },
@@ -211,7 +210,7 @@ internal static class BasicNodeOptions {
         Validate = ctx => {
 
         },
-        IsAvailableModel = model => {
+        IsAvailableModelMembers = model => {
             if (model is QueryModel) return true;
             return false;
         },

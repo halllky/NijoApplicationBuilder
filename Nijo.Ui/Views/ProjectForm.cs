@@ -13,10 +13,6 @@ namespace Nijo.Ui.Views {
         /// ViewModel
         /// </summary>
         private readonly ProjectFormViewModel _viewModel;
-        /// <summary>
-        /// スキーマ定義エクスプローラーで選択されている要素
-        /// </summary>
-        private XElement? _selectedRootAggregate;
 
         /// <summary>
         /// 表示しているフォルダのパス
@@ -57,32 +53,22 @@ namespace Nijo.Ui.Views {
         /// </summary>
         private void SchemaExplorer_AfterSelect(object sender, TreeViewEventArgs e) {
             if (e.Node?.Tag is XElement element) {
-                _selectedRootAggregate = element;
-                DisplayAggregateDetail(element);
+
+                // 既存のコントロールを明示的にDisposeする
+                foreach (Control control in _splitContainer.Panel2.Controls) {
+                    control.Dispose();
+                }
+
+                // 既存のコントロールをクリア
+                _splitContainer.Panel2.Controls.Clear();
+
+                // 新しいRootAggregateComponentを作成
+                var dataModelView = _viewModel.ChangeSelectedElement(element);
+                dataModelView.Dock = DockStyle.Fill;
+
+                // パネルに追加
+                _splitContainer.Panel2.Controls.Add(dataModelView);
             }
-        }
-
-        /// <summary>
-        /// 選択された集約の詳細を表示
-        /// </summary>
-        private void DisplayAggregateDetail(XElement element) {
-            var (dataTable, label) = _viewModel.GetDataModelDetail(element);
-
-            // 既存のコントロールを明示的にDisposeする
-            foreach (Control control in _splitContainer.Panel2.Controls) {
-                control.Dispose();
-            }
-
-            // 既存のコントロールをクリア
-            _splitContainer.Panel2.Controls.Clear();
-
-            // 新しいRootAggregateDataModelComponentを作成
-            var dataModelView = new RootAggregateDataModelComponent();
-            dataModelView.Dock = DockStyle.Fill;
-            dataModelView.DisplayModel(dataTable, label);
-
-            // パネルに追加
-            _splitContainer.Panel2.Controls.Add(dataModelView);
         }
 
         private void FolderViewForm_FormClosing(object sender, FormClosingEventArgs e) {

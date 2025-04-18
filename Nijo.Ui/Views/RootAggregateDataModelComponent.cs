@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml.Linq;
+using Nijo.Models;
 using Nijo.SchemaParsing;
 
 namespace Nijo.Ui.Views {
@@ -24,11 +25,12 @@ namespace Nijo.Ui.Views {
         /// <summary>
         /// モデルの詳細を表示
         /// </summary>
-        public void DisplayModel(DataTable dataTable, string label) {
+        public void DisplayRootAggregateInfo(XElement rootAggregateElement, SchemaParseContext schemaParseContext) {
             // AggregateMemberDataGridViewにデータを表示
-            aggregateMemberDataGridView1.DisplayModel(dataTable);
+            var model = schemaParseContext.Models.Values.OfType<DataModel>().Single();
+            aggregateMemberDataGridView1.DisplayMembers(rootAggregateElement, model, schemaParseContext);
 
-            _aggregateDetailLabel.Text = label;
+            _aggregateDetailLabel.Text = schemaParseContext.GetDisplayName(rootAggregateElement);
         }
     }
 }
