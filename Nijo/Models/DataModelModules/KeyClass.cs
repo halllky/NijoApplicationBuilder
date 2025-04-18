@@ -91,7 +91,7 @@ namespace Nijo.Models.DataModelModules {
                     """;
             }
 
-            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => _aggregate.ToIdentifier();
+            ISchemaPathNode IInstancePropertyMetadata.MappingKey => _aggregate;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetOwnMembers();
@@ -157,7 +157,7 @@ namespace Nijo.Models.DataModelModules {
                 }
             }
 
-            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => Member.ToIdentifier();
+            ISchemaPathNode IInstancePropertyMetadata.MappingKey => Member;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetOwnMembers();

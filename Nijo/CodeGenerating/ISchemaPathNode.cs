@@ -19,6 +19,18 @@ namespace Nijo.CodeGenerating {
         /// 1つ前のノード
         /// </summary>
         ISchemaPathNode? PreviousNode { get; }
+
+
+        #region empty
+        /// <summary>
+        /// 実質null
+        /// </summary>
+        public static ISchemaPathNode Empty = new EmptySchemaPathNode();
+        private class EmptySchemaPathNode : ISchemaPathNode {
+            XElement ISchemaPathNode.XElement => new XElement("Empty");
+            ISchemaPathNode? ISchemaPathNode.PreviousNode => null;
+        }
+        #endregion empty
     }
 
     public static partial class SchemaPathNodeExtensions {

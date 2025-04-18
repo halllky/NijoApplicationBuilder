@@ -284,7 +284,7 @@ namespace Nijo.Models.QueryModelModules {
             public UiConstraint.E_Type UiConstraintType => Member.Type.UiConstraintType;
 
             IValueMemberType IInstanceValuePropertyMetadata.Type => Member.Type;
-            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => Member.ToIdentifier();
+            ISchemaPathNode IInstancePropertyMetadata.MappingKey => Member;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
 
             public bool IsRequired => Member.IsKey || Member.IsRequired;
@@ -348,7 +348,7 @@ namespace Nijo.Models.QueryModelModules {
                 return RefEntry.GetMembers();
             }
 
-            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => Member.ToIdentifier();
+            ISchemaPathNode IInstancePropertyMetadata.MappingKey => Member;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetMembers();
@@ -505,7 +505,7 @@ namespace Nijo.Models.QueryModelModules {
                 return $"{TsNewObjectFunction}()";
             }
 
-            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => _child.ToIdentifier();
+            ISchemaPathNode IInstancePropertyMetadata.MappingKey => _child;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
@@ -521,7 +521,7 @@ namespace Nijo.Models.QueryModelModules {
                 return "[]";
             }
 
-            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => _aggregate.ToIdentifier();
+            ISchemaPathNode IInstancePropertyMetadata.MappingKey => _aggregate;
             bool IInstanceStructurePropertyMetadata.IsArray => true;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }

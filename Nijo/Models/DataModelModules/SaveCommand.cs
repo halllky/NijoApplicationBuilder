@@ -274,7 +274,7 @@ namespace Nijo.Models.DataModelModules {
             public string CsUpdateType => Member.Type.CsDomainTypeName;
             public string CsDeleteType => Member.Type.CsDomainTypeName;
 
-            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => Member.ToIdentifier();
+            ISchemaPathNode IInstancePropertyMetadata.MappingKey => Member;
             IValueMemberType IInstanceValuePropertyMetadata.Type => Member.Type;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
@@ -300,7 +300,7 @@ namespace Nijo.Models.DataModelModules {
             public string CsUpdateType => new SaveCommand(_aggregate, SaveCommand.E_Type.Update).CsClassNameUpdate;
             public string CsDeleteType => new SaveCommand(_aggregate, SaveCommand.E_Type.Delete).CsClassNameDelete;
 
-            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => _aggregate.ToIdentifier();
+            ISchemaPathNode IInstancePropertyMetadata.MappingKey => _aggregate;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
@@ -317,7 +317,7 @@ namespace Nijo.Models.DataModelModules {
             public string CsUpdateType => $"List<{new SaveCommand(_aggregate, SaveCommand.E_Type.Update).CsClassNameUpdate}>";
             public string CsDeleteType => $"List<{new SaveCommand(_aggregate, SaveCommand.E_Type.Delete).CsClassNameDelete}>";
 
-            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => _aggregate.ToIdentifier();
+            ISchemaPathNode IInstancePropertyMetadata.MappingKey => _aggregate;
             bool IInstanceStructurePropertyMetadata.IsArray => true;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
@@ -329,7 +329,7 @@ namespace Nijo.Models.DataModelModules {
             var rootInstance = new Variable("this");
             var rightDictOfRootInstance = rootInstance
                 .Create1To1PropertiesRecursively(this)
-                .ToDictionary(x => x.Metadata.MappingKey);
+                .ToDictionary(x => x.Metadata.MappingKey.ToIdentifier());
 
             var efCoreEntity = new EFCoreEntity(_aggregate);
 
@@ -385,7 +385,7 @@ namespace Nijo.Models.DataModelModules {
                         var saveCommand = new SaveCommandChildrenMember(children, Type);
                         var loopVar = new Variable(children.GetLoopVarName());
                         foreach (var descendant in loopVar.Create1To1PropertiesRecursively(saveCommand)) {
-                            dict2.Add(descendant.Metadata.MappingKey, descendant);
+                            dict2.Add(descendant.Metadata.MappingKey.ToIdentifier(), descendant);
                         }
 
                         yield return $$"""

@@ -104,12 +104,12 @@ namespace Nijo.Models.QueryModelModules {
         #region メンバー
         internal abstract class SearchResultMember : IInstancePropertyMetadata {
             internal abstract string PhysicalName { get; }
-            internal abstract SchemaNodeIdentity MappingKey { get; }
+            internal abstract ISchemaPathNode MappingKey { get; }
 
             internal abstract string RenderDeclaration();
 
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
-            SchemaNodeIdentity IInstancePropertyMetadata.MappingKey => MappingKey;
+            ISchemaPathNode IInstancePropertyMetadata.MappingKey => MappingKey;
         }
 
         internal class SearchResultValueMember : SearchResultMember, IInstanceValuePropertyMetadata {
@@ -127,7 +127,7 @@ namespace Nijo.Models.QueryModelModules {
 
             private string? _physicalName;
 
-            internal override SchemaNodeIdentity MappingKey => _valueMember.ToIdentifier();
+            internal override ISchemaPathNode MappingKey => _valueMember;
             IValueMemberType IInstanceValuePropertyMetadata.Type => _valueMember.Type;
 
             internal override string RenderDeclaration() {
@@ -147,7 +147,7 @@ namespace Nijo.Models.QueryModelModules {
             private readonly ChildrenAggregate _children;
 
             internal override string PhysicalName => _children.PhysicalName;
-            internal override SchemaNodeIdentity MappingKey => _children.ToIdentifier();
+            internal override ISchemaPathNode MappingKey => _children;
 
             bool IInstanceStructurePropertyMetadata.IsArray => true;
 
