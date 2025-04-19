@@ -7,10 +7,10 @@ using System.Xml.Linq;
 
 namespace Nijo.IntegrationTest.Implementors;
 
-public class MultiplePathRefImplementor : IApplicationServiceImplementor {
-    public string TargetXmlFileName => "014_複数経路の参照.xml";
+public class MultiplePathRefImplementor : ApplicationServiceImplementorBase {
+    public override string TargetXmlFileName => "014_複数経路の参照.xml";
 
-    public string GetImplementation(XDocument schemaXml) {
+    public override string GetImplementation(XDocument schemaXml) {
         return @"
 using System;
 using System.Collections.Generic;

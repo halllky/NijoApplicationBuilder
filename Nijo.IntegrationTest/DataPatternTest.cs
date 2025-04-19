@@ -237,13 +237,13 @@ public class DataPatternTest {
         }
     }
 
-    static private IApplicationServiceImplementor GetImplementor(string xmlFileName) {
+    static private ApplicationServiceImplementorBase GetImplementor(string xmlFileName) {
         // アセンブリ内のすべてのIApplicationServiceImplementor実装を取得
         var implementors = AppDomain.CurrentDomain.GetAssemblies()
             .SelectMany(a => a.GetTypes())
-            .Where(t => typeof(IApplicationServiceImplementor).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract)
+            .Where(t => typeof(ApplicationServiceImplementorBase).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract)
             .Select(t => Activator.CreateInstance(t))
-            .OfType<IApplicationServiceImplementor>();
+            .OfType<ApplicationServiceImplementorBase>();
 
         // 対象のXMLファイルに対応する実装を返す
         return implementors.First(i => i.TargetXmlFileName == $"{xmlFileName}.xml");

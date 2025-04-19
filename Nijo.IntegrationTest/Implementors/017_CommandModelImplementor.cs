@@ -7,10 +7,10 @@ using System.Xml.Linq;
 
 namespace Nijo.IntegrationTest.Implementors;
 
-public class CommandModelImplementor : IApplicationServiceImplementor {
-    public string TargetXmlFileName => "017_CommandModel.xml";
+public class CommandModelImplementor : ApplicationServiceImplementorBase {
+    public override string TargetXmlFileName => "017_CommandModel.xml";
 
-    public string GetImplementation(XDocument schemaXml) {
+    public override string GetImplementation(XDocument schemaXml) {
         return @"
 using System;
 using System.Collections.Generic;

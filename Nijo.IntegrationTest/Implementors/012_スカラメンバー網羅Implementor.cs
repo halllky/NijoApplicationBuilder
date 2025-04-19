@@ -7,10 +7,10 @@ using System.Xml.Linq;
 
 namespace Nijo.IntegrationTest.Implementors;
 
-public class ScalarMemberImplementor : IApplicationServiceImplementor {
-    public string TargetXmlFileName => "012_スカラメンバー網羅.xml";
+public class ScalarMemberImplementor : ApplicationServiceImplementorBase {
+    public override string TargetXmlFileName => "012_スカラメンバー網羅.xml";
 
-    public string GetImplementation(XDocument schemaXml) {
+    public override string GetImplementation(XDocument schemaXml) {
         return $$"""
             using System;
             using System.Collections.Generic;

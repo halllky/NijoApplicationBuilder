@@ -7,10 +7,10 @@ using System.Xml.Linq;
 
 namespace Nijo.IntegrationTest.Implementors;
 
-public class PrimaryKeyRefImplementor : IApplicationServiceImplementor {
-    public string TargetXmlFileName => "013_主キーにref.xml";
+public class PrimaryKeyRefImplementor : ApplicationServiceImplementorBase {
+    public override string TargetXmlFileName => "013_主キーにref.xml";
 
-    public string GetImplementation(XDocument schemaXml) {
+    public override string GetImplementation(XDocument schemaXml) {
         return @"
 using System;
 using System.Collections.Generic;

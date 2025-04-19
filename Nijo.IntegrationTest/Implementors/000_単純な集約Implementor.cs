@@ -1,3 +1,5 @@
+using Nijo.CodeGenerating.Helpers;
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,10 +9,10 @@ using System.Xml.Linq;
 
 namespace Nijo.IntegrationTest.Implementors;
 
-public class SimpleAggregateImplementor : IApplicationServiceImplementor {
-    public string TargetXmlFileName => "000_単純な集約.xml";
+public class SimpleAggregateImplementor : ApplicationServiceImplementorBase {
+    public override string TargetXmlFileName => "000_単純な集約.xml";
 
-    public string GetImplementation(XDocument schemaXml) {
+    public override string GetImplementation(XDocument schemaXml) {
         return @"
 using System;
 using System.Collections.Generic;
@@ -32,4 +34,5 @@ partial class OverridedApplicationService {
     }
 }";
     }
+
 }

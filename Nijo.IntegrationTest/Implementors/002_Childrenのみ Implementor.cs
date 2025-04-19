@@ -7,10 +7,10 @@ using System.Xml.Linq;
 
 namespace Nijo.IntegrationTest.Implementors;
 
-public class ChildrenOnlyImplementor : IApplicationServiceImplementor {
-    public string TargetXmlFileName => "002_Childrenのみ.xml";
+public class ChildrenOnlyImplementor : ApplicationServiceImplementorBase {
+    public override string TargetXmlFileName => "002_Childrenのみ.xml";
 
-    public string GetImplementation(XDocument schemaXml) {
+    public override string GetImplementation(XDocument schemaXml) {
         return @"
 using System;
 using System.Collections.Generic;

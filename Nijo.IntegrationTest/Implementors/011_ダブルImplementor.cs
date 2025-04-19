@@ -7,10 +7,10 @@ using System.Xml.Linq;
 
 namespace Nijo.IntegrationTest.Implementors;
 
-public class DoubleImplementor : IApplicationServiceImplementor {
-    public string TargetXmlFileName => "011_ダブル.xml";
+public class DoubleImplementor : ApplicationServiceImplementorBase {
+    public override string TargetXmlFileName => "011_ダブル.xml";
 
-    public string GetImplementation(XDocument schemaXml) {
+    public override string GetImplementation(XDocument schemaXml) {
         return @"
 using System;
 using System.Collections.Generic;

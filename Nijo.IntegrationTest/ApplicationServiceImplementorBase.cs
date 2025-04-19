@@ -1,15 +1,16 @@
+using Nijo.CodeGenerating.Helpers;
 using System.Xml.Linq;
 
 namespace Nijo.IntegrationTest;
 
-public interface IApplicationServiceImplementor {
+public abstract class ApplicationServiceImplementorBase {
     /// <summary>
     /// この実装が対応するXMLファイルの名前を返します。
     /// </summary>
-    string TargetXmlFileName { get; }
+    public abstract string TargetXmlFileName { get; }
 
     /// <summary>
     /// OverridedApplicationServiceの実装を返します。
     /// </summary>
-    string GetImplementation(XDocument schemaXml);
+    public abstract string GetImplementation(XDocument schemaXml);
 }

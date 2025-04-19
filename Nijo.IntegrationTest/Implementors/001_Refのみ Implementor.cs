@@ -7,10 +7,10 @@ using System.Xml.Linq;
 
 namespace Nijo.IntegrationTest.Implementors;
 
-public class RefOnlyImplementor : IApplicationServiceImplementor {
-    public string TargetXmlFileName => "001_Refのみ.xml";
+public class RefOnlyImplementor : ApplicationServiceImplementorBase {
+    public override string TargetXmlFileName => "001_Refのみ.xml";
 
-    public string GetImplementation(XDocument schemaXml) {
+    public override string GetImplementation(XDocument schemaXml) {
         return @"
 using System;
 using System.Collections.Generic;
