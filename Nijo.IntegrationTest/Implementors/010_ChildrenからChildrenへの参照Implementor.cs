@@ -42,8 +42,10 @@ public partial class OverridedApplicationService {
             発行日時 = e.発行日時,
             定型欄 = e.定型欄.Select(c => new 定型欄SearchResult {
                 欄ID = c.欄ID,
-                セクションID = c.セクションテンプレート_セクションID,
-                セクション名 = c.セクションテンプレート!.セクション名,
+                セクションテンプレート_Parent_テンプレートID = c.セクションテンプレート!.Parent_テンプレートID,
+                セクションテンプレート_Parent_テンプレート名 = c.セクションテンプレート!.Parent!.テンプレート名,
+                セクションテンプレート_セクションID = c.セクションテンプレート!.セクションID,
+                セクションテンプレート_セクション名 = c.セクションテンプレート!.セクション名,
                 文 = c.文,
             }).ToList(),
             Version = (int)e.Version!,
@@ -52,21 +54,23 @@ public partial class OverridedApplicationService {
 
     protected override IQueryable<見積回答SearchResult> CreateQuerySource(見積回答SearchCondition searchCondition, IPresentationContext<見積回答Messages> context) {
         return DbContext.見積回答DbSet.Select(e => new 見積回答SearchResult {
-            見積書_見積書_見積書ID = e.見積書_見積書ID,
-            見積書_見積書_タイトル = e.見積書!.タイトル,
-            見積書_見積書_発行日時 = e.見積書!.発行日時,
+            見積書_見積書ID = e.見積書_見積書ID,
+            見積書_タイトル = e.見積書!.タイトル,
+            見積書_発行日時 = e.見積書!.発行日時,
             返答日 = e.返答日,
-            定型欄 = e.見積書.定型欄.Select(c => new 定型欄SearchResult {
+            見積書_定型欄 = e.見積書.定型欄.Select(c => new 定型欄SearchResult {
                 欄ID = c.欄ID,
-                セクションID = c.セクションテンプレート_セクションID,
-                セクション名 = c.セクションテンプレート!.セクション名,
+                セクションテンプレート_Parent_テンプレートID = c.セクションテンプレート!.Parent_テンプレートID,
+                セクションテンプレート_Parent_テンプレート名 = c.セクションテンプレート!.Parent!.テンプレート名,
+                セクションテンプレート_セクションID = c.セクションテンプレート!.セクションID,
+                セクションテンプレート_セクション名 = c.セクションテンプレート!.セクション名,
                 文 = c.文,
             }).ToList(),
             コメント = e.コメント.Select(c => new コメントSearchResult {
-                欄ID = c.対象!.欄ID,
-                セクションID = c.対象!.セクションテンプレート!.セクションID,
-                セクション名 = c.対象!.セクションテンプレート!.セクション名,
-                文 = c.対象!.文,
+                対象_欄ID = c.対象!.欄ID,
+                対象_セクションテンプレート_セクションID = c.対象!.セクションテンプレート!.セクションID,
+                対象_セクションテンプレート_セクション名 = c.対象!.セクションテンプレート!.セクション名,
+                対象_文 = c.対象!.文,
                 コメント文章 = c.コメント文章,
             }).ToList(),
             Version = (int)e.Version!,

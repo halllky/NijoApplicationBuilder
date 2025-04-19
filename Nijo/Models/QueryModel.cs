@@ -178,16 +178,16 @@ namespace Nijo.Models {
             その後、画面表示用型(DisplayData)に変換する際に、SearchResultをDisplayDataに変換するのではなく、DisplayDataRefに変換する。
 
             ### 検索条件（SearchCondition）
-            通常のSearchConditionと同じ。ただし、 `ref-to` されている集約がルートではなく子孫集約の場合、
-            検索条件オブジェクトのエントリーが親子逆転する。
+            通常のSearchConditionと同じ。
+            なお、 `ref-to` されている集約がルートではなく子孫集約の場合、当該子孫のルートの検索条件オブジェクトになる。
 
             ```ts
-            // 通常のSearchCondition
-            type 親QueryModelのSearchCondition = {
+            // 参照されている方のSearchCondition
+            type 集約AのSearchCondition = {
                 filter: {
                     親のID?: string
                     親の名前?: string
-                    子の検索条件: {
+                    集約AのChildren: {
                         子のID?: string
                         子の金額?: { from?: number, to?: number }
                         子の日付?: { from?: string, to?: string }
@@ -196,16 +196,24 @@ namespace Nijo.Models {
                 }
                 // 以下略...
             }
-
-            // 検索条件オブジェクトのエントリーが親子逆転する
-            type 子のQueryModelの参照検索用のSearchCondition = {
+            
+            // 参照する方のSearchCondition
+            type 集約BのSearchCondition = {
                 filter: {
-                    子のID?: string
-                    子の金額?: { from?: number, to?: number }
-                    子の日付?: { from?: string, to?: string }
-                    Parent: {
+                    参照元の集約のID?: string
+                    参照元の集約の金額?: { from?: number, to?: number }
+                    参照元の集約の日付?: { from?: string, to?: string }
+
+                    // 「集約AのChildren」ではなく集約Aのルートの検索条件がここにすべて現れる
+                    集約AのChildrenへの参照: {
                         親のID?: string
                         親の名前?: string
+                        集約AのChildren: {
+                            子のID?: string
+                            子の金額?: { from?: number, to?: number }
+                            子の日付?: { from?: string, to?: string }
+                            // 以下略...
+                        }
                     }
                 }
                 // 以下略...

@@ -27,7 +27,7 @@ namespace Nijo.Models.QueryModelModules {
         private const string CONTROLLER_ACTION_LOAD = "load";
         internal string ActionEndpoint => $"{CONTROLLER_ACTION_LOAD}";
 
-        private const string VALIDATE_METHOD = "ValidateSearchCondition";
+        internal const string VALIDATE_METHOD = "ValidateSearchCondition";
         internal const string LOAD_METHOD = "LoadAsync";
 
         internal const string CREATE_QUERY_SOURCE = "CreateQuerySource";

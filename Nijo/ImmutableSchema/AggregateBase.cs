@@ -39,6 +39,10 @@ namespace Nijo.ImmutableSchema {
         /// データベーステーブル名
         /// </summary>
         public string DbName => _ctx.GetDbName(_xElement);
+        /// <summary>
+        /// ラテン語名
+        /// </summary>
+        public string LatinName => _ctx.GetLatinName(_xElement);
 
         /// <summary>
         /// この集約が持つメンバーを列挙します。
@@ -275,7 +279,6 @@ namespace Nijo.ImmutableSchema {
         internal RootAggregate(XElement xElement, SchemaParseContext ctx, ISchemaPathNode? previous)
             : base(xElement, ctx, previous) { }
 
-        public string LatinName => _ctx.GetLatinName(_xElement);
         public bool IsReadOnly => _xElement.Attribute(BasicNodeOptions.IsReadOnly.AttributeName) != null;
         public IModel Model => _ctx.TryGetModel(_xElement, out var model) ? model : throw new InvalidOperationException("ありえない");
 
