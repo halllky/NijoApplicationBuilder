@@ -75,7 +75,7 @@ public class ScalarMemberImplementor : ApplicationServiceImplementorBase {
     }
 
     public override void AssertSearchResultMemberPath(IInstanceProperty[] properties) {
-        Assert.That(properties, Has.Length.EqualTo(44));
+        Assert.That(properties, Has.Length.EqualTo(34));
 
         // 親集約関連
         AssertExists<InstanceValueProperty>(properties, "親集約.ID");

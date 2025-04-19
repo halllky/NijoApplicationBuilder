@@ -48,7 +48,7 @@ public partial class OverridedApplicationService {
     }
 
     public override void AssertSearchResultMemberPath(IInstanceProperty[] properties) {
-        Assert.That(properties, Has.Length.EqualTo(54));
+        Assert.That(properties, Has.Length.EqualTo(61));
 
         // 受注関連
         AssertExists<InstanceValueProperty>(properties, "受注.ID");
@@ -62,12 +62,12 @@ public partial class OverridedApplicationService {
         AssertExists<InstanceValueProperty>(properties, "受注.明細.Select(e => e.数量)");
 
         // 納品関連
-        AssertExists<InstanceValueProperty>(properties, "納品.受注明細_連番");
-        AssertExists<InstanceValueProperty>(properties, "納品.受注明細_商品名");
-        AssertExists<InstanceValueProperty>(properties, "納品.受注明細_数量");
         AssertExists<InstanceValueProperty>(properties, "納品.受注明細_Parent_ID");
         AssertExists<InstanceValueProperty>(properties, "納品.受注明細_Parent_表示名称");
         AssertExists<InstanceValueProperty>(properties, "納品.受注明細_Parent_受注日");
+        AssertExists<InstanceValueProperty>(properties, "納品.受注明細_連番");
+        AssertExists<InstanceValueProperty>(properties, "納品.受注明細_商品名");
+        AssertExists<InstanceValueProperty>(properties, "納品.受注明細_数量");
         AssertExists<InstanceValueProperty>(properties, "納品.表示名称");
         AssertExists<InstanceValueProperty>(properties, "納品.納品日");
         AssertExists<InstanceValueProperty>(properties, "納品.納品数量");
@@ -78,30 +78,34 @@ public partial class OverridedApplicationService {
         AssertExists<InstanceValueProperty>(properties, "納品.備考.Select(e => e.本文)");
 
         // 請求関連
-        AssertExists<InstanceValueProperty>(properties, "請求.納品_受注明細_連番");
-        AssertExists<InstanceValueProperty>(properties, "請求.納品_受注明細_商品名");
-        AssertExists<InstanceValueProperty>(properties, "請求.納品_受注明細_数量");
         AssertExists<InstanceValueProperty>(properties, "請求.納品_受注明細_Parent_ID");
         AssertExists<InstanceValueProperty>(properties, "請求.納品_受注明細_Parent_表示名称");
         AssertExists<InstanceValueProperty>(properties, "請求.納品_受注明細_Parent_受注日");
+        AssertExists<InstanceValueProperty>(properties, "請求.納品_受注明細_連番");
+        AssertExists<InstanceValueProperty>(properties, "請求.納品_受注明細_商品名");
+        AssertExists<InstanceValueProperty>(properties, "請求.納品_受注明細_数量");
         AssertExists<InstanceValueProperty>(properties, "請求.納品_表示名称");
         AssertExists<InstanceValueProperty>(properties, "請求.納品_納品日");
         AssertExists<InstanceValueProperty>(properties, "請求.納品_納品数量");
         AssertExists<InstanceStructureProperty>(properties, "請求.納品_備考");
+        AssertExists<InstanceValueProperty>(properties, "請求.納品_備考.Select(e => e.備考連番)");
+        AssertExists<InstanceValueProperty>(properties, "請求.納品_備考.Select(e => e.本文)");
         AssertExists<InstanceValueProperty>(properties, "請求.表示名称");
         AssertExists<InstanceValueProperty>(properties, "請求.金額");
 
         // 入金関連
-        AssertExists<InstanceValueProperty>(properties, "入金.請求_納品_受注明細_連番");
-        AssertExists<InstanceValueProperty>(properties, "入金.請求_納品_受注明細_商品名");
-        AssertExists<InstanceValueProperty>(properties, "入金.請求_納品_受注明細_数量");
         AssertExists<InstanceValueProperty>(properties, "入金.請求_納品_受注明細_Parent_ID");
         AssertExists<InstanceValueProperty>(properties, "入金.請求_納品_受注明細_Parent_表示名称");
         AssertExists<InstanceValueProperty>(properties, "入金.請求_納品_受注明細_Parent_受注日");
+        AssertExists<InstanceValueProperty>(properties, "入金.請求_納品_受注明細_連番");
+        AssertExists<InstanceValueProperty>(properties, "入金.請求_納品_受注明細_商品名");
+        AssertExists<InstanceValueProperty>(properties, "入金.請求_納品_受注明細_数量");
         AssertExists<InstanceValueProperty>(properties, "入金.請求_納品_表示名称");
         AssertExists<InstanceValueProperty>(properties, "入金.請求_納品_納品日");
         AssertExists<InstanceValueProperty>(properties, "入金.請求_納品_納品数量");
         AssertExists<InstanceStructureProperty>(properties, "入金.請求_納品_備考");
+        AssertExists<InstanceValueProperty>(properties, "入金.請求_納品_備考.Select(e => e.備考連番)");
+        AssertExists<InstanceValueProperty>(properties, "入金.請求_納品_備考.Select(e => e.本文)");
         AssertExists<InstanceValueProperty>(properties, "入金.請求_表示名称");
         AssertExists<InstanceValueProperty>(properties, "入金.請求_金額");
         AssertExists<InstanceValueProperty>(properties, "入金.表示名称");
@@ -112,6 +116,9 @@ public partial class OverridedApplicationService {
         AssertExists<InstanceValueProperty>(properties, "状況2.受注_表示名称");
         AssertExists<InstanceValueProperty>(properties, "状況2.受注_受注日");
         AssertExists<InstanceStructureProperty>(properties, "状況2.受注_明細");
+        AssertExists<InstanceValueProperty>(properties, "状況2.受注_明細.Select(e => e.連番)");
+        AssertExists<InstanceValueProperty>(properties, "状況2.受注_明細.Select(e => e.商品名)");
+        AssertExists<InstanceValueProperty>(properties, "状況2.受注_明細.Select(e => e.数量)");
         AssertExists<InstanceValueProperty>(properties, "状況2.受注数");
         AssertExists<InstanceValueProperty>(properties, "状況2.納品数");
         AssertExists<InstanceValueProperty>(properties, "状況2.請求額合計");

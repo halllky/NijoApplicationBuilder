@@ -13,6 +13,7 @@ using Nijo.ImmutableSchema;
 using Nijo.Models.DataModelModules;
 using Nijo.Models.QueryModelModules;
 using Nijo.CodeGenerating.Helpers;
+using Nijo.Models;
 
 namespace Nijo.IntegrationTest;
 
@@ -141,6 +142,8 @@ public class DataPatternTest {
             // SearchResult
             var allMembers = appSchema
                 .GetRootAggregates()
+                .Where(root => root.Model is QueryModel
+                            || root.Model is DataModel && root.GenerateDefaultQueryModel)
                 .Select(root => new Variable(root.PhysicalName, new SearchResult(root)))
                 .SelectMany(variable => variable.CreatePropertiesRecursively())
                 .ToArray();
@@ -289,7 +292,10 @@ public class DataPatternTest {
             .OfType<ApplicationServiceImplementorBase>();
 
         // 対象のXMLファイルに対応する実装を返す
-        return implementors.First(i => i.TargetXmlFileName == $"{xmlFileName}.xml");
+        return implementors.FirstOrDefault(i => i.TargetXmlFileName == $"{xmlFileName}.xml")
+            ?? throw new InvalidOperationException(
+                $"{xmlFileName}.xml と対応する {nameof(ApplicationServiceImplementorBase)} クラスの実装が見つかりません。" +
+                $"Implementorsフォルダにこのパターンの実装クラスがあるか確認してください。");
     }
 }
 

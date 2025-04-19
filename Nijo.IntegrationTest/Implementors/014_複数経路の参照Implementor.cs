@@ -48,7 +48,7 @@ public partial class OverridedApplicationService {
     }
 
     public override void AssertSearchResultMemberPath(IInstanceProperty[] properties) {
-        Assert.That(properties, Has.Length.EqualTo(64));
+        Assert.That(properties, Has.Length.EqualTo(62));
 
         // 営業区関連
         AssertExists<InstanceValueProperty>(properties, "営業区.営業区ID");

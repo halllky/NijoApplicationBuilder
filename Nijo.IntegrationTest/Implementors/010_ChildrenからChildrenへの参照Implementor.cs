@@ -76,7 +76,7 @@ public partial class OverridedApplicationService {
     }
 
     public override void AssertSearchResultMemberPath(IInstanceProperty[] properties) {
-        Assert.That(properties, Has.Length.EqualTo(31));
+        Assert.That(properties, Has.Length.EqualTo(37));
 
         // 見積書テンプレート関連
         AssertExists<InstanceValueProperty>(properties, "見積書テンプレート.テンプレートID");

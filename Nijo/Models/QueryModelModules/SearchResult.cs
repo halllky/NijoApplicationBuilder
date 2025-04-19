@@ -164,17 +164,27 @@ namespace Nijo.Models.QueryModelModules {
             /// </summary>
             internal string GetPhysicalName() {
                 var list = new List<string>();
+                var previousOfPrevious = (ISchemaPathNode?)null;
                 foreach (var node in Member.GetPathFromEntry()) {
 
                     // エントリーを除外
-                    if (node.PreviousNode == null) continue;
+                    if (node.PreviousNode == null) {
+                        previousOfPrevious = node.PreviousNode;
+                        continue;
+                    }
 
-                    if (node.PreviousNode is ChildrenAggregate) {
+                    // Childrenはその親とは別のクラスのためアンダースコアによるパス結合をクリア
+                    if (node.PreviousNode is ChildrenAggregate
+                        // 親から子に向かって辿った場合のみクリア（参照先の場合は子から親に辿ることがある）
+                        && previousOfPrevious?.XElement == node.PreviousNode.XElement.Parent) {
                         list.Clear();
                     }
 
                     // Refの名前はこの1つ前で列挙済みのためスキップ
-                    if (node.PreviousNode is RefToMember) continue;
+                    if (node.PreviousNode is RefToMember) {
+                        previousOfPrevious = node.PreviousNode;
+                        continue;
+                    }
 
                     // 参照先のメンバーで子から親に辿る場合は "Parent" という名前になる
                     if (node.XElement == node.PreviousNode.XElement.Parent) {
@@ -182,6 +192,8 @@ namespace Nijo.Models.QueryModelModules {
                     } else {
                         list.Add(node.XElement.Name.LocalName);
                     }
+
+                    previousOfPrevious = node.PreviousNode;
                 }
                 return list.Join("_");
             }
