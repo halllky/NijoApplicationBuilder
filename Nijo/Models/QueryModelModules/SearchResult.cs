@@ -23,8 +23,8 @@ namespace Nijo.Models.QueryModelModules {
         internal SearchResult(RootAggregate aggregate) {
             _aggregate = aggregate;
         }
-        internal SearchResult(ChildrenAggregate aggregate) {
-            _aggregate = aggregate;
+        protected SearchResult(ChildrenAggregate children) {
+            _aggregate = children;
         }
         private readonly AggregateBase _aggregate;
 
@@ -34,24 +34,43 @@ namespace Nijo.Models.QueryModelModules {
 
         internal string CsClassName => $"{_aggregate.PhysicalName}SearchResult";
 
-        internal IEnumerable<SearchResultMember> GetMembers() {
-            return GetMembersRecursively(_aggregate);
+        internal IEnumerable<ISearchResultMember> GetMembers() {
+            return GetMembersRecursively(_aggregate, false);
 
-            static IEnumerable<SearchResultMember> GetMembersRecursively(AggregateBase aggregate) {
+            static IEnumerable<ISearchResultMember> GetMembersRecursively(AggregateBase aggregate, bool enumeratesParent) {
+                // aggregateが参照先の場合は親のメンバーも列挙
+                if (enumeratesParent) {
+                    var parent = aggregate.GetParent();
+                    if (parent != null && aggregate.PreviousNode != (ISchemaPathNode)parent) {
+                        foreach (var srm in GetMembersRecursively(parent, true)) {
+                            yield return srm;
+                        }
+                    }
+                }
+
                 foreach (var member in aggregate.GetMembers()) {
                     if (member is ValueMember vm) {
                         yield return new SearchResultValueMember(vm);
 
                     } else if (member is ChildrenAggregate children) {
+                        // aggregateが参照先の場合、かつ子から親へ辿られたとき、循環参照を防ぐ
+                        if (aggregate.PreviousNode == (ISchemaPathNode)children) continue;
+
                         yield return new SearchResultChildrenMember(children);
 
-                    } else if (member is RefToMember refTo) {
-                        foreach (var srm in GetMembersRecursively(refTo.RefTo)) {
+                    } else if (member is ChildAggregate child) {
+                        // aggregateが参照先の場合、かつ子から親へ辿られたとき、循環参照を防ぐ
+                        if (aggregate.PreviousNode == (ISchemaPathNode)child) continue;
+
+                        foreach (var srm in GetMembersRecursively(child, enumeratesParent)) {
                             yield return srm;
                         }
 
-                    } else if (member is ChildAggregate child) {
-                        foreach (var srm in GetMembersRecursively(child)) {
+                    } else if (member is RefToMember refTo) {
+                        // aggregateが参照先の場合、かつ子から親へ辿られたとき、循環参照を防ぐ
+                        if (aggregate.PreviousNode == (ISchemaPathNode)refTo) continue;
+
+                        foreach (var srm in GetMembersRecursively(refTo.RefTo, true)) {
                             yield return srm;
                         }
 
@@ -72,7 +91,7 @@ namespace Nijo.Models.QueryModelModules {
                 .Where(agg => agg is RootAggregate || agg is ChildrenAggregate)
                 .Select(agg => agg switch {
                     RootAggregate root => new SearchResult(root),
-                    ChildrenAggregate children => new SearchResult(children),
+                    ChildrenAggregate children => new SearchResultChildrenMember(children),
                     _ => throw new InvalidOperationException(),
                 });
 
@@ -102,19 +121,10 @@ namespace Nijo.Models.QueryModelModules {
 
 
         #region メンバー
-        internal abstract class SearchResultMember : IInstancePropertyMetadata {
-            protected SearchResultMember(IAggregateMember member) {
-                _member = member;
-            }
-            private readonly IAggregateMember _member;
-            private string? _physicalName;
-
-            internal string PhysicalName => _physicalName ??= EnumeratePhysicalNameParts().Join("_");
-
-            internal abstract string RenderDeclaration();
-
-            string IInstancePropertyMetadata.PropertyName => PhysicalName;
-            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _member;
+        internal interface ISearchResultMember : IInstancePropertyMetadata {
+            IAggregateMember Member { get; }
+            string RenderDeclaration();
+            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Member;
 
             /// <summary>
             /// 検索条件のプロパティはChildやRefといった親と1対1のリレーションについては
@@ -136,56 +146,58 @@ namespace Nijo.Models.QueryModelModules {
             /// };
             /// </code>
             /// </summary>
-            private IEnumerable<string> EnumeratePhysicalNameParts() {
-                foreach (var node in _member.GetPathFromEntry().SinceNearestChildren()) {
+            internal string GetPhysicalName() {
+                var list = new List<string>();
+                foreach (var node in Member.GetPathFromEntry().SinceNearestChildren()) {
                     // エントリーを除外
                     if (node.PreviousNode == null) continue;
 
                     // Refの名前はこの1つ前で列挙済みのためスキップ
                     if (node.PreviousNode is RefToMember) continue;
 
-                    yield return node.XElement.Name.LocalName;
+                    list.Add(node.XElement.Name.LocalName);
                 }
+                return list.Join("_");
             }
         }
 
-        internal class SearchResultValueMember : SearchResultMember, IInstanceValuePropertyMetadata {
-            internal SearchResultValueMember(ValueMember valueMember) : base(valueMember) {
+        internal class SearchResultValueMember : ISearchResultMember, IInstanceValuePropertyMetadata {
+            internal SearchResultValueMember(ValueMember valueMember) {
                 _valueMember = valueMember;
             }
             private readonly ValueMember _valueMember;
+            private string? _physicalName;
 
+            public string PropertyName => _physicalName ??= ((ISearchResultMember)this).GetPhysicalName();
             IValueMemberType IInstanceValuePropertyMetadata.Type => _valueMember.Type;
+            IAggregateMember ISearchResultMember.Member => _valueMember;
 
-            internal override string RenderDeclaration() {
+            string ISearchResultMember.RenderDeclaration() {
                 var type = _valueMember.Type.CsPrimitiveTypeName;
 
                 return $$"""
                     /// <summary>{{_valueMember.DisplayName}}</summary>
-                    public {{type}}? {{PhysicalName}} { get; set; }
+                    public {{type}}? {{PropertyName}} { get; set; }
                     """;
             }
         }
 
-        internal class SearchResultChildrenMember : SearchResultMember, IInstanceStructurePropertyMetadata {
+        internal class SearchResultChildrenMember : SearchResult, ISearchResultMember, IInstanceStructurePropertyMetadata {
             internal SearchResultChildrenMember(ChildrenAggregate children) : base(children) {
                 _children = children;
             }
             private readonly ChildrenAggregate _children;
+            private string? _physicalName;
 
+            public string PropertyName => _physicalName ??= ((ISearchResultMember)this).GetPhysicalName();
             bool IInstanceStructurePropertyMetadata.IsArray => true;
+            IAggregateMember ISearchResultMember.Member => _children;
+            IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetMembers();
 
-            IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
-                // Childrenの要素型（内部のSearchResult）のメンバーを返す
-                return new SearchResult(_children).GetMembers();
-            }
-
-            internal override string RenderDeclaration() {
-                var sr = new SearchResult(_children);
-
+            string ISearchResultMember.RenderDeclaration() {
                 return $$"""
                     /// <summary>{{_children.DisplayName}}</summary>
-                    public List<{{sr.CsClassName}}> {{PhysicalName}} { get; set; } = new();
+                    public List<{{CsClassName}}> {{PropertyName}} { get; set; } = new();
                     """;
             }
         }
@@ -213,14 +225,14 @@ namespace Nijo.CodeGenerating {
                 // Children
                 if (node is ChildrenAggregate children) {
                     var member = new SearchResult.SearchResultChildrenMember(children);
-                    yield return member.PhysicalName;
+                    yield return member.PropertyName;
                     continue;
                 }
 
                 // 末端のメンバー
                 if (node is ValueMember vm) {
                     var member = new SearchResult.SearchResultValueMember(vm);
-                    yield return member.PhysicalName;
+                    yield return member.PropertyName;
                     continue;
                 }
 

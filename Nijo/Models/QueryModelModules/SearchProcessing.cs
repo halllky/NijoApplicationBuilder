@@ -6,6 +6,7 @@ using Nijo.Parts.CSharp;
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -301,15 +302,17 @@ namespace Nijo.Models.QueryModelModules {
             var searchResult = new SearchResult(_rootAggregate);
             var displayData = new DisplayData(_rootAggregate);
 
+            var sr = new Variable("searchResult", searchResult);
+
             return $$"""
                 /// <summary>
                 /// {{_rootAggregate.DisplayName}}の検索結果型を画面表示用の型に変換する式を返します。
                 /// 検索条件には存在するが画面表示用データには存在しない項目は、この式の結果に含まれません。
                 /// </summary>
                 protected virtual Expression<Func<{{searchResult.CsClassName}}, {{displayData.CsClassName}}>> {{ToDisplayData}}() {
-                    return searchResult => new {{displayData.CsClassName}}() {
+                    return {{sr.Name}} => new {{displayData.CsClassName}}() {
                         {{DisplayData.VALUES_CS}} = new() {
-                            {{WithIndent(RenderMember(displayData), "            ")}}
+                            {{WithIndent(RenderMember(displayData, sr), "            ")}}
                         },
                 {{If(displayData.HasLifeCycle, () => $$"""
                         {{DisplayData.EXISTS_IN_DB_CS}} = true,
@@ -319,35 +322,63 @@ namespace Nijo.Models.QueryModelModules {
                 {{If(displayData.HasVersion, () => $$"""
                         {{DisplayData.VERSION_CS}} = searchResult.{{SearchResult.VERSION}},
                 """)}}
+                {{displayData.GetChildMembers().SelectTextTemplate(child => $$"""
+                        // {{child.PhysicalName}} = 
+                """)}}
                     };
                 }
                 """;
 
-            static IEnumerable<string> RenderMember(DisplayData displayData) {
-                foreach (var member in displayData.GetOwnMembers()) {
+            static IEnumerable<string> RenderMember(DisplayData left, IInstancePropertyOwner rightInstance) {
+                // 右辺
+                var rightMembers = rightInstance
+                    .CreatePropertiesRecursively()
+                    .ToDictionary(x => x.Metadata.SchemaPathNode.ToMappingKey());
+
+                foreach (var member in left.GetOwnMembers()) {
                     if (member is DisplayData.DisplayDataValueMember vm) {
+                        var right = rightMembers[vm.Member.ToMappingKey()];
+
                         yield return $$"""
-                            {{member.PhysicalName}} = {{vm.Member.Type.RenderCastToDomainType()}}searchResult.{{vm.Member.GetPathFromEntry().AsSearchResult().Join("!.")}},
+                            {{member.PhysicalName}} = {{vm.Member.Type.RenderCastToDomainType()}}{{right.GetJoinedPathFromInstance("!.")}},
                             """;
 
                     } else if (member is DisplayData.DisplayDataRefMember refTo) {
                         yield return $$"""
                             {{member.PhysicalName}} = new() {
-                                {{WithIndent(RenderRefMember(refTo.RefEntry), "    ")}}
+                                {{WithIndent(RenderRefMember(refTo.RefEntry, rightInstance, rightMembers), "    ")}}
                             },
                             """;
 
-                        static IEnumerable<string> RenderRefMember(DisplayDataRef.RefDisplayDataMemberContainer displayDataRef) {
-                            foreach (var member in displayDataRef.GetMembers()) {
+                        static IEnumerable<string> RenderRefMember(DisplayDataRef.RefDisplayDataMemberContainer left, IInstancePropertyOwner rightInstance, IReadOnlyDictionary<SchemaNodeIdentity, IInstanceProperty> rightMembers) {
+                            foreach (var member in left.GetMembers()) {
                                 if (member is DisplayDataRef.RefDisplayDataValueMember vm) {
+                                    var property = rightMembers.GetValueOrDefault(vm.Member.ToMappingKey());
+
                                     yield return $$"""
-                                        {{member.PhysicalName}} = {{vm.Member.Type.RenderCastToDomainType()}}searchResult.{{vm.Member.GetPathFromEntry().AsSearchResult().Join("!.")}},
+                                        {{member.PhysicalName}} = {{vm.Member.Type.RenderCastToDomainType()}}{{property?.GetJoinedPathFromInstance("!.")}},
+                                        """;
+
+                                } else if (member is DisplayDataRef.RefDisplayDataChildrenMember children) {
+                                    var property = rightMembers.GetValueOrDefault(children.ChildrenAggregate.ToMappingKey());
+                                    var loopVar = new Variable(children.ChildrenAggregate.GetLoopVarName(), children);
+
+                                    // 配列中に登場する変数の代入元はループ変数が優先
+                                    var overridedDict = new Dictionary<SchemaNodeIdentity, IInstanceProperty>(rightMembers);
+                                    foreach (var m in loopVar.CreatePropertiesRecursively() ?? []) {
+                                        overridedDict[m.Metadata.SchemaPathNode.ToMappingKey()] = m;
+                                    }
+
+                                    yield return $$"""
+                                        {{member.PhysicalName}} = {{property?.GetJoinedPathFromInstance("!.")}}.Select({{loopVar.Name}} => new {{children.CsClassName}} {
+                                            {{WithIndent(RenderRefMember(children, loopVar, overridedDict), "    ")}}
+                                        }).ToList(),
                                         """;
 
                                 } else if (member is DisplayDataRef.RefDisplayDataMemberContainer container) {
                                     yield return $$"""
                                         {{member.PhysicalName}} = new() {
-                                            {{WithIndent(RenderRefMember(container), "    ")}}
+                                            {{WithIndent(RenderRefMember(container, rightInstance, rightMembers), "    ")}}
                                         },
                                         """;
                                 }

@@ -278,16 +278,16 @@ namespace Nijo.Models.QueryModelModules {
         /// </summary>
         internal class RefDisplayDataChildrenMember : RefDisplayDataMemberContainer, IRefDisplayDataMember, IInstanceStructurePropertyMetadata {
             internal RefDisplayDataChildrenMember(ChildrenAggregate member) : base(member) {
-                _member = member;
+                ChildrenAggregate = member;
             }
-            private readonly ChildrenAggregate _member;
+            internal ChildrenAggregate ChildrenAggregate { get; }
 
-            public string PhysicalName => _member.PhysicalName;
-            public string DisplayName => _member.DisplayName;
-            public string CsType => $"{_member.PhysicalName}RefTargetVia{_member.PreviousNode!.XElement.Name.LocalName.ToCSharpSafe()}";
+            public string PhysicalName => ChildrenAggregate.PhysicalName;
+            public string DisplayName => ChildrenAggregate.DisplayName;
+            public string CsType => $"{ChildrenAggregate.PhysicalName}RefTargetVia{ChildrenAggregate.PreviousNode!.XElement.Name.LocalName.ToCSharpSafe()}";
             internal override string CsClassName => CsType;
 
-            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _member;
+            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => ChildrenAggregate;
             bool IInstanceStructurePropertyMetadata.IsArray => true;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
 
