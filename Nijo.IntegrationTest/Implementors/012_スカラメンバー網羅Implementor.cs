@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Nijo.CodeGenerating.Helpers;
+using NUnit.Framework;
 
 namespace Nijo.IntegrationTest.Implementors;
 
@@ -70,5 +72,51 @@ public class ScalarMemberImplementor : ApplicationServiceImplementorBase {
                 }
             }
             """;
+    }
+
+    public override void AssertSearchResultMemberPath(IInstanceProperty[] properties) {
+        Assert.That(properties, Has.Length.EqualTo(44));
+
+        // 親集約関連
+        AssertExists<InstanceValueProperty>(properties, "親集約.ID");
+        AssertExists<InstanceValueProperty>(properties, "親集約.整数のキー");
+        AssertExists<InstanceValueProperty>(properties, "親集約.日付のキー");
+        AssertExists<InstanceValueProperty>(properties, "親集約.列挙体のキー");
+        AssertExists<InstanceValueProperty>(properties, "親集約.値オブジェクトのキー");
+        AssertExists<InstanceValueProperty>(properties, "親集約.単語");
+        AssertExists<InstanceValueProperty>(properties, "親集約.単語半角英数");
+        AssertExists<InstanceValueProperty>(properties, "親集約.文章");
+        AssertExists<InstanceValueProperty>(properties, "親集約.整数");
+        AssertExists<InstanceValueProperty>(properties, "親集約.実数");
+        AssertExists<InstanceValueProperty>(properties, "親集約.日付時刻");
+        AssertExists<InstanceValueProperty>(properties, "親集約.日付");
+        AssertExists<InstanceValueProperty>(properties, "親集約.年月");
+        AssertExists<InstanceValueProperty>(properties, "親集約.年");
+        AssertExists<InstanceValueProperty>(properties, "親集約.参照_参照先ID");
+        AssertExists<InstanceValueProperty>(properties, "親集約.参照_Name");
+        AssertExists<InstanceValueProperty>(properties, "親集約.真偽値");
+        AssertExists<InstanceValueProperty>(properties, "親集約.列挙体");
+        AssertExists<InstanceStructureProperty>(properties, "親集約.Children");
+
+        // Childrenの子要素
+        AssertExists<InstanceValueProperty>(properties, "Children.ChildrenId");
+        AssertExists<InstanceValueProperty>(properties, "Children.単語");
+        AssertExists<InstanceValueProperty>(properties, "Children.文章");
+        AssertExists<InstanceValueProperty>(properties, "Children.整数");
+        AssertExists<InstanceValueProperty>(properties, "Children.実数");
+        AssertExists<InstanceValueProperty>(properties, "Children.日付時刻");
+        AssertExists<InstanceValueProperty>(properties, "Children.日付");
+        AssertExists<InstanceValueProperty>(properties, "Children.年月");
+        AssertExists<InstanceValueProperty>(properties, "Children.年");
+        AssertExists<InstanceValueProperty>(properties, "Children.参照_参照先ID");
+        AssertExists<InstanceValueProperty>(properties, "Children.参照_Name");
+        AssertExists<InstanceValueProperty>(properties, "Children.真偽値");
+        AssertExists<InstanceValueProperty>(properties, "Children.列挙体");
+
+        // 参照先関連
+        AssertExists<InstanceValueProperty>(properties, "参照先.参照先ID");
+        AssertExists<InstanceValueProperty>(properties, "参照先.Name");
+
+        // ユーザーアカウントはQueryModelでないのでSearchResultは生成されない
     }
 }

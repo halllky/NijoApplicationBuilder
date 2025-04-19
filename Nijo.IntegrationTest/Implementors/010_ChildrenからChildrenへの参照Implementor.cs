@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Nijo.CodeGenerating.Helpers;
+using NUnit.Framework;
 
 namespace Nijo.IntegrationTest.Implementors;
 
@@ -71,5 +73,49 @@ public partial class OverridedApplicationService {
         });
     }
 }";
+    }
+
+    public override void AssertSearchResultMemberPath(IInstanceProperty[] properties) {
+        Assert.That(properties, Has.Length.EqualTo(31));
+
+        // 見積書テンプレート関連
+        AssertExists<InstanceValueProperty>(properties, "見積書テンプレート.テンプレートID");
+        AssertExists<InstanceValueProperty>(properties, "見積書テンプレート.テンプレート名");
+        AssertExists<InstanceStructureProperty>(properties, "見積書テンプレート.セクション");
+
+        AssertExists<InstanceValueProperty>(properties, "セクション.セクションID");
+        AssertExists<InstanceValueProperty>(properties, "セクション.セクション名");
+
+        // 見積書関連
+        AssertExists<InstanceValueProperty>(properties, "見積書.見積書ID");
+        AssertExists<InstanceValueProperty>(properties, "見積書.タイトル");
+        AssertExists<InstanceValueProperty>(properties, "見積書.発行日時");
+        AssertExists<InstanceStructureProperty>(properties, "見積書.定型欄");
+
+        AssertExists<InstanceValueProperty>(properties, "定型欄.欄ID");
+        AssertExists<InstanceValueProperty>(properties, "定型欄.セクションテンプレート_セクションID");
+        AssertExists<InstanceValueProperty>(properties, "定型欄.セクションテンプレート_セクション名");
+        AssertExists<InstanceValueProperty>(properties, "定型欄.セクションテンプレート_Parent_テンプレートID");
+        AssertExists<InstanceValueProperty>(properties, "定型欄.セクションテンプレート_Parent_テンプレート名");
+        AssertExists<InstanceValueProperty>(properties, "定型欄.文");
+
+        // 見積回答関連
+        AssertExists<InstanceValueProperty>(properties, "見積回答.見積書_見積書ID");
+        AssertExists<InstanceValueProperty>(properties, "見積回答.見積書_タイトル");
+        AssertExists<InstanceValueProperty>(properties, "見積回答.見積書_発行日時");
+        AssertExists<InstanceStructureProperty>(properties, "見積回答.見積書_定型欄");
+        AssertExists<InstanceValueProperty>(properties, "見積回答.返答日");
+        AssertExists<InstanceStructureProperty>(properties, "見積回答.コメント");
+
+        AssertExists<InstanceValueProperty>(properties, "コメント.対象_Parent_見積書ID");
+        AssertExists<InstanceValueProperty>(properties, "コメント.対象_Parent_タイトル");
+        AssertExists<InstanceValueProperty>(properties, "コメント.対象_Parent_発行日時");
+        AssertExists<InstanceValueProperty>(properties, "コメント.対象_欄ID");
+        AssertExists<InstanceValueProperty>(properties, "コメント.対象_セクションテンプレート_セクションID");
+        AssertExists<InstanceValueProperty>(properties, "コメント.対象_セクションテンプレート_セクション名");
+        AssertExists<InstanceValueProperty>(properties, "コメント.対象_セクションテンプレート_Parent_テンプレートID");
+        AssertExists<InstanceValueProperty>(properties, "コメント.対象_セクションテンプレート_Parent_テンプレート名");
+        AssertExists<InstanceValueProperty>(properties, "コメント.対象_文");
+        AssertExists<InstanceValueProperty>(properties, "コメント.コメント文章");
     }
 }

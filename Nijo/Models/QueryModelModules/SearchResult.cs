@@ -45,6 +45,7 @@ namespace Nijo.Models.QueryModelModules {
     ///   * Childと同様に、参照元集約直下のプロパティとして定義される。
     ///   * 参照先がルート集約ではなく子孫集約の場合、参照元の親集約のメンバーも参照元クラスに定義される。
     ///   * 参照先がChildrenを持つ場合、参照元にChildrenがある場合と同様に、別のクラスとして定義される。アンダースコアのパスは当該参照先のChildrenが起点となる。
+    ///   * 参照先が子孫集約の場合、親への参照がParentという名前で表れる。
     /// </para>
     /// </summary>
     internal class SearchResult : IInstancePropertyOwnerMetadata {

@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Nijo.CodeGenerating.Helpers;
+using NUnit.Framework;
 
 namespace Nijo.IntegrationTest.Implementors;
 
@@ -44,5 +46,15 @@ public partial class OverridedApplicationService {
         });
     }
 }";
+    }
+
+    public override void AssertSearchResultMemberPath(IInstanceProperty[] properties) {
+        Assert.That(properties, Has.Length.EqualTo(4));
+
+        // 従業員関連
+        AssertExists<InstanceValueProperty>(properties, "従業員.内部ID");
+        AssertExists<InstanceValueProperty>(properties, "従業員.従業員コード");
+        AssertExists<InstanceValueProperty>(properties, "従業員.名前");
+        AssertExists<InstanceValueProperty>(properties, "従業員.区分");
     }
 }
