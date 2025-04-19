@@ -18,17 +18,17 @@ namespace Nijo.Models.DataModelModules {
     internal class SaveCommand : IInstancePropertyOwnerMetadata {
 
         internal SaveCommand(AggregateBase aggregate, E_Type type) {
-            _aggregate = aggregate;
+            Aggregate = aggregate;
             Type = type;
         }
-        private readonly AggregateBase _aggregate;
+        internal AggregateBase Aggregate { get; }
 
         internal enum E_Type { Create, Update, Delete }
         internal E_Type Type { get; }
 
-        internal string CsClassNameCreate => $"{_aggregate.PhysicalName}CreateCommand";
-        internal string CsClassNameUpdate => $"{_aggregate.PhysicalName}UpdateCommand";
-        internal string CsClassNameDelete => $"{_aggregate.PhysicalName}DeleteCommand";
+        internal string CsClassNameCreate => $"{Aggregate.PhysicalName}CreateCommand";
+        internal string CsClassNameUpdate => $"{Aggregate.PhysicalName}UpdateCommand";
+        internal string CsClassNameDelete => $"{Aggregate.PhysicalName}DeleteCommand";
 
         internal const string VERSION = "Version";
         internal const string TO_DBENTITY = "ToDbEntity";
@@ -78,7 +78,7 @@ namespace Nijo.Models.DataModelModules {
 
         #region CREATE
         internal IEnumerable<ISaveCommandMember> GetCreateCommandMembers() {
-            foreach (var member in _aggregate.GetMembers()) {
+            foreach (var member in Aggregate.GetMembers()) {
                 if (member is ValueMember vm) {
                     // 新規登録時に自動採番されるものは新規登録メンバー中に含めない
                     if (vm.Type is SequenceMember) continue;
@@ -99,14 +99,14 @@ namespace Nijo.Models.DataModelModules {
         private string RenderCreateCommandDeclaring(CodeRenderingContext ctx) {
             return $$"""
                 /// <summary>
-                /// {{_aggregate.DisplayName}} の新規登録コマンド引数
+                /// {{Aggregate.DisplayName}} の新規登録コマンド引数
                 /// </summary>
                 public partial class {{CsClassNameCreate}} {
                 {{GetCreateCommandMembers().SelectTextTemplate(m => $$"""
                     /// <summary>{{m.DisplayName}}</summary>
                     public required {{m.CsCreateType}}? {{m.PhysicalName}} { get; set; }
                 """)}}
-                {{If(_aggregate is RootAggregate, () => $$"""
+                {{If(Aggregate is RootAggregate, () => $$"""
 
                     {{WithIndent(RenderToDbEntity(isCreate: true), "    ")}}
                 """)}}
@@ -118,7 +118,7 @@ namespace Nijo.Models.DataModelModules {
 
         #region UPDATE
         internal IEnumerable<ISaveCommandMember> GetUpdateCommandMembers() {
-            foreach (var member in _aggregate.GetMembers()) {
+            foreach (var member in Aggregate.GetMembers()) {
                 if (member is ValueMember vm) {
                     yield return new SaveCommandValueMember(vm);
 
@@ -134,18 +134,18 @@ namespace Nijo.Models.DataModelModules {
             }
         }
         private string RenderUpdateCommandDeclaring(CodeRenderingContext ctx) {
-            var efCoreEntity = new EFCoreEntity(_aggregate);
+            var efCoreEntity = new EFCoreEntity(Aggregate);
 
             return $$"""
                 /// <summary>
-                /// {{_aggregate.DisplayName}} の更新コマンド引数
+                /// {{Aggregate.DisplayName}} の更新コマンド引数
                 /// </summary>
                 public partial class {{CsClassNameUpdate}} {
                 {{GetUpdateCommandMembers().SelectTextTemplate(m => $$"""
                     /// <summary>{{m.DisplayName}}</summary>
                     public required {{m.CsUpdateType}}? {{m.PhysicalName}} { get; set; }
                 """)}}
-                {{If(_aggregate is RootAggregate, () => $$"""
+                {{If(Aggregate is RootAggregate, () => $$"""
                     /// <summary>楽観排他制御用のバージョン</summary>
                     public required int? {{VERSION}} { get; set; }
 
@@ -166,7 +166,7 @@ namespace Nijo.Models.DataModelModules {
 
         #region DELETE
         private IEnumerable<ISaveCommandMember> GetDeleteCommandMembers() {
-            foreach (var member in _aggregate.GetMembers()) {
+            foreach (var member in Aggregate.GetMembers()) {
                 if (member is ValueMember vm) {
                     if (!vm.IsKey) continue;
 
@@ -180,18 +180,18 @@ namespace Nijo.Models.DataModelModules {
             }
         }
         private string RenderDeleteCommandDeclaring(CodeRenderingContext ctx) {
-            var efCoreEntity = new EFCoreEntity(_aggregate);
+            var efCoreEntity = new EFCoreEntity(Aggregate);
 
             return $$"""
                 /// <summary>
-                /// {{_aggregate.DisplayName}} の物理削除コマンド引数。キーとバージョンのみを持つ。
+                /// {{Aggregate.DisplayName}} の物理削除コマンド引数。キーとバージョンのみを持つ。
                 /// </summary>
                 public partial class {{CsClassNameDelete}} {
                 {{GetDeleteCommandMembers().SelectTextTemplate(m => $$"""
                     /// <summary>{{m.DisplayName}}</summary>
                     public required {{m.CsDeleteType}}? {{m.PhysicalName}} { get; set; }
                 """)}}
-                {{If(_aggregate is RootAggregate, () => $$"""
+                {{If(Aggregate is RootAggregate, () => $$"""
                     /// <summary>楽観排他制御用のバージョン</summary>
                     public required int? {{VERSION}} { get; set; }
                 """)}}
@@ -252,6 +252,7 @@ namespace Nijo.Models.DataModelModules {
 
         #region メンバー
         internal interface ISaveCommandMember : IInstancePropertyMetadata {
+            bool IsKey { get; }
             ISchemaPathNode Member { get; }
             string PhysicalName { get; }
             string CsCreateType { get; }
@@ -274,6 +275,7 @@ namespace Nijo.Models.DataModelModules {
             public string CsUpdateType => Member.Type.CsDomainTypeName;
             public string CsDeleteType => Member.Type.CsDomainTypeName;
 
+            public bool IsKey => Member.IsKey;
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Member;
             IValueMemberType IInstanceValuePropertyMetadata.Type => Member.Type;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
@@ -293,14 +295,15 @@ namespace Nijo.Models.DataModelModules {
         internal class SaveCommandChildMember : SaveCommand, ISaveCommandMember, IInstanceStructurePropertyMetadata {
             internal SaveCommandChildMember(ChildAggregate child, E_Type type) : base(child, type) { }
 
-            ISchemaPathNode ISaveCommandMember.Member => (IAggregateMember)_aggregate;
-            public string PhysicalName => _aggregate.PhysicalName;
-            public string DisplayName => _aggregate.DisplayName;
-            public string CsCreateType => new SaveCommand(_aggregate, SaveCommand.E_Type.Create).CsClassNameCreate;
-            public string CsUpdateType => new SaveCommand(_aggregate, SaveCommand.E_Type.Update).CsClassNameUpdate;
-            public string CsDeleteType => new SaveCommand(_aggregate, SaveCommand.E_Type.Delete).CsClassNameDelete;
+            ISchemaPathNode ISaveCommandMember.Member => (IAggregateMember)Aggregate;
+            public string PhysicalName => Aggregate.PhysicalName;
+            public string DisplayName => Aggregate.DisplayName;
+            public string CsCreateType => new SaveCommand(Aggregate, SaveCommand.E_Type.Create).CsClassNameCreate;
+            public string CsUpdateType => new SaveCommand(Aggregate, SaveCommand.E_Type.Update).CsClassNameUpdate;
+            public string CsDeleteType => new SaveCommand(Aggregate, SaveCommand.E_Type.Delete).CsClassNameDelete;
 
-            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _aggregate;
+            bool ISaveCommandMember.IsKey => false;
+            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Aggregate;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
@@ -310,14 +313,16 @@ namespace Nijo.Models.DataModelModules {
         internal class SaveCommandChildrenMember : SaveCommand, ISaveCommandMember, IInstanceStructurePropertyMetadata {
             internal SaveCommandChildrenMember(ChildrenAggregate children, E_Type type) : base(children, type) { }
 
-            ISchemaPathNode ISaveCommandMember.Member => (IAggregateMember)_aggregate;
-            public string PhysicalName => _aggregate.PhysicalName;
-            public string DisplayName => _aggregate.DisplayName;
-            public string CsCreateType => $"List<{new SaveCommand(_aggregate, SaveCommand.E_Type.Create).CsClassNameCreate}>";
-            public string CsUpdateType => $"List<{new SaveCommand(_aggregate, SaveCommand.E_Type.Update).CsClassNameUpdate}>";
-            public string CsDeleteType => $"List<{new SaveCommand(_aggregate, SaveCommand.E_Type.Delete).CsClassNameDelete}>";
+            internal new ChildrenAggregate Aggregate => (ChildrenAggregate)base.Aggregate;
+            ISchemaPathNode ISaveCommandMember.Member => (IAggregateMember)base.Aggregate;
+            public string PhysicalName => base.Aggregate.PhysicalName;
+            public string DisplayName => base.Aggregate.DisplayName;
+            public string CsCreateType => $"List<{new SaveCommand(base.Aggregate, SaveCommand.E_Type.Create).CsClassNameCreate}>";
+            public string CsUpdateType => $"List<{new SaveCommand(base.Aggregate, SaveCommand.E_Type.Update).CsClassNameUpdate}>";
+            public string CsDeleteType => $"List<{new SaveCommand(base.Aggregate, SaveCommand.E_Type.Delete).CsClassNameDelete}>";
 
-            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _aggregate;
+            bool ISaveCommandMember.IsKey => false;
+            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => base.Aggregate;
             bool IInstanceStructurePropertyMetadata.IsArray => true;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
@@ -331,7 +336,7 @@ namespace Nijo.Models.DataModelModules {
                 .Create1To1PropertiesRecursively()
                 .ToDictionary(x => x.Metadata.SchemaPathNode.ToMappingKey());
 
-            var efCoreEntity = new EFCoreEntity(_aggregate);
+            var efCoreEntity = new EFCoreEntity(Aggregate);
 
             return $$"""
                 /// <summary>

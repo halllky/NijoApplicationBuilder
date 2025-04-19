@@ -181,39 +181,19 @@ namespace Nijo.Models.DataModelModules {
                             var refToRoot = refTo.Member.RefTo.GetRoot();
                             var keyClass = new KeyClass.KeyClassEntry(refTo.Member.RefTo.AsEntry());
 
-                            // contextの配列から子孫までのパス
-                            var treePath = new List<string>();
-                            foreach (var agg in refTo.Member.RefTo.GetPathFromRoot()) {
-                                if (agg is RootAggregate) {
-                                    continue;
-
-                                } else if (agg is ChildAggregate child) {
-                                    var saveCommandMember = new SaveCommand.SaveCommandChildMember(child, SaveCommand.E_Type.Create);
-                                    treePath.Add($".Select(x => x.{saveCommandMember.PhysicalName})");
-
-                                } else if (agg is ChildrenAggregate children) {
-                                    var saveCommandMember = new SaveCommand.SaveCommandChildrenMember(children, SaveCommand.E_Type.Create);
-                                    treePath.Add($".SelectMany(x => x.{saveCommandMember.PhysicalName})");
-
-                                } else {
-                                    throw new NotImplementedException();
-                                }
-                            }
-
                             var owner = refTo.Member.Owner.DisplayName.Replace("\"", "\\\"");
                             var memberName = refTo.DisplayName.Replace("\"", "\\\"");
                             var refToName = refTo.Member.RefTo.DisplayName.Replace("\"", "\\\"");
+
+                            var convertToKeyClass = refTo.Member.RefTo.GetPathFromRoot().Any(agg => agg is ChildrenAggregate)
+                                ? $".SelectMany(x => {keyClass.ClassName}.{KeyClass.KeyClassEntry.FROM_SAVE_COMMAND}(x))"
+                                : $".Select(x => {keyClass.ClassName}.{KeyClass.KeyClassEntry.FROM_SAVE_COMMAND}(x))";
 
                             if (refTo.Member.IsKey) {
                                 // refがキーの場合はキー重複を防ぐためインデックス順に振る
                                 yield return $$"""
                                     {{member.PhysicalName}} = context.{{GeneratedList(refToRoot)}}
-                                    {{treePath.SelectTextTemplate(path => $$"""
-                                        {{path}}
-                                    """)}}
-                                        .Select(cmd => new {{keyClass.ClassName}} {
-                                            {{WithIndent(RenderKeyClassBodyConverting(keyClass), "        ")}}
-                                        })
+                                        {{convertToKeyClass}}
                                         .ElementAtOrDefault(itemIndex)
                                         ?? throw new InvalidOperationException($"{{owner}}の{{memberName}}のキー重複を防ぐため{{refToName}}には少なくとも{itemIndex + 1}件のデータがある必要がありますが、{context.{{GeneratedList(refToRoot)}}.Count}件しかありません。"),
                                     """;
@@ -224,12 +204,7 @@ namespace Nijo.Models.DataModelModules {
                                     {{member.PhysicalName}} = context.{{GeneratedList(refToRoot)}}.Count == 0
                                         ? throw new InvalidOperationException("{{owner}}の{{memberName}}に設定するためのインスタンスを探そうとしましたが、{{refToName}}が1件も作成されていません。")
                                         : context.{{GeneratedList(refToRoot)}}
-                                    {{treePath.SelectTextTemplate(path => $$"""
-                                            {{path}}
-                                    """)}}
-                                            .Select(cmd => new {{keyClass.ClassName}} {
-                                                {{WithIndent(RenderKeyClassBodyConverting(keyClass), "            ")}}
-                                            })
+                                            {{convertToKeyClass}}
                                             .ElementAt(context.Random.Next(0, context.{{GeneratedList(refToRoot)}}.Count)),
                                     """;
 
@@ -239,17 +214,13 @@ namespace Nijo.Models.DataModelModules {
                                     {{member.PhysicalName}} = context.{{GeneratedList(refToRoot)}}.Count == 0
                                         ? null
                                         : context.{{GeneratedList(refToRoot)}}
-                                    {{treePath.SelectTextTemplate(path => $$"""
-                                            {{path}}
-                                    """)}}
-                                            .Select(cmd => new {{keyClass.ClassName}} {
-                                                {{WithIndent(RenderKeyClassBodyConverting(keyClass), "            ")}}
-                                            })
+                                            {{convertToKeyClass}}
                                             .ElementAt(context.Random.Next(0, context.{{GeneratedList(refToRoot)}}.Count)),
                                     """;
                             }
 
                             // SaveCommand から KeyClass への変換
+                            [Obsolete]
                             static IEnumerable<string> RenderKeyClassBodyConverting(KeyClass.IKeyClassStructure keyClassStructure) {
                                 foreach (var member in keyClassStructure.GetOwnMembers()) {
                                     if (member is KeyClass.KeyClassValueMember vm) {
@@ -279,6 +250,27 @@ namespace Nijo.Models.DataModelModules {
                                     }
                                 }
                             }
+
+                            //// SaveCommand の配列から KeyClass の配列へ変換するソースをレンダリングする
+                            //static IEnumerable<string> RenderConvertFromSaveCommandArrayToKeyClassArray(SaveCommand.SaveCommandRefMember refTo) {
+                            //    var pathFromRoot = refTo.Member.RefTo.GetPathFromRoot();
+                            //    foreach (var agg in pathFromRoot) {
+                            //        if (agg is RootAggregate) {
+                            //            continue;
+
+                            //        } else if (agg is ChildAggregate child) {
+                            //            var saveCommandMember = new SaveCommand.SaveCommandChildMember(child, SaveCommand.E_Type.Create);
+                            //            treePath.Add($".Select(x => x.{saveCommandMember.PhysicalName})");
+
+                            //        } else if (agg is ChildrenAggregate children) {
+                            //            var saveCommandMember = new SaveCommand.SaveCommandChildrenMember(children, SaveCommand.E_Type.Create);
+                            //            treePath.Add($".SelectMany(x => x.{saveCommandMember.PhysicalName})");
+
+                            //        } else {
+                            //            throw new NotImplementedException();
+                            //        }
+                            //    }
+                            //}
 
                         } else if (member is SaveCommand.SaveCommandChildMember child) {
                             yield return $$"""

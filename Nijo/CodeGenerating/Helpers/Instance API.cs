@@ -114,32 +114,42 @@ public sealed class InstanceStructureProperty : IInstanceProperty, IInstanceProp
 public static partial class CodeGeneratingHelperExtensions {
 
     #region CreateProperties系メソッド
+    public static IInstanceProperty CreateProperty(this IInstancePropertyOwner owner, IInstancePropertyMetadata propertyMetadata) {
+        return propertyMetadata switch {
+            IInstanceValuePropertyMetadata v => owner.CreateProperty(v),
+            IInstanceStructurePropertyMetadata s => owner.CreateProperty(s),
+            _ => throw new InvalidOperationException("上記2種以外はありえない"),
+        };
+    }
     /// <summary>
     /// この構造体のプロパティを定義します。
     /// レンダリング処理のパフォーマンスのため、引数のプロパティがこの構造体で定義されているか否かのチェックは行なっていないので注意。
     /// </summary>
-    public static IInstanceProperty CreateProperty(this IInstancePropertyOwner owner, IInstancePropertyMetadata propertyMetadata) {
-        var variable = owner switch {
-            Variable v => v,
-            InstanceStructureProperty s => s.Root,
-            _ => throw new NotImplementedException(),
+    public static InstanceValueProperty CreateProperty(this IInstancePropertyOwner owner, IInstanceValuePropertyMetadata propertyMetadata) {
+        return new InstanceValueProperty {
+            Root = owner switch {
+                Variable v => v,
+                InstanceStructureProperty s => s.Root,
+                _ => throw new NotImplementedException(),
+            },
+            Owner = owner,
+            Metadata = propertyMetadata,
         };
-
-        if (propertyMetadata is IInstanceValuePropertyMetadata valueMetadata) {
-            return new InstanceValueProperty {
-                Root = variable,
-                Owner = owner,
-                Metadata = valueMetadata,
-            };
-        } else if (propertyMetadata is IInstanceStructurePropertyMetadata structMetadata) {
-            return new InstanceStructureProperty {
-                Root = variable,
-                Owner = owner,
-                Metadata = structMetadata,
-            };
-        } else {
-            throw new NotImplementedException("上2種類以外はありえない");
-        }
+    }
+    /// <summary>
+    /// この構造体のプロパティを定義します。
+    /// レンダリング処理のパフォーマンスのため、引数のプロパティがこの構造体で定義されているか否かのチェックは行なっていないので注意。
+    /// </summary>
+    public static InstanceStructureProperty CreateProperty(this IInstancePropertyOwner owner, IInstanceStructurePropertyMetadata propertyMetadata) {
+        return new InstanceStructureProperty {
+            Root = owner switch {
+                Variable v => v,
+                InstanceStructureProperty s => s.Root,
+                _ => throw new NotImplementedException(),
+            },
+            Owner = owner,
+            Metadata = propertyMetadata,
+        };
     }
 
     /// <summary>
