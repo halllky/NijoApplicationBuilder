@@ -103,8 +103,7 @@ namespace Nijo.Models.DataModelModules {
                 /// </summary>
                 public partial class {{CsClassNameCreate}} {
                 {{GetCreateCommandMembers().SelectTextTemplate(m => $$"""
-                    /// <summary>{{m.DisplayName}}</summary>
-                    public required {{m.CsCreateType}}? {{m.PhysicalName}} { get; set; }
+                    {{WithIndent(m.RenderDeclaring(), "    ")}}
                 """)}}
                 {{If(Aggregate is RootAggregate, () => $$"""
 
@@ -142,8 +141,7 @@ namespace Nijo.Models.DataModelModules {
                 /// </summary>
                 public partial class {{CsClassNameUpdate}} {
                 {{GetUpdateCommandMembers().SelectTextTemplate(m => $$"""
-                    /// <summary>{{m.DisplayName}}</summary>
-                    public required {{m.CsUpdateType}}? {{m.PhysicalName}} { get; set; }
+                    {{WithIndent(m.RenderDeclaring(), "    ")}}
                 """)}}
                 {{If(Aggregate is RootAggregate, () => $$"""
                     /// <summary>楽観排他制御用のバージョン</summary>
@@ -188,8 +186,7 @@ namespace Nijo.Models.DataModelModules {
                 /// </summary>
                 public partial class {{CsClassNameDelete}} {
                 {{GetDeleteCommandMembers().SelectTextTemplate(m => $$"""
-                    /// <summary>{{m.DisplayName}}</summary>
-                    public required {{m.CsDeleteType}}? {{m.PhysicalName}} { get; set; }
+                    {{WithIndent(m.RenderDeclaring(), "    ")}}
                 """)}}
                 {{If(Aggregate is RootAggregate, () => $$"""
                     /// <summary>楽観排他制御用のバージョン</summary>
@@ -258,6 +255,8 @@ namespace Nijo.Models.DataModelModules {
             string CsCreateType { get; }
             string CsUpdateType { get; }
             string CsDeleteType { get; }
+
+            string RenderDeclaring();
         }
         /// <summary>
         /// 更新処理引数クラスの値メンバー
@@ -279,6 +278,13 @@ namespace Nijo.Models.DataModelModules {
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Member;
             IValueMemberType IInstanceValuePropertyMetadata.Type => Member.Type;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
+
+            string ISaveCommandMember.RenderDeclaring() {
+                return $$"""
+                    /// <summary>{{DisplayName}}</summary>
+                    public required {{Member.Type.CsDomainTypeName}}? {{PhysicalName}} { get; set; }
+                    """;
+            }
         }
         /// <summary>
         /// 更新処理引数クラスの参照先キー項目
@@ -306,6 +312,19 @@ namespace Nijo.Models.DataModelModules {
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Aggregate;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
+
+            string ISaveCommandMember.RenderDeclaring() {
+                var className = Type switch {
+                    E_Type.Create => CsCreateType,
+                    E_Type.Update => CsUpdateType,
+                    E_Type.Delete => CsDeleteType,
+                    _ => throw new NotImplementedException(),
+                };
+                return $$"""
+                    /// <summary>{{DisplayName}}</summary>
+                    public required {{className}} {{PhysicalName}} { get; set; }
+                    """;
+            }
         }
         /// <summary>
         /// 更新処理引数クラスの子コレクションメンバー
@@ -325,6 +344,19 @@ namespace Nijo.Models.DataModelModules {
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => base.Aggregate;
             bool IInstanceStructurePropertyMetadata.IsArray => true;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
+
+            string ISaveCommandMember.RenderDeclaring() {
+                var className = Type switch {
+                    E_Type.Create => CsCreateType,
+                    E_Type.Update => CsUpdateType,
+                    E_Type.Delete => CsDeleteType,
+                    _ => throw new NotImplementedException(),
+                };
+                return $$"""
+                    /// <summary>{{DisplayName}}</summary>
+                    public required {{className}} {{PhysicalName}} { get; set; }
+                    """;
+            }
         }
         #endregion メンバー
 

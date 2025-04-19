@@ -53,6 +53,13 @@ namespace Nijo.Models.DataModelModules {
                 }
             }
 
+            string SaveCommand.ISaveCommandMember.RenderDeclaring() {
+                return $$"""
+                    /// <summary>{{DisplayName}}</summary>
+                    public required {{ClassName}}? {{PhysicalName}} { get; set; }
+                    """;
+            }
+
             /// <summary>
             /// 子孫のキークラス定義も含めて全部レンダリング
             /// </summary>
@@ -315,6 +322,13 @@ namespace Nijo.Models.DataModelModules {
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetOwnMembers();
+
+            string SaveCommand.ISaveCommandMember.RenderDeclaring() {
+                return $$"""
+                    /// <summary>{{DisplayName}}</summary>
+                    public required {{CsType}} {{PhysicalName}} { get; set; }
+                    """;
+            }
         }
         #endregion メンバー
     }
