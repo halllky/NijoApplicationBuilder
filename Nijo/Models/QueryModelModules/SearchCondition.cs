@@ -412,7 +412,7 @@ namespace Nijo.Models.QueryModelModules {
 
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _rm;
             string IInstancePropertyMetadata.PropertyName => _rm.PhysicalName;
-            bool IInstanceStructurePropertyMetadata.IsArray => _rm is ChildrenAggregate;
+            bool IInstanceStructurePropertyMetadata.IsArray => false; // 検索条件なのでChildrenであっても配列ではない
 
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
                 return ((IInstancePropertyOwnerMetadata)ChildFilter).GetMembers();
