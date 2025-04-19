@@ -138,7 +138,7 @@ namespace Nijo.Models.QueryModelModules {
                     /// </summary>
                     public partial class {{CsClassName}} {
                     {{GetMembers().SelectTextTemplate(member => $$"""
-                        public {{member.CsType}}? {{member.PhysicalName}} { get; set; }
+                        {{WithIndent(member.RenderDeclaring(), "    ")}}
                     """)}}
                     }
                     """;
@@ -197,6 +197,7 @@ namespace Nijo.Models.QueryModelModules {
         internal interface IRefDisplayDataMember : IInstancePropertyMetadata {
             string PhysicalName { get; }
             string CsType { get; }
+            string RenderDeclaring();
         }
 
         /// <summary>
@@ -215,6 +216,12 @@ namespace Nijo.Models.QueryModelModules {
             IValueMemberType IInstanceValuePropertyMetadata.Type => Member.Type;
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Member;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
+
+            string IRefDisplayDataMember.RenderDeclaring() {
+                return $$"""
+                    public {{CsType}}? {{PhysicalName}} { get; set; }
+                    """;
+            }
         }
 
         /// <summary>
@@ -233,6 +240,12 @@ namespace Nijo.Models.QueryModelModules {
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _member;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
+
+            string IRefDisplayDataMember.RenderDeclaring() {
+                return $$"""
+                    public {{CsType}} {{PhysicalName}} { get; set; } = new();
+                    """;
+            }
         }
 
         /// <summary>
@@ -252,6 +265,12 @@ namespace Nijo.Models.QueryModelModules {
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _member;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
+
+            string IRefDisplayDataMember.RenderDeclaring() {
+                return $$"""
+                    public {{CsType}} {{PhysicalName}} { get; set; } = new();
+                    """;
+            }
         }
 
         /// <summary>
@@ -271,6 +290,12 @@ namespace Nijo.Models.QueryModelModules {
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _member;
             bool IInstanceStructurePropertyMetadata.IsArray => true;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
+
+            string IRefDisplayDataMember.RenderDeclaring() {
+                return $$"""
+                    public List<{{CsType}}> {{PhysicalName}} { get; set; } = [];
+                    """;
+            }
         }
 
         /// <summary>
@@ -290,6 +315,12 @@ namespace Nijo.Models.QueryModelModules {
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _parent;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
+
+            string IRefDisplayDataMember.RenderDeclaring() {
+                return $$"""
+                    public {{CsType}} {{PhysicalName}} { get; set; } = new();
+                    """;
+            }
         }
         #endregion Entry以外のメンバー
     }

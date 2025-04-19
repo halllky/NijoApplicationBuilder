@@ -161,7 +161,7 @@ namespace Nijo.Models.QueryModelModules {
 
                 return $$"""
                     /// <summary>{{_children.DisplayName}}</summary>
-                    public List<{{sr.CsClassName}}> {{PhysicalName}} { get; set; } = [];
+                    public List<{{sr.CsClassName}}> {{PhysicalName}} { get; set; } = new();
                     """;
             }
         }
