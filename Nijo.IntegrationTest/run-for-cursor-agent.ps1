@@ -45,7 +45,7 @@ if ($args.Count -eq 0) {
         $env:TEST_CASE = $patternName
         
         # 個別のパターンに対してテストを実行
-        $testFilter = "FullyQualifiedName~TestXmlPattern"
+        $testFilter = "FullyQualifiedName~Nijo.IntegrationTest.DataPatternTest.コンパイルエラーチェック"
         $resultFileName = "DataPatternTest_${patternName}_Results.trx"
         
         Write-Host "テストフィルター: $testFilter"
@@ -75,7 +75,7 @@ if ($args.Count -eq 0) {
     $env:TEST_CASE = $patternName
     
     # テスト実行（詳細出力とログ記録）
-    $testFilter = "FullyQualifiedName~TestXmlPattern"
+    $testFilter = "FullyQualifiedName~Nijo.IntegrationTest.DataPatternTest.コンパイルエラーチェック"
     $resultFileName = "DataPatternTest_${patternName}_Results.trx"
     
     Write-Host "テストフィルター: $testFilter"
@@ -93,6 +93,7 @@ if ($args.Count -eq 0) {
         Write-Host ""
         Write-Host "テスト結果は以下のディレクトリに保存されました:"
         Write-Host $resultDir
+        Write-Host "エラーの詳細は $resultDir\$resultFileName を確認してください。"
     } else {
         Write-Host ""
         Write-Host "★★★ テストが正常に完了しました ★★★"
