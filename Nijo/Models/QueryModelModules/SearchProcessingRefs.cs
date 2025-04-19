@@ -168,7 +168,7 @@ namespace Nijo.Models.QueryModelModules {
                         var countTask = filtered.CountAsync();
                         var searchTask = converted.ToArrayAsync();
 
-                        // UIのパフォーマンスのため並列で実行
+                        // 応答速度を上げるため2つのクエリを並列で実行する
                         await Task.WhenAll(countTask, searchTask);
 
                         loaded = await searchTask;
