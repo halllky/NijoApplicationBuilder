@@ -115,6 +115,41 @@ public class DataPatternTest {
         Assert.Pass($"{fileName} のテストが完了しました");
     }
 
+    [Test]
+    [TestCaseSource(nameof(GetXmlFilePaths))]
+    [Category("DataPattern")]
+    public void 各構造体のオブジェクトパスが正しく生成されるか確認(string fileName) {
+        var implementor = GetImplementor(fileName)
+            ?? throw new InvalidOperationException(
+                $"'{fileName}' の確認用クラスが定義されていません。" +
+                $"Implementorsフォルダにこのパターンと対応するクラスが用意されているか確認してください。");
+
+        var workspaceRoot = Path.GetFullPath(Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", ".."));
+        var dataPatternsDir = Path.Combine(workspaceRoot, "DataPatterns");
+        var sourceXmlPath = Path.Combine(dataPatternsDir, $"{fileName}.xml");
+        var schemaXml = XDocument.Load(sourceXmlPath);
+        var parseContext = new SchemaParseContext(schemaXml, SchemaParseRule.Default());
+
+        // TryBuildSchemaメソッドを使用してApplicationSchemaのインスタンスを生成
+        if (!parseContext.TryBuildSchema(schemaXml, out var appSchema, _logger)) {
+            Assert.Fail("スキーマのビルドに失敗したため、ダンプを生成できませんでした。");
+            return;
+        }
+
+        // パターンごとに期待結果と突合する
+        Assert.Multiple(() => {
+            // SearchResult
+            var allMembers = appSchema
+                .GetRootAggregates()
+                .Select(root => new Variable(root.PhysicalName, new SearchResult(root)))
+                .SelectMany(variable => variable.CreatePropertiesRecursively())
+                .ToArray();
+            implementor.AssertSearchResultMemberPath(allMembers);
+        });
+
+        Assert.Pass($"{fileName} のテストが完了しました");
+    }
+
     /// <summary>
     /// XMLファイルごとのテスト
     /// </summary>

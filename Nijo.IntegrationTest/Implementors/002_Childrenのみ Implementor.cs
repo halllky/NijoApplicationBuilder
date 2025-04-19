@@ -1,3 +1,5 @@
+using Nijo.CodeGenerating.Helpers;
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,5 +30,16 @@ partial class OverridedApplicationService {
         });
     }
 }";
+    }
+
+    public override void AssertSearchResultMemberPath(IInstanceProperty[] properties) {
+        Assert.That(properties, Has.Length.EqualTo(5));
+
+        AssertExists<InstanceValueProperty>(properties, "親集約.親集約ID");
+        AssertExists<InstanceValueProperty>(properties, "親集約.親集約名");
+        AssertExists<InstanceStructureProperty>(properties, "親集約.子集約");
+
+        AssertExists<InstanceValueProperty>(properties, "子集約.子集約ID");
+        AssertExists<InstanceValueProperty>(properties, "子集約.子集約名");
     }
 }
