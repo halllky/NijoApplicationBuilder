@@ -360,8 +360,9 @@ namespace Nijo.Models.QueryModelModules {
                                         """;
 
                                 } else if (member is DisplayDataRef.RefDisplayDataChildrenMember children) {
+                                    var searchResultChildren = new SearchResult.SearchResultChildrenMember(children.ChildrenAggregate);
                                     var property = rightMembers.GetValueOrDefault(children.ChildrenAggregate.ToMappingKey());
-                                    var loopVar = new Variable(children.ChildrenAggregate.GetLoopVarName(), children);
+                                    var loopVar = new Variable(children.ChildrenAggregate.GetLoopVarName(), searchResultChildren);
 
                                     // 配列中に登場する変数の代入元はループ変数が優先
                                     var overridedDict = new Dictionary<SchemaNodeIdentity, IInstanceProperty>(rightMembers);
