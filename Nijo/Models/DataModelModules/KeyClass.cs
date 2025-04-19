@@ -132,7 +132,7 @@ namespace Nijo.Models.DataModelModules {
                     foreach (var member in valueMembers) {
                         yield return KeyValuePair.Create(
                             member.Metadata.SchemaPathNode.ToMappingKey(),
-                            member.GetJoinedPathFromInstance("?."));
+                            member.GetJoinedPathFromInstance(E_CsTs.CSharp, "?."));
                     }
 
                     // 左辺の集約が表れたら終了（左辺の子孫の集約はそれと対応する右辺の変数を定義しなくてもよい）
@@ -211,7 +211,7 @@ namespace Nijo.Models.DataModelModules {
                         var loopVar = new Variable(children.GetLoopVarName(), childMetadata);
 
                         return $$"""
-                            foreach (var {{loopVar.Name}} in {{childProperty.GetJoinedPathFromInstance()}}) {
+                            foreach (var {{loopVar.Name}} in {{childProperty.GetJoinedPathFromInstance(E_CsTs.CSharp)}}) {
                                 {{WithIndent(RenderReturnOrForEach(childProperty, indexInAncestorArray + 1, true), "    ")}}
                             }
                             """;

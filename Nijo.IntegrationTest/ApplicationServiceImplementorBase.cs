@@ -1,3 +1,4 @@
+using Nijo.CodeGenerating;
 using Nijo.CodeGenerating.Helpers;
 using NUnit.Framework;
 using System.Xml.Linq;
@@ -31,7 +32,7 @@ public abstract class ApplicationServiceImplementorBase {
     /// <param name="properties">全プロパティ</param>
     /// <param name="expectedPath">大元の変数からのパスの期待結果</param>
     protected static void AssertExists<TPropertyType>(IEnumerable<IInstanceProperty> properties, string expectedPath) where TPropertyType : IInstanceProperty {
-        Assert.That(properties.Count(p => p is TPropertyType && p.GetJoinedPathFromInstance() == expectedPath), Is.EqualTo(1));
+        Assert.That(properties.Count(p => p is TPropertyType && p.GetJoinedPathFromInstance(E_CsTs.CSharp) == expectedPath), Is.EqualTo(1), $"プロパティが無い: {expectedPath}");
     }
     #endregion ユーティリティ
 }

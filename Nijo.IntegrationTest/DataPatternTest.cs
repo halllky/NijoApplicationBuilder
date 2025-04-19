@@ -145,6 +145,14 @@ public class DataPatternTest {
                 .SelectMany(variable => variable.CreatePropertiesRecursively())
                 .ToArray();
             implementor.AssertSearchResultMemberPath(allMembers);
+
+            // 調査用
+            TestContext.Out.WriteLine($$"""
+                実際の全メンバーパス:
+                {{allMembers.SelectTextTemplate(m => $$"""
+                {{m.GetJoinedPathFromInstance(E_CsTs.CSharp)}}
+                """)}}
+                """);
         });
 
         Assert.Pass($"{fileName} のテストが完了しました");

@@ -44,8 +44,8 @@ internal class ValueObjectMember : IValueMemberType {
         RenderTsNewObjectFunctionValue = () => "undefined",
         RenderFiltering = ctx => {
             var query = ctx.Query.Root.Name;
-            var fullpathNullable = ctx.SearchCondition.GetJoinedPathFromInstance("?.");
-            var fullpathNotNull = ctx.SearchCondition.GetJoinedPathFromInstance(".");
+            var fullpathNullable = ctx.SearchCondition.GetJoinedPathFromInstance(E_CsTs.CSharp, "?.");
+            var fullpathNotNull = ctx.SearchCondition.GetJoinedPathFromInstance(E_CsTs.CSharp, ".");
 
             var queryFullPath = ctx.Query.GetFlattenArrayPath(E_CsTs.CSharp, out var isMany);
             var queryOwnerFullPath = queryFullPath.SkipLast(1);

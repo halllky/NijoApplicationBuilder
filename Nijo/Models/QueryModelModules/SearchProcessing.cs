@@ -340,7 +340,7 @@ namespace Nijo.Models.QueryModelModules {
                         var right = rightMembers[vm.Member.ToMappingKey()];
 
                         yield return $$"""
-                            {{member.PhysicalName}} = {{vm.Member.Type.RenderCastToDomainType()}}{{right.GetJoinedPathFromInstance("!.")}},
+                            {{member.PhysicalName}} = {{vm.Member.Type.RenderCastToDomainType()}}{{right.GetJoinedPathFromInstance(E_CsTs.CSharp, "!.")}},
                             """;
 
                     } else if (member is DisplayData.DisplayDataRefMember refTo) {
@@ -356,7 +356,7 @@ namespace Nijo.Models.QueryModelModules {
                                     var property = rightMembers.GetValueOrDefault(vm.Member.ToMappingKey());
 
                                     yield return $$"""
-                                        {{member.PhysicalName}} = {{vm.Member.Type.RenderCastToDomainType()}}{{property?.GetJoinedPathFromInstance("!.")}},
+                                        {{member.PhysicalName}} = {{vm.Member.Type.RenderCastToDomainType()}}{{property?.GetJoinedPathFromInstance(E_CsTs.CSharp, "!.")}},
                                         """;
 
                                 } else if (member is DisplayDataRef.RefDisplayDataChildrenMember children) {
@@ -370,7 +370,7 @@ namespace Nijo.Models.QueryModelModules {
                                     }
 
                                     yield return $$"""
-                                        {{member.PhysicalName}} = {{property?.GetJoinedPathFromInstance("!.")}}.Select({{loopVar.Name}} => new {{children.CsClassName}} {
+                                        {{member.PhysicalName}} = {{property?.GetJoinedPathFromInstance(E_CsTs.CSharp, "!.")}}.Select({{loopVar.Name}} => new {{children.CsClassName}} {
                                             {{WithIndent(RenderRefMember(children, loopVar, overridedDict), "    ")}}
                                         }).ToList(),
                                         """;

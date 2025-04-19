@@ -236,8 +236,11 @@ public static partial class CodeGeneratingHelperExtensions {
     /// <c>x.Prop1?.Prop2?.Prop3?.Prop4</c> のような数珠つなぎのソースコードのレンダリングに使用します。
     /// </summary>
     /// <param name="nullableSeparator">null許容メンバーのパスの結合に使われる。 "?." または "!." を代入</param>
-    public static string GetJoinedPathFromInstance(this IInstanceProperty property, string nullableSeparator = ".") {
+    public static string GetJoinedPathFromInstance(this IInstanceProperty property, E_CsTs csts, string nullableSeparator = ".") {
         var path = new StringBuilder();
+        var isArray = false;
+        var select = csts == E_CsTs.CSharp ? "Select" : "map";
+        var selectMany = csts == E_CsTs.CSharp ? "SelectMany" : "flatMap";
 
         // パス作成（変数部分）
         path.Append(property.Root.Name);
@@ -257,10 +260,24 @@ public static partial class CodeGeneratingHelperExtensions {
                 path.Append('.');
             }
 
-            // メンバー名
-            path.Append(prop.Metadata.PropertyName);
+            // このメンバーの多重度がひとつ前のインスタンスに対して1対多か否か
+            var isOneToMany = prop is InstanceStructureProperty structureProperty && structureProperty.Metadata.IsArray;
 
-            previous = prop;
+            // メンバー名
+            if (isOneToMany) {
+                path.Append(isArray
+                    ? $"{selectMany}(e => e.{prop.Metadata.PropertyName})"
+                    : $"{select}(e => e.{prop.Metadata.PropertyName})");
+            } else {
+                path.Append(isArray
+                    ? $"{select}(e => e.{prop.Metadata.PropertyName})"
+                    : $"{prop.Metadata.PropertyName}");
+            }
+
+            // このメンバーが1対多なら以降のパスは Select, SelectMany（JSの場合は map, flatMap）になる
+            if (!isArray && isOneToMany) {
+                isArray = true;
+            }
         }
         return path.ToString();
     }
