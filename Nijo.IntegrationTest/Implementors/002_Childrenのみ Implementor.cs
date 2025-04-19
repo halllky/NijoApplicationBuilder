@@ -39,7 +39,7 @@ partial class OverridedApplicationService {
         AssertExists<InstanceValueProperty>(properties, "親集約.親集約名");
         AssertExists<InstanceStructureProperty>(properties, "親集約.子集約");
 
-        AssertExists<InstanceValueProperty>(properties, "子集約.子集約ID");
-        AssertExists<InstanceValueProperty>(properties, "子集約.子集約名");
+        AssertExists<InstanceValueProperty>(properties, "親集約.子集約.Select(e => e.子集約ID)");
+        AssertExists<InstanceValueProperty>(properties, "親集約.子集約.Select(e => e.子集約名)");
     }
 }

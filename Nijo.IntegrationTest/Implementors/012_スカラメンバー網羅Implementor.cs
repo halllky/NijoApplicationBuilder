@@ -99,19 +99,19 @@ public class ScalarMemberImplementor : ApplicationServiceImplementorBase {
         AssertExists<InstanceStructureProperty>(properties, "親集約.Children");
 
         // Childrenの子要素
-        AssertExists<InstanceValueProperty>(properties, "Children.ChildrenId");
-        AssertExists<InstanceValueProperty>(properties, "Children.単語");
-        AssertExists<InstanceValueProperty>(properties, "Children.文章");
-        AssertExists<InstanceValueProperty>(properties, "Children.整数");
-        AssertExists<InstanceValueProperty>(properties, "Children.実数");
-        AssertExists<InstanceValueProperty>(properties, "Children.日付時刻");
-        AssertExists<InstanceValueProperty>(properties, "Children.日付");
-        AssertExists<InstanceValueProperty>(properties, "Children.年月");
-        AssertExists<InstanceValueProperty>(properties, "Children.年");
-        AssertExists<InstanceValueProperty>(properties, "Children.参照_参照先ID");
-        AssertExists<InstanceValueProperty>(properties, "Children.参照_Name");
-        AssertExists<InstanceValueProperty>(properties, "Children.真偽値");
-        AssertExists<InstanceValueProperty>(properties, "Children.列挙体");
+        AssertExists<InstanceValueProperty>(properties, "親集約.Children.Select(e => e.ChildrenId)");
+        AssertExists<InstanceValueProperty>(properties, "親集約.Children.Select(e => e.単語)");
+        AssertExists<InstanceValueProperty>(properties, "親集約.Children.Select(e => e.文章)");
+        AssertExists<InstanceValueProperty>(properties, "親集約.Children.Select(e => e.整数)");
+        AssertExists<InstanceValueProperty>(properties, "親集約.Children.Select(e => e.実数)");
+        AssertExists<InstanceValueProperty>(properties, "親集約.Children.Select(e => e.日付時刻)");
+        AssertExists<InstanceValueProperty>(properties, "親集約.Children.Select(e => e.日付)");
+        AssertExists<InstanceValueProperty>(properties, "親集約.Children.Select(e => e.年月)");
+        AssertExists<InstanceValueProperty>(properties, "親集約.Children.Select(e => e.年)");
+        AssertExists<InstanceValueProperty>(properties, "親集約.Children.Select(e => e.参照_参照先ID)");
+        AssertExists<InstanceValueProperty>(properties, "親集約.Children.Select(e => e.参照_Name)");
+        AssertExists<InstanceValueProperty>(properties, "親集約.Children.Select(e => e.真偽値)");
+        AssertExists<InstanceValueProperty>(properties, "親集約.Children.Select(e => e.列挙体)");
 
         // 参照先関連
         AssertExists<InstanceValueProperty>(properties, "参照先.参照先ID");

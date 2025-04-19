@@ -238,7 +238,7 @@ public static partial class CodeGeneratingHelperExtensions {
     /// <param name="nullableSeparator">null許容メンバーのパスの結合に使われる。 "?." または "!." を代入</param>
     public static string GetJoinedPathFromInstance(this IInstanceProperty property, E_CsTs csts, string nullableSeparator = ".") {
         var path = new StringBuilder();
-        var isArray = false;
+        var previousIsArray = false;
         var select = csts == E_CsTs.CSharp ? "Select" : "map";
         var selectMany = csts == E_CsTs.CSharp ? "SelectMany" : "flatMap";
 
@@ -247,7 +247,7 @@ public static partial class CodeGeneratingHelperExtensions {
 
         // パス作成（プロパティ部分）
         var previous = (IInstanceProperty?)null;
-        foreach (var prop in property.GetPathFromInstance()) {
+        foreach (var current in property.GetPathFromInstance()) {
             // セパレータ
             if (previous == null) {
                 // previousは変数
@@ -261,22 +261,20 @@ public static partial class CodeGeneratingHelperExtensions {
             }
 
             // このメンバーの多重度がひとつ前のインスタンスに対して1対多か否か
-            var isOneToMany = prop is InstanceStructureProperty structureProperty && structureProperty.Metadata.IsArray;
+            var currentIsArray = current is InstanceStructureProperty structureProperty && structureProperty.Metadata.IsArray;
 
             // メンバー名
-            if (isOneToMany) {
-                path.Append(isArray
-                    ? $"{selectMany}(e => e.{prop.Metadata.PropertyName})"
-                    : $"{select}(e => e.{prop.Metadata.PropertyName})");
+            if (previousIsArray) {
+                path.Append(currentIsArray
+                    ? $"{selectMany}(e => e.{current.Metadata.PropertyName})"
+                    : $"{select}(e => e.{current.Metadata.PropertyName})");
             } else {
-                path.Append(isArray
-                    ? $"{select}(e => e.{prop.Metadata.PropertyName})"
-                    : $"{prop.Metadata.PropertyName}");
+                path.Append(current.Metadata.PropertyName);
             }
 
             // このメンバーが1対多なら以降のパスは Select, SelectMany（JSの場合は map, flatMap）になる
-            if (!isArray && isOneToMany) {
-                isArray = true;
+            if (!previousIsArray && currentIsArray) {
+                previousIsArray = true;
             }
         }
         return path.ToString();

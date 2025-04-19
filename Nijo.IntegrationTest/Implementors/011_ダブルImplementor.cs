@@ -63,20 +63,20 @@ public partial class OverridedApplicationService {
 
         // 子の子配列（Children）
         AssertExists<InstanceStructureProperty>(properties, "ルート.子_子の子配列");
-        AssertExists<InstanceValueProperty>(properties, "子の子配列.ID4");
-        AssertExists<InstanceValueProperty>(properties, "子の子配列.名前4");
+        AssertExists<InstanceValueProperty>(properties, "ルート.子_子の子配列.Select(e => e.ID4)");
+        AssertExists<InstanceValueProperty>(properties, "ルート.子_子の子配列.Select(e => e.名前4)");
 
         // 子配列関連（Children）
         AssertExists<InstanceStructureProperty>(properties, "ルート.子配列");
-        AssertExists<InstanceValueProperty>(properties, "子配列.ID7");
-        AssertExists<InstanceValueProperty>(properties, "子配列.名前7");
-        AssertExists<InstanceValueProperty>(properties, "子配列.子配列の子_ID8");
-        AssertExists<InstanceValueProperty>(properties, "子配列.子配列の子_名前8");
+        AssertExists<InstanceValueProperty>(properties, "ルート.子配列.Select(e => e.ID7)");
+        AssertExists<InstanceValueProperty>(properties, "ルート.子配列.Select(e => e.名前7)");
+        AssertExists<InstanceValueProperty>(properties, "ルート.子配列.Select(e => e.子配列の子_ID8)");
+        AssertExists<InstanceValueProperty>(properties, "ルート.子配列.Select(e => e.子配列の子_名前8)");
 
         // 子配列の子配列（Children）
-        AssertExists<InstanceStructureProperty>(properties, "子配列.子配列の子配列");
-        AssertExists<InstanceValueProperty>(properties, "子配列の子配列.ID9");
-        AssertExists<InstanceValueProperty>(properties, "子配列の子配列.名前9");
+        AssertExists<InstanceStructureProperty>(properties, "ルート.子配列.SelectMany(e => e.子配列の子配列)");
+        AssertExists<InstanceValueProperty>(properties, "ルート.子配列.SelectMany(e => e.子配列の子配列).Select(e => e.ID9)");
+        AssertExists<InstanceValueProperty>(properties, "ルート.子配列.SelectMany(e => e.子配列の子配列).Select(e => e.名前9)");
 
         // ルートを参照1関連
         AssertExists<InstanceValueProperty>(properties, "ルートを参照1.ルート子配列子配列_ID9");
@@ -140,12 +140,12 @@ public partial class OverridedApplicationService {
         AssertExists<InstanceStructureProperty>(properties, "ルートを参照2.参照2の子配列");
 
         // 参照2の子配列関連
-        AssertExists<InstanceValueProperty>(properties, "参照2の子配列.参照2子配列ID");
-        AssertExists<InstanceValueProperty>(properties, "参照2の子配列.名前202");
-        AssertExists<InstanceStructureProperty>(properties, "参照2の子配列.参照2の子配列の子配列");
+        AssertExists<InstanceValueProperty>(properties, "ルートを参照2.参照2の子配列.Select(e => e.参照2子配列ID)");
+        AssertExists<InstanceValueProperty>(properties, "ルートを参照2.参照2の子配列.Select(e => e.名前202)");
+        AssertExists<InstanceStructureProperty>(properties, "ルートを参照2.参照2の子配列.SelectMany(e => e.参照2の子配列の子配列)");
 
         // 参照2の子配列の子配列関連
-        AssertExists<InstanceValueProperty>(properties, "参照2の子配列の子配列.参照2子配列子配列ID");
-        AssertExists<InstanceValueProperty>(properties, "参照2の子配列の子配列.名前203");
+        AssertExists<InstanceValueProperty>(properties, "ルートを参照2.参照2の子配列.SelectMany(e => e.参照2の子配列の子配列).Select(e => e.参照2子配列子配列ID)");
+        AssertExists<InstanceValueProperty>(properties, "ルートを参照2.参照2の子配列.SelectMany(e => e.参照2の子配列の子配列).Select(e => e.名前203)");
     }
 }

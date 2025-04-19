@@ -57,9 +57,9 @@ public partial class OverridedApplicationService {
         AssertExists<InstanceStructureProperty>(properties, "受注.明細");
 
         // 明細の子要素
-        AssertExists<InstanceValueProperty>(properties, "明細.連番");
-        AssertExists<InstanceValueProperty>(properties, "明細.商品名");
-        AssertExists<InstanceValueProperty>(properties, "明細.数量");
+        AssertExists<InstanceValueProperty>(properties, "受注.明細.Select(e => e.連番)");
+        AssertExists<InstanceValueProperty>(properties, "受注.明細.Select(e => e.商品名)");
+        AssertExists<InstanceValueProperty>(properties, "受注.明細.Select(e => e.数量)");
 
         // 納品関連
         AssertExists<InstanceValueProperty>(properties, "納品.受注明細_連番");
@@ -74,8 +74,8 @@ public partial class OverridedApplicationService {
         AssertExists<InstanceStructureProperty>(properties, "納品.備考");
 
         // 備考の子要素
-        AssertExists<InstanceValueProperty>(properties, "備考.備考連番");
-        AssertExists<InstanceValueProperty>(properties, "備考.本文");
+        AssertExists<InstanceValueProperty>(properties, "納品.備考.Select(e => e.備考連番)");
+        AssertExists<InstanceValueProperty>(properties, "納品.備考.Select(e => e.本文)");
 
         // 請求関連
         AssertExists<InstanceValueProperty>(properties, "請求.納品_受注明細_連番");

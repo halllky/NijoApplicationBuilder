@@ -56,10 +56,8 @@ public partial class OverridedApplicationService {
         AssertExists<InstanceStructureProperty>(properties, "営業区.部署");
 
         // 部署関連
-        AssertExists<InstanceValueProperty>(properties, "部署.部署ID");
-        AssertExists<InstanceValueProperty>(properties, "部署.部署名");
-        AssertExists<InstanceValueProperty>(properties, "部署.Parent_営業区ID");
-        AssertExists<InstanceValueProperty>(properties, "部署.Parent_営業区名");
+        AssertExists<InstanceValueProperty>(properties, "営業区.部署.Select(e => e.部署ID)");
+        AssertExists<InstanceValueProperty>(properties, "営業区.部署.Select(e => e.部署名)");
 
         // 依頼関連
         AssertExists<InstanceValueProperty>(properties, "依頼.依頼番号");
