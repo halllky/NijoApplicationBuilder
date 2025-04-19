@@ -7,14 +7,14 @@ Write-Host "===================================================="
 Write-Host ""
 
 # テスト結果出力ディレクトリ
-$resultDir = Join-Path $PSScriptRoot "TestResults"
+$resultDir = Join-Path $PSScriptRoot "Nijo.IntegrationTest" | Join-Path -ChildPath "TestResults"
 if (-not (Test-Path $resultDir)) {
     New-Item -ItemType Directory -Path $resultDir | Out-Null
 }
 
 # テストプロジェクトのビルド
 Write-Host "ビルドを実行しています..."
-dotnet build $PSScriptRoot\Nijo.IntegrationTest.csproj -c Debug | Out-File "$resultDir\Build_Results.txt"
+dotnet build $PSScriptRoot\Nijo.IntegrationTest\Nijo.IntegrationTest.csproj -c Debug | Out-File "$resultDir\Build_Results.txt"
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host ""
@@ -33,7 +33,7 @@ if ($args.Count -eq 0) {
     Write-Host ""
     
     # DataPatternsディレクトリからXMLファイルを取得
-    $xmlFiles = Get-ChildItem -Path (Join-Path $PSScriptRoot "DataPatterns") -Filter "*.xml"
+    $xmlFiles = Get-ChildItem -Path (Join-Path $PSScriptRoot "Nijo.IntegrationTest" | Join-Path -ChildPath "DataPatterns") -Filter "*.xml"
     
     foreach ($xmlFile in $xmlFiles) {
         $patternName = [System.IO.Path]::GetFileNameWithoutExtension($xmlFile.Name)
@@ -52,7 +52,7 @@ if ($args.Count -eq 0) {
         Write-Host "結果ファイル: $resultFileName"
         Write-Host ""
         
-        $testResult = dotnet test $PSScriptRoot\Nijo.IntegrationTest.csproj --filter "$testFilter" -v detailed --logger "console;verbosity=detailed" --logger "trx;LogFileName=$resultFileName" --results-directory $resultDir
+        $testResult = dotnet test $PSScriptRoot\Nijo.IntegrationTest\Nijo.IntegrationTest.csproj --filter "$testFilter" -v detailed --logger "console;verbosity=detailed" --logger "trx;LogFileName=$resultFileName" --results-directory $resultDir
         
         if ($LASTEXITCODE -ne 0) {
             Write-Host "★ '$patternName' のテスト実行中にエラーが発生しました"
@@ -85,7 +85,7 @@ if ($args.Count -eq 0) {
     Write-Host "テストを実行しています（詳細モード）..."
     Write-Host ""
     
-    $testResult = dotnet test $PSScriptRoot\Nijo.IntegrationTest.csproj --filter "$testFilter" -v detailed --logger "console;verbosity=detailed" --logger "trx;LogFileName=$resultFileName" --results-directory $resultDir
+    $testResult = dotnet test $PSScriptRoot\Nijo.IntegrationTest\Nijo.IntegrationTest.csproj --filter "$testFilter" -v detailed --logger "console;verbosity=detailed" --logger "trx;LogFileName=$resultFileName" --results-directory $resultDir
     
     if ($LASTEXITCODE -ne 0) {
         Write-Host ""

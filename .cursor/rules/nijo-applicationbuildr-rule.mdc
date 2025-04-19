@@ -12,9 +12,9 @@ alwaysApply: true
 - 参照しようとしているフォルダに `README.md` という名前のファイルがある場合、 `README.md` を参照してください。
 
 ## 動作確認をおこなうときの必須事項
-- 実装した結果が正しいかを確認するときは [run-for-cursor-agent.ps1](mdc:Nijo.IntegrationTest/run-for-cursor-agent.ps1) を使用してください。
-- 全パターンではなく `Nijo.IntegrationTest/DataPatterns` にある特定のパターンのみテストする場合は `run-for-cursor-agent.ps1 000_単純な集約` のように拡張子抜きのxmlファイル名を指定してください。
-- [run-for-cursor-agent.ps1](mdc:Nijo.IntegrationTest/run-for-cursor-agent.ps1) の詳細な結果は [DataPatternTest_Results.trx](mdc:Nijo.IntegrationTest/TestResults/DataPatternTest_Results.trx) に出力されています。エラーの詳細を確認する際はまずこのファイルを確認してください。
+- 実装した結果が正しいかを確認するときは [TEST_FOR_CURSOR_AGENT_COMPILE.ps1](mdc:TEST_FOR_CURSOR_AGENT_COMPILE.ps1) を使用してください。
+- 全パターンではなく `Nijo.IntegrationTest/DataPatterns` にある特定のパターンのみテストする場合は `.\TEST_FOR_CURSOR_AGENT_COMPILE.ps1 000_単純な集約` のように拡張子抜きのxmlファイル名を指定してください。
+- [TEST_FOR_CURSOR_AGENT_COMPILE.ps1](mdc:TEST_FOR_CURSOR_AGENT_COMPILE.ps1) の詳細な結果は [DataPatternTest_Results.trx](mdc:Nijo.IntegrationTest/TestResults/DataPatternTest_Results.trx) に出力されています。エラーの詳細を確認する際はまずこのファイルを確認してください。
 
 ## エラー原因調査するときの注意事項
 - コンパイルエラーが出ているファイルが [OverridedApplicationService.cs](mdc:自動テストで作成されたプロジェクト/Core/OverridedApplicationService.cs) の場合
