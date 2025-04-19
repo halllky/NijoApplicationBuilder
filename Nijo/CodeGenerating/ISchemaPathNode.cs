@@ -67,24 +67,6 @@ namespace Nijo.CodeGenerating {
         }
 
         /// <summary>
-        /// パスを後ろから辿り直近のChildren以降のみに絞り込む。
-        /// パス内にChildrenが無い場合は引数のパスがそのまま返される。
-        /// </summary>
-        public static IEnumerable<ISchemaPathNode> SinceNearestChildren(this IEnumerable<ISchemaPathNode> path) {
-            var result = new List<ISchemaPathNode>();
-            var previousIsChildren = false;
-
-            foreach (var node in path) {
-                if (previousIsChildren) result.Clear();
-
-                result.Add(node);
-
-                if (node is ChildrenAggregate) previousIsChildren = true;
-            }
-            return result;
-        }
-
-        /// <summary>
         /// パスを最初にref-toが出現した箇所以降のみに絞り込む。
         /// パス内にref-toが無い場合は空配列を返す
         /// </summary>

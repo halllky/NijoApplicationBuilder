@@ -93,10 +93,10 @@ public partial class OverridedApplicationService {
         AssertExists<InstanceStructureProperty>(properties, "見積書.定型欄");
 
         AssertExists<InstanceValueProperty>(properties, "見積書.定型欄.Select(e => e.欄ID)");
-        AssertExists<InstanceValueProperty>(properties, "見積書.定型欄.Select(e => e.セクションテンプレート_セクションID)");
-        AssertExists<InstanceValueProperty>(properties, "見積書.定型欄.Select(e => e.セクションテンプレート_セクション名)");
         AssertExists<InstanceValueProperty>(properties, "見積書.定型欄.Select(e => e.セクションテンプレート_Parent_テンプレートID)");
         AssertExists<InstanceValueProperty>(properties, "見積書.定型欄.Select(e => e.セクションテンプレート_Parent_テンプレート名)");
+        AssertExists<InstanceValueProperty>(properties, "見積書.定型欄.Select(e => e.セクションテンプレート_セクションID)");
+        AssertExists<InstanceValueProperty>(properties, "見積書.定型欄.Select(e => e.セクションテンプレート_セクション名)");
         AssertExists<InstanceValueProperty>(properties, "見積書.定型欄.Select(e => e.文)");
 
         // 見積回答関連
@@ -104,9 +104,15 @@ public partial class OverridedApplicationService {
         AssertExists<InstanceValueProperty>(properties, "見積回答.見積書_タイトル");
         AssertExists<InstanceValueProperty>(properties, "見積回答.見積書_発行日時");
         AssertExists<InstanceStructureProperty>(properties, "見積回答.見積書_定型欄");
+        AssertExists<InstanceValueProperty>(properties, "見積回答.見積書_定型欄.Select(e => e.欄ID)");
+        AssertExists<InstanceValueProperty>(properties, "見積回答.見積書_定型欄.Select(e => e.セクションテンプレート_Parent_テンプレートID)");
+        AssertExists<InstanceValueProperty>(properties, "見積回答.見積書_定型欄.Select(e => e.セクションテンプレート_Parent_テンプレート名)");
+        AssertExists<InstanceValueProperty>(properties, "見積回答.見積書_定型欄.Select(e => e.セクションテンプレート_セクションID)");
+        AssertExists<InstanceValueProperty>(properties, "見積回答.見積書_定型欄.Select(e => e.セクションテンプレート_セクション名)");
+        AssertExists<InstanceValueProperty>(properties, "見積回答.見積書_定型欄.Select(e => e.文)");
         AssertExists<InstanceValueProperty>(properties, "見積回答.返答日");
-        AssertExists<InstanceStructureProperty>(properties, "見積回答.コメント");
 
+        AssertExists<InstanceStructureProperty>(properties, "見積回答.コメント");
         AssertExists<InstanceValueProperty>(properties, "見積回答.コメント.Select(e => e.対象_Parent_見積書ID)");
         AssertExists<InstanceValueProperty>(properties, "見積回答.コメント.Select(e => e.対象_Parent_タイトル)");
         AssertExists<InstanceValueProperty>(properties, "見積回答.コメント.Select(e => e.対象_Parent_発行日時)");

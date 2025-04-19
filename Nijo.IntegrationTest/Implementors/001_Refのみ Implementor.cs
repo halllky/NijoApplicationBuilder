@@ -36,8 +36,8 @@ partial class OverridedApplicationService {
         return DbContext.参照元DbSet.Select(e => new 参照元SearchResult {
             参照元集約ID = e.参照元集約ID,
             参照元集約名 = e.参照元集約名,
-            参照_参照先_参照先集約ID = e.参照!.参照先集約ID,
-            参照_参照先_参照先集約名 = e.参照!.参照先集約名,
+            参照_参照先集約ID = e.参照!.参照先集約ID,
+            参照_参照先集約名 = e.参照!.参照先集約名,
             Version = (int)e.Version!,
         });
     }

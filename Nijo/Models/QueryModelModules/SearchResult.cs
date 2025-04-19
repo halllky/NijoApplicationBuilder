@@ -28,16 +28,16 @@ namespace Nijo.Models.QueryModelModules {
     ///         子のID = "xxx",
     ///     },
     /// };
-    /// 
+    ///
     /// // SearchResultにおける親と1対1対応のオブジェクトの構造
     /// var searchResult = new なんらかのSearchResult {
     ///     親のID = "xxx",
     ///     子_子のID = "xxx",
     /// };
     /// </code>
-    /// 
+    ///
     /// 各構造ごとの詳細なルールは以下。
-    /// 
+    ///
     /// * ValueMember: 親集約のプロパティとして定義される。
     /// * Child: 親と別のクラスとしてではなく、 `(親のインスタンス).(Childの物理名)_(ValueMemberの物理名)` という風にアンダースコアつながりで親の直下のメンバーとして生成される。
     /// * Children: 親と別のクラスとして定義される。プロパティのパスは、Childrenが起点となる。
@@ -164,14 +164,24 @@ namespace Nijo.Models.QueryModelModules {
             /// </summary>
             internal string GetPhysicalName() {
                 var list = new List<string>();
-                foreach (var node in Member.GetPathFromEntry().SinceNearestChildren()) {
+                foreach (var node in Member.GetPathFromEntry()) {
+
                     // エントリーを除外
                     if (node.PreviousNode == null) continue;
+
+                    if (node.PreviousNode is ChildrenAggregate) {
+                        list.Clear();
+                    }
 
                     // Refの名前はこの1つ前で列挙済みのためスキップ
                     if (node.PreviousNode is RefToMember) continue;
 
-                    list.Add(node.XElement.Name.LocalName);
+                    // 参照先のメンバーで子から親に辿る場合は "Parent" という名前になる
+                    if (node.XElement == node.PreviousNode.XElement.Parent) {
+                        list.Add("Parent");
+                    } else {
+                        list.Add(node.XElement.Name.LocalName);
+                    }
                 }
                 return list.Join("_");
             }
