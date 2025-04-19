@@ -103,31 +103,58 @@ namespace Nijo.Models.QueryModelModules {
 
         #region メンバー
         internal abstract class SearchResultMember : IInstancePropertyMetadata {
-            internal abstract string PhysicalName { get; }
-            internal abstract ISchemaPathNode MappingKey { get; }
+            protected SearchResultMember(IAggregateMember member) {
+                _member = member;
+            }
+            private readonly IAggregateMember _member;
+            private string? _physicalName;
+
+            internal string PhysicalName => _physicalName ??= EnumeratePhysicalNameParts().Join("_");
 
             internal abstract string RenderDeclaration();
 
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
-            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => MappingKey;
+            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _member;
+
+            /// <summary>
+            /// 検索条件のプロパティはChildやRefといった親と1対1のリレーションについては
+            /// DisplayData等のネストされたオブジェクトではなく"_"で接続されたフラットな構造になる（以下例）。
+            /// こうなっている理由は、もしパフォーマンスに問題が出た場合に、EFCoreのLINQ to Entity からSQLへ実装を変更しやすい余地を残すため。
+            /// <code>
+            /// // DisplayDataなどのネストされたオブジェクトにおける親と1対1対応のオブジェクトの構造
+            /// var displayData = new なんらかのDisplayData {
+            ///     親のID = "xxx",
+            ///     子 = new() {
+            ///         子のID = "xxx",
+            ///     },
+            /// };
+            /// 
+            /// // SearchResultにおける親と1対1対応のオブジェクトの構造
+            /// var searchResult = new なんらかのSearchResult {
+            ///     親のID = "xxx",
+            ///     子_子のID = "xxx",
+            /// };
+            /// </code>
+            /// </summary>
+            private IEnumerable<string> EnumeratePhysicalNameParts() {
+                foreach (var node in _member.GetPathFromEntry().SinceNearestChildren()) {
+                    // エントリーを除外
+                    if (node.PreviousNode == null) continue;
+
+                    // Refの名前はこの1つ前で列挙済みのためスキップ
+                    if (node.PreviousNode is RefToMember) continue;
+
+                    yield return node.XElement.Name.LocalName;
+                }
+            }
         }
 
         internal class SearchResultValueMember : SearchResultMember, IInstanceValuePropertyMetadata {
-            internal SearchResultValueMember(ValueMember valueMember) {
+            internal SearchResultValueMember(ValueMember valueMember) : base(valueMember) {
                 _valueMember = valueMember;
             }
             private readonly ValueMember _valueMember;
 
-            internal override string PhysicalName => _physicalName ??= _valueMember
-                .GetPathFromEntry()
-                .Skip(1) // エントリーを除外
-                .SinceNearestChildren()
-                .SelectPhysicalName()
-                .Join("_");
-
-            private string? _physicalName;
-
-            internal override ISchemaPathNode MappingKey => _valueMember;
             IValueMemberType IInstanceValuePropertyMetadata.Type => _valueMember.Type;
 
             internal override string RenderDeclaration() {
@@ -141,13 +168,10 @@ namespace Nijo.Models.QueryModelModules {
         }
 
         internal class SearchResultChildrenMember : SearchResultMember, IInstanceStructurePropertyMetadata {
-            internal SearchResultChildrenMember(ChildrenAggregate children) {
+            internal SearchResultChildrenMember(ChildrenAggregate children) : base(children) {
                 _children = children;
             }
             private readonly ChildrenAggregate _children;
-
-            internal override string PhysicalName => _children.PhysicalName;
-            internal override ISchemaPathNode MappingKey => _children;
 
             bool IInstanceStructurePropertyMetadata.IsArray => true;
 

@@ -216,8 +216,9 @@ public static class ApplicationSchemaExtensions {
             yield return new KeyClass.KeyClassEntry(rootAggregate);
         }
         if (rootAggregate.Model is QueryModel || rootAggregate.Model is DataModel && rootAggregate.GenerateDefaultQueryModel) {
-            yield return new DisplayData(rootAggregate);
             yield return new SearchCondition.Filter(rootAggregate);
+            yield return new SearchResult(rootAggregate);
+            yield return new DisplayData(rootAggregate);
             yield return new DisplayDataRef.Entry(rootAggregate);
         }
         if (rootAggregate.Model is CommandModel) {
