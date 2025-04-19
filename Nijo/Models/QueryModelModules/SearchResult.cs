@@ -14,8 +14,38 @@ namespace Nijo.Models.QueryModelModules {
     /// QueryModelの検索結果型。
     /// SQLのSELECT句の形と対応する。
     /// EFCoreによるWhere句の付加が可能。
-    /// ChildやRefToがあっても入れ子にならずフラットなデータ構造になる。
     /// <see cref="DisplayData"/> が持つ項目は全て検索結果型にも存在する。
+    ///
+    /// <para>
+    /// 検索条件のプロパティはChildやRefといった親と1対1のリレーションについては
+    /// DisplayData等のネストされたオブジェクトではなく"_"で接続されたフラットな構造になる（以下例）。
+    /// こうなっている理由は、もしパフォーマンスに問題が出た場合に、EFCoreのLINQ to Entity からSQLへ実装を変更しやすい余地を残すため。
+    /// <code>
+    /// // DisplayDataなどのネストされたオブジェクトにおける親と1対1対応のオブジェクトの構造
+    /// var displayData = new なんらかのDisplayData {
+    ///     親のID = "xxx",
+    ///     子 = new() {
+    ///         子のID = "xxx",
+    ///     },
+    /// };
+    /// 
+    /// // SearchResultにおける親と1対1対応のオブジェクトの構造
+    /// var searchResult = new なんらかのSearchResult {
+    ///     親のID = "xxx",
+    ///     子_子のID = "xxx",
+    /// };
+    /// </code>
+    /// 
+    /// 各構造ごとの詳細なルールは以下。
+    /// 
+    /// * ValueMember: 親集約のプロパティとして定義される。
+    /// * Child: 親と別のクラスとしてではなく、 `(親のインスタンス).(Childの物理名)_(ValueMemberの物理名)` という風にアンダースコアつながりで親の直下のメンバーとして生成される。
+    /// * Children: 親と別のクラスとして定義される。プロパティのパスは、Childrenが起点となる。
+    /// * Ref: 参照先のメンバーがSearchResultにも継承される。
+    ///   * Childと同様に、参照元集約直下のプロパティとして定義される。
+    ///   * 参照先がルート集約ではなく子孫集約の場合、参照元の親集約のメンバーも参照元クラスに定義される。
+    ///   * 参照先がChildrenを持つ場合、参照元にChildrenがある場合と同様に、別のクラスとして定義される。アンダースコアのパスは当該参照先のChildrenが起点となる。
+    /// </para>
     /// </summary>
     internal class SearchResult : IInstancePropertyOwnerMetadata {
 
@@ -127,24 +157,8 @@ namespace Nijo.Models.QueryModelModules {
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Member;
 
             /// <summary>
-            /// 検索条件のプロパティはChildやRefといった親と1対1のリレーションについては
-            /// DisplayData等のネストされたオブジェクトではなく"_"で接続されたフラットな構造になる（以下例）。
-            /// こうなっている理由は、もしパフォーマンスに問題が出た場合に、EFCoreのLINQ to Entity からSQLへ実装を変更しやすい余地を残すため。
-            /// <code>
-            /// // DisplayDataなどのネストされたオブジェクトにおける親と1対1対応のオブジェクトの構造
-            /// var displayData = new なんらかのDisplayData {
-            ///     親のID = "xxx",
-            ///     子 = new() {
-            ///         子のID = "xxx",
-            ///     },
-            /// };
-            /// 
-            /// // SearchResultにおける親と1対1対応のオブジェクトの構造
-            /// var searchResult = new なんらかのSearchResult {
-            ///     親のID = "xxx",
-            ///     子_子のID = "xxx",
-            /// };
-            /// </code>
+            /// プロパティ名の計算。
+            /// 詳細なルールはこのクラスのXMLコメントを参照。
             /// </summary>
             internal string GetPhysicalName() {
                 var list = new List<string>();
