@@ -39,26 +39,38 @@ public class OverridedApplicationConfigure : DefaultConfiguration {
     }
 
 
+    #region DB
     /// <summary>
     /// DBコンテキスト接続設定
     /// </summary>
     protected override void ConfigureDbContext(IServiceProvider services, DbContextOptionsBuilder options) {
+        // SQLiteを使用する
         var settings = services.GetRequiredService<RuntimeSetting>();
         var connStr = settings.GetCurrentProfile().ConnStr;
         options.UseSqlite(connStr);
+
+        // 自動生成される登録更新処理は変更追跡オフが前提
+        options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
     }
+
     /// <summary>
     /// <see cref="DbContext.OnConfiguring(DbContextOptionsBuilder)"/>
     /// </summary>
     public override void OnConfiguringDbContext(DbContextOptionsBuilder optionsBuilder, Logger logger) {
-        // SQLのログ出力
+        // SQL発行時にログ出力するようにする
         optionsBuilder.LogTo(
             sql => logger.Debug(sql),
             Microsoft.Extensions.Logging.LogLevel.Debug,
             Microsoft.EntityFrameworkCore.Diagnostics.DbContextLoggerOptions.SingleLine);
     }
+    #endregion DB
 
 
+    #region ログ
+    /// <summary>
+    /// ログファイル名規則。表記はNLogのルールに従う。
+    /// </summary>
+    protected virtual string LogFileNameRule => "${date:format=yyyy-MM-dd}.log";
     /// <summary>
     /// ログ出力設定
     /// </summary>
@@ -68,7 +80,7 @@ public class OverridedApplicationConfigure : DefaultConfiguration {
 
         // ファイル出力
         var fileTarget = new FileTarget("logfile") {
-            FileName = Path.Combine(settings.LogDirectory, "${date:format=yyyy-MM-dd}.log"),
+            FileName = Path.Combine(settings.LogDirectory, LogFileNameRule),
             Layout = "${longdate}|${level:uppercase=true}|${logger}|${message}${onexception:inner=${newline}${exception:format=tostring}}",
             ArchiveFileName = Path.Combine(settings.LogDirectory, "archive", "${date:format=yyyy-MM-dd}.{#}.log"),
             ArchiveNumbering = ArchiveNumberingMode.Sequence,
@@ -82,4 +94,5 @@ public class OverridedApplicationConfigure : DefaultConfiguration {
         LogManager.Configuration = config;
         return LogManager.GetCurrentClassLogger();
     }
+    #endregion ログ
 }

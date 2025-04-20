@@ -15,6 +15,23 @@ public static class TestUtilBuilder {
 /// <see cref="ITestUtil"/> の実装
 /// </summary>
 public class TestUtilImpl : ITestUtil {
+    public TestUtilImpl() {
+        // "TestContext.CurrentContext.WorkDirectory" は bin/Debug/net9.0
+        WorkDirectory = Path.GetFullPath(Path.Combine(
+             TestContext.CurrentContext.WorkDirectory,
+             "..", // net9.0
+             "..", // Debug
+             "..", // bin
+             "..", // Test
+             $"Test.Log",
+             $"テスト結果_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid().ToString().Substring(0, 8)}"));
+    }
+
+    /// <summary>
+    /// テスト用の一時ディレクトリ、兼、ファイル出力がある場合はその出力先。
+    /// テスト実行1回ごとに異なるフォルダに出力される。
+    /// </summary>
+    private string WorkDirectory { get; }
 
     public TestScopeImpl<MessageContainer> CreateScope(IPresentationContextOptions? options = null) {
         return CreateScope<MessageContainer>(options);
@@ -24,23 +41,21 @@ public class TestUtilImpl : ITestUtil {
         return CreateScope<TMessageRoot>(options);
     }
     public TestScopeImpl<TMessageRoot> CreateScope<TMessageRoot>(IPresentationContextOptions? options = null) where TMessageRoot : IMessageContainer {
-        var workDirectory = Path.Combine(
-            TestContext.CurrentContext.WorkDirectory,
-            $"test-log",
-            $"テスト結果_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid().ToString().Substring(0, 8)}");
-        Directory.CreateDirectory(workDirectory);
+
+        Directory.CreateDirectory(WorkDirectory);
 
         // DI機構
-        var configure = new OverridedApplicationConfigure();
+        var configure = new OverridedApplicationConfigureForTest();
         var services = new ServiceCollection();
         configure.ConfigureServices(services);
 
         // DI機構: 実行時設定
         services.AddScoped(provider => {
             var settings = new RuntimeSetting();
-            settings.LogDirectory = workDirectory;
+            settings.LogDirectory = WorkDirectory;
             settings.CurrentDbProfileName = "SQLITE001";
-            var dbFileName = $"./{Path.GetRelativePath(TestContext.CurrentContext.WorkDirectory, workDirectory).Replace("\\", "/")}/UNITTEST.sqlite3";
+
+            var dbFileName = $"./{Path.GetRelativePath(TestContext.CurrentContext.WorkDirectory, WorkDirectory).Replace("\\", "/")}/UNITTEST.sqlite3";
             settings.DbProfiles.Add(new() {
                 Name = "SQLITE001",
                 ConnStr = $"Data Source={dbFileName};Pooling=False",
@@ -58,14 +73,28 @@ public class TestUtilImpl : ITestUtil {
         var dbContext = provider.GetRequiredService<MyDbContext>();
         dbContext.Database.EnsureCreated();
 
-        return new TestScopeImpl<TMessageRoot>(provider, presentationContext, workDirectory);
+        return new TestScopeImpl<TMessageRoot>(provider, presentationContext, WorkDirectory);
     }
 
-    public void Dispose() {
-        // 特に後処理なし
+    void IDisposable.Dispose() {
+        // ログの場所を標準出力に表示する
+        TestContext.Out.WriteLine($$"""
+            テストが実行されました。ログは以下の場所に出力されました。
+            {{WorkDirectory}}
+            """);
     }
 
     #region
+    /// <summary>
+    /// <see cref="OverridedApplicationConfigure"/> のうちユニットテストの時だけ変更したい初期設定処理を変更したもの
+    /// </summary>
+    private class OverridedApplicationConfigureForTest : OverridedApplicationConfigure {
+        // ログファイル名、Webアプリケーションの方では日付毎などだが、テストの場合は毎回別のフォルダに出力されるので、決め打ち
+        protected override string LogFileNameRule => "テスト中に出力されたログ.log";
+    }
+    /// <summary>
+    /// <see cref="IPresentationContextOptions"/> のユニットテスト用の実装。
+    /// </summary>
     private class PresentationContextOptionsImpl : IPresentationContextOptions {
         public bool IgnoreConfirm { get; init; }
     }

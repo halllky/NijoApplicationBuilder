@@ -37,7 +37,7 @@ public class DummyDataTsvOutput : IDummyDataOutput {
             var values = properties
                 .Select(p => {
                     var value = p.GetValue(entity);
-                    return value?.ToString() ?? string.Empty;
+                    return '"' + value?.ToString()?.Replace("\"", "\"\"") + '"';
                 });
 
             var dataLine = string.Join("\t", values);

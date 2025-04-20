@@ -9,7 +9,12 @@ namespace MyApp.Core;
 partial class OverridedApplicationService {
 
     public override Task<CommandModelテストReturnValue> Execute(CommandModelテストParameter param, IPresentationContext<CommandModelテストParameterMessages> context) {
-        throw new NotImplementedException();
+
+        context.Messages.AddInfo($"サーバー側処理が呼び出されました。現在の時刻は {CurrentTime:G} です。");
+
+        return Task.FromResult(new CommandModelテストReturnValue {
+            // 戻り値を記載する場合はここに書く
+        });
     }
 
     protected override IQueryable<顧客SearchResult> CreateQuerySource(顧客SearchCondition searchCondition, IPresentationContext<顧客Messages> context) {
@@ -18,6 +23,10 @@ partial class OverridedApplicationService {
             顧客名 = e.顧客名,
             住所_市町村 = e.住所!.市町村,
             住所_都道府県 = e.住所!.都道府県,
+            住所_番地以降 = e.住所!.番地以降,
+            備考 = e.備考,
+            年齢 = e.年齢,
+            生年月日 = e.生年月日,
             Version = (int)e.Version!,
         });
     }
