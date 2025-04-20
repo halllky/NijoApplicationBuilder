@@ -53,7 +53,7 @@
         "problemMatcher": []
       },
       {
-        "label": "Nijo: デバッグ実行を開始する",
+        "label": "Nijo: テンプレプロジェクトのデバッグ実行を開始する",
         "command": ".\\run-nijo-exe.bat",
         "type": "shell",
         "args": [
@@ -65,7 +65,7 @@
         "problemMatcher": []
       },
       {
-        "label": "Nijo: デバッグ実行を開始する（コード自動生成スキップ）",
+        "label": "Nijo: テンプレプロジェクトのデバッグ実行を開始する（コード自動生成スキップ）",
         "command": ".\\run-nijo-exe.bat",
         "type": "shell",
         "args": [
