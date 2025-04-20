@@ -45,7 +45,9 @@ namespace Nijo.ValueMemberTypes {
 
         string IValueMemberType.RenderCreateDummyDataValueBody(CodeRenderingContext ctx) {
             return $$"""
-                return context.Random.Next(0, 1000);
+                return member.IsKey
+                    ? context.GetNextSequence()
+                    : context.Random.Next(0, 1000);
                 """;
         }
 

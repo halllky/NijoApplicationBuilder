@@ -42,7 +42,9 @@ internal class DateTimeMember : IValueMemberType {
 
     string IValueMemberType.RenderCreateDummyDataValueBody(CodeRenderingContext ctx) {
         return $$"""
-            return DateTime.Now.AddDays(context.Random.Next(-365, 365)).AddHours(context.Random.Next(-24, 24));
+            return member.IsKey
+                ? DateTime.Now.AddHours(context.GetNextSequence())
+                : DateTime.Now.AddDays(context.Random.Next(-365, 365)).AddHours(context.Random.Next(-24, 24));
             """;
     }
 

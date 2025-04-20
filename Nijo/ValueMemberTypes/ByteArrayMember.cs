@@ -49,7 +49,14 @@ internal class ByteArrayMember : IValueMemberType {
         return $$"""
             // ダミーデータとして8バイトのランダムなバイト配列を生成
             var dummyBytes = new byte[8];
-            context.Random.NextBytes(dummyBytes);
+            if (member.IsKey) {
+                // キーの場合はシーケンス値を含む一意なデータを生成
+                var seq = context.GetNextSequence();
+                BitConverter.GetBytes(seq).CopyTo(dummyBytes, 0);
+                context.Random.NextBytes(new Span<byte>(dummyBytes, 4, 4));
+            } else {
+                context.Random.NextBytes(dummyBytes);
+            }
             return dummyBytes;
             """;
     }

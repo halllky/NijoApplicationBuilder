@@ -43,7 +43,9 @@ internal class YearMonthMember : IValueMemberType {
     string IValueMemberType.RenderCreateDummyDataValueBody(CodeRenderingContext ctx) {
         return $$"""
             var now = DateTime.Now;
-            return new YearMonth(now.Year, now.Month);
+            return member.IsKey
+                ? new YearMonth(now.Year, Math.Max(1, Math.Min(12, (context.GetNextSequence() % 12) + 1)))
+                : new YearMonth(now.Year, now.Month);
             """;
     }
 

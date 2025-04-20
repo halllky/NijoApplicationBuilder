@@ -59,7 +59,27 @@ namespace Nijo.ValueMemberTypes {
 
         string IValueMemberType.RenderCreateDummyDataValueBody(CodeRenderingContext ctx) {
             return $$"""
-                return string.Concat(Enumerable.Range(0, member.MaxLength ?? 12).Select(_ => "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}\\\"|;:,.<>?"[context.Random.Next(0, 63)]));
+                if (member.IsKey) {
+                    string prefix = "DESC_";
+                    string seqValue = context.GetNextSequence().ToString("D10");
+                    string separator = "_";
+
+                    // 接頭辞とシーケンス値と区切り文字の長さを計算
+                    int fixedPartLength = prefix.Length + seqValue.Length + separator.Length;
+
+                    // 利用可能な残り文字数を計算（最大長から固定部分の長さを引く）
+                    int availableLength = Math.Max(1, (member.MaxLength ?? 50) - fixedPartLength);
+
+                    // 残りの文字数分だけランダム文字を生成
+                    string randomPart = string.Concat(Enumerable.Range(0, availableLength)
+                        .Select(_ => "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"[context.Random.Next(0, 36)]));
+
+                    return $"{prefix}{seqValue}{separator}{randomPart}";
+                }
+                else {
+                    return string.Concat(Enumerable.Range(0, member.MaxLength ?? 12)
+                        .Select(_ => "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}\\\"|;:,.<>?"[context.Random.Next(0, 63)]));
+                }
                 """;
         }
 

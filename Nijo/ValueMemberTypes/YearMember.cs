@@ -42,7 +42,9 @@ internal class YearMember : IValueMemberType {
 
     string IValueMemberType.RenderCreateDummyDataValueBody(CodeRenderingContext ctx) {
         return $$"""
-            return DateTime.Now.Year + context.Random.Next(-50, 50);
+            return member.IsKey
+                ? DateTime.Now.Year + context.GetNextSequence()
+                : DateTime.Now.Year + context.Random.Next(-50, 50);
             """;
     }
 

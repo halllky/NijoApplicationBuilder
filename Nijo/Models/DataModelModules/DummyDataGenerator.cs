@@ -73,6 +73,7 @@ namespace Nijo.Models.DataModelModules {
                             // データフローの順番でダミーデータのパターンを作成
                     {{items.SelectTextTemplate(rootAggregate => $$"""
                             context.{{GeneratedList(rootAggregate)}} = {{CreatePatternMethodName(rootAggregate)}}(context).ToArray();
+                            context.ResetSequence();
                     """)}}
 
                             // データフローの順番で登録実行
@@ -311,6 +312,23 @@ namespace Nijo.Models.DataModelModules {
                     public sealed class {{DUMMY_DATA_GENERATE_CONTEXT}} {
                         public required Random Random { get; init; }
                         public required {{Metadata.CS_CLASSNAME}} Metadata { get; init; }
+
+                        #region シーケンス
+                        private int _sequence = 0;
+                        /// <summary>
+                        /// シーケンス値を取得します。
+                        /// この値はルート集約単位で一意です。
+                        /// </summary>
+                        public int GetNextSequence() {
+                            return _sequence++;
+                        }
+                        /// <summary>
+                        /// シーケンス値をリセットします。
+                        /// </summary>
+                        public void ResetSequence() {
+                            _sequence = 0;
+                        }
+                        #endregion シーケンス
 
                     {{_rootAggregates.SelectTextTemplate(agg => $$"""
                         {{WithIndent(RenderGetRefTo(agg), "    ")}}

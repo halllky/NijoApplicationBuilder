@@ -42,7 +42,9 @@ internal class DecimalMember : IValueMemberType {
 
     string IValueMemberType.RenderCreateDummyDataValueBody(CodeRenderingContext ctx) {
         return $$"""
-            return (decimal)(context.Random.NextDouble() * 1000);
+            return member.IsKey
+                ? (decimal)context.GetNextSequence() + (decimal)(context.Random.NextDouble() * 0.1)
+                : (decimal)(context.Random.NextDouble() * 1000);
             """;
     }
 

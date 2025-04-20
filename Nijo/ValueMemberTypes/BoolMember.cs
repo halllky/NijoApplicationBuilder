@@ -70,7 +70,9 @@ internal class BoolMember : IValueMemberType {
 
     string IValueMemberType.RenderCreateDummyDataValueBody(CodeRenderingContext ctx) {
         return $$"""
-            return context.Random.Next(0, 2) == 0;
+            return member.IsKey
+                ? (context.GetNextSequence() % 2 == 0)
+                : context.Random.Next(0, 2) == 0;
             """;
     }
 

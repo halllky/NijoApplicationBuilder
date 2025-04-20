@@ -84,7 +84,9 @@ namespace Nijo.ValueMemberTypes {
                     """;
             } else {
                 return $$"""
-                    return Enum.GetValues<{{_parser.CsEnumName}}>().ElementAt(context.Random.Next(0, {{count - 1}}));
+                    return member.IsKey && Enum.GetValues<{{_parser.CsEnumName}}>().Length > 0
+                        ? Enum.GetValues<{{_parser.CsEnumName}}>()[context.GetNextSequence() % Enum.GetValues<{{_parser.CsEnumName}}>().Length]
+                        : Enum.GetValues<{{_parser.CsEnumName}}>().ElementAt(context.Random.Next(0, {{count - 1}}));
                     """;
             }
         }
