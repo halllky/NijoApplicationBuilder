@@ -35,7 +35,7 @@ export const 顧客一覧検索 = () => {
               <Input.Word name="filter.顧客名" control={control} />
             </VForm3.Item>
             <VForm3.Item label="生年月日">
-              <Input.DateInput name="filter.生年月日" control={control} />
+              <Input.DateInput name="filter.生年月日.to" control={control} />
             </VForm3.Item>
             <VForm3.Item label="年齢">
               <Input.NumberInput name="filter.年齢.from" control={control} />

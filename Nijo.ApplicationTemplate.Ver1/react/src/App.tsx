@@ -1,13 +1,28 @@
-import { useState } from "react"
+import React from 'react'
+import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import MainLayout from './layout/MainLayout'
+import { 顧客一覧検索 } from './pages/顧客/顧客一覧検索'
+
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <MainLayout />,
+    children: [
+      {
+        index: true,
+        element: <顧客一覧検索 />
+      },
+      {
+        path: '顧客',
+        element: <顧客一覧検索 />
+      }
+    ]
+  }
+])
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <div className="h-full bg-gray-100 flex flex-col justify-center items-center">
-      <h1 className="text-3xl font-bold text-gray-900 mb-5">Tailwind CSSが導入されました</h1>
-      <p className="text-gray-600">美しいUIコンポーネントを簡単に作成できます</p>
-    </div>
+    <RouterProvider router={router} />
   )
 }
 
