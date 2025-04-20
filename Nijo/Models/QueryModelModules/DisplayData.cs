@@ -511,7 +511,11 @@ namespace Nijo.Models.QueryModelModules {
         }
 
         internal class DisplayDataChildrenDescendant : DisplayDataDescendant, IInstanceStructurePropertyMetadata {
-            internal DisplayDataChildrenDescendant(ChildrenAggregate children) : base(children) { }
+            internal DisplayDataChildrenDescendant(ChildrenAggregate children) : base(children) {
+                ChildrenAggregate = children;
+            }
+
+            internal ChildrenAggregate ChildrenAggregate { get; }
 
             internal override string CsClassNameAsMember => $"List<{CsClassName}>";
             internal override string TsTypeNameAsMember => $"{TsTypeName}[]";

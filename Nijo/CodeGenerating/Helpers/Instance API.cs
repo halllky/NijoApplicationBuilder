@@ -94,6 +94,10 @@ public sealed class InstanceValueProperty : IInstanceProperty {
     public bool IsNullable => true;
 
     IInstancePropertyMetadata IInstanceProperty.Metadata => Metadata;
+
+    public override string ToString() {
+        return $"{Metadata.PropertyName}(InstanceValueProperty)";
+    }
 }
 /// <summary>
 /// 自動生成されるソースコードの中に表れる変数のプロパティのうち、子孫をもつ構造体メンバーのプロパティ。
@@ -107,6 +111,10 @@ public sealed class InstanceStructureProperty : IInstanceProperty, IInstanceProp
     IInstancePropertyMetadata IInstanceProperty.Metadata => Metadata;
     IInstancePropertyOwnerMetadata IInstancePropertyOwner.Metadata => Metadata;
     string IInstancePropertyOwner.Name => Metadata.PropertyName;
+
+    public override string ToString() {
+        return $"{Metadata.PropertyName}(InstanceStructureProperty)";
+    }
 }
 
 // ------------------------------------------

@@ -53,21 +53,21 @@ namespace Nijo.Models.QueryModelModules {
 
         // Childは親の一部としてレンダリングされるので定義できない
         internal SearchResult(RootAggregate aggregate) {
-            _aggregate = aggregate;
+            Aggregate = aggregate;
         }
         protected SearchResult(ChildrenAggregate children) {
-            _aggregate = children;
+            Aggregate = children;
         }
-        private readonly AggregateBase _aggregate;
+        internal AggregateBase Aggregate { get; }
 
         /// <summary>楽観排他制御用のバージョン</summary>
         internal const string VERSION = "Version";
-        internal bool HasVersion => _aggregate is RootAggregate;
+        internal bool HasVersion => Aggregate is RootAggregate;
 
-        internal string CsClassName => $"{_aggregate.PhysicalName}SearchResult";
+        internal string CsClassName => $"{Aggregate.PhysicalName}SearchResult";
 
         internal IEnumerable<ISearchResultMember> GetMembers() {
-            return GetMembersRecursively(_aggregate, false);
+            return GetMembersRecursively(Aggregate, false);
 
             static IEnumerable<ISearchResultMember> GetMembersRecursively(AggregateBase aggregate, bool enumeratesParent) {
                 // aggregateが参照先の場合は親のメンバーも列挙
@@ -131,7 +131,7 @@ namespace Nijo.Models.QueryModelModules {
                 #region 検索クエリ型
                 {{tree.SelectTextTemplate(sr => $$"""
                 /// <summary>
-                /// {{sr._aggregate.DisplayName}}の検索結果型。
+                /// {{sr.Aggregate.DisplayName}}の検索結果型。
                 /// SQLのSELECT句の形と対応する。
                 /// </summary>
                 public partial class {{sr.CsClassName}} {
@@ -222,19 +222,19 @@ namespace Nijo.Models.QueryModelModules {
 
         internal class SearchResultChildrenMember : SearchResult, ISearchResultMember, IInstanceStructurePropertyMetadata {
             internal SearchResultChildrenMember(ChildrenAggregate children) : base(children) {
-                _children = children;
+                Aggregate = children;
             }
-            private readonly ChildrenAggregate _children;
+            internal new ChildrenAggregate Aggregate { get; }
             private string? _physicalName;
 
             public string PropertyName => _physicalName ??= ((ISearchResultMember)this).GetPhysicalName();
             bool IInstanceStructurePropertyMetadata.IsArray => true;
-            IAggregateMember ISearchResultMember.Member => _children;
+            IAggregateMember ISearchResultMember.Member => Aggregate;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetMembers();
 
             string ISearchResultMember.RenderDeclaration() {
                 return $$"""
-                    /// <summary>{{_children.DisplayName}}</summary>
+                    /// <summary>{{Aggregate.DisplayName}}</summary>
                     public List<{{CsClassName}}> {{PropertyName}} { get; set; } = new();
                     """;
             }

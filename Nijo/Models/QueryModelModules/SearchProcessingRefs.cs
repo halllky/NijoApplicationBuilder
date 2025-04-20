@@ -1,4 +1,5 @@
 using Nijo.CodeGenerating;
+using Nijo.CodeGenerating.Helpers;
 using Nijo.ImmutableSchema;
 using Nijo.Parts.Common;
 using Nijo.Parts.CSharp;
@@ -119,8 +120,9 @@ namespace Nijo.Models.QueryModelModules {
             var root = _entryAggregate.GetRoot();
             var searchCondition = new SearchCondition.Entry(root);
             var searchConditionMessage = new SearchConditionMessageContainer(root);
-            var searchResult = new SearchResult(_entryAggregate.GetRoot());
             var displayData = new DisplayDataRef.Entry(_entryAggregate);
+
+            var isDisplayDataArray = _entryAggregate.EnumerateThisAndAncestors().Any(agg => agg is ChildrenAggregate);
 
             return $$"""
                 #region 参照検索
@@ -159,7 +161,7 @@ namespace Nijo.Models.QueryModelModules {
                     }
 
                     // 画面表示用の型への変換
-                    var converted = query.Select({{ToRefTarget}}());
+                    var converted = query.{{(isDisplayDataArray ? "SelectMany" : "Select")}}({{ToRefTarget}}());
 
                     // 検索処理実行
                     {{displayData.CsClassName}}[] loaded;
@@ -191,12 +193,7 @@ namespace Nijo.Models.QueryModelModules {
                         {{SearchProcessingReturn.TOTAL_COUNT_CS}} = totalCount,
                     };
                 }
-                /// <summary>
-                /// {{_entryAggregate.DisplayName}}の参照検索結果型を画面表示用の型に変換する式を返します。
-                /// </summary>
-                protected virtual Expression<Func<{{searchResult.CsClassName}}, {{displayData.CsClassName}}>> {{ToRefTarget}}() {
-                    throw new NotImplementedException(); // TODO ver.1
-                }
+                {{RenderConvertToRefTarget()}}
                 /// <summary>
                 /// {{_entryAggregate.DisplayName}}の参照検索の読み込み後処理
                 /// </summary>
@@ -206,6 +203,146 @@ namespace Nijo.Models.QueryModelModules {
                 }
                 #endregion 参照検索
                 """;
+        }
+
+        /// <summary>
+        /// ルート集約の <see cref="SearchResult"/> を、
+        /// ルート集約または子孫集約の <see cref="DisplayDataRef"/> に変換する式をレンダリングする
+        /// </summary>
+        private string RenderConvertToRefTarget() {
+            // ルート集約をエントリーとしてレンダリングしたほうが都合がよいので
+            var rootAsEntry = (RootAggregate)_entryAggregate.GetRoot().AsEntry();
+            var thisAggregateAsNotEntry = rootAsEntry.EnumerateThisAndDescendants().Single(a => ((ISchemaPathNode)a).XElement == ((ISchemaPathNode)_entryAggregate).XElement);
+
+            var searchResult = new SearchResult(rootAsEntry);
+            var displayData = new DisplayDataRef.Entry(thisAggregateAsNotEntry);
+            var sr = new Variable("searchResult", searchResult);
+
+            // ------------------------------------------
+            // 右辺の変数に使われる変数を定義する。右辺は集約ルートが起点になる。
+            var rightInstances = CollectInstancesRecursively(sr).ToDictionary(kv => kv.Key, kv => kv.Value);
+
+            IEnumerable<KeyValuePair<SchemaNodeIdentity, string>> CollectInstancesRecursively(IInstancePropertyOwner currentInstance, IInstancePropertyOwner? ownerArray = null) {
+                var currentSearchResult = (SearchResult)currentInstance.Metadata;
+
+                // ValueMember(Ref先のValueMember含む)
+                var valueMembers = currentInstance
+                    .Create1To1PropertiesRecursively();
+                foreach (var member in valueMembers) {
+                    yield return KeyValuePair.Create(
+                        member.Metadata.SchemaPathNode.ToMappingKey(),
+                        member.GetJoinedPathFromInstance(E_CsTs.CSharp, "!."));
+                }
+
+                // Children に対して再帰処理
+                foreach (var member in currentSearchResult.GetMembers()) {
+                    if (member is SearchResult.SearchResultValueMember) {
+                        continue; // 上で列挙済みなのでスキップ
+
+                    } else if (member is SearchResult.SearchResultChildrenMember children) {
+                        var childProperty = currentInstance.CreateProperty(children);
+                        var loopVar = new Variable(children.Aggregate.GetLoopVarName(), children);
+                        foreach (var desc in CollectInstancesRecursively(loopVar, childProperty)) {
+                            yield return desc;
+                        }
+
+                    } else {
+                        throw new NotImplementedException();
+                    }
+                }
+            }
+
+            // ------------------------------------------
+            var ancestors = thisAggregateAsNotEntry.EnumerateThisAndAncestors().ToArray();
+            var isReturnArray = ancestors.Any(agg => agg is ChildrenAggregate);
+
+            if (!isReturnArray) {
+                // *** ルート集約と戻り値の多重度が1対1の場合 ***
+
+                var left = new Variable("newステートメントなので変数名なし", displayData);
+
+                return $$"""
+                    /// <summary>
+                    /// {{thisAggregateAsNotEntry.DisplayName}}の参照検索結果型を画面表示用の型に変換する式を返します。
+                    /// </summary>
+                    protected virtual Expression<Func<{{searchResult.CsClassName}}, {{displayData.CsClassName}}>> {{ToRefTarget}}() {
+                        return {{sr.Name}} => new {{displayData.CsClassName}}() {
+                            {{WithIndent(RenderBody(left), "        ")}}
+                        };
+                    }
+                    """;
+
+            } else {
+                // *** ルート集約と戻り値の多重度が1対多の場合 ***
+
+                // ラムダ式の引数からSelectまでの間の配列パス
+                IInstancePropertyOwner arrayProperty = sr;
+                foreach (var agg in ancestors) {
+                    if (agg is RootAggregate) continue;
+                    if (agg is ChildAggregate) continue;
+
+                    if (agg is ChildrenAggregate children) {
+                        var propMetadata = new SearchResult.SearchResultChildrenMember(children);
+                        arrayProperty = arrayProperty.CreateProperty(propMetadata);
+                    }
+                }
+                var arrayPath = ((IInstanceProperty)arrayProperty).GetJoinedPathFromInstance(E_CsTs.CSharp, "!.");
+
+                // Selectのループ変数
+                var loopVar = new Variable("x", searchResult);
+
+                // 左辺
+                var left = new Variable("newステートメントなので変数名なし", displayData);
+
+                return $$"""
+                    /// <summary>
+                    /// {{thisAggregateAsNotEntry.DisplayName}}の参照検索結果型を画面表示用の型に変換する式を返します。
+                    /// </summary>
+                    protected virtual Expression<Func<{{searchResult.CsClassName}}, IEnumerable<{{displayData.CsClassName}}>>> {{ToRefTarget}}() {
+                        return {{sr.Name}} => {{arrayPath}}.Select({{loopVar.Name}} => new {{displayData.CsClassName}}() {
+                            {{WithIndent(RenderBody(left), "        ")}}
+                        });
+                    }
+                    """;
+            }
+
+            IEnumerable<string> RenderBody(IInstancePropertyOwner displayDataInstance) {
+                foreach (var member in displayDataInstance.CreateProperties()) {
+
+                    if (member is InstanceValueProperty vp) {
+                        yield return $$"""
+                            {{member.Metadata.PropertyName}} = {{rightInstances.GetValueOrDefault(vp.Metadata.SchemaPathNode.ToMappingKey())}},
+                            """;
+
+                    } else if (member is InstanceStructureProperty sp) {
+
+                        if (sp.Metadata.IsArray) {
+                            var childrenMetadata = (DisplayDataRef.RefDisplayDataChildrenMember)sp.Metadata;
+                            var arrayPath = rightInstances.GetValueOrDefault(sp.Metadata.SchemaPathNode.ToMappingKey());
+                            var loopVarName = childrenMetadata.ChildrenAggregate.GetLoopVarName();
+                            var left = new Variable("newステートメントなので変数名なし", childrenMetadata);
+
+                            yield return $$"""
+                                {{member.Metadata.PropertyName}} = {{arrayPath}}!.Select({{loopVarName}} => new {{childrenMetadata.CsClassName}} {
+                                    {{WithIndent(RenderBody(left), "    ")}}
+                                }).ToList(),
+                                """;
+
+                        } else {
+                            var childrenMetadata = (DisplayDataRef.RefDisplayDataMemberContainer)sp.Metadata;
+                            var left = new Variable("newステートメントなので変数名なし", childrenMetadata);
+
+                            yield return $$"""
+                                {{member.Metadata.PropertyName}} = new() {
+                                    {{WithIndent(RenderBody(left), "    ")}}
+                                },
+                                """;
+                        }
+                    } else {
+                        throw new NotImplementedException();
+                    }
+                }
+            }
         }
     }
 }
