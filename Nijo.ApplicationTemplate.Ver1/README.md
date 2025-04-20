@@ -22,3 +22,43 @@
 2. [`run-nijo-exe.bat`](./run-nijo-exe.bat)を実行してコードを生成
 3. 必要に応じて[`migration.bat`](./migration.bat)でDBマイグレーションを実行
 4. Core, Webapi, reactの開発を実施
+
+## McpServerの使用方法
+
+CursorエージェントがNijo.ApplicationTemplate.Ver1のデバッグ実行とリビルドを行うためのサーバーです。
+
+### 起動方法
+
+```bash
+run-mcpserver.bat
+```
+
+または
+
+```bash
+cd McpServer
+dotnet run
+```
+
+### 利用可能なエンドポイント
+
+- GET /api/process/status - プロセスの実行状態を取得
+- POST /api/process/start - ReactとWebAPIアプリケーションを起動
+- POST /api/process/rebuild - WebAPIアプリケーションを再ビルド
+- POST /api/process/stop - すべてのプロセスを停止
+
+### Curlでの操作例
+
+```bash
+# 起動
+curl -X POST http://localhost:5001/api/process/start
+
+# 再ビルド
+curl -X POST http://localhost:5001/api/process/rebuild
+
+# ステータス確認
+curl http://localhost:5001/api/process/status
+
+# 停止
+curl -X POST http://localhost:5001/api/process/stop
+```
