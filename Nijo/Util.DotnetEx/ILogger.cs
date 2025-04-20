@@ -17,7 +17,7 @@ namespace Nijo.Util.DotnetEx {
             // 新しいLoggerFactoryを作成
             _loggerFactory = LoggerFactory.Create(builder => {
                 builder.AddSimpleConsole(opt => {
-                    opt.SingleLine = false;
+                    opt.SingleLine = true;
                     opt.IncludeScopes = true;
                     opt.TimestampFormat = "yyyy/MM/dd HH:mm:ss.fff\t";
                     opt.UseUtcTimestamp = false;
