@@ -65,15 +65,19 @@ namespace Nijo.Models.QueryModelModules {
         /// 他の集約から参照されているもののみ再帰的にレンダリングする
         /// </summary>
         internal static string RenderTypeScriptRecursively(RootAggregate rootAggregate) {
-            var refDisp = new Entry(rootAggregate);
+            var (entries, _) = GetReferedMembersRecursively(rootAggregate);
 
             return $$"""
+                //#region 他の集約から参照されるときの画面表示用オブジェクト
+                {{entries.SelectTextTemplate(entry => $$"""
                 /**
-                 * {{rootAggregate.DisplayName}}が他の集約から外部参照されるときの型
+                 * {{entry.Aggregate.DisplayName}}が他の集約から外部参照されるときの型
                  */
-                export type {{refDisp.TsTypeName}} = {
+                export type {{entry.TsTypeName}} = {
                   // TODO ver.1
                 }
+                """)}}
+                //#endregion 他の集約から参照されるときの画面表示用オブジェクト
                 """;
         }
 
