@@ -25,9 +25,8 @@ import React from "react"
  *   - 検索結果一覧。列定義を呼び出し側で指定する。
  *   - ページネーションは自動的に表示される。
  */
-export const MultiView = React.forwardRef(<TQueryModel extends QueryModelType>(
+export const MultiView = <TQueryModel extends QueryModelType>(
   props: MultiViewProps<TQueryModel>,
-  ref: React.Ref<MultiViewRef<TQueryModel>>
 ) => {
 
   return (
@@ -35,7 +34,7 @@ export const MultiView = React.forwardRef(<TQueryModel extends QueryModelType>(
       TODO: 未実装
     </div>
   )
-})
+}
 
 export type MultiViewProps<TQueryModelType extends QueryModelType> = {
   /** QueryModelの種類 */
@@ -50,7 +49,10 @@ export type MultiViewProps<TQueryModelType extends QueryModelType> = {
   /** 画面タイトル */
   title?: string
   /** 画面上部の検索条件欄 */
-  children?: React.ReactNode
+  children?: (props: {
+    /** 画面の検索条件を管理するReact Hook Formのメソッド。 */
+    reactHookFormMethods: UseFormReturn<SearchConditionTypeMap[TQueryModelType]>
+  }) => React.ReactNode
   /**
    * 画面初期表示時の検索条件。
    * 挙動を安定させるために `useMemo` でラップした値を使用すること。
@@ -63,10 +65,4 @@ export type MultiViewProps<TQueryModelType extends QueryModelType> = {
    * @param cellType セル型定義ヘルパー関数の一覧。
    */
   getColumnDefs: (cellType: ColumnDefFactories<DisplayDataTypeMap[TQueryModelType]>) => ColumnDef<DisplayDataTypeMap[TQueryModelType]>[]
-}
-
-/** MultiViewコンポーネントのref */
-export type MultiViewRef<TQueryModelType extends QueryModelType> = {
-  /** 画面の検索条件を管理するReact Hook Formのメソッド。 */
-  reactHookFormMethods: UseFormReturn<SearchConditionTypeMap[TQueryModelType]>
 }

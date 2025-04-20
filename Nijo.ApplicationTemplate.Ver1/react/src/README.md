@@ -14,3 +14,4 @@ React.js のソースコードが格納されるフォルダ。
 - [layout](./layout/) : レイアウト用のモジュール。
   - [MultiView](./layout/MultiView.tsx) : 一覧検索画面ベース
   - [cellType](./layout/cellType/) : グリッドの列定義に関連するモジュール
+- [util](./util/) : input, layout 以外の共通モジュール
