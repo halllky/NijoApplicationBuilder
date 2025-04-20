@@ -10,7 +10,40 @@ export const useFieldArrayEx = <
 
 /** 列定義ヘルパー関数の一覧を返します。 */
 export const useCellTypes = <TRow extends ReactHookForm.FieldValues>(): ColumnDefFactories<TRow> => {
-  throw new Error("Not implemented")
+  const textCellFactory: BoundColumnDefFactory<TRow, string | undefined> = (fieldName, header, options) => {
+    return {
+      header,
+      fieldPath: fieldName as string
+    };
+  };
+
+  const numberCellFactory: BoundColumnDefFactory<TRow, number | undefined> = (fieldName, header, options) => {
+    return {
+      header,
+      fieldPath: fieldName as string
+    };
+  };
+
+  const dateCellFactory: BoundColumnDefFactory<TRow, string | undefined> = (fieldName, header, options) => {
+    return {
+      header,
+      fieldPath: fieldName as string
+    };
+  };
+
+  const booleanCellFactory: BoundColumnDefFactory<TRow, boolean> = (fieldName, header, options) => {
+    return {
+      header,
+      fieldPath: fieldName as string
+    };
+  };
+
+  return {
+    text: textCellFactory,
+    number: numberCellFactory,
+    date: dateCellFactory,
+    boolean: booleanCellFactory
+  };
 }
 
 /** フィールド配列。react-hook-formのuseFieldArrayを拡張したもの。 */
@@ -50,6 +83,10 @@ export type UnboundColumnDefFactory<TRow, TCellValueType> = (
 
 /** グリッドの列定義 */
 export type ColumnDef<TRow, TCellValueType = unknown> = {
+  /** ヘッダーに表示する文字列 */
+  header: string;
+  /** この列と紐づけるフィールドパス */
+  fieldPath?: string;
 }
 
 export type ColumnDefOptions = {
