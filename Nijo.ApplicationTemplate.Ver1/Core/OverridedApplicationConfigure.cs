@@ -60,7 +60,7 @@ public class OverridedApplicationConfigure : DefaultConfiguration {
         // SQL発行時にログ出力するようにする
         optionsBuilder.LogTo(
             sql => logger.Debug(sql),
-            Microsoft.Extensions.Logging.LogLevel.Debug,
+            Microsoft.Extensions.Logging.LogLevel.Information,
             Microsoft.EntityFrameworkCore.Diagnostics.DbContextLoggerOptions.SingleLine);
     }
     #endregion DB
