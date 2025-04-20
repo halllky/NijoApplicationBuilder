@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 /* オリジナルのスタイル設定を必要に応じて残します */
 @layer base {
