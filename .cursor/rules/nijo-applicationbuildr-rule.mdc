@@ -19,6 +19,7 @@ alwaysApply: true
 - 自動生成された方（Nijo.ApplicationTemplate.Ver1, または 「自動テストで作成されたプロジェクト」）の場合
   - MCP `nijo-mcp` を使用して動作確認してください。
   - MCP `nijo-mcp` にわたすnijo.xmlのパスはWindowsの絶対パス（ `C:\\` から始まるパス）であることに注意してください。
+  - 作業が完了した後は、MCP `nijo-mcp` の機能を使用してデバッグを終了してください。
 
 ## エラー原因調査するときの注意事項
 - コンパイルエラーが出ているファイルが [OverridedApplicationService.cs](mdc:自動テストで作成されたプロジェクト/Core/OverridedApplicationService.cs) の場合

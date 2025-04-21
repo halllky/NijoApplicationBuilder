@@ -44,10 +44,10 @@ if (app.Environment.IsDevelopment()) {
 } else {
     app.UseExceptionHandler("/Error");
     app.UseHsts();
+    app.UseStaticFiles(); // プロダクション環境でのみ静的ファイルを使用
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
 app.UseRouting();
 app.UseCors();
 app.UseAuthorization();

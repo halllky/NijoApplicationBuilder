@@ -34,6 +34,7 @@ namespace Nijo.Mcp {
     [McpServerToolType]
     public static class NijoMcpTools {
 
+        private const string NIJO_PROJ = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo"; // とりあえずハードコード
         private const string JOB_NAME = "mijo-mcp-debug-task";
 
         [McpServerTool(Name = "start_debugging"), Description("ソースコード自動生成された方のアプリケーションのデバッグを開始する。既に開始されている場合はリビルドして再開する。")]
@@ -61,9 +62,90 @@ namespace Nijo.Mcp {
                 // 既存のプロセスを終了
                 JobObjectHelper.TryKillJobByName(JOB_NAME);
 
+                // ------------------------------------
                 var output = new StringBuilder();
                 var errorDetected = false;
                 var errorDetectionTime = DateTime.MinValue;
+
+                // ソースコードの自動生成のかけなおし
+                output.AppendLine("[nijo-mcp] Nijoプロジェクトのビルドを開始します...");
+
+                // Nijoプロジェクトのビルド
+                var buildProcess = new Process();
+                buildProcess.StartInfo.FileName = "dotnet";
+                buildProcess.StartInfo.Arguments = $"build {NIJO_PROJ} -c Debug";
+                buildProcess.StartInfo.RedirectStandardOutput = true;
+                buildProcess.StartInfo.RedirectStandardError = true;
+                buildProcess.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+                buildProcess.StartInfo.StandardErrorEncoding = Encoding.UTF8;
+
+                var buildOutput = new StringBuilder();
+                buildProcess.OutputDataReceived += (sender, e) => {
+                    if (e.Data != null) {
+                        buildOutput.AppendLine(e.Data);
+                    }
+                };
+                buildProcess.ErrorDataReceived += (sender, e) => {
+                    if (e.Data != null) {
+                        buildOutput.AppendLine(e.Data);
+                        if (!errorDetected) {
+                            errorDetected = true;
+                            errorDetectionTime = DateTime.Now;
+                        }
+                    }
+                };
+
+                buildProcess.Start();
+                buildProcess.BeginOutputReadLine();
+                buildProcess.BeginErrorReadLine();
+                buildProcess.WaitForExit();
+
+                output.AppendLine($"[nijo-mcp] Nijoプロジェクトのビルド結果:\n{buildOutput}");
+
+                // ビルドが成功した場合のみ、ソースコード自動生成を実行
+                if (buildProcess.ExitCode == 0) {
+                    output.AppendLine("[nijo-mcp] ソースコード自動生成を開始します...");
+
+                    // ソースコード自動生成
+                    var generateProcess = new Process();
+                    generateProcess.StartInfo.FileName = "nijo";
+                    generateProcess.StartInfo.Arguments = $"generate {nijoXmlDir}";
+                    generateProcess.StartInfo.RedirectStandardOutput = true;
+                    generateProcess.StartInfo.RedirectStandardError = true;
+                    generateProcess.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+                    generateProcess.StartInfo.StandardErrorEncoding = Encoding.UTF8;
+
+                    var generateOutput = new StringBuilder();
+                    generateProcess.OutputDataReceived += (sender, e) => {
+                        if (e.Data != null) {
+                            generateOutput.AppendLine(e.Data);
+                        }
+                    };
+                    generateProcess.ErrorDataReceived += (sender, e) => {
+                        if (e.Data != null) {
+                            generateOutput.AppendLine(e.Data);
+                            if (!errorDetected) {
+                                errorDetected = true;
+                                errorDetectionTime = DateTime.Now;
+                            }
+                        }
+                    };
+
+                    generateProcess.Start();
+                    generateProcess.BeginOutputReadLine();
+                    generateProcess.BeginErrorReadLine();
+                    generateProcess.WaitForExit();
+
+                    output.AppendLine($"[nijo-mcp] ソースコード自動生成結果:\n{generateOutput}");
+
+                    if (generateProcess.ExitCode != 0) {
+                        errorDetected = true;
+                        errorDetectionTime = DateTime.Now;
+                    }
+                } else {
+                    errorDetected = true;
+                    errorDetectionTime = DateTime.Now;
+                }
 
                 // npm run dev プロセスを開始
                 var npmProcess = new Process();
@@ -134,7 +216,7 @@ namespace Nijo.Mcp {
 
                 // プロセスの準備完了を待機
                 var ready = false;
-                var timeout = DateTime.Now.AddMinutes(3);
+                var timeout = DateTime.Now.AddMinutes(1);
                 while (!ready && DateTime.Now < timeout) {
                     // エラーが検出されてから5秒経過したら中断
                     if (errorDetected && DateTime.Now > errorDetectionTime.AddSeconds(5)) {
