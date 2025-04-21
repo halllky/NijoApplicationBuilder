@@ -33,14 +33,14 @@ internal class ConfigurationInWebApi : DefaultConfigurationInWebApi {
         // クライアント側から送られてきたパラメータは
         // Content-Type: multipart/form-data
         // のリクエストボディのこの名前のセクションにJSONで入っているのでそこから取得する
-        const string PARAM_DATA = "data";
+        const string PARAM_DATA = "complex-post-request-body";
         var jsonOption = JsonUtil.GetDefaultJsonSerializerOptions();
         var dataSection = filterContext.HttpContext.Request.Form[PARAM_DATA];
         var data = JsonSerializer.Deserialize<TParameter>(filterContext.HttpContext.Request.Body, jsonOption)
             ?? throw new InvalidOperationException("リクエストの型が不正です。");
 
-        // ignoreConfirmはクエリパラメータから取得する
-        const string PARAM_IGNORE_CONFIRM = "ignoreConfirm";
+        // `useHttpRequest` フック内でこの名前のクエリパラメータが付される
+        const string PARAM_IGNORE_CONFIRM = "ignore-confirm";
         bool blnIgnoreConfirm;
         if (!filterContext.HttpContext.Request.Query.TryGetValue(PARAM_IGNORE_CONFIRM, out var strIgnoreConfirm)) {
             blnIgnoreConfirm = false;
@@ -68,7 +68,8 @@ internal class ConfigurationInWebApi : DefaultConfigurationInWebApi {
         var ctx = (PresentationContextInWebApi<TMessageRoot>)presentationContext;
         var jsonOptions = JsonUtil.GetDefaultJsonSerializerOptions();
 
-        // レスポンスボディ
+        // レスポンスボディ。
+        // 各項目の名前は `useHttpRequest.tsx` で定義されているものと合わせる必要がある
         var responseBody = new JsonObject();
         if (returnValue != null) {
             responseBody["returnValue"] = JsonSerializer.Serialize(returnValue, returnValue.GetType(), jsonOptions);
@@ -81,12 +82,10 @@ internal class ConfigurationInWebApi : DefaultConfigurationInWebApi {
         responseBody["detail"] = ctx.Messages.ToJsonObject();
         responseBody["toastMessage"] = ctx.ToastMessage; // ソースコード自動生成と関係ない独自処理
 
-        // ステータスコード
+        // ステータスコード。
+        // `useHttpRequest.tsx` でレスポンスを受け取ったあとの処理と整合性がとれている必要がある
         var objectResult = new ObjectResult(JsonSerializer.Serialize(responseBody, jsonOptions));
-        if (ctx.Messages.HasError()) {
-            objectResult.StatusCode = (int)HttpStatusCode.BadRequest;
-
-        } else if (!ctx.Options.IgnoreConfirm && ctx.HasConfirm()) {
+        if (ctx.Messages.HasError() || !ctx.Options.IgnoreConfirm && ctx.HasConfirm()) {
             objectResult.StatusCode = (int)HttpStatusCode.Accepted;
 
         } else {

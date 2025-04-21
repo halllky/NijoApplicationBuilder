@@ -146,12 +146,12 @@ namespace Nijo.Parts.CSharp {
                     using Microsoft.Extensions.Logging;
 
                     namespace {{_ctx.Config.RootNamespace}};
-                    internal abstract class {{ABSTRACT_CLASS_WEBAPI}} {
+                    public abstract class {{ABSTRACT_CLASS_WEBAPI}} {
 
                         /// <summary>
                         /// <see cref="WebApplicationBuilder"/> に対する初期設定を行ないます。
                         /// </summary>
-                        internal virtual void InitWebHostBuilder(WebApplicationBuilder builder) {
+                        public virtual void InitWebHostBuilder(WebApplicationBuilder builder) {
 
                             // HTMLのエンコーディングをUTF-8にする(日本語のHTMLエンコード防止)
                             builder.Services.Configure<Microsoft.Extensions.WebEncoders.WebEncoderOptions>(options => {
@@ -186,7 +186,7 @@ namespace Nijo.Parts.CSharp {
                         /// <summary>
                         /// <see cref="WebApplication"/> に対する初期設定を行ないます。
                         /// </summary>
-                        internal virtual void InitWebApplication(WebApplication app) {
+                        public virtual void InitWebApplication(WebApplication app) {
                             // AddCorsの設定をするならこちらも必要
                             app.UseCors();
                         }

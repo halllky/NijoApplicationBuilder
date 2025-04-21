@@ -51,7 +51,7 @@ export const useHttpRequest = () => {
     try {
       // 添付ファイルを処理する。
       // リクエスト全体は Content-Type: multipart/form-data で送信する。
-      // リクエスト本体は "data" という名前のフィールドにJSONをまるごと格納する。
+      // リクエスト本体は "complex-post-request-body" という名前のフィールドにJSONをまるごと格納する。
       // 添付ファイルは、ファイル1件ごとにUUIDを発番し、そのUUIDをキーとしてファイル本体のバイナリをそのフィールドに格納する。
       const formData = new FormData()
       const stringifiedRequestBody = JSON.stringify(requestBody, (key, value) => {
@@ -71,7 +71,7 @@ export const useHttpRequest = () => {
         }
         return value
       })
-      formData.append('data', stringifiedRequestBody)
+      formData.append('complex-post-request-body', stringifiedRequestBody)
 
       // -------------------------
       // 「～しますがよろしいですか？」の確認メッセージが表示される前の、エラーチェックのみを行なうHTTPリクエストでは、
@@ -80,7 +80,7 @@ export const useHttpRequest = () => {
       // オプションで確認メッセージ無視が指定されている場合は1巡目からignoreConfirmを指定する。
       const searchParams = new URLSearchParams()
       if (options?.ignoreConfirm) {
-        searchParams.append('ignoreConfirm', 'true')
+        searchParams.append('ignore-confirm', 'true')
       }
 
       while (true) {
@@ -93,6 +93,15 @@ export const useHttpRequest = () => {
           body: formData,
         })
 
+        // HTTPステータスコードが200-299でない場合はエラー。
+        // ここで言うエラーは、必須入力漏れなどのエラーが発生したことを示すものではなく、
+        // サーバーからの応答が無い、サーバー側で復旧不可のエラーが発生した、などといったものを示す。
+        if (!response.ok) {
+          msgContext.error(handleUnknownResponse(response))
+          return undefined
+        }
+
+        // HTTPステータスコードが200-299の場合はレスポンスをJSONとしてパースする
         const json = await response.json() as PresentationContextResponse<TReturnValue>
 
         // トーストメッセージがある場合はそれを表示

@@ -182,8 +182,8 @@ namespace Nijo.CodeGenerating {
                 /// </summary>
                 [ApiController]
                 [Route("{{controller.Route}}")]
-                internal partial class {{controller.CsClassName}} : ControllerBase {
-                    internal {{controller.CsClassName}}({{ApplicationService.ABSTRACT_CLASS}} applicationService, {{ApplicationConfigure.ABSTRACT_CLASS_WEBAPI}} webConfigure) {
+                public partial class {{controller.CsClassName}} : ControllerBase {
+                    public {{controller.CsClassName}}({{ApplicationService.ABSTRACT_CLASS}} applicationService, {{ApplicationConfigure.ABSTRACT_CLASS_WEBAPI}} webConfigure) {
                         _applicationService = applicationService;
                         _webConfigure = webConfigure;
                     }
