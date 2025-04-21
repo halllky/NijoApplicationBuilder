@@ -18,6 +18,7 @@ alwaysApply: true
   - [TEST_FOR_CURSOR_AGENT_COMPILE.ps1](mdc:TEST_FOR_CURSOR_AGENT_COMPILE.ps1) の詳細な結果は [DataPatternTest_Results.trx](mdc:Nijo.IntegrationTest/TestResults/DataPatternTest_Results.trx) に出力されています。エラーの詳細を確認する際はまずこのファイルを確認してください。
 - 自動生成された方（Nijo.ApplicationTemplate.Ver1, または 「自動テストで作成されたプロジェクト」）の場合
   - MCP `nijo-mcp` を使用して動作確認してください。
+  - MCP `nijo-mcp` にわたすnijo.xmlのパスはWindowsの絶対パス（ `C:\\` から始まるパス）であることに注意してください。
 
 ## エラー原因調査するときの注意事項
 - コンパイルエラーが出ているファイルが [OverridedApplicationService.cs](mdc:自動テストで作成されたプロジェクト/Core/OverridedApplicationService.cs) の場合
