@@ -40,6 +40,9 @@ namespace Nijo.Mcp {
         [McpServerTool(Name = "start_debugging"), Description("ソースコード自動生成された方のアプリケーションのデバッグを開始する。既に開始されている場合はリビルドして再開する。")]
         public static string StartDebugging([Description("nijo.xmlのファイルの絶対パス")] string nijoXmlFileFullPath) {
             try {
+                // npm run devの出力が化けるので強制的にutf8指定
+                Console.InputEncoding = Encoding.UTF8;
+                Console.OutputEncoding = Encoding.UTF8;
 
                 if (string.IsNullOrEmpty(nijoXmlFileFullPath)) {
                     return "nijo.xmlのファイルの絶対パスを指定してください。";
@@ -188,8 +191,8 @@ namespace Nijo.Mcp {
                 dotnetProcess.StartInfo.Arguments = "run --launch-profile https";
                 dotnetProcess.StartInfo.RedirectStandardOutput = true;
                 dotnetProcess.StartInfo.RedirectStandardError = true;
-                dotnetProcess.StartInfo.StandardOutputEncoding = Console.OutputEncoding;
-                dotnetProcess.StartInfo.StandardErrorEncoding = Console.OutputEncoding;
+                dotnetProcess.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+                dotnetProcess.StartInfo.StandardErrorEncoding = Encoding.UTF8;
 
                 dotnetProcess.OutputDataReceived += (sender, e) => {
                     if (e.Data != null) {
@@ -246,6 +249,10 @@ namespace Nijo.Mcp {
         [McpServerTool(Name = "stop_debugging"), Description("ソースコード自動生成された方のアプリケーションのデバッグを終了する。")]
         public static string StopDebugging() {
             try {
+                // npm run devの出力が化けるので強制的にutf8指定
+                Console.InputEncoding = Encoding.UTF8;
+                Console.OutputEncoding = Encoding.UTF8;
+
                 var result = JobObjectHelper.TryKillJobByName(JOB_NAME);
                 return result
                     ? "デバッグを終了しました。"
