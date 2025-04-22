@@ -75,7 +75,7 @@ public static class JobObjectHelper {
     }
 
     /// <summary>
-    /// 新規ジョブを作成し、必要な設定を施したうえでプロセスをアサインします。
+    /// 新規ジョブを作成し、プロセスをアサインします。
     /// </summary>
     /// <param name="jobName">再起動後にも同じ名前で開けるようユニークな名前を付ける</param>
     /// <param name="process">アサインしたい Process インスタンス</param>
@@ -85,26 +85,6 @@ public static class JobObjectHelper {
         var hJob = CreateJobObject(IntPtr.Zero, jobName);
         if (hJob == IntPtr.Zero)
             throw new Win32Exception(Marshal.GetLastWin32Error(), "CreateJobObject failed");
-
-        // キル・オン・クローズを設定
-        var info = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION {
-            BasicLimitInformation = new JOBOBJECT_BASIC_LIMIT_INFORMATION {
-                LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
-            }
-        };
-        int length = Marshal.SizeOf(info);
-        IntPtr infoPtr = Marshal.AllocHGlobal(length);
-        try {
-            Marshal.StructureToPtr(info, infoPtr, false);
-            if (!SetInformationJobObject(hJob,
-                                         JOBOBJECTINFOCLASS.ExtendedLimitInformation,
-                                         infoPtr,
-                                         (uint)length)) {
-                throw new Win32Exception(Marshal.GetLastWin32Error(), "SetInformationJobObject failed");
-            }
-        } finally {
-            Marshal.FreeHGlobal(infoPtr);
-        }
 
         // プロセスをジョブにアサイン
         if (!AssignProcessToJobObject(hJob, process.Handle))
@@ -121,7 +101,7 @@ public static class JobObjectHelper {
         // ジョブを開く（Terminate 権限だけあればOK）
         var hJob = OpenJobObject(JOB_OBJECT_TERMINATE, false, jobName);
         if (hJob == IntPtr.Zero) {
-            return false; // OpenJobObject failed 
+            return false; // OpenJobObject failed
         }
 
         try {
