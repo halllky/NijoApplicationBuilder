@@ -37,43 +37,6 @@ namespace Nijo.Mcp {
         private const string NPM_LOG_FILE = "npm_output.log";
         private const string DOTNET_LOG_FILE = "dotnet_output.log";
 
-        // ログフォルダを準備する
-        private static void PrepareLogDirectory() {
-            // カレントディレクトリにlogsフォルダがなければ作成
-            if (!Directory.Exists(WORK_DIR)) {
-                Directory.CreateDirectory(WORK_DIR);
-            }
-
-            // Git管理対象外
-            File.WriteAllText(Path.Combine(WORK_DIR, ".gitignore"), "*");
-
-            // 既存のログファイルがあれば削除
-            string npmLogPath = Path.Combine(WORK_DIR, NPM_LOG_FILE);
-            string dotnetLogPath = Path.Combine(WORK_DIR, DOTNET_LOG_FILE);
-
-            if (File.Exists(npmLogPath)) {
-                File.Delete(npmLogPath);
-            }
-
-            if (File.Exists(dotnetLogPath)) {
-                File.Delete(dotnetLogPath);
-            }
-        }
-
-        // ログファイルの内容を読み取る
-        private static string ReadLogFile(string fileName) {
-            string logPath = Path.Combine(WORK_DIR, fileName);
-            if (!File.Exists(logPath)) {
-                return "ログファイルが見つかりません。";
-            }
-
-            try {
-                return File.ReadAllText(logPath);
-            } catch (Exception ex) {
-                return $"ログファイルの読み取りに失敗しました: {ex.Message}";
-            }
-        }
-
         [McpServerTool(Name = "start_debugging"), Description("ソースコード自動生成された方のアプリケーションのデバッグを開始する。既に開始されている場合はリビルドして再開する。")]
         public static async Task<string> StartDebugging([Description("nijo.xmlのファイルの絶対パス")] string nijoXmlFileFullPath) {
             try {
@@ -469,6 +432,45 @@ namespace Nijo.Mcp {
             }
         }
 
+        [McpServerTool(Name = "get_npm_log"), Description("npmプロセスのログを取得する。")]
+        public static string GetNpmLog() {
+            return ReadLogFile(NPM_LOG_FILE);
+        }
+
+        [McpServerTool(Name = "get_dotnet_log"), Description("dotnetプロセスのログを取得する。")]
+        public static string GetDotnetLog() {
+            return ReadLogFile(DOTNET_LOG_FILE);
+        }
+
+        // ログフォルダを準備する
+        private static void PrepareLogDirectory() {
+            // カレントディレクトリにlogsフォルダがなければ作成
+            if (!Directory.Exists(WORK_DIR)) Directory.CreateDirectory(WORK_DIR);
+
+            // Git管理対象外
+            File.WriteAllText(Path.Combine(WORK_DIR, ".gitignore"), "*");
+
+            // 既存のログファイルがあれば削除
+            string npmLogPath = Path.Combine(WORK_DIR, NPM_LOG_FILE);
+            string dotnetLogPath = Path.Combine(WORK_DIR, DOTNET_LOG_FILE);
+            if (File.Exists(npmLogPath)) File.Delete(npmLogPath);
+            if (File.Exists(dotnetLogPath)) File.Delete(dotnetLogPath);
+        }
+
+        // ログファイルの内容を読み取る
+        private static string ReadLogFile(string fileName) {
+            string logPath = Path.Combine(WORK_DIR, fileName);
+            if (!File.Exists(logPath)) {
+                return "ログファイルが見つかりません。";
+            }
+
+            try {
+                return File.ReadAllText(logPath);
+            } catch (Exception ex) {
+                return $"ログファイルの読み取りに失敗しました: {ex.Message}";
+            }
+        }
+
         // ポート番号からプロセスIDを取得するメソッド
         private static int? FindProcessIdByPort(int port) {
             // netstatコマンドを実行して、特定のポートを使用しているプロセスのPIDを取得
@@ -531,16 +533,6 @@ namespace Nijo.Mcp {
             }
 
             return result.ToString();
-        }
-
-        [McpServerTool(Name = "get_npm_log"), Description("npmプロセスのログを取得する。")]
-        public static string GetNpmLog() {
-            return ReadLogFile(NPM_LOG_FILE);
-        }
-
-        [McpServerTool(Name = "get_dotnet_log"), Description("dotnetプロセスのログを取得する。")]
-        public static string GetDotnetLog() {
-            return ReadLogFile(DOTNET_LOG_FILE);
         }
     }
 }
