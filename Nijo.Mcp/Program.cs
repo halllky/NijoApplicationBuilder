@@ -1,14 +1,10 @@
-using Microsoft.Extensions.AI;
 using ModelContextProtocol.Server;
 using System.ComponentModel;
-using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Text.RegularExpressions;
-using System.Net.Http;
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.Logging.AddConsole(consoleLogOptions => {
@@ -35,7 +31,6 @@ namespace Nijo.Mcp {
     public static class NijoMcpTools {
 
         private const string NIJO_PROJ = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo"; // とりあえずハードコード
-        private const string JOB_NAME = "mijo-mcp-debug-task";
         private const string DOTNET_URL = "https://localhost:7098/swagger";
         private const string NPM_URL = "http://localhost:5173";
         private const string WORK_DIR = "temp_work";
@@ -108,12 +103,10 @@ namespace Nijo.Mcp {
                 PrepareLogDirectory();
 
                 // 既存のプロセスを終了 - これによって以前実行していたプロセスが終了する
-                JobObjectHelper.TryKillJobByName(JOB_NAME);
+                StopDebugging();
 
                 // ------------------------------------
                 var mainOutput = new StringBuilder();
-                var npmOutput = new StringBuilder();
-                var dotnetOutput = new StringBuilder();
                 var errorDetected = false;
                 var errorDetectionTime = DateTime.MinValue;
 
@@ -204,35 +197,43 @@ namespace Nijo.Mcp {
 
                 // npm run dev プロセスを開始
                 mainOutput.AppendLine($"[nijo-mcp] npmプロセスを開始します: npm run dev (出力は {npmLogPath} に保存されます)");
+                Process? npmProcess = null;
                 try {
-                    // バッチファイルを作成して実行する（Windows）
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                        string npmBatchPath = Path.Combine(Directory.GetCurrentDirectory(), WORK_DIR, "run_npm.bat");
-                        File.WriteAllText(npmBatchPath, $$"""
-                            @echo off 
-                            chcp 65001 
-                             
-                            cd /d "{{reactDir}}" 
-                            npm run dev > "{{npmLogPath}}" 2>&1 
-                            """);
+                    npmProcess = new Process();
+                    npmProcess.StartInfo.FileName = "npm";
+                    npmProcess.StartInfo.Arguments = "run dev";
+                    npmProcess.StartInfo.WorkingDirectory = reactDir;
+                    npmProcess.StartInfo.UseShellExecute = false;
+                    npmProcess.StartInfo.RedirectStandardOutput = true;
+                    npmProcess.StartInfo.RedirectStandardError = true;
+                    npmProcess.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+                    npmProcess.StartInfo.StandardErrorEncoding = Encoding.UTF8;
+                    npmProcess.StartInfo.CreateNoWindow = true;
 
-                        var npmProcess = new Process();
-                        npmProcess.StartInfo.FileName = "cmd.exe";
-                        npmProcess.StartInfo.Arguments = $"/c start /min cmd /c {npmBatchPath}";
-                        npmProcess.StartInfo.UseShellExecute = true;
-                        npmProcess.StartInfo.CreateNoWindow = true;
+                    // ログファイルへの出力
+                    using (var npmLogFileStream = new FileStream(npmLogPath, FileMode.Create, FileAccess.Write, FileShare.Read))
+                    using (var npmLogWriter = new StreamWriter(npmLogFileStream, Encoding.UTF8) { AutoFlush = true }) {
+                        npmProcess.OutputDataReceived += (sender, e) => {
+                            if (e.Data != null) {
+                                npmLogWriter.WriteLine(e.Data);
+                            }
+                        };
+                        npmProcess.ErrorDataReceived += (sender, e) => {
+                            if (e.Data != null) {
+                                npmLogWriter.WriteLine("ERROR: " + e.Data);
+                                if (e.Data.Contains("ERROR") || e.Data.Contains("Error:")) {
+                                    errorDetected = true;
+                                    errorDetectionTime = DateTime.Now;
+                                }
+                            }
+                        };
+
                         npmProcess.Start();
-                        mainOutput.AppendLine($"[nijo-mcp] npmプロセスを開始しました");
-                    } else {
-                        // Linuxの場合
-                        var npmProcess = new Process();
-                        npmProcess.StartInfo.FileName = "bash";
-                        npmProcess.StartInfo.Arguments = $"-c \"cd '{reactDir}' && npm run dev > '{npmLogPath}' 2>&1 &\"";
-                        npmProcess.StartInfo.UseShellExecute = true;
-                        npmProcess.StartInfo.CreateNoWindow = true;
-                        npmProcess.Start();
-                        mainOutput.AppendLine($"[nijo-mcp] npmプロセスを開始しました");
+                        npmProcess.BeginOutputReadLine();
+                        npmProcess.BeginErrorReadLine();
                     }
+
+                    mainOutput.AppendLine($"[nijo-mcp] npmプロセスを開始しました");
                 } catch (Exception ex) {
                     mainOutput.AppendLine($"[nijo-mcp] npmプロセスの起動に失敗しました: {ex.Message}");
                     errorDetected = true;
@@ -241,35 +242,43 @@ namespace Nijo.Mcp {
 
                 // dotnet run プロセスを開始
                 mainOutput.AppendLine($"[nijo-mcp] dotnetプロセスを開始します: dotnet run --launch-profile https (出力は {dotnetLogPath} に保存されます)");
+                Process? dotnetProcess = null;
                 try {
-                    // バッチファイルを作成して実行する（Windows）
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                        string dotnetBatchPath = Path.Combine(Directory.GetCurrentDirectory(), WORK_DIR, "run_dotnet.bat");
-                        File.WriteAllText(dotnetBatchPath, $$"""
-                            @echo off 
-                            chcp 65001 
-                             
-                            cd /d "{{webApiDir}}" 
-                            dotnet run --launch-profile https > "{{dotnetLogPath}}" 2>&1 
-                            """);
+                    dotnetProcess = new Process();
+                    dotnetProcess.StartInfo.FileName = "dotnet";
+                    dotnetProcess.StartInfo.Arguments = "run --launch-profile https";
+                    dotnetProcess.StartInfo.WorkingDirectory = webApiDir;
+                    dotnetProcess.StartInfo.UseShellExecute = false;
+                    dotnetProcess.StartInfo.RedirectStandardOutput = true;
+                    dotnetProcess.StartInfo.RedirectStandardError = true;
+                    dotnetProcess.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+                    dotnetProcess.StartInfo.StandardErrorEncoding = Encoding.UTF8;
+                    dotnetProcess.StartInfo.CreateNoWindow = true;
 
-                        var dotnetProcess = new Process();
-                        dotnetProcess.StartInfo.FileName = "cmd.exe";
-                        dotnetProcess.StartInfo.Arguments = $"/c start /min cmd /c {dotnetBatchPath}";
-                        dotnetProcess.StartInfo.UseShellExecute = true;
-                        dotnetProcess.StartInfo.CreateNoWindow = true;
+                    // ログファイルへの出力
+                    using (var dotnetLogFileStream = new FileStream(dotnetLogPath, FileMode.Create, FileAccess.Write, FileShare.Read))
+                    using (var dotnetLogWriter = new StreamWriter(dotnetLogFileStream, Encoding.UTF8) { AutoFlush = true }) {
+                        dotnetProcess.OutputDataReceived += (sender, e) => {
+                            if (e.Data != null) {
+                                dotnetLogWriter.WriteLine(e.Data);
+                            }
+                        };
+                        dotnetProcess.ErrorDataReceived += (sender, e) => {
+                            if (e.Data != null) {
+                                dotnetLogWriter.WriteLine("ERROR: " + e.Data);
+                                if (e.Data.Contains("ERROR") || e.Data.Contains("Error:") || e.Data.Contains("Exception:")) {
+                                    errorDetected = true;
+                                    errorDetectionTime = DateTime.Now;
+                                }
+                            }
+                        };
+
                         dotnetProcess.Start();
-                        mainOutput.AppendLine($"[nijo-mcp] dotnetプロセスを開始しました");
-                    } else {
-                        // Linuxの場合
-                        var dotnetProcess = new Process();
-                        dotnetProcess.StartInfo.FileName = "bash";
-                        dotnetProcess.StartInfo.Arguments = $"-c \"cd '{webApiDir}' && dotnet run --launch-profile https > '{dotnetLogPath}' 2>&1 &\"";
-                        dotnetProcess.StartInfo.UseShellExecute = true;
-                        dotnetProcess.StartInfo.CreateNoWindow = true;
-                        dotnetProcess.Start();
-                        mainOutput.AppendLine($"[nijo-mcp] dotnetプロセスを開始しました");
+                        dotnetProcess.BeginOutputReadLine();
+                        dotnetProcess.BeginErrorReadLine();
                     }
+
+                    mainOutput.AppendLine($"[nijo-mcp] dotnetプロセスを開始しました");
                 } catch (Exception ex) {
                     mainOutput.AppendLine($"[nijo-mcp] dotnetプロセスの起動に失敗しました: {ex.Message}");
                     errorDetected = true;
@@ -366,6 +375,8 @@ namespace Nijo.Mcp {
 
                     // エラーが検出されてから5秒経過したら中断
                     if (errorDetected && DateTime.Now > errorDetectionTime.AddSeconds(5)) {
+                        // プロセスを終了
+                        StopDebugging();
                         return $"エラーが検出されたため、デバッグを中断しました。\n" +
                                $"メイン処理の出力:\n{mainOutput}\n" +
                                $"NPMログファイル: {npmLogPath}\n" +
@@ -394,6 +405,8 @@ namespace Nijo.Mcp {
                 }
 
                 if (!ready) {
+                    // プロセスを終了
+                    StopDebugging();
                     var status = new StringBuilder("タイムアウト: ");
                     if (!dotnetReady) status.Append("WebAPIの準備が完了しませんでした。");
                     if (!npmReady) status.Append("フロントエンドの準備が完了しませんでした。");
@@ -411,6 +424,8 @@ namespace Nijo.Mcp {
                        $"WebAPIログ: {dotnetLogPath}";
 
             } catch (Exception ex) {
+                // エラー発生時はプロセスを終了
+                StopDebugging();
                 return $"エラーが発生しました: {ex}";
             }
         }
@@ -422,65 +437,100 @@ namespace Nijo.Mcp {
                 Console.InputEncoding = Encoding.UTF8;
                 Console.OutputEncoding = Encoding.UTF8;
 
-                var result = JobObjectHelper.TryKillJobByName(JOB_NAME);
+                var result = new StringBuilder();
 
-                // Windows標準の方法でプロセスを探して終了する
+                // 特定のポートを使用しているプロセスを見つけて終了させる
                 try {
-                    // npm関連のプロセスを終了
-                    Process[] npmProcesses = Process.GetProcessesByName("node");
-                    foreach (var proc in npmProcesses) {
-                        try {
-                            proc.Kill();
-                        } catch { }
+                    // netstatコマンドを実行して、特定のポートを使っているプロセスのPIDを取得
+                    var dotnetPid = FindProcessIdByPort(7098); // DOTNETのポート番号
+                    var npmPid = FindProcessIdByPort(5173);    // NPMのポート番号
+
+                    if (dotnetPid.HasValue) {
+                        var killResultDotnet = KillProcessWithChildren(dotnetPid.Value);
+                        result.AppendLine($"WebAPIプロセス(PID:{dotnetPid})の終了結果: {killResultDotnet}");
+                    } else {
+                        result.AppendLine("WebAPIプロセスが見つかりませんでした。");
                     }
 
-                    // dotnet関連のプロセスを終了
-                    Process[] dotnetProcesses = Process.GetProcessesByName("dotnet");
-                    foreach (var proc in dotnetProcesses) {
-                        try {
-                            // プロセス情報からWebApiのホスト判定する
-                            if (proc.MainWindowTitle.Contains("WebApi") ||
-                                (proc.MainModule != null && proc.MainModule.FileName.Contains("WebApi"))) {
-                                proc.Kill();
-                            }
-                        } catch { }
-                    }
-
-                    // cmdプロセスも終了（バッチファイル実行の場合）
-                    Process[] cmdProcesses = Process.GetProcessesByName("cmd");
-                    foreach (var proc in cmdProcesses) {
-                        try {
-                            // タイトルに "run_npm.bat" や "run_dotnet.bat" が含まれていたら終了
-                            if (proc.MainWindowTitle.Contains("run_npm.bat") || proc.MainWindowTitle.Contains("run_dotnet.bat")) {
-                                proc.Kill();
-                            }
-                        } catch { }
+                    if (npmPid.HasValue) {
+                        var killResultNpm = KillProcessWithChildren(npmPid.Value);
+                        result.AppendLine($"フロントエンドプロセス(PID:{npmPid})の終了結果: {killResultNpm}");
+                    } else {
+                        result.AppendLine("フロントエンドプロセスが見つかりませんでした。");
                     }
                 } catch (Exception ex) {
-                    Console.WriteLine($"プロセス終了時のエラー: {ex.Message}");
+                    result.AppendLine($"ポート検索処理でエラーが発生しました: {ex.Message}");
                 }
 
-                // バッチファイルを削除
-                try {
-                    string npmBatchPath = Path.Combine(Directory.GetCurrentDirectory(), WORK_DIR, "run_npm.bat");
-                    string dotnetBatchPath = Path.Combine(Directory.GetCurrentDirectory(), WORK_DIR, "run_dotnet.bat");
-
-                    if (File.Exists(npmBatchPath)) {
-                        File.Delete(npmBatchPath);
-                    }
-
-                    if (File.Exists(dotnetBatchPath)) {
-                        File.Delete(dotnetBatchPath);
-                    }
-                } catch { }
-
-                return result
-                    ? "デバッグを終了しました。"
-                    : "デバッグプロセスが見つかりませんでした。";
+                return result.ToString();
 
             } catch (Exception ex) {
                 return $"エラーが発生しました: {ex}";
             }
+        }
+
+        // ポート番号からプロセスIDを取得するメソッド
+        private static int? FindProcessIdByPort(int port) {
+            // netstatコマンドを実行して、特定のポートを使用しているプロセスのPIDを取得
+            var process = new Process();
+            process.StartInfo.FileName = "netstat";
+            process.StartInfo.Arguments = "-ano";  // すべてのコネクション情報とPIDを表示
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.CreateNoWindow = true;
+
+            process.Start();
+            var output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit();
+
+            // 出力から該当するポートを使用しているプロセスのPIDを検索
+            var lines = output.Split('\n');
+            foreach (var line in lines) {
+                // TCPコネクションをフィルタリング
+                if (line.Contains("TCP") && line.Contains($":{port} ")) {
+                    // 行の形式: "TCP    127.0.0.1:7098     0.0.0.0:0     LISTENING    12345"
+                    var parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length >= 5) {
+                        int pid;
+                        if (int.TryParse(parts[parts.Length - 1], out pid)) {
+                            return pid;
+                        }
+                    }
+                }
+            }
+
+            return null;  // 見つからなかった場合
+        }
+
+        // 指定したPIDのプロセスとその子プロセスを終了するメソッド
+        private static string KillProcessWithChildren(int pid) {
+            var result = new StringBuilder();
+
+            try {
+                // taskkillコマンドを使ってプロセスツリーを強制終了
+                var process = new Process();
+                process.StartInfo.FileName = "taskkill";
+                process.StartInfo.Arguments = $"/PID {pid} /T /F";  // /T: ツリー(子プロセスを含む) /F: 強制終了
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.RedirectStandardOutput = true;
+                process.StartInfo.RedirectStandardError = true;
+                process.StartInfo.CreateNoWindow = true;
+
+                process.Start();
+                string output = process.StandardOutput.ReadToEnd();
+                string error = process.StandardError.ReadToEnd();
+                process.WaitForExit();
+
+                if (process.ExitCode == 0) {
+                    result.Append($"成功: {output.Trim()}");
+                } else {
+                    result.Append($"エラー(コード:{process.ExitCode}): {error.Trim()}");
+                }
+            } catch (Exception ex) {
+                result.Append($"例外が発生しました: {ex.Message}");
+            }
+
+            return result.ToString();
         }
 
         [McpServerTool(Name = "get_npm_log"), Description("npmプロセスのログを取得する。")]
