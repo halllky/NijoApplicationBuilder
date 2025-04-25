@@ -5,6 +5,8 @@ using System.Text;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text.Json.Nodes;
+using System.Reflection;
 
 //Console.WriteLine(await Nijo.Mcp.NijoMcpTools.StartDebugging(@"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.ApplicationTemplate.Ver1\nijo.xml"));
 //Console.WriteLine(Nijo.Mcp.NijoMcpTools.StopDebugging());
@@ -37,14 +39,31 @@ namespace Nijo.Mcp {
         private const string DOTNET_URL = "https://localhost:7098/swagger";
         private const string NPM_URL = "http://localhost:5173";
         private const string WORK_DIR = "temp_work";
-        private const string NPM_LOG_FILE = "npm_output.log";
-        private const string DOTNET_LOG_FILE = "dotnet_output.log";
+        private const string MAIN_LOG_FILE = "output.log";
+        private const string NPM_LOG_FILE = "output_npm.log";
+        private const string DOTNET_LOG_FILE = "output_dotnet.log";
 
         [McpServerTool(Name = "start_debugging"), Description("ソースコード自動生成された方のアプリケーションのデバッグを開始する。既に開始されている場合はリビルドして再開する。")]
         public static async Task<string> StartDebugging([Description("nijo.xmlのファイルの絶対パス")] string nijoXmlFileFullPath) {
+            // ログディレクトリを準備
+            PrepareLogDirectory();
+
+            // メインログ
+            var workDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location!)!, WORK_DIR);
+            var mainOutput = new StringBuilder();
+            string mainLogPath = Path.Combine(workDirectory, MAIN_LOG_FILE);
+            using var mainLogFs = new FileStream(mainLogPath, FileMode.Create, FileAccess.Write, FileShare.Read);
+            using var sw = new StreamWriter(mainLogFs, encoding: Encoding.UTF8);
+            sw.AutoFlush = true;
+            void WriteToMainLog(string text) {
+                mainOutput.AppendLine(text);
+                sw.WriteLine(text);
+            }
+
             try {
+
                 if (string.IsNullOrEmpty(nijoXmlFileFullPath)) {
-                    return "nijo.xmlのファイルの絶対パスを指定してください。";
+                    return ToMcpResutJson(new { Error = "nijo.xmlのファイルの絶対パスを指定してください。" });
                 }
 
                 var nijoXmlDir = Path.GetDirectoryName(nijoXmlFileFullPath);
@@ -52,28 +71,24 @@ namespace Nijo.Mcp {
                 var webApiDir = Path.Combine(nijoXmlDir!, "WebApi");
 
                 if (!File.Exists(nijoXmlFileFullPath)) {
-                    return $"指定されたnijo.xmlファイルが見つかりません: {nijoXmlFileFullPath}";
+                    return ToMcpResutJson(new { Error = $"指定されたnijo.xmlファイルが見つかりません: {nijoXmlFileFullPath}" });
                 }
                 if (!Directory.Exists(reactDir)) {
-                    return $"reactフォルダが見つかりません: {reactDir}";
+                    return ToMcpResutJson(new { Error = $"reactフォルダが見つかりません: {reactDir}" });
                 }
                 if (!Directory.Exists(webApiDir)) {
-                    return $"WebApiフォルダが見つかりません: {webApiDir}";
+                    return ToMcpResutJson(new { Error = $"WebApiフォルダが見つかりません: {webApiDir}" });
                 }
 
-                // ログディレクトリを準備
-                PrepareLogDirectory();
-
                 // 既存のプロセスを終了 - これによって以前実行していたプロセスが終了する
-                StopDebugging();
+                WriteToMainLog(StopDebugging());
 
                 // ------------------------------------
-                var mainOutput = new StringBuilder();
                 var errorDetected = false;
                 var errorDetectionTime = DateTime.MinValue;
 
                 // ソースコードの自動生成のかけなおし
-                mainOutput.AppendLine("[nijo-mcp] Nijoプロジェクトのビルドを開始します...");
+                WriteToMainLog("[nijo-mcp] Nijoプロジェクトのビルドを開始します...");
 
                 // Nijoプロジェクトのビルド
                 var buildProcess = new Process();
@@ -105,11 +120,11 @@ namespace Nijo.Mcp {
                 buildProcess.BeginErrorReadLine();
                 buildProcess.WaitForExit();
 
-                mainOutput.AppendLine($"[nijo-mcp] Nijoプロジェクトのビルド結果:\n{buildOutput}");
+                WriteToMainLog($"[nijo-mcp] Nijoプロジェクトのビルド結果:\n{buildOutput}");
 
                 // ビルドが成功した場合のみ、ソースコード自動生成を実行
                 if (buildProcess.ExitCode == 0) {
-                    mainOutput.AppendLine("[nijo-mcp] ソースコード自動生成を開始します...");
+                    WriteToMainLog("[nijo-mcp] ソースコード自動生成を開始します...");
 
                     // ソースコード自動生成
                     var generateProcess = new Process();
@@ -117,8 +132,8 @@ namespace Nijo.Mcp {
                     generateProcess.StartInfo.Arguments = $"generate {nijoXmlDir}";
                     generateProcess.StartInfo.RedirectStandardOutput = true;
                     generateProcess.StartInfo.RedirectStandardError = true;
-                    generateProcess.StartInfo.StandardOutputEncoding = Encoding.UTF8;
-                    generateProcess.StartInfo.StandardErrorEncoding = Encoding.UTF8;
+                    generateProcess.StartInfo.StandardOutputEncoding = Console.OutputEncoding;
+                    generateProcess.StartInfo.StandardErrorEncoding = Console.OutputEncoding;
 
                     var generateOutput = new StringBuilder();
                     generateProcess.OutputDataReceived += (sender, e) => {
@@ -141,7 +156,7 @@ namespace Nijo.Mcp {
                     generateProcess.BeginErrorReadLine();
                     generateProcess.WaitForExit();
 
-                    mainOutput.AppendLine($"[nijo-mcp] ソースコード自動生成結果:\n{generateOutput}");
+                    WriteToMainLog($"[nijo-mcp] ソースコード自動生成結果:\n{generateOutput}");
 
                     if (generateProcess.ExitCode != 0) {
                         errorDetected = true;
@@ -153,22 +168,22 @@ namespace Nijo.Mcp {
                 }
 
                 // npmログファイル
-                string npmLogPath = Path.Combine(Directory.GetCurrentDirectory(), WORK_DIR, NPM_LOG_FILE);
+                string npmLogPath = Path.Combine(workDirectory, NPM_LOG_FILE);
                 using var npmLogFileStream = new FileStream(npmLogPath, FileMode.Create, FileAccess.Write, FileShare.Read);
                 using var npmLogWriter = new StreamWriter(npmLogFileStream, Encoding.UTF8) { AutoFlush = true };
 
                 // dotnetログファイル
-                string dotnetLogPath = Path.Combine(Directory.GetCurrentDirectory(), WORK_DIR, DOTNET_LOG_FILE);
+                string dotnetLogPath = Path.Combine(workDirectory, DOTNET_LOG_FILE);
                 using var dotnetLogFileStream = new FileStream(dotnetLogPath, FileMode.Create, FileAccess.Write, FileShare.Read);
                 using var dotnetLogWriter = new StreamWriter(dotnetLogFileStream, Encoding.UTF8) { AutoFlush = true };
 
                 // npm run dev プロセスを開始
-                mainOutput.AppendLine($"[nijo-mcp] npmプロセスを開始します: npm run dev (出力は {npmLogPath} に保存されます)");
+                WriteToMainLog($"[nijo-mcp] npmプロセスを開始します: npm run dev (出力は {npmLogPath} に保存されます)");
                 Process? npmProcess = null;
                 try {
                     npmProcess = new Process();
                     npmProcess.StartInfo.FileName = "cmd";
-                    npmProcess.StartInfo.Arguments = "/c \"npm run dev\"";
+                    npmProcess.StartInfo.Arguments = "/c \"npm.cmd run dev\"";
                     npmProcess.StartInfo.WorkingDirectory = reactDir;
                     npmProcess.StartInfo.UseShellExecute = false;
                     npmProcess.StartInfo.RedirectStandardOutput = true;
@@ -198,15 +213,15 @@ namespace Nijo.Mcp {
                     npmProcess.BeginOutputReadLine();
                     npmProcess.BeginErrorReadLine();
 
-                    mainOutput.AppendLine($"[nijo-mcp] npmプロセスを開始しました");
+                    WriteToMainLog($"[nijo-mcp] npmプロセスを開始しました");
                 } catch (Exception ex) {
-                    mainOutput.AppendLine($"[nijo-mcp] npmプロセスの起動に失敗しました: {ex.Message}");
+                    WriteToMainLog($"[nijo-mcp] npmプロセスの起動に失敗しました: {ex.Message}");
                     errorDetected = true;
                     errorDetectionTime = DateTime.Now;
                 }
 
                 // dotnet run プロセスを開始
-                mainOutput.AppendLine($"[nijo-mcp] dotnetプロセスを開始します: dotnet run --launch-profile https (出力は {dotnetLogPath} に保存されます)");
+                WriteToMainLog($"[nijo-mcp] dotnetプロセスを開始します: dotnet run --launch-profile https (出力は {dotnetLogPath} に保存されます)");
                 Process? dotnetProcess = null;
                 try {
                     dotnetProcess = new Process();
@@ -240,9 +255,9 @@ namespace Nijo.Mcp {
                     dotnetProcess.BeginOutputReadLine();
                     dotnetProcess.BeginErrorReadLine();
 
-                    mainOutput.AppendLine($"[nijo-mcp] dotnetプロセスを開始しました");
+                    WriteToMainLog($"[nijo-mcp] dotnetプロセスを開始しました");
                 } catch (Exception ex) {
-                    mainOutput.AppendLine($"[nijo-mcp] dotnetプロセスの起動に失敗しました: {ex.Message}");
+                    WriteToMainLog($"[nijo-mcp] dotnetプロセスの起動に失敗しました: {ex.Message}");
                     errorDetected = true;
                     errorDetectionTime = DateTime.Now;
                 }
@@ -252,7 +267,7 @@ namespace Nijo.Mcp {
 
                 // サービスの準備完了を待機
                 var ready = false;
-                var timeout = DateTime.Now.AddMinutes(1);
+                var timeout = DateTime.Now.AddSeconds(10);
                 var dotnetReady = false;
                 var npmReady = false;
 
@@ -291,7 +306,7 @@ namespace Nijo.Mcp {
                                         newContent = sr.ReadToEnd();
                                     }
                                     lastNpmLogSize = npmLogInfo.Length;
-                                    mainOutput.AppendLine($"[npm-log] {newContent.TrimEnd()}");
+                                    WriteToMainLog($"[npm-log] {newContent.TrimEnd()}");
 
                                     // エラーチェック
                                     if (newContent.Contains("ERROR") || newContent.Contains("Error:")) {
@@ -302,7 +317,7 @@ namespace Nijo.Mcp {
                             }
                             lastNpmLogCheck = DateTime.Now;
                         } catch (Exception ex) {
-                            mainOutput.AppendLine($"[nijo-mcp] npmログファイルの読み取りに失敗しました: {ex.Message}");
+                            WriteToMainLog($"[nijo-mcp] npmログファイルの読み取りに失敗しました: {ex.Message}");
                         }
                     }
 
@@ -320,7 +335,7 @@ namespace Nijo.Mcp {
                                         newContent = sr.ReadToEnd();
                                     }
                                     lastDotnetLogSize = dotnetLogInfo.Length;
-                                    mainOutput.AppendLine($"[dotnet-log] {newContent.TrimEnd()}");
+                                    WriteToMainLog($"[dotnet-log] {newContent.TrimEnd()}");
 
                                     // エラーチェック
                                     if (newContent.Contains("ERROR") || newContent.Contains("Error:") || newContent.Contains("Exception:")) {
@@ -331,31 +346,34 @@ namespace Nijo.Mcp {
                             }
                             lastDotnetLogCheck = DateTime.Now;
                         } catch (Exception ex) {
-                            mainOutput.AppendLine($"[nijo-mcp] dotnetログファイルの読み取りに失敗しました: {ex.Message}");
+                            WriteToMainLog($"[nijo-mcp] dotnetログファイルの読み取りに失敗しました: {ex.Message}");
                         }
                     }
 
-                    // エラーが検出されてから5秒経過したら中断
-                    if (errorDetected && DateTime.Now > errorDetectionTime.AddSeconds(5)) {
+                    // エラーが検出されてから一定時間経過したら中断
+                    if (errorDetected && DateTime.Now > errorDetectionTime.AddSeconds(3)) {
                         // プロセスを終了
-                        StopDebugging();
-                        return $"エラーが検出されたため、デバッグを中断しました。\n" +
-                               $"メイン処理の出力:\n{mainOutput}\n" +
-                               $"NPMログファイル: {npmLogPath}\n" +
-                               $"WebAPIログファイル: {dotnetLogPath}";
+                        WriteToMainLog(StopDebugging());
+
+                        return ToMcpResutJson(new {
+                            Result = "エラーが検出されたため、デバッグを中断しました。",
+                            NpmLogFile = npmLogPath,
+                            DotnetLogFile = dotnetLogPath,
+                            Details = mainOutput.ToString(),
+                        });
                     }
 
                     if (!dotnetReady) {
                         dotnetReady = await IsServiceReadyAsync(DOTNET_URL);
                         if (dotnetReady) {
-                            mainOutput.AppendLine("[nijo-mcp] WebAPIの準備が完了しました。");
+                            WriteToMainLog("[nijo-mcp] WebAPIの準備が完了しました。");
                         }
                     }
 
                     if (!npmReady) {
                         npmReady = await IsServiceReadyAsync(NPM_URL);
                         if (npmReady) {
-                            mainOutput.AppendLine("[nijo-mcp] フロントエンドの準備が完了しました。");
+                            WriteToMainLog("[nijo-mcp] フロントエンドの準備が完了しました。");
                         }
                     }
 
@@ -368,27 +386,39 @@ namespace Nijo.Mcp {
 
                 if (!ready) {
                     // プロセスを終了
-                    StopDebugging();
+                    WriteToMainLog(StopDebugging());
+
                     var status = new StringBuilder("タイムアウト: ");
                     if (!dotnetReady) status.Append("WebAPIの準備が完了しませんでした。");
                     if (!npmReady) status.Append("フロントエンドの準備が完了しませんでした。");
-                    return $"{status}\n" +
-                           $"メイン処理の出力:\n{mainOutput}\n" +
-                           $"NPMログファイル: {npmLogPath}\n" +
-                           $"WebAPIログファイル: {dotnetLogPath}";
+
+                    return ToMcpResutJson(new {
+                        Result = status.ToString(),
+                        NpmLogFile = npmLogPath,
+                        DotnetLogFile = dotnetLogPath,
+                        Details = mainOutput.ToString(),
+                    });
                 }
 
-                return $"デバッグを開始しました。以下のURLにアクセスしてください。\n" +
-                       $"{NPM_URL}\n" +
-                       $"メイン処理の出力:\n{mainOutput}\n" +
-                       $"ログファイルは以下の場所に保存されています：\n" +
-                       $"NPMログ: {npmLogPath}\n" +
-                       $"WebAPIログ: {dotnetLogPath}";
+                return ToMcpResutJson(new {
+                    Success = true,
+                    Result = "デバッグを開始しました。",
+                    LaunchedApplicationUrl = NPM_URL,
+                    NpmLogFile = npmLogPath,
+                    DotnetLogFile = dotnetLogPath,
+                    Details = mainOutput.ToString(),
+                });
 
             } catch (Exception ex) {
                 // エラー発生時はプロセスを終了
-                StopDebugging();
-                return $"エラーが発生しました: {ex}";
+                WriteToMainLog(StopDebugging());
+
+                WriteToMainLog($"Error: {ex}");
+
+                return ToMcpResutJson(new {
+                    Result = "エラーが発生しました。",
+                    Exception = ex.ToString(),
+                });
             }
         }
 
@@ -417,13 +447,31 @@ namespace Nijo.Mcp {
                         result.AppendLine("フロントエンドプロセスが見つかりませんでした。");
                     }
                 } catch (Exception ex) {
-                    result.AppendLine($"ポート検索処理でエラーが発生しました: {ex.Message}");
+                    return $$"""
+
+                        ******* 既存プロセス停止処理 START ******
+                        ポート検索処理でエラーが発生しました: {{ex}}
+                        ******* 既存プロセス停止処理 END ******
+
+                        """;
                 }
 
-                return result.ToString();
+                return $$"""
+
+                    ******* 既存プロセス停止処理 START ******
+                    {{result}}
+                    ******* 既存プロセス停止処理 END ******
+
+                    """;
 
             } catch (Exception ex) {
-                return $"エラーが発生しました: {ex}";
+                return $$"""
+
+                    ******* 既存プロセス停止処理 START ******
+                    エラーが発生しました: {{ex}}
+                    ******* 既存プロセス停止処理 END ******
+
+                    """;
             }
         }
 
@@ -439,22 +487,26 @@ namespace Nijo.Mcp {
 
         // ログフォルダを準備する
         private static void PrepareLogDirectory() {
+            var workDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location!)!, WORK_DIR);
+
             // カレントディレクトリにlogsフォルダがなければ作成
-            if (!Directory.Exists(WORK_DIR)) Directory.CreateDirectory(WORK_DIR);
+            if (!Directory.Exists(workDirectory)) Directory.CreateDirectory(workDirectory);
 
             // Git管理対象外
-            File.WriteAllText(Path.Combine(WORK_DIR, ".gitignore"), "*");
+            File.WriteAllText(Path.Combine(workDirectory, ".gitignore"), "*");
 
             // 既存のログファイルがあれば削除
-            string npmLogPath = Path.Combine(WORK_DIR, NPM_LOG_FILE);
-            string dotnetLogPath = Path.Combine(WORK_DIR, DOTNET_LOG_FILE);
+            string mainLogPath = Path.Combine(workDirectory, MAIN_LOG_FILE);
+            string npmLogPath = Path.Combine(workDirectory, NPM_LOG_FILE);
+            string dotnetLogPath = Path.Combine(workDirectory, DOTNET_LOG_FILE);
+            if (File.Exists(mainLogPath)) File.Delete(mainLogPath);
             if (File.Exists(npmLogPath)) File.Delete(npmLogPath);
             if (File.Exists(dotnetLogPath)) File.Delete(dotnetLogPath);
         }
 
         // ログファイルの内容を読み取る
         private static string ReadLogFile(string fileName) {
-            string logPath = Path.Combine(WORK_DIR, fileName);
+            string logPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location!)!, WORK_DIR, fileName);
             if (!File.Exists(logPath)) {
                 return "ログファイルが見つかりません。";
             }
@@ -529,5 +581,20 @@ namespace Nijo.Mcp {
 
             return result.ToString();
         }
+
+        #region MCPの戻り値
+        // MCPツールの戻り値はJSONのみ
+
+        private static string ToMcpResultError(string error) {
+            return ToMcpResutJson(new { Success = false, Error = error });
+        }
+        private static string ToMcpResutJson<T>(T result) {
+            var jsonOptions = new JsonSerializerOptions {
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                WriteIndented = true,
+            };
+            return JsonSerializer.Serialize(result, jsonOptions);
+        }
+        #endregion MCPの戻り値
     }
 }
