@@ -2,6 +2,7 @@ import React from 'react'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import MainLayout from './layout/MainLayout'
 import { 顧客一覧検索 } from './pages/顧客/顧客一覧検索'
+import { Home } from './pages'
 
 const router = createBrowserRouter([
   {
@@ -10,7 +11,7 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <顧客一覧検索 />
+        element: <Home />
       },
       {
         path: '顧客',
