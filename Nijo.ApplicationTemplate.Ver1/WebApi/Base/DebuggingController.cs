@@ -26,12 +26,14 @@ public class DebuggingController : ControllerBase {
     /// </summary>
     [HttpGet]
     public IActionResult Index([FromServices] OverridedApplicationService app) {
+        var webApiUrl = HttpContext.Request.Scheme + "://" + HttpContext.Request.Host; // ベースURLを取得
         return Ok($$"""
             接続先DB: {{app.Settings.CurrentDbProfileName}} (Provider: {{app.DbContext.Database.ProviderName}})
             ログディレクトリ: {{Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), app.Settings.LogDirectory))}}
             アプリケーションバージョン: {{Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "N/A"}}
             .NET ランタイムバージョン: {{Environment.Version.ToString()}}
             OS: {{RuntimeInformation.OSDescription}}
+            Swagger UI: {{webApiUrl}}/swagger
             """);
     }
 
