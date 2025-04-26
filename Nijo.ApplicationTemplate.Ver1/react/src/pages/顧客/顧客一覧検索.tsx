@@ -43,7 +43,7 @@ export const 顧客一覧検索 = () => {
               <Input.NumberInput name="filter.年齢.to" control={control} />
             </VForm3.Item>
           </VForm3.BreakPoint>
-          <VForm3.BreakPoint showBorder label="住所">
+          <VForm3.BreakPoint label="住所">
             <VForm3.Item label="都道府県">
               <Input.Word name="filter.住所.都道府県" control={control} />
             </VForm3.Item>

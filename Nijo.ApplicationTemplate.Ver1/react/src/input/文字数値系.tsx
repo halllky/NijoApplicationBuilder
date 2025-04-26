@@ -17,7 +17,7 @@ export const Word = <
       name={props.name}
       render={({ field }) => (
         <div className={`flex flex-col ${props.className ?? ''}`}>
-          <input type="text" {...field} />
+          <input type="text" {...field} className="border border-gray-300 p-1" />
           <FieldErrorView name={props.name} />
         </div>
       )}
@@ -44,6 +44,7 @@ export const NumberInput = <
           <input
             type="number"
             {...field}
+            className="border border-gray-300 p-1"
             onBlur={(e) => {
               // フォーカスアウト時にノーマライズとバリデーションを発火
               if (clientSideValidator && clientSideValidator.validate) {

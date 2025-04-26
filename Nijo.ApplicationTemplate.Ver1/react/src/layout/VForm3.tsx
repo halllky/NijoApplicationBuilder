@@ -24,8 +24,11 @@ export namespace VForm3 {
     className?: string
   }) => {
     return (
-      <div>
-
+      <div
+        className={`flex flex-row flex-wrap gap-2 ${props?.className}`}
+        style={{ '--label-width': props?.labelWidth ?? '10rem' } as React.CSSProperties}
+      >
+        {props?.children}
       </div>
     )
   }
@@ -36,15 +39,20 @@ export namespace VForm3 {
    */
   export const BreakPoint = (props?: {
     children?: React.ReactNode
-    /** trueにするとこのブレークポイントの外側に境界線が表示される。 */
-    showBorder?: boolean
     /** このブレークポイントのラベル。 */
     label?: React.ReactNode
     className?: string
   }) => {
-    return (
-      <div>
+    const border = props?.label ? 'border border-gray-400 p-1' : ''
 
+    return (
+      <div className={`flex flex-col max-w-[640px] ${props?.className} ${border}`}>
+        {props?.label && (
+          <div className="font-bold mb-1">
+            {props?.label}
+          </div>
+        )}
+        {props?.children}
       </div>
     )
   }
@@ -61,8 +69,17 @@ export namespace VForm3 {
     children?: React.ReactNode
   }) => {
     return (
-      <div>
-
+      <div className="flex items-start py-1">
+        <div
+          className="flex-shrink-0 pt-1 pr-2 text-right"
+          style={{ width: 'var(--label-width)' }}
+        >
+          {props?.label}
+          {props?.required && <span className="text-red-500 ml-1">*</span>}
+        </div>
+        <div className="flex-grow">
+          {props?.children}
+        </div>
       </div>
     )
   }
