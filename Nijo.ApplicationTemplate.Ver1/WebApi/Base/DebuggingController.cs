@@ -3,10 +3,17 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using MyApp.Core;
+using MyApp.Core.Debugging;
 using System.Text;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Data.Common;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using NLog;
 
 namespace MyApp.WebApi.Base;
 
@@ -14,6 +21,9 @@ namespace MyApp.WebApi.Base;
 [Route("api/debug-info")]
 public class DebuggingController : ControllerBase {
 
+    /// <summary>
+    /// デバッグ用情報を返す
+    /// </summary>
     [HttpGet]
     public IActionResult Index([FromServices] OverridedApplicationService app) {
         return Ok($$"""
@@ -25,6 +35,11 @@ public class DebuggingController : ControllerBase {
             """);
     }
 
+    /// <summary>
+    /// このアプリケーションのER図を mermaid.js 形式で返す
+    /// </summary>
+    /// <param name="app"></param>
+    /// <returns></returns>
     [HttpGet("er-diagram")]
     public IActionResult GetErDiagram([FromServices] OverridedApplicationService app) {
         // DbContextからテーブル定義情報を取得
@@ -96,6 +111,111 @@ public class DebuggingController : ControllerBase {
         }
 
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// 調査用のSQLをhttpから実行できるようにするエンドポイント。
+    /// 参照系のクエリのみ実行可能
+    /// </summary>
+    [HttpPost("execute-sql")]
+    public async Task<IActionResult> ExecuteSql([FromBody] ExecuteSqlRequest request, [FromServices] OverridedApplicationService app) {
+        var sql = request.Sql?.Trim() ?? string.Empty;
+
+        // SELECT文以外は受け付けない基本的なチェック (必須ではないが、意図しない操作の早期発見に役立つ)
+        if (string.IsNullOrWhiteSpace(sql) || !sql.StartsWith("SELECT", StringComparison.OrdinalIgnoreCase)) {
+            return BadRequest("SELECT文のみを想定しています。"); // 必要であればより厳格なメッセージに
+        }
+
+        var connection = app.DbContext.Database.GetDbConnection();
+        DbTransaction? transaction = null; // トランザクション変数を宣言
+
+        try {
+            await connection.OpenAsync();
+            transaction = await connection.BeginTransactionAsync(); // トランザクション開始
+
+            using var command = connection.CreateCommand();
+            command.CommandText = sql;
+            command.Transaction = transaction; // コマンドにトランザクションを割り当て
+
+            using var reader = await command.ExecuteReaderAsync();
+
+            var results = new List<Dictionary<string, object?>>();
+            var columns = Enumerable.Range(0, reader.FieldCount).Select(reader.GetName).ToList();
+
+            while (await reader.ReadAsync()) {
+                var row = new Dictionary<string, object?>();
+                for (int i = 0; i < reader.FieldCount; i++) {
+                    row[columns[i]] = reader.IsDBNull(i) ? null : reader.GetValue(i);
+                }
+                results.Add(row);
+            }
+
+            // 結果取得後、必ずロールバックして変更を破棄
+            await transaction.RollbackAsync();
+
+            // 結果をJSON文字列にシリアライズして返す
+            // System.Text.Json は object? の辞書を適切に処理できる
+            return Content(JsonSerializer.Serialize(results, new JsonSerializerOptions { WriteIndented = true }), "application/json");
+
+        } catch (DbException ex) {
+            if (transaction != null) await transaction.RollbackAsync(); // エラー時もロールバック試行
+            return BadRequest($"SQLの実行中にエラーが発生しました: {ex.Message}");
+        } catch (Exception ex) {
+            if (transaction != null) await transaction.RollbackAsync(); // エラー時もロールバック試行
+            return StatusCode(500, $"予期せぬエラーが発生しました: {ex.Message}");
+        } finally {
+            // transaction?.Dispose(); // BeginTransactionAsync で取得したものは using で管理されていないため、Disposeは不要
+            if (connection.State == System.Data.ConnectionState.Open) {
+                await connection.CloseAsync();
+            }
+        }
+    }
+
+    public class ExecuteSqlRequest {
+        public string? Sql { get; set; }
+    }
+
+    /// <summary>
+    /// DB再作成
+    /// </summary>
+    [HttpPost("destroy-and-reset-database")]
+    public async Task<IActionResult> DestroyAndResetDatabase([FromServices] IServiceProvider serviceProvider) {
+
+        try {
+
+            // データベース定義を削除
+            using (var scope = serviceProvider.CreateScope()) {
+                var dbContext = scope.ServiceProvider.GetRequiredService<MyDbContext>();
+                await dbContext.Database.EnsureDeletedAsync();
+
+                // 念のためファイル削除の完了を待機
+                await Task.Delay(100);
+            }
+
+            using (var scope = serviceProvider.CreateScope()) {
+                var dbContext = scope.ServiceProvider.GetRequiredService<MyDbContext>();
+
+                // データベース定義を再作成
+                await dbContext.Database.EnsureCreatedAsync();
+
+                // ダミーデータを投入
+                var generator = new DummyDataGenerator();
+                var dbDescriptor = new DummyDataDbOutput(dbContext);
+                await generator.GenerateAsync(dbDescriptor);
+            }
+
+            return Ok(new {
+                success = true,
+                message = "データベースのリセットとダミーデータの投入が正常に完了しました",
+            });
+        } catch (Exception ex) {
+            return StatusCode(500, new {
+                success = false,
+                message = "データベースのリセット中にエラーが発生しました",
+                error = ex.Message,
+                stackTrace = ex.StackTrace
+            });
+        }
     }
 }
 

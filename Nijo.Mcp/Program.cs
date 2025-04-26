@@ -494,6 +494,61 @@ namespace Nijo.Mcp {
             return await response.Content.ReadAsStringAsync();
         }
 
+        [McpServerTool(Name = "reset_debug_database"), Description(
+            "ソースコード自動生成された方のアプリケーションのデータベースをリセットし、ダミーデータを投入します。" +
+            "このツールを使用するためには、予め start_debugging でアプリケーションが実行開始されている必要があります。")]
+        public static async Task<string> ResetDebugDatabase() {
+            using var httpClient = new HttpClient() {
+                BaseAddress = new Uri(DOTNET_URL),
+            };
+
+            try {
+                var response = await httpClient.PostAsync("/api/debug-info/destroy-and-reset-database", null);
+                var responseBody = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode) {
+                    return $"データベースのリセットに失敗しました (HTTP {(int)response.StatusCode}): {responseBody}";
+                }
+
+                return $"データベースのリセットとダミーデータの投入が完了しました: {responseBody}";
+
+            } catch (HttpRequestException ex) {
+                return $"APIエンドポイントへの接続に失敗しました。start_debugging でアプリケーションが実行開始されているか確認してください。 Error: {ex.Message}";
+            } catch (Exception ex) {
+                return $"予期せぬエラーが発生しました: {ex.Message}";
+            }
+        }
+
+        [McpServerTool(Name = "execute_debug_sql"), Description(
+            "指定されたSQLクエリを実行し、結果を返します。SELECT文のみ実行可能です。" +
+            "このツールを使用するためには、予め start_debugging でアプリケーションが実行開始されている必要がある。")]
+        public static async Task<string> ExecuteDebugSql([Description("実行するSQLクエリ")] string sql) {
+            using var httpClient = new HttpClient() {
+                BaseAddress = new Uri(DOTNET_URL),
+            };
+
+            try {
+                var requestBody = JsonSerializer.Serialize(new { sql });
+                var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+
+                var response = await httpClient.PostAsync("/api/debug-info/execute-sql", content);
+
+                var responseBody = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode) {
+                    return $"SQLの実行に失敗しました (HTTP {(int)response.StatusCode}): {responseBody}";
+                }
+
+                // 成功時はJSONをそのまま返す
+                return responseBody;
+
+            } catch (HttpRequestException ex) {
+                return $"APIエンドポイントへの接続に失敗しました。start_debugging でアプリケーションが実行開始されているか確認してください。 Error: {ex.Message}";
+            } catch (Exception ex) {
+                return $"予期せぬエラーが発生しました: {ex.Message}";
+            }
+        }
+
         // ログフォルダを準備する
         private static void PrepareWorkDirectory() {
             var workDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location!)!, WORK_DIR);
