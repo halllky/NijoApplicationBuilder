@@ -37,7 +37,7 @@ namespace Nijo.Mcp {
     public static class NijoMcpTools {
 
         private const string NIJO_PROJ = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo"; // とりあえずハードコード
-        private const string DOTNET_URL = "https://localhost:7098/swagger";
+        private const string DOTNET_URL = "https://localhost:7098";
         private const string NPM_URL = "http://localhost:5173";
         private const string WORK_DIR = "temp_work";
         private const string MAIN_LOG_FILE = "output.log";
@@ -117,7 +117,7 @@ namespace Nijo.Mcp {
                 @echo. >> "{{mainLogPath}}"
                 @echo ************************************** >> "{{mainLogPath}}"
                 @echo 起動指示を出しました。アプリケーションが実行されているかは各httpポートを監視して確認してください。 >> "{{mainLogPath}}"
-                @echo - .NET    : {{DOTNET_URL}} >> "{{mainLogPath}}"
+                @echo - .NET    : {{DOTNET_URL}}/swagger >> "{{mainLogPath}}"
                 @echo - Node.js : {{NPM_URL}} >> "{{mainLogPath}}"
                 @echo. >> "{{mainLogPath}}"
                 @echo 各プロセスの出力は以下のログを参照してください。 >> "{{mainLogPath}}"
@@ -347,7 +347,7 @@ namespace Nijo.Mcp {
 
                 while (!ready && DateTime.Now < timeout) {
                     if (!dotnetReady) {
-                        dotnetReady = await IsServiceReadyAsync(DOTNET_URL);
+                        dotnetReady = await IsServiceReadyAsync($"{DOTNET_URL}/swagger");
                         if (dotnetReady) {
                             mainOutput.AppendLine("[nijo-mcp] WebAPIの準備が完了しました。");
                         }
@@ -456,18 +456,42 @@ namespace Nijo.Mcp {
             }
         }
 
-        [McpServerTool(Name = "get_launch_log"), Description("start_debugging の起動失敗時の詳細確認のためのログを確認する。")]
-        public static string GetNpmLog() {
-            string logPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location!)!, WORK_DIR, MAIN_LOG_FILE);
-            if (!File.Exists(logPath)) {
-                return "ログファイルが見つかりません。";
+        [McpServerTool(Name = "get_debug_info"), Description(
+            "ソースコード自動生成された方のアプリケーションのAPサーバーに問い合わせ、接続先DBなどの情報を取得する。" +
+            "このツールを使用するためには、予め start_debugging でアプリケーションが実行開始されている必要がある。")]
+        public static async Task<string> GeDebugInfo() {
+            using var httpClient = new HttpClient() {
+                BaseAddress = new Uri(DOTNET_URL),
+            };
+            var response = await httpClient.GetAsync("/api/debug-info");
+
+            if (!response.IsSuccessStatusCode) {
+                return $$"""
+                    アプリケーションの実行設定の問い合わせに失敗しました。
+                    start_debugging でアプリケーションが実行開始されていない可能性があります。
+                    """;
             }
 
-            try {
-                return File.ReadAllText(logPath);
-            } catch (Exception ex) {
-                return $"ログファイルの読み取りに失敗しました: {ex.Message}";
+            return await response.Content.ReadAsStringAsync();
+        }
+
+        [McpServerTool(Name = "get_debug_info_er_diagram"), Description(
+            "ソースコード自動生成された方のアプリケーションのAPサーバーに問い合わせ、テーブル定義のER図をmermaid形式で返す。" +
+            "このツールを使用するためには、予め start_debugging でアプリケーションが実行開始されている必要がある。")]
+        public static async Task<string> GeDebugInfoErDiagram() {
+            using var httpClient = new HttpClient() {
+                BaseAddress = new Uri(DOTNET_URL),
+            };
+            var response = await httpClient.GetAsync("/api/debug-info/er-diagram");
+
+            if (!response.IsSuccessStatusCode) {
+                return $$"""
+                    アプリケーションの実行設定の問い合わせに失敗しました。
+                    start_debugging でアプリケーションが実行開始されていない可能性があります。
+                    """;
             }
+
+            return await response.Content.ReadAsStringAsync();
         }
 
         // ログフォルダを準備する

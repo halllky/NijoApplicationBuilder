@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NLog;
@@ -27,8 +28,14 @@ public class OverridedApplicationConfigure : DefaultConfiguration {
         });
 
         // 実行時設定（appsettings.json）
-        services.AddScoped(provider => {
+        services.AddTransient(provider => {
             var settings = new RuntimeSetting();
+            new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json", true)
+                .AddJsonFile("appsettings.Development.json", false)
+                .Build()
+                .GetSection("Nijo")
+                .Bind(settings);
             return settings;
         });
     }
@@ -80,8 +87,8 @@ public class OverridedApplicationConfigure : DefaultConfiguration {
 
         // ファイル出力
         var fileTarget = new FileTarget("logfile") {
-            FileName = Path.Combine(settings.LogDirectory, LogFileNameRule),
-            Layout = "${longdate}|${level:uppercase=true}|${logger}|${message}${onexception:inner=${newline}${exception:format=tostring}}",
+            FileName = Path.Combine(Directory.GetCurrentDirectory(), settings.LogDirectory, LogFileNameRule),
+            Layout = "${longdate}\t${level:uppercase=true}\t${logger}\t${message}${onexception:inner=${newline}${exception:format=tostring}}",
             ArchiveFileName = Path.Combine(settings.LogDirectory, "archive", "${date:format=yyyy-MM-dd}.{#}.log"),
             ArchiveNumbering = ArchiveNumberingMode.Sequence,
             ArchiveAboveSize = 5 * 1024 * 1024, // 5MBを越えたらアーカイブ

@@ -7,7 +7,10 @@ using MyApp.WebApi.Base;
 var builder = WebApplication.CreateBuilder(args);
 
 // コントローラーの追加
-builder.Services.AddControllers();
+builder.Services.AddControllers(options => {
+    options.Filters.Add<LoggingActionFilter>(); // ログ出力
+    options.Filters.Add<GlobalExceptionFilter>(); // グローバル例外ハンドリング
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
