@@ -89,21 +89,11 @@ namespace Nijo.Models.QueryModelModules {
         public const string TO_UPDATE_COMMAND = "ToUpdateCommand";
         public const string TO_DELETE_COMMAND = "ToDeleteCommand";
 
-
         /// <summary>
-        /// valuesの中に宣言されるメンバーを列挙する。
+        /// 子孫要素でなく自身のメンバーはこのオブジェクトの中に列挙される
         /// </summary>
-        internal IEnumerable<IDisplayDataMember> GetOwnMembers() {
-            foreach (var member in Aggregate.GetMembers()) {
-                if (member is ValueMember vm) {
-                    yield return new DisplayDataValueMember(vm);
-
-                } else if (member is RefToMember refTo) {
-                    yield return new DisplayDataRefMember(refTo);
-
-                }
-            }
-        }
+        internal ValuesContainer Values => _values ??= new ValuesContainer(Aggregate);
+        private ValuesContainer? _values;
 
         /// <summary>
         /// 子要素を列挙する。
@@ -121,9 +111,11 @@ namespace Nijo.Models.QueryModelModules {
         }
 
         IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
-            var ownMembers = GetOwnMembers().Cast<IInstancePropertyMetadata>();
-            var childMemberes = GetChildMembers().Cast<IInstancePropertyMetadata>();
-            return ownMembers.Concat(childMemberes);
+            yield return Values;
+
+            foreach (var childMember in GetChildMembers()) {
+                yield return (IInstancePropertyMetadata)childMember;
+            }
         }
 
 
@@ -213,7 +205,7 @@ namespace Nijo.Models.QueryModelModules {
                 /// <see cref="{{CsClassName}}/> の{{VALUES_CS}}の型
                 /// </summary>
                 public partial class {{CsValuesClassName}} {
-                {{GetOwnMembers().SelectTextTemplate(m => $$"""
+                {{Values.GetMembers().SelectTextTemplate(m => $$"""
                     {{WithIndent(m.RenderCsDeclaration(), "    ")}}
                 """)}}
                 }
@@ -225,9 +217,9 @@ namespace Nijo.Models.QueryModelModules {
                     /// <summary>{{Aggregate.DisplayName}}全体が読み取り専用か否か</summary>
                     [JsonPropertyName("{{ALL_READONLY_TS}}")]
                     public bool {{ALL_READONLY_CS}} { get; set; }
-                {{GetOwnMembers().SelectTextTemplate(member => $$"""
+                {{Values.GetMembers().SelectTextTemplate(member => $$"""
                     /// <summary>{{member.DisplayName}}が読み取り専用か否か</summary>
-                    public bool {{member.PhysicalName}} { get; set; }
+                    public bool {{member.PropertyName}} { get; set; }
                 """)}}
                 }
                 """;
@@ -239,7 +231,7 @@ namespace Nijo.Models.QueryModelModules {
                 export type {{TsTypeName}} = {
                   /** 値 */
                   {{VALUES_TS}}: {
-                {{GetOwnMembers().SelectTextTemplate(m => $$"""
+                {{Values.GetMembers().SelectTextTemplate(m => $$"""
                   {{WithIndent(m.RenderTsDeclaration(), "  ")}}
                 """)}}
                   }
@@ -264,9 +256,9 @@ namespace Nijo.Models.QueryModelModules {
                   {{READONLY_TS}}: {
                     /** {{Aggregate.DisplayName}}全体が読み取り専用か否か */
                     {{ALL_READONLY_TS}}?: boolean
-                {{GetOwnMembers().SelectTextTemplate(member => $$"""
+                {{Values.GetMembers().SelectTextTemplate(member => $$"""
                     /** {{member.DisplayName}}が読み取り専用か否か */
-                    {{member.PhysicalName}}?: boolean
+                    {{member.PropertyName}}?: boolean
                 """)}}
                   }
                 }
@@ -275,9 +267,38 @@ namespace Nijo.Models.QueryModelModules {
         #endregion レンダリング
 
 
-        #region Valuesの中に定義されるメンバー
-        internal interface IDisplayDataMember : IUiConstraintValue, IInstancePropertyMetadata {
-            string PhysicalName { get; }
+        #region Values
+        /// <summary>
+        /// Valuesオブジェクトそのもの
+        /// </summary>
+        internal class ValuesContainer : IInstanceStructurePropertyMetadata {
+            public ValuesContainer(AggregateBase aggregate) {
+                _aggregate = aggregate;
+            }
+            private readonly AggregateBase _aggregate;
+
+            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => ISchemaPathNode.Empty;
+            string IInstancePropertyMetadata.PropertyName => VALUES_CS;
+            bool IInstanceStructurePropertyMetadata.IsArray => false;
+
+            IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetMembers();
+
+            internal IEnumerable<IDisplayDataMemberInValues> GetMembers() {
+                foreach (var member in _aggregate.GetMembers()) {
+                    if (member is ValueMember vm) {
+                        yield return new DisplayDataValueMember(vm);
+
+                    } else if (member is RefToMember refTo) {
+                        yield return new DisplayDataRefMember(refTo);
+
+                    }
+                }
+            }
+        }
+        /// <summary>
+        /// Valuesオブジェクトの中のメンバー
+        /// </summary>
+        internal interface IDisplayDataMemberInValues : IUiConstraintValue, IInstancePropertyMetadata {
             UiConstraint.E_Type UiConstraintType { get; }
 
             string RenderCsDeclaration();
@@ -285,20 +306,22 @@ namespace Nijo.Models.QueryModelModules {
 
             string RenderNewObjectCreation();
         }
-
-        internal class DisplayDataValueMember : IDisplayDataMember, IInstanceValuePropertyMetadata {
+        /// <summary>
+        /// Valuesオブジェクトの中のValueMember
+        /// </summary>
+        internal class DisplayDataValueMember : IDisplayDataMemberInValues, IInstanceValuePropertyMetadata {
             internal DisplayDataValueMember(ValueMember vm) {
                 Member = vm;
             }
             internal ValueMember Member { get; }
 
-            public string PhysicalName => Member.PhysicalName;
+            public string PropertyName => Member.PhysicalName;
             public string DisplayName => Member.DisplayName;
             public UiConstraint.E_Type UiConstraintType => Member.Type.UiConstraintType;
 
             IValueMemberType IInstanceValuePropertyMetadata.Type => Member.Type;
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Member;
-            string IInstancePropertyMetadata.PropertyName => PhysicalName;
+            string IInstancePropertyMetadata.PropertyName => PropertyName;
 
             public bool IsRequired => Member.IsKey || Member.IsRequired;
             public string? CharacterType => Member.CharacterType;
@@ -309,12 +332,12 @@ namespace Nijo.Models.QueryModelModules {
             public string RenderCsDeclaration() {
                 return $$"""
                     /// <summary>{{Member.DisplayName}}</summary>
-                    public {{Member.Type.CsDomainTypeName}}? {{PhysicalName}} { get; set; }
+                    public {{Member.Type.CsDomainTypeName}}? {{PropertyName}} { get; set; }
                     """;
             }
             public string RenderTsDeclaration() {
                 return $$"""
-                    {{PhysicalName}}?: {{Member.Type.TsTypeName}}
+                    {{PropertyName}}?: {{Member.Type.TsTypeName}}
                     """;
             }
 
@@ -322,8 +345,10 @@ namespace Nijo.Models.QueryModelModules {
                 return "undefined";
             }
         }
-
-        internal class DisplayDataRefMember : IDisplayDataMember, IInstanceStructurePropertyMetadata {
+        /// <summary>
+        /// Valuesオブジェクトの中のRefTo
+        /// </summary>
+        internal class DisplayDataRefMember : IDisplayDataMemberInValues, IInstanceStructurePropertyMetadata {
             internal DisplayDataRefMember(RefToMember refTo) {
                 Member = refTo;
                 RefEntry = new DisplayDataRef.Entry(refTo.RefTo);
@@ -331,7 +356,7 @@ namespace Nijo.Models.QueryModelModules {
             internal RefToMember Member { get; }
             internal DisplayDataRef.Entry RefEntry;
 
-            public string PhysicalName => Member.PhysicalName;
+            public string PropertyName => Member.PhysicalName;
             public string DisplayName => Member.DisplayName;
             public UiConstraint.E_Type UiConstraintType => UiConstraint.E_Type.MemberConstraintBase;
 
@@ -344,12 +369,12 @@ namespace Nijo.Models.QueryModelModules {
             public string RenderCsDeclaration() {
                 return $$"""
                     /// <summary>{{Member.DisplayName}}</summary>
-                    public {{RefEntry.CsClassName}} {{PhysicalName}} { get; set; } = new();
+                    public {{RefEntry.CsClassName}} {{PropertyName}} { get; set; } = new();
                     """;
             }
             public string RenderTsDeclaration() {
                 return $$"""
-                    {{PhysicalName}}: {{RefEntry.TsTypeName}}
+                    {{PropertyName}}: {{RefEntry.TsTypeName}}
                     """;
             }
 
@@ -363,10 +388,10 @@ namespace Nijo.Models.QueryModelModules {
 
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Member;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
-            string IInstancePropertyMetadata.PropertyName => PhysicalName;
+            string IInstancePropertyMetadata.PropertyName => PropertyName;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetMembers();
         }
-        #endregion Valuesの中に定義されるメンバー
+        #endregion Values
 
 
         #region UI用の制約定義
@@ -385,8 +410,8 @@ namespace Nijo.Models.QueryModelModules {
             static string RenderMembers(DisplayData displayData) {
                 return $$"""
                     {{VALUES_TS}}: {
-                    {{displayData.GetOwnMembers().SelectTextTemplate(m => $$"""
-                      {{m.PhysicalName}}: Util.{{m.UiConstraintType}}
+                    {{displayData.Values.GetMembers().SelectTextTemplate(m => $$"""
+                      {{m.PropertyName}}: Util.{{m.UiConstraintType}}
                     """)}}
                     }
                     {{displayData.GetChildMembers().SelectTextTemplate(desc => $$"""
@@ -410,8 +435,8 @@ namespace Nijo.Models.QueryModelModules {
             static string RenderMembers(DisplayData displayData) {
                 return $$"""
                     {{VALUES_TS}}: {
-                    {{displayData.GetOwnMembers().SelectTextTemplate(m => $$"""
-                      {{m.PhysicalName}}: {
+                    {{displayData.Values.GetMembers().SelectTextTemplate(m => $$"""
+                      {{m.PropertyName}}: {
                     {{If(m.IsRequired, () => $$"""
                         {{UiConstraint.MEMBER_REQUIRED}}: true,
                     """)}}
@@ -470,8 +495,8 @@ namespace Nijo.Models.QueryModelModules {
                 /** {{Aggregate.DisplayName}}の画面表示用データの新しいインスタンスを作成します。 */
                 export const {{TsNewObjectFunction}} = (): {{TsTypeName}} => ({
                   {{VALUES_TS}}: {
-                {{GetOwnMembers().SelectTextTemplate(m => $$"""
-                    {{m.PhysicalName}}: {{m.RenderNewObjectCreation()}},
+                {{Values.GetMembers().SelectTextTemplate(m => $$"""
+                    {{m.PropertyName}}: {{m.RenderNewObjectCreation()}},
                 """)}}
                   },
                 {{If(HasLifeCycle, () => $$"""

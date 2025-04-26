@@ -336,17 +336,17 @@ namespace Nijo.Models.QueryModelModules {
                     .CreatePropertiesRecursively()
                     .ToDictionary(x => x.Metadata.SchemaPathNode.ToMappingKey());
 
-                foreach (var member in left.GetOwnMembers()) {
+                foreach (var member in left.Values.GetMembers()) {
                     if (member is DisplayData.DisplayDataValueMember vm) {
                         var right = rightMembers[vm.Member.ToMappingKey()];
 
                         yield return $$"""
-                            {{member.PhysicalName}} = {{vm.Member.Type.RenderCastToDomainType()}}{{right.GetJoinedPathFromInstance(E_CsTs.CSharp, "!.")}},
+                            {{member.PropertyName}} = {{vm.Member.Type.RenderCastToDomainType()}}{{right.GetJoinedPathFromInstance(E_CsTs.CSharp, "!.")}},
                             """;
 
                     } else if (member is DisplayData.DisplayDataRefMember refTo) {
                         yield return $$"""
-                            {{member.PhysicalName}} = new() {
+                            {{member.PropertyName}} = new() {
                                 {{WithIndent(RenderRefMember(refTo.RefEntry, rightInstance, rightMembers), "    ")}}
                             },
                             """;

@@ -27,7 +27,7 @@ internal class DisplayDataMessageContainer : MessageContainer {
 
     protected override IEnumerable<IMessageContainerMember> GetMembers() {
         var displayData = new DisplayData(_aggregate);
-        foreach (var member in displayData.GetOwnMembers()) {
+        foreach (var member in displayData.Values.GetMembers()) {
             yield return new ContainerMemberImpl {
                 PhysicalName = member.PropertyName,
                 DisplayName = member.DisplayName,

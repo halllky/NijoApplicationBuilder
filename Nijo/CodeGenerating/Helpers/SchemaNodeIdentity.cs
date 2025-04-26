@@ -48,11 +48,6 @@ namespace Nijo.CodeGenerating.Helpers;
 public class SchemaNodeIdentity {
 
     /// <summary>
-    /// 他のどの識別子ともマッチしない。マッピングに用いられない。実質null
-    /// </summary>
-    public static SchemaNodeIdentity None { get; } = new SchemaNodeIdentity(string.Empty, 0);
-
-    /// <summary>
     /// 新しい <see cref="SchemaNodeIdentity"/> のインスタンスを作成する
     /// </summary>
     public static SchemaNodeIdentity Create(ISchemaPathNode node) {
