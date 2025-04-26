@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Text.Json.Nodes;
 using System.Reflection;
 
+//Console.WriteLine(Nijo.Mcp.NijoMcpTools.GenerateCode(@"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.ApplicationTemplate.Ver1\nijo.xml"));
 //Console.WriteLine(await Nijo.Mcp.NijoMcpTools.StartDebugging(@"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.ApplicationTemplate.Ver1\nijo.xml"));
 //Console.WriteLine(Nijo.Mcp.NijoMcpTools.StopDebugging());
 
@@ -43,6 +44,215 @@ namespace Nijo.Mcp {
         private const string NPM_LOG_FILE = "output_npm.log";
         private const string DOTNET_LOG_FILE = "output_dotnet.log";
         private const string START_CMD_FILE = "start_app.cmd";
+
+        private static string RenderCmdContent(string nijoXmlFileFullPath, bool isDebug) {
+            var workDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location!)!, WORK_DIR);
+            var mainLogPath = Path.Combine(workDirectory, MAIN_LOG_FILE);
+            var npmLogPath = Path.Combine(workDirectory, NPM_LOG_FILE);
+            var dotnetLogPath = Path.Combine(workDirectory, DOTNET_LOG_FILE);
+
+            var nijoXmlDir = Path.GetDirectoryName(nijoXmlFileFullPath);
+            var reactDir = Path.Combine(nijoXmlDir!, "react");
+            var webApiDir = Path.Combine(nijoXmlDir!, "WebApi");
+
+            return $$"""
+                chcp 65001
+                @rem ↑dotnetコマンド実行時に強制的に書き換えられてしまいnpmの標準入出力が化けるので先に書き換えておく
+
+                @echo off
+                setlocal
+                set NO_COLOR=true
+
+                set "PROJ_ROOT={{nijoXmlDir}}"
+                set "NIJO_ROOT={{NIJO_PROJ}}"
+                set "NIJO_EXE={{NIJO_PROJ}}\bin\Debug\net9.0\nijo.exe"
+
+                echo. > {{mainLogPath}}
+                {{(isDebug ? $$"""
+                echo. > {{dotnetLogPath}}
+                echo. > {{npmLogPath}}
+
+                """ : $$"""
+
+                """)}}
+                @echo ******* {{(isDebug ? "start_debugging" : "generate_code")}} を開始します。 ******* >> "{{mainLogPath}}"
+                @echo. >> "{{mainLogPath}}"
+                @echo - 対象プロジェクト: %PROJ_ROOT% >> "{{mainLogPath}}"
+                @echo - NijoApplicationBuilderルート: %NIJO_ROOT% >> "{{mainLogPath}}"
+                @echo. >> "{{mainLogPath}}"
+
+                @echo. >> "{{mainLogPath}}"
+                @echo ************************************** >> "{{mainLogPath}}"
+                @echo ******* ソースコードの自動生成プログラムの最新化を開始します。 ******* >> "{{mainLogPath}}"
+                dotnet build %NIJO_ROOT% -c Debug >> "{{mainLogPath}}" 2>&1
+                if not "%errorlevel%"=="0" (
+                    @echo. >> "{{mainLogPath}}"
+                    @echo nijo.exeのビルドでエラーが発生しました。処理を中断します。 >> "{{mainLogPath}}"
+                    exit /b 1
+                )
+
+                @echo. >> "{{mainLogPath}}"
+                @echo ************************************** >> "{{mainLogPath}}"
+                @echo ******* ソースコードの自動生成のかけなおしを実行します。 ******* >> "{{mainLogPath}}"
+                %NIJO_EXE% generate %PROJ_ROOT% >> "{{mainLogPath}}" 2>&1
+                if not "%errorlevel%"=="0" (
+                    @echo. >> "{{mainLogPath}}"
+                    @echo ソースコードの自動生成のかけなおしでエラーが発生しました。処理を中断します。 >> "{{mainLogPath}}"
+                    exit /b 1
+                )
+
+                {{(isDebug ? $$"""
+                @echo. >> "{{mainLogPath}}"
+                @echo ************************************** >> "{{mainLogPath}}"
+                @echo ******* .NET デバッグプロセスを起動します。 ******* >> "{{mainLogPath}}"
+                cd /d "{{webApiDir}}"
+                start /B dotnet run --launch-profile https >> {{dotnetLogPath}} 2>&1
+
+                @echo. >> "{{mainLogPath}}"
+                @echo ************************************** >> "{{mainLogPath}}"
+                @echo ******* Node.js デバッグプロセスを起動します。 ******* >> "{{mainLogPath}}"
+                cd /d "{{reactDir}}"
+                start /B "" cmd /c "npm run dev > {{npmLogPath}} 2>&1"
+
+                @echo. >> "{{mainLogPath}}"
+                @echo ************************************** >> "{{mainLogPath}}"
+                @echo 起動指示を出しました。アプリケーションが実行されているかは各httpポートを監視して確認してください。 >> "{{mainLogPath}}"
+                @echo - .NET    : {{DOTNET_URL}} >> "{{mainLogPath}}"
+                @echo - Node.js : {{NPM_URL}} >> "{{mainLogPath}}"
+                @echo. >> "{{mainLogPath}}"
+                @echo 各プロセスの出力は以下のログを参照してください。 >> "{{mainLogPath}}"
+                @echo - npm run dev のログ: "{{npmLogPath}}" >> "{{mainLogPath}}"
+                @echo - dotnet run のログ: "{{dotnetLogPath}}" >> "{{mainLogPath}}"
+
+                """ : $$"""
+                @echo. >> "{{mainLogPath}}"
+                @echo ************************************** >> "{{mainLogPath}}"
+                @echo ******* .NET をビルドします。 ******* >> "{{mainLogPath}}"
+                cd /d "{{nijoXmlDir}}"
+                dotnet build >> {{mainLogPath}} 2>&1
+
+                @echo. >> "{{mainLogPath}}"
+                @echo ************************************** >> "{{mainLogPath}}"
+                @echo ******* TypeScript の型検査を行ないます。 ******* >> "{{mainLogPath}}"
+                endlocal
+                pushd "{{reactDir}}"
+                call tsc -b --noEmit >> "{{mainLogPath}}" 2>&1
+                @echo. >> "{{mainLogPath}}"
+                if "%errorlevel%"=="0" (
+                    @echo エラーなし >> "{{mainLogPath}}"
+                ) else (
+                    @echo エラーが検知されました。 >> "{{mainLogPath}}"
+                )
+                @echo. >> "{{mainLogPath}}"
+                popd
+
+                """)}}
+                @echo. >> "{{mainLogPath}}"
+                @echo ************************************** >> "{{mainLogPath}}"
+                @echo ******* 処理終了 ******* >> "{{mainLogPath}}"
+
+                exit /b 0
+                """.ReplaceLineEndings(" \r\n"); // cmd処理中にchcpしたときは改行コードの前にスペースが無いと上手く動かない
+        }
+
+        [McpServerTool(Name = "generate_code"), Description("ソースコードの自動生成処理の最新化、自動生成処理のかけなおし、コンパイルエラーチェックを行います。")]
+        public static string GenerateCode([Description("nijo.xmlのファイルの絶対パス")] string nijoXmlFileFullPath) {
+            var mainOutput = new StringBuilder();
+
+            // 既存のプロセスを終了 - これによって以前実行していたプロセスが終了する
+            mainOutput.AppendLine(StopDebugging());
+
+            // ワークディレクトリを準備
+            PrepareWorkDirectory();
+
+            try {
+                if (string.IsNullOrEmpty(nijoXmlFileFullPath)) {
+                    return ToMcpResutJson(new { Error = "nijo.xmlのファイルの絶対パスを指定してください。" });
+                }
+
+                // 各種パス定義
+                var workDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location!)!, WORK_DIR);
+                var mainLogPath = Path.Combine(workDirectory, MAIN_LOG_FILE);
+
+                var nijoXmlDir = Path.GetDirectoryName(nijoXmlFileFullPath);
+                var reactDir = Path.Combine(nijoXmlDir!, "react");
+
+                if (!File.Exists(nijoXmlFileFullPath)) {
+                    return ToMcpResutJson(new { Error = $"指定されたnijo.xmlファイルが見つかりません: {nijoXmlFileFullPath}" });
+                }
+                if (!Directory.Exists(reactDir)) {
+                    return ToMcpResutJson(new { Error = $"reactフォルダが見つかりません: {reactDir}" });
+                }
+                // WebApiディレクトリの存在チェックはデバッグビルドではないので不要
+
+                // .cmdファイルを作成
+                string cmdFilePath = Path.Combine(workDirectory, START_CMD_FILE); // start_app.cmdを流用
+                string cmdContent = RenderCmdContent(nijoXmlFileFullPath, false); // isDebug = false を指定
+                File.WriteAllText(cmdFilePath, cmdContent, new UTF8Encoding(false, false));
+                mainOutput.AppendLine($"[nijo-mcp] 実行スクリプトを作成しました: {cmdFilePath}");
+
+                // .cmdファイルを実行
+                mainOutput.AppendLine($"[nijo-mcp] スクリプトを実行します (出力は {mainLogPath} に保存されます)");
+                Process? cmdProcess = null;
+                try {
+                    cmdProcess = new Process();
+                    cmdProcess.StartInfo.FileName = "cmd";
+                    cmdProcess.StartInfo.Arguments = $"/c \"{cmdFilePath}\"";
+                    cmdProcess.StartInfo.UseShellExecute = false;
+                    cmdProcess.StartInfo.CreateNoWindow = true;
+                    cmdProcess.StartInfo.RedirectStandardOutput = true; // 標準出力をリダイレクト
+                    cmdProcess.StartInfo.RedirectStandardError = true;  // 標準エラーをリダイレクト
+
+                    var processOutput = new StringBuilder();
+                    cmdProcess.OutputDataReceived += (sender, e) => { if (e.Data != null) processOutput.AppendLine(e.Data); };
+                    cmdProcess.ErrorDataReceived += (sender, e) => { if (e.Data != null) processOutput.AppendLine(e.Data); };
+
+                    cmdProcess.Start();
+                    cmdProcess.BeginOutputReadLine();
+                    cmdProcess.BeginErrorReadLine();
+                    cmdProcess.WaitForExit();
+
+                    mainOutput.AppendLine("[nijo-mcp] スクリプト実行出力:");
+                    mainOutput.AppendLine(processOutput.ToString());
+
+                    if (cmdProcess.ExitCode != 0) {
+                        return ToMcpResutJson(new {
+                            Success = false,
+                            Result = $"[nijo-mcp] スクリプトの実行に失敗しました（終了コード: {cmdProcess.ExitCode}）",
+                            ExecutionLog = mainOutput.ToString(),
+                            LogFile = mainLogPath,
+                        });
+                    }
+
+                } catch (Exception ex) {
+                    return ToMcpResutJson(new {
+                        Success = false,
+                        Result = $"[nijo-mcp] スクリプトの実行中にエラーが発生しました（{ex.Message}）",
+                        ExecutionLog = mainOutput.ToString(),
+                        Exception = ex.ToString(),
+                        LogFile = mainLogPath,
+                    });
+                }
+
+                // 成功した場合
+                return $$"""
+                    ソースコードの自動生成を完了しました。
+
+                    ---
+                    【ビルド結果ログ】
+                    {{File.ReadAllText(mainLogPath, new UTF8Encoding(false, false))}}
+                    """;
+
+            } catch (Exception ex) {
+                mainOutput.AppendLine($"Error: {ex}");
+                return ToMcpResutJson(new {
+                    Success = false,
+                    Result = "エラーが発生しました。",
+                    Exception = ex.ToString(),
+                    Details = mainOutput.ToString(),
+                });
+            }
+        }
 
         [McpServerTool(Name = "start_debugging"), Description("ソースコード自動生成された方のアプリケーションのデバッグを開始する。既に開始されている場合はリビルドして再開する。")]
         public static async Task<string> StartDebugging([Description("nijo.xmlのファイルの絶対パス")] string nijoXmlFileFullPath) {
@@ -86,76 +296,7 @@ namespace Nijo.Mcp {
 
                 // .cmdファイルを作成
                 string startCmdPath = Path.Combine(workDirectory, START_CMD_FILE);
-                string cmdContent = $$"""
-                    chcp 65001 
-                    @rem ↑dotnetコマンド実行時に強制的に書き換えられてしまいnpmの標準入出力が化けるので先に書き換えておく 
-                     
-                    @echo off 
-                    setlocal
-                    set NO_COLOR=true 
-                     
-                    set "PROJ_ROOT={{nijoXmlDir}}" 
-                    set "NIJO_ROOT={{NIJO_PROJ}}" 
-                    set "NIJO_EXE={{NIJO_PROJ}}\bin\Debug\net9.0\nijo.exe" 
-                     
-                    echo. > {{mainLogPath}} 
-                    echo. > {{dotnetLogPath}} 
-                    echo. > {{npmLogPath}} 
-                     
-                    @echo ******* start_debugging を開始します。 ******* >> "{{mainLogPath}}" 
-                    @echo. >> "{{mainLogPath}}" 
-                    @echo - 対象プロジェクト: %PROJ_ROOT% >> "{{mainLogPath}}" 
-                    @echo - NijoApplicationBuilderルート: %NIJO_ROOT% >> "{{mainLogPath}}" 
-                    @echo. >> "{{mainLogPath}}" 
-                     
-                    @echo. >> "{{mainLogPath}}" 
-                    @echo ************************************** >> "{{mainLogPath}}" 
-                    @echo ******* ソースコードの自動生成プログラムの最新化を開始します。 ******* >> "{{mainLogPath}}" 
-                    dotnet build %NIJO_ROOT% -c Debug >> "{{mainLogPath}}" 2>&1 
-                    if not "%errorlevel%"=="0" ( 
-                      @echo. >> "{{mainLogPath}}" 
-                      @echo nijo.exeのビルドでエラーが発生しました。処理を中断します。 >> "{{mainLogPath}}" 
-                      exit /b 1 
-                    ) 
-                     
-                    @echo. >> "{{mainLogPath}}" 
-                    @echo ************************************** >> "{{mainLogPath}}" 
-                    @echo ******* ソースコードの自動生成のかけなおしを実行します。 ******* >> "{{mainLogPath}}" 
-                    %NIJO_EXE% generate %PROJ_ROOT% >> "{{mainLogPath}}" 2>&1 
-                    if not "%errorlevel%"=="0" ( 
-                      @echo. >> "{{mainLogPath}}" 
-                      @echo ソースコードの自動生成のかけなおしでエラーが発生しました。処理を中断します。 >> "{{mainLogPath}}" 
-                      exit /b 1 
-                    ) 
-                     
-                    @echo. >> "{{mainLogPath}}" 
-                    @echo ************************************** >> "{{mainLogPath}}" 
-                    @echo ******* .NET デバッグプロセスを起動します。 ******* >> "{{mainLogPath}}" 
-                    cd /d "{{webApiDir}}" 
-                    start /B dotnet run --launch-profile https >> {{dotnetLogPath}} 2>&1 
-                     
-                    @echo. >> "{{mainLogPath}}" 
-                    @echo ************************************** >> "{{mainLogPath}}" 
-                    @echo ******* Node.js デバッグプロセスを起動します。 ******* >> "{{mainLogPath}}" 
-                    cd /d "{{reactDir}}" 
-                    start /B "" cmd /c "npm run dev > {{npmLogPath}} 2>&1" 
-                     
-                    @echo. >> "{{mainLogPath}}" 
-                    @echo ************************************** >> "{{mainLogPath}}" 
-                    @echo 起動指示を出しました。アプリケーションが実行されているかは各httpポートを監視して確認してください。 >> "{{mainLogPath}}" 
-                    @echo - .NET    : {{DOTNET_URL}} >> "{{mainLogPath}}" 
-                    @echo - Node.js : {{NPM_URL}} >> "{{mainLogPath}}" 
-                    @echo. >> "{{mainLogPath}}" 
-                    @echo 各プロセスの出力は以下のログを参照してください。 >> "{{mainLogPath}}" 
-                    @echo - npm run dev のログ: "{{npmLogPath}}" >> "{{mainLogPath}}" 
-                    @echo - dotnet run のログ: "{{dotnetLogPath}}" >> "{{mainLogPath}}" 
-                     
-                    @echo. >> "{{mainLogPath}}" 
-                    @echo ************************************** >> "{{mainLogPath}}" 
-                    @echo ******* 処理終了 ******* >> "{{mainLogPath}}" 
-                     
-                    exit /b 0 
-                    """;
+                string cmdContent = RenderCmdContent(nijoXmlFileFullPath, true);
                 File.WriteAllText(startCmdPath, cmdContent, new UTF8Encoding(false, false));
                 mainOutput.AppendLine($"[nijo-mcp] 起動スクリプトを作成しました: {startCmdPath}");
 
@@ -414,12 +555,7 @@ namespace Nijo.Mcp {
             return result.ToString();
         }
 
-        #region MCPの戻り値
-        // MCPツールの戻り値はJSONのみ
-
-        private static string ToMcpResultError(string error) {
-            return ToMcpResutJson(new { Success = false, Error = error });
-        }
+        // MCPツールの戻り値をJSONにする
         private static string ToMcpResutJson<T>(T result) {
             var jsonOptions = new JsonSerializerOptions {
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
@@ -427,6 +563,5 @@ namespace Nijo.Mcp {
             };
             return JsonSerializer.Serialize(result, jsonOptions);
         }
-        #endregion MCPの戻り値
     }
 }
