@@ -19,6 +19,9 @@ namespace Nijo.Models.QueryModelModules {
 
         private readonly SearchCondition.Filter _filter;
 
+        internal override string CsClassName => $"{_aggregate.PhysicalName}SearchConditionMessages";
+        internal override string TsTypeName => $"{_aggregate.PhysicalName}SearchConditionMessages";
+
         protected override IEnumerable<IMessageContainerMember> GetMembers() {
             return _filter
                 .GetOwnMembers()

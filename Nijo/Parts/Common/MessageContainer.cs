@@ -38,6 +38,13 @@ namespace Nijo.Parts.Common {
         /// </summary>
         protected abstract IEnumerable<IMessageContainerMember> GetMembers();
 
+        /// <summary>
+        /// C#のクラス定義に追加で何かレンダリングが必要なコードがあればこれをオーバーライドして記載
+        /// </summary>
+        protected virtual string RenderCSharpAdditionalSource() {
+            return SKIP_MARKER;
+        }
+
         internal string RenderCSharp() {
             var impl = new List<string>() { CONCRETE_CLASS };
             impl.AddRange(GetCsClassImplements());
@@ -73,6 +80,7 @@ namespace Nijo.Parts.Common {
                     public {{m.CsType ?? $"{INTERFACE_LIST}<{m.NestedObject?.CsClassName}>"}} {{m.PhysicalName}} { get; }
                 """)}}
                 """)}}
+                    {{WithIndent(RenderCSharpAdditionalSource(), "    ")}}
                 }
                 """;
         }

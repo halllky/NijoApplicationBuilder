@@ -191,9 +191,19 @@ namespace Nijo.Models {
             // 定数: メタデータ
             ctx.Use<Metadata>().Add(rootAggregate);
 
+            // カスタムロジック用モジュール
+            ctx.Use<CommandQueryMappings>().AddDataModel(rootAggregate);
+
             // QueryModelと全く同じ型の場合はそれぞれのモデルのソースも生成
             if (rootAggregate.GenerateDefaultQueryModel) {
                 QueryModel.GenerateCode(ctx, rootAggregate, aggregateFile);
+            }
+
+            // 標準の一括作成コマンド
+            if (rootAggregate.GenerateBatchUpdateCommand) {
+                var batchUpdate = new BatchUpdate(rootAggregate);
+                aggregateFile.AddWebapiControllerAction(batchUpdate.RenderControllerAction(ctx));
+                aggregateFile.AddAppSrvMethod(batchUpdate.RenderAppSrvMethod(ctx), "一括更新処理");
             }
 
             aggregateFile.ExecuteRendering(ctx);

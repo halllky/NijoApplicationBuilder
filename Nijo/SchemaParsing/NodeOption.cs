@@ -169,13 +169,16 @@ internal static class BasicNodeOptions {
     };
     internal static NodeOption GenerateBatchUpdateCommand = new() {
         AttributeName = "GenerateBatchUpdateCommand",
-        DisplayName = "DataModelと全く同じ型のCommandModelを生成するかどうか",
+        DisplayName = "DataModelと全く同じ型のQueryModelの一括更新用のWebエンドポイント・Reactフック・アプリケーションサービスを生成するかどうか",
         Type = E_NodeOptionType.Boolean,
         HelpText = $$"""
             標準の更新ロジックで一括更新処理を生成する場合に指定。
             """,
         Validate = ctx => {
-
+            // このオプションを使用するためにはGenerateDefaultQueryModelの指定が必須
+            if (ctx.XElement.Attribute(GenerateDefaultQueryModel.AttributeName) == null) {
+                ctx.AddError("このオプションを使用するためにはGenerateDefaultQueryModelの指定が必須");
+            }
         },
         IsAvailableModelMembers = model => {
             return false;

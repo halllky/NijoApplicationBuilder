@@ -1,6 +1,7 @@
 using Nijo.CodeGenerating;
 using Nijo.ImmutableSchema;
 using Nijo.Models.CommandModelModules;
+using Nijo.Models.DataModelModules;
 using Nijo.Models.QueryModelModules;
 using Nijo.Util.DotnetEx;
 using System;
@@ -24,6 +25,10 @@ namespace Nijo.Parts.Common {
         /// </summary>
         internal const string REFERED_QUERY_MODEL_TYPE = "ReferedQueryModelType";
         /// <summary>
+        /// JavaScript用: 一括更新処理が存在するQueryModelの型名のリテラル型
+        /// </summary>
+        internal const string BATCH_UPDATABLE_QUERY_MODEL_TYPE = "BatchUpdatableQueryModelType";
+        /// <summary>
         /// JavaScript用: CommandModelの型名のリテラル型
         /// </summary>
         internal const string COMMAND_MODEL_TYPE = "CommandModelType";
@@ -40,8 +45,13 @@ namespace Nijo.Parts.Common {
             _commandModels.Add(rootAggregate);
             return this;
         }
+        internal CommandQueryMappings AddDataModel(RootAggregate rootAggregate) {
+            _dataModels.Add(rootAggregate);
+            return this;
+        }
         private readonly List<RootAggregate> _queryModels = [];
         private readonly List<RootAggregate> _commandModels = [];
+        private readonly List<RootAggregate> _dataModels = [];
 
         void IMultiAggregateSourceFile.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {
             // 特になし
@@ -82,6 +92,11 @@ namespace Nijo.Parts.Common {
         }
 
         private SourceFile RenderTypeScript(CodeRenderingContext ctx) {
+
+            // 一括更新処理可能なQueryModel
+            var batchUpdatableQueryModels = _dataModels
+                .Where(root => root.GenerateBatchUpdateCommand)
+                .ToArray();
 
             // Ref関連モジュールは他の集約から参照されているもののみ使用可能
             var referedRefEntires = new Dictionary<RootAggregate, DisplayDataRef.Entry[]>();
@@ -151,6 +166,16 @@ namespace Nijo.Parts.Common {
                     {{If(referedRefEntires.Values.SelectMany(x => x).Any(), () => $$"""
                     {{referedRefEntires.Values.SelectMany(x => x).SelectTextTemplate((refEntry, i) => $$"""
                       {{(i == 0 ? "=" : "|")}} '{{refEntry.Aggregate.PhysicalName}}'
+                    """)}}
+                    """).Else(() => $$"""
+                      = never
+                    """)}}
+
+                    /** 一括更新処理可能なQueryModelの種類の一覧 */
+                    export type {{BATCH_UPDATABLE_QUERY_MODEL_TYPE}}
+                    {{If(batchUpdatableQueryModels.Any(), () => $$"""
+                    {{batchUpdatableQueryModels.SelectTextTemplate((dataModel, i) => $$"""
+                      {{(i == 0 ? "=" : "|")}} '{{dataModel.PhysicalName}}'
                     """)}}
                     """).Else(() => $$"""
                       = never
@@ -276,6 +301,11 @@ namespace Nijo.Parts.Common {
                     //#region コマンド
                     {{CommandProcessing.RenderTsTypeMap(_commandModels)}}
                     //#endregion コマンド
+
+
+                    //#region DataModel一括更新
+                    {{BatchUpdate.RenderTsTypeMap(_dataModels)}}
+                    //#endregion DataModel一括更新
 
 
                     //#region 画面遷移用フック（MultiView）

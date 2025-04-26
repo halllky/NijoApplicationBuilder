@@ -1,6 +1,7 @@
 using Nijo.CodeGenerating;
 using Nijo.CodeGenerating.Helpers;
 using Nijo.ImmutableSchema;
+using Nijo.Models.DataModelModules;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,22 +15,22 @@ namespace Nijo.Models.QueryModelModules {
     internal class DisplayData : IInstancePropertyOwnerMetadata {
 
         internal DisplayData(AggregateBase aggregate) {
-            _aggregate = aggregate;
+            Aggregate = aggregate;
         }
-        private readonly AggregateBase _aggregate;
+        internal AggregateBase Aggregate { get; }
 
 
         /// <summary>C#クラス名</summary>
-        internal string CsClassName => $"{_aggregate.PhysicalName}DisplayData";
+        internal string CsClassName => $"{Aggregate.PhysicalName}DisplayData";
         /// <summary>C#クラス名（values）</summary>
-        internal string CsValuesClassName => $"{_aggregate.PhysicalName}DisplayDataValues";
+        internal string CsValuesClassName => $"{Aggregate.PhysicalName}DisplayDataValues";
         /// <summary>TypeScript型名</summary>
-        internal string TsTypeName => $"{_aggregate.PhysicalName}DisplayData";
+        internal string TsTypeName => $"{Aggregate.PhysicalName}DisplayData";
 
         /// <summary>画面上で独自の追加削除のライフサイクルを持つかどうか</summary>
         internal virtual bool HasLifeCycle => true;
         /// <summary>楽観排他制御用のバージョンを持つかどうか</summary>
-        internal virtual bool HasVersion => _aggregate is RootAggregate;
+        internal virtual bool HasVersion => Aggregate is RootAggregate;
 
         /// <summary>値が格納されるプロパティの名前（C#）</summary>
         internal const string VALUES_CS = "Values";
@@ -84,12 +85,16 @@ namespace Nijo.Models.QueryModelModules {
         /// <summary>追加・更新・削除のいずれかの区分を返すメソッドの名前</summary>
         internal const string GET_SAVE_TYPE = "GetSaveType";
 
+        public const string TO_CREATE_COMMAND = "ToCreateCommand";
+        public const string TO_UPDATE_COMMAND = "ToUpdateCommand";
+        public const string TO_DELETE_COMMAND = "ToDeleteCommand";
+
 
         /// <summary>
         /// valuesの中に宣言されるメンバーを列挙する。
         /// </summary>
         internal IEnumerable<IDisplayDataMember> GetOwnMembers() {
-            foreach (var member in _aggregate.GetMembers()) {
+            foreach (var member in Aggregate.GetMembers()) {
                 if (member is ValueMember vm) {
                     yield return new DisplayDataValueMember(vm);
 
@@ -104,7 +109,7 @@ namespace Nijo.Models.QueryModelModules {
         /// 子要素を列挙する。
         /// </summary>
         internal IEnumerable<DisplayDataDescendant> GetChildMembers() {
-            foreach (var member in _aggregate.GetMembers()) {
+            foreach (var member in Aggregate.GetMembers()) {
                 if (member is ChildAggregate child) {
                     yield return new DisplayDataChildDescendant(child);
 
@@ -163,10 +168,10 @@ namespace Nijo.Models.QueryModelModules {
         private string RenderCSharpDeclaring(CodeRenderingContext ctx) {
             return $$"""
                 /// <summary>
-                /// {{_aggregate.DisplayName}}の画面表示用データ。
+                /// {{Aggregate.DisplayName}}の画面表示用データ。
                 /// </summary>
                 public partial class {{CsClassName}} {
-                    /// <summary>{{_aggregate.DisplayName}}自身が持つ値</summary>
+                    /// <summary>{{Aggregate.DisplayName}}自身が持つ値</summary>
                     [JsonPropertyName("{{VALUES_TS}}")]
                     public {{CsValuesClassName}} {{VALUES_CS}} { get; set; } = new();
                 {{GetChildMembers().SelectTextTemplate(c => $$"""
@@ -194,6 +199,10 @@ namespace Nijo.Models.QueryModelModules {
                     /// <summary>どの項目が読み取り専用か</summary>
                     [JsonPropertyName("{{READONLY_TS}}")]
                     public {{ReadOnlyDataCsClassName}} {{READONLY_CS}} { get; set; } = new();
+                {{If(Aggregate is RootAggregate root && root.Model is DataModel, () => $$"""
+
+                    {{WithIndent(RenderConvertingToSaveCommand(), "    ")}}
+                """)}}
                 }
 
                 /// <summary>
@@ -209,7 +218,7 @@ namespace Nijo.Models.QueryModelModules {
                 /// <see cref="{{CsClassName}}/> の{{READONLY_CS}}の型
                 /// </summary>
                 public partial class {{ReadOnlyDataCsClassName}} {
-                    /// <summary>{{_aggregate.DisplayName}}全体が読み取り専用か否か</summary>
+                    /// <summary>{{Aggregate.DisplayName}}全体が読み取り専用か否か</summary>
                     [JsonPropertyName("{{ALL_READONLY_TS}}")]
                     public bool {{ALL_READONLY_CS}} { get; set; }
                 {{GetOwnMembers().SelectTextTemplate(member => $$"""
@@ -222,7 +231,7 @@ namespace Nijo.Models.QueryModelModules {
 
         private string RenderTypeScriptType(CodeRenderingContext ctx) {
             return $$"""
-                /** {{_aggregate.DisplayName}}の画面表示用データ。 */
+                /** {{Aggregate.DisplayName}}の画面表示用データ。 */
                 export type {{TsTypeName}} = {
                   /** 値 */
                   {{VALUES_TS}}: {
@@ -249,7 +258,7 @@ namespace Nijo.Models.QueryModelModules {
                 """)}}
                   /** どの項目が読み取り専用か */
                   {{READONLY_TS}}: {
-                    /** {{_aggregate.DisplayName}}全体が読み取り専用か否か */
+                    /** {{Aggregate.DisplayName}}全体が読み取り専用か否か */
                     {{ALL_READONLY_TS}}?: boolean
                 {{GetOwnMembers().SelectTextTemplate(member => $$"""
                     /** {{member.DisplayName}}が読み取り専用か否か */
@@ -357,13 +366,13 @@ namespace Nijo.Models.QueryModelModules {
 
 
         #region UI用の制約定義
-        internal string UiConstraintTypeName => $"{_aggregate.PhysicalName}ConstraintType";
-        internal string UiConstraingValueName => $"{_aggregate.PhysicalName}Constraints";
+        internal string UiConstraintTypeName => $"{Aggregate.PhysicalName}ConstraintType";
+        internal string UiConstraingValueName => $"{Aggregate.PhysicalName}Constraints";
         internal string RenderUiConstraintType(CodeRenderingContext ctx) {
-            if (_aggregate is not RootAggregate) throw new InvalidOperationException();
+            if (Aggregate is not RootAggregate) throw new InvalidOperationException();
 
             return $$"""
-                /** {{_aggregate.DisplayName}}の各メンバーの制約の型 */
+                /** {{Aggregate.DisplayName}}の各メンバーの制約の型 */
                 type {{UiConstraintTypeName}} = {
                   {{WithIndent(RenderMembers(this), "  ")}}
                 }
@@ -385,10 +394,10 @@ namespace Nijo.Models.QueryModelModules {
             }
         }
         internal string RenderUiConstraintValue(CodeRenderingContext ctx) {
-            if (_aggregate is not RootAggregate) throw new InvalidOperationException();
+            if (Aggregate is not RootAggregate) throw new InvalidOperationException();
 
             return $$"""
-                /** {{_aggregate.DisplayName}}の各メンバーの制約の具体的な値 */
+                /** {{Aggregate.DisplayName}}の各メンバーの制約の具体的な値 */
                 export const {{UiConstraingValueName}}: {{UiConstraintTypeName}} = {
                   {{WithIndent(RenderMembers(this), "  ")}}
                 }
@@ -454,7 +463,7 @@ namespace Nijo.Models.QueryModelModules {
         }
         private string RenderTypeScriptObjectCreationFunction(CodeRenderingContext ctx) {
             return $$"""
-                /** {{_aggregate.DisplayName}}の画面表示用データの新しいインスタンスを作成します。 */
+                /** {{Aggregate.DisplayName}}の画面表示用データの新しいインスタンスを作成します。 */
                 export const {{TsNewObjectFunction}} = (): {{TsTypeName}} => ({
                   {{VALUES_TS}}: {
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
@@ -483,8 +492,8 @@ namespace Nijo.Models.QueryModelModules {
         internal abstract class DisplayDataDescendant : DisplayData {
             internal DisplayDataDescendant(AggregateBase aggregate) : base(aggregate) { }
 
-            internal string PhysicalName => _aggregate.PhysicalName;
-            internal string DisplayName => _aggregate.DisplayName;
+            internal string PhysicalName => Aggregate.PhysicalName;
+            internal string DisplayName => Aggregate.DisplayName;
             internal abstract string CsClassNameAsMember { get; }
             internal abstract string TsTypeNameAsMember { get; }
 
@@ -525,10 +534,40 @@ namespace Nijo.Models.QueryModelModules {
                 return "[]";
             }
 
-            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _aggregate;
+            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Aggregate;
             bool IInstanceStructurePropertyMetadata.IsArray => true;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
         }
         #endregion Valuesの外に定義されるメンバー（Child, Children）
+
+
+        #region SaveCommandへの変換
+        private string RenderConvertingToSaveCommand() {
+            var createCommand = new SaveCommand(Aggregate, SaveCommand.E_Type.Create);
+            var udpateCommand = new SaveCommand(Aggregate, SaveCommand.E_Type.Update);
+            var deleteCommand = new SaveCommand(Aggregate, SaveCommand.E_Type.Delete);
+
+            return $$"""
+                /// <summary>
+                /// このインスタンスを <see cref="{{createCommand.CsClassNameCreate}}"/> に変換します。
+                /// </summary>
+                public {{createCommand.CsClassNameCreate}} {{TO_CREATE_COMMAND}}() {
+                    throw new NotImplementedException();
+                }
+                /// <summary>
+                /// このインスタンスを <see cref="{{udpateCommand.CsClassNameUpdate}}"/> に変換します。
+                /// </summary>
+                public {{udpateCommand.CsClassNameUpdate}} {{TO_UPDATE_COMMAND}}() {
+                    throw new NotImplementedException();
+                }
+                /// <summary>
+                /// このインスタンスを <see cref="{{deleteCommand.CsClassNameDelete}}"/> に変換します。
+                /// </summary>
+                public {{deleteCommand.CsClassNameDelete}} {{TO_DELETE_COMMAND}}() {
+                    throw new NotImplementedException();
+                }
+                """;
+        }
+        #endregion SaveCommandへの変換
     }
 }

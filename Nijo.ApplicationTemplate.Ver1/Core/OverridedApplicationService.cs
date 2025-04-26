@@ -17,7 +17,7 @@ partial class OverridedApplicationService {
         });
     }
 
-    protected override IQueryable<顧客SearchResult> CreateQuerySource(顧客SearchCondition searchCondition, IPresentationContext<顧客Messages> context) {
+    protected override IQueryable<顧客SearchResult> CreateQuerySource(顧客SearchCondition searchCondition, IPresentationContext<顧客SearchConditionMessages> context) {
         return DbContext.顧客DbSet.Select(e => new 顧客SearchResult {
             顧客ID = e.顧客ID,
             顧客名 = e.顧客名,

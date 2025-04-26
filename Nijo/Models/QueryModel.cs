@@ -311,6 +311,12 @@ namespace Nijo.Models {
             var deepEquals = new DeepEqual(rootAggregate);
             aggregateFile.AddTypeScriptFunction(deepEquals.RenderTypeScript());
 
+            // データ型: 画面表示用型メッセージ
+            var displayDataMessages = new DisplayDataMessageContainer(rootAggregate);
+            aggregateFile.AddCSharpClass(DisplayDataMessageContainer.RenderCSharpRecursively(rootAggregate), "Class_DisplayDataMessage");
+            aggregateFile.AddTypeScriptTypeDef(displayDataMessages.RenderTypeScript()); // ちなみに子孫集約はルート集約の中にレンダリングされる
+            ctx.Use<MessageContainer.BaseClass>().Register(displayDataMessages.CsClassName, displayDataMessages.CsClassName);
+
             // 検索処理
             // - reactは型名マッピングのみ
             // - ASP.NET Core Controller Action
