@@ -26,8 +26,8 @@ namespace Nijo.Models.DataModelModules {
         protected override IEnumerable<IMessageContainerMember> GetMembers() {
             // SaveCommandと同じデータ型になるのでSaveCommandの処理を流用する。
             // Updateを使っているのは、Create, Update, Delete のうちUpdateが最も多くの項目を持っているため
-            return new SaveCommand(_aggregate, SaveCommand.E_Type.Create) // CUD全部名前同じなのでCにしている
-                .GetUpdateCommandMembers()
+            return new SaveCommand(_aggregate, SaveCommand.E_Type.Update)
+                .GetMembers()
                 .Select(m => new MessageContainerMemberImpl {
                     PhysicalName = m.PhysicalName,
                     DisplayName = m.DisplayName,

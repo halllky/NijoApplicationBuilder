@@ -143,7 +143,7 @@ namespace Nijo.Models.DataModelModules {
                     }
 
                     // Child, Children に対して再帰処理
-                    foreach (var member in currentSaveCommand.GetCreateCommandMembers()) {
+                    foreach (var member in currentSaveCommand.GetMembers()) {
                         if (member is SaveCommand.SaveCommandChildMember child) {
                             var childProperty = currentInstance.CreateProperty(child);
                             foreach (var desc in CollectInstancesRecursively(childProperty)) {

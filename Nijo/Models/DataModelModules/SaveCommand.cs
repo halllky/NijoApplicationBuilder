@@ -85,7 +85,7 @@ namespace Nijo.Models.DataModelModules {
 
 
         #region CREATE
-        internal IEnumerable<ISaveCommandMember> GetCreateCommandMembers() {
+        private IEnumerable<ISaveCommandMember> GetCreateCommandMembers() {
             foreach (var member in Aggregate.GetMembers()) {
                 if (member is ValueMember vm) {
                     // 新規登録時に自動採番されるものは新規登録メンバー中に含めない
@@ -110,7 +110,7 @@ namespace Nijo.Models.DataModelModules {
                 /// {{Aggregate.DisplayName}} の新規登録コマンド引数
                 /// </summary>
                 public partial class {{CsClassNameCreate}} {
-                {{GetCreateCommandMembers().SelectTextTemplate(m => $$"""
+                {{GetMembers().SelectTextTemplate(m => $$"""
                     {{WithIndent(m.RenderDeclaring(), "    ")}}
                 """)}}
                 {{If(Aggregate is RootAggregate, () => $$"""
@@ -124,7 +124,7 @@ namespace Nijo.Models.DataModelModules {
 
 
         #region UPDATE
-        internal IEnumerable<ISaveCommandMember> GetUpdateCommandMembers() {
+        private IEnumerable<ISaveCommandMember> GetUpdateCommandMembers() {
             foreach (var member in Aggregate.GetMembers()) {
                 if (member is ValueMember vm) {
                     yield return new SaveCommandValueMember(vm);
@@ -148,7 +148,7 @@ namespace Nijo.Models.DataModelModules {
                 /// {{Aggregate.DisplayName}} の更新コマンド引数
                 /// </summary>
                 public partial class {{CsClassNameUpdate}} {
-                {{GetUpdateCommandMembers().SelectTextTemplate(m => $$"""
+                {{GetMembers().SelectTextTemplate(m => $$"""
                     {{WithIndent(m.RenderDeclaring(), "    ")}}
                 """)}}
                 {{If(Aggregate is RootAggregate, () => $$"""
@@ -193,7 +193,7 @@ namespace Nijo.Models.DataModelModules {
                 /// {{Aggregate.DisplayName}} の物理削除コマンド引数。キーとバージョンのみを持つ。
                 /// </summary>
                 public partial class {{CsClassNameDelete}} {
-                {{GetDeleteCommandMembers().SelectTextTemplate(m => $$"""
+                {{GetMembers().SelectTextTemplate(m => $$"""
                     {{WithIndent(m.RenderDeclaring(), "    ")}}
                 """)}}
                 {{If(Aggregate is RootAggregate, () => $$"""

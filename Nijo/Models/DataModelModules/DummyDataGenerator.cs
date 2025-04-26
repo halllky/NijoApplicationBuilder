@@ -160,7 +160,7 @@ namespace Nijo.Models.DataModelModules {
                     """;
 
                 static IEnumerable<string> RenderBody(SaveCommand saveCommand) {
-                    foreach (var member in saveCommand.GetCreateCommandMembers()) {
+                    foreach (var member in saveCommand.GetMembers()) {
                         if (member is SaveCommand.SaveCommandValueMember vm) {
                             var path = new List<string>();
 
