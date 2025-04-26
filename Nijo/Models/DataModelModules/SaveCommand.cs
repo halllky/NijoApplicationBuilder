@@ -206,55 +206,6 @@ namespace Nijo.Models.DataModelModules {
         #endregion DELETE
 
 
-        #region ValueMember再帰列挙
-        /// <summary>
-        /// ValueMemberのみの再帰列挙
-        /// <list type="bullet">
-        /// <item>親、参照先のValueMember: 含めます。</item>
-        /// <item>Child, ChildrenのValueMember: 含めません。</item>
-        /// </list>
-        /// </summary>
-        internal IEnumerable<SaveCommandValueMember> GetCreateCommandValueMembersRecursively() {
-            foreach (var member in GetCreateCommandMembers()) {
-                if (member is SaveCommandValueMember vm) {
-                    yield return vm;
-
-                } else if (member is KeyClass.IKeyClassStructure keyClass) {
-                    foreach (var vm2 in keyClass.GetValueMembersRecursively()) {
-                        yield return vm2;
-                    }
-                }
-            }
-        }
-        /// <inheritdoc cref="GetCreateCommandValueMembersRecursively"/>
-        internal IEnumerable<SaveCommandValueMember> GetUpdateCommandValueMembersRecursively() {
-            foreach (var member in GetUpdateCommandMembers()) {
-                if (member is SaveCommandValueMember vm) {
-                    yield return vm;
-
-                } else if (member is KeyClass.IKeyClassStructure keyClass) {
-                    foreach (var vm2 in keyClass.GetValueMembersRecursively()) {
-                        yield return vm2;
-                    }
-                }
-            }
-        }
-        /// <inheritdoc cref="GetCreateCommandValueMembersRecursively"/>
-        internal IEnumerable<SaveCommandValueMember> GetDeleteCommandValueMembersRecursively() {
-            foreach (var member in GetDeleteCommandMembers()) {
-                if (member is SaveCommandValueMember vm) {
-                    yield return vm;
-
-                } else if (member is KeyClass.IKeyClassStructure keyClass) {
-                    foreach (var vm2 in keyClass.GetValueMembersRecursively()) {
-                        yield return vm2;
-                    }
-                }
-            }
-        }
-        #endregion ValueMember再帰列挙
-
-
         #region メンバー
         internal interface ISaveCommandMember : IInstancePropertyMetadata {
             bool IsKey { get; }
@@ -344,9 +295,9 @@ namespace Nijo.Models.DataModelModules {
             ISchemaPathNode ISaveCommandMember.Member => (IAggregateMember)base.Aggregate;
             public string PhysicalName => base.Aggregate.PhysicalName;
             public string DisplayName => base.Aggregate.DisplayName;
-            public string CsCreateType => $"List<{new SaveCommand(base.Aggregate, SaveCommand.E_Type.Create).CsClassNameCreate}>";
-            public string CsUpdateType => $"List<{new SaveCommand(base.Aggregate, SaveCommand.E_Type.Update).CsClassNameUpdate}>";
-            public string CsDeleteType => $"List<{new SaveCommand(base.Aggregate, SaveCommand.E_Type.Delete).CsClassNameDelete}>";
+            public string CsCreateType => $"List<{new SaveCommand(base.Aggregate, E_Type.Create).CsClassName}>";
+            public string CsUpdateType => $"List<{new SaveCommand(base.Aggregate, E_Type.Update).CsClassName}>";
+            public string CsDeleteType => $"List<{new SaveCommand(base.Aggregate, E_Type.Delete).CsClassName}>";
 
             bool ISaveCommandMember.IsKey => false;
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => base.Aggregate;
