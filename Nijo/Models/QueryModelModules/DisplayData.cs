@@ -2,6 +2,7 @@ using Nijo.CodeGenerating;
 using Nijo.CodeGenerating.Helpers;
 using Nijo.ImmutableSchema;
 using Nijo.Models.DataModelModules;
+using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -280,6 +281,7 @@ namespace Nijo.Models.QueryModelModules {
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => ISchemaPathNode.Empty;
             string IInstancePropertyMetadata.PropertyName => VALUES_CS;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
+            string IInstanceStructurePropertyMetadata.CsType => new DisplayData(_aggregate).ValueCsClassName;
 
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetMembers();
 
@@ -389,6 +391,7 @@ namespace Nijo.Models.QueryModelModules {
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Member;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PropertyName;
+            string IInstanceStructurePropertyMetadata.CsType => RefEntry.CsClassName;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetMembers();
         }
         #endregion Values
@@ -546,6 +549,7 @@ namespace Nijo.Models.QueryModelModules {
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _child;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
+            string IInstanceStructurePropertyMetadata.CsType => CsClassName;
         }
 
         internal class DisplayDataChildrenDescendant : DisplayDataDescendant, IInstanceStructurePropertyMetadata {
@@ -566,6 +570,7 @@ namespace Nijo.Models.QueryModelModules {
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Aggregate;
             bool IInstanceStructurePropertyMetadata.IsArray => true;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
+            string IInstanceStructurePropertyMetadata.CsType => CsClassName;
         }
         #endregion Valuesの外に定義されるメンバー（Child, Children）
 
@@ -576,93 +581,81 @@ namespace Nijo.Models.QueryModelModules {
             var udpateCommand = new SaveCommand(Aggregate, SaveCommand.E_Type.Update);
             var deleteCommand = new SaveCommand(Aggregate, SaveCommand.E_Type.Delete);
 
+            var right = new Variable("this", this);
+            var dict = right
+                .Create1To1PropertiesRecursively()
+                .ToDictionary(x => x.Metadata.SchemaPathNode.ToMappingKey());
+
             return $$"""
                 /// <summary>
                 /// このインスタンスを <see cref="{{createCommand.CsClassName}}"/> に変換します。
                 /// </summary>
                 public {{createCommand.CsClassNameCreate}} {{TO_CREATE_COMMAND}}() {
-                    // return new {{createCommand.CsClassNameCreate}} {
-                    //     {{WithIndent(RenderBody(createCommand), "    ")}}
-                    // };
-
-                    throw new NotImplementedException();
+                    return new {{createCommand.CsClassNameCreate}} {
+                        {{WithIndent(RenderBody(createCommand, right, dict), "        ")}}
+                    };
                 }
                 /// <summary>
                 /// このインスタンスを <see cref="{{udpateCommand.CsClassName}}"/> に変換します。
                 /// </summary>
                 public {{udpateCommand.CsClassNameUpdate}} {{TO_UPDATE_COMMAND}}() {
-                    // return new {{udpateCommand.CsClassNameUpdate}} {
-                    //     {{WithIndent(RenderBody(udpateCommand), "    ")}}
-                    //     {{SaveCommand.VERSION}} = this.{{VERSION_CS}},
-                    // };
-
-                    throw new NotImplementedException();
+                    return new {{udpateCommand.CsClassNameUpdate}} {
+                        {{WithIndent(RenderBody(udpateCommand, right, dict), "        ")}}
+                        {{SaveCommand.VERSION}} = this.{{VERSION_CS}},
+                    };
                 }
                 /// <summary>
                 /// このインスタンスを <see cref="{{deleteCommand.CsClassName}}"/> に変換します。
                 /// </summary>
                 public {{deleteCommand.CsClassNameDelete}} {{TO_DELETE_COMMAND}}() {
-                    // return new {{deleteCommand.CsClassNameDelete}} {
-                    //     {{WithIndent(RenderBody(deleteCommand), "    ")}}
-                    //     {{SaveCommand.VERSION}} = this.{{VERSION_CS}},
-                    // };
-
-                    throw new NotImplementedException();
+                    return new {{deleteCommand.CsClassNameDelete}} {
+                        {{WithIndent(RenderBody(deleteCommand, right, dict), "        ")}}
+                        {{SaveCommand.VERSION}} = this.{{VERSION_CS}},
+                    };
                 }
                 """;
 
-            static IEnumerable<string> RenderBody(SaveCommand command) {
+            static IEnumerable<string> RenderBody(IInstancePropertyOwnerMetadata left, IInstancePropertyOwner right, IReadOnlyDictionary<SchemaNodeIdentity, IInstanceProperty> rigthMembers) {
 
-                foreach (var member in command.GetMembers()) {
-                    yield break;
+                foreach (var member in left.GetMembers()) {
+                    if (member is IInstanceValuePropertyMetadata vp) {
+                        var rightPath = rigthMembers.TryGetValue(member.SchemaPathNode.ToMappingKey(), out var source)
+                            ? $"{source.Root.Name}.{source.GetPathFromInstance().Select(p => p.Metadata.PropertyName).Join("?.")}"
+                            : "null";
+                        yield return $$"""
+                            {{member.PropertyName}} = {{rightPath}},
+                            """;
+
+                    } else if (member is IInstanceStructurePropertyMetadata sp) {
+
+                        if (sp.IsArray) {
+                            var arrayPath = rigthMembers.TryGetValue(sp.SchemaPathNode.ToMappingKey(), out var source)
+                                ? $"{source.Root.Name}.{source.GetPathFromInstance().Select(p => p.Metadata.PropertyName).Join("?.")}"
+                              : throw new InvalidOperationException($"右辺にChildrenのXElementが無い: {sp.DisplayName}");
+
+                            // 辞書に、ラムダ式内部で右辺に使用できるプロパティを加える
+                            var dict2 = new Dictionary<SchemaNodeIdentity, IInstanceProperty>(rigthMembers);
+                            var loopVar = new Variable(((ChildrenAggregate)sp.SchemaPathNode).GetLoopVarName(), (IInstancePropertyOwnerMetadata)source.Metadata);
+                            foreach (var descendant in loopVar.Create1To1PropertiesRecursively()) {
+                                dict2.Add(descendant.Metadata.SchemaPathNode.ToMappingKey(), descendant);
+                            }
+
+                            yield return $$"""
+                                {{member.PropertyName}} = {{arrayPath}}?.Select({{loopVar.Name}} => new {{sp.CsType}}() {
+                                    {{WithIndent(RenderBody(sp, loopVar, dict2), "    ")}}
+                                }).ToList() ?? [],
+                                """;
+
+                        } else {
+                            yield return $$"""
+                                {{member.PropertyName}} = new() {
+                                    {{WithIndent(RenderBody(sp, right, rigthMembers), "    ")}}
+                                },
+                                """;
+                        }
+
+                    }
                 }
-
-                //var valuesProperty = $"this.{VALUES_CS}";
-
-                //// ValueMembers の変換
-                //if (command.Type == SaveCommand.E_Type.Create) {
-                //    foreach (var member in command.GetCreateCommandValueMembersRecursively()) {
-                //        yield return $$"""
-                //            {{member.PhysicalName}} = {{valuesProperty}}.{{member.PhysicalName}},
-                //            """;
-                //    }
-                //} else if (command.Type == SaveCommand.E_Type.Update) {
-                //    foreach (var member in command.GetUpdateCommandValueMembersRecursively()) {
-                //        yield return $$"""
-                //            {{member.PhysicalName}} = {{valuesProperty}}.{{member.PhysicalName}},
-                //            """;
-                //    }
-                //}
-
-                //// Child の変換
-                //if (command.Type == SaveCommand.E_Type.Create) {
-                //    foreach (var member in command.GetCreateCommandMembers().OfType<SaveCommand.SaveCommandChildMember>()) {
-                //        yield return $$"""
-                //            {{member.PhysicalName}} = this.{{member.PhysicalName}}.{{TO_CREATE_COMMAND}}(),
-                //            """;
-                //    }
-                //} else if (command.Type == SaveCommand.E_Type.Update) {
-                //    foreach (var member in command.GetUpdateCommandMembers().OfType<SaveCommand.SaveCommandChildMember>()) {
-                //        yield return $$"""
-                //            {{member.PhysicalName}} = this.{{member.PhysicalName}}.{{TO_UPDATE_COMMAND}}(),
-                //            """;
-                //    }
-                //}
-
-                //// Children の変換
-                //if (command.Type == SaveCommand.E_Type.Create) {
-                //    foreach (var member in command.GetCreateCommandMembers().OfType<SaveCommand.SaveCommandChildrenMember>()) {
-                //        yield return $$"""
-                //            {{member.PhysicalName}} = this.{{member.PhysicalName}}.Select(item => item.{{TO_CREATE_COMMAND}}()).ToList(),
-                //            """;
-                //    }
-                //} else if (command.Type == SaveCommand.E_Type.Update) {
-                //    foreach (var member in command.GetUpdateCommandMembers().OfType<SaveCommand.SaveCommandChildrenMember>()) {
-                //        yield return $$"""
-                //            {{member.PhysicalName}} = this.{{member.PhysicalName}}.Select(item => item.{{TO_UPDATE_COMMAND}}()).ToList(),
-                //            """;
-                //    }
-                //}
             }
         }
         #endregion SaveCommandへの変換

@@ -270,6 +270,7 @@ namespace Nijo.Models.DataModelModules {
             bool ISaveCommandMember.IsKey => false;
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Aggregate;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
+            string IInstanceStructurePropertyMetadata.CsType => CsClassName;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
 
             string ISaveCommandMember.RenderDeclaring() {
@@ -302,6 +303,7 @@ namespace Nijo.Models.DataModelModules {
             bool ISaveCommandMember.IsKey => false;
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => base.Aggregate;
             bool IInstanceStructurePropertyMetadata.IsArray => true;
+            string IInstanceStructurePropertyMetadata.CsType => CsClassName;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
 
             string ISaveCommandMember.RenderDeclaring() {

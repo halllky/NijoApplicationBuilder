@@ -428,6 +428,7 @@ namespace Nijo.Models.DataModelModules {
             bool IInstanceStructurePropertyMetadata.IsArray => OtherSideIsMany;
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => OtherSide;
             string IInstancePropertyMetadata.PropertyName => OtherSidePhysicalName;
+            string IInstanceStructurePropertyMetadata.CsType => new EFCoreEntity(OtherSide).CsClassName;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
                 IInstancePropertyOwnerMetadata otherSideEfCoreEntity = new EFCoreEntity(OtherSide);
                 foreach (var member in otherSideEfCoreEntity.GetMembers()) {

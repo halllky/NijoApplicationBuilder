@@ -253,6 +253,7 @@ namespace Nijo.Models.DataModelModules {
 
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _aggregate;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
+            string IInstanceStructurePropertyMetadata.CsType => ClassName;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetOwnMembers();
         }

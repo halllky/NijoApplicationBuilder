@@ -229,6 +229,7 @@ namespace Nijo.Models.QueryModelModules {
 
             public string PropertyName => _physicalName ??= ((ISearchResultMember)this).GetPhysicalName();
             bool IInstanceStructurePropertyMetadata.IsArray => true;
+            string IInstanceStructurePropertyMetadata.CsType => CsClassName;
             IAggregateMember ISearchResultMember.Member => Aggregate;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetMembers();
 

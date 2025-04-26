@@ -27,6 +27,8 @@ public interface IInstanceValuePropertyMetadata : IInstancePropertyMetadata {
 /// 自動生成されるソースコード上に表れるプロパティのうち、子孫をもつ構造体メンバーのメタ情報。単一のオブジェクトも配列も両方含む。
 /// </summary>
 public interface IInstanceStructurePropertyMetadata : IInstancePropertyMetadata, IInstancePropertyOwnerMetadata {
+    /// <summary>配列の場合は List や [] 抜きのクラス名</summary>
+    string CsType { get; }
     bool IsArray { get; }
 }
 

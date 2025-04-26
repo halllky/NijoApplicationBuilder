@@ -195,6 +195,7 @@ namespace Nijo.Models.QueryModelModules {
             internal virtual string TsTypeName => $"{_aggregate.PhysicalName}SearchConditionFilter";
 
             bool IInstanceStructurePropertyMetadata.IsArray => false;
+            string IInstanceStructurePropertyMetadata.CsType => CsClassName;
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => ISchemaPathNode.Empty;
             string IInstancePropertyMetadata.PropertyName => Entry.FILTER_CS;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetOwnMembers();
@@ -384,6 +385,7 @@ namespace Nijo.Models.QueryModelModules {
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _rm;
             string IInstancePropertyMetadata.PropertyName => _rm.PhysicalName;
             bool IInstanceStructurePropertyMetadata.IsArray => false; // 検索条件なのでChildrenであっても配列ではない
+            string IInstanceStructurePropertyMetadata.CsType => ChildFilter.CsClassName;
 
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
                 return ((IInstancePropertyOwnerMetadata)ChildFilter).GetMembers();
