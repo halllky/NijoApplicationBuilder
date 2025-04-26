@@ -2,6 +2,7 @@ import React from 'react'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import MainLayout from './layout/MainLayout'
 import { 顧客一覧検索 } from './pages/顧客/顧客一覧検索'
+import { 顧客詳細編集 } from './pages/顧客/顧客詳細編集'
 import { Home } from './pages'
 
 const router = createBrowserRouter([
@@ -15,7 +16,20 @@ const router = createBrowserRouter([
       },
       {
         path: '顧客',
-        element: <顧客一覧検索 />
+        children: [
+          {
+            index: true,
+            element: <顧客一覧検索 />
+          },
+          {
+            path: 'new',
+            element: <顧客詳細編集 />
+          },
+          {
+            path: ':顧客ID',
+            element: <顧客詳細編集 />
+          }
+        ]
       }
     ]
   }

@@ -31,7 +31,7 @@ import { PageFrame, PageFrameTitle } from "./PageFrame"
 export const MultiView = <TQueryModel extends QueryModelType>(
   props: MultiViewProps<TQueryModel>,
 ) => {
-  const { queryModel, isReady, title, children, initialSearchCondition, getColumnDefs } = props
+  const { queryModel, isReady, title, children, initialSearchCondition, getColumnDefs, headerButtons } = props
 
   // 検索条件用のreact-hook-form
   const defaultValues = useMemo(() => initialSearchCondition || createNewSearchConditionFunctions[queryModel](), [initialSearchCondition, queryModel])
@@ -157,7 +157,8 @@ export const MultiView = <TQueryModel extends QueryModelType>(
         {title || `${queryModel}一覧検索`}
       </PageFrameTitle>
       <div className="flex-1"></div>
-      <button onClick={handleClear} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">
+      {headerButtons}
+      <button onClick={handleClear} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 mx-2">
         クリア
       </button>
       <div className="flex">
@@ -365,4 +366,8 @@ export type MultiViewProps<TQueryModelType extends QueryModelType> = {
    * @param cellType セル型定義ヘルパー関数の一覧。
    */
   getColumnDefs: (cellType: ColumnDefFactories<DisplayDataTypeMap[TQueryModelType]>) => ColumnDef<DisplayDataTypeMap[TQueryModelType]>[]
+  /**
+   * ヘッダー部に表示する追加ボタン等
+   */
+  headerButtons?: React.ReactNode
 }
