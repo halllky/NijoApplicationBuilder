@@ -26,9 +26,15 @@ namespace Nijo.Models.DataModelModules {
         internal enum E_Type { Create, Update, Delete }
         internal E_Type Type { get; }
 
-        internal string CsClassNameCreate => $"{Aggregate.PhysicalName}CreateCommand";
-        internal string CsClassNameUpdate => $"{Aggregate.PhysicalName}UpdateCommand";
-        internal string CsClassNameDelete => $"{Aggregate.PhysicalName}DeleteCommand";
+        internal string CsClassName => Type switch {
+            E_Type.Create => $"{Aggregate.PhysicalName}CreateCommand",
+            E_Type.Update => $"{Aggregate.PhysicalName}UpdateCommand",
+            E_Type.Delete => $"{Aggregate.PhysicalName}DeleteCommand",
+            _ => throw new InvalidOperationException(),
+        };
+        internal string CsClassNameCreate => CsClassName;
+        internal string CsClassNameUpdate => CsClassName;
+        internal string CsClassNameDelete => CsClassName;
 
         internal const string VERSION = "Version";
         internal const string TO_DBENTITY = "ToDbEntity";
@@ -64,9 +70,10 @@ namespace Nijo.Models.DataModelModules {
                 """;
         }
 
-
-
-        IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
+        /// <summary>
+        /// メンバーを列挙する。ValueMember, Ref, Child, Children すべて含む
+        /// </summary>
+        internal IEnumerable<ISaveCommandMember> GetMembers() {
             return Type switch {
                 E_Type.Create => GetCreateCommandMembers(),
                 E_Type.Update => GetUpdateCommandMembers(),
@@ -74,6 +81,7 @@ namespace Nijo.Models.DataModelModules {
                 _ => throw new NotImplementedException(),
             };
         }
+        IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetMembers();
 
 
         #region CREATE
