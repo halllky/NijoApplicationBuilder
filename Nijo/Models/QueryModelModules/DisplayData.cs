@@ -166,6 +166,10 @@ namespace Nijo.Models.QueryModelModules {
         }
 
         private string RenderCSharpDeclaring(CodeRenderingContext ctx) {
+
+            // SaveCommandへの変換メソッドを生成するかどうかの判定
+            bool shouldGenerateSaveCommandMethods = Aggregate is RootAggregate root && root.Model is Nijo.Models.DataModel;
+
             return $$"""
                 /// <summary>
                 /// {{Aggregate.DisplayName}}の画面表示用データ。
@@ -199,7 +203,7 @@ namespace Nijo.Models.QueryModelModules {
                     /// <summary>どの項目が読み取り専用か</summary>
                     [JsonPropertyName("{{READONLY_TS}}")]
                     public {{ReadOnlyDataCsClassName}} {{READONLY_CS}} { get; set; } = new();
-                {{If(Aggregate is RootAggregate root && root.Model is DataModel, () => $$"""
+                {{If(shouldGenerateSaveCommandMethods, () => $$"""
 
                     {{WithIndent(RenderConvertingToSaveCommand(), "    ")}}
                 """)}}
@@ -549,24 +553,92 @@ namespace Nijo.Models.QueryModelModules {
 
             return $$"""
                 /// <summary>
-                /// このインスタンスを <see cref="{{createCommand.CsClassNameCreate}}"/> に変換します。
+                /// このインスタンスを <see cref="{{createCommand.CsClassName}}"/> に変換します。
                 /// </summary>
                 public {{createCommand.CsClassNameCreate}} {{TO_CREATE_COMMAND}}() {
+                    // return new {{createCommand.CsClassNameCreate}} {
+                    //     {{WithIndent(RenderBody(createCommand), "    ")}}
+                    // };
+
                     throw new NotImplementedException();
                 }
                 /// <summary>
-                /// このインスタンスを <see cref="{{udpateCommand.CsClassNameUpdate}}"/> に変換します。
+                /// このインスタンスを <see cref="{{udpateCommand.CsClassName}}"/> に変換します。
                 /// </summary>
                 public {{udpateCommand.CsClassNameUpdate}} {{TO_UPDATE_COMMAND}}() {
+                    // return new {{udpateCommand.CsClassNameUpdate}} {
+                    //     {{WithIndent(RenderBody(udpateCommand), "    ")}}
+                    //     {{SaveCommand.VERSION}} = this.{{VERSION_CS}},
+                    // };
+
                     throw new NotImplementedException();
                 }
                 /// <summary>
-                /// このインスタンスを <see cref="{{deleteCommand.CsClassNameDelete}}"/> に変換します。
+                /// このインスタンスを <see cref="{{deleteCommand.CsClassName}}"/> に変換します。
                 /// </summary>
                 public {{deleteCommand.CsClassNameDelete}} {{TO_DELETE_COMMAND}}() {
+                    // return new {{deleteCommand.CsClassNameDelete}} {
+                    //     {{WithIndent(RenderBody(deleteCommand), "    ")}}
+                    //     {{SaveCommand.VERSION}} = this.{{VERSION_CS}},
+                    // };
+
                     throw new NotImplementedException();
                 }
                 """;
+
+            static IEnumerable<string> RenderBody(SaveCommand command) {
+
+                foreach (var member in command.GetMembers()) {
+                    yield break;
+                }
+
+                //var valuesProperty = $"this.{VALUES_CS}";
+
+                //// ValueMembers の変換
+                //if (command.Type == SaveCommand.E_Type.Create) {
+                //    foreach (var member in command.GetCreateCommandValueMembersRecursively()) {
+                //        yield return $$"""
+                //            {{member.PhysicalName}} = {{valuesProperty}}.{{member.PhysicalName}},
+                //            """;
+                //    }
+                //} else if (command.Type == SaveCommand.E_Type.Update) {
+                //    foreach (var member in command.GetUpdateCommandValueMembersRecursively()) {
+                //        yield return $$"""
+                //            {{member.PhysicalName}} = {{valuesProperty}}.{{member.PhysicalName}},
+                //            """;
+                //    }
+                //}
+
+                //// Child の変換
+                //if (command.Type == SaveCommand.E_Type.Create) {
+                //    foreach (var member in command.GetCreateCommandMembers().OfType<SaveCommand.SaveCommandChildMember>()) {
+                //        yield return $$"""
+                //            {{member.PhysicalName}} = this.{{member.PhysicalName}}.{{TO_CREATE_COMMAND}}(),
+                //            """;
+                //    }
+                //} else if (command.Type == SaveCommand.E_Type.Update) {
+                //    foreach (var member in command.GetUpdateCommandMembers().OfType<SaveCommand.SaveCommandChildMember>()) {
+                //        yield return $$"""
+                //            {{member.PhysicalName}} = this.{{member.PhysicalName}}.{{TO_UPDATE_COMMAND}}(),
+                //            """;
+                //    }
+                //}
+
+                //// Children の変換
+                //if (command.Type == SaveCommand.E_Type.Create) {
+                //    foreach (var member in command.GetCreateCommandMembers().OfType<SaveCommand.SaveCommandChildrenMember>()) {
+                //        yield return $$"""
+                //            {{member.PhysicalName}} = this.{{member.PhysicalName}}.Select(item => item.{{TO_CREATE_COMMAND}}()).ToList(),
+                //            """;
+                //    }
+                //} else if (command.Type == SaveCommand.E_Type.Update) {
+                //    foreach (var member in command.GetUpdateCommandMembers().OfType<SaveCommand.SaveCommandChildrenMember>()) {
+                //        yield return $$"""
+                //            {{member.PhysicalName}} = this.{{member.PhysicalName}}.Select(item => item.{{TO_UPDATE_COMMAND}}()).ToList(),
+                //            """;
+                //    }
+                //}
+            }
         }
         #endregion SaveCommandへの変換
     }
