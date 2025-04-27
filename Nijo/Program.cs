@@ -204,8 +204,13 @@ namespace Nijo {
                     logger.LogInformation("デバッグを開始します。右記パスにファイルが存在したら終了します: {cancelFile}", cancelFileFullPath);
                 }
 
-                var reactServerUrl = project.GetConfig().ReactDebuggingUrl;
-                using var launcher = new Runtime.GeneratedProjectLauncher(project.WebapiProjectRoot, new Uri(reactServerUrl), project.ReactProjectRoot, logger);
+                var config = project.GetConfig();
+                using var launcher = new Runtime.GeneratedProjectLauncher(
+                    project.WebapiProjectRoot,
+                    project.ReactProjectRoot,
+                    new Uri(config.DotnetDebuggingUrl),
+                    new Uri(config.ReactDebuggingUrl),
+                    logger);
                 try {
                     if (!noBuild) {
                         var rule = SchemaParseRule.Default();
@@ -222,10 +227,10 @@ namespace Nijo {
                             var launchBrowser = new Process();
                             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                                 launchBrowser.StartInfo.FileName = "cmd";
-                                launchBrowser.StartInfo.Arguments = $"/c \"start {reactServerUrl}\"";
+                                launchBrowser.StartInfo.Arguments = $"/c \"start {config.ReactDebuggingUrl}\"";
                             } else {
                                 launchBrowser.StartInfo.FileName = "open";
-                                launchBrowser.StartInfo.Arguments = reactServerUrl;
+                                launchBrowser.StartInfo.Arguments = config.ReactDebuggingUrl;
                             }
                             launchBrowser.Start();
                             launchBrowser.WaitForExit();

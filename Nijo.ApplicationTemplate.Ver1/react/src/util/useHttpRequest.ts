@@ -149,7 +149,9 @@ const getBackendUrl = (subDirectory: string) => {
 
   if (import.meta.env.DEV) {
     // ポートは ASP.NET Core の launchSettings.json で指定しているポート
-    return `https://localhost:7098/${subDirectoryWithoutFirstSlash}`
+    const backendApi = import.meta.env.VITE_BACKEND_API
+    const backendApiWithLastSlash = backendApi.endsWith('/') ? backendApi : (backendApi + '/')
+    return `${backendApiWithLastSlash}${subDirectoryWithoutFirstSlash}`
   } else {
     // 本番環境ではReactは1個のjsファイルにバンドルされてASP.NET Core と同じオリジンから配信されるので相対パスでよい。
     return `/${subDirectoryWithoutFirstSlash}`

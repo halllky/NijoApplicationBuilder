@@ -66,6 +66,12 @@ namespace Nijo.CodeGenerating {
         /// </summary>
         [Description($"【廃止予定】開発環境におけるReact.jsのサーバーが展開されるURL。ASP.NET Core サーバーでのCORS設定に必要")]
         public string ReactDebuggingUrl => _xDocument.Root?.Attribute(nameof(ReactDebuggingUrl))?.Value ?? "http://localhost:5173";
+        /// <summary>
+        /// 開発環境におけるASP.NET Coreのサーバーが展開されるURL。httpsから始める必要あり。
+        /// 開発環境でReact.jsがバックエンド側処理を呼ぶのに必要。
+        /// </summary>
+        [Description($"【廃止予定】開発環境におけるASP.NET Coreのサーバーが展開されるURL。React.jsからのバックエンド呼び出し必要")]
+        public string DotnetDebuggingUrl => _xDocument.Root?.Attribute(nameof(DotnetDebuggingUrl))?.Value ?? "https://localhost:7098";
 
         /// <summary>
         /// このインスタンスの情報を引数のXElementに反映させます。
