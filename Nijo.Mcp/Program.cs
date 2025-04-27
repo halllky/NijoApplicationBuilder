@@ -55,9 +55,8 @@ namespace Nijo.Mcp {
                 if (!Directory.Exists(reactDir)) {
                     return $"reactフォルダが見つかりません: {reactDir}";
                 }
-                if (!WorkDirectory.TryPrepare(out var workDirectory, out var errorMessage)) {
-                    return errorMessage;
-                }
+
+                using var workDirectory = WorkDirectory.Prepare();
 
                 await 既存デバッグプロセス中止(workDirectory);
 
@@ -83,9 +82,7 @@ namespace Nijo.Mcp {
                 }
                 var nijoXmlDir = Path.GetDirectoryName(nijoXmlFileFullPath)!;
 
-                if (!WorkDirectory.TryPrepare(out var workDirectory, out var errorMessage)) {
-                    return errorMessage;
-                }
+                using var workDirectory = WorkDirectory.Prepare();
 
                 await 既存デバッグプロセス中止(workDirectory);
 
@@ -114,9 +111,7 @@ namespace Nijo.Mcp {
         [McpServerTool(Name = "stop_debugging"), Description("ソースコード自動生成された方のアプリケーションのデバッグを終了する。")]
         public static async Task<string> StopDebugging() {
             try {
-                if (!WorkDirectory.TryPrepare(out var workDirectory, out var errorMessage)) {
-                    return errorMessage;
-                }
+                using var workDirectory = WorkDirectory.Prepare();
 
                 await 既存デバッグプロセス中止(workDirectory);
 

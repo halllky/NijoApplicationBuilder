@@ -8,10 +8,10 @@ partial class NijoMcpTools {
     /// </summary>
     public static async Task<bool> デバッグ開始(WorkDirectory workDirectory, string nijoXmlDir) {
 
-        workDirectory.AppendSectionTitle("デバッグ開始");
+        workDirectory.WriteSectionTitle("デバッグ開始");
 
         // 別プロセスで nijo run を起動する。ここではプロセスの完了は待たない。
-        var launchCmdPath = Path.Combine(nijoXmlDir, "launch.cmd");
+        var launchCmdPath = Path.Combine(workDirectory.DirectoryPath, "launch.cmd");
         RenderCmdFile(launchCmdPath, $$"""
             chcp 65001
             @rem ↑dotnetコマンド実行時に強制的に書き換えられてしまいnpmの標準入出力が化けるので先に書き換えておく
@@ -23,20 +23,20 @@ partial class NijoMcpTools {
             set "NIJO_EXE={{NIJO_PROJ}}\bin\Debug\net9.0\nijo.exe"
             set "CANCEL_FILE={{workDirectory.NijoExeCancelFile}}"
 
-            @echo. >> "{{workDirectory.MainLogFile}}"
-            @echo ******* デバッグ開始 ******* >> "{{workDirectory.MainLogFile}}"
-            start /B /SEPARATE "%NIJO_EXE% run --no-browser --cancel-file %CANCEL_FILE% >> {{workDirectory.DebugLogFile}} 2>&1"
+            @echo.
+            @echo ******* デバッグ開始 *******
+            start "" /B /SEPARATE cmd /c ""%NIJO_EXE%" run --no-browser --cancel-file "%CANCEL_FILE%" >> "{{workDirectory.DebugLogFile}}" 2>&1"
 
             exit /b %errorlevel%
             """);
 
-        var exitCode = await ExecuteProcess(new() {
+        var exitCode = await ExecuteProcess("nijo run", new() {
             FileName = launchCmdPath,
             WorkingDirectory = nijoXmlDir,
         }, workDirectory, TimeSpan.FromMinutes(5));
 
         if (exitCode != 0) {
-            workDirectory.AppendToMainLog("[nijo-mcp] デバッグ開始に失敗しました。");
+            workDirectory.WriteToMainLog("[nijo-mcp] デバッグ開始に失敗しました。");
             return false;
         }
 
@@ -45,7 +45,7 @@ partial class NijoMcpTools {
         var timeout = TimeSpan.FromSeconds(20);
         var status = await デバッグプロセス稼働判定(workDirectory, timeout);
         if (!status.DotnetIsReady || !status.NpmIsReady) {
-            workDirectory.AppendToMainLog("[nijo-mcp] デバッグ開始に失敗しました。");
+            workDirectory.WriteToMainLog("[nijo-mcp] デバッグ開始に失敗しました。");
             return false;
         }
 

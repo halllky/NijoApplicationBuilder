@@ -16,98 +16,80 @@ public class WorkDirectory : IDisposable {
     /// <param name="workDirectory">ワークディレクトリ</param>
     /// <param name="errorMessage">エラーメッセージ</param>
     /// <returns>ワークディレクトリが準備できたかどうか</returns>
-    public static bool TryPrepare(
-        [NotNullWhen(true)] out WorkDirectory? workDirectory,
-        [NotNullWhen(false)] out string? errorMessage) {
+    public static WorkDirectory Prepare() {
+        var fullpath = Path.GetFullPath(Path.Combine(
+            Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location!)!, // net9.0
+            "..", // Debug
+            "..", // bin
+            "..", // Nijo.Mpc
+            "..", // NijoApplicationBuilder
+            "Nijo.Mpc.WorkDirectory"));
+        var mainLog = Path.Combine(fullpath, "output.log");
 
-        try {
-            var fullpath = Path.GetFullPath(Path.Combine(
-                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location!)!, // net9.0
-                "..", // Debug
-                "..", // bin
-                "..", // Nijo.Mpc
-                "..", // NijoApplicationBuilder
-                "Nijo.Mpc.WorkDirectory"));
-            var mainLog = Path.Combine(fullpath, "output.log");
+        // 既存のログファイルがあれば削除
+        if (File.Exists(mainLog)) File.Delete(mainLog);
 
-            // 既存のログファイルがあれば削除
-            if (File.Exists(mainLog)) File.Delete(mainLog);
+        var workDirectory = new WorkDirectory(fullpath, mainLog);
 
-            workDirectory = new WorkDirectory(fullpath, mainLog);
+        // ワークフォルダがなければ作成
+        if (!Directory.Exists(workDirectory.DirectoryPath)) Directory.CreateDirectory(workDirectory.DirectoryPath);
 
-            // ワークフォルダがなければ作成
-            if (!Directory.Exists(workDirectory.FullPath)) Directory.CreateDirectory(workDirectory.FullPath);
+        // Git管理対象外
+        File.WriteAllText(Path.Combine(workDirectory.DirectoryPath, ".gitignore"), "*");
 
-            // Git管理対象外
-            File.WriteAllText(Path.Combine(workDirectory.FullPath, ".gitignore"), "*");
-
-            errorMessage = null;
-            return true;
-
-        } catch (Exception ex) {
-            errorMessage = $$"""
-                ワークディレクトリの準備に失敗しました。
-                ---
-                {{ex}}
-                """;
-            workDirectory = null;
-            return false;
-        }
+        return workDirectory;
     }
 
     private WorkDirectory(string fullpath, string mainLog) {
-        FullPath = fullpath;
-        MainLogFile = mainLog;
-        _mainLogFileStream = new FileStream(mainLog, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite);
+        DirectoryPath = fullpath;
+        _mainLogFileStream = new FileStream(mainLog, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
         _mainLogWriter = new StreamWriter(_mainLogFileStream, encoding: Encoding.UTF8) {
             AutoFlush = true,
         };
+        _lock = new Lock();
     }
     private readonly FileStream _mainLogFileStream;
     private readonly StreamWriter _mainLogWriter;
+    private readonly Lock _lock;
 
     /// <summary>
     /// ワークディレクトリパス
     /// </summary>
-    public string FullPath { get; }
-    /// <summary>
-    /// ログ
-    /// </summary>
-    public string MainLogFile { get; }
+    public string DirectoryPath { get; }
     /// <summary>
     /// デバッグプロセスのログ。
     /// デバッグプロセスはMCPツール本体とは別のライフサイクルで動くためファイルも別。
     /// </summary>
-    public string DebugLogFile => Path.Combine(FullPath, "output_debug.log");
+    public string DebugLogFile => Path.Combine(DirectoryPath, "output_debug.log");
     /// <summary>
     /// npmの標準出力ログ
     /// </summary>
-    public string NpmLogStdOut => Path.Combine(FullPath, "output_npm_stdout.log");
+    public string NpmLogStdOut => Path.Combine(DirectoryPath, "output_npm_stdout.log");
     /// <summary>
     /// npmの標準エラーログ
     /// </summary>
-    public string NpmLogStdErr => Path.Combine(FullPath, "output_npm_stderr.log");
+    public string NpmLogStdErr => Path.Combine(DirectoryPath, "output_npm_stderr.log");
     /// <summary>
     /// dotnetの標準出力ログ
     /// </summary>
-    public string DotnetLogStdOut => Path.Combine(FullPath, "output_dotnet_stdout.log");
+    public string DotnetLogStdOut => Path.Combine(DirectoryPath, "output_dotnet_stdout.log");
     /// <summary>
     /// dotnetの標準エラーログ
     /// </summary>
-    public string DotnetLogStdErr => Path.Combine(FullPath, "output_dotnet_stderr.log");
+    public string DotnetLogStdErr => Path.Combine(DirectoryPath, "output_dotnet_stderr.log");
 
     /// <summary>
     /// デバッグ中止ファイル。
     /// `nijo run` したときにキャンセル用のファイルを指定できるので、
     /// そこにファイルを出力し、完了まで一定時間待つ。
     /// </summary>
-    public string NijoExeCancelFile => Path.Combine(FullPath, "CANCEL_DEBUG_PROCESS.txt");
+    public string NijoExeCancelFile => Path.Combine(DirectoryPath, "CANCEL_DEBUG_PROCESS.txt");
 
     /// <summary>
     /// メインログに大まかなセクションタイトルを追加
     /// </summary>
-    public void AppendSectionTitle(string title) {
-        AppendToMainLog($$"""
+    public void WriteSectionTitle(string title) {
+        WriteToMainLog($$"""
 
             ****************************************
             {{title}}
@@ -117,15 +99,17 @@ public class WorkDirectory : IDisposable {
     /// <summary>
     /// メインログにテキストを追加する
     /// </summary>
-    public void AppendToMainLog(string text) {
-        var counter = 0; // 失敗しても数回はリトライ
-        while (counter <= 3) {
-            try {
-                _mainLogWriter.WriteLine(text);
-                return;
-            } catch {
-                counter++;
-                Thread.Sleep(500);
+    public void WriteToMainLog(string text) {
+        lock (_lock) {
+            var counter = 0; // 失敗しても数回はリトライ
+            while (counter <= 3) {
+                try {
+                    _mainLogWriter.WriteLine(text);
+                    return;
+                } catch {
+                    counter++;
+                    Thread.Sleep(500);
+                }
             }
         }
         throw new InvalidOperationException($"ログ出力に失敗しました。");
@@ -137,11 +121,19 @@ public class WorkDirectory : IDisposable {
     /// <param name="summary">概要を表す文。</param>
     /// <returns>引数のメッセージのあとにメインログの内容を付加した文字列。</returns>
     public string WithMainLogContents(string summary) {
-        return $$"""
-            {{summary}}
-            ---
-            {{File.ReadAllText(MainLogFile)}}
-            """;
+        lock (_lock) {
+            // ファイルの先頭に移動しないとファイル内容を読みだせない
+            _mainLogFileStream.Seek(0, SeekOrigin.Begin);
+
+            // StreamReaderが破棄されたあともストリームを閉じないようにするためleaveOpen
+            using var reader = new StreamReader(_mainLogFileStream, leaveOpen: true);
+
+            return $$"""
+                {{summary}}
+                ---
+                {{reader.ReadToEnd()}}
+                """;
+        }
     }
 
     void IDisposable.Dispose() {

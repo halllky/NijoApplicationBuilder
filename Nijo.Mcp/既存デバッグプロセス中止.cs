@@ -9,10 +9,12 @@ partial class NijoMcpTools {
     /// </summary>
     public static async Task 既存デバッグプロセス中止(WorkDirectory workDirectory) {
 
-        workDirectory.AppendSectionTitle("既存デバッグプロセス中止");
+        workDirectory.WriteSectionTitle("既存デバッグプロセス中止");
         try {
-            using var writer = new StreamWriter(workDirectory.NijoExeCancelFile, append: true, encoding: new UTF8Encoding(false, false));
-            writer.WriteLine(""); // ファイルがあればよいので中身は空
+            // キャンセルファイルを出力する
+            using (var writer = new StreamWriter(workDirectory.NijoExeCancelFile, append: true, encoding: new UTF8Encoding(false, false))) {
+                writer.WriteLine(""); // ファイルがあればよいので中身は空
+            }
 
             while (true) {
                 var status = await デバッグプロセス稼働判定(workDirectory, TimeSpan.FromSeconds(2));

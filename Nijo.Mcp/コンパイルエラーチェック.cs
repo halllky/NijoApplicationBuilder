@@ -9,10 +9,10 @@ partial class NijoMcpTools {
     /// </summary>
     private static async Task<bool> コンパイルエラーチェック(WorkDirectory workDirectory, string nijoXmlDir) {
 
-        workDirectory.AppendSectionTitle("コンパイルエラーチェック");
+        workDirectory.WriteSectionTitle("コンパイルエラーチェック");
 
-        var csharpCmd = Path.Combine(workDirectory.FullPath, "csharp_compile_check.cmd");
-        var typeScriptCmd = Path.Combine(workDirectory.FullPath, "typescript_compile_check.cmd");
+        var csharpCmd = Path.Combine(workDirectory.DirectoryPath, "csharp_compile_check.cmd");
+        var typeScriptCmd = Path.Combine(workDirectory.DirectoryPath, "typescript_compile_check.cmd");
 
         RenderCmdFile(csharpCmd, $$"""
             chcp 65001
@@ -21,10 +21,10 @@ partial class NijoMcpTools {
             set NO_COLOR=true
             set "PROJ_ROOT={{nijoXmlDir}}"
 
-            @echo. >> "{{workDirectory.MainLogFile}}"
-            @echo ******* C#コンパイルエラーチェック ******* >> "{{workDirectory.MainLogFile}}"
+            @echo.
+            @echo *** C#コンパイルエラーチェック ***
 
-            dotnet build %PROJ_ROOT% -c Debug >> "{{workDirectory.MainLogFile}}" 2>&1
+            dotnet build %PROJ_ROOT% -c Debug 2>&1
 
             exit /b %errorlevel%
             """);
@@ -36,22 +36,22 @@ partial class NijoMcpTools {
             set NO_COLOR=true
             set "PROJ_ROOT={{nijoXmlDir}}"
 
-            @echo. >> "{{workDirectory.MainLogFile}}"
-            @echo ******* TypeScriptコンパイルエラーチェック ******* >> "{{workDirectory.MainLogFile}}"
+            @echo.
+            @echo *** TypeScriptコンパイルエラーチェック ***
 
-            call tsc -b --noEmit >> "{{workDirectory.MainLogFile}}" 2>&1
+            call tsc -b --noEmit 2>&1
 
             exit /b %errorlevel%
             """);
 
-        var csharpExitCode = await ExecuteProcess(new() {
+        var csharpExitCode = await ExecuteProcess("dotnet build", new() {
             WorkingDirectory = nijoXmlDir,
             FileName = "cmd",
             Arguments = $"/c \"{csharpCmd}\"",
             UseShellExecute = false,
         }, workDirectory, TimeSpan.FromSeconds(25));
 
-        var typeScriptExitCode = await ExecuteProcess(new() {
+        var typeScriptExitCode = await ExecuteProcess("tsc -b --noEmit", new() {
             WorkingDirectory = Path.Combine(nijoXmlDir, "react"),
             FileName = "cmd",
             Arguments = $"/c \"{typeScriptCmd}\"",
