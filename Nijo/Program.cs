@@ -76,6 +76,16 @@ namespace Nijo {
                 ["-n", "--no-build"],
                 description: "デバッグ開始時にコード自動生成をせず、アプリケーションの起動のみ行います。");
 
+            // デバッグ実行時、ブラウザを立ち上げない
+            var noBrowser = new Option<bool>(
+                ["-b", "--no-browser"],
+                description: "デバッグ開始時にブラウザを立ち上げません。");
+
+            // デバッグ実行キャンセルファイル
+            var cancelFile = new Option<string?>(
+                ["-c", "--cancel-file"],
+                description: "デバッグ実行の終了のトリガーは、通常はユーザーからのキー入力ですが、これを指定したときはこのファイルが存在したら終了と判定します。");
+
             // ---------------------------------------------------
             // ** コマンド **
 
@@ -99,8 +109,8 @@ namespace Nijo {
             var run = new Command(
                 name: "run",
                 description: "プロジェクトのデバッグを開始します。")
-                { path, noBuild };
-            run.SetHandler(Run, path, noBuild);
+                { path, noBuild, noBrowser, cancelFile };
+            run.SetHandler(Run, path, noBuild, noBrowser, cancelFile);
             rootCommand.AddCommand(run);
 
             // スキーマダンプ
@@ -169,10 +179,15 @@ namespace Nijo {
         /// </summary>
         /// <param name="path">対象フォルダまでの相対パス</param>
         /// <param name="noBuild">ソースコードの自動生成をスキップする場合はtrue</param>
-        private static void Run(string? path, bool noBuild) {
+        /// <param name="noBrowser">デバッグ開始時にブラウザを立ち上げない</param>
+        /// <param name="cancelFile">デバッグ実行を終了するトリガー。このファイルが存在したら終了する。</param>
+        private static async Task Run(string? path, bool noBuild, bool noBrowser, string? cancelFile) {
             var projectRoot = path == null
                 ? Directory.GetCurrentDirectory()
                 : Path.Combine(Directory.GetCurrentDirectory(), path);
+            var cancelFileFullPath = cancelFile == null
+                ? null
+                : Path.GetFullPath(cancelFile);
             var logger = ILoggerExtension.CreateConsoleLogger();
 
             if (!GeneratedProject.TryOpen(projectRoot, out var project, out var error)) {
@@ -183,7 +198,11 @@ namespace Nijo {
             var firstLaunch = true;
             while (true) {
                 logger.LogInformation("-----------------------------------------------");
-                logger.LogInformation("デバッグを開始します。キーボードのQで終了します。それ以外のキーでリビルドします。");
+                if (cancelFileFullPath == null) {
+                    logger.LogInformation("デバッグを開始します。キーボードのQで終了します。それ以外のキーでリビルドします。");
+                } else {
+                    logger.LogInformation("デバッグを開始します。右記パスにファイルが存在したら終了します: {cancelFile}", cancelFileFullPath);
+                }
 
                 var reactServerUrl = project.GetConfig().ReactDebuggingUrl;
                 using var launcher = new Runtime.GeneratedProjectLauncher(project.WebapiProjectRoot, new Uri(reactServerUrl), project.ReactProjectRoot, logger);
@@ -198,7 +217,7 @@ namespace Nijo {
                     launcher.WaitForReady();
 
                     // 初回ビルド時はブラウザ立ち上げ
-                    if (firstLaunch) {
+                    if (firstLaunch && !noBrowser) {
                         try {
                             var launchBrowser = new Process();
                             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
@@ -219,9 +238,19 @@ namespace Nijo {
                     logger.LogError("{msg}", ex.ToString());
                 }
 
-                // キー入力待機
-                var input = Console.ReadKey(true);
-                if (input.Key == ConsoleKey.Q) break;
+                // 待機。breakで終了。continueでリビルド
+                if (cancelFileFullPath == null) {
+                    // キー入力待機
+                    var input = Console.ReadKey(true);
+                    if (input.Key == ConsoleKey.Q) break;
+
+                } else {
+                    // キャンセルファイル監視
+                    while (!File.Exists(cancelFileFullPath)) {
+                        await Task.Delay(500);
+                    }
+                    break;
+                }
             }
         }
 
