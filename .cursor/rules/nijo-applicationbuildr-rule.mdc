@@ -15,7 +15,7 @@ alwaysApply: true
 そのアプリケーションが、ソースコードの自動生成を行なうものか、自動生成されたあとのアプリケーションかで動作確認の方法が異なります。
 
 - ソースコードを自動生成する方（Nijo.csproj）の動作確認の場合
-  - 実装した結果が正しいかを確認するときは [TEST_FOR_CURSOR_AGENT_COMPILE.ps1](mdc:TEST_FOR_CURSOR_AGENT_COMPILE.ps1) を使用してください。
+  - 様々なデータパターンでコンパイルエラーが出ないことを確認するために [TEST_FOR_CURSOR_AGENT_COMPILE.ps1](mdc:TEST_FOR_CURSOR_AGENT_COMPILE.ps1) を使用することができます。
   - 全パターンではなく `Nijo.IntegrationTest/DataPatterns` にある特定のパターンのみテストする場合は `.\TEST_FOR_CURSOR_AGENT_COMPILE.ps1 000_単純な集約` のように拡張子抜きのxmlファイル名を指定してください。
   - [TEST_FOR_CURSOR_AGENT_COMPILE.ps1](mdc:TEST_FOR_CURSOR_AGENT_COMPILE.ps1) の詳細な結果は [DataPatternTest_Results.trx](mdc:Nijo.IntegrationTest/TestResults/DataPatternTest_Results.trx) に出力されています。エラーの詳細を確認する際はまずこのファイルを確認してください。
 - 自動生成された方の動作確認の場合。なお、自動生成されたプロジェクトか否かは、プロジェクトのルートに `nijo.xml` という名前のファイルが含まれるか否かで判断する。具体的には Nijo.ApplicationTemplate.Ver1, および「自動テストで作成されたプロジェクト」がこれに該当する。

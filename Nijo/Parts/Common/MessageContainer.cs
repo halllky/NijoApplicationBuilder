@@ -11,7 +11,7 @@ namespace Nijo.Parts.Common {
     /// <summary>
     /// エラーメッセージなどのメッセージの入れ物。
     /// 対応するモデルと同じ形の構造を持つ。
-    /// 
+    ///
     /// <code>インスタンス.プロパティ名.AddError(メッセージ)</code> のように直感的に書ける、
     /// 無駄なペイロードを避けるためにメッセージが無いときはJSON化されない、といった性質を持つ。
     /// </summary>
@@ -262,9 +262,149 @@ namespace Nijo.Parts.Common {
                                 yield break;
                             }
 
-                            /// <summary>このインスタンスをJsonNode型に変換します。</summary>
+                            /// <summary>
+                            /// このインスタンスをJsonNode型に変換します。
+                            /// <list type="bullet">
+                            /// <item>このメソッドは、このオブジェクトおよび子孫オブジェクトが持っているメッセージを再帰的に集め、以下のようなJSONオブジェクトに変換します。</item>
+                            /// <item>メッセージコンテナは、エラー、警告、インフォメーションの3種類のメッセージを、それぞれ配列として持ちます。</item>
+                            /// <item>エラーだけ持っているなど、一部の種類のメッセージのみ持っている場合、他の種類の配列は配列自体が存在しなくなります。</item>
+                            /// <item>
+                            /// 3種類のメッセージのいずれも持っていない項目のプロパティは存在しません。
+                            /// 例えば以下のオブジェクトで「項目A」「項目B」以外に「項目X」が存在するが、Xにはメッセージが発生していない場合、Xのプロパティは存在しません。
+                            /// </item>
+                            /// <item>ネストされたオブジェクトのメッセージも生成されます。（下記「子オブジェクトのメッセージ」）</item>
+                            /// <item>配列は、配列インデックスをキーとしたオブジェクトになります。（下記「子配列のメッセージ」）</item>
+                            /// </list>
+                            /// <code>
+                            /// {
+                            ///   "項目A": { "{{TS_ERROR}}": ["xxxがエラーです"], "{{TS_WARN}}": ["xxxという警告があります"], "{{TS_INFO}}": ["xxxという情報があります"] },
+                            ///   "項目B": { "{{TS_ERROR}}": ["xxxがエラーです", "yyyがエラーです"], "{{TS_WARN}}": ["xxxという警告があります"], "{{TS_INFO}}": ["xxxという情報があります"] },
+                            ///   "子オブジェクトのメッセージ": {
+                            ///     "項目C": { "{{TS_ERROR}}": ["xxxがエラーです"] },
+                            ///     "項目D": { "{{TS_ERROR}}": ["xxxがエラーです"] },
+                            ///   },
+                            ///   "子配列のメッセージ": {
+                            ///     "1": {
+                            ///       "項目E": { "{{TS_ERROR}}": ["xxxがエラーです"] },
+                            ///     },
+                            ///     "5": {
+                            ///       "項目E": { "{{TS_ERROR}}": ["xxxがエラーです"] },
+                            ///     },
+                            ///   }
+                            /// }
+                            /// </code>
+                            /// </summary>
                             public JsonObject ToJsonObject() {
-                                throw new NotImplementedException(); // TODO ver.1
+                                // 結果となるJSONオブジェクトを作成
+                                var result = new JsonObject();
+
+                                // 自分自身のメッセージを処理
+                                bool hasMessages = false;
+
+                                // エラーメッセージを追加
+                                if (_errors.Count > 0) {
+                                    var jsonArray = new JsonArray();
+                                    foreach (var error in _errors) {
+                                        jsonArray.Add(error);
+                                    }
+                                    result["{{TS_ERROR}}"] = jsonArray;
+                                    hasMessages = true;
+                                }
+
+                                // 警告メッセージを追加
+                                if (_warnings.Count > 0) {
+                                    var jsonArray = new JsonArray();
+                                    foreach (var warning in _warnings) {
+                                        jsonArray.Add(warning);
+                                    }
+                                    result["{{TS_WARN}}"] = jsonArray;
+                                    hasMessages = true;
+                                }
+
+                                // 情報メッセージを追加
+                                if (_informations.Count > 0) {
+                                    var jsonArray = new JsonArray();
+                                    foreach (var info in _informations) {
+                                        jsonArray.Add(info);
+                                    }
+                                    result["{{TS_INFO}}"] = jsonArray;
+                                    hasMessages = true;
+                                }
+
+                                // 子要素を処理
+                                var children = EnumerateChildren().ToList();
+
+                                if (children.Count > 0) {
+                                    // 子要素がMessageContainerListの場合の特殊処理（配列型）
+                                    bool isListContainer = children.All(c =>
+                                        c.GetType().GetInterfaces().Any(i =>
+                                            i.IsGenericType &&
+                                            i.GetGenericTypeDefinition() == typeof({{INTERFACE_LIST}}<>)));
+
+                                    if (isListContainer) {
+                                        // 各子要素を処理
+                                        foreach (var child in children) {
+                                            // 子要素の名前を取得（パスの最後の要素）
+                                            var childPath = child.GetType().GetField("_path", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.GetValue(child) as IEnumerable<string>;
+                                            if (childPath == null) continue;
+                                            var childName = childPath.Last();
+
+                                            // インデックス付きの項目を処理
+                                            // リフレクションを使用してCountプロパティとインデクサーにアクセス
+                                            var countProperty = child.GetType().GetProperty("Count");
+                                            if (countProperty == null) continue;
+
+                                            var indexerProperty = child.GetType().GetProperty("Item");
+                                            if (indexerProperty == null) continue;
+
+                                            // Dictionaryから直接キーを取得するように変更
+                                            var itemsField = child.GetType().GetField("_items", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                                            if (itemsField == null) continue;
+
+                                            var items = itemsField.GetValue(child) as Dictionary<int, IMessageContainer>;
+                                            if (items == null || items.Count == 0) continue;
+
+                                            var arrayJson = new JsonObject();
+                                            bool hasArrayMessages = false;
+
+                                            foreach (var key in items.Keys) {
+                                                var item = items[key];
+                                                if (item == null) continue;
+
+                                                // メッセージがある場合のみ追加
+                                                var itemJson = item.ToJsonObject();
+                                                if (itemJson.Count == 0) continue;
+
+                                                // インデックスをキーとして追加
+                                                arrayJson[key.ToString()] = itemJson;
+                                                hasArrayMessages = true;
+                                            }
+
+                                            if (hasArrayMessages) {
+                                                result[childName] = arrayJson;
+                                                hasMessages = true;
+                                            }
+                                        }
+                                    } else {
+                                        // 通常の子要素を処理
+                                        foreach (var child in children) {
+                                            var childJson = child.ToJsonObject();
+
+                                            // メッセージがある場合のみ追加
+                                            if (childJson.Count > 0) {
+                                                // 子要素の名前を取得（パスの最後の要素）
+                                                var childPath = child.GetType().GetField("_path", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.GetValue(child) as IEnumerable<string>;
+                                                if (childPath != null) {
+                                                    var childName = childPath.Last();
+                                                    result[childName] = childJson;
+                                                    hasMessages = true;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                return hasMessages ? result : new JsonObject();
                             }
 
                             /// <summary>
