@@ -120,7 +120,20 @@ public class DebuggingController : ControllerBase {
     /// 参照系のクエリのみ実行可能
     /// </summary>
     [HttpPost("execute-sql")]
-    public async Task<IActionResult> ExecuteSql([FromBody] ExecuteSqlRequest request, [FromServices] OverridedApplicationService app) {
+    public async Task<IActionResult> ExecuteSql([FromBody] ExecuteSqlRequest request) {
+        var app = HttpContext.RequestServices.GetRequiredService<OverridedApplicationService>(); // HttpContextから取得
+
+        // リクエストボディの内容をログに出力（デバッグ用）
+        try {
+            Request.EnableBuffering(); // リクエストボディを複数回読めるようにする
+            using var reader = new StreamReader(Request.Body, Encoding.UTF8, true, 1024, true); // leaveOpen: true
+            var rawRequestBody = await reader.ReadToEndAsync();
+            Console.WriteLine($"---- Received ExecuteSql Request Body ----\n{rawRequestBody}\n----------------------------------------");
+            Request.Body.Position = 0; // ストリームの位置を元に戻す
+        } catch (Exception ex) {
+            Console.WriteLine($"Error reading request body: {ex.Message}");
+        }
+
         var sql = request.Sql?.Trim() ?? string.Empty;
 
         // SELECT文以外は受け付けない基本的なチェック (必須ではないが、意図しない操作の早期発見に役立つ)
@@ -181,7 +194,8 @@ public class DebuggingController : ControllerBase {
     /// DB再作成
     /// </summary>
     [HttpPost("destroy-and-reset-database")]
-    public async Task<IActionResult> DestroyAndResetDatabase([FromServices] IServiceProvider serviceProvider) {
+    public async Task<IActionResult> DestroyAndResetDatabase() {
+        var serviceProvider = HttpContext.RequestServices;
 
         try {
 

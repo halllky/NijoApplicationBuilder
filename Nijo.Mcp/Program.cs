@@ -504,7 +504,8 @@ namespace Nijo.Mcp {
             };
 
             try {
-                var response = await httpClient.PostAsync("/api/debug-info/destroy-and-reset-database", null);
+                var content = new StringContent("", Encoding.UTF8, "application/json"); // 空のJSONコンテンツを作成
+                var response = await httpClient.PostAsync("/api/debug-info/destroy-and-reset-database", content); // contentを渡す
                 var responseBody = await response.Content.ReadAsStringAsync();
 
                 if (!response.IsSuccessStatusCode) {
