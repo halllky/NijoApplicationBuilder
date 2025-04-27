@@ -40,8 +40,6 @@ namespace Nijo.Mcp {
         private const string DOTNET_URL = "https://localhost:7098";
         private const string NPM_URL = "http://localhost:5173";
         private const string MAIN_LOG_FILE = "output.log";
-        private const string NPM_LOG_FILE = "output_npm.log";
-        private const string DOTNET_LOG_FILE = "output_dotnet.log";
         private const string START_CMD_FILE = "start_app.cmd";
 
         private static string GetWorkDirectoryFullPath() {
@@ -57,8 +55,11 @@ namespace Nijo.Mcp {
         private static string RenderCmdContent(string nijoXmlFileFullPath, bool isDebug) {
             var workDirectory = GetWorkDirectoryFullPath();
             var mainLogPath = Path.Combine(workDirectory, MAIN_LOG_FILE);
-            var npmLogPath = Path.Combine(workDirectory, NPM_LOG_FILE);
-            var dotnetLogPath = Path.Combine(workDirectory, DOTNET_LOG_FILE);
+            // ログファイル名を標準出力用と標準エラー用に分ける
+            var npmLogPath_StdOut = Path.Combine(workDirectory, "output_npm_stdout.log");
+            var npmLogPath_StdErr = Path.Combine(workDirectory, "output_npm_stderr.log");
+            var dotnetLogPath_StdOut = Path.Combine(workDirectory, "output_dotnet_stdout.log");
+            var dotnetLogPath_StdErr = Path.Combine(workDirectory, "output_dotnet_stderr.log");
 
             var nijoXmlDir = Path.GetDirectoryName(nijoXmlFileFullPath);
             var reactDir = Path.Combine(nijoXmlDir!, "react");
@@ -77,8 +78,10 @@ namespace Nijo.Mcp {
                 set "NIJO_EXE={{NIJO_PROJ}}\bin\Debug\net9.0\nijo.exe"
 
                 {{(isDebug ? $$"""
-                echo. > {{dotnetLogPath}}
-                echo. > {{npmLogPath}}
+                echo. > {{dotnetLogPath_StdOut}}
+                echo. > {{dotnetLogPath_StdErr}}
+                echo. > {{npmLogPath_StdOut}}
+                echo. > {{npmLogPath_StdErr}}
 
                 """ : $$"""
 
@@ -114,13 +117,13 @@ namespace Nijo.Mcp {
                 @echo ************************************** >> "{{mainLogPath}}"
                 @echo ******* .NET デバッグプロセスを起動します。 ******* >> "{{mainLogPath}}"
                 cd /d "{{webApiDir}}"
-                start /B /SEPARATE "" cmd /c "dotnet run --launch-profile https > {{dotnetLogPath}} 2>&1"
+                powershell -Command "Start-Process -FilePath 'dotnet' -ArgumentList 'run --launch-profile https' -RedirectStandardOutput '{{dotnetLogPath_StdOut}}' -RedirectStandardError '{{dotnetLogPath_StdErr}}' -NoNewWindow"
 
                 @echo. >> "{{mainLogPath}}"
                 @echo ************************************** >> "{{mainLogPath}}"
                 @echo ******* Node.js デバッグプロセスを起動します。 ******* >> "{{mainLogPath}}"
                 cd /d "{{reactDir}}"
-                start /B /SEPARATE "" cmd /c "npm run dev > {{npmLogPath}} 2>&1"
+                powershell -Command "Start-Process -FilePath 'npm' -ArgumentList 'run dev' -RedirectStandardOutput '{{npmLogPath_StdOut}}' -RedirectStandardError '{{npmLogPath_StdErr}}' -NoNewWindow"
 
                 @echo. >> "{{mainLogPath}}"
                 @echo ************************************** >> "{{mainLogPath}}"
@@ -129,8 +132,10 @@ namespace Nijo.Mcp {
                 @echo - Node.js : {{NPM_URL}} >> "{{mainLogPath}}"
                 @echo. >> "{{mainLogPath}}"
                 @echo 各プロセスの出力は以下のログを参照してください。 >> "{{mainLogPath}}"
-                @echo - npm run dev のログ: "{{npmLogPath}}" >> "{{mainLogPath}}"
-                @echo - dotnet run のログ: "{{dotnetLogPath}}" >> "{{mainLogPath}}"
+                @echo - npm run dev の標準出力ログ: "{{npmLogPath_StdOut}}" >> "{{mainLogPath}}"
+                @echo - npm run dev の標準エラーログ: "{{npmLogPath_StdErr}}" >> "{{mainLogPath}}"
+                @echo - dotnet run の標準出力ログ: "{{dotnetLogPath_StdOut}}" >> "{{mainLogPath}}"
+                @echo - dotnet run の標準エラーログ: "{{dotnetLogPath_StdErr}}" >> "{{mainLogPath}}"
 
                 """ : $$"""
                 @echo. >> "{{mainLogPath}}"
@@ -294,9 +299,6 @@ namespace Nijo.Mcp {
                 }
 
                 // 各種パス定義
-                var npmLogPath = Path.Combine(workDirectory, NPM_LOG_FILE);
-                var dotnetLogPath = Path.Combine(workDirectory, DOTNET_LOG_FILE);
-
                 var nijoXmlDir = Path.GetDirectoryName(nijoXmlFileFullPath);
                 var reactDir = Path.Combine(nijoXmlDir!, "react");
                 var webApiDir = Path.Combine(nijoXmlDir!, "WebApi");
@@ -558,18 +560,22 @@ namespace Nijo.Mcp {
             // Git管理対象外
             File.WriteAllText(Path.Combine(workDirectory, ".gitignore"), "*");
 
-            // 既存のログファイルがあれば削除
+            // 既存のログファイルがあれば削除 (ファイル名を追加)
             string mainLogPath = Path.Combine(workDirectory, MAIN_LOG_FILE);
-            string npmLogPath = Path.Combine(workDirectory, NPM_LOG_FILE);
-            string dotnetLogPath = Path.Combine(workDirectory, DOTNET_LOG_FILE);
+            string npmLogPath_StdOut = Path.Combine(workDirectory, "output_npm_stdout.log");
+            string npmLogPath_StdErr = Path.Combine(workDirectory, "output_npm_stderr.log");
+            string dotnetLogPath_StdOut = Path.Combine(workDirectory, "output_dotnet_stdout.log");
+            string dotnetLogPath_StdErr = Path.Combine(workDirectory, "output_dotnet_stderr.log");
             string startCmdPath = Path.Combine(workDirectory, START_CMD_FILE);
             if (File.Exists(mainLogPath)) File.Delete(mainLogPath);
-            if (File.Exists(npmLogPath)) File.Delete(npmLogPath);
-            if (File.Exists(dotnetLogPath)) File.Delete(dotnetLogPath);
+            if (File.Exists(npmLogPath_StdOut)) File.Delete(npmLogPath_StdOut);
+            if (File.Exists(npmLogPath_StdErr)) File.Delete(npmLogPath_StdErr);
+            if (File.Exists(dotnetLogPath_StdOut)) File.Delete(dotnetLogPath_StdOut);
+            if (File.Exists(dotnetLogPath_StdErr)) File.Delete(dotnetLogPath_StdErr);
             if (File.Exists(startCmdPath)) File.Delete(startCmdPath);
         }
 
-        // 
+        //
         private static async Task StopDebugging(Action<string> outLog, TimeSpan timeout) {
             // ASP.NET Core
             try {
@@ -646,10 +652,10 @@ namespace Nijo.Mcp {
         // 指定したPIDのプロセスとその子プロセスを終了するメソッド
         private static Task KillProcessWithChildren(int pid, TimeSpan timeout, Action<string> outLog) {
             try {
-                // taskkillコマンドを使ってプロセスツリーを強制終了
+                // taskkillではなくwmicを使用してプロセスを終了
                 var process = new Process();
-                process.StartInfo.FileName = "taskkill";
-                process.StartInfo.Arguments = $"/PID {pid} /F";  // /F: 強制終了
+                process.StartInfo.FileName = "wmic";
+                process.StartInfo.Arguments = $"process where ProcessId={pid} delete";
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardError = true;
@@ -658,16 +664,16 @@ namespace Nijo.Mcp {
                 var maybeFinish = false;
                 process.OutputDataReceived += (sender, args) => {
                     if (args.Data == null) return;
-                    outLog($"[taskkill {pid} stdout] {args.Data}");
+                    outLog($"[wmic {pid} stdout] {args.Data}");
                     maybeFinish = true;
                 };
                 process.ErrorDataReceived += (sender, args) => {
                     if (args.Data == null) return;
-                    outLog($"[taskkill {pid} stderr] {args.Data}");
+                    outLog($"[wmic {pid} stderr] {args.Data}");
                     maybeFinish = true;
                 };
 
-                outLog($"[taskkill {pid}] 開始");
+                outLog($"[wmic {pid}] 開始");
 
                 process.Start();
                 process.BeginOutputReadLine();
@@ -676,25 +682,25 @@ namespace Nijo.Mcp {
                 var timeoutLimit = DateTime.Now + timeout;
                 while (true) {
                     if (DateTime.Now > timeoutLimit) {
-                        outLog($"[taskkill {pid}] タイムアウト");
+                        outLog($"[wmic {pid}] タイムアウト");
                         process.CancelOutputRead();
                         process.CancelErrorRead();
                         process.Kill();
                         break;
 
                     } else if (maybeFinish) {
-                        outLog($"[taskkill {pid}] 終了");
+                        outLog($"[wmic {pid}] 終了");
                         process.CancelOutputRead();
                         process.CancelErrorRead();
                         break;
 
                     } else {
-                        outLog($"[taskkill {pid}] 完了待機中...");
+                        outLog($"[wmic {pid}] 完了待機中...");
                         Thread.Sleep(500);
                     }
                 }
             } catch (Exception ex) {
-                outLog($"[taskkill {pid}] 例外が発生しました: {ex.Message}");
+                outLog($"[wmic {pid}] 例外が発生しました: {ex.Message}");
             }
             return Task.CompletedTask;
         }
