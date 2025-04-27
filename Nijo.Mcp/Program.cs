@@ -39,14 +39,23 @@ namespace Nijo.Mcp {
         private const string NIJO_PROJ = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo"; // とりあえずハードコード
         private const string DOTNET_URL = "https://localhost:7098";
         private const string NPM_URL = "http://localhost:5173";
-        private const string WORK_DIR = "temp_work";
         private const string MAIN_LOG_FILE = "output.log";
         private const string NPM_LOG_FILE = "output_npm.log";
         private const string DOTNET_LOG_FILE = "output_dotnet.log";
         private const string START_CMD_FILE = "start_app.cmd";
 
+        private static string GetWorkDirectoryFullPath() {
+            return Path.GetFullPath(Path.Combine(
+                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location!)!, // net9.0
+                "..", // Debug
+                "..", // bin
+                "..", // Nijo.Mpc
+                "..", // NijoApplicationBuilder
+                "Nijo.Mpc.WorkDirectory"));
+        }
+
         private static string RenderCmdContent(string nijoXmlFileFullPath, bool isDebug) {
-            var workDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location!)!, WORK_DIR);
+            var workDirectory = GetWorkDirectoryFullPath();
             var mainLogPath = Path.Combine(workDirectory, MAIN_LOG_FILE);
             var npmLogPath = Path.Combine(workDirectory, NPM_LOG_FILE);
             var dotnetLogPath = Path.Combine(workDirectory, DOTNET_LOG_FILE);
@@ -67,7 +76,6 @@ namespace Nijo.Mcp {
                 set "NIJO_ROOT={{NIJO_PROJ}}"
                 set "NIJO_EXE={{NIJO_PROJ}}\bin\Debug\net9.0\nijo.exe"
 
-                echo. > {{mainLogPath}}
                 {{(isDebug ? $$"""
                 echo. > {{dotnetLogPath}}
                 echo. > {{npmLogPath}}
@@ -106,13 +114,13 @@ namespace Nijo.Mcp {
                 @echo ************************************** >> "{{mainLogPath}}"
                 @echo ******* .NET デバッグプロセスを起動します。 ******* >> "{{mainLogPath}}"
                 cd /d "{{webApiDir}}"
-                start /B dotnet run --launch-profile https >> {{dotnetLogPath}} 2>&1
+                start /B /SEPARATE "" cmd /c "dotnet run --launch-profile https > {{dotnetLogPath}} 2>&1"
 
                 @echo. >> "{{mainLogPath}}"
                 @echo ************************************** >> "{{mainLogPath}}"
                 @echo ******* Node.js デバッグプロセスを起動します。 ******* >> "{{mainLogPath}}"
                 cd /d "{{reactDir}}"
-                start /B "" cmd /c "npm run dev > {{npmLogPath}} 2>&1"
+                start /B /SEPARATE "" cmd /c "npm run dev > {{npmLogPath}} 2>&1"
 
                 @echo. >> "{{mainLogPath}}"
                 @echo ************************************** >> "{{mainLogPath}}"
@@ -156,22 +164,22 @@ namespace Nijo.Mcp {
         }
 
         [McpServerTool(Name = "generate_code"), Description("ソースコードの自動生成処理の最新化、自動生成処理のかけなおし、コンパイルエラーチェックを行います。")]
-        public static string GenerateCode([Description("nijo.xmlのファイルの絶対パス")] string nijoXmlFileFullPath) {
+        public static async Task<string> GenerateCode([Description("nijo.xmlのファイルの絶対パス")] string nijoXmlFileFullPath) {
             var mainOutput = new StringBuilder();
 
-            // 既存のプロセスを終了 - これによって以前実行していたプロセスが終了する
-            mainOutput.AppendLine(StopDebugging());
-
-            // ワークディレクトリを準備
-            PrepareWorkDirectory();
-
             try {
+                // 既存のプロセスを終了 - これによって以前実行していたプロセスが終了する
+                await StopDebugging(text => mainOutput.AppendLine(text), TimeSpan.FromSeconds(5));
+
+                // ワークディレクトリを準備
+                PrepareWorkDirectory();
+
                 if (string.IsNullOrEmpty(nijoXmlFileFullPath)) {
                     return ToMcpResutJson(new { Error = "nijo.xmlのファイルの絶対パスを指定してください。" });
                 }
 
                 // 各種パス定義
-                var workDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location!)!, WORK_DIR);
+                var workDirectory = GetWorkDirectoryFullPath();
                 var mainLogPath = Path.Combine(workDirectory, MAIN_LOG_FILE);
 
                 var nijoXmlDir = Path.GetDirectoryName(nijoXmlFileFullPath);
@@ -257,23 +265,35 @@ namespace Nijo.Mcp {
         [McpServerTool(Name = "start_debugging"), Description("ソースコード自動生成された方のアプリケーションのデバッグを開始する。既に開始されている場合はリビルドして再開する。")]
         public static async Task<string> StartDebugging([Description("nijo.xmlのファイルの絶対パス")] string nijoXmlFileFullPath) {
 
-            var mainOutput = new StringBuilder();
-
-            // 既存のプロセスを終了 - これによって以前実行していたプロセスが終了する
-            mainOutput.AppendLine(StopDebugging());
-
-            // ワークディレクトリを準備
-            PrepareWorkDirectory();
+            // メインログへのC#からの書き込み
+            var workDirectory = GetWorkDirectoryFullPath();
+            var mainLogPath = Path.Combine(workDirectory, MAIN_LOG_FILE);
+            void AppendLineToMainLog(string text) {
+                var counter = 0; // 失敗しても数回はリトライ
+                while (counter <= 3) {
+                    try {
+                        using var writer = new StreamWriter(mainLogPath, append: true, encoding: Encoding.UTF8);
+                        writer.WriteLine(text);
+                        return;
+                    } catch {
+                        counter++;
+                    }
+                }
+                throw new InvalidOperationException($"ログ出力に失敗しました。");
+            }
 
             try {
+                // 既存のプロセスを終了 - これによって以前実行していたプロセスが終了する
+                await StopDebugging(AppendLineToMainLog, TimeSpan.FromSeconds(5));
+
+                // ワークディレクトリを準備
+                PrepareWorkDirectory();
 
                 if (string.IsNullOrEmpty(nijoXmlFileFullPath)) {
                     return ToMcpResutJson(new { Error = "nijo.xmlのファイルの絶対パスを指定してください。" });
                 }
 
                 // 各種パス定義
-                var workDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location!)!, WORK_DIR);
-                var mainLogPath = Path.Combine(workDirectory, MAIN_LOG_FILE);
                 var npmLogPath = Path.Combine(workDirectory, NPM_LOG_FILE);
                 var dotnetLogPath = Path.Combine(workDirectory, DOTNET_LOG_FILE);
 
@@ -298,10 +318,10 @@ namespace Nijo.Mcp {
                 string startCmdPath = Path.Combine(workDirectory, START_CMD_FILE);
                 string cmdContent = RenderCmdContent(nijoXmlFileFullPath, true);
                 File.WriteAllText(startCmdPath, cmdContent, new UTF8Encoding(false, false));
-                mainOutput.AppendLine($"[nijo-mcp] 起動スクリプトを作成しました: {startCmdPath}");
+                AppendLineToMainLog($"[nijo-mcp] 起動スクリプトを作成しました: {startCmdPath}");
 
                 // .cmdファイルを実行
-                mainOutput.AppendLine($"[nijo-mcp] アプリケーションプロセスを開始します (出力は {mainLogPath} に保存されます)");
+                AppendLineToMainLog($"[nijo-mcp] アプリケーションプロセスを開始します (出力は {mainLogPath} に保存されます)");
                 Process? startProcess = null;
                 try {
                     startProcess = new Process();
@@ -317,25 +337,24 @@ namespace Nijo.Mcp {
 
                 } catch (Exception ex) {
                     return ToMcpResutJson(new {
-                        Result = $"[nijo-mcp] 起動スクリプトの実行に失敗しました（{ex.Message}）",
-                        Details = mainOutput.ToString(),
+                        Result = $"[nijo-mcp] 起動スクリプトの実行に失敗しました（{ex.Message}）。詳細はログを確認してください。",
+                        LogFile = mainLogPath,
                         Exception = ex.ToString(),
                     });
                 }
+
+                AppendLineToMainLog("[nijo-mcp] 起動スクリプトの実行を完了しました。各Webサーバーが立ち上がっているかの確認を行ないます。");
 
                 // 少し待ってからアクセス確認を開始
                 await Task.Delay(1000);
 
                 // サービスの準備完了を待機
                 var ready = false;
-                var timeout = DateTime.Now.AddSeconds(10);
                 var dotnetReady = false;
                 var npmReady = false;
 
                 // Webのポートにリクエストを投げて結果が返ってくるかどうかで確認する
-                using var _httpClient = new HttpClient() {
-                    Timeout = TimeSpan.FromSeconds(1)
-                };
+                using var _httpClient = new HttpClient() { Timeout = TimeSpan.FromSeconds(1) };
                 async Task<bool> IsServiceReadyAsync(string url) {
                     try {
                         var response = await _httpClient.GetAsync(url);
@@ -345,40 +364,48 @@ namespace Nijo.Mcp {
                     }
                 }
 
+                var timeout = DateTime.Now.AddSeconds(10);
                 while (!ready && DateTime.Now < timeout) {
                     if (!dotnetReady) {
                         dotnetReady = await IsServiceReadyAsync($"{DOTNET_URL}/swagger");
                         if (dotnetReady) {
-                            mainOutput.AppendLine("[nijo-mcp] WebAPIの準備が完了しました。");
+                            AppendLineToMainLog("[nijo-mcp] ASP.NET Core サーバーの起動を確認しました。");
+                        } else {
+                            AppendLineToMainLog("[nijo-mcp] ASP.NET Core サーバーはまだ起動されていません。");
                         }
                     }
 
                     if (!npmReady) {
                         npmReady = await IsServiceReadyAsync(NPM_URL);
                         if (npmReady) {
-                            mainOutput.AppendLine("[nijo-mcp] フロントエンドの準備が完了しました。");
+                            AppendLineToMainLog("[nijo-mcp] Node.js サーバーの起動を確認しました。");
+                        } else {
+                            AppendLineToMainLog("[nijo-mcp] Node.js サーバーはまだ起動されていません。");
                         }
                     }
 
                     ready = dotnetReady && npmReady;
 
                     if (!ready) {
+                        AppendLineToMainLog("[nijo-mcp] 待機中...");
                         await Task.Delay(500); // 0.5秒待機
                     }
                 }
 
                 // Node.js と .NET のいずれかがタイムアウトまで起動しなかった場合、プロセスを終了
                 if (!ready) {
-                    mainOutput.AppendLine(StopDebugging());
+                    AppendLineToMainLog("[nijo-mcp] Node.js と .NET のいずれかが起動していません。起動されている方のプロセスを中断します。");
+
+                    await StopDebugging(AppendLineToMainLog, TimeSpan.FromSeconds(5));
 
                     var status = new StringBuilder("タイムアウト: ");
                     if (!dotnetReady) status.Append("WebAPIの準備が完了しませんでした。");
                     if (!npmReady) status.Append("フロントエンドの準備が完了しませんでした。");
+                    status.Append("詳細はログを確認してください。");
 
                     return ToMcpResutJson(new {
                         Result = status.ToString(),
                         LogFile = mainLogPath,
-                        Details = mainOutput.ToString(),
                     });
                 }
 
@@ -391,51 +418,23 @@ namespace Nijo.Mcp {
 
             } catch (Exception ex) {
                 // エラー発生時はプロセスを終了
-                mainOutput.AppendLine(StopDebugging());
+                await StopDebugging(AppendLineToMainLog, TimeSpan.FromSeconds(5));
 
-                mainOutput.AppendLine($"Error: {ex}");
+                AppendLineToMainLog($"Error: {ex}");
 
                 return ToMcpResutJson(new {
-                    Result = "エラーが発生しました。",
+                    Result = "エラーが発生しました。詳細はログを確認してください。",
+                    LogFile = mainLogPath,
                     Exception = ex.ToString(),
-                    Details = mainOutput.ToString(),
                 });
             }
         }
 
         [McpServerTool(Name = "stop_debugging"), Description("ソースコード自動生成された方のアプリケーションのデバッグを終了する。")]
-        public static string StopDebugging() {
+        public static async Task<string> StopDebugging() {
             try {
                 var result = new StringBuilder();
-
-                // 特定のポートを使用しているプロセスを見つけて終了させる
-                try {
-                    // netstatコマンドを実行して、特定のポートを使っているプロセスのPIDを取得
-                    var dotnetPid = FindProcessIdByPort(7098); // DOTNETのポート番号
-                    var npmPid = FindProcessIdByPort(5173);    // NPMのポート番号
-
-                    if (dotnetPid.HasValue) {
-                        var killResultDotnet = KillProcessWithChildren(dotnetPid.Value);
-                        result.AppendLine($"WebAPIプロセス(PID:{dotnetPid})の終了結果: {killResultDotnet}");
-                    } else {
-                        result.AppendLine("WebAPIプロセスが見つかりませんでした。");
-                    }
-
-                    if (npmPid.HasValue) {
-                        var killResultNpm = KillProcessWithChildren(npmPid.Value);
-                        result.AppendLine($"フロントエンドプロセス(PID:{npmPid})の終了結果: {killResultNpm}");
-                    } else {
-                        result.AppendLine("フロントエンドプロセスが見つかりませんでした。");
-                    }
-                } catch (Exception ex) {
-                    return $$"""
-
-                        ******* 既存プロセス停止処理 START ******
-                        ポート検索処理でエラーが発生しました: {{ex}}
-                        ******* 既存プロセス停止処理 END ******
-
-                        """;
-                }
+                await StopDebugging(text => result.AppendLine(text), TimeSpan.FromSeconds(5));
 
                 return $$"""
 
@@ -551,7 +550,7 @@ namespace Nijo.Mcp {
 
         // ログフォルダを準備する
         private static void PrepareWorkDirectory() {
-            var workDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location!)!, WORK_DIR);
+            var workDirectory = GetWorkDirectoryFullPath();
 
             // ワークフォルダがなければ作成
             if (!Directory.Exists(workDirectory)) Directory.CreateDirectory(workDirectory);
@@ -570,8 +569,49 @@ namespace Nijo.Mcp {
             if (File.Exists(startCmdPath)) File.Delete(startCmdPath);
         }
 
+        // 
+        private static async Task StopDebugging(Action<string> outLog, TimeSpan timeout) {
+            // ASP.NET Core
+            try {
+                outLog("[stop_debugging] ASP.NET Core サーバーのポート検索開始");
+
+                var dotnetPid = FindProcessIdByPort(7098, timeout); // DOTNETのポート番号
+
+                if (dotnetPid.HasValue) {
+                    outLog($"[stop_debugging] ASP.NET Coreプロセス(PID:{dotnetPid})を終了します。");
+
+                    await KillProcessWithChildren(dotnetPid.Value, timeout, outLog);
+
+                    outLog($"[stop_debugging] ASP.NET Coreプロセス(PID:{dotnetPid})を終了しました。");
+                } else {
+                    outLog("[stop_debugging] ASP.NET Coreプロセスが見つかりませんでした。");
+                }
+            } catch (Exception ex) {
+                outLog($"[stop_debugging] ASP.NET Core サーバーの停止でエラーが発生しました: {ex.Message}");
+            }
+
+            // Node.js
+            try {
+                outLog("[stop_debugging] Node.js サーバーのポート検索開始");
+
+                var npmPid = FindProcessIdByPort(5173, timeout);    // NPMのポート番号
+
+                if (npmPid.HasValue) {
+                    outLog($"[stop_debugging] Node.js フロントエンドプロセス(PID:{npmPid})を終了します。");
+
+                    await KillProcessWithChildren(npmPid.Value, timeout, outLog);
+
+                    outLog($"[stop_debugging] フロントエンドプロセス(PID:{npmPid})を終了しました。");
+                } else {
+                    outLog("[stop_debugging] フロントエンドプロセスが見つかりませんでした。");
+                }
+            } catch (Exception ex) {
+                outLog($"[stop_debugging] Node.js サーバーの停止でエラーが発生しました: {ex.Message}");
+            }
+        }
+
         // ポート番号からプロセスIDを取得するメソッド
-        private static int? FindProcessIdByPort(int port) {
+        private static int? FindProcessIdByPort(int port, TimeSpan timeout) {
             // netstatコマンドを実行して、特定のポートを使用しているプロセスのPIDを取得
             var process = new Process();
             process.StartInfo.FileName = "netstat";
@@ -582,7 +622,7 @@ namespace Nijo.Mcp {
 
             process.Start();
             var output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
+            process.WaitForExit(timeout);
 
             // 出力から該当するポートを使用しているプロセスのPIDを検索
             var lines = output.Split('\n');
@@ -604,34 +644,59 @@ namespace Nijo.Mcp {
         }
 
         // 指定したPIDのプロセスとその子プロセスを終了するメソッド
-        private static string KillProcessWithChildren(int pid) {
-            var result = new StringBuilder();
-
+        private static Task KillProcessWithChildren(int pid, TimeSpan timeout, Action<string> outLog) {
             try {
                 // taskkillコマンドを使ってプロセスツリーを強制終了
                 var process = new Process();
                 process.StartInfo.FileName = "taskkill";
-                process.StartInfo.Arguments = $"/PID {pid} /T /F";  // /T: ツリー(子プロセスを含む) /F: 強制終了
+                process.StartInfo.Arguments = $"/PID {pid} /F";  // /F: 強制終了
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardError = true;
                 process.StartInfo.CreateNoWindow = true;
 
-                process.Start();
-                string output = process.StandardOutput.ReadToEnd();
-                string error = process.StandardError.ReadToEnd();
-                process.WaitForExit();
+                var maybeFinish = false;
+                process.OutputDataReceived += (sender, args) => {
+                    if (args.Data == null) return;
+                    outLog($"[taskkill {pid} stdout] {args.Data}");
+                    maybeFinish = true;
+                };
+                process.ErrorDataReceived += (sender, args) => {
+                    if (args.Data == null) return;
+                    outLog($"[taskkill {pid} stderr] {args.Data}");
+                    maybeFinish = true;
+                };
 
-                if (process.ExitCode == 0) {
-                    result.Append($"成功: {output.Trim()}");
-                } else {
-                    result.Append($"エラー(コード:{process.ExitCode}): {error.Trim()}");
+                outLog($"[taskkill {pid}] 開始");
+
+                process.Start();
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+
+                var timeoutLimit = DateTime.Now + timeout;
+                while (true) {
+                    if (DateTime.Now > timeoutLimit) {
+                        outLog($"[taskkill {pid}] タイムアウト");
+                        process.CancelOutputRead();
+                        process.CancelErrorRead();
+                        process.Kill();
+                        break;
+
+                    } else if (maybeFinish) {
+                        outLog($"[taskkill {pid}] 終了");
+                        process.CancelOutputRead();
+                        process.CancelErrorRead();
+                        break;
+
+                    } else {
+                        outLog($"[taskkill {pid}] 完了待機中...");
+                        Thread.Sleep(500);
+                    }
                 }
             } catch (Exception ex) {
-                result.Append($"例外が発生しました: {ex.Message}");
+                outLog($"[taskkill {pid}] 例外が発生しました: {ex.Message}");
             }
-
-            return result.ToString();
+            return Task.CompletedTask;
         }
 
         // MCPツールの戻り値をJSONにする

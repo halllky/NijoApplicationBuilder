@@ -12,10 +12,6 @@
 **/.user
 **/.suo
 
-# ログファイル
-*.log
-/Nijo.IntegrationTest.Log/*
-
 # 一時ファイル
 *.tmp
 *.temp
