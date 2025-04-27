@@ -8,6 +8,8 @@ partial class NijoMcpTools {
     /// </summary>
     public static async Task<bool> デバッグ開始(WorkDirectory workDirectory, string nijoXmlDir) {
 
+        workDirectory.AppendSectionTitle("デバッグ開始");
+
         // 別プロセスで nijo run を起動する。ここではプロセスの完了は待たない。
         var launchCmdPath = Path.Combine(nijoXmlDir, "launch.cmd");
         RenderCmdFile(launchCmdPath, $$"""

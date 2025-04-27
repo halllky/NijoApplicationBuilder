@@ -5,6 +5,9 @@ namespace Nijo.Mcp;
 
 partial class NijoMcpTools {
     private static async Task<bool> ソースコード自動生成かけなおし(WorkDirectory workDirectory, string nijoXmlDir) {
+
+        workDirectory.AppendSectionTitle("ソースコード自動生成かけなおし");
+
         var mainLogPath = workDirectory.MainLogFile;
         var cmdFilePath = Path.Combine(workDirectory.FullPath, "update-source-code.cmd");
         RenderCmdFile(cmdFilePath, $$"""

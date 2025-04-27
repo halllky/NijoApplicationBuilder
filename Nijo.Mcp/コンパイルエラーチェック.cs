@@ -8,6 +8,9 @@ partial class NijoMcpTools {
     /// 結果はワークディレクトリのログファイルに出力される。
     /// </summary>
     private static async Task<bool> コンパイルエラーチェック(WorkDirectory workDirectory, string nijoXmlDir) {
+
+        workDirectory.AppendSectionTitle("コンパイルエラーチェック");
+
         var csharpCmd = Path.Combine(workDirectory.FullPath, "csharp_compile_check.cmd");
         var typeScriptCmd = Path.Combine(workDirectory.FullPath, "typescript_compile_check.cmd");
 

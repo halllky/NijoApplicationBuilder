@@ -29,12 +29,12 @@ partial class NijoMcpTools {
             if (e.Data != null) workDirectory.AppendToMainLog($"[{startInfo.FileName} stderr] {e.Data}");
         };
 
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-
         workDirectory.AppendToMainLog($"[{startInfo.FileName}] 開始");
 
         process.Start();
+
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
 
         var timeoutLimit = DateTime.Now.Add(timeout);
         while (true) {
@@ -46,7 +46,7 @@ partial class NijoMcpTools {
                 return 1;
 
             } else if (process.HasExited) {
-                workDirectory.AppendToMainLog($"[{startInfo.FileName}] 終了");
+                workDirectory.AppendToMainLog($"[{startInfo.FileName}] 終了（終了コード: {process.ExitCode}）");
                 process.CancelOutputRead();
                 process.CancelErrorRead();
                 return process.ExitCode;

@@ -8,7 +8,7 @@ namespace Nijo.Mcp;
 /// ワークディレクトリ。
 /// ログファイル等のパス情報を持つ
 /// </summary>
-public class WorkDirectory {
+public class WorkDirectory : IDisposable {
 
     /// <summary>
     /// ワークディレクトリを準備する。
@@ -28,17 +28,18 @@ public class WorkDirectory {
                 "..", // Nijo.Mpc
                 "..", // NijoApplicationBuilder
                 "Nijo.Mpc.WorkDirectory"));
+            var mainLog = Path.Combine(fullpath, "output.log");
 
-            workDirectory = new WorkDirectory(fullpath);
+            // 既存のログファイルがあれば削除
+            if (File.Exists(mainLog)) File.Delete(mainLog);
+
+            workDirectory = new WorkDirectory(fullpath, mainLog);
 
             // ワークフォルダがなければ作成
             if (!Directory.Exists(workDirectory.FullPath)) Directory.CreateDirectory(workDirectory.FullPath);
 
             // Git管理対象外
             File.WriteAllText(Path.Combine(workDirectory.FullPath, ".gitignore"), "*");
-
-            // 既存のログファイルがあれば削除 (ファイル名を追加)
-            if (File.Exists(workDirectory.MainLogFile)) File.Delete(workDirectory.MainLogFile);
 
             errorMessage = null;
             return true;
@@ -54,9 +55,17 @@ public class WorkDirectory {
         }
     }
 
-    private WorkDirectory(string fullpath) {
+    private WorkDirectory(string fullpath, string mainLog) {
         FullPath = fullpath;
+        MainLogFile = mainLog;
+        _mainLogFileStream = new FileStream(mainLog, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite);
+        _mainLogWriter = new StreamWriter(_mainLogFileStream, encoding: Encoding.UTF8) {
+            AutoFlush = true,
+        };
     }
+    private readonly FileStream _mainLogFileStream;
+    private readonly StreamWriter _mainLogWriter;
+
     /// <summary>
     /// ワークディレクトリパス
     /// </summary>
@@ -64,7 +73,7 @@ public class WorkDirectory {
     /// <summary>
     /// ログ
     /// </summary>
-    public string MainLogFile => Path.Combine(FullPath, "output.log");
+    public string MainLogFile { get; }
     /// <summary>
     /// デバッグプロセスのログ。
     /// デバッグプロセスはMCPツール本体とは別のライフサイクルで動くためファイルも別。
@@ -95,17 +104,28 @@ public class WorkDirectory {
     public string NijoExeCancelFile => Path.Combine(FullPath, "CANCEL_DEBUG_PROCESS.txt");
 
     /// <summary>
+    /// メインログに大まかなセクションタイトルを追加
+    /// </summary>
+    public void AppendSectionTitle(string title) {
+        AppendToMainLog($$"""
+
+            ****************************************
+            {{title}}
+            """);
+    }
+
+    /// <summary>
     /// メインログにテキストを追加する
     /// </summary>
     public void AppendToMainLog(string text) {
         var counter = 0; // 失敗しても数回はリトライ
         while (counter <= 3) {
             try {
-                using var writer = new StreamWriter(MainLogFile, append: true, encoding: Encoding.UTF8);
-                writer.WriteLine(text);
+                _mainLogWriter.WriteLine(text);
                 return;
             } catch {
                 counter++;
+                Thread.Sleep(500);
             }
         }
         throw new InvalidOperationException($"ログ出力に失敗しました。");
@@ -122,5 +142,10 @@ public class WorkDirectory {
             ---
             {{File.ReadAllText(MainLogFile)}}
             """;
+    }
+
+    void IDisposable.Dispose() {
+        _mainLogWriter.Dispose();
+        _mainLogFileStream.Dispose();
     }
 }

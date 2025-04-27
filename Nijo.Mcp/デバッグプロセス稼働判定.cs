@@ -6,6 +6,8 @@ partial class NijoMcpTools {
     /// </summary>
     public static async Task<ServiceStatus> デバッグプロセス稼働判定(WorkDirectory workDirectory, TimeSpan timeout) {
 
+        workDirectory.AppendSectionTitle("デバッグプロセス稼働判定");
+
         // サービスの準備完了を待機
         var ready = false;
         var dotnetReady = false;

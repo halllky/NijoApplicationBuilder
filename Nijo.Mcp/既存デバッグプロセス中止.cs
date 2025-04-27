@@ -8,6 +8,8 @@ partial class NijoMcpTools {
     /// そこにファイルを出力し、完了まで一定時間待つ。
     /// </summary>
     public static async Task 既存デバッグプロセス中止(WorkDirectory workDirectory) {
+
+        workDirectory.AppendSectionTitle("既存デバッグプロセス中止");
         try {
             using var writer = new StreamWriter(workDirectory.NijoExeCancelFile, append: true, encoding: new UTF8Encoding(false, false));
             writer.WriteLine(""); // ファイルがあればよいので中身は空
