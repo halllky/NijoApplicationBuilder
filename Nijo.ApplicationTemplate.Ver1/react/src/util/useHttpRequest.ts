@@ -87,9 +87,6 @@ export const useHttpRequest = () => {
         const url = getBackendUrl(subDirectory) + '?' + searchParams.toString()
         const response = await fetch(url, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
           body: formData,
         })
 
