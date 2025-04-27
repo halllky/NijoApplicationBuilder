@@ -86,13 +86,13 @@ namespace Nijo.Mcp {
 
                 await 既存デバッグプロセス中止(workDirectory);
 
-                if (!await ソースコード自動生成かけなおし(workDirectory, nijoXmlDir)) {
-                    return workDirectory.WithMainLogContents("ソースコードの自動生成に失敗しました。");
-                }
+                //if (!await ソースコード自動生成かけなおし(workDirectory, nijoXmlDir)) {
+                //    return workDirectory.WithMainLogContents("ソースコードの自動生成に失敗しました。");
+                //}
 
-                if (!await コンパイルエラーチェック(workDirectory, nijoXmlDir)) {
-                    return workDirectory.WithMainLogContents("コンパイルエラーが発生しました。");
-                }
+                //if (!await コンパイルエラーチェック(workDirectory, nijoXmlDir)) {
+                //    return workDirectory.WithMainLogContents("コンパイルエラーが発生しました。");
+                //}
 
                 if (!await デバッグ開始(workDirectory, nijoXmlDir)) {
                     return workDirectory.WithMainLogContents("デバッグ開始に失敗しました。");
@@ -101,7 +101,7 @@ namespace Nijo.Mcp {
                 return $$"""
                     デバッグを開始しました。
                     ---
-                    {{await デバッグ中サイト情報取得(TimeSpan.FromSeconds(5))}}
+                    {{await デバッグ中サイト情報取得(workDirectory, TimeSpan.FromSeconds(5))}}
                     """;
             } catch (Exception ex) {
                 return ex.ToString();
@@ -122,12 +122,11 @@ namespace Nijo.Mcp {
             }
         }
 
-        [McpServerTool(Name = "get_debug_info"), Description(
-            "ソースコード自動生成された方のアプリケーションのAPサーバーに問い合わせ、接続先DBなどの情報を取得する。" +
-            "このツールを使用するためには、予め start_debugging でアプリケーションが実行開始されている必要がある。")]
+        [McpServerTool(Name = "get_debug_info"), Description("ソースコード自動生成された方のアプリケーションのAPサーバーに問い合わせ、プロセスが実行中か否かや、接続先DBがどこかなどの情報を取得する。")]
         public static async Task<string> GeDebugInfo() {
             try {
-                return await デバッグ中サイト情報取得(TimeSpan.FromSeconds(5));
+                using var workDirectory = WorkDirectory.Prepare();
+                return await デバッグ中サイト情報取得(workDirectory, TimeSpan.FromSeconds(5));
 
             } catch (Exception ex) {
                 return ex.ToString();

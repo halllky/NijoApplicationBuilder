@@ -10,6 +10,9 @@ partial class NijoMcpTools {
 
         workDirectory.WriteSectionTitle("デバッグ開始");
 
+        // キャンセルファイル削除
+        if (File.Exists(workDirectory.NijoExeCancelFile)) File.Delete(workDirectory.NijoExeCancelFile);
+
         // 別プロセスで nijo run を起動する。ここではプロセスの完了は待たない。
         var launchCmdPath = Path.Combine(workDirectory.DirectoryPath, "launch.cmd");
         RenderCmdFile(launchCmdPath, $$"""
@@ -22,6 +25,9 @@ partial class NijoMcpTools {
 
             set "NIJO_EXE={{NIJO_PROJ}}\bin\Debug\net9.0\nijo.exe"
             set "CANCEL_FILE={{workDirectory.NijoExeCancelFile}}"
+
+            @rem ログファイル初期化
+            echo. > "{{workDirectory.DebugLogFile}}"
 
             @echo.
             @echo ******* デバッグ開始 *******
