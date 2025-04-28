@@ -17,22 +17,22 @@ public class WorkDirectory : IDisposable {
     /// <param name="errorMessage">エラーメッセージ</param>
     /// <returns>ワークディレクトリが準備できたかどうか</returns>
     public static WorkDirectory Prepare() {
-        var fullpath = Path.GetFullPath(Path.Combine(
+        var directoryPath = Path.GetFullPath(Path.Combine(
             Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location!)!, // net9.0
             "..", // Debug
             "..", // bin
             "..", // Nijo.Mpc
             "..", // NijoApplicationBuilder
             "Nijo.Mpc.WorkDirectory"));
-        var mainLog = Path.Combine(fullpath, "output.log");
+        var mainLog = Path.Combine(directoryPath, "output.log");
 
         // 既存のログファイルがあれば削除
         if (File.Exists(mainLog)) File.Delete(mainLog);
 
-        var workDirectory = new WorkDirectory(fullpath, mainLog);
-
         // ワークフォルダがなければ作成
-        if (!Directory.Exists(workDirectory.DirectoryPath)) Directory.CreateDirectory(workDirectory.DirectoryPath);
+        if (!Directory.Exists(directoryPath)) Directory.CreateDirectory(directoryPath);
+
+        var workDirectory = new WorkDirectory(directoryPath, mainLog);
 
         // Git管理対象外
         File.WriteAllText(Path.Combine(workDirectory.DirectoryPath, ".gitignore"), "*");
