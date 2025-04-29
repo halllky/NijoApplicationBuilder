@@ -19,25 +19,6 @@ namespace Nijo.Models {
         internal const string SCHEMA_NAME = "value-object";
         public string SchemaName => SCHEMA_NAME;
 
-        public string RenderRuleMarkdown() => $$"""
-            # 値オブジェクト（ValueObject）
-            スキーマ定義での指定方法: '{{SchemaName}}'
-
-            識別子や複合値といった特殊な値を表すためのオブジェクト。
-            主に集約のキーとして使用されたり、特定の業務ルールをもった値を表現する形で使用される。
-
-            この値オブジェクトは、スキーマ定義上の他のモデルの属性の種類として使用することができる。
-
-            値オブジェクトの定義からは以下のモジュールが生成される。
-
-            ## C#の値オブジェクトクラス
-            値オブジェクトを表すC#のクラスが生成される。
-            このクラスは値の等価性比較を行うためのメソッドを持つ。
-            
-            ## TypeScriptの型定義
-            TypeScript側での型定義が生成される。
-            """;
-
         public void Validate(XElement rootAggregateElement, SchemaParseContext context, Action<XElement, string> addError) {
             // 特に検証ロジックなし
         }

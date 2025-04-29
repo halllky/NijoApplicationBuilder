@@ -18,16 +18,6 @@ namespace Nijo.Models {
     internal class StaticEnumModel : IModel {
         public string SchemaName => EnumDefParser.SCHEMA_NAME;
 
-        public string RenderRuleMarkdown() => $$"""
-            # 静的区分値（列挙値）
-            スキーマ定義での指定方法: '{{SchemaName}}'
-
-            値がソースコード上にハードコードされる区分値。
-            C#はenumとして、TypeScriptはリテラル型として表れる。
-
-            この静的区分値は、スキーマ定義上の他のモデルの属性の種類として使用することができる。
-            """;
-
         public void Validate(XElement rootAggregateElement, SchemaParseContext context, Action<XElement, string> addError) {
             // キー（key属性）のバリデーション
             var enumValues = rootAggregateElement.Elements().ToList();

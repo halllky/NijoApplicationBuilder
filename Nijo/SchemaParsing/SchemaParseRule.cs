@@ -194,12 +194,6 @@ public class SchemaParseRule {
             ここで指定されたタイプは、そのルート集約からどのようなソースが生成されるかを表します。
             例えば {{nameof(Nijo.Models.DataModel)}} からは、そのデータのRDBMSでの定義を設定する処理や、登録更新処理に関するモジュールが生成され、
             {{nameof(Nijo.Models.QueryModel)}} からは、{{nameof(Nijo.Models.DataModel)}}のデータを人間や外部システムが閲覧するための検索や問い合わせに関するモジュールが生成されます。
-            このスキーマで仕様できるモデルは以下です。
-
-            {{this.Models.SelectTextTemplate(model => $$"""
-            {{Regex.Replace(model.RenderRuleMarkdown(), @"^(#+) ", "$1## ", RegexOptions.Multiline)}}
-
-            """)}}
             """;
     }
 }
