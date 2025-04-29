@@ -58,12 +58,12 @@ namespace Nijo.Mcp {
 
                 using var workDirectory = WorkDirectory.Prepare();
 
-                await 既存デバッグプロセス中止(workDirectory);
-
+                if (!await 既存デバッグプロセス中止(workDirectory)) {
+                    return workDirectory.WithMainLogContents("既存デバッグプロセス中止に失敗しました。");
+                }
                 if (!await ソースコード自動生成かけなおし(workDirectory, nijoXmlDir)) {
                     return workDirectory.WithMainLogContents("ソースコードの自動生成に失敗しました。");
                 }
-
                 if (!await コンパイルエラーチェック(workDirectory, nijoXmlDir)) {
                     return workDirectory.WithMainLogContents("コンパイルエラーが発生しました。");
                 }
@@ -84,16 +84,15 @@ namespace Nijo.Mcp {
 
                 using var workDirectory = WorkDirectory.Prepare();
 
-                await 既存デバッグプロセス中止(workDirectory);
-
-                //if (!await ソースコード自動生成かけなおし(workDirectory, nijoXmlDir)) {
-                //    return workDirectory.WithMainLogContents("ソースコードの自動生成に失敗しました。");
-                //}
-
-                //if (!await コンパイルエラーチェック(workDirectory, nijoXmlDir)) {
-                //    return workDirectory.WithMainLogContents("コンパイルエラーが発生しました。");
-                //}
-
+                if (!await 既存デバッグプロセス中止(workDirectory)) {
+                    return workDirectory.WithMainLogContents("既存デバッグプロセス中止に失敗しました。");
+                }
+                if (!await ソースコード自動生成かけなおし(workDirectory, nijoXmlDir)) {
+                    return workDirectory.WithMainLogContents("ソースコードの自動生成に失敗しました。");
+                }
+                if (!await コンパイルエラーチェック(workDirectory, nijoXmlDir)) {
+                    return workDirectory.WithMainLogContents("コンパイルエラーが発生しました。");
+                }
                 if (!await デバッグ開始(workDirectory, nijoXmlDir)) {
                     return workDirectory.WithMainLogContents("デバッグ開始に失敗しました。");
                 }
@@ -113,7 +112,9 @@ namespace Nijo.Mcp {
             try {
                 using var workDirectory = WorkDirectory.Prepare();
 
-                await 既存デバッグプロセス中止(workDirectory);
+                if (!await 既存デバッグプロセス中止(workDirectory)) {
+                    return workDirectory.WithMainLogContents("既存デバッグプロセス中止に失敗しました。");
+                }
 
                 return "デバッグを停止しました。";
 

@@ -44,18 +44,18 @@ partial class NijoMcpTools {
             exit /b %errorlevel%
             """);
 
-        var csharpExitCode = await ExecuteProcess("dotnet build", new() {
-            WorkingDirectory = nijoXmlDir,
-            FileName = "cmd",
-            Arguments = $"/c \"{csharpCmd}\"",
-            UseShellExecute = false,
+        var csharpExitCode = await ExecuteProcess("dotnet build", startInfo => {
+            startInfo.WorkingDirectory = nijoXmlDir;
+            startInfo.FileName = "cmd";
+            startInfo.Arguments = $"/c \"{csharpCmd}\"";
+            startInfo.UseShellExecute = false;
         }, workDirectory, TimeSpan.FromSeconds(25));
 
-        var typeScriptExitCode = await ExecuteProcess("tsc -b --noEmit", new() {
-            WorkingDirectory = Path.Combine(nijoXmlDir, "react"),
-            FileName = "cmd",
-            Arguments = $"/c \"{typeScriptCmd}\"",
-            UseShellExecute = false,
+        var typeScriptExitCode = await ExecuteProcess("tsc -b --noEmit", startInfo => {
+            startInfo.WorkingDirectory = Path.Combine(nijoXmlDir, "react");
+            startInfo.FileName = "cmd";
+            startInfo.Arguments = $"/c \"{typeScriptCmd}\"";
+            startInfo.UseShellExecute = false;
         }, workDirectory, TimeSpan.FromSeconds(25));
 
         return csharpExitCode == 0 && typeScriptExitCode == 0;

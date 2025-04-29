@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace Nijo.Mcp;
 
 partial class NijoMcpTools {
@@ -10,46 +12,26 @@ partial class NijoMcpTools {
 
         workDirectory.WriteSectionTitle("デバッグ開始");
 
-        // キャンセルファイル削除
-        if (File.Exists(workDirectory.NijoExeCancelFile)) File.Delete(workDirectory.NijoExeCancelFile);
+        var npmRun = StartNewProcess("npm run dev", startInfo => {
+            startInfo.WorkingDirectory = Path.Combine(nijoXmlDir, "react");
+            startInfo.FileName = "cmd";
+            startInfo.Arguments = "/c \"npm.cmd run dev\"";
+            startInfo.EnvironmentVariables["NO_COLOR"] = "true";
+        }, workDirectory, workDirectory.WriteToNpmRunLog);
 
-        // 別プロセスで nijo run を起動する。ここではプロセスの完了は待たない。
-        var launchCmdPath = Path.Combine(workDirectory.DirectoryPath, "launch.cmd");
-        RenderCmdFile(launchCmdPath, $$"""
-            chcp 65001
-            @rem ↑dotnetコマンド実行時に強制的に書き換えられてしまいnpmの標準入出力が化けるので先に書き換えておく
+        var dotnetRun = StartNewProcess("dotnet run", startInfo => {
+            startInfo.WorkingDirectory = Path.Combine(nijoXmlDir, "WebApi");
+            startInfo.FileName = "dotnet";
+            startInfo.Arguments = "run --launch-profile https";
+        }, workDirectory, workDirectory.WriteToDotnetRunLog);
 
-            @echo off
-            setlocal
-            set NO_COLOR=true
-
-            set "NIJO_EXE={{NIJO_PROJ}}\bin\Debug\net9.0\nijo.exe"
-            set "CANCEL_FILE={{workDirectory.NijoExeCancelFile}}"
-
-            @rem ログファイル初期化
-            echo. > "{{workDirectory.DebugLogFile}}"
-
-            @echo.
-            @echo ******* デバッグ開始 *******
-            start "" /B /SEPARATE cmd /c ""%NIJO_EXE%" run --no-browser --cancel-file "%CANCEL_FILE%" >> "{{workDirectory.DebugLogFile}}" 2>&1"
-
-            exit /b %errorlevel%
-            """);
-
-        var exitCode = await ExecuteProcess("nijo run", new() {
-            FileName = launchCmdPath,
-            WorkingDirectory = nijoXmlDir,
-        }, workDirectory, TimeSpan.FromMinutes(5));
-
-        if (exitCode != 0) {
-            workDirectory.WriteToMainLog("[nijo-mcp] デバッグ開始に失敗しました。");
-            return false;
-        }
+        await File.WriteAllTextAsync(workDirectory.NpmRunPidFile, npmRun.Id.ToString());
+        await File.WriteAllTextAsync(workDirectory.DotnetRunPidFile, dotnetRun.Id.ToString());
 
         // HTTPサーバーが起動するまで待つ。
         // 一定時間経っても起動していなければ失敗と判断する。
         var timeout = TimeSpan.FromSeconds(20);
-        var status = await デバッグプロセス稼働判定(workDirectory, timeout);
+        var status = await ChecAliveDebugServer(workDirectory, timeout);
         if (!status.DotnetIsReady || !status.NpmIsReady) {
             workDirectory.WriteToMainLog("[nijo-mcp] デバッグ開始に失敗しました。");
             return false;

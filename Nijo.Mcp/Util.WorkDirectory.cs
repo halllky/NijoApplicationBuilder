@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Nijo.Mcp;
 
@@ -17,6 +18,7 @@ public class WorkDirectory : IDisposable {
     /// <param name="errorMessage">エラーメッセージ</param>
     /// <returns>ワークディレクトリが準備できたかどうか</returns>
     public static WorkDirectory Prepare() {
+        // ワークフォルダがなければ作成
         var directoryPath = Path.GetFullPath(Path.Combine(
             Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location!)!, // net9.0
             "..", // Debug
@@ -24,13 +26,11 @@ public class WorkDirectory : IDisposable {
             "..", // Nijo.Mpc
             "..", // NijoApplicationBuilder
             "Nijo.Mpc.WorkDirectory"));
-        var mainLog = Path.Combine(directoryPath, "output.log");
+        if (!Directory.Exists(directoryPath)) Directory.CreateDirectory(directoryPath);
 
         // 既存のログファイルがあれば削除
+        var mainLog = Path.Combine(directoryPath, "output.log");
         if (File.Exists(mainLog)) File.Delete(mainLog);
-
-        // ワークフォルダがなければ作成
-        if (!Directory.Exists(directoryPath)) Directory.CreateDirectory(directoryPath);
 
         var workDirectory = new WorkDirectory(directoryPath, mainLog);
 
@@ -56,44 +56,72 @@ public class WorkDirectory : IDisposable {
     /// ワークディレクトリパス
     /// </summary>
     public string DirectoryPath { get; }
-    /// <summary>
-    /// デバッグプロセスのログ。
-    /// デバッグプロセスはMCPツール本体とは別のライフサイクルで動くためファイルも別。
-    /// </summary>
-    public string DebugLogFile => Path.Combine(DirectoryPath, "output_debug.log");
-    /// <summary>
-    /// npmの標準出力ログ
-    /// </summary>
-    public string NpmLogStdOut => Path.Combine(DirectoryPath, "output_npm_stdout.log");
-    /// <summary>
-    /// npmの標準エラーログ
-    /// </summary>
-    public string NpmLogStdErr => Path.Combine(DirectoryPath, "output_npm_stderr.log");
-    /// <summary>
-    /// dotnetの標準出力ログ
-    /// </summary>
-    public string DotnetLogStdOut => Path.Combine(DirectoryPath, "output_dotnet_stdout.log");
-    /// <summary>
-    /// dotnetの標準エラーログ
-    /// </summary>
-    public string DotnetLogStdErr => Path.Combine(DirectoryPath, "output_dotnet_stderr.log");
 
-    /// <summary>
-    /// デバッグ中止ファイル。
-    /// `nijo run` したときにキャンセル用のファイルを指定できるので、
-    /// そこにファイルを出力し、完了まで一定時間待つ。
-    /// </summary>
-    public string NijoExeCancelFile => Path.Combine(DirectoryPath, "CANCEL_DEBUG_PROCESS.txt");
+    public string NpmRunPidFile => Path.Combine(DirectoryPath, "PID_NPM_RUN");
+    public string NpmRunLogFile => Path.Combine(DirectoryPath, "output_npm-run.log");
+    public string DotnetRunPidFile => Path.Combine(DirectoryPath, "PID_DOTNET_RUN");
+    public string DotnetRunLogFile => Path.Combine(DirectoryPath, "output_dotnet-run.log");
+    private readonly Lock _npmLock = new();
+    private readonly Lock _dotnetLock = new();
+    private bool _isFirstNpmLog = true;
+    private bool _isFirstDotnetLog = true;
+
+    public void WriteToNpmRunLog(string text) {
+        lock (_npmLock) {
+            // このセッションにおける最初の書き込み時は前回のセッションのファイルを削除
+            if (_isFirstNpmLog) {
+                if (File.Exists(NpmRunLogFile)) File.Delete(NpmRunLogFile);
+                _isFirstNpmLog = false;
+            }
+
+            using var fs = new FileStream(NpmRunLogFile, FileMode.Append, FileAccess.Write, FileShare.Read);
+            using var writer = new StreamWriter(fs, Encoding.UTF8);
+            writer.WriteLine(text);
+        }
+    }
+    public void WriteToDotnetRunLog(string text) {
+        lock (_dotnetLock) {
+            // このセッションにおける最初の書き込み時は前回のセッションのファイルを削除
+            if (_isFirstDotnetLog) {
+                if (File.Exists(DotnetRunLogFile)) File.Delete(DotnetRunLogFile);
+                _isFirstDotnetLog = false;
+            }
+
+            using var fs = new FileStream(DotnetRunLogFile, FileMode.Append, FileAccess.Write, FileShare.Read);
+            using var writer = new StreamWriter(fs, Encoding.UTF8);
+            writer.WriteLine(text);
+        }
+    }
+    public int? ReadNpmRunPidFile() {
+        if (!File.Exists(NpmRunPidFile)) return null;
+        return int.Parse(File.ReadAllText(NpmRunPidFile));
+    }
+    public int? ReadDotnetRunPidFile() {
+        if (!File.Exists(DotnetRunPidFile)) return null;
+        return int.Parse(File.ReadAllText(DotnetRunPidFile));
+    }
+    public void DeleteNpmRunPidFile() {
+        lock (_npmLock) {
+            if (File.Exists(NpmRunPidFile)) File.Delete(NpmRunPidFile);
+        }
+    }
+    public void DeleteDotnetRunPidFile() {
+        lock (_dotnetLock) {
+            if (File.Exists(DotnetRunPidFile)) File.Delete(DotnetRunPidFile);
+        }
+    }
 
     /// <summary>
     /// メインログに大まかなセクションタイトルを追加
     /// </summary>
     public void WriteSectionTitle(string title) {
-        WriteToMainLog($$"""
+        lock (_lock) {
+            WriteLineWithRetry(_mainLogWriter, $$"""
 
-            ****************************************
-            {{title}}
-            """);
+                ****************************************
+                {{title}}
+                """);
+        }
     }
 
     /// <summary>
@@ -101,15 +129,18 @@ public class WorkDirectory : IDisposable {
     /// </summary>
     public void WriteToMainLog(string text) {
         lock (_lock) {
-            var counter = 0; // 失敗しても数回はリトライ
-            while (counter <= 3) {
-                try {
-                    _mainLogWriter.WriteLine(text);
-                    return;
-                } catch {
-                    counter++;
-                    Thread.Sleep(500);
-                }
+            WriteLineWithRetry(_mainLogWriter, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} {text}");
+        }
+    }
+    private static void WriteLineWithRetry(StreamWriter writer, string text) {
+        var counter = 0; // 失敗しても数回はリトライ
+        while (counter <= 3) {
+            try {
+                writer.WriteLine(text);
+                return;
+            } catch {
+                counter++;
+                Thread.Sleep(500);
             }
         }
         throw new InvalidOperationException($"ログ出力に失敗しました。");

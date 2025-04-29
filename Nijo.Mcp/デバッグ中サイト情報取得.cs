@@ -7,7 +7,7 @@ partial class NijoMcpTools {
     /// <param name="timeout">タイムアウト時間</param>
     /// <returns>デバッグ情報取得APIの結果。取得できなかった場合はその旨</returns>
     public static async Task<string> デバッグ中サイト情報取得(WorkDirectory workDirectory, TimeSpan timeout) {
-        var status = await デバッグプロセス稼働判定(workDirectory, TimeSpan.FromSeconds(5));
+        var status = await ChecAliveDebugServer(workDirectory, TimeSpan.FromSeconds(5));
         if (!status.DotnetIsReady || !status.NpmIsReady) {
             return $$"""
                 デバッグプロセスまたはその一部は現在実行されていません。

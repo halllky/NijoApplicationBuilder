@@ -48,10 +48,10 @@ partial class NijoMcpTools {
             )
             """);
 
-        var exitCode = await ExecuteProcess("nijo generate", new() {
-            FileName = "cmd",
-            Arguments = $"/c \"{cmdFilePath}\"",
-            UseShellExecute = false,
+        var exitCode = await ExecuteProcess("nijo generate", startInfo => {
+            startInfo.FileName = "cmd";
+            startInfo.Arguments = $"/c \"{cmdFilePath}\"";
+            startInfo.UseShellExecute = false;
         }, workDirectory, TimeSpan.FromSeconds(25));
 
         return exitCode == 0;
