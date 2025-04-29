@@ -60,6 +60,7 @@ partial class NijoMcpTools {
             var startInfo = new ProcessStartInfo {
                 FileName = Path.GetFullPath(workDirectory.NpmRunCmdFile),
                 UseShellExecute = true, // viteは UseShellExecute で実行しないとまともに動かない
+                WindowStyle = ProcessWindowStyle.Hidden,
                 WorkingDirectory = npmRunDir,
             };
 
@@ -83,6 +84,7 @@ partial class NijoMcpTools {
             var startInfo = new ProcessStartInfo {
                 FileName = Path.GetFullPath(workDirectory.DotnetRunCmdFile),
                 UseShellExecute = true,
+                WindowStyle = ProcessWindowStyle.Hidden,
                 WorkingDirectory = dotnetRunDir,
             };
 

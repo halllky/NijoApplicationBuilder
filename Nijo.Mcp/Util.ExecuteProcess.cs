@@ -55,7 +55,6 @@ partial class NijoMcpTools {
         process.OutputDataReceived += (sender, e) => {
             try {
                 if (e.Data != null) {
-                    workDirectory.WriteToMainLog($"[{logName} event] OutputDataReceived: Data received.");
                     outLog($"[{logName} stdout] {e.Data}");
                 } else {
                     workDirectory.WriteToMainLog($"[{logName} event] OutputDataReceived: Stream closed (Data is null).");
@@ -70,7 +69,6 @@ partial class NijoMcpTools {
         process.ErrorDataReceived += (sender, e) => {
             try {
                 if (e.Data != null) {
-                    workDirectory.WriteToMainLog($"[{logName} event] ErrorDataReceived: Data received.");
                     outLog($"[{logName} stderr] {e.Data}");
                 } else {
                     workDirectory.WriteToMainLog($"[{logName} event] ErrorDataReceived: Stream closed (Data is null).");
