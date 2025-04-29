@@ -109,18 +109,25 @@ namespace Nijo.Mcp {
 
         [McpServerTool(Name = "stop_debugging"), Description("ソースコード自動生成された方のアプリケーションのデバッグを終了する。")]
         public static async Task<string> StopDebugging() {
-            try {
-                using var workDirectory = WorkDirectory.Prepare();
+            using var workDirectory = WorkDirectory.Prepare();
+            // MCP サーバー自身の PID をログに出力
+            var mcpProcessId = Environment.ProcessId;
+            workDirectory.WriteToMainLog($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [NijoMcpTools.StopDebugging] MCP Process ID: {mcpProcessId}");
+            workDirectory.WriteToMainLog($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [NijoMcpTools.StopDebugging] StopDebugging method called. Calling 既存デバッグプロセス中止...");
 
-                if (!await 既存デバッグプロセス中止(workDirectory)) {
-                    return workDirectory.WithMainLogContents("既存デバッグプロセス中止に失敗しました。");
-                }
+            // 既存デバッグプロセス中止 を呼び出し、結果を待つ
+            bool success = await 既存デバッグプロセス中止(workDirectory);
 
+            // await の完了直後に結果を返す
+            if (success) {
+                workDirectory.WriteToMainLog($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [NijoMcpTools.StopDebugging] 既存デバッグプロセス中止 succeeded. Returning success message.");
                 return "デバッグを停止しました。";
-
-            } catch (Exception ex) {
-                return ex.ToString();
+            } else {
+                workDirectory.WriteToMainLog($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [NijoMcpTools.StopDebugging] 既存デバッグプロセス中止 failed. Returning failure message.");
+                // 失敗した場合でも、ログの内容を含めて返す
+                return workDirectory.WithMainLogContents("既存デバッグプロセス中止に失敗しました。");
             }
+            // この return 文の後には何も実行されない
         }
 
         [McpServerTool(Name = "get_debug_info"), Description("ソースコード自動生成された方のアプリケーションのAPサーバーに問い合わせ、プロセスが実行中か否かや、接続先DBがどこかなどの情報を取得する。")]

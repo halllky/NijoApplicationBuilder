@@ -21,21 +21,31 @@ partial class NijoMcpTools {
                 workDirectory.WriteToMainLog($"Node.js サーバーは起動されていないか、nijo-mcp以外によって起動されたため停止できません。");
 
             } else {
-                var process = Process.GetProcessById(pid.Value);
+                try {
+                    var process = Process.GetProcessById(pid.Value);
 
-                if (process == null) {
-                    workDirectory.WriteToMainLog($"Node.js サーバーのPID {pid} を停止しようとしましたが、プロセスが見つかりません。");
-
-                } else {
-                    workDirectory.WriteToMainLog($"Node.js サーバーのPID {pid} を停止します。");
-                    var result = EnsureKill(process);
-                    workDirectory.WriteToMainLog(result);
-                    shouldCheckHttp = true;
+                    if (process == null) {
+                        workDirectory.WriteToMainLog($"Node.js サーバーのPID {pid} を停止しようとしましたが、プロセスが見つかりません。");
+                    } else {
+                        workDirectory.WriteToMainLog($"Node.js サーバーのPID {pid} (Name: {process.ProcessName}) を停止します。");
+                        try {
+                            // Process.Kill(entireProcessTree: true) を使用してプロセスツリーごと終了
+                            process.Kill(entireProcessTree: true);
+                            workDirectory.WriteToMainLog($"Node.js サーバーのプロセスツリーを正常に終了しました (PID: {pid})");
+                            shouldCheckHttp = true;
+                        } catch (Exception ex) {
+                            workDirectory.WriteToMainLog($"Node.js サーバーのプロセスツリー終了中にエラーが発生しました: {ex.Message}");
+                        }
+                    }
+                } catch (ArgumentException) {
+                    workDirectory.WriteToMainLog($"Node.js サーバーのPID {pid} を停止しようとしましたが、プロセスが既に終了しています。");
+                } catch (Exception ex) {
+                    workDirectory.WriteToMainLog($"Node.js サーバーのPID {pid} を停止しようとしましたが、例外が発生しました: {ex.Message}");
                 }
                 workDirectory.DeleteNpmRunPidFile();
             }
         } catch (Exception ex) {
-            workDirectory.WriteToMainLog($"npm run のtaskkillで例外: {ex.Message}");
+            workDirectory.WriteToMainLog($"npm run の終了処理で例外: {ex.Message}");
         }
 
         try {
@@ -44,20 +54,30 @@ partial class NijoMcpTools {
                 workDirectory.WriteToMainLog($"ASP.NET Core サーバーは起動されていないか、nijo-mcp以外によって起動されたため停止できません。");
 
             } else {
-                var process = Process.GetProcessById(pid.Value);
-                if (process == null) {
-                    workDirectory.WriteToMainLog($"ASP.NET Core サーバーのPID {pid} を停止しようとしましたが、プロセスが見つかりません。");
-
-                } else {
-                    workDirectory.WriteToMainLog($"ASP.NET Core サーバーのPID {pid} を停止します。");
-                    var result = EnsureKill(process);
-                    workDirectory.WriteToMainLog(result);
-                    shouldCheckHttp = true;
+                try {
+                    var process = Process.GetProcessById(pid.Value);
+                    if (process == null) {
+                        workDirectory.WriteToMainLog($"ASP.NET Core サーバーのPID {pid} を停止しようとしましたが、プロセスが見つかりません。");
+                    } else {
+                        workDirectory.WriteToMainLog($"ASP.NET Core サーバーのPID {pid} (Name: {process.ProcessName}) を停止します。");
+                        try {
+                            // Process.Kill(entireProcessTree: true) を使用してプロセスツリーごと終了
+                            process.Kill(entireProcessTree: true);
+                            workDirectory.WriteToMainLog($"ASP.NET Core サーバーのプロセスツリーを正常に終了しました (PID: {pid})");
+                            shouldCheckHttp = true;
+                        } catch (Exception ex) {
+                            workDirectory.WriteToMainLog($"ASP.NET Core サーバーのプロセスツリー終了中にエラーが発生しました: {ex.Message}");
+                        }
+                    }
+                } catch (ArgumentException) {
+                    workDirectory.WriteToMainLog($"ASP.NET Core サーバーのPID {pid} を停止しようとしましたが、プロセスが既に終了しています。");
+                } catch (Exception ex) {
+                    workDirectory.WriteToMainLog($"ASP.NET Core サーバーのPID {pid} を停止しようとしましたが、例外が発生しました: {ex.Message}");
                 }
                 workDirectory.DeleteDotnetRunPidFile();
             }
         } catch (Exception ex) {
-            workDirectory.WriteToMainLog($"dotnet run のtaskkillで例外: {ex.Message}");
+            workDirectory.WriteToMainLog($"dotnet run の終了処理で例外: {ex.Message}");
         }
 
         // 終了したか確認

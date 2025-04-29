@@ -59,8 +59,11 @@ public class WorkDirectory : IDisposable {
 
     public string NpmRunPidFile => Path.Combine(DirectoryPath, "PID_NPM_RUN");
     public string NpmRunLogFile => Path.Combine(DirectoryPath, "output_npm-run.log");
+    public string NpmRunCmdFile => Path.Combine(DirectoryPath, "run-npm-dev.cmd");
     public string DotnetRunPidFile => Path.Combine(DirectoryPath, "PID_DOTNET_RUN");
     public string DotnetRunLogFile => Path.Combine(DirectoryPath, "output_dotnet-run.log");
+    public string DotnetRunCmdFile => Path.Combine(DirectoryPath, "run-dotnet.cmd");
+
     private readonly Lock _npmLock = new();
     private readonly Lock _dotnetLock = new();
     private bool _isFirstNpmLog = true;
