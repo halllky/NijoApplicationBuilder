@@ -40,7 +40,8 @@ namespace Nijo.Mcp {
         private const string NPM_URL = "http://localhost:5173";
 
 
-        [McpServerTool(Name = "generate_code"), Description("ソースコードの自動生成処理の最新化、自動生成処理のかけなおし、コンパイルエラーチェックを行います。")]
+        [McpServerTool(Name = "generate_code"), Description(
+            "ソースコードの自動生成処理の最新化、自動生成処理のかけなおし、コンパイルエラーチェックを行います。")]
         public static async Task<string> GenerateCode([Description("nijo.xmlのファイルの絶対パス")] string nijoXmlFileFullPath) {
             try {
                 if (string.IsNullOrEmpty(nijoXmlFileFullPath)) {
@@ -74,7 +75,8 @@ namespace Nijo.Mcp {
             }
         }
 
-        [McpServerTool(Name = "start_debugging"), Description("ソースコード自動生成された方のアプリケーションのデバッグを開始する。既に開始されている場合はリビルドして再開する。")]
+        [McpServerTool(Name = "start_debugging"), Description(
+            "ソースコード自動生成された方のアプリケーションのデバッグを開始する。既に開始されている場合はリビルドして再開する。")]
         public static async Task<string> StartDebugging([Description("nijo.xmlのファイルの絶対パス")] string nijoXmlFileFullPath) {
             try {
                 if (string.IsNullOrEmpty(nijoXmlFileFullPath)) {
@@ -107,7 +109,8 @@ namespace Nijo.Mcp {
             }
         }
 
-        [McpServerTool(Name = "stop_debugging"), Description("ソースコード自動生成された方のアプリケーションのデバッグを終了する。")]
+        [McpServerTool(Name = "stop_debugging"), Description(
+            "ソースコード自動生成された方のアプリケーションのデバッグを終了する。")]
         public static async Task<string> StopDebugging() {
             using var workDirectory = WorkDirectory.Prepare();
             // MCP サーバー自身の PID をログに出力
@@ -130,7 +133,8 @@ namespace Nijo.Mcp {
             // この return 文の後には何も実行されない
         }
 
-        [McpServerTool(Name = "get_debug_info"), Description("ソースコード自動生成された方のアプリケーションのAPサーバーに問い合わせ、プロセスが実行中か否かや、接続先DBがどこかなどの情報を取得する。")]
+        [McpServerTool(Name = "get_debug_info"), Description(
+            "ソースコード自動生成された方のアプリケーションのAPサーバーに問い合わせ、プロセスが実行中か否かや、接続先DBがどこかなどの情報を取得する。")]
         public static async Task<string> GeDebugInfo() {
             try {
                 using var workDirectory = WorkDirectory.Prepare();
@@ -227,30 +231,6 @@ namespace Nijo.Mcp {
                 }
             } catch (Exception ex) {
                 return ex.ToString();
-            }
-        }
-
-        [McpServerTool(Name = "test_node_process_redirect"), Description(
-            "シンプルなNode.jsスクリプトを実行し、標準出力/エラーがログにリダイレクトされるかテストします。")]
-        public static async Task<string> TestNodeProcessRedirect() {
-            try {
-                using var workDirectory = WorkDirectory.Prepare();
-
-                workDirectory.WriteSectionTitle("Node.js リダイレクトテスト");
-
-                var exitCode = await ExecuteProcess("node test", startInfo => {
-                    startInfo.FileName = "node.exe";
-                    startInfo.Arguments = "-e \"console.log('Hello'); console.error('Error World'); \"";
-                }, workDirectory, TimeSpan.FromSeconds(10)); // タイムアウトを10秒に設定
-
-                if (exitCode == 0) {
-                    return workDirectory.WithMainLogContents("Node.js リダイレクトテストが正常に終了しました。ログを確認してください。");
-                } else {
-                    return workDirectory.WithMainLogContents($"Node.js リダイレクトテストが失敗しました (終了コード: {exitCode})。ログを確認してください。");
-                }
-
-            } catch (Exception ex) {
-                return $"テスト中にエラーが発生しました: {ex.ToString()}";
             }
         }
     }
