@@ -38,6 +38,7 @@ namespace Nijo.Mcp {
         private const string NIJO_PROJ = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo"; // とりあえずハードコード
         private const string DOTNET_URL = "https://localhost:7098";
         private const string NPM_URL = "http://localhost:5173";
+        private const string NIJO_SLN = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\nijo.sln";
 
 
         [McpServerTool(Name = "generate_code"), Description(
@@ -229,6 +230,71 @@ namespace Nijo.Mcp {
                 } catch (Exception ex) {
                     return $"予期せぬエラーが発生しました: {ex.Message}";
                 }
+            } catch (Exception ex) {
+                return ex.ToString();
+            }
+        }
+
+        [McpServerTool(Name = "list_tests"), Description(
+            "nijo.slnに含まれるすべてのユニットテストを列挙して返します。")]
+        public static async Task<string> ListTests() {
+            try {
+                using var workDirectory = WorkDirectory.Prepare();
+                workDirectory.WriteToMainLog($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [NijoMcpTools.ListTests] ListTests method called.");
+
+                var exitCode = await ExecuteProcess(
+                    "dotnet-test-list",
+                    startInfo => {
+                        startInfo.FileName = "dotnet";
+                        startInfo.ArgumentList.Add("test");
+                        startInfo.ArgumentList.Add(NIJO_SLN);
+                        startInfo.ArgumentList.Add("--list-tests");
+                    },
+                    workDirectory,
+                    TimeSpan.FromMinutes(5)
+                );
+
+                if (exitCode != 0) {
+                    return workDirectory.WithMainLogContents("ユニットテストの列挙に失敗しました。");
+                }
+
+                return workDirectory.WithMainLogContents("ユニットテストの列挙が完了しました（詳細ログ）。");
+            } catch (Exception ex) {
+                return ex.ToString();
+            }
+        }
+
+        [McpServerTool(Name = "run_test"), Description(
+            "指定されたユニットテストを実行し、結果を返します。")]
+        public static async Task<string> RunTest([Description("実行するテストの名前またはフィルター式")] string testFilter) {
+            try {
+                if (string.IsNullOrEmpty(testFilter)) {
+                    return "実行するテストの名前またはフィルター式を指定してください。";
+                }
+
+                using var workDirectory = WorkDirectory.Prepare();
+                workDirectory.WriteToMainLog($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [NijoMcpTools.RunTest] RunTest method called with filter: {testFilter}");
+
+                var exitCode = await ExecuteProcess(
+                    "dotnet-test-run",
+                    startInfo => {
+                        startInfo.FileName = "dotnet";
+                        startInfo.ArgumentList.Add("test");
+                        startInfo.ArgumentList.Add(NIJO_SLN);
+                        startInfo.ArgumentList.Add("--filter");
+                        startInfo.ArgumentList.Add(testFilter);
+                        startInfo.ArgumentList.Add("-v");
+                        startInfo.ArgumentList.Add("normal");
+                    },
+                    workDirectory,
+                    TimeSpan.FromMinutes(10)
+                );
+
+                if (exitCode != 0) {
+                    return workDirectory.WithMainLogContents("ユニットテストの実行に失敗しました。");
+                }
+
+                return workDirectory.WithMainLogContents("ユニットテストの実行が完了しました。");
             } catch (Exception ex) {
                 return ex.ToString();
             }
