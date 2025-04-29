@@ -12,7 +12,7 @@ partial class NijoMcpTools {
         var npmReady = false;
 
         // Webのポートにリクエストを投げて結果が返ってくるかどうかで確認する
-        using var _httpClient = new HttpClient() { Timeout = TimeSpan.FromSeconds(1) };
+        using var _httpClient = new HttpClient() { Timeout = TimeSpan.FromSeconds(3) };
         async Task<(bool Result, string Message)> IsServiceReadyAsync(string url) {
             try {
                 var response = await _httpClient.GetAsync(url);

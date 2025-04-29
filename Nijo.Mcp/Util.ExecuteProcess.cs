@@ -53,10 +53,28 @@ partial class NijoMcpTools {
         editStartInfo(process.StartInfo);
 
         process.OutputDataReceived += (sender, e) => {
-            outLog($"[{logName} stdout] {e.Data}");
+            try {
+                if (e.Data != null) {
+                    workDirectory.WriteToMainLog($"[{logName} event] OutputDataReceived: Data received.");
+                    outLog($"[{logName} stdout] {e.Data}");
+                } else {
+                    workDirectory.WriteToMainLog($"[{logName} event] OutputDataReceived: Stream closed (Data is null).");
+                }
+            } catch (Exception ex) {
+                workDirectory.WriteToMainLog($"[{logName} event] EXCEPTION in OutputDataReceived: {ex.ToString()}");
+            }
         };
         process.ErrorDataReceived += (sender, e) => {
-            outLog($"[{logName} stderr] {e.Data}");
+            try {
+                if (e.Data != null) {
+                    workDirectory.WriteToMainLog($"[{logName} event] ErrorDataReceived: Data received.");
+                    outLog($"[{logName} stderr] {e.Data}");
+                } else {
+                    workDirectory.WriteToMainLog($"[{logName} event] ErrorDataReceived: Stream closed (Data is null).");
+                }
+            } catch (Exception ex) {
+                workDirectory.WriteToMainLog($"[{logName} event] EXCEPTION in ErrorDataReceived: {ex.ToString()}");
+            }
         };
 
         workDirectory.WriteToMainLog($"[{logName}] 開始");

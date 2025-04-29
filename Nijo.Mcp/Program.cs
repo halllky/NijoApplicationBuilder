@@ -222,5 +222,29 @@ namespace Nijo.Mcp {
                 return ex.ToString();
             }
         }
+
+        [McpServerTool(Name = "test_node_process_redirect"), Description(
+            "シンプルなNode.jsスクリプトを実行し、標準出力/エラーがログにリダイレクトされるかテストします。")]
+        public static async Task<string> TestNodeProcessRedirect() {
+            try {
+                using var workDirectory = WorkDirectory.Prepare();
+
+                workDirectory.WriteSectionTitle("Node.js リダイレクトテスト");
+
+                var exitCode = await ExecuteProcess("node test", startInfo => {
+                    startInfo.FileName = "node.exe";
+                    startInfo.Arguments = "-e \"console.log('Hello'); console.error('Error World'); \"";
+                }, workDirectory, TimeSpan.FromSeconds(10)); // タイムアウトを10秒に設定
+
+                if (exitCode == 0) {
+                    return workDirectory.WithMainLogContents("Node.js リダイレクトテストが正常に終了しました。ログを確認してください。");
+                } else {
+                    return workDirectory.WithMainLogContents($"Node.js リダイレクトテストが失敗しました (終了コード: {exitCode})。ログを確認してください。");
+                }
+
+            } catch (Exception ex) {
+                return $"テスト中にエラーが発生しました: {ex.ToString()}";
+            }
+        }
     }
 }

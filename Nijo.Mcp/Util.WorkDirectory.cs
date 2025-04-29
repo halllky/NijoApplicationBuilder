@@ -76,7 +76,7 @@ public class WorkDirectory : IDisposable {
 
             using var fs = new FileStream(NpmRunLogFile, FileMode.Append, FileAccess.Write, FileShare.Read);
             using var writer = new StreamWriter(fs, Encoding.UTF8);
-            writer.WriteLine(text);
+            writer.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} {text}");
         }
     }
     public void WriteToDotnetRunLog(string text) {
@@ -89,7 +89,7 @@ public class WorkDirectory : IDisposable {
 
             using var fs = new FileStream(DotnetRunLogFile, FileMode.Append, FileAccess.Write, FileShare.Read);
             using var writer = new StreamWriter(fs, Encoding.UTF8);
-            writer.WriteLine(text);
+            writer.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} {text}");
         }
     }
     public int? ReadNpmRunPidFile() {

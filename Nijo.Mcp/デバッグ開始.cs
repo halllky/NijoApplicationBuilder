@@ -12,12 +12,20 @@ partial class NijoMcpTools {
 
         workDirectory.WriteSectionTitle("デバッグ開始");
 
+        // 診断用ログ出力
+        workDirectory.WriteToMainLog($"開始: 直接Node.jsを使ってViteを起動します");
+
+        var npmRunDir = Path.Combine(nijoXmlDir, "react");
+        workDirectory.WriteToMainLog($"npm run devの作業ディレクトリ: {npmRunDir}");
+
         var npmRun = StartNewProcess("npm run dev", startInfo => {
-            startInfo.WorkingDirectory = Path.Combine(nijoXmlDir, "react");
-            startInfo.FileName = "cmd";
-            startInfo.Arguments = "/c \"npm.cmd run dev\"";
-            startInfo.EnvironmentVariables["NO_COLOR"] = "true";
+            startInfo.WorkingDirectory = npmRunDir;
+            startInfo.FileName = "node.exe";
+            startInfo.Arguments = ".\\node_modules\\vite\\bin\\vite.js --clearScreen disable --debug";
+            // startInfo.EnvironmentVariables["PATH"] = Environment.GetEnvironmentVariable("PATH"); // 設定したが影響なし...
         }, workDirectory, workDirectory.WriteToNpmRunLog);
+
+        workDirectory.WriteToMainLog($"node viteプロセスを起動しました (PID: {npmRun.Id})");
 
         var dotnetRun = StartNewProcess("dotnet run", startInfo => {
             startInfo.WorkingDirectory = Path.Combine(nijoXmlDir, "WebApi");
@@ -27,6 +35,10 @@ partial class NijoMcpTools {
 
         await File.WriteAllTextAsync(workDirectory.NpmRunPidFile, npmRun.Id.ToString());
         await File.WriteAllTextAsync(workDirectory.DotnetRunPidFile, dotnetRun.Id.ToString());
+
+        // HTTP接続確認前に少し待機
+        workDirectory.WriteToMainLog("サーバー起動待機中: 15秒間待機します");
+        await Task.Delay(15000);  // 15秒に延長
 
         // HTTPサーバーが起動するまで待つ。
         // 一定時間経っても起動していなければ失敗と判断する。
