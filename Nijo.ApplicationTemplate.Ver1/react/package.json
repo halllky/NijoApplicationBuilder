@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:redirect": "node start-vite.mjs",
     "tsc": "tsc -b --noEmit",
     "build": "tsc -b && vite build",
     "lint": "eslint .",

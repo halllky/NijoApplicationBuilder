@@ -13,19 +13,36 @@ partial class NijoMcpTools {
         workDirectory.WriteSectionTitle("デバッグ開始");
 
         // 診断用ログ出力
-        workDirectory.WriteToMainLog($"開始: 直接Node.jsを使ってViteを起動します");
+        workDirectory.WriteToMainLog($"開始: cmd /c を使って start-vite.mjs を起動します");
 
         var npmRunDir = Path.Combine(nijoXmlDir, "react");
         workDirectory.WriteToMainLog($"npm run devの作業ディレクトリ: {npmRunDir}");
 
-        var npmRun = StartNewProcess("npm run dev", startInfo => {
-            startInfo.WorkingDirectory = npmRunDir;
-            startInfo.FileName = "node.exe";
-            startInfo.Arguments = ".\\node_modules\\vite\\bin\\vite.js --clearScreen disable --debug";
-            // startInfo.EnvironmentVariables["PATH"] = Environment.GetEnvironmentVariable("PATH"); // 設定したが影響なし...
-        }, workDirectory, workDirectory.WriteToNpmRunLog);
+        // UseShellExecute = true を使用するため StartNewProcess は使えない
+        // また、UseShellExecute = true の場合は標準入出力のリダイレクトも不可のため、
+        // WriteToNpmRunLog によるログ収集も機能しない
+        Process? npmRun;
+        try {
+            var startInfo = new ProcessStartInfo {
+                FileName = "cmd.exe",
+                Arguments = "/c node start-vite.mjs",
+                WorkingDirectory = npmRunDir,
+                UseShellExecute = true,
+            };
+            npmRun = Process.Start(startInfo);
 
-        workDirectory.WriteToMainLog($"node viteプロセスを起動しました (PID: {npmRun.Id})");
+            if (npmRun == null) {
+                workDirectory.WriteToMainLog($"[ERROR] cmd /c node start-vite.mjs プロセスの起動に失敗しました。Process.Startがnullを返しました。");
+                // TODO: デバッグ中止処理を追加すべきか検討
+                return false;
+            }
+            workDirectory.WriteToMainLog($"cmd /c node start-vite.mjs プロセスを起動しました (PID: {npmRun.Id})");
+
+        } catch (Exception ex) {
+            workDirectory.WriteToMainLog($"[ERROR] cmd /c node start-vite.mjs プロセスの起動中に例外が発生しました: {ex.Message}");
+            // TODO: デバッグ中止処理を追加すべきか検討
+            return false;
+        }
 
         var dotnetRun = StartNewProcess("dotnet run", startInfo => {
             startInfo.WorkingDirectory = Path.Combine(nijoXmlDir, "WebApi");
