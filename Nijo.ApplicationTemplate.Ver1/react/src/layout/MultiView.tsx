@@ -60,42 +60,52 @@ export const MultiView = <TQueryModel extends QueryModelType>(
   const cellType = useCellTypes<DisplayDataTypeMap[TQueryModel]>()
   const columnDefs = useMemo(() => getColumnDefs(cellType), [getColumnDefs, cellType])
 
-  // テスト用の列定義を生成する関数 (テストのために使用)
-  const generateMockColumnDefs = () => {
-    const mockColumnDefs: ColumnDef<DisplayDataTypeMap[TQueryModel]>[] = columnDefs.map(def => {
-      return {
-        ...def,
-        fieldPath: typeof def.fieldPath === 'string' ? def.fieldPath : def.header
-      };
-    });
-    return mockColumnDefs;
-  }
-
-  // 実際に使用する列定義
-  const finalColumnDefs = useMemo(() => generateMockColumnDefs(), [columnDefs]);
-
   // 検索実行関数
   const { complexPost } = Util.useHttpRequest()
   const doSearch = useCallback(async (data: SearchConditionTypeMap[TQueryModel]) => {
     try {
       setIsSearching(true)
-      // ページネーション情報を設定
-      const searchData = { ...data }
-      searchData.skip = (currentPage - 1) * itemsPerPage
-      searchData.take = itemsPerPage
 
-      // APIを呼び出す
-      reactHookFormMethods.clearErrors()
-      const response = await complexPost<LoadFeature.ReturnType[TQueryModel]>(LoadFeature.Endpoint[queryModel], searchData, {
-        handleDetailMessage: (detail) => Util.setErrorDetailMessage(reactHookFormMethods.setError, detail),
-      })
+      // 検索用パラメータの構築
+      const searchData = {
+        condition: data,
+        pageSize: itemsPerPage,
+        pageNo: currentPage
+      }
 
-      setSearchResults(response?.currentPageItems ?? [])
-      setTotalCount(response?.totalCount ?? 0)
+      console.log('search data:', searchData)
 
-    } catch (error) {
-      console.error('検索中にエラーが発生しました:', error)
-      // エラー時は空の結果を設定
+      // 検索APIの呼び出し
+      const response = await complexPost<{ currentPageItems: DisplayDataTypeMap[TQueryModel][], totalCount: number }>(
+        LoadFeature.Endpoint[queryModel],
+        searchData
+      )
+
+      console.log('API response type:', typeof response)
+      console.log('API response:', response)
+
+      // レスポンスが文字列の場合、JSONとして解析
+      let parsedResponse = response;
+      if (typeof response === 'string') {
+        try {
+          parsedResponse = JSON.parse(response);
+          console.log('API responseをパース後:', parsedResponse);
+        } catch (error) {
+          console.error('JSON解析エラー:', error);
+        }
+      }
+
+      // 解析されたレスポンスを使用
+      if (parsedResponse && parsedResponse.currentPageItems) {
+        setSearchResults(parsedResponse.currentPageItems)
+        setTotalCount(parsedResponse.totalCount || 0)
+      } else {
+        console.log('検索結果なし')
+        setSearchResults([])
+        setTotalCount(0)
+      }
+    } catch (e) {
+      console.error(e)
       setSearchResults([])
       setTotalCount(0)
     } finally {
@@ -235,7 +245,7 @@ export const MultiView = <TQueryModel extends QueryModelType>(
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-gray-50">
-                  {finalColumnDefs.map((column, index) => (
+                  {columnDefs.map((column, index) => (
                     <th key={index} className="border p-1 text-left">
                       {column.header}
                     </th>
@@ -245,31 +255,66 @@ export const MultiView = <TQueryModel extends QueryModelType>(
               <tbody>
                 {isSearching ? (
                   <tr>
-                    <td colSpan={finalColumnDefs.length} className="text-center p-4">
+                    <td colSpan={columnDefs.length} className="text-center p-4">
                       検索中...
                     </td>
                   </tr>
                 ) : searchResults.length === 0 ? (
                   <tr>
-                    <td colSpan={finalColumnDefs.length} className="text-center p-4">
+                    <td colSpan={columnDefs.length} className="text-center p-4">
                       検索結果がありません
                     </td>
                   </tr>
                 ) : (
                   searchResults.map((row, rowIndex) => (
                     <tr key={rowIndex} className="border-b hover:bg-gray-50">
-                      {finalColumnDefs.map((column, colIndex) => {
+                      {columnDefs.map((column, colIndex) => {
                         const fieldPath = column.fieldPath || '';
+
                         // パスからデータを取得
-                        let value: any = row;
-                        const pathParts = fieldPath.split('.');
-                        for (const part of pathParts) {
-                          value = value?.[part];
+                        let value: any = null;
+
+                        try {
+                          if (fieldPath.startsWith('住所.values.')) {
+                            // 住所フィールドの特別処理
+                            const addressField = fieldPath.split('.')[2]; // '住所.values.都道府県' -> '都道府県'
+                            if (row.住所 && row.住所.values) {
+                              // 型安全に住所データにアクセス
+                              switch (addressField) {
+                                case '都道府県':
+                                  value = row.住所.values.都道府県;
+                                  break;
+                                case '市町村':
+                                  value = row.住所.values.市町村;
+                                  break;
+                                case '番地以降':
+                                  value = row.住所.values.番地以降;
+                                  break;
+                                default:
+                                  value = null;
+                              }
+                            }
+                          } else {
+                            // 通常のフィールド処理
+                            value = row;
+                            const pathParts = fieldPath.split('.');
+                            for (const part of pathParts) {
+                              if (value && part in value) {
+                                value = value[part];
+                              } else {
+                                value = null;
+                                break;
+                              }
+                            }
+                          }
+                        } catch (e) {
+                          console.error('データ取得エラー:', e, fieldPath, row);
+                          value = null;
                         }
 
                         return (
                           <td key={colIndex} className="border p-2">
-                            {String(value || '')}
+                            {value !== null ? String(value) : ''}
                           </td>
                         );
                       })}
