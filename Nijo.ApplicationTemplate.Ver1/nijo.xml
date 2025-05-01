@@ -47,11 +47,11 @@
       <備考 Type="description" />
     </処方>
   </診察>
-  <部署 Type="data-model" DbName="BUSHO">
+  <部署 Type="data-model" GenerateDefaultQueryModel="True" DbName="BUSHO">
     <部署コード Type="word" IsKey="True" IsRequired="True" DbName="BUSHO_CD" />
     <部署名 Type="word" IsRequired="True" DbName="BUSHO_NAME" MaxLength="40" />
   </部署>
-  <従業員 Type="data-model" DbName="EMPLOYEE">
+  <従業員 Type="data-model" GenerateDefaultQueryModel="True" DbName="EMPLOYEE">
     <従業員ID Type="従業員ID" IsKey="True" IsRequired="True" DbName="ID" />
     <氏名 Type="word" IsRequired="True" DbName="NAME" MaxLength="40" />
     <氏名カナ Type="word" DbName="NAME_KANA" MaxLength="40" />

@@ -22,7 +22,7 @@ internal class ValueObjectMember : IValueMemberType {
     string IValueMemberType.SchemaTypeName => _ctx.GetPhysicalName(_xElement);
     string IValueMemberType.CsDomainTypeName => _ctx.GetPhysicalName(_xElement);
     string IValueMemberType.CsPrimitiveTypeName => "string";
-    string IValueMemberType.TsTypeName => _ctx.GetPhysicalName(_xElement);
+    string IValueMemberType.TsTypeName => $"Util.{_ctx.GetPhysicalName(_xElement)}";
     UiConstraint.E_Type IValueMemberType.UiConstraintType => UiConstraint.E_Type.StringMemberConstraint;
 
     private readonly XElement _xElement;

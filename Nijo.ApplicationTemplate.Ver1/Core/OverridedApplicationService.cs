@@ -17,6 +17,29 @@ partial class OverridedApplicationService {
         });
     }
 
+    protected override IQueryable<部署SearchResult> CreateQuerySource(部署SearchCondition searchCondition, IPresentationContext<部署SearchConditionMessages> context) {
+        return DbContext.部署DbSet.Select(e => new 部署SearchResult {
+            部署コード = e.部署コード,
+            部署名 = e.部署名,
+            Version = (int)e.Version!,
+        });
+    }
+
+    protected override IQueryable<従業員SearchResult> CreateQuerySource(従業員SearchCondition searchCondition, IPresentationContext<従業員SearchConditionMessages> context) {
+        return DbContext.従業員DbSet.Select(e => new 従業員SearchResult {
+            従業員ID = e.従業員ID,
+            氏名 = e.氏名,
+            氏名カナ = e.氏名カナ,
+            退職日 = e.退職日,
+            所属部署 = e.所属部署.Select(d => new 所属部署SearchResult {
+                年度 = d.年度,
+                部署_部署名 = d.部署!.部署名,
+                部署_部署コード = d.部署!.部署コード,
+            }).ToList(),
+            Version = (int)e.Version!,
+        });
+    }
+
     protected override IQueryable<顧客SearchResult> CreateQuerySource(顧客SearchCondition searchCondition, IPresentationContext<顧客SearchConditionMessages> context) {
         return DbContext.顧客DbSet.Select(e => new 顧客SearchResult {
             顧客ID = e.顧客ID,

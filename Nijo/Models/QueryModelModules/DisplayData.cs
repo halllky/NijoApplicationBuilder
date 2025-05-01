@@ -233,7 +233,7 @@ namespace Nijo.Models.QueryModelModules {
                   /** 値 */
                   {{VALUES_TS}}: {
                 {{Values.GetMembers().SelectTextTemplate(m => $$"""
-                  {{WithIndent(m.RenderTsDeclaration(), "  ")}}
+                    {{WithIndent(m.RenderTsDeclaration(), "    ")}}
                 """)}}
                   }
                 {{GetChildMembers().SelectTextTemplate(member => $$"""
