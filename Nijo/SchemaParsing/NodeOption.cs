@@ -48,39 +48,6 @@ public class NodeOption {
     /// <see cref="IsAvailableModelMembers"/> の処理を自然言語で表現したもの。ドキュメント用
     /// </summary>
     public required string AvailableModelMembersText { get; init; }
-
-    /// <summary>
-    /// ルールで定義されているオプション属性を説明するドキュメントをレンダリングします。
-    /// ドキュメントは以下の情報を説明します。
-    /// 
-    /// - 説明（HelpText プロパティをそのまま使用）
-    /// - その属性を指定できる箇所がどこか（IsAvailableModelMembers プロパティの処理を自然言語にしたもの）
-    ///   - 例えば `IsKey` 属性は「DataModelのルート集約, Child, Children 直下のValueMemberまたはref-to」
-    /// - その属性に指定できる値について、真偽値型の場合、"True"のみ指定可能
-    /// - 制約（Validate プロパティの処理を自然言語にしたもの）
-    /// </summary>
-    /// <param name="rule">ルール</param>
-    internal static string RenderDocumentMarkdown(SchemaParseRule rule) {
-        return $$"""
-            # スキーマ定義オプション
-
-            このドキュメントはスキーマ定義で使用できるオプション属性を説明するものです。
-
-            {{rule.NodeOptions.OrderBy(o => o.AttributeName).SelectTextTemplate(option => $$"""
-            ## `{{option.AttributeName}}` : {{option.DisplayName}}
-            {{option.HelpText}}
-
-            {{If(option.Type == E_NodeOptionType.Boolean, () => $$"""
-            このオプションのスキーマ定義XMLでの値は "True" のみを指定できます。
-
-            """)}}
-            {{option.AvailableModelMembersText}}
-
-            {{option.ValidateRuleText}}
-
-            """)}}
-            """.Replace(SKIP_MARKER, "");
-    }
 }
 
 /// <summary>

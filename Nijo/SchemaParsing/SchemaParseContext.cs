@@ -25,14 +25,14 @@ public class SchemaParseContext {
 
         Document = xDocument;
         Models = rule.Models.ToDictionary(m => m.SchemaName);
+        _rule = rule;
         _valueMemberTypes = rule.ValueMemberTypes.ToDictionary(m => m.SchemaTypeName);
-        _nodeOptions = rule.NodeOptions.ToDictionary(o => o.AttributeName);
     }
 
     public XDocument Document { get; }
     public IReadOnlyDictionary<string, IModel> Models { get; }
+    private readonly SchemaParseRule _rule;
     private readonly IReadOnlyDictionary<string, IValueMemberType> _valueMemberTypes;
-    private readonly IReadOnlyDictionary<string, NodeOption> _nodeOptions;
 
     private const string ATTR_IS = "is";
     internal const string ATTR_NODE_TYPE = "Type";
@@ -136,15 +136,11 @@ public class SchemaParseContext {
     /// </summary>
     public IEnumerable<NodeOption> GetOptions(XElement xElement) {
         var attrs = xElement.Attributes().Select(attr => attr.Name.LocalName).ToHashSet();
-        return _nodeOptions.Values.Where(opt => attrs.Contains(opt.AttributeName));
+        return _rule.NodeOptions.Where(opt => attrs.Contains(opt.AttributeName));
     }
-    /// <summary>
-    /// 特定のモデルで使用可能なオプショナル属性を列挙します。
-    /// </summary>
+    /// <inheritdoc cref="SchemaParseRule.GetAvailableOptionsFor"/>
     public IEnumerable<NodeOption> GetAvailableOptionsFor(IModel model) {
-        return _nodeOptions.Values
-            .Where(opt => opt.IsAvailableModelMembers == null
-                       || opt.IsAvailableModelMembers(model));
+        return _rule.GetAvailableOptionsFor(model);
     }
     #endregion オプション属性
 
