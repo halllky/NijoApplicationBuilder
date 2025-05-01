@@ -23,6 +23,7 @@ using Nijo.Models.DataModelModules;
 using Nijo.Models.QueryModelModules;
 using Nijo.ImmutableSchema;
 using Nijo.CodeGenerating;
+using Nijo.Models;
 
 [assembly: InternalsVisibleTo("Nijo.IntegrationTest")]
 [assembly: InternalsVisibleTo("Nijo.Ui")]
@@ -292,22 +293,38 @@ namespace Nijo {
         }
 
         /// <summary>
-        /// スキーマ定義で使用できるオプションを説明するドキュメントをMarkdown形式で出力します。
+        /// Nijoプロジェクト内部にファイルを生成する
         /// </summary>
         private static void GenerateInternal() {
             var logger = ILoggerExtension.CreateConsoleLogger();
             var rule = SchemaParseRule.Default();
-            var outputPath = Path.GetFullPath(Path.Combine(
+
+            // 各モデルでどういったオプションを使用できるかを記載
+            var modelsDir = Path.GetFullPath(Path.Combine(
                 Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, // net9.0
                 "..", // Debug
                 "..", // bin
                 "..", // Nijo
-                "SchemaParsing",
-                "README.NodeOptions.md"));
-            Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
-            File.WriteAllText(outputPath, NodeOption.RenderDocumentMarkdown(rule), new UTF8Encoding(false, false));
+                "Models"));
+            void RenderOptionsMd(string filename, IModel model) {
+                var fullpath = Path.Combine(modelsDir, filename);
+                var availableOptions = rule.GetAvailableOptionsFor(model);
 
-            logger.LogInformation("オプション属性ドキュメントを生成しました: {outputPath}", outputPath);
+                File.WriteAllText(fullpath, $$"""
+                    # {{model.GetType().Name}}に指定することができるオプション
+                    {{availableOptions.SelectTextTemplate(opt => $$"""
+
+                    ## `{{opt.AttributeName}}` （{{opt.DisplayName}}）
+                    {{opt.HelpText}}
+                    """)}}
+                    """.Replace(SKIP_MARKER, string.Empty), new UTF8Encoding(false, false));
+
+                logger.LogInformation("オプション属性ドキュメントを生成しました: {0}", fullpath);
+            }
+
+            RenderOptionsMd("DataModel.Options.md", new DataModel());
+            RenderOptionsMd("QueryModel.Options.md", new QueryModel());
+            RenderOptionsMd("CommandModel.Options.md", new CommandModel());
         }
     }
 }
