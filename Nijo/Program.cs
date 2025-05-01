@@ -22,6 +22,7 @@ using Nijo.CodeGenerating.Helpers;
 using Nijo.Models.DataModelModules;
 using Nijo.Models.QueryModelModules;
 using Nijo.ImmutableSchema;
+using Nijo.CodeGenerating;
 
 [assembly: InternalsVisibleTo("Nijo.IntegrationTest")]
 [assembly: InternalsVisibleTo("Nijo.Ui")]
@@ -127,6 +128,13 @@ namespace Nijo {
                 description: "スキーマ定義ルールを説明するドキュメントをMarkdown形式で出力します。");
             rule.SetHandler(Rule);
             rootCommand.AddCommand(rule);
+
+            // スキーマ定義オプション
+            var generateInternal = new Command(
+                name: "generate-internal",
+                description: "スキーマ定義で使用できるオプションを説明するドキュメントをMarkdown形式で出力します。");
+            generateInternal.SetHandler(GenerateInternal);
+            rootCommand.AddCommand(generateInternal);
 
             return rootCommand;
         }
@@ -299,6 +307,25 @@ namespace Nijo {
 
             // 標準出力に出力
             Console.WriteLine(markdownContent);
+        }
+
+        /// <summary>
+        /// スキーマ定義で使用できるオプションを説明するドキュメントをMarkdown形式で出力します。
+        /// </summary>
+        private static void GenerateInternal() {
+            var logger = ILoggerExtension.CreateConsoleLogger();
+            var rule = SchemaParseRule.Default();
+            var outputPath = Path.GetFullPath(Path.Combine(
+                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, // net9.0
+                "..", // Debug
+                "..", // bin
+                "..", // Nijo
+                "SchemaParsing",
+                "README.NodeOptions.md"));
+            Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
+            File.WriteAllText(outputPath, NodeOption.RenderDocumentMarkdown(rule), new UTF8Encoding(false, false));
+
+            logger.LogInformation("オプション属性ドキュメントを生成しました: {outputPath}", outputPath);
         }
     }
 }

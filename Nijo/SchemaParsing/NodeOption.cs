@@ -23,10 +23,6 @@ public class NodeOption {
     /// </summary>
     public required string DisplayName { get; init; }
     /// <summary>
-    /// このオプション属性の説明文
-    /// </summary>
-    public required string HelpText { get; init; }
-    /// <summary>
     /// 真偽値 or 文字列
     /// </summary>
     public required E_NodeOptionType Type { get; init; }
@@ -39,6 +35,52 @@ public class NodeOption {
     /// nullの場合は指定可能と判定されます。
     /// </summary>
     public Func<IModel, bool>? IsAvailableModelMembers { get; init; }
+
+    /// <summary>
+    /// このオプション属性の説明文
+    /// </summary>
+    public required string HelpText { get; init; }
+    /// <summary>
+    /// <see cref="Validate"/> の処理を自然言語で表現したもの。ドキュメント用
+    /// </summary>
+    public required string ValidateRuleText { get; init; }
+    /// <summary>
+    /// <see cref="IsAvailableModelMembers"/> の処理を自然言語で表現したもの。ドキュメント用
+    /// </summary>
+    public required string AvailableModelMembersText { get; init; }
+
+    /// <summary>
+    /// ルールで定義されているオプション属性を説明するドキュメントをレンダリングします。
+    /// ドキュメントは以下の情報を説明します。
+    /// 
+    /// - 説明（HelpText プロパティをそのまま使用）
+    /// - その属性を指定できる箇所がどこか（IsAvailableModelMembers プロパティの処理を自然言語にしたもの）
+    ///   - 例えば `IsKey` 属性は「DataModelのルート集約, Child, Children 直下のValueMemberまたはref-to」
+    /// - その属性に指定できる値について、真偽値型の場合、"True"のみ指定可能
+    /// - 制約（Validate プロパティの処理を自然言語にしたもの）
+    /// </summary>
+    /// <param name="rule">ルール</param>
+    internal static string RenderDocumentMarkdown(SchemaParseRule rule) {
+        return $$"""
+            # スキーマ定義オプション
+
+            このドキュメントはスキーマ定義で使用できるオプション属性を説明するものです。
+
+            {{rule.NodeOptions.OrderBy(o => o.AttributeName).SelectTextTemplate(option => $$"""
+            ## `{{option.AttributeName}}` : {{option.DisplayName}}
+            {{option.HelpText}}
+
+            {{If(option.Type == E_NodeOptionType.Boolean, () => $$"""
+            このオプションのスキーマ定義XMLでの値は "True" のみを指定できます。
+
+            """)}}
+            {{option.AvailableModelMembersText}}
+
+            {{option.ValidateRuleText}}
+
+            """)}}
+            """.Replace(SKIP_MARKER, "");
+    }
 }
 
 /// <summary>
@@ -83,6 +125,8 @@ internal static class BasicNodeOptions {
             // 改行不可
             if (ctx.Value.Contains('\n')) ctx.AddError("改行を含めることはできません。");
         },
+        ValidateRuleText = "改行を含めることはできません。",
+        AvailableModelMembersText = "すべてのモデルのメンバーで使用可能です。",
     };
 
     internal static NodeOption DbName = new() {
@@ -101,6 +145,8 @@ internal static class BasicNodeOptions {
             if (model is DataModel) return true;
             return false;
         },
+        ValidateRuleText = "改行を含めることはできません。",
+        AvailableModelMembersText = "DataModelのみで使用可能です。",
     };
 
     internal static NodeOption LatinName = new() {
@@ -115,6 +161,8 @@ internal static class BasicNodeOptions {
             // 改行不可
             if (ctx.Value.Contains('\n')) ctx.AddError("改行を含めることはできません。");
         },
+        ValidateRuleText = "改行を含めることはできません。",
+        AvailableModelMembersText = "すべてのモデルのメンバーで使用可能です。",
     };
 
     internal static NodeOption IsKey = new() {
@@ -134,6 +182,8 @@ internal static class BasicNodeOptions {
             if (model is QueryModel) return true;
             return false;
         },
+        ValidateRuleText = "検証ルールはありません。",
+        AvailableModelMembersText = "DataModelとQueryModelで使用可能です。",
     };
 
     internal static NodeOption IsRequired = new() {
@@ -147,6 +197,8 @@ internal static class BasicNodeOptions {
         Validate = ctx => {
 
         },
+        ValidateRuleText = "検証ルールはありません。",
+        AvailableModelMembersText = "すべてのモデルのメンバーで使用可能です。",
     };
 
 
@@ -166,6 +218,8 @@ internal static class BasicNodeOptions {
         IsAvailableModelMembers = model => {
             return false;
         },
+        ValidateRuleText = "検証ルールはありません。",
+        AvailableModelMembersText = "モデルメンバーでは使用できません。",
     };
     internal static NodeOption GenerateBatchUpdateCommand = new() {
         AttributeName = "GenerateBatchUpdateCommand",
@@ -183,6 +237,8 @@ internal static class BasicNodeOptions {
         IsAvailableModelMembers = model => {
             return false;
         },
+        ValidateRuleText = "このオプションを使用するためにはGenerateDefaultQueryModelの指定が必須です。",
+        AvailableModelMembersText = "モデルメンバーでは使用できません。",
     };
     #endregion DataModel用
 
@@ -202,6 +258,8 @@ internal static class BasicNodeOptions {
             if (model is QueryModel) return true;
             return false;
         },
+        ValidateRuleText = "検証ルールはありません。",
+        AvailableModelMembersText = "QueryModelでのみ使用可能です。",
     };
     internal static NodeOption HasLifeCycle = new() {
         AttributeName = "HasLifeCycle",
@@ -217,6 +275,8 @@ internal static class BasicNodeOptions {
             if (model is QueryModel) return true;
             return false;
         },
+        ValidateRuleText = "検証ルールはありません。",
+        AvailableModelMembersText = "QueryModelでのみ使用可能です。",
     };
     #endregion QueryModel用
 
@@ -232,6 +292,8 @@ internal static class BasicNodeOptions {
         Validate = ctx => {
 
         },
+        ValidateRuleText = "検証ルールはありません。",
+        AvailableModelMembersText = "すべてのモデルのメンバーで使用可能です。",
     };
     internal static NodeOption CharacterType = new() {
         AttributeName = "CharacterType",
@@ -243,6 +305,8 @@ internal static class BasicNodeOptions {
         Validate = ctx => {
 
         },
+        ValidateRuleText = "検証ルールはありません。",
+        AvailableModelMembersText = "すべてのモデルのメンバーで使用可能です。",
     };
     internal static NodeOption TotalDigit = new() {
         AttributeName = "TotalDigit",
@@ -254,6 +318,8 @@ internal static class BasicNodeOptions {
         Validate = ctx => {
 
         },
+        ValidateRuleText = "検証ルールはありません。",
+        AvailableModelMembersText = "すべてのモデルのメンバーで使用可能です。",
     };
     internal static NodeOption DecimalPlace = new() {
         AttributeName = "DecimalPlace",
@@ -265,6 +331,8 @@ internal static class BasicNodeOptions {
         Validate = ctx => {
 
         },
+        ValidateRuleText = "検証ルールはありません。",
+        AvailableModelMembersText = "すべてのモデルのメンバーで使用可能です。",
     };
     internal static NodeOption SequenceName = new() {
         AttributeName = "SequenceName",
@@ -276,6 +344,8 @@ internal static class BasicNodeOptions {
         Validate = ctx => {
 
         },
+        ValidateRuleText = "検証ルールはありません。",
+        AvailableModelMembersText = "すべてのモデルのメンバーで使用可能です。",
     };
     #endregion ValueMember用
 }
