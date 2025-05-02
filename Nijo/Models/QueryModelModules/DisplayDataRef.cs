@@ -64,18 +64,14 @@ namespace Nijo.Models.QueryModelModules {
         /// <summary>
         /// 他の集約から参照されているもののみ再帰的にレンダリングする
         /// </summary>
-        internal static string RenderTypeScriptRecursively(RootAggregate rootAggregate) {
+        internal static string RenderTypeScriptRecursively(RootAggregate rootAggregate, CodeRenderingContext ctx) {
             var (entries, _) = GetReferedMembersRecursively(rootAggregate);
 
             return $$"""
                 //#region 他の集約から参照されるときの画面表示用オブジェクト
                 {{entries.SelectTextTemplate(entry => $$"""
-                /**
-                 * {{entry.Aggregate.DisplayName}}が他の集約から外部参照されるときの型
-                 */
-                export type {{entry.TsTypeName}} = {
-                  // TODO ver.1
-                }
+                {{entry.RenderTypeScriptTypeDef(ctx)}}
+
                 """)}}
                 //#endregion 他の集約から参照されるときの画面表示用オブジェクト
                 """;
@@ -106,7 +102,6 @@ namespace Nijo.Models.QueryModelModules {
             internal AggregateBase Aggregate { get; }
 
             internal abstract string CsClassName { get; }
-
             /// <summary>
             /// 直近のメンバーを列挙する
             /// </summary>
@@ -142,7 +137,7 @@ namespace Nijo.Models.QueryModelModules {
                     /// </summary>
                     public partial class {{CsClassName}} {
                     {{GetMembers().SelectTextTemplate(member => $$"""
-                        {{WithIndent(member.RenderDeclaring(), "    ")}}
+                        {{WithIndent(member.RenderDeclaringCSharp(), "    ")}}
                     """)}}
                     }
                     """;
@@ -160,6 +155,17 @@ namespace Nijo.Models.QueryModelModules {
 
             #region TypeScript側オブジェクト新規作成関数
             public string TsNewObjectFunction => $"createNew{TsTypeName}";
+
+            internal string RenderTypeScriptTypeDef(CodeRenderingContext ctx) {
+                return $$"""
+                    /** {{((AggregateBase)Aggregate.GetEntry()).DisplayName}}が他の集約から外部参照されるときの{{Aggregate.DisplayName}}の型 */
+                    export type {{TsTypeName}} = {
+                    {{GetMembers().SelectTextTemplate(member => $$"""
+                      {{WithIndent(member.RenderDeclaringTypeScript(), "  ")}}
+                    """)}}
+                    }
+                    """;
+            }
             internal string RenderTypeScriptObjectCreationFunction(CodeRenderingContext ctx) {
                 return $$"""
                     /**
@@ -175,6 +181,11 @@ namespace Nijo.Models.QueryModelModules {
                         if (member is RefDisplayDataValueMember vm) {
                             yield return $$"""
                                 {{member.PhysicalName}}: undefined,
+                                """;
+
+                        } else if (member is RefDisplayDataChildrenMember children) {
+                            yield return $$"""
+                                {{member.PhysicalName}}: [],
                                 """;
 
                         } else if (member is RefDisplayDataMemberContainer container) {
@@ -201,7 +212,8 @@ namespace Nijo.Models.QueryModelModules {
         internal interface IRefDisplayDataMember : IInstancePropertyMetadata {
             string PhysicalName { get; }
             string CsType { get; }
-            string RenderDeclaring();
+            string RenderDeclaringCSharp();
+            string RenderDeclaringTypeScript();
         }
 
         /// <summary>
@@ -221,9 +233,15 @@ namespace Nijo.Models.QueryModelModules {
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Member;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
 
-            string IRefDisplayDataMember.RenderDeclaring() {
+            string IRefDisplayDataMember.RenderDeclaringCSharp() {
                 return $$"""
                     public {{CsType}}? {{PhysicalName}} { get; set; }
+                    """;
+            }
+
+            string IRefDisplayDataMember.RenderDeclaringTypeScript() {
+                return $$"""
+                    {{PhysicalName}}?: {{Member.Type.TsTypeName}}
                     """;
             }
         }
@@ -245,9 +263,17 @@ namespace Nijo.Models.QueryModelModules {
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
 
-            string IRefDisplayDataMember.RenderDeclaring() {
+            string IRefDisplayDataMember.RenderDeclaringCSharp() {
                 return $$"""
                     public {{CsType}} {{PhysicalName}} { get; set; } = new();
+                    """;
+            }
+
+            string IRefDisplayDataMember.RenderDeclaringTypeScript() {
+                var refTo = new Entry(_member.RefTo);
+
+                return $$"""
+                    {{PhysicalName}}: {{refTo.TsTypeName}}
                     """;
             }
         }
@@ -270,9 +296,19 @@ namespace Nijo.Models.QueryModelModules {
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
 
-            string IRefDisplayDataMember.RenderDeclaring() {
+            string IRefDisplayDataMember.RenderDeclaringCSharp() {
                 return $$"""
                     public {{CsType}} {{PhysicalName}} { get; set; } = new();
+                    """;
+            }
+
+            string IRefDisplayDataMember.RenderDeclaringTypeScript() {
+                return $$"""
+                    {{PhysicalName}}: {
+                    {{GetMembers().SelectTextTemplate(member => $$"""
+                      {{WithIndent(member.RenderDeclaringTypeScript(), "  ")}}
+                    """)}}
+                    }
                     """;
             }
         }
@@ -295,9 +331,19 @@ namespace Nijo.Models.QueryModelModules {
             bool IInstanceStructurePropertyMetadata.IsArray => true;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
 
-            string IRefDisplayDataMember.RenderDeclaring() {
+            string IRefDisplayDataMember.RenderDeclaringCSharp() {
                 return $$"""
                     public List<{{CsType}}> {{PhysicalName}} { get; set; } = [];
+                    """;
+            }
+
+            string IRefDisplayDataMember.RenderDeclaringTypeScript() {
+                return $$"""
+                    {{PhysicalName}}: {
+                    {{GetMembers().SelectTextTemplate(member => $$"""
+                      {{WithIndent(member.RenderDeclaringTypeScript(), "  ")}}
+                    """)}}
+                    }[]
                     """;
             }
         }
@@ -320,9 +366,19 @@ namespace Nijo.Models.QueryModelModules {
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             string IInstancePropertyMetadata.PropertyName => PhysicalName;
 
-            string IRefDisplayDataMember.RenderDeclaring() {
+            string IRefDisplayDataMember.RenderDeclaringCSharp() {
                 return $$"""
                     public {{CsType}} {{PhysicalName}} { get; set; } = new();
+                    """;
+            }
+
+            string IRefDisplayDataMember.RenderDeclaringTypeScript() {
+                return $$"""
+                    {{PhysicalName}}: {
+                    {{GetMembers().SelectTextTemplate(member => $$"""
+                      {{WithIndent(member.RenderDeclaringTypeScript(), "  ")}}
+                    """)}}
+                    }
                     """;
             }
         }
