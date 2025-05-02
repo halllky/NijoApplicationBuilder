@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Panel, PanelGroup, PanelResizeHandle, ImperativePanelGroupHandle } from "react-resizable-panels"
 import * as Util from "../util"
 import { PageFrame, PageFrameTitle } from "./PageFrame"
+import { GetColumnDefsFunction } from "./cellType/GetColumnDefsFunction"
 
 /**
  * QueryModelのルート集約の一覧検索画面。
@@ -275,8 +276,8 @@ export const MultiView = <TQueryModel extends QueryModelType>(
                         let value: any = null;
 
                         try {
-                          if (fieldPath.startsWith('住所.values.')) {
-                            // 住所フィールドの特別処理
+                          if (fieldPath.startsWith('住所.values.') && '住所' in row) {
+                            // 住所フィールドの特別処理（顧客データの場合）
                             const addressField = fieldPath.split('.')[2]; // '住所.values.都道府県' -> '都道府県'
                             if (row.住所 && row.住所.values) {
                               // 型安全に住所データにアクセス
@@ -410,7 +411,7 @@ export type MultiViewProps<TQueryModelType extends QueryModelType> = {
    * 原則として `useCallback` を使用すること。
    * @param cellType セル型定義ヘルパー関数の一覧。
    */
-  getColumnDefs: (cellType: ColumnDefFactories<DisplayDataTypeMap[TQueryModelType]>) => ColumnDef<DisplayDataTypeMap[TQueryModelType]>[]
+  getColumnDefs: GetColumnDefsFunction<DisplayDataTypeMap[TQueryModelType]>
   /**
    * ヘッダー部に表示する追加ボタン等
    */
