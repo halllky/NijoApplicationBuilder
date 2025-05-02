@@ -4,9 +4,10 @@
  *
  * 基本的な使い方
  * - もっとも外側に `Root` を配置する。
- * - `Root` の中に `BreakPoint` を配置する。
+ * - `Root` の中に `BreakPoint` または `FullWidthItem` を配置する。
  *   - 画面サイズが変更されたとき、 `BreakPoint` の単位で折り返しが発生する。
  *   - `BreakPoint` の中では `Item` は縦方向に配置される。
+ *   - `FullWidthItem` は折り返しがなく常に横幅いっぱいに配置される。
  * - `BreakPoint` の直下に `Item` を配置する。
  *   - `Item` のプロパティにその項目のラベルを記載する。（stringでもよいが、凝ったラベルの場合はReactNodeでも可）
  *   - `Item` の子要素にはその項目の入力フォーム（テキストボックスやチェックボックスなど）を記載する。
@@ -25,7 +26,7 @@ export namespace VForm3 {
   }) => {
     return (
       <div
-        className={`flex flex-row flex-wrap gap-2 ${props?.className}`}
+        className={`flex flex-row flex-wrap gap-2 ${props?.className ?? ''}`}
         style={{ '--label-width': props?.labelWidth ?? '10rem' } as React.CSSProperties}
       >
         {props?.children}
@@ -80,6 +81,27 @@ export namespace VForm3 {
         <div className="flex-grow">
           {props?.children}
         </div>
+      </div>
+    )
+  }
+
+  /**
+   * フォームの1項目。ラベルと値のペア。
+   * 基本的な使い方は `VForm3` のコメントを参照。
+   */
+  export const FullWidthItem = (props?: {
+    label?: React.ReactNode
+    children?: React.ReactNode
+    className?: string
+  }) => {
+    return (
+      <div className={`flex flex-col w-full ${props?.className ?? ''}`}>
+        {props?.label && (
+          <div className="font-bold mb-1">
+            {props?.label}
+          </div>
+        )}
+        {props?.children}
       </div>
     )
   }
