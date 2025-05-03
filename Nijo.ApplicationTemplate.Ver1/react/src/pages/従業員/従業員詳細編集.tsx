@@ -89,10 +89,6 @@ export const 従業員詳細編集 = () => {
     })
 
   // 所属部署Fieldsの変化を監視
-  React.useEffect(() => {
-    console.log('所属部署Fields変更:', 所属部署Fields);
-    console.log('所属部署Fields詳細構造:', JSON.stringify(所属部署Fields, null, 2));
-  }, [所属部署Fields]);
 
   // 所属部署を追加
   const add所属部署 = useEvent(() => {
@@ -101,9 +97,7 @@ export const 従業員詳細編集 = () => {
     newData.values.年度 = 2024;
     newData.values.部署.部署名 = "テスト部署";
     newData.values.部署.部署コード = "TEST001";
-    console.log('追加する所属部署データ:', newData);
     append所属部署(newData);
-    console.log('現在の所属部署Fields:', 所属部署Fields);
   })
 
   // 所属部署を削除する。
@@ -178,9 +172,32 @@ export const 従業員詳細編集 = () => {
                 ref={所属部署GridRef}
                 rows={所属部署Fields}
                 getColumnDefs={getColumnDefs}
-                onChangeRow={(newRow, index) => {
-                  console.log('行が変更されました:', newRow, index);
-                  update所属部署(index, newRow);
+                onChangeCell={(rowIndex, fieldPath, newValue) => {
+                  // 現在の行のデータをコピー
+                  const currentRow = { ...所属部署Fields[rowIndex] };
+
+                  // fieldPathに基づいて適切なプロパティを更新
+                  if (fieldPath === 'values.年度') {
+                    currentRow.values = { ...currentRow.values, 年度: newValue };
+                  } else if (fieldPath === 'values.部署.部署名') {
+                    currentRow.values = {
+                      ...currentRow.values,
+                      部署: { ...currentRow.values.部署, 部署名: newValue }
+                    };
+                  } else if (fieldPath === 'values.部署.部署コード') {
+                    currentRow.values = {
+                      ...currentRow.values,
+                      部署: { ...currentRow.values.部署, 部署コード: newValue }
+                    };
+                  } else {
+                    // その他のフィールドの場合はsetValueを使用
+                    // @ts-ignore 動的に生成されるフィールドパスは型推論が難しいため、ts-ignoreでエラーを抑制
+                    setValue(`所属部署.${rowIndex}.${fieldPath}`, newValue);
+                    return;
+                  }
+
+                  // useFieldArrayのupdateメソッドを使用して行全体を更新
+                  update所属部署(rowIndex, currentRow);
                 }}
                 showCheckBox={true}
                 rowSelection={rowSelection}

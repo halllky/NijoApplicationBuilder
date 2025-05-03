@@ -15,7 +15,7 @@ export interface UseEditingReturn<TRow extends ReactHookForm.FieldValues> {
 export function useEditing<TRow extends ReactHookForm.FieldValues>(
   rows: TRow[],
   columnDefs: EditableGridColumnDef<TRow>[],
-  onChangeRow?: (row: TRow, rowIndex: number) => void,
+  onChangeCell?: (rowIndex: number, fieldPath: string, newValue: any) => void,
   isGridReadOnly?: boolean | ((row: TRow, rowIndex: number) => boolean),
 ): UseEditingReturn<TRow> {
   const [isEditing, setIsEditing] = useState(false);
@@ -56,7 +56,7 @@ export function useEditing<TRow extends ReactHookForm.FieldValues>(
 
     const { rowIndex, colIndex } = editingCell;
 
-    if (!onChangeRow || getIsReadOnly(rowIndex)) {
+    if (!onChangeCell || getIsReadOnly(rowIndex)) {
       setIsEditing(false);
       setEditingCell(null);
       return;
@@ -72,10 +72,6 @@ export function useEditing<TRow extends ReactHookForm.FieldValues>(
     const targetRow = rows[rowIndex];
     const colDef = columnDefs[colIndex];
 
-    console.log('[confirmEdit] rowIndex:', rowIndex, 'colIndex:', colIndex);
-    console.log('[confirmEdit] colDef:', colDef);
-    console.log('[confirmEdit] editValue:', editValue);
-
     if (!targetRow || !colDef || !colDef.fieldPath) {
       setIsEditing(false);
       setEditingCell(null);
@@ -86,25 +82,28 @@ export function useEditing<TRow extends ReactHookForm.FieldValues>(
     let newValue: any = editValue;
 
     try {
+      // 元の値の型に合わせて変換
       if (typeof originalValue === 'number') {
         newValue = Number(editValue);
+        // NaNチェックを追加
+        if (isNaN(newValue)) {
+          newValue = originalValue; // NaNの場合は元の値に戻す
+        }
       } else if (typeof originalValue === 'boolean') {
         newValue = editValue.toLowerCase() === 'true';
       }
+      // 文字列型はそのままnewValue（=editValue）を使用
     } catch (e) {
       console.error("型変換エラー", e);
-      newValue = originalValue;
+      newValue = originalValue; // エラー時は元の値に戻す
     }
 
-    console.log('[confirmEdit] originalValue:', originalValue, 'typeof:', typeof originalValue);
-    console.log('[confirmEdit] newValue:', newValue, 'typeof:', typeof newValue);
+    // 変更があったセルの情報(rowIndex, fieldPath, newValue)を渡す
+    onChangeCell(rowIndex, colDef.fieldPath, newValue);
 
-    setValueByPath(targetRow, colDef.fieldPath, newValue);
-
-    onChangeRow(targetRow, rowIndex);
     setIsEditing(false);
     setEditingCell(null);
-  }, [onChangeRow, getIsReadOnly, columnDefs, rows, editValue, editingCell]);
+  }, [onChangeCell, getIsReadOnly, columnDefs, rows, editValue, editingCell]);
 
   // 編集値の変更ハンドラ
   const handleEditValueChange = useCallback((value: string) => {

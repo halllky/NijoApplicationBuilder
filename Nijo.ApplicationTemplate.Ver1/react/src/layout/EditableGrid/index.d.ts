@@ -9,9 +9,9 @@ export type EditableGridProps<TRow extends ReactHookForm.FieldValues> = {
   /** 行のデータ。通常はuseFieldArrayの返り値を渡す。 */
   rows: TRow[]
   /** 列定義を取得する関数。この関数の参照が変わる度にグリッドが再レンダリングされるため、原則として `useCallback` を使用すること。 */
-  getColumnDefs: (cellTypes: CellTypeDefs<TRow>) => ColumnDef<TRow>[];
-  /** 行データが変更された際のコールバック。これが指定されていない場合、そのグリッドは読み取り専用とみなす。 */
-  onChangeRow?: (row: TRow, rowIndex: number) => void
+  getColumnDefs: GetColumnDefsFunction<TRow>
+  /** セルデータが変更されたときのコールバック */
+  onChangeCell?: (rowIndex: number, fieldPath: string, newValue: any) => void
   /** 行ヘッダのチェックボックスを表示するかどうか。 */
   showCheckBox?: boolean | ((row: TRow, rowIndex: number) => boolean)
   /** グリッドを読み取り専用にするかどうか。 */

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useRef, useState, useCallback, useEffect, useImperativeHandle, useMemo } from "react";
-import { EditableGridProps, EditableGridRef } from "./index.d";
+import { EditableGridProps, EditableGridRef, EditableGridColumnDef } from "./index.d";
 import {
   createColumnHelper,
   getCoreRowModel,
@@ -38,7 +38,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   const {
     rows,
     getColumnDefs,
-    onChangeRow,
+    onChangeCell,
     showCheckBox,
     isReadOnly,
     className
@@ -93,7 +93,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   } = selection;
 
   // 編集機能の管理をフックに移動
-  const editing = useEditing<TRow>(rows, columnDefs, onChangeRow, isReadOnly);
+  const editing = useEditing<TRow>(rows, columnDefs, onChangeCell, isReadOnly);
   const {
     isEditing,
     editValue,
@@ -183,7 +183,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
       },
     }),
     // 列ヘッダーとデータ列
-    ...columnDefs.map((colDef, colIndex) =>
+    ...columnDefs.map((colDef: EditableGridColumnDef<TRow>, colIndex: number) =>
       columnHelper.accessor(
         (row: TRow) => {
           // fieldPathがある場合そのパスに対応する値を取得
@@ -195,13 +195,13 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
         {
           id: colDef.fieldPath || `col-${colIndex}`,
           header: colDef.header,
-          size: colDef.width ?? defaultColumnWidth,
-          enableResizing: colDef.resizable ?? true,
+          size: typeof colDef.defaultWidth === 'string' ? parseInt(colDef.defaultWidth, 10) : (colDef.defaultWidth ?? defaultColumnWidth),
+          enableResizing: true,
           cell: ({ getValue }: { getValue: () => any }) => {
             // tbody側で編集/表示の切り替えやイベントハンドラを設定するため、
             // ここでは単純に値を表示する or 基本的なラッパーコンポーネントを返す程度に留める
             return (
-              <div className="p-1 h-8 w-full overflow-hidden">
+              <div className="p-1 h-8 w-full overflow-hidden text-ellipsis whitespace-nowrap">
                 {getValue()?.toString() || ''}
               </div>
             );
@@ -360,7 +360,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
               >
                 {row.getVisibleCells().map(cell => {
                   const rowIndex = row.index;
-                  const colIndex = cell.column.id === 'rowHeader' ? -1 : columnDefs.findIndex(col =>
+                  const colIndex = cell.column.id === 'rowHeader' ? -1 : columnDefs.findIndex((col: EditableGridColumnDef<TRow>) =>
                     col.fieldPath === cell.column.id || `col-${col.fieldPath}` === cell.column.id
                   );
 
