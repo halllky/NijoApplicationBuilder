@@ -1,10 +1,19 @@
 import React from 'react'
-import { RouterProvider } from 'react-router-dom'
-import { router } from './routes'
+import * as ReactRouter from 'react-router-dom'
+import MainLayout from "./layout/MainLayout"
+import { getRouter } from './routes'
 
 function App() {
+  const router = React.useMemo(() => {
+    return ReactRouter.createBrowserRouter([{
+      path: "/",
+      element: <MainLayout />,
+      children: getRouter(),
+    }])
+  }, [])
+
   return (
-    <RouterProvider router={router} />
+    <ReactRouter.RouterProvider router={router} />
   )
 }
 
