@@ -16,6 +16,7 @@ export function useDragSelection(
 
   // マウスダウンハンドラ
   const handleMouseDown = useCallback((rowIndex: number, colIndex: number) => {
+    console.log('[useDragSelection] mouseDown', rowIndex, colIndex);
     setActiveCell({ rowIndex, colIndex });
     setSelectedRange({
       startRow: rowIndex,
@@ -30,6 +31,12 @@ export function useDragSelection(
   // マウス移動ハンドラ
   const handleMouseMove = useCallback((rowIndex: number, colIndex: number) => {
     if (isDragging && dragStartCell) {
+      console.log('[useDragSelection] mouseMove', rowIndex, colIndex);
+
+      // アクティブセルを更新
+      setActiveCell({ rowIndex, colIndex });
+
+      // 選択範囲を更新
       setSelectedRange({
         startRow: dragStartCell.rowIndex,
         startCol: dragStartCell.colIndex,
@@ -37,12 +44,12 @@ export function useDragSelection(
         endCol: colIndex
       });
     }
-  }, [isDragging, dragStartCell, setSelectedRange]);
+  }, [isDragging, dragStartCell, setActiveCell, setSelectedRange]);
 
   // マウスアップハンドラ
   const handleMouseUp = useCallback(() => {
+    console.log('[useDragSelection] mouseUp');
     setIsDragging(false);
-    setDragStartCell(null);
   }, []);
 
   // イベントリスナーの設定

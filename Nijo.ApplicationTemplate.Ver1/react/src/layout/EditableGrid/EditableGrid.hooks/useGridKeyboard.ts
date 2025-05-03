@@ -47,22 +47,33 @@ export function useGridKeyboard({
     // 編集モード中は矢印キーを処理しない
     if (isEditing) return;
 
+    // Shiftキーを押した状態でのキー操作時、範囲選択の開始位置を保持
+    const rangeStart = selectedRange ?
+      { rowIndex: selectedRange.startRow, colIndex: selectedRange.startCol } :
+      { rowIndex, colIndex };
+
     switch (e.key) {
       case 'ArrowUp':
         e.preventDefault();
         if (rowIndex > 0) {
-          setActiveCell({ rowIndex: rowIndex - 1, colIndex });
-          if (!e.shiftKey) {
+          const newRowIndex = rowIndex - 1;
+          setActiveCell({ rowIndex: newRowIndex, colIndex });
+
+          if (e.shiftKey) {
+            // 範囲選択（Shift + 矢印キー）
             setSelectedRange({
-              startRow: rowIndex - 1,
-              startCol: colIndex,
-              endRow: rowIndex - 1,
+              startRow: rangeStart.rowIndex,
+              startCol: rangeStart.colIndex,
+              endRow: newRowIndex,
               endCol: colIndex
             });
-          } else if (selectedRange) {
+          } else {
+            // 単一選択
             setSelectedRange({
-              ...selectedRange,
-              endRow: rowIndex - 1
+              startRow: newRowIndex,
+              startCol: colIndex,
+              endRow: newRowIndex,
+              endCol: colIndex
             });
           }
         }
@@ -70,18 +81,24 @@ export function useGridKeyboard({
       case 'ArrowDown':
         e.preventDefault();
         if (rowIndex < rowCount - 1) {
-          setActiveCell({ rowIndex: rowIndex + 1, colIndex });
-          if (!e.shiftKey) {
+          const newRowIndex = rowIndex + 1;
+          setActiveCell({ rowIndex: newRowIndex, colIndex });
+
+          if (e.shiftKey) {
+            // 範囲選択（Shift + 矢印キー）
             setSelectedRange({
-              startRow: rowIndex + 1,
-              startCol: colIndex,
-              endRow: rowIndex + 1,
+              startRow: rangeStart.rowIndex,
+              startCol: rangeStart.colIndex,
+              endRow: newRowIndex,
               endCol: colIndex
             });
-          } else if (selectedRange) {
+          } else {
+            // 単一選択
             setSelectedRange({
-              ...selectedRange,
-              endRow: rowIndex + 1
+              startRow: newRowIndex,
+              startCol: colIndex,
+              endRow: newRowIndex,
+              endCol: colIndex
             });
           }
         }
@@ -89,18 +106,24 @@ export function useGridKeyboard({
       case 'ArrowLeft':
         e.preventDefault();
         if (colIndex > 0) {
-          setActiveCell({ rowIndex, colIndex: colIndex - 1 });
-          if (!e.shiftKey) {
+          const newColIndex = colIndex - 1;
+          setActiveCell({ rowIndex, colIndex: newColIndex });
+
+          if (e.shiftKey) {
+            // 範囲選択（Shift + 矢印キー）
+            setSelectedRange({
+              startRow: rangeStart.rowIndex,
+              startCol: rangeStart.colIndex,
+              endRow: rowIndex,
+              endCol: newColIndex
+            });
+          } else {
+            // 単一選択
             setSelectedRange({
               startRow: rowIndex,
-              startCol: colIndex - 1,
+              startCol: newColIndex,
               endRow: rowIndex,
-              endCol: colIndex - 1
-            });
-          } else if (selectedRange) {
-            setSelectedRange({
-              ...selectedRange,
-              endCol: colIndex - 1
+              endCol: newColIndex
             });
           }
         }
@@ -108,18 +131,24 @@ export function useGridKeyboard({
       case 'ArrowRight':
         e.preventDefault();
         if (colIndex < colCount - 1) {
-          setActiveCell({ rowIndex, colIndex: colIndex + 1 });
-          if (!e.shiftKey) {
+          const newColIndex = colIndex + 1;
+          setActiveCell({ rowIndex, colIndex: newColIndex });
+
+          if (e.shiftKey) {
+            // 範囲選択（Shift + 矢印キー）
+            setSelectedRange({
+              startRow: rangeStart.rowIndex,
+              startCol: rangeStart.colIndex,
+              endRow: rowIndex,
+              endCol: newColIndex
+            });
+          } else {
+            // 単一選択
             setSelectedRange({
               startRow: rowIndex,
-              startCol: colIndex + 1,
+              startCol: newColIndex,
               endRow: rowIndex,
-              endCol: colIndex + 1
-            });
-          } else if (selectedRange) {
-            setSelectedRange({
-              ...selectedRange,
-              endCol: colIndex + 1
+              endCol: newColIndex
             });
           }
         }
@@ -128,6 +157,51 @@ export function useGridKeyboard({
         e.preventDefault();
         if (!getIsReadOnly(rowIndex)) {
           startEditing(rowIndex, colIndex);
+        }
+        break;
+      case 'Tab':
+        e.preventDefault();
+        // 次のセルに移動
+        if (e.shiftKey) {
+          // 前のセル
+          if (colIndex > 0) {
+            setActiveCell({ rowIndex, colIndex: colIndex - 1 });
+            setSelectedRange({
+              startRow: rowIndex,
+              startCol: colIndex - 1,
+              endRow: rowIndex,
+              endCol: colIndex - 1
+            });
+          } else if (rowIndex > 0) {
+            // 前の行の最後のセル
+            setActiveCell({ rowIndex: rowIndex - 1, colIndex: colCount - 1 });
+            setSelectedRange({
+              startRow: rowIndex - 1,
+              startCol: colCount - 1,
+              endRow: rowIndex - 1,
+              endCol: colCount - 1
+            });
+          }
+        } else {
+          // 次のセル
+          if (colIndex < colCount - 1) {
+            setActiveCell({ rowIndex, colIndex: colIndex + 1 });
+            setSelectedRange({
+              startRow: rowIndex,
+              startCol: colIndex + 1,
+              endRow: rowIndex,
+              endCol: colIndex + 1
+            });
+          } else if (rowIndex < rowCount - 1) {
+            // 次の行の最初のセル
+            setActiveCell({ rowIndex: rowIndex + 1, colIndex: 0 });
+            setSelectedRange({
+              startRow: rowIndex + 1,
+              startCol: 0,
+              endRow: rowIndex + 1,
+              endCol: 0
+            });
+          }
         }
         break;
     }

@@ -75,14 +75,14 @@ export type BoundColumnDefFactory<TRow extends ReactHookForm.FieldValues, TCellV
   header: string,
   /** オプション */
   options?: ColumnDefOptions
-) => ColumnDef<TRow, TCellValueType>
+) => CellTypeColumnDef<TRow, TCellValueType>
 
 /** ボタンなど、特定のプロパティと紐づかない列定義を生成する関数。 */
 export type UnboundColumnDefFactory<TRow, TCellValueType> = (
-) => ColumnDef<TRow, TCellValueType>
+) => CellTypeColumnDef<TRow, TCellValueType>
 
 /** グリッドの列定義 */
-export type ColumnDef<TRow, TCellValueType = unknown> = {
+export type CellTypeColumnDef<TRow, TCellValueType = unknown> = {
   /** ヘッダーに表示する文字列 */
   header: string;
   /** この列と紐づけるフィールドパス */

@@ -1,5 +1,5 @@
 import * as ReactHookForm from "react-hook-form"
-import { ColumnDef, ColumnDefFactories } from "./useFieldArrayEx"
+import { CellTypeColumnDef, ColumnDefFactories } from "./useFieldArrayEx"
 
 /**
  * 列定義を取得する関数の型。
@@ -8,4 +8,4 @@ import { ColumnDef, ColumnDefFactories } from "./useFieldArrayEx"
  *
  * @param cellType セル型定義ヘルパー関数の一覧。
  */
-export type GetColumnDefsFunction<TRow extends ReactHookForm.FieldValues> = (cellType: ColumnDefFactories<TRow>) => ColumnDef<TRow>[]
+export type GetColumnDefsFunction<TRow extends ReactHookForm.FieldValues> = (cellType: ColumnDefFactories<TRow>) => CellTypeColumnDef<TRow>[]

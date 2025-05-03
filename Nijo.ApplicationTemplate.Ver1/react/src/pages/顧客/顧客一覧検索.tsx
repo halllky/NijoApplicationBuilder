@@ -9,7 +9,7 @@ export const 顧客一覧検索 = () => {
   const navigate = useNavigate()
 
   /** 一覧表示のカラム定義 */
-  const getColumnDefs = React.useCallback((cellType: Layout.ColumnDefFactories<顧客DisplayData>): Layout.ColumnDef<顧客DisplayData>[] => [
+  const getColumnDefs: Layout.GetColumnDefsFunction<顧客DisplayData> = React.useCallback(cellType => [
     cellType.text("values.顧客ID", "顧客ID"),
     cellType.text("values.顧客名", "顧客名"),
     cellType.date("values.生年月日", "生年月日"),

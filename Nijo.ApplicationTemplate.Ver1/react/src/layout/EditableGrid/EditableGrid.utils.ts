@@ -21,3 +21,23 @@ export const getValueByPath = (obj: any, path: string): any => {
     return undefined;
   }
 }
+
+/**
+ * オブジェクトの指定されたパスに値を設定するユーティリティ関数
+ */
+export function setValueByPath(obj: any, path: string, value: any): void {
+  const keys = path.split('.');
+  const lastKey = keys.pop();
+  let target = obj;
+
+  for (const key of keys) {
+    if (target[key] === undefined || target[key] === null) {
+      target[key] = {}; // パスが存在しない場合はオブジェクトを作成
+    }
+    target = target[key];
+  }
+
+  if (lastKey !== undefined) {
+    target[lastKey] = value;
+  }
+}

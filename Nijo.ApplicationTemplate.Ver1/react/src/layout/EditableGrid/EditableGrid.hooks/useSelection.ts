@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { CellPosition, CellSelectionRange } from "../index.d";
 
 export interface UseSelectionReturn {
@@ -8,7 +8,7 @@ export interface UseSelectionReturn {
   allRowsSelected: boolean;
   setActiveCell: (cell: CellPosition | null) => void;
   setSelectedRange: (range: CellSelectionRange | null) => void;
-  handleCellClick: (rowIndex: number, colIndex: number) => void;
+  handleCellClick: (event: React.MouseEvent, rowIndex: number, colIndex: number) => void;
   handleToggleAllRows: (checked: boolean) => void;
   handleToggleRow: (rowIndex: number, checked: boolean) => void;
   selectRows: (startRowIndex: number, endRowIndex: number) => void;
@@ -20,6 +20,8 @@ export function useSelection(totalRows: number): UseSelectionReturn {
   const [selectedRange, setSelectedRange] = useState<CellSelectionRange | null>(null);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [allRowsSelected, setAllRowsSelected] = useState(false);
+
+  const lastClickedCellRef = useRef<CellPosition | null>(null);
 
   // 全行選択トグルのハンドラ
   const handleToggleAllRows = useCallback((checked: boolean) => {
@@ -49,14 +51,28 @@ export function useSelection(totalRows: number): UseSelectionReturn {
   }, [totalRows]);
 
   // セルクリックハンドラ
-  const handleCellClick = useCallback((rowIndex: number, colIndex: number) => {
-    setActiveCell({ rowIndex, colIndex });
-    setSelectedRange({
-      startRow: rowIndex,
-      startCol: colIndex,
-      endRow: rowIndex,
-      endCol: colIndex
-    });
+  const handleCellClick = useCallback((event: React.MouseEvent, rowIndex: number, colIndex: number) => {
+    const currentCell = { rowIndex, colIndex };
+
+    if (event.shiftKey && lastClickedCellRef.current) {
+      setActiveCell(currentCell);
+      setSelectedRange({
+        startRow: Math.min(lastClickedCellRef.current.rowIndex, currentCell.rowIndex),
+        startCol: Math.min(lastClickedCellRef.current.colIndex, currentCell.colIndex),
+        endRow: Math.max(lastClickedCellRef.current.rowIndex, currentCell.rowIndex),
+        endCol: Math.max(lastClickedCellRef.current.colIndex, currentCell.colIndex)
+      });
+    } else {
+      setActiveCell(currentCell);
+      setSelectedRange({
+        startRow: currentCell.rowIndex,
+        startCol: currentCell.colIndex,
+        endRow: currentCell.rowIndex,
+        endCol: currentCell.colIndex
+      });
+    }
+
+    lastClickedCellRef.current = currentCell;
   }, []);
 
   // 行範囲選択

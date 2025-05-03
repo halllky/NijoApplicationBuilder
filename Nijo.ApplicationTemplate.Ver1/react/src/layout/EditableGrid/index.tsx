@@ -7,10 +7,12 @@ import {
   useReactTable,
   type Row,
   type Cell,
+  flexRender
 } from '@tanstack/react-table';
 import {
   useVirtualizer,
-  type VirtualItem
+  type VirtualItem,
+  notUndefined
 } from '@tanstack/react-virtual';
 import { useCellTypes } from "../cellType/useFieldArrayEx";
 import type * as ReactHookForm from 'react-hook-form';
@@ -51,7 +53,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
 
   // テーブルの参照
   const tableContainerRef = useRef<HTMLDivElement>(null);
-  const tableBodyRef = useRef<HTMLDivElement>(null);
+  const tableBodyRef = useRef<HTMLTableSectionElement>(null);
 
   // 列定義の取得
   const cellType = useCellTypes<TRow>();
@@ -182,21 +184,47 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
             return (
               <div
                 className={`p-1 h-8 w-full overflow-hidden ${isActive ? 'bg-blue-100' : ''} ${isInRange ? 'bg-blue-50' : ''}`}
-                onClick={() => handleCellClick(rowIndex, colIndex)}
+                onClick={(e) => handleCellClick(e, rowIndex, colIndex)}
                 onDoubleClick={() => {
                   if (!getIsReadOnly(rowIndex)) {
                     startEditing(rowIndex, colIndex);
                   }
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && isEditing) {
+                    confirmEdit();
+                  } else if (e.key === 'Escape' && isEditing) {
+                    cancelEdit();
+                  }
+                }}
+                tabIndex={0}
               >
-                {getValue()?.toString() || ''}
+                {isEditing && isActive ? (
+                  <input
+                    type="text"
+                    value={editValue}
+                    onChange={(e) => handleEditValueChange(e.target.value)}
+                    onKeyDown={(e) => {
+                      e.stopPropagation();
+                      if (e.key === 'Enter') {
+                        confirmEdit();
+                      } else if (e.key === 'Escape') {
+                        cancelEdit();
+                      }
+                    }}
+                    autoFocus
+                    className="w-full h-full"
+                  />
+                ) : (
+                  getValue()?.toString() || ''
+                )}
               </div>
             );
           }
         }
       )
     )
-  ], [columnDefs, showCheckBox, allRowsSelected, handleToggleAllRows, getShouldShowCheckBox, selectedRows, handleToggleRow, activeCell, selectedRange, handleCellClick, getIsReadOnly, startEditing, columnHelper]);
+  ], [columnDefs, showCheckBox, allRowsSelected, handleToggleAllRows, getShouldShowCheckBox, selectedRows, handleToggleRow, activeCell, selectedRange, handleCellClick, getIsReadOnly, startEditing, isEditing, editValue, handleEditValueChange, confirmEdit, cancelEdit, columnHelper]);
 
   const table = useReactTable({
     data: rows,
@@ -225,19 +253,26 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   // --- デバッグログ用追加 ---
 
   const rowVirtualizer = useVirtualizer({
-    count: tableRows.length,
-    getScrollElement: () => {
-      // --- デバッグログ用追加 ---
-      console.log('[EditableGrid] rowVirtualizer getScrollElement called. tableBodyRef.current:', tableBodyRef.current);
-      // --- デバッグログ用追加 ---
-      return tableBodyRef.current;
-    },
-    estimateSize: () => 35, // 行の高さの推定値
+    count: rows.length,
+    getScrollElement: () => tableBodyRef.current,
+    estimateSize: () => 35,
     overscan: 5,
   });
 
-  // --- デバッグログ用追加 ---
   const virtualItems = rowVirtualizer.getVirtualItems();
+
+  // Before/After 行の高さを計算
+  const [paddingTop, paddingBottom] = useMemo(() => {
+    if (!virtualItems.length) {
+      return [0, 0];
+    }
+    return [
+      notUndefined(virtualItems[0]).start - rowVirtualizer.options.scrollMargin,
+      rowVirtualizer.getTotalSize() - notUndefined(virtualItems[virtualItems.length - 1]).end,
+    ];
+  }, [virtualItems, rowVirtualizer]);
+
+  // --- デバッグログ用追加 ---
   useEffect(() => {
     console.log(`[EditableGrid] virtualItems changed (count: ${virtualItems.length})`, virtualItems);
   }, [virtualItems]);
@@ -256,13 +291,12 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   // ref用の公開メソッド
   useImperativeHandle(ref, () => ({
     getSelectedRows: () => {
-      return Array.from(selectedRows).map(rowIndex => ({
-        row: rows[rowIndex],
-        rowIndex
-      }));
+      return Array.from(selectedRows).map(rowIndex => rows[rowIndex]);
     },
-    selectRow: selectRows
-  }), [rows, selectedRows, selectRows]);
+    selectRow: selectRows,
+    getActiveCell: () => activeCell ?? undefined,
+    getSelectedRange: () => selectedRange ?? undefined,
+  }), []);
 
   // 初期状態設定
   useEffect(() => {
@@ -277,150 +311,178 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     }
   }, [rows, columnDefs, activeCell, setActiveCell, setSelectedRange]);
 
+  // フック呼び出しは常に実行する
+
   return (
     <div
-      className={`overflow-auto border border-gray-300 ${className || ''}`}
       ref={tableContainerRef}
-      style={{ height: '100%', width: '100%' }}
-      role="grid"
-      aria-rowcount={rows.length + 1} // +1 for header row
-      aria-colcount={columnDefs.length + 1} // +1 for row header
-    >
-      {rows.length === 0 ? (
-        <EmptyDataMessage />
-      ) : (
-        <div
-          className="relative"
-          style={{ width: columnVirtualizer.getTotalSize() + 'px' }}
-        >
-          {/* ヘッダー行 */}
-          <div
-            className="sticky top-0 bg-gray-100 z-10"
-            role="rowgroup"
-          >
-            {table.getHeaderGroups().map(headerGroup => (
-              <div
-                key={headerGroup.id}
-                className="flex"
-                role="row"
-                aria-rowindex={1}
-              >
-                {columnVirtualizer.getVirtualItems().map(virtualColumn => {
-                  const header = headerGroup.headers[virtualColumn.index];
-                  if (!header) return null;
+      className={`overflow-auto border border-gray-300 relative ${className || ''}`}
+      style={{ height: '400px' }}
+      onMouseMove={(e) => {
+        if (isDragging && tableBodyRef.current) {
+          // マウス位置からテーブル内の行と列のインデックスを計算
+          // 実際の実装では、テーブルのスクロール位置も考慮する必要がある
+          const rect = tableBodyRef.current.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
 
-                  return virtualColumn.index === 0 ? (
-                    <CheckboxHeaderCell
-                      key={header.id}
-                      allRowsSelected={allRowsSelected}
-                      onToggleAllRows={handleToggleAllRows}
-                      showCheckBox={showCheckBox}
-                      virtualColumn={virtualColumn}
-                    />
-                  ) : (
-                    <HeaderCell
-                      key={header.id}
-                      header={header}
-                      virtualColumn={virtualColumn}
-                    />
+          // 行インデックスの計算（仮想化を考慮）
+          const rowHeight = 35; // 推定行高さ
+          const visibleStartRow = Math.floor(tableBodyRef.current.scrollTop / rowHeight);
+          const rowIndex = visibleStartRow + Math.floor(y / rowHeight);
+
+          // 列インデックスの計算（簡易的）
+          const colWidth = rect.width / columnDefs.length;
+          const colIndex = Math.floor(x / colWidth);
+
+          if (rowIndex >= 0 && rowIndex < rows.length && colIndex >= 0 && colIndex < columnDefs.length) {
+            handleMouseMove(rowIndex, colIndex);
+          }
+        }
+      }}
+    >
+      <table className="w-full border-collapse">
+        <thead className="sticky top-0 z-10 bg-gray-100">
+          <tr>
+            {table.getFlatHeaders().map(header => (
+              <th key={header.id} className="border border-gray-300 p-2">
+                {header.column.id === 'rowHeader' ? (
+                  <CheckboxHeaderCell
+                    isChecked={allRowsSelected}
+                    onToggle={(checked) => handleToggleAllRows(checked)}
+                    showCheckBox={!!showCheckBox}
+                  />
+                ) : (
+                  <HeaderCell
+                    header={header.column.columnDef.header?.toString() || ''}
+                  />
+                )}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody ref={tableBodyRef}>
+          {/* 上部パディング行 */}
+          {paddingTop > 0 && (
+            <tr>
+              <td
+                style={{ height: `${paddingTop}px` }}
+                colSpan={table.getAllColumns().length}
+              />
+            </tr>
+          )}
+
+          {/* 仮想化された行 */}
+          {virtualItems.map(virtualRow => {
+            const row = tableRows[virtualRow.index];
+            if (!row) return null;
+
+            return (
+              <tr
+                key={row.id}
+                className="hover:bg-gray-50"
+              >
+                {row.getVisibleCells().map(cell => {
+                  const rowIndex = row.index;
+                  const colIndex = cell.column.id === 'rowHeader' ? -1 : columnDefs.findIndex(col =>
+                    col.fieldPath === cell.column.id || `col-${col.fieldPath}` === cell.column.id
+                  );
+
+                  const isActive = activeCell?.rowIndex === rowIndex && activeCell?.colIndex === colIndex;
+                  const isInRange = Boolean(selectedRange &&
+                    rowIndex >= selectedRange.startRow && rowIndex <= selectedRange.endRow &&
+                    colIndex >= selectedRange.startCol && colIndex <= selectedRange.endCol);
+
+                  if (cell.column.id === 'rowHeader') {
+                    return (
+                      <td
+                        key={cell.id}
+                        className="border border-gray-300 w-10"
+                      >
+                        <RowCheckboxCell
+                          rowIndex={rowIndex}
+                          isChecked={selectedRows.has(rowIndex)}
+                          onToggle={(checked) => handleToggleRow(rowIndex, checked)}
+                          showCheckBox={getShouldShowCheckBox(rowIndex)}
+                        />
+                      </td>
+                    );
+                  }
+
+                  return (
+                    <td
+                      key={cell.id}
+                      className={`border border-gray-300 ${isActive ? 'bg-blue-100' : ''} ${isInRange ? 'bg-blue-50' : ''}`}
+                      onClick={(e) => handleCellClick(e, rowIndex, colIndex)}
+                      onDoubleClick={() => {
+                        if (!getIsReadOnly(rowIndex)) {
+                          startEditing(rowIndex, colIndex);
+                        }
+                      }}
+                      onMouseDown={() => {
+                        if (!isEditing) {
+                          handleMouseDown(rowIndex, colIndex);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'F2' && !isEditing && !getIsReadOnly(rowIndex)) {
+                          startEditing(rowIndex, colIndex);
+                        } else if (e.key === 'Enter' && isEditing) {
+                          confirmEdit();
+                        } else if (e.key === 'Escape' && isEditing) {
+                          cancelEdit();
+                        }
+                      }}
+                      tabIndex={0}
+                    >
+                      {isEditing && isActive ? (
+                        <input
+                          type="text"
+                          value={editValue}
+                          onChange={(e) => handleEditValueChange(e.target.value)}
+                          onKeyDown={(e) => {
+                            e.stopPropagation();
+                            if (e.key === 'Enter') {
+                              confirmEdit();
+                            } else if (e.key === 'Escape') {
+                              cancelEdit();
+                            }
+                          }}
+                          autoFocus
+                          className="w-full h-full p-1"
+                        />
+                      ) : (
+                        <div className="p-1">
+                          {cell.getValue()?.toString() || ''}
+                        </div>
+                      )}
+                    </td>
                   );
                 })}
-              </div>
-            ))}
-          </div>
+              </tr>
+            );
+          })}
 
-          {/* テーブル本体 */}
-          <div
-            ref={tableBodyRef}
-            className="overflow-auto"
-            style={{
-              height: '200px',
-              position: 'relative',
-            }}
-          >
-            <div // 仮想アイテム配置用コンテナ
-              className="relative overflow-auto"
-              style={{
-                height: `calc(100% - 40px)`,
-                width: '100%'
-              }}
-              role="rowgroup"
-            >
-              {rowVirtualizer.getVirtualItems().map(virtualRow => {
-                const row = tableRows[virtualRow.index];
-                if (!row) return null;
+          {/* 下部パディング行 */}
+          {paddingBottom > 0 && (
+            <tr>
+              <td
+                style={{ height: `${paddingBottom}px` }}
+                colSpan={table.getAllColumns().length}
+              />
+            </tr>
+          )}
 
-                return (
-                  <div
-                    key={row.id}
-                    className="flex"
-                    style={{
-                      position: 'absolute',
-                      top: virtualRow.start + 'px',
-                      height: `${virtualRow.size}px`,
-                      width: '100%'
-                    }}
-                    role="row"
-                    aria-rowindex={virtualRow.index + 2} // +2 for header row and 0-indexing
-                  >
-                    {columnVirtualizer.getVirtualItems().map(virtualColumn => {
-                      const rowIndex = virtualRow.index;
-
-                      // 行ヘッダー（チェックボックス列）
-                      if (virtualColumn.index === 0) {
-                        return (
-                          <RowCheckboxCell
-                            key={`${row.id}-checkbox`}
-                            rowIndex={rowIndex}
-                            isSelected={selectedRows.has(rowIndex)}
-                            showCheckBox={getShouldShowCheckBox(rowIndex)}
-                            onToggleRow={handleToggleRow}
-                            virtualColumn={virtualColumn}
-                          />
-                        );
-                      }
-
-                      // データセル
-                      const cell = row.getVisibleCells()[virtualColumn.index];
-                      if (!cell) return null;
-
-                      const colIndex = virtualColumn.index - 1; // -1 for row header adjustment
-                      const isActive = activeCell?.rowIndex === rowIndex && activeCell?.colIndex === colIndex;
-                      const isInRange = Boolean(selectedRange &&
-                        rowIndex >= Math.min(selectedRange.startRow, selectedRange.endRow) &&
-                        rowIndex <= Math.max(selectedRange.startRow, selectedRange.endRow) &&
-                        colIndex >= Math.min(selectedRange.startCol, selectedRange.endCol) &&
-                        colIndex <= Math.max(selectedRange.startCol, selectedRange.endCol));
-
-                      return (
-                        <DataCell
-                          key={cell.id}
-                          cell={cell}
-                          rowIndex={rowIndex}
-                          colIndex={colIndex}
-                          isActive={isActive}
-                          isInRange={isInRange}
-                          isReadOnly={getIsReadOnly(rowIndex)}
-                          isEditing={isEditing}
-                          editValue={editValue}
-                          onEditValueChange={handleEditValueChange}
-                          onConfirmEdit={() => confirmEdit(rowIndex, colIndex)}
-                          onCancelEdit={cancelEdit}
-                          onStartEditing={() => startEditing(rowIndex, colIndex)}
-                          onClickCell={() => handleCellClick(rowIndex, colIndex)}
-                          onMouseDown={() => handleMouseDown(rowIndex, colIndex)}
-                          onMouseMove={() => handleMouseMove(rowIndex, colIndex)}
-                          virtualColumn={virtualColumn}
-                        />
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
+          {/* データが空の場合のメッセージ */}
+          {rows.length === 0 && (
+            <tr>
+              <td colSpan={table.getAllColumns().length}>
+                <EmptyDataMessage />
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
     </div>
   );
 }) as (<TRow extends ReactHookForm.FieldValues, >(props: EditableGridProps<TRow> & { ref: React.ForwardedRef<EditableGridRef<TRow>> }) => React.ReactNode);
