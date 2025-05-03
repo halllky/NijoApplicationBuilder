@@ -39,8 +39,13 @@ namespace Nijo.Mcp {
         private const string DOTNET_URL = "https://localhost:7098";
         private const string NPM_URL = "http://localhost:5173";
         private const string NIJO_SLN = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\nijo.sln";
+        private const string APPLICATION_TEMPLATE_DIR = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.ApplicationTemplate.Ver1";
+        private const string DATA_PATTERN_DIR = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.IntegrationTest\DataPatterns";
+        private const string DATA_PATTERN_REVEALED_DIR = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\自動テストで作成されたプロジェクト";
+        private const string DATA_PATTERN_IMPLEMENTORS_DIR = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.IntegrationTest\DataPatternsImplementors";
 
 
+        #region アプリケーションテンプレート
         [McpServerTool(Name = "generate_code"), Description(
             "ソースコードの自動生成処理の最新化、自動生成処理のかけなおし、コンパイルエラーチェックを行います。")]
         public static async Task<string> GenerateCode([Description("nijo.xmlのファイルの絶対パス")] string nijoXmlFileFullPath) {
@@ -234,7 +239,10 @@ namespace Nijo.Mcp {
                 return ex.ToString();
             }
         }
+        #endregion アプリケーションテンプレート
 
+
+        #region NUnit
         [McpServerTool(Name = "list_tests"), Description(
             "nijo.slnに含まれるすべてのユニットテストを列挙して返します。")]
         public static async Task<string> ListTests() {
@@ -299,5 +307,176 @@ namespace Nijo.Mcp {
                 return ex.ToString();
             }
         }
+        #endregion NUnit
+
+
+        #region 自動テストで作成されたプロジェクト
+        [McpServerTool(Name = "reveal_data_pattern"), Description(
+            "Nijo.IntegrationTest の DataPatterns フォルダにあるXMLで「自動テストで作成されたプロジェクト」フォルダにアプリケーションを顕現させる。 ")]
+        public static async Task<string> RevealDataPattern(
+            [Description("DataPatternsフォルダにあるXMLのファイルの絶対パス")] string dataPatternsXmlFileFullPath) {
+
+            try {
+                if (string.IsNullOrEmpty(dataPatternsXmlFileFullPath)) {
+                    return "DataPatternsフォルダにあるXMLのファイルの絶対パスを指定してください。";
+                }
+                if (!File.Exists(dataPatternsXmlFileFullPath)) {
+                    return $"指定されたDataPatternsフォルダにあるXMLのファイルが見つかりません: {dataPatternsXmlFileFullPath}";
+                }
+
+                using var workDirectory = WorkDirectory.Prepare();
+                workDirectory.WriteToMainLog($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [NijoMcpTools.RevealDataPattern] RevealDataPattern method called with path: {dataPatternsXmlFileFullPath}");
+
+                // 「自動テストで作成されたプロジェクト」フォルダの内容を全部クリア
+                Directory.Delete(DATA_PATTERN_REVEALED_DIR, true);
+
+                // アプリケーションテンプレートを「自動テストで作成されたプロジェクト」フォルダにコピー。
+                // ただし、アプリケーションテンプレートのnijo.xmlのデータ構造に由来するソースは除く
+                CopyDirectoryRecursively(APPLICATION_TEMPLATE_DIR, DATA_PATTERN_REVEALED_DIR, path => {
+
+                    // CreateQuerySource の実装などはコピーしない
+                    if (path == Path.Combine(APPLICATION_TEMPLATE_DIR, "Core", "OverridedApplicationService.cs")) return false;
+
+                    // 画面の実装はコピーしない。ただしHome.tsxだけはコピーする
+                    if (path == Path.Combine(APPLICATION_TEMPLATE_DIR, "react", "src", "pages", "Home.tsx")) return true;
+                    if (path.StartsWith(Path.Combine(APPLICATION_TEMPLATE_DIR, "react", "src", "pages"))) return false;
+
+                    return true;
+                });
+
+                // 「自動テストで作成されたプロジェクト」のnijo.xmlを指定されたXMLファイルで上書き
+                var nijoXmlDestination = Path.Combine(DATA_PATTERN_REVEALED_DIR, "nijo.xml");
+                File.Copy(dataPatternsXmlFileFullPath, nijoXmlDestination, true);
+
+                // OverridedApplicationService や画面の実装はスナップショットされたファイルで上書き
+                var xmlFileNameWithoutExtension = Path.GetFileNameWithoutExtension(dataPatternsXmlFileFullPath);
+                var existsSnapshotFiles = Directory.Exists(Path.Combine(DATA_PATTERN_IMPLEMENTORS_DIR, xmlFileNameWithoutExtension));
+                if (existsSnapshotFiles) {
+                    CopyDirectoryRecursively(Path.Combine(DATA_PATTERN_IMPLEMENTORS_DIR, xmlFileNameWithoutExtension), DATA_PATTERN_REVEALED_DIR, path => true);
+                } else {
+                    // スナップショットが無い場合はAIエージェントによるスナップショット用ファイルの実装の助けになるようなファイルを作成する
+                    var appsrvFileName = Path.Combine(DATA_PATTERN_REVEALED_DIR, "Core", "OverridedApplicationService.cs");
+                    var pagesIndexFileName = Path.Combine(DATA_PATTERN_REVEALED_DIR, "react", "src", "pages", "Index.tsx");
+
+                    await File.WriteAllTextAsync(appsrvFileName, $$"""
+                        using System;
+                        using System.Collections.Generic;
+                        using System.Linq;
+                        using System.Text;
+                        using System.Threading.Tasks;
+
+                        namespace MyApp.Core;
+
+                        partial class OverridedApplicationService {
+                            // このクラスに生成されるabstractメソッドを実装してください。
+
+                            // 例: 従業員DataModel から 従業員QueryModel のインスタンスを生成するメソッドを実装する
+                            // protected override IQueryable<従業員SearchResult> CreateQuerySource(従業員SearchCondition searchCondition, IPresentationContext<従業員SearchConditionMessages> context) {
+                            //     return DbContext.従業員DbSet.Select(e => new 従業員SearchResult {
+                            //         従業員ID = e.従業員ID,
+                            //         氏名 = e.氏名,
+                            //         氏名カナ = e.氏名カナ,
+                            //         退職日 = e.退職日,
+                            //         所属部署 = e.所属部署.Select(d => new 所属部署SearchResult {
+                            //             年度 = d.年度,
+                            //             部署_部署名 = d.部署!.部署名,
+                            //             部署_部署コード = d.部署!.部署コード,
+                            //         }).ToList(),
+                            //         Version = (int)e.Version!,
+                            //     });
+                            // }
+                        }
+                        """, new UTF8Encoding(false, false));
+
+                    await File.WriteAllTextAsync(pagesIndexFileName, $$"""
+                        // このファイルには画面の実装を記載してください。
+
+                        import { RouteObjectWithSideMenuSetting } from "../routes";
+
+                        // 例:
+                        // import { 従業員一覧検索 } from "./従業員/従業員一覧検索";
+                        // import { 従業員詳細編集 } from "./従業員/従業員詳細編集";
+                        // import { 顧客一覧検索 } from "./顧客/顧客一覧検索";
+                        // import { 顧客詳細編集 } from "./顧客/顧客詳細編集";
+
+                        /** Home以外の画面のルーティング設定 */
+                        export default function (): RouteObjectWithSideMenuSetting[] {
+                          return []
+
+                          // 例:
+                          // return [
+                          //   { path: '顧客', element: <顧客一覧検索 />, sideMenuLabel: "顧客一覧" },
+                          //   { path: '顧客/new', element: <顧客詳細編集 /> },
+                          //   { path: '顧客/:顧客ID', element: <顧客詳細編集 /> },
+                          //   { path: '従業員', element: <従業員一覧検索 />, sideMenuLabel: "従業員一覧" },
+                          //   { path: '従業員/new', element: <従業員詳細編集 /> },
+                          //   { path: '従業員/:従業員ID', element: <従業員詳細編集 /> },
+                          // ]
+                        }
+                        """, new UTF8Encoding(false, false));
+                }
+
+                return $$"""
+                    「自動テストで作成されたプロジェクト」フォルダにアプリケーションを作成しました。
+                    {{nijoXmlDestination}}
+                    """;
+
+            } catch (Exception ex) {
+                return ex.ToString();
+            }
+        }
+
+        [McpServerTool(Name = "save_implementation_snapshot"), Description(
+            "「自動テストで作成されたプロジェクト」フォルダにあるアプリケーションの実装のうち、"
+            + "当該データパターンのデータ構造に由来するカスタマイズ実装を、スナップショットとして保存する。")]
+        public static async Task<string> SaveImplementationSnapshot() {
+            try {
+                using var workDirectory = WorkDirectory.Prepare();
+                workDirectory.WriteToMainLog($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [NijoMcpTools.SaveImplementationSnapshot] SaveImplementationSnapshot method called.");
+
+                // 「自動テストで作成されたプロジェクト」のnijo.xmlが「DataPatterns」フォルダのどのパターンから作成されたものかを特定する。
+                // 「自動テストで作成されたプロジェクト」のnijo.xmlと完全一致する「DataPatterns」フォルダのXMLファイルを探すというロジックで特定する。
+                var nijoXmlFileFullPath = Path.Combine(DATA_PATTERN_REVEALED_DIR, "nijo.xml");
+                if (!File.Exists(nijoXmlFileFullPath)) {
+                    return $"指定されたファイルが見つかりません: {nijoXmlFileFullPath}";
+                }
+                var nijoXmlFileContent = await File.ReadAllTextAsync(nijoXmlFileFullPath);
+                var dataPatternsXmlFiles = Directory.GetFiles(DATA_PATTERN_DIR, "*.xml");
+
+                string? snapshotDir = null;
+                foreach (var dataPatternsXmlFile in dataPatternsXmlFiles) {
+                    var dataPatternsXmlFileContent = await File.ReadAllTextAsync(dataPatternsXmlFile);
+                    if (nijoXmlFileContent == dataPatternsXmlFileContent) {
+                        snapshotDir = Path.Combine(DATA_PATTERN_IMPLEMENTORS_DIR, Path.GetFileNameWithoutExtension(dataPatternsXmlFile));
+                        break;
+                    }
+                }
+                if (snapshotDir == null) {
+                    return "指定されたnijo.xmlに対応するデータパターンが見つかりません。";
+                }
+
+                // スナップショットフォルダが存在しない場合は作成する
+                if (!Directory.Exists(snapshotDir)) {
+                    Directory.CreateDirectory(snapshotDir);
+                }
+
+                // 「自動テストで作成されたプロジェクト」のフォルダの内容のうち、
+                // 当該データパターンのデータ構造に由来するカスタマイズ実装をスナップショットフォルダにコピーする
+                CopyDirectoryRecursively(DATA_PATTERN_REVEALED_DIR, snapshotDir, path => {
+                    // OverridedApplicationService.cs と画面の実装のみコピーし、他は無視
+                    if (path == Path.Combine(DATA_PATTERN_REVEALED_DIR, "Core", "OverridedApplicationService.cs")) return true;
+                    if (path == Path.Combine(DATA_PATTERN_REVEALED_DIR, "react", "src", "pages", "index.tsx")) return true;
+                    return false;
+                });
+
+                return $$"""
+                    指定されたデータパターンのデータ構造に由来するカスタマイズ実装をスナップショットフォルダにコピーしました。
+                    {{snapshotDir}}
+                """;
+            } catch (Exception ex) {
+                return ex.ToString();
+            }
+        }
+        #endregion 自動テストで作成されたプロジェクト
     }
 }
