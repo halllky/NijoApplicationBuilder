@@ -1,12 +1,10 @@
 import React from "react"
 import * as ReactRouter from "react-router-dom"
 import { Home } from "./pages/Home"
-import { 顧客一覧検索 } from "./pages/顧客/顧客一覧検索"
-import { 顧客詳細編集 } from "./pages/顧客/顧客詳細編集"
-import { 従業員一覧検索 } from "./pages/従業員/従業員一覧検索"
-import { 従業員詳細編集 } from "./pages/従業員/従業員詳細編集"
 import { DEBUG_ROOMS_ROUTES } from "./debug-rooms"
+import getQueryModelRoutes from "./pages"
 
+/** RouteObject に sideMenuLabel を追加した型 */
 export type RouteObjectWithSideMenuSetting = ReactRouter.RouteObject & {
   /** この値がundefinedでないものは、サイドメニューに表示される。 */
   sideMenuLabel?: string
@@ -26,13 +24,7 @@ export const getRouter = (): RouteObjectWithSideMenuSetting[] => {
   }
 
   // QueryModelの各種画面
-  pages.push({ path: '顧客', element: <顧客一覧検索 />, sideMenuLabel: "顧客一覧" })
-  pages.push({ path: '顧客/new', element: <顧客詳細編集 /> })
-  pages.push({ path: '顧客/:顧客ID', element: <顧客詳細編集 /> })
-
-  pages.push({ path: '従業員', element: <従業員一覧検索 />, sideMenuLabel: "従業員一覧" })
-  pages.push({ path: '従業員/new', element: <従業員詳細編集 /> })
-  pages.push({ path: '従業員/:従業員ID', element: <従業員詳細編集 /> })
+  pages.push(...getQueryModelRoutes())
 
   return pages
 }
