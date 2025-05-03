@@ -148,27 +148,26 @@ export const 従業員詳細編集 = () => {
               </Layout.VForm3.Item>
             </Layout.VForm3.BreakPoint>
 
-            <Layout.VForm3.FullWidthItem className="h-48" label={(
+            <Layout.VForm3.FullWidthItem label={(
               <div className="flex flex-row items-center">
                 <div>所属部署</div>
                 <div className="basis-4"></div>
                 <Input.IconButton fill onClick={add所属部署}>追加</Input.IconButton>
               </div>
             )}>
-              <div className="h-36">
-                <Layout.EditableGrid
-                  ref={所属部署GridRef}
-                  rows={所属部署Fields}
-                  getColumnDefs={getColumnDefs}
-                  onChangeRow={(newRow, index) => {
-                    console.log('行が変更されました:', newRow, index);
-                    update所属部署(index, newRow);
-                  }}
-                  showCheckBox={true}
-                  rowSelection={rowSelection}
-                  onRowSelectionChange={setRowSelection}
-                />
-              </div>
+              <Layout.EditableGrid
+                ref={所属部署GridRef}
+                rows={所属部署Fields}
+                getColumnDefs={getColumnDefs}
+                onChangeRow={(newRow, index) => {
+                  console.log('行が変更されました:', newRow, index);
+                  update所属部署(index, newRow);
+                }}
+                showCheckBox={true}
+                rowSelection={rowSelection}
+                onRowSelectionChange={setRowSelection}
+                className="h-64 border border-gray-300"
+              />
             </Layout.VForm3.FullWidthItem>
           </Layout.VForm3.Root>
         </ReactHookForm.FormProvider>

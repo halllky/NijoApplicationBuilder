@@ -6,8 +6,7 @@ import {
   getCoreRowModel,
   useReactTable,
   type Row,
-  type Cell,
-  flexRender
+  type Cell
 } from '@tanstack/react-table';
 import {
   useVirtualizer,
@@ -29,10 +28,6 @@ import { useSelection } from "./EditableGrid.hooks/useSelection";
 import { useEditing } from "./EditableGrid.hooks/useEditing";
 import { useGridKeyboard } from "./EditableGrid.hooks/useGridKeyboard";
 import { useDragSelection } from "./EditableGrid.hooks/useDragSelection";
-
-// --- デバッグログ用追加 ---
-let renderCount = 0;
-// --- デバッグログ用追加 ---
 
 /**
  * 編集可能なグリッドを表示するコンポーネント
@@ -171,52 +166,12 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
         {
           id: colDef.fieldPath || `col-${colIndex}`,
           header: () => colDef.header,
-          cell: ({ row, column, getValue }: { row: Row<TRow>; column: any; getValue: () => any }) => {
-            const rowIndex = row.index;
-            const isActive = activeCell?.rowIndex === rowIndex && activeCell?.colIndex === colIndex;
-            const isInRange = Boolean(selectedRange &&
-              rowIndex >= Math.min(selectedRange.startRow, selectedRange.endRow) &&
-              rowIndex <= Math.max(selectedRange.startRow, selectedRange.endRow) &&
-              colIndex >= Math.min(selectedRange.startCol, selectedRange.endCol) &&
-              colIndex <= Math.max(selectedRange.startCol, selectedRange.endCol));
-
+          cell: ({ getValue }: { getValue: () => any }) => {
+            // tbody側で編集/表示の切り替えやイベントハンドラを設定するため、
+            // ここでは単純に値を表示する or 基本的なラッパーコンポーネントを返す程度に留める
             return (
-              <div
-                className={`p-1 h-8 w-full overflow-hidden ${isActive ? 'bg-blue-200' : ''} ${isInRange ? 'bg-blue-100' : ''}`}
-                onClick={(e) => handleCellClick(e, rowIndex, colIndex)}
-                onDoubleClick={() => {
-                  if (!getIsReadOnly(rowIndex)) {
-                    startEditing(rowIndex, colIndex);
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && isEditing) {
-                    confirmEdit();
-                  } else if (e.key === 'Escape' && isEditing) {
-                    cancelEdit();
-                  }
-                }}
-                tabIndex={0}
-              >
-                {isEditing && isActive ? (
-                  <input
-                    type="text"
-                    value={editValue}
-                    onChange={(e) => handleEditValueChange(e.target.value)}
-                    onKeyDown={(e) => {
-                      e.stopPropagation();
-                      if (e.key === 'Enter') {
-                        confirmEdit();
-                      } else if (e.key === 'Escape') {
-                        cancelEdit();
-                      }
-                    }}
-                    autoFocus
-                    className="w-full h-full"
-                  />
-                ) : (
-                  getValue()?.toString() || ''
-                )}
+              <div className="p-1 h-8 w-full overflow-hidden">
+                {getValue()?.toString() || ''}
               </div>
             );
           }
@@ -231,25 +186,8 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     getCoreRowModel: getCoreRowModel(),
   });
 
-  // --- デバッグログ用追加 ---
-  useEffect(() => {
-    console.log(`[EditableGrid] props.rows changed (length: ${rows.length})`, rows);
-  }, [rows]);
-  // --- デバッグログ用追加 ---
-
   // 仮想化設定
   const { rows: tableRows } = table.getRowModel();
-
-  // --- デバッグログ用追加 ---
-  useEffect(() => {
-    console.log('[EditableGrid] tableBodyRef.current:', tableBodyRef.current);
-  }, []); // 初回レンダリング後のみ実行
-  // --- デバッグログ用追加 ---
-
-  useEffect(() => {
-    console.log(`[EditableGrid] tableRows changed (length: ${tableRows.length})`, tableRows);
-  }, [tableRows]);
-  // --- デバッグログ用追加 ---
 
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
@@ -271,22 +209,6 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     ];
   }, [virtualItems, rowVirtualizer]);
 
-  // --- デバッグログ用追加 ---
-  useEffect(() => {
-    console.log(`[EditableGrid] virtualItems changed (count: ${virtualItems.length})`, virtualItems);
-  }, [virtualItems]);
-  renderCount++;
-  console.log(`[EditableGrid] Render #${renderCount}`);
-  // --- デバッグログ用追加 ---
-
-  const columnVirtualizer = useVirtualizer({
-    count: table.getAllColumns().length,
-    getScrollElement: () => tableContainerRef.current,
-    estimateSize: () => 150, // 列の幅の推定値
-    horizontal: true,
-    overscan: 2,
-  });
-
   // ref用の公開メソッド
   useImperativeHandle(ref, () => ({
     getSelectedRows: () => {
@@ -295,7 +217,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     selectRow: selectRows,
     getActiveCell: () => activeCell ?? undefined,
     getSelectedRange: () => selectedRange ?? undefined,
-  }), []);
+  }), [selectedRows, rows, selectRows, activeCell, selectedRange]);
 
   // 初期状態設定
   useEffect(() => {
@@ -310,17 +232,13 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     }
   }, [rows, columnDefs, activeCell, setActiveCell, setSelectedRange]);
 
-  // フック呼び出しは常に実行する
-
   return (
     <div
       ref={tableContainerRef}
-      className={`overflow-auto border border-gray-300 relative ${className ?? ''}`}
-      style={{ height: '400px' }}
+      className={`overflow-auto resize-y bg-gray-200 relative ${className ?? ''}`}
       onMouseMove={(e) => {
         if (isDragging && tableBodyRef.current) {
           // マウス位置からテーブル内の行と列のインデックスを計算
-          // 実際の実装では、テーブルのスクロール位置も考慮する必要がある
           const rect = tableBodyRef.current.getBoundingClientRect();
           const x = e.clientX - rect.left;
           const y = e.clientY - rect.top;
@@ -379,7 +297,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
             return (
               <tr
                 key={row.id}
-                className="hover:bg-gray-50"
+                className="bg-gray-100"
               >
                 {row.getVisibleCells().map(cell => {
                   const rowIndex = row.index;

@@ -16,7 +16,6 @@ export function useDragSelection(
 
   // マウスダウンハンドラ
   const handleMouseDown = useCallback((rowIndex: number, colIndex: number) => {
-    console.log('[useDragSelection] mouseDown', rowIndex, colIndex);
     setActiveCell({ rowIndex, colIndex });
     setSelectedRange({
       startRow: rowIndex,
@@ -31,8 +30,6 @@ export function useDragSelection(
   // マウス移動ハンドラ
   const handleMouseMove = useCallback((rowIndex: number, colIndex: number) => {
     if (isDragging && dragStartCell) {
-      console.log('[useDragSelection] mouseMove', rowIndex, colIndex);
-
       // アクティブセルを更新
       setActiveCell({ rowIndex, colIndex });
 
@@ -48,7 +45,6 @@ export function useDragSelection(
 
   // マウスアップハンドラ
   const handleMouseUp = useCallback(() => {
-    console.log('[useDragSelection] mouseUp');
     setIsDragging(false);
   }, []);
 
