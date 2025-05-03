@@ -18,7 +18,7 @@ export const RowCheckboxCell = memo(({
   showCheckBox
 }: RowCheckboxCellProps) => {
   return (
-    <div className="w-10 h-8 flex justify-center items-center">
+    <div className="w-full h-8 flex justify-center items-center">
       {showCheckBox && (
         <input
           type="checkbox"

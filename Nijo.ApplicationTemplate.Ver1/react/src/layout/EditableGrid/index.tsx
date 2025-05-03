@@ -6,7 +6,8 @@ import {
   getCoreRowModel,
   useReactTable,
   type Row,
-  type Cell
+  type Cell,
+  flexRender
 } from '@tanstack/react-table';
 import {
   useVirtualizer,
@@ -18,8 +19,6 @@ import type * as ReactHookForm from 'react-hook-form';
 import { getValueByPath } from "./EditableGrid.utils";
 
 // コンポーネントのインポート
-import { HeaderCell } from "./EditableGrid.HeaderCell";
-import { CheckboxHeaderCell } from "./EditableGrid.CheckboxHeaderCell";
 import { RowCheckboxCell } from "./EditableGrid.RowCheckboxCell";
 import { EmptyDataMessage } from "./EditableGrid.EmptyDataMessage";
 
@@ -52,6 +51,12 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   // 列定義の取得
   const cellType = useCellTypes<TRow>();
   const columnDefs = getColumnDefs(cellType);
+
+  // 列のデフォルトサイズ (8rem をピクセル換算。環境依存可能性あり)
+  const defaultColumnWidth = 128;
+
+  // 列状態 (サイズ変更用)
+  const [columnSizing, setColumnSizing] = useState({});
 
   // チェックボックス表示判定
   const getShouldShowCheckBox = useCallback((rowIndex: number): boolean => {
@@ -125,7 +130,9 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     // 行ヘッダー（チェックボックス列）
     columnHelper.display({
       id: 'rowHeader',
-      header: () => {
+      size: 32,
+      enableResizing: false,
+      header: ({ table }) => {
         const handleClick = (e: React.MouseEvent) => {
           e.stopPropagation(); // イベント伝播を停止
 
@@ -145,13 +152,13 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
 
         return (
           <div
-            className="w-10 h-10 flex justify-center items-center cursor-pointer"
+            className="h-10 flex justify-center items-center cursor-pointer"
             onClick={handleClick} // onClickハンドラを追加
           >
             {showCheckBox && (
               <input
                 type="checkbox"
-                checked={allRowsSelected}
+                checked={table.getIsAllRowsSelected()}
                 onChange={(e) => handleToggleAllRows(e.target.checked)}
                 aria-label="全行選択"
               />
@@ -162,7 +169,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
       cell: ({ row }: { row: Row<TRow> }) => {
         const rowIndex = row.index;
         return (
-          <div className="w-10 h-8 flex justify-center items-center">
+          <div className="h-8 flex justify-center items-center">
             {getShouldShowCheckBox(rowIndex) && (
               <input
                 type="checkbox"
@@ -188,6 +195,8 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
         {
           id: colDef.fieldPath || `col-${colIndex}`,
           header: colDef.header,
+          size: colDef.width ?? defaultColumnWidth,
+          enableResizing: colDef.resizable ?? true,
           cell: ({ getValue }: { getValue: () => any }) => {
             // tbody側で編集/表示の切り替えやイベントハンドラを設定するため、
             // ここでは単純に値を表示する or 基本的なラッパーコンポーネントを返す程度に留める
@@ -205,8 +214,22 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   const table = useReactTable({
     data: rows,
     columns,
+    columnResizeMode: 'onChange',
+    state: {
+      columnSizing,
+    },
+    onColumnSizingChange: setColumnSizing,
     getCoreRowModel: getCoreRowModel(),
+    enableColumnResizing: true,
+    defaultColumn: {
+      size: defaultColumnWidth,
+      minSize: 50,
+      maxSize: 500,
+    },
   });
+
+  // テーブル全体の合計幅を取得 (最初のヘッダーグループから)
+  const tableTotalWidth = table.getTotalSize();
 
   // 仮想化設定
   const { rows: tableRows } = table.getRowModel();
@@ -281,27 +304,39 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
         }
       }}
     >
-      <table className="w-full border-collapse">
-        <thead className="sticky top-0 z-10 bg-gray-100">
-          <tr>
-            {table.getFlatHeaders().map(header => (
-              <th key={header.id} className="border border-gray-300 p-2">
-                {header.column.id === 'rowHeader' ? (
-                  <CheckboxHeaderCell
-                    isChecked={allRowsSelected}
-                    onToggle={(checked) => handleToggleAllRows(checked)}
-                    showCheckBox={!!showCheckBox}
-                  />
-                ) : (
-                  <HeaderCell
-                    header={header.column.columnDef.header?.toString() || ''}
-                  />
-                )}
-              </th>
-            ))}
-          </tr>
+      <table
+        className="border-collapse table-fixed"
+        style={{ minWidth: tableTotalWidth }}
+      >
+        <thead className="sticky top-0 z-10 bg-gray-100 grid-header-group">
+          {table.getHeaderGroups().map(headerGroup => (
+            <tr key={headerGroup.id}>
+              {headerGroup.headers.map(header => (
+                <th
+                  key={header.id}
+                  className="border border-gray-300 px-1 relative text-left select-none"
+                  style={{ width: header.getSize() }}
+                >
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
+                  {header.column.getCanResize() && (
+                    <div
+                      onMouseDown={header.getResizeHandler()}
+                      onTouchStart={header.getResizeHandler()}
+                      className={`absolute top-0 right-0 h-full w-1.5 cursor-col-resize select-none touch-none ${header.column.getIsResizing() ? 'bg-blue-500 opacity-50' : 'hover:bg-gray-400'}`}
+                    >
+                    </div>
+                  )}
+                </th>
+              ))}
+            </tr>
+          ))}
         </thead>
-        <tbody ref={tableBodyRef}>
+        <tbody ref={tableBodyRef} className="grid-body">
           {/* 上部パディング行 */}
           {paddingTop > 0 && (
             <tr>
@@ -321,6 +356,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
               <tr
                 key={row.id}
                 className="bg-gray-100"
+                style={{ height: `${virtualRow.size}px` }}
               >
                 {row.getVisibleCells().map(cell => {
                   const rowIndex = row.index;
@@ -337,7 +373,8 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                     return (
                       <td
                         key={cell.id}
-                        className="border border-gray-300 w-10"
+                        className="border border-gray-300 align-middle text-center"
+                        style={{ width: cell.column.getSize() }}
                       >
                         <RowCheckboxCell
                           rowIndex={rowIndex}
@@ -352,7 +389,8 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                   return (
                     <td
                       key={cell.id}
-                      className={`border border-gray-300 outline-none ${isActive ? 'bg-blue-200' : ''} ${isInRange ? 'bg-blue-100' : ''}`}
+                      className={`border border-gray-300 outline-none p-1 align-middle ${isActive ? 'bg-blue-200' : ''} ${isInRange ? 'bg-blue-100' : ''}`}
+                      style={{ width: cell.column.getSize() }}
                       onClick={(e) => handleCellClick(e, rowIndex, colIndex)}
                       onDoubleClick={() => {
                         if (!getIsReadOnly(rowIndex)) {
@@ -389,10 +427,10 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                             }
                           }}
                           autoFocus
-                          className="w-full h-full p-1"
+                          className="w-full h-full p-1 border-none outline-none"
                         />
                       ) : (
-                        <div className="p-1 select-none">
+                        <div className="select-none overflow-hidden text-ellipsis whitespace-nowrap">
                           {cell.getValue()?.toString() || ''}
                         </div>
                       )}
