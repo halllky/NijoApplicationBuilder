@@ -1,4 +1,6 @@
-import { GetColumnDefsFunction } from "./cellType"
+import * as React from "react"
+import type * as ReactHookForm from 'react-hook-form'
+import { GetColumnDefsFunction } from "../cellType"
 
 /** EditableGridのプロパティ */
 export type EditableGridProps<TRow> = {
@@ -24,3 +26,14 @@ export type EditableGridRef<TRow> = {
   selectRow: (startRowIndex: number, endRowIndex: number) => void
 }
 
+export interface CellPosition {
+  rowIndex: number;
+  colIndex: number;
+}
+
+export interface CellSelectionRange {
+  startRow: number;
+  startCol: number;
+  endRow: number;
+  endCol: number;
+}
