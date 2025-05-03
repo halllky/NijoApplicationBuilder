@@ -1,5 +1,6 @@
 /自動テストで作成されたプロジェクト/*
 /Nijo.IntegrationTest.Log/*
+/Nijo.IntegrationTest.DataPatternsImplementors/*
 
 # 開発者個人設定
 appsettings.Development.json

@@ -12,6 +12,11 @@ using System.Reflection;
 //Console.WriteLine(await Nijo.Mcp.NijoMcpTools.StartDebugging(@"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.ApplicationTemplate.Ver1\nijo.xml"));
 //Console.WriteLine(Nijo.Mcp.NijoMcpTools.StopDebugging());
 
+//using var wd = Nijo.Mcp.WorkDirectory.Prepare();
+//await Nijo.Mcp.NijoMcpTools.アプリケーションテンプレートを自動テストで作成されたプロジェクトにコピーする(wd, @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.IntegrationTest\DataPatterns\000_単純な集約.xml");
+
+// -----------------------------------
+
 var builder = Host.CreateApplicationBuilder(args);
 builder.Logging.AddConsole(consoleLogOptions => {
     // Configure all logs to go to stderr
@@ -42,11 +47,12 @@ namespace Nijo.Mcp {
         private const string APPLICATION_TEMPLATE_DIR = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.ApplicationTemplate.Ver1";
         private const string DATA_PATTERN_DIR = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.IntegrationTest\DataPatterns";
         private const string DATA_PATTERN_REVEALED_DIR = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\自動テストで作成されたプロジェクト";
-        private const string DATA_PATTERN_IMPLEMENTORS_DIR = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.IntegrationTest\DataPatternsImplementors";
+        private const string DATA_PATTERN_IMPLEMENTORS_DIR = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.IntegrationTest.DataPatternsImplementors";
 
 
         #region アプリケーションテンプレート
-        [McpServerTool(Name = "generate_code"), Description(
+        private const string TOOL_CHECK_COMPILE_ERROR = "check_compile_error";
+        [McpServerTool(Name = TOOL_CHECK_COMPILE_ERROR), Description(
             "ソースコードの自動生成処理の最新化、自動生成処理のかけなおし、コンパイルエラーチェックを行います。")]
         public static async Task<string> GenerateCode([Description("nijo.xmlのファイルの絶対パス")] string nijoXmlFileFullPath) {
             try {
@@ -311,169 +317,128 @@ namespace Nijo.Mcp {
 
 
         #region 自動テストで作成されたプロジェクト
-        [McpServerTool(Name = "reveal_data_pattern"), Description(
-            "Nijo.IntegrationTest の DataPatterns フォルダにあるXMLで「自動テストで作成されたプロジェクト」フォルダにアプリケーションを顕現させる。 ")]
-        public static async Task<string> RevealDataPattern(
-            [Description("DataPatternsフォルダにあるXMLのファイルの絶対パス")] string dataPatternsXmlFileFullPath) {
+        private const string TOOL_START_IMPLEMENTATION_SESSION = "start_implementation_session";
+        private const string TOOL_CONTINUE_IMPLEMENTATION_SESSION = "continue_implementation_session";
+        private const string NEXT_ACTION_FILE = "SESSION_NEXT_ACTION";
 
-            try {
-                if (string.IsNullOrEmpty(dataPatternsXmlFileFullPath)) {
-                    return "DataPatternsフォルダにあるXMLのファイルの絶対パスを指定してください。";
-                }
-                if (!File.Exists(dataPatternsXmlFileFullPath)) {
-                    return $"指定されたDataPatternsフォルダにあるXMLのファイルが見つかりません: {dataPatternsXmlFileFullPath}";
-                }
-
-                using var workDirectory = WorkDirectory.Prepare();
-                workDirectory.WriteToMainLog($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [NijoMcpTools.RevealDataPattern] RevealDataPattern method called with path: {dataPatternsXmlFileFullPath}");
-
-                // 「自動テストで作成されたプロジェクト」フォルダの内容を全部クリア
-                Directory.Delete(DATA_PATTERN_REVEALED_DIR, true);
-
-                // アプリケーションテンプレートを「自動テストで作成されたプロジェクト」フォルダにコピー。
-                // ただし、アプリケーションテンプレートのnijo.xmlのデータ構造に由来するソースは除く
-                CopyDirectoryRecursively(APPLICATION_TEMPLATE_DIR, DATA_PATTERN_REVEALED_DIR, path => {
-
-                    // CreateQuerySource の実装などはコピーしない
-                    if (path == Path.Combine(APPLICATION_TEMPLATE_DIR, "Core", "OverridedApplicationService.cs")) return false;
-
-                    // 画面の実装はコピーしない。ただしHome.tsxだけはコピーする
-                    if (path == Path.Combine(APPLICATION_TEMPLATE_DIR, "react", "src", "pages", "Home.tsx")) return true;
-                    if (path.StartsWith(Path.Combine(APPLICATION_TEMPLATE_DIR, "react", "src", "pages"))) return false;
-
-                    return true;
-                });
-
-                // 「自動テストで作成されたプロジェクト」のnijo.xmlを指定されたXMLファイルで上書き
-                var nijoXmlDestination = Path.Combine(DATA_PATTERN_REVEALED_DIR, "nijo.xml");
-                File.Copy(dataPatternsXmlFileFullPath, nijoXmlDestination, true);
-
-                // OverridedApplicationService や画面の実装はスナップショットされたファイルで上書き
-                var xmlFileNameWithoutExtension = Path.GetFileNameWithoutExtension(dataPatternsXmlFileFullPath);
-                var existsSnapshotFiles = Directory.Exists(Path.Combine(DATA_PATTERN_IMPLEMENTORS_DIR, xmlFileNameWithoutExtension));
-                if (existsSnapshotFiles) {
-                    CopyDirectoryRecursively(Path.Combine(DATA_PATTERN_IMPLEMENTORS_DIR, xmlFileNameWithoutExtension), DATA_PATTERN_REVEALED_DIR, path => true);
-                } else {
-                    // スナップショットが無い場合はAIエージェントによるスナップショット用ファイルの実装の助けになるようなファイルを作成する
-                    var appsrvFileName = Path.Combine(DATA_PATTERN_REVEALED_DIR, "Core", "OverridedApplicationService.cs");
-                    var pagesIndexFileName = Path.Combine(DATA_PATTERN_REVEALED_DIR, "react", "src", "pages", "Index.tsx");
-
-                    await File.WriteAllTextAsync(appsrvFileName, $$"""
-                        using System;
-                        using System.Collections.Generic;
-                        using System.Linq;
-                        using System.Text;
-                        using System.Threading.Tasks;
-
-                        namespace MyApp.Core;
-
-                        partial class OverridedApplicationService {
-                            // このクラスに生成されるabstractメソッドを実装してください。
-
-                            // 例: 従業員DataModel から 従業員QueryModel のインスタンスを生成するメソッドを実装する
-                            // protected override IQueryable<従業員SearchResult> CreateQuerySource(従業員SearchCondition searchCondition, IPresentationContext<従業員SearchConditionMessages> context) {
-                            //     return DbContext.従業員DbSet.Select(e => new 従業員SearchResult {
-                            //         従業員ID = e.従業員ID,
-                            //         氏名 = e.氏名,
-                            //         氏名カナ = e.氏名カナ,
-                            //         退職日 = e.退職日,
-                            //         所属部署 = e.所属部署.Select(d => new 所属部署SearchResult {
-                            //             年度 = d.年度,
-                            //             部署_部署名 = d.部署!.部署名,
-                            //             部署_部署コード = d.部署!.部署コード,
-                            //         }).ToList(),
-                            //         Version = (int)e.Version!,
-                            //     });
-                            // }
-                        }
-                        """, new UTF8Encoding(false, false));
-
-                    await File.WriteAllTextAsync(pagesIndexFileName, $$"""
-                        // このファイルには画面の実装を記載してください。
-
-                        import { RouteObjectWithSideMenuSetting } from "../routes";
-
-                        // 例:
-                        // import { 従業員一覧検索 } from "./従業員/従業員一覧検索";
-                        // import { 従業員詳細編集 } from "./従業員/従業員詳細編集";
-                        // import { 顧客一覧検索 } from "./顧客/顧客一覧検索";
-                        // import { 顧客詳細編集 } from "./顧客/顧客詳細編集";
-
-                        /** Home以外の画面のルーティング設定 */
-                        export default function (): RouteObjectWithSideMenuSetting[] {
-                          return []
-
-                          // 例:
-                          // return [
-                          //   { path: '顧客', element: <顧客一覧検索 />, sideMenuLabel: "顧客一覧" },
-                          //   { path: '顧客/new', element: <顧客詳細編集 /> },
-                          //   { path: '顧客/:顧客ID', element: <顧客詳細編集 /> },
-                          //   { path: '従業員', element: <従業員一覧検索 />, sideMenuLabel: "従業員一覧" },
-                          //   { path: '従業員/new', element: <従業員詳細編集 /> },
-                          //   { path: '従業員/:従業員ID', element: <従業員詳細編集 /> },
-                          // ]
-                        }
-                        """, new UTF8Encoding(false, false));
-                }
-
-                return $$"""
-                    「自動テストで作成されたプロジェクト」フォルダにアプリケーションを作成しました。
-                    {{nijoXmlDestination}}
-                    """;
-
-            } catch (Exception ex) {
-                return ex.ToString();
+        [McpServerTool(Name = TOOL_START_IMPLEMENTATION_SESSION), Description(
+            "Nijo.IntegrationTest の DataPatterns フォルダにあるXMLと対応する OverridedApplicationService などの実装を作成するセッションを開始する。")]
+        public static async Task<string> StartImplementationSession() {
+            using (var workDirectory = WorkDirectory.Prepare()) {
+                var nextActionFile = Path.Combine(workDirectory.DirectoryPath, NEXT_ACTION_FILE);
+                if (File.Exists(nextActionFile)) File.Delete(nextActionFile);
             }
+            return await NextImplementationSession();
         }
 
-        [McpServerTool(Name = "save_implementation_snapshot"), Description(
-            "「自動テストで作成されたプロジェクト」フォルダにあるアプリケーションの実装のうち、"
-            + "当該データパターンのデータ構造に由来するカスタマイズ実装を、スナップショットとして保存する。")]
-        public static async Task<string> SaveImplementationSnapshot() {
+        [McpServerTool(Name = TOOL_CONTINUE_IMPLEMENTATION_SESSION), Description(
+            $"{TOOL_START_IMPLEMENTATION_SESSION} ツール内の指示により呼び出されるツール。")]
+        public static async Task<string> NextImplementationSession() {
+            string? nextActionFile = null;
             try {
                 using var workDirectory = WorkDirectory.Prepare();
-                workDirectory.WriteToMainLog($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [NijoMcpTools.SaveImplementationSnapshot] SaveImplementationSnapshot method called.");
 
-                // 「自動テストで作成されたプロジェクト」のnijo.xmlが「DataPatterns」フォルダのどのパターンから作成されたものかを特定する。
-                // 「自動テストで作成されたプロジェクト」のnijo.xmlと完全一致する「DataPatterns」フォルダのXMLファイルを探すというロジックで特定する。
-                var nijoXmlFileFullPath = Path.Combine(DATA_PATTERN_REVEALED_DIR, "nijo.xml");
-                if (!File.Exists(nijoXmlFileFullPath)) {
-                    return $"指定されたファイルが見つかりません: {nijoXmlFileFullPath}";
+                if (!await 既存デバッグプロセス中止(workDirectory)) {
+                    return workDirectory.WithMainLogContents("既存デバッグプロセス中止に失敗しました。");
                 }
-                var nijoXmlFileContent = await File.ReadAllTextAsync(nijoXmlFileFullPath);
-                var dataPatternsXmlFiles = Directory.GetFiles(DATA_PATTERN_DIR, "*.xml");
 
-                string? snapshotDir = null;
-                foreach (var dataPatternsXmlFile in dataPatternsXmlFiles) {
-                    var dataPatternsXmlFileContent = await File.ReadAllTextAsync(dataPatternsXmlFile);
-                    if (nijoXmlFileContent == dataPatternsXmlFileContent) {
-                        snapshotDir = Path.Combine(DATA_PATTERN_IMPLEMENTORS_DIR, Path.GetFileNameWithoutExtension(dataPatternsXmlFile));
-                        break;
+                // このファイルに状態を記録し、AIエージェントに対話的に指示を送る
+                nextActionFile = Path.Combine(workDirectory.DirectoryPath, NEXT_ACTION_FILE);
+                var currentPatternFile = Path.Combine(workDirectory.DirectoryPath, "SESSION_CURRENT_PATTERN");
+
+                const string NEXT_IMPL_REACT = "::Reactの画面を実装させる::";
+                const string NEXT_TRY_COMPLIE = "::コンパイルエラーが出なくなるまで修正を繰り返させる::";
+                const string NEXT_FORWARD = "::次のデータパターンXMLに進む::";
+
+                // セッション開始（DataPatternの最初のファイルでセットアップを行なう）
+                if (!File.Exists(nextActionFile)) {
+                    var nextPatternXmlFullPath = GetNextDataPatternXmlFullPath(null) ?? throw new InvalidOperationException("DataPatternsフォルダにxmlが1個も無い");
+
+                    File.WriteAllText(nextActionFile, NEXT_IMPL_REACT);
+                    File.WriteAllText(currentPatternFile, nextPatternXmlFullPath);
+
+                    return await SetupNextPatternAndEchoImplementAppSrv(workDirectory, nextPatternXmlFullPath, deleteAll: true);
+                }
+
+                // 1つ前のセッションの指示を読み取る
+                var nextAction = File.ReadAllText(nextActionFile);
+                var currentPattern = File.ReadAllText(currentPatternFile);
+
+                switch (nextAction) {
+                    // Reactの実装を促す
+                    case NEXT_IMPL_REACT:
+                        File.WriteAllText(nextActionFile, NEXT_TRY_COMPLIE);
+                        return $$"""
+                            下記TypeScriptファイル内の関数（React Router のルーティング定義）と、
+                            当該ルーティングで定義される画面のソースコードを、下記スキーマ定義のデータ構造に合うように実装してください。
+
+                            * 実装対象: {{Path.Combine(DATA_PATTERN_REVEALED_DIR, "react", "src", "pages", "index.tsx")}}
+                            * スキーマ定義: {{Path.Combine(DATA_PATTERN_REVEALED_DIR, "nijo.xml")}}
+
+                            実装例は当該TypeScriptファイル内のコメントや、
+                            "{{Path.Combine(DATA_PATTERN_REVEALED_DIR, "react", "src", "debug-rooms")}}" フォルダ内のサンプルを参照してください。
+
+                            実装完了後、 "{{TOOL_CONTINUE_IMPLEMENTATION_SESSION}}" ツールを呼び出してください。
+                            """;
+
+                    // コンパイルエラーが出なくなるまで繰り返させる
+                    case NEXT_TRY_COMPLIE:
+                        File.WriteAllText(nextActionFile, NEXT_FORWARD);
+                        return $$"""
+                            "{{TOOL_CHECK_COMPILE_ERROR}}" ツールを "{{Path.Combine(DATA_PATTERN_REVEALED_DIR, "nijo.xml")}}" で呼び出し、
+                            あなたがこれまでに実装した C#, TypeScript のソースでコンパイルエラーが出ないかどうかの確認を行なってください。
+                            ツール実行後、以下いずれかの対応を行なってください。
+
+                            * エラーが無かった場合
+                              * "{{TOOL_CONTINUE_IMPLEMENTATION_SESSION}}" ツールを呼び出してください。
+                            * エラーがあった場合
+                              * あなたが実装したソースコードが原因であれば、ソースコードを修正し、再度 "{{TOOL_CHECK_COMPILE_ERROR}}" ツールを呼んでください。
+                              * 自動生成されたソースコード中に問題があるなど、あなたが実装したソースコードに原因が無い場合、 "{{TOOL_CONTINUE_IMPLEMENTATION_SESSION}}" ツールを呼んでください。
+                            """;
+
+                    // AIエージェントが実装した成果を保存し、次のパターンへ進む
+                    case NEXT_FORWARD:
+                        AIエージェントの実装成果をスナップショットフォルダに保存する(currentPattern);
+                        var next = GetNextDataPatternXmlFullPath(currentPattern);
+                        if (next != null) {
+                            File.WriteAllText(nextActionFile, NEXT_IMPL_REACT);
+                            File.WriteAllText(currentPatternFile, next);
+
+                            return await SetupNextPatternAndEchoImplementAppSrv(workDirectory, next, deleteAll: false);
+
+                        } else {
+                            return $$"""
+                                タスクは完了です。
+                                """;
+                        }
+
+                    default:
+                        throw new InvalidOperationException($"不正な状態: {nextAction}");
+                }
+
+                // ファイルコピー => ソースコード自動生成かけなおし => アプリケーションサービスクラスの実装を指示
+                static async Task<string> SetupNextPatternAndEchoImplementAppSrv(WorkDirectory workDirectory, string nextPatternXmlFullPath, bool deleteAll) {
+                    if (!await アプリケーションテンプレートを自動テストで作成されたプロジェクトにコピーする(workDirectory, nextPatternXmlFullPath, deleteAll)) {
+                        return workDirectory.WithMainLogContents("アプリケーションテンプレートの「自動テストで作成されたプロジェクト」へのコピーに失敗しました。");
                     }
-                }
-                if (snapshotDir == null) {
-                    return "指定されたnijo.xmlに対応するデータパターンが見つかりません。";
+                    if (!await ソースコード自動生成かけなおし(workDirectory, DATA_PATTERN_REVEALED_DIR)) {
+                        return workDirectory.WithMainLogContents("ソースコードの自動生成に失敗しました。");
+                    }
+                    return $$"""
+                        データパターン "{{Path.GetFileName(nextPatternXmlFullPath)}}" の定義で「自動テストで作成されたプロジェクト」の自動生成コードを洗い替えました。
+
+                        下記C#ファイル内のクラスで定義可能な abstract メソッドを、下記スキーマ定義のデータ構造に合うように実装してください。
+                        実装例は当該C#ファイル内のコメントを参照してください。
+
+                        * 実装対象: {{Path.Combine(DATA_PATTERN_REVEALED_DIR, "Core", "OverridedApplicationService.cs")}}
+                        * スキーマ定義: {{Path.Combine(DATA_PATTERN_REVEALED_DIR, "nijo.xml")}}
+
+                        実装完了後、 "{{TOOL_CONTINUE_IMPLEMENTATION_SESSION}}" ツールを呼び出してください。
+                        """;
                 }
 
-                // スナップショットフォルダが存在しない場合は作成する
-                if (!Directory.Exists(snapshotDir)) {
-                    Directory.CreateDirectory(snapshotDir);
-                }
-
-                // 「自動テストで作成されたプロジェクト」のフォルダの内容のうち、
-                // 当該データパターンのデータ構造に由来するカスタマイズ実装をスナップショットフォルダにコピーする
-                CopyDirectoryRecursively(DATA_PATTERN_REVEALED_DIR, snapshotDir, path => {
-                    // OverridedApplicationService.cs と画面の実装のみコピーし、他は無視
-                    if (path == Path.Combine(DATA_PATTERN_REVEALED_DIR, "Core", "OverridedApplicationService.cs")) return true;
-                    if (path == Path.Combine(DATA_PATTERN_REVEALED_DIR, "react", "src", "pages", "index.tsx")) return true;
-                    return false;
-                });
-
-                return $$"""
-                    指定されたデータパターンのデータ構造に由来するカスタマイズ実装をスナップショットフォルダにコピーしました。
-                    {{snapshotDir}}
-                """;
             } catch (Exception ex) {
+                if (nextActionFile != null && File.Exists(nextActionFile)) File.Delete(nextActionFile);
                 return ex.ToString();
             }
         }

@@ -167,12 +167,17 @@ namespace Nijo {
 
             if (!GeneratedProject.TryOpen(projectRoot, out var project, out var error)) {
                 logger.LogError(error);
+                Environment.ExitCode = 1;
                 return;
             }
             var rule = SchemaParseRule.Default();
             var parseContext = new SchemaParseContext(XDocument.Load(project.SchemaXmlPath), rule);
 
-            project.GenerateCode(parseContext, logger);
+            if (project.GenerateCode(parseContext, logger)) {
+                Environment.ExitCode = 0;
+            } else {
+                Environment.ExitCode = 1;
+            }
         }
 
 
