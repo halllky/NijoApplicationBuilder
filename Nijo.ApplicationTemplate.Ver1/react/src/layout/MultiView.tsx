@@ -162,6 +162,28 @@ export const MultiView = <TQueryModel extends QueryModelType>(
     group.setLayout(newLayout);
   }, []);
 
+  // ネストされたプロパティへのアクセス関数
+  const getNestedValue = useCallback((obj: any, path: string) => {
+    if (!path) return '';
+
+    try {
+      const pathParts = path.split('.');
+      let value = obj;
+
+      for (const part of pathParts) {
+        if (value === null || value === undefined || typeof value !== 'object') {
+          return '';
+        }
+        value = value[part];
+      }
+
+      return value !== null && value !== undefined ? String(value) : '';
+    } catch (e) {
+      console.error('データ取得エラー:', e, path, obj);
+      return '';
+    }
+  }, []);
+
   return (
     <PageFrame headerContent={(<>
       <PageFrameTitle>
@@ -271,51 +293,11 @@ export const MultiView = <TQueryModel extends QueryModelType>(
                     <tr key={rowIndex} className="border-b hover:bg-gray-50">
                       {columnDefs.map((column, colIndex) => {
                         const fieldPath = column.fieldPath || '';
-
-                        // パスからデータを取得
-                        let value: any = null;
-
-                        try {
-                          if (fieldPath.startsWith('住所.values.') && '住所' in row) {
-                            // 住所フィールドの特別処理（顧客データの場合）
-                            const addressField = fieldPath.split('.')[2]; // '住所.values.都道府県' -> '都道府県'
-                            if (row.住所 && row.住所.values) {
-                              // 型安全に住所データにアクセス
-                              switch (addressField) {
-                                case '都道府県':
-                                  value = row.住所.values.都道府県;
-                                  break;
-                                case '市町村':
-                                  value = row.住所.values.市町村;
-                                  break;
-                                case '番地以降':
-                                  value = row.住所.values.番地以降;
-                                  break;
-                                default:
-                                  value = null;
-                              }
-                            }
-                          } else {
-                            // 通常のフィールド処理
-                            value = row;
-                            const pathParts = fieldPath.split('.');
-                            for (const part of pathParts) {
-                              if (value && part in value) {
-                                value = value[part];
-                              } else {
-                                value = null;
-                                break;
-                              }
-                            }
-                          }
-                        } catch (e) {
-                          console.error('データ取得エラー:', e, fieldPath, row);
-                          value = null;
-                        }
+                        const value = getNestedValue(row, fieldPath);
 
                         return (
-                          <td key={colIndex} className="border p-2">
-                            {value !== null ? String(value) : ''}
+                          <td key={colIndex} className="border p-2 truncate" title={value}>
+                            {value}
                           </td>
                         );
                       })}
