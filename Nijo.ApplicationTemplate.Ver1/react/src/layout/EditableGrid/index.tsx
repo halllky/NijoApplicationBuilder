@@ -22,7 +22,6 @@ import { getValueByPath } from "./EditableGrid.utils";
 import { HeaderCell } from "./EditableGrid.HeaderCell";
 import { CheckboxHeaderCell } from "./EditableGrid.CheckboxHeaderCell";
 import { RowCheckboxCell } from "./EditableGrid.RowCheckboxCell";
-import { DataCell } from "./EditableGrid.DataCell";
 import { EmptyDataMessage } from "./EditableGrid.EmptyDataMessage";
 
 // カスタムフックのインポート
@@ -183,7 +182,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
 
             return (
               <div
-                className={`p-1 h-8 w-full overflow-hidden ${isActive ? 'bg-blue-100' : ''} ${isInRange ? 'bg-blue-50' : ''}`}
+                className={`p-1 h-8 w-full overflow-hidden ${isActive ? 'bg-blue-200' : ''} ${isInRange ? 'bg-blue-100' : ''}`}
                 onClick={(e) => handleCellClick(e, rowIndex, colIndex)}
                 onDoubleClick={() => {
                   if (!getIsReadOnly(rowIndex)) {
@@ -316,7 +315,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   return (
     <div
       ref={tableContainerRef}
-      className={`overflow-auto border border-gray-300 relative ${className || ''}`}
+      className={`overflow-auto border border-gray-300 relative ${className ?? ''}`}
       style={{ height: '400px' }}
       onMouseMove={(e) => {
         if (isDragging && tableBodyRef.current) {
@@ -412,7 +411,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                   return (
                     <td
                       key={cell.id}
-                      className={`border border-gray-300 ${isActive ? 'bg-blue-100' : ''} ${isInRange ? 'bg-blue-50' : ''}`}
+                      className={`border border-gray-300 outline-none ${isActive ? 'bg-blue-200' : ''} ${isInRange ? 'bg-blue-100' : ''}`}
                       onClick={(e) => handleCellClick(e, rowIndex, colIndex)}
                       onDoubleClick={() => {
                         if (!getIsReadOnly(rowIndex)) {
@@ -452,7 +451,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                           className="w-full h-full p-1"
                         />
                       ) : (
-                        <div className="p-1">
+                        <div className="p-1 select-none">
                           {cell.getValue()?.toString() || ''}
                         </div>
                       )}

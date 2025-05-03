@@ -35,30 +35,30 @@ export type EditableGridRef<TRow extends ReactHookForm.FieldValues> = {
   getSelectedRange: () => { startRow: number, startCol: number, endRow: number, endCol: number } | undefined
 }
 
+/** ボディセルの位置を表す構造体。 */
 export interface CellPosition {
-  rowIndex: number;
-  colIndex: number;
+  rowIndex: number
+  colIndex: number
 }
 
+/** セル選択範囲を表す構造体。 */
 export interface CellSelectionRange {
-  startRow: number;
-  startCol: number;
-  endRow: number;
-  endCol: number;
+  startRow: number
+  startCol: number
+  endRow: number
+  endCol: number
 }
 
 /** EditableGridの列定義 */
 export type EditableGridColumnDef<TRow extends ReactHookForm.FieldValues> = {
   /** 列のヘッダーテキスト */
-  header: string;
-  /** react-hook-formのフィールドパス */
-  fieldPath?: ReactHookForm.Path<TRow>;
+  header: string
+  /** react-hook-formのフィールドパス。フォームのルートからではなく行データのルートからのパスを指定する。 */
+  fieldPath?: ReactHookForm.Path<TRow>
   /** セルのデータ型 */
-  cellType?: keyof CellTypeDefs<TRow>['components'];
-  /** セルのオプション */
-  cellOption?: any;
-  /** 列の幅 */
-  width?: number | string;
+  cellType?: keyof CellTypeDefs<TRow>['components']
+  /** 画面初期表示時の列の幅 */
+  defaultWidth?: number | string
   /** 列が読み取り専用かどうか */
-  isReadOnly?: boolean | ((row: TRow, rowIndex: number) => boolean);
+  isReadOnly?: boolean | ((row: TRow, rowIndex: number) => boolean)
 }
