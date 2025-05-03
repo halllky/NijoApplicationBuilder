@@ -1,6 +1,6 @@
-export * from "./cellType"
 export * from "./EditableGrid"
 export * from "./EditableGrid/index.d"
+export * from "./EditableGrid/useCellTypes"
 export * from "./MultiView"
 export * from "./PageFrame"
 export * from "./VForm3"

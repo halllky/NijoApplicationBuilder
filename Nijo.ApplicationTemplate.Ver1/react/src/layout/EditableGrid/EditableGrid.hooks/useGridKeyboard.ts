@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { CellPosition, CellSelectionRange } from "../index.d";
 
 export interface UseGridKeyboardProps {
@@ -24,6 +24,8 @@ export function useGridKeyboard({
   startEditing,
   getIsReadOnly
 }: UseGridKeyboardProps) {
+  const anchorCellRef = useRef<CellPosition | null>(null);
+
   // クリップボードへのコピー処理
   const handleCopy = useCallback((e: ClipboardEvent) => {
     if (!selectedRange || !e.clipboardData) return;
@@ -44,13 +46,23 @@ export function useGridKeyboard({
 
     const { rowIndex, colIndex } = activeCell;
 
+    // Shiftキーが押されていない場合、または anchorCell が未設定の場合にアンカーを更新
+    if (!e.shiftKey || !anchorCellRef.current) {
+      anchorCellRef.current = activeCell;
+    }
+
     // 編集モード中は矢印キーを処理しない
     if (isEditing) return;
 
     // Shiftキーを押した状態でのキー操作時、範囲選択の開始位置を保持
-    const rangeStart = selectedRange ?
-      { rowIndex: selectedRange.startRow, colIndex: selectedRange.startCol } :
-      { rowIndex, colIndex };
+    // const rangeStart = selectedRange ?
+    //  { rowIndex: selectedRange.startRow, colIndex: selectedRange.startCol } :
+    //  { rowIndex, colIndex };
+    // ↑ 不要になったのでコメントアウト
+
+    // アンカーセルが存在しない場合は処理しない（Shiftキーが押された最初のイベントより前）
+    const anchorCell = anchorCellRef.current;
+    if (e.shiftKey && !anchorCell) return;
 
     switch (e.key) {
       case 'ArrowUp':
@@ -59,16 +71,17 @@ export function useGridKeyboard({
           const newRowIndex = rowIndex - 1;
           setActiveCell({ rowIndex: newRowIndex, colIndex });
 
-          if (e.shiftKey) {
+          if (e.shiftKey && anchorCell) { // anchorCell の存在を確認
             // 範囲選択（Shift + 矢印キー）
             setSelectedRange({
-              startRow: rangeStart.rowIndex,
-              startCol: rangeStart.colIndex,
-              endRow: newRowIndex,
-              endCol: colIndex
+              startRow: Math.min(anchorCell.rowIndex, newRowIndex),
+              startCol: Math.min(anchorCell.colIndex, colIndex),
+              endRow: Math.max(anchorCell.rowIndex, newRowIndex),
+              endCol: Math.max(anchorCell.colIndex, colIndex)
             });
           } else {
-            // 単一選択
+            // 単一選択 (アンカーもリセット)
+            anchorCellRef.current = { rowIndex: newRowIndex, colIndex };
             setSelectedRange({
               startRow: newRowIndex,
               startCol: colIndex,
@@ -84,16 +97,17 @@ export function useGridKeyboard({
           const newRowIndex = rowIndex + 1;
           setActiveCell({ rowIndex: newRowIndex, colIndex });
 
-          if (e.shiftKey) {
+          if (e.shiftKey && anchorCell) { // anchorCell の存在を確認
             // 範囲選択（Shift + 矢印キー）
             setSelectedRange({
-              startRow: rangeStart.rowIndex,
-              startCol: rangeStart.colIndex,
-              endRow: newRowIndex,
-              endCol: colIndex
+              startRow: Math.min(anchorCell.rowIndex, newRowIndex),
+              startCol: Math.min(anchorCell.colIndex, colIndex),
+              endRow: Math.max(anchorCell.rowIndex, newRowIndex),
+              endCol: Math.max(anchorCell.colIndex, colIndex)
             });
           } else {
-            // 単一選択
+            // 単一選択 (アンカーもリセット)
+            anchorCellRef.current = { rowIndex: newRowIndex, colIndex };
             setSelectedRange({
               startRow: newRowIndex,
               startCol: colIndex,
@@ -109,16 +123,17 @@ export function useGridKeyboard({
           const newColIndex = colIndex - 1;
           setActiveCell({ rowIndex, colIndex: newColIndex });
 
-          if (e.shiftKey) {
+          if (e.shiftKey && anchorCell) { // anchorCell の存在を確認
             // 範囲選択（Shift + 矢印キー）
             setSelectedRange({
-              startRow: rangeStart.rowIndex,
-              startCol: rangeStart.colIndex,
-              endRow: rowIndex,
-              endCol: newColIndex
+              startRow: Math.min(anchorCell.rowIndex, rowIndex),
+              startCol: Math.min(anchorCell.colIndex, newColIndex),
+              endRow: Math.max(anchorCell.rowIndex, rowIndex),
+              endCol: Math.max(anchorCell.colIndex, newColIndex)
             });
           } else {
-            // 単一選択
+            // 単一選択 (アンカーもリセット)
+            anchorCellRef.current = { rowIndex, colIndex: newColIndex };
             setSelectedRange({
               startRow: rowIndex,
               startCol: newColIndex,
@@ -134,16 +149,17 @@ export function useGridKeyboard({
           const newColIndex = colIndex + 1;
           setActiveCell({ rowIndex, colIndex: newColIndex });
 
-          if (e.shiftKey) {
+          if (e.shiftKey && anchorCell) { // anchorCell の存在を確認
             // 範囲選択（Shift + 矢印キー）
             setSelectedRange({
-              startRow: rangeStart.rowIndex,
-              startCol: rangeStart.colIndex,
-              endRow: rowIndex,
-              endCol: newColIndex
+              startRow: Math.min(anchorCell.rowIndex, rowIndex),
+              startCol: Math.min(anchorCell.colIndex, newColIndex),
+              endRow: Math.max(anchorCell.rowIndex, rowIndex),
+              endCol: Math.max(anchorCell.colIndex, newColIndex)
             });
           } else {
-            // 単一選択
+            // 単一選択 (アンカーもリセット)
+            anchorCellRef.current = { rowIndex, colIndex: newColIndex };
             setSelectedRange({
               startRow: rowIndex,
               startCol: newColIndex,

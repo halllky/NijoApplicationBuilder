@@ -13,7 +13,7 @@ import {
   type VirtualItem,
   notUndefined
 } from '@tanstack/react-virtual';
-import { useCellTypes } from "../cellType/useFieldArrayEx";
+import { useCellTypes } from "./useCellTypes";
 import type * as ReactHookForm from 'react-hook-form';
 import { getValueByPath } from "./EditableGrid.utils";
 
@@ -125,18 +125,40 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     // 行ヘッダー（チェックボックス列）
     columnHelper.display({
       id: 'rowHeader',
-      header: () => (
-        <div className="w-10 h-10 flex justify-center items-center">
-          {showCheckBox && (
-            <input
-              type="checkbox"
-              checked={allRowsSelected}
-              onChange={(e) => handleToggleAllRows(e.target.checked)}
-              aria-label="全行選択"
-            />
-          )}
-        </div>
-      ),
+      header: () => {
+        const handleClick = (e: React.MouseEvent) => {
+          e.stopPropagation(); // イベント伝播を停止
+
+          // 全セルを選択
+          setSelectedRange({
+            startRow: 0,
+            startCol: 0,
+            endRow: rows.length - 1,
+            endCol: columnDefs.length - 1
+          });
+
+          // アクティブセルを左上ボディセルに設定
+          if (rows.length > 0 && columnDefs.length > 0) {
+            setActiveCell({ rowIndex: 0, colIndex: 0 });
+          }
+        };
+
+        return (
+          <div
+            className="w-10 h-10 flex justify-center items-center cursor-pointer"
+            onClick={handleClick} // onClickハンドラを追加
+          >
+            {showCheckBox && (
+              <input
+                type="checkbox"
+                checked={allRowsSelected}
+                onChange={(e) => handleToggleAllRows(e.target.checked)}
+                aria-label="全行選択"
+              />
+            )}
+          </div>
+        );
+      },
       cell: ({ row }: { row: Row<TRow> }) => {
         const rowIndex = row.index;
         return (
@@ -165,7 +187,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
         },
         {
           id: colDef.fieldPath || `col-${colIndex}`,
-          header: () => colDef.header,
+          header: colDef.header,
           cell: ({ getValue }: { getValue: () => any }) => {
             // tbody側で編集/表示の切り替えやイベントハンドラを設定するため、
             // ここでは単純に値を表示する or 基本的なラッパーコンポーネントを返す程度に留める
@@ -211,9 +233,10 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
 
   // ref用の公開メソッド
   useImperativeHandle(ref, () => ({
-    getSelectedRows: () => {
-      return Array.from(selectedRows).map(rowIndex => rows[rowIndex]);
-    },
+    getSelectedRows: () => Array.from(selectedRows).map(rowIndex => ({
+      row: rows[rowIndex],
+      rowIndex,
+    })),
     selectRow: selectRows,
     getActiveCell: () => activeCell ?? undefined,
     getSelectedRange: () => selectedRange ?? undefined,

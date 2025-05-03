@@ -1,40 +1,41 @@
 import * as ReactHookForm from "react-hook-form"
-
-/** セル型定義ヘルパー関数を返します。 */
-export const useFieldArrayEx = <
-  TField extends ReactHookForm.FieldValues,
-  TFieldArrayName extends ReactHookForm.FieldArrayPath<TField>
->(props: ReactHookForm.UseFieldArrayProps<TField, TFieldArrayName>): UseFieldArrayExReturn<TField, TFieldArrayName> => {
-  throw new Error("Not implemented")
-}
+import { EditableGridColumnDef, EditableGridColumnDefOptions } from "./index.d"
 
 /** 列定義ヘルパー関数の一覧を返します。 */
 export const useCellTypes = <TRow extends ReactHookForm.FieldValues>(): ColumnDefFactories<TRow> => {
   const textCellFactory: BoundColumnDefFactory<TRow, string | undefined> = (fieldName, header, options) => {
     return {
       header,
-      fieldPath: fieldName as string
+      fieldPath: fieldName,
+      cellType: "text",
+      ...options,
     };
   };
 
   const numberCellFactory: BoundColumnDefFactory<TRow, number | undefined> = (fieldName, header, options) => {
     return {
       header,
-      fieldPath: fieldName as string
+      fieldPath: fieldName,
+      cellType: "number",
+      ...options,
     };
   };
 
   const dateCellFactory: BoundColumnDefFactory<TRow, string | undefined> = (fieldName, header, options) => {
     return {
       header,
-      fieldPath: fieldName as string
+      fieldPath: fieldName,
+      cellType: "date",
+      ...options,
     };
   };
 
   const booleanCellFactory: BoundColumnDefFactory<TRow, boolean> = (fieldName, header, options) => {
     return {
       header,
-      fieldPath: fieldName as string
+      fieldPath: fieldName,
+      cellType: "boolean",
+      ...options,
     };
   };
 
@@ -44,15 +45,6 @@ export const useCellTypes = <TRow extends ReactHookForm.FieldValues>(): ColumnDe
     date: dateCellFactory,
     boolean: booleanCellFactory
   };
-}
-
-/** フィールド配列。react-hook-formのuseFieldArrayを拡張したもの。 */
-export type UseFieldArrayExReturn<
-  TField extends ReactHookForm.FieldValues,
-  TFieldArrayName extends ReactHookForm.FieldArrayPath<TField>
-> = ReactHookForm.UseFieldArrayReturn<TField, TFieldArrayName> & {
-  /** 列定義ヘルパー関数の一覧 */
-  cellType: ColumnDefFactories<ReactHookForm.FieldArrayWithId<TField, TFieldArrayName>>
 }
 
 /** このアプリケーションで定義可能な、グリッドの列定義の種類の一覧 */
@@ -74,22 +66,9 @@ export type BoundColumnDefFactory<TRow extends ReactHookForm.FieldValues, TCellV
   /** ヘッダーに表示する文字列 */
   header: string,
   /** オプション */
-  options?: ColumnDefOptions
-) => CellTypeColumnDef<TRow, TCellValueType>
+  options?: EditableGridColumnDefOptions<TRow>
+) => EditableGridColumnDef<TRow>
 
 /** ボタンなど、特定のプロパティと紐づかない列定義を生成する関数。 */
-export type UnboundColumnDefFactory<TRow, TCellValueType> = (
-) => CellTypeColumnDef<TRow, TCellValueType>
-
-/** グリッドの列定義 */
-export type CellTypeColumnDef<TRow, TCellValueType = unknown> = {
-  /** ヘッダーに表示する文字列 */
-  header: string;
-  /** この列と紐づけるフィールドパス */
-  fieldPath?: string;
-}
-
-export type ColumnDefOptions = {
-  /** 列の幅 */
-  defaultWidth?: number
-}
+export type UnboundColumnDefFactory<TRow extends ReactHookForm.FieldValues> = (
+) => EditableGridColumnDef<TRow>
