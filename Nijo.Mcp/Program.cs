@@ -357,12 +357,21 @@ namespace Nijo.Mcp {
                     File.WriteAllText(nextActionFile, NEXT_IMPL_REACT);
                     File.WriteAllText(currentPatternFile, nextPatternXmlFullPath);
 
-                    return await SetupNextPatternAndEchoImplementAppSrv(workDirectory, nextPatternXmlFullPath, deleteAll: true);
+                    return await SetupNextPatternAndEchoImplementAppSrv($$"""
+                        下記スキーマ定義それぞれについて、自動生成されたソースを利用したアプリケーションの実装を開始します。
+                        {{string.Join(Environment.NewLine, Directory.GetFiles(DATA_PATTERN_DIR).Select(filename => $$"""
+                        * {{Path.GetFileName(filename)}}
+                        """))}}
+
+                        以下の指示に従いソースコードの実装を進めてください。
+
+                        ---------------------------
+                        """, workDirectory, nextPatternXmlFullPath, deleteAll: true);
                 }
 
                 // 1つ前のセッションの指示を読み取る
                 var nextAction = File.ReadAllText(nextActionFile);
-                var currentPattern = File.ReadAllText(currentPatternFile);
+                var currentPatternXmlFullPath = File.ReadAllText(currentPatternFile);
 
                 switch (nextAction) {
                     // Reactの実装を促す
@@ -375,8 +384,11 @@ namespace Nijo.Mcp {
                             * 実装対象: {{Path.Combine(DATA_PATTERN_REVEALED_DIR, "react", "src", "pages", "index.tsx")}}
                             * スキーマ定義: {{Path.Combine(DATA_PATTERN_REVEALED_DIR, "nijo.xml")}}
 
-                            実装例は当該TypeScriptファイル内のコメントや、
-                            "{{Path.Combine(DATA_PATTERN_REVEALED_DIR, "react", "src", "debug-rooms")}}" フォルダ内のサンプルを参照してください。
+                            実装例は以下を参考にしてください。
+
+                            * "{{Path.Combine(DATA_PATTERN_REVEALED_DIR, "react", "src", "pages", "index.tsx")}}" 内部でコメントアウトされたソース
+                            * "{{Path.Combine(DATA_PATTERN_REVEALED_DIR, "react", "src", "debug-rooms")}}" フォルダ内のサンプル
+                            * "{{Path.Combine(DATA_PATTERN_REVEALED_DIR, "react", "src", "pages")}}" 直下にある「画面実装例」フォルダの中身（TypeScriptコンパイラに認識させないために拡張子を ".tsx.SAMPLE" にしています）
 
                             実装完了後、 "{{TOOL_CONTINUE_IMPLEMENTATION_SESSION}}" ツールを呼び出してください。
                             """;
@@ -398,13 +410,25 @@ namespace Nijo.Mcp {
 
                     // AIエージェントが実装した成果を保存し、次のパターンへ進む
                     case NEXT_FORWARD:
-                        AIエージェントの実装成果をスナップショットフォルダに保存する(currentPattern);
-                        var next = GetNextDataPatternXmlFullPath(currentPattern);
+
+                        // スナップショットフォルダを決定
+                        var snapshotDir = Path.Combine(DATA_PATTERN_IMPLEMENTORS_DIR, Path.GetFileNameWithoutExtension(currentPatternXmlFullPath));
+                        AIエージェントの実装成果をスナップショットフォルダに保存する(currentPatternXmlFullPath, snapshotDir);
+
+                        // コンパイラーの結果をログ出力しておく
+                        await コンパイルエラーチェック(workDirectory, DATA_PATTERN_REVEALED_DIR);
+                        File.Copy(
+                            workDirectory.MainLogFullPath,
+                            Path.Combine(snapshotDir, "build.log"));
+
+                        var next = GetNextDataPatternXmlFullPath(currentPatternXmlFullPath);
                         if (next != null) {
                             File.WriteAllText(nextActionFile, NEXT_IMPL_REACT);
                             File.WriteAllText(currentPatternFile, next);
 
-                            return await SetupNextPatternAndEchoImplementAppSrv(workDirectory, next, deleteAll: false);
+                            return await SetupNextPatternAndEchoImplementAppSrv($$"""
+                                スキーマ定義 "{{Path.GetFileName(currentPatternXmlFullPath)}}" の実装を完了しました。続いて "{{Path.GetFileName(next)}}" の実装に移ります。
+                                """, workDirectory, next, deleteAll: false);
 
                         } else {
                             return $$"""
@@ -417,7 +441,11 @@ namespace Nijo.Mcp {
                 }
 
                 // ファイルコピー => ソースコード自動生成かけなおし => アプリケーションサービスクラスの実装を指示
-                static async Task<string> SetupNextPatternAndEchoImplementAppSrv(WorkDirectory workDirectory, string nextPatternXmlFullPath, bool deleteAll) {
+                static async Task<string> SetupNextPatternAndEchoImplementAppSrv(
+                    string messagePrefix,
+                    WorkDirectory workDirectory,
+                    string nextPatternXmlFullPath,
+                    bool deleteAll) {
                     if (!await アプリケーションテンプレートを自動テストで作成されたプロジェクトにコピーする(workDirectory, nextPatternXmlFullPath, deleteAll)) {
                         return workDirectory.WithMainLogContents("アプリケーションテンプレートの「自動テストで作成されたプロジェクト」へのコピーに失敗しました。");
                     }
@@ -425,9 +453,11 @@ namespace Nijo.Mcp {
                         return workDirectory.WithMainLogContents("ソースコードの自動生成に失敗しました。");
                     }
                     return $$"""
-                        データパターン "{{Path.GetFileName(nextPatternXmlFullPath)}}" の定義で「自動テストで作成されたプロジェクト」の自動生成コードを洗い替えました。
+                        {{messagePrefix}}
 
-                        下記C#ファイル内のクラスで定義可能な abstract メソッドを、下記スキーマ定義のデータ構造に合うように実装してください。
+                        下記C#ファイル内のクラス "OverridedApplicationService" は "AutoGeneratedApplicationService" を継承します。
+                        基底クラスではいくつかのabstractメソッドが宣言されているため、具象クラス側でそれらをオーバライドして実装する必要があります。
+                        各種abstractメソッドをオーバライドし、下記スキーマ定義のデータ構造に合うように実装してください。
                         実装例は当該C#ファイル内のコメントを参照してください。
 
                         * 実装対象: {{Path.Combine(DATA_PATTERN_REVEALED_DIR, "Core", "OverridedApplicationService.cs")}}

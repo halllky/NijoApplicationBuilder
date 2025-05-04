@@ -42,6 +42,7 @@ public class WorkDirectory : IDisposable {
 
     private WorkDirectory(string fullpath, string mainLog) {
         DirectoryPath = fullpath;
+        MainLogFullPath = mainLog;
         _mainLogFileStream = new FileStream(mainLog, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
         _mainLogWriter = new StreamWriter(_mainLogFileStream, encoding: Encoding.UTF8) {
             AutoFlush = true,
@@ -56,6 +57,10 @@ public class WorkDirectory : IDisposable {
     /// ワークディレクトリパス
     /// </summary>
     public string DirectoryPath { get; }
+    /// <summary>
+    /// メインログ絶対パス
+    /// </summary>
+    public string MainLogFullPath { get; }
 
     public string NpmRunPidFile => Path.Combine(DirectoryPath, "PID_NPM_RUN");
     public string NpmRunLogFile => Path.Combine(DirectoryPath, "output_npm-run.log");

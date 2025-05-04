@@ -93,11 +93,6 @@ partial class NijoMcpTools {
         workDirectory.WriteToMainLog($"右記ファイルをサンプルコードで初期化します: {pagesIndexFile}");
 
         await File.WriteAllTextAsync(pagesIndexFile, $$"""
-            // このファイルには画面の実装を React router にマッピングする処理を記載してください。
-            // また、一覧検索と詳細編集の各画面のコンポーネントの実装を、集約名と対応するフォルダの中に作成してください。
-            // 実装内容は、「画面実装例（従業員）」「画面実装例（顧客」フォルダ内のサンプルを参考にしてください。
-            // （TypeScriptコンパイラに認識させないために拡張子を ".tsx.SAMPLE" にしています）
-
             import { RouteObjectWithSideMenuSetting } from "../routes";
 
             // 例:
@@ -125,11 +120,12 @@ partial class NijoMcpTools {
         return true;
     }
 
-    private static bool AIエージェントの実装成果をスナップショットフォルダに保存する(string dataPatternsXmlFileFullPath) {
+    private static bool AIエージェントの実装成果をスナップショットフォルダに保存する(string dataPatternsXmlFileFullPath, string snapshotDir) {
 
-        // スナップショットフォルダを決定
-        var xmlFileNameWithoutExtension = Path.GetFileNameWithoutExtension(dataPatternsXmlFileFullPath);
-        var snapshotDir = Path.Combine(DATA_PATTERN_IMPLEMENTORS_DIR, xmlFileNameWithoutExtension);
+        // 前回のセッションの結果が残っているなら削除
+        if (Directory.Exists(snapshotDir)) {
+            Directory.Delete(snapshotDir, true);
+        }
 
         // 「自動テストで作成されたプロジェクト」のフォルダの内容のうち、
         // 当該データパターンのデータ構造に由来するカスタマイズ実装をスナップショットフォルダにコピーする
@@ -151,9 +147,6 @@ partial class NijoMcpTools {
             overwrite: true);
 
         // React画面
-        foreach (var dir in Directory.GetDirectories(destinationPagesDir)) {
-            Directory.Delete(dir, true);
-        }
         foreach (var sourceDirectory in Directory.GetDirectories(Path.Combine(DATA_PATTERN_REVEALED_DIR, "react", "src", "pages"))) {
             CopyDirectoryRecursively(
                 sourceDirectory,
