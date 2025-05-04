@@ -13,7 +13,7 @@ namespace Nijo.CodeGenerating {
     /// publicなプロパティにはDescription属性をつけ、そのプロパティの役割を1行で記述すること。
     /// ここでつけられた文言はnijo.xml記載ルールのドキュメントにそのまま表れる。
     /// </summary>
-    public class CodeRenderingConfig {
+    public class GeneratedProjectOptions {
 
         internal const string ROOT_ELEMENT_NAME = "NijoApplicationBuilder";
 
@@ -21,7 +21,7 @@ namespace Nijo.CodeGenerating {
         /// アプリケーションの新規作成時はXMLのルート要素に一切の属性が付されないXMLを保存すればよいので
         /// このコンストラクタが使われるのは既存のアプリケーションの読み込み時のみ
         /// </summary>
-        internal CodeRenderingConfig(XDocument xDocument) {
+        internal GeneratedProjectOptions(XDocument xDocument) {
             _xDocument = xDocument;
         }
 

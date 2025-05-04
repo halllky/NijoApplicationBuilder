@@ -10,15 +10,15 @@ namespace Nijo.Ui.Views {
     /// アプリケーション全体設定画面
     /// </summary>
     public partial class AppConfigView : UserControl {
-        private readonly CodeRenderingConfig _config;
+        private readonly GeneratedProjectOptions _config;
         private readonly DataGridView _gridView;
         private readonly XDocument _document;
 
-        public AppConfigView(CodeRenderingConfig config) {
+        public AppConfigView(GeneratedProjectOptions config) {
             _config = config;
 
             // XMLドキュメントのインスタンスを取得するためのプライベートフィールドを取得
-            var fieldInfo = typeof(CodeRenderingConfig).GetField("_xDocument", BindingFlags.NonPublic | BindingFlags.Instance);
+            var fieldInfo = typeof(GeneratedProjectOptions).GetField("_xDocument", BindingFlags.NonPublic | BindingFlags.Instance);
             _document = (XDocument)fieldInfo.GetValue(_config);
 
             InitializeComponent();
@@ -73,7 +73,7 @@ namespace Nijo.Ui.Views {
         /// CodeRenderingConfigのプロパティをリフレクションで取得してDataGridViewに表示
         /// </summary>
         private void LoadConfigProperties() {
-            Type configType = typeof(CodeRenderingConfig);
+            Type configType = typeof(GeneratedProjectOptions);
             PropertyInfo[] properties = configType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
             foreach (PropertyInfo property in properties) {

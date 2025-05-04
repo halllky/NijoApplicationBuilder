@@ -25,8 +25,8 @@ namespace Nijo.CodeGenerating {
     /// <see cref="IMultiAggregateSourceFile"/> の状態を管理する
     /// </summary>
     public interface IMultiAggregateSourceFileManager {
-        /// <inheritdoc cref="CodeRenderingConfig"/>
-        CodeRenderingConfig Config { get; }
+        /// <inheritdoc cref="GeneratedProjectOptions"/>
+        GeneratedProjectOptions Config { get; }
         /// <summary>
         /// 1つのファイルの中に複数の集約の情報が含まれるソースファイルを使用します。
         /// </summary>

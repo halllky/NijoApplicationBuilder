@@ -62,9 +62,9 @@ namespace Nijo {
         /// <summary>
         /// このプロジェクトのソースコード自動生成設定を返します。
         /// </summary>
-        public CodeRenderingConfig GetConfig() {
+        public GeneratedProjectOptions GetConfig() {
             var xDocument = XDocument.Load(SchemaXmlPath);
-            return new CodeRenderingConfig(xDocument);
+            return new GeneratedProjectOptions(xDocument);
         }
 
         /// <summary>

@@ -134,8 +134,8 @@ public class ProjectFormViewModel {
     /// <summary>
     /// アプリケーション設定を取得
     /// </summary>
-    public CodeRenderingConfig GetAppConfig() {
-        return new CodeRenderingConfig(_schemaParseContext.Document);
+    public GeneratedProjectOptions GetAppConfig() {
+        return new GeneratedProjectOptions(_schemaParseContext.Document);
     }
 
     /// <summary>
