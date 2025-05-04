@@ -189,7 +189,13 @@ namespace Nijo.Models.QueryModelModules {
                 /// <summary>
                 /// {{_rootAggregate.DisplayName}}のデータベースへの問い合わせデータ構造（SQLで言うSELECT句とFROM句）を定義する
                 /// </summary>
+                {{If(ctx.RenderingOptions.AllowNotImplemented, () => $$"""
+                protected virtual IQueryable<{{searchResult.CsClassName}}> {{CREATE_QUERY_SOURCE}}({{searchCondition.CsClassName}} searchCondition, {{PresentationContext.INTERFACE}}<{{searchConditionMessage.CsClassName}}> context) {
+                    throw new NotImplementedException("クエリ構造が定義されていません。このメソッドをオーバライドし、{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}の各項目がどのテーブルから取得されるかを定義してください。");
+                }
+                """).Else(() => $$"""
                 protected abstract IQueryable<{{searchResult.CsClassName}}> {{CREATE_QUERY_SOURCE}}({{searchCondition.CsClassName}} searchCondition, {{PresentationContext.INTERFACE}}<{{searchConditionMessage.CsClassName}}> context);
+                """)}}
                 {{RenderAppendWhereClause(ctx)}}
                 {{RenderAppendOrderByClause()}}
                 {{RenderToDisplayData()}}

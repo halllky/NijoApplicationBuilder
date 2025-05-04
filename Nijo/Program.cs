@@ -83,6 +83,11 @@ namespace Nijo {
                 ["-b", "--no-browser"],
                 description: "デバッグ開始時にブラウザを立ち上げません。");
 
+            // 未実装を許可
+            var allowNotImplemented = new Option<bool>(
+                ["-a", "--allow-not-implemented"],
+                description: "QueryModelのデータ構造定義などの必ず実装しなければならないメソッドは通常abstractでレンダリングされるが、コンパイルエラーの確認などのためにあえてvirtualでレンダリングする。");
+
             // デバッグ実行キャンセルファイル
             var cancelFile = new Option<string?>(
                 ["-c", "--cancel-file"],
@@ -103,16 +108,16 @@ namespace Nijo {
             var generate = new Command(
                 name: "generate",
                 description: "ソースコードの自動生成を実行します。")
-                { path };
-            generate.SetHandler(Generate, path);
+                { path, allowNotImplemented };
+            generate.SetHandler(Generate, path, allowNotImplemented);
             rootCommand.AddCommand(generate);
 
             // デバッグ実行開始
             var run = new Command(
                 name: "run",
                 description: "プロジェクトのデバッグを開始します。")
-                { path, noBuild, noBrowser, cancelFile };
-            run.SetHandler(Run, path, noBuild, noBrowser, cancelFile);
+                { path, noBuild, noBrowser, allowNotImplemented, cancelFile };
+            run.SetHandler(Run, path, noBuild, noBrowser, allowNotImplemented, cancelFile);
             rootCommand.AddCommand(run);
 
             // スキーマダンプ
@@ -159,7 +164,7 @@ namespace Nijo {
         /// ソースコードの自動生成を実行します。
         /// </summary>
         /// <param name="path">対象フォルダまでの相対パス</param>
-        private static void Generate(string? path) {
+        private static void Generate(string? path, bool allowNotImplemented) {
             var projectRoot = path == null
                 ? Directory.GetCurrentDirectory()
                 : Path.Combine(Directory.GetCurrentDirectory(), path);
@@ -172,8 +177,11 @@ namespace Nijo {
             }
             var rule = SchemaParseRule.Default();
             var parseContext = new SchemaParseContext(XDocument.Load(project.SchemaXmlPath), rule);
+            var renderingOptions = new CodeRenderingOptions {
+                AllowNotImplemented = allowNotImplemented,
+            };
 
-            if (project.GenerateCode(parseContext, logger)) {
+            if (project.GenerateCode(parseContext, renderingOptions, logger)) {
                 Environment.ExitCode = 0;
             } else {
                 Environment.ExitCode = 1;
@@ -187,8 +195,9 @@ namespace Nijo {
         /// <param name="path">対象フォルダまでの相対パス</param>
         /// <param name="noBuild">ソースコードの自動生成をスキップする場合はtrue</param>
         /// <param name="noBrowser">デバッグ開始時にブラウザを立ち上げない</param>
+        /// <param name="allowNotImplemented">抽象メソッドをabstractでなくvirtualで生成</param>
         /// <param name="cancelFile">デバッグ実行を終了するトリガー。このファイルが存在したら終了する。</param>
-        private static async Task Run(string? path, bool noBuild, bool noBrowser, string? cancelFile) {
+        private static async Task Run(string? path, bool noBuild, bool noBrowser, bool allowNotImplemented, string? cancelFile) {
             var projectRoot = path == null
                 ? Directory.GetCurrentDirectory()
                 : Path.Combine(Directory.GetCurrentDirectory(), path);
@@ -222,7 +231,11 @@ namespace Nijo {
                     if (!noBuild) {
                         var rule = SchemaParseRule.Default();
                         var parseContext = new SchemaParseContext(XDocument.Load(project.SchemaXmlPath), rule);
-                        project.GenerateCode(parseContext, logger);
+                        var renderingOptions = new CodeRenderingOptions {
+                            AllowNotImplemented = allowNotImplemented,
+                        };
+
+                        project.GenerateCode(parseContext, renderingOptions, logger);
                     }
 
                     launcher.Launch();

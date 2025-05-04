@@ -77,14 +77,14 @@ namespace Nijo {
         /// <summary>
         /// コード自動生成を実行します。
         /// </summary>
-        internal bool GenerateCode(SchemaParseContext parseContext, ILogger logger) {
+        internal bool GenerateCode(SchemaParseContext parseContext, CodeRenderingOptions renderingOptions, ILogger logger) {
             // スキーマ定義のコレクションを作成
             if (!parseContext.TryBuildSchema(parseContext.Document, out var immutableSchema, logger)) {
                 logger.LogError("エラーがある状態でソースコードの自動生成を行なうことはできません。");
                 return false;
             }
 
-            var ctx = new CodeRenderingContext(this, GetConfig(), parseContext, immutableSchema);
+            var ctx = new CodeRenderingContext(this, GetConfig(), renderingOptions, parseContext, immutableSchema);
 
             logger.LogInformation("ソース自動生成開始");
 

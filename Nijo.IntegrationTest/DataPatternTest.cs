@@ -69,6 +69,21 @@ public class DataPatternTest {
         // テンプレートプロジェクトをコピー
         CopyDirectory(templateProjectDir, testProjectDir);
 
+        // テンプレートプロジェクトでしか使わないソースを削除（ApplicationService）
+        File.WriteAllText(Path.Combine(testProjectDir, "Core", "OverridedApplicationService.cs"), $$"""
+            using System;
+            using System.Collections.Generic;
+            using System.Linq;
+            using System.Text;
+            using System.Threading.Tasks;
+
+            namespace MyApp.Core;
+
+            partial class OverridedApplicationService {
+                // 実装なし
+            }
+            """.Replace("\r\n", "\n"), new UTF8Encoding(false, false));
+
         // テンプレートプロジェクトでしか使わないソースを削除（ユニットテスト）
         Directory.Delete(Path.Combine(testProjectDir, "Test", "Tests"), true);
 
@@ -207,18 +222,20 @@ public class DataPatternTest {
             Assert.Fail($"スキーマ定義の検証に失敗しました。");
         }
         try {
-            project.GenerateCode(parseContext, _logger);
+            project.GenerateCode(parseContext, new() {
+                AllowNotImplemented = true,
+            }, _logger);
         } catch (Exception ex) {
             Assert.Fail($"ソースコード自動生成に失敗しました。\n{ex}");
         }
 
-        // OverridedApplicationServiceの実装
-        var implementor = GetImplementor(fileName);
-        if (implementor != null) {
-            var implementation = implementor.GetImplementation(schemaXml);
-            var servicePath = Path.Combine(testProjectDir, "Core", "OverridedApplicationService.cs");
-            File.WriteAllText(servicePath, implementation);
-        }
+        //// OverridedApplicationServiceの実装
+        //var implementor = GetImplementor(fileName);
+        //if (implementor != null) {
+        //    var implementation = implementor.GetImplementation(schemaXml);
+        //    var servicePath = Path.Combine(testProjectDir, "Core", "OverridedApplicationService.cs");
+        //    File.WriteAllText(servicePath, implementation);
+        //}
 
         // -------------------------------
         // コンパイラーチェック実行。dotnet build と tsc -b --noEmit で判断する。

@@ -13,15 +13,17 @@ namespace Nijo.CodeGenerating {
     /// ソースコード自動生成のコンテキスト情報
     /// </summary>
     public sealed class CodeRenderingContext : IMultiAggregateSourceFileManager {
-        internal CodeRenderingContext(GeneratedProject project, GeneratedProjectOptions options, SchemaParseContext xmlParseContext, ApplicationSchema immutableSchema) {
+        internal CodeRenderingContext(GeneratedProject project, GeneratedProjectOptions projectOptions, CodeRenderingOptions renderingOptions, SchemaParseContext xmlParseContext, ApplicationSchema immutableSchema) {
             Project = project;
-            Config = options;
+            Config = projectOptions;
+            RenderingOptions = renderingOptions;
             SchemaParser = xmlParseContext;
             _immutableSchema = immutableSchema;
         }
 
         public GeneratedProject Project { get; }
         public GeneratedProjectOptions Config { get; }
+        public CodeRenderingOptions RenderingOptions { get; }
 
         private readonly ApplicationSchema _immutableSchema;
 
