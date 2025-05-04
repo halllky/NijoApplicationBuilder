@@ -68,6 +68,21 @@ public class DataPatternTest {
 
         // テンプレートプロジェクトをコピー
         CopyDirectory(templateProjectDir, testProjectDir);
+
+        // テンプレートプロジェクトでしか使わないソースを削除（ユニットテスト）
+        Directory.Delete(Path.Combine(testProjectDir, "Test", "Tests"), true);
+
+        // テンプレートプロジェクトでしか使わないソースを削除（画面）
+        foreach (var dir in Directory.GetDirectories(Path.Combine(testProjectDir, "react", "src", "pages"))) {
+            Directory.Delete(dir, true);
+        }
+        // テンプレートプロジェクトでしか使わないソースを削除（ルーティング。pages/index.tsx）
+        File.WriteAllText(Path.Combine(testProjectDir, "react", "src", "pages", "index.tsx"), $$"""
+            /** 画面のルーティング設定 */
+            export default function (): never[] {
+              return []
+            }
+            """.Replace("\r\n", "\n"), new UTF8Encoding(false, false));
     }
 
     /// <summary>
@@ -168,7 +183,7 @@ public class DataPatternTest {
     [Test]
     [TestCaseSource(nameof(GetXmlFilePaths))]
     [Category("DataPattern")]
-    public void コンパイルエラーチェック(string fileName) {
+    public async Task コンパイルエラーチェック(string fileName) {
         var workspaceRoot = Path.GetFullPath(Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", ".."));
         var testProjectDir = Path.Combine(workspaceRoot, "..", TEST_PROJECT_DIR);
         var dataPatternsDir = Path.Combine(workspaceRoot, "DataPatterns");
@@ -205,68 +220,176 @@ public class DataPatternTest {
             File.WriteAllText(servicePath, implementation);
         }
 
-        // C#コンパイルチェック
-        var solutionPath = Path.Combine(testProjectDir, "NIJO_APPLICATION_TEMPLATE.sln");
-        using var csBuildProcess = Process.Start(new ProcessStartInfo {
-            FileName = "dotnet",
-            Arguments = $"build \"{solutionPath}\" -c Debug",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            StandardOutputEncoding = Encoding.UTF8,
-            StandardErrorEncoding = Encoding.UTF8,
-        })!;
+        // -------------------------------
+        // コンパイラーチェック実行。dotnet build と tsc -b --noEmit で判断する。
+        var logDirRoot = Path.Combine(workspaceRoot, "..", "Nijo.IntegrationTest.Log");
+        var csharpCmd = Path.Combine(logDirRoot, "csharp_compile_check.cmd");
+        var typeScriptCmd = Path.Combine(logDirRoot, "typescript_compile_check.cmd");
 
-        var outputBuilder = new StringBuilder();
-        var errorBuilder = new StringBuilder();
+        RenderCmdFile(csharpCmd, $$"""
+            chcp 65001
+            @echo off
+            setlocal
+            set NO_COLOR=true
 
-        csBuildProcess.OutputDataReceived += (sender, e) => {
-            if (e.Data != null) {
-                outputBuilder.AppendLine(e.Data);
-                Console.WriteLine(e.Data);
+            @echo.
+            @echo *** C#コンパイルエラーチェック ***
+
+            dotnet build -c Debug 2>&1
+
+            exit /b %errorlevel%
+            """);
+
+        RenderCmdFile(typeScriptCmd, $$"""
+            chcp 65001
+            @echo off
+            setlocal
+            set NO_COLOR=true
+
+            @echo.
+            @echo *** TypeScriptコンパイルエラーチェック ***
+
+            call tsc -b --noEmit 2>&1
+
+            exit /b %errorlevel%
+            """);
+
+        var csharpExitCode = await ExecuteProcess("dotnet build", startInfo => {
+            startInfo.WorkingDirectory = project.ProjectRoot;
+            startInfo.FileName = "cmd";
+            startInfo.Arguments = $"/c \"{csharpCmd}\"";
+            startInfo.UseShellExecute = false;
+        }, TimeSpan.FromSeconds(25));
+
+        var typeScriptExitCode = await ExecuteProcess("tsc -b --noEmit", startInfo => {
+            startInfo.WorkingDirectory = project.ReactProjectRoot;
+            startInfo.FileName = "cmd";
+            startInfo.Arguments = $"/c \"{typeScriptCmd}\"";
+            startInfo.UseShellExecute = false;
+        }, TimeSpan.FromSeconds(25));
+
+        if (csharpExitCode == 0 && typeScriptExitCode == 0) {
+            Assert.Pass($"{fileName} のテストが完了しました");
+
+        } else {
+            Assert.Fail($"コンパイルエラーが発生しました。");
+        }
+
+        // -------------------------------
+        // ユーティリティ
+
+        // .cmd ファイルを、文字コードや行末処理を加えたうえで出力する。
+        static void RenderCmdFile(string cmdFilePath, string cmdFileContent) {
+            File.WriteAllText(
+                cmdFilePath,
+                // cmd処理中にchcpしたときは各行の改行コードの前にスペースが無いと上手く動かないので
+                cmdFileContent.ReplaceLineEndings(" \r\n"),
+                new UTF8Encoding(false, false));
+        }
+
+        // プロセス実行
+        static async Task<int> ExecuteProcess(string logName, Action<ProcessStartInfo> editStartInfo, TimeSpan timeout) {
+            using var process = new Process();
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.CreateNoWindow = true;
+            process.StartInfo.RedirectStandardOutput = true; // 標準出力をリダイレクト
+            process.StartInfo.RedirectStandardError = true;  // 標準エラーをリダイレクト
+            process.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+            process.StartInfo.StandardErrorEncoding = Encoding.UTF8;
+            editStartInfo(process.StartInfo);
+
+            process.OutputDataReceived += (sender, e) => {
+                try {
+                    if (e.Data != null) {
+                        TestContext.Out.WriteLine($"[{logName} stdout] {e.Data}");
+                    } else {
+                        TestContext.Out.WriteLine($"[{logName} event] OutputDataReceived: Stream closed (Data is null).");
+                    }
+                } catch (InvalidOperationException ioex) {
+                    // プロセス終了時などにストリームが閉じられてこの例外が発生することがあるため、無視する
+                    TestContext.Out.WriteLine($"[{logName} event] Caught InvalidOperationException in OutputDataReceived (likely harmless): {ioex.Message}");
+                } catch (Exception ex) {
+                    TestContext.Out.WriteLine($"[{logName} event] EXCEPTION in OutputDataReceived: {ex.ToString()}");
+                }
+            };
+            process.ErrorDataReceived += (sender, e) => {
+                try {
+                    if (e.Data != null) {
+                        TestContext.Out.WriteLine($"[{logName} stderr] {e.Data}");
+                    } else {
+                        TestContext.Out.WriteLine($"[{logName} event] ErrorDataReceived: Stream closed (Data is null).");
+                    }
+                } catch (InvalidOperationException ioex) {
+                    // プロセス終了時などにストリームが閉じられてこの例外が発生することがあるため、ログのみ出力して無視する
+                    TestContext.Out.WriteLine($"[{logName} event] Caught InvalidOperationException in ErrorDataReceived (likely harmless): {ioex.Message}");
+                } catch (Exception ex) {
+                    TestContext.Out.WriteLine($"[{logName} event] EXCEPTION in ErrorDataReceived: {ex.ToString()}");
+                }
+            };
+
+            TestContext.Out.WriteLine($"[{logName}] 開始");
+
+            process.Start();
+
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+            var timeoutLimit = DateTime.Now.Add(timeout);
+            while (true) {
+                if (DateTime.Now > timeoutLimit) {
+                    TestContext.Out.WriteLine($"[{logName}] プロセスがタイムアウトしました。");
+                    await EnsureKill(process);
+                    process.CancelOutputRead();
+                    process.CancelErrorRead();
+                    return 1;
+
+                } else if (process.HasExited) {
+                    TestContext.Out.WriteLine($"[{logName}] 終了（終了コード: {process.ExitCode}）");
+                    process.CancelOutputRead();
+                    process.CancelErrorRead();
+                    return process.ExitCode;
+
+                } else {
+                    await Task.Delay(100);
+                }
             }
-        };
-        csBuildProcess.ErrorDataReceived += (sender, e) => {
-            if (e.Data != null) {
-                errorBuilder.AppendLine(e.Data);
-                Console.WriteLine(e.Data);
+        }
+
+        // タスクキル
+        static async Task<string> EnsureKill(Process process) {
+            int? pid = null;
+            try {
+                if (process.HasExited) return "Process is already exited. taskkill is skipped.";
+
+                pid = process.Id;
+                // 対象プロセスの情報をログ出力
+                Console.Error.WriteLine($"[NijoMcpTools.EnsureKill] Killing process info - PID: {process.Id}, Name: {process.ProcessName}"); // 標準エラーに出力
+
+                var kill = new Process();
+                kill.StartInfo.FileName = "taskkill";
+                kill.StartInfo.ArgumentList.Add("/PID");
+                kill.StartInfo.ArgumentList.Add(pid.ToString()!);
+                kill.StartInfo.ArgumentList.Add("/T");
+                kill.StartInfo.ArgumentList.Add("/F");
+                kill.StartInfo.RedirectStandardOutput = true;
+                kill.StartInfo.RedirectStandardError = true;
+
+                kill.Start();
+                bool exited = await Task.Run(() => kill.WaitForExit(TimeSpan.FromSeconds(5)));
+
+                if (!exited) {
+                    return $"taskkill timed out after 5 seconds (PID = {pid})";
+                }
+
+                if (kill.ExitCode == 0) {
+                    return $"Success to task kill (PID = {pid})";
+                } else {
+                    return $"Exit code of TASKKILL is '{kill.ExitCode}' (PID = {pid})";
+                }
+
+            } catch (Exception ex) {
+                return $"Failed to task kill (PID = {pid}): {ex.Message}";
             }
-        };
-        csBuildProcess.BeginOutputReadLine();
-        csBuildProcess.BeginErrorReadLine();
-
-        if (!csBuildProcess.WaitForExit(300000)) { // 5分のタイムアウト
-            csBuildProcess.Kill();
-            Assert.Fail("C#コンパイルがタイムアウトしました。");
         }
-
-        if (csBuildProcess.ExitCode != 0) {
-            Assert.Fail($"C#コンパイルに失敗しました。\n出力:\n{outputBuilder}\nエラー:\n{errorBuilder}");
-        }
-
-        // TypeScriptコンパイルチェック
-        var tsConfigPath = Path.Combine(testProjectDir, "react", "tsconfig.json");
-        using var tsBuildProcess = Process.Start(new ProcessStartInfo {
-            FileName = "powershell",
-            Arguments = "/c \"npm run tsc\"",
-            WorkingDirectory = Path.Combine(testProjectDir, "react"),
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            StandardOutputEncoding = Encoding.UTF8,
-            StandardErrorEncoding = Encoding.UTF8,
-        })!;
-        if (!tsBuildProcess.WaitForExit(300000)) { // 5分のタイムアウト
-            tsBuildProcess.Kill();
-            Assert.Fail("TypeScriptコンパイルがタイムアウトしました。");
-        }
-        if (tsBuildProcess.ExitCode != 0) {
-            var output = tsBuildProcess.StandardOutput.ReadToEnd();
-            var error2 = tsBuildProcess.StandardError.ReadToEnd();
-            Assert.Fail($"TypeScriptコンパイルに失敗しました。\n出力:\n{output}\nエラー:\n{error2}");
-        }
-
-        Assert.Pass($"{fileName} のテストが完了しました");
     }
 
     static private void CopyDirectory(string sourceDir, string targetDir) {

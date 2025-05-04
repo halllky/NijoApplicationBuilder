@@ -24,7 +24,7 @@ namespace MyApp.Core;
 
 partial class OverridedApplicationService {
 
-    protected override IQueryable<参照先SearchResult> CreateQuerySource(参照先SearchCondition searchCondition, IPresentationContext<参照先Messages> context) {
+    protected override IQueryable<参照先SearchResult> CreateQuerySource(参照先SearchCondition searchCondition, IPresentationContext<参照先SearchConditionMessages> context) {
         return DbContext.参照先DbSet.Select(e => new 参照先SearchResult {
             参照先集約ID = e.参照先集約ID,
             参照先集約名 = e.参照先集約名,
@@ -32,7 +32,7 @@ partial class OverridedApplicationService {
         });
     }
 
-    protected override IQueryable<参照元SearchResult> CreateQuerySource(参照元SearchCondition searchCondition, IPresentationContext<参照元Messages> context) {
+    protected override IQueryable<参照元SearchResult> CreateQuerySource(参照元SearchCondition searchCondition, IPresentationContext<参照元SearchConditionMessages> context) {
         return DbContext.参照元DbSet.Select(e => new 参照元SearchResult {
             参照元集約ID = e.参照元集約ID,
             参照元集約名 = e.参照元集約名,

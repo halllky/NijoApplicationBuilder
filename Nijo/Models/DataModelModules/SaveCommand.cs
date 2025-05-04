@@ -253,6 +253,8 @@ namespace Nijo.Models.DataModelModules {
                 Member = refTo;
             }
             internal RefToMember Member { get; }
+            public override string PhysicalName => Member.PhysicalName;
+            public override string DisplayName => Member.DisplayName;
         }
         /// <summary>
         /// 更新処理引数クラスの子メンバー
