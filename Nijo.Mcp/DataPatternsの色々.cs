@@ -166,6 +166,24 @@ partial class NijoMcpTools {
 
         foreach (var fullpath in Directory.GetFiles(DATA_PATTERN_DIR)) {
 
+            // 途中から始めたいときはコメントアウトを外す
+            // if (fullpath == @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.IntegrationTest\DataPatterns\000_単純な集約.xml") continue;
+            // if (fullpath == @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.IntegrationTest\DataPatterns\001_Refのみ.xml") continue;
+            // if (fullpath == @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.IntegrationTest\DataPatterns\002_Childrenのみ.xml") continue;
+            // if (fullpath == @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.IntegrationTest\DataPatterns\003_Childのみ.xml") continue;
+            // if (fullpath == @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.IntegrationTest\DataPatterns\010_ChildrenからChildrenへの参照.xml") continue;
+            // if (fullpath == @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.IntegrationTest\DataPatterns\011_ダブル.xml") continue;
+            // if (fullpath == @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.IntegrationTest\DataPatterns\012_スカラメンバー網羅.xml") continue;
+            // if (fullpath == @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.IntegrationTest\DataPatterns\013_主キーにref.xml") continue;
+            // if (fullpath == @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.IntegrationTest\DataPatterns\014_複数経路の参照.xml") continue;
+            // if (fullpath == @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.IntegrationTest\DataPatterns\017_CommandModel.xml") continue;
+            //if (fullpath == @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.IntegrationTest\DataPatterns\100_RDRA.xml") continue;
+            //if (fullpath == @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.IntegrationTest\DataPatterns\101_売上管理.xml") continue;
+            //if (fullpath == @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.IntegrationTest\DataPatterns\102_社内備品管理.xml") continue;
+            //if (fullpath == @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.IntegrationTest\DataPatterns\103_011ダブルのReadWrite混在版.xml") continue;
+            //if (fullpath == @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.IntegrationTest\DataPatterns\104_required属性のテスト.xml") continue;
+            //if (fullpath == @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.IntegrationTest\DataPatterns\105_外部キー代理.xml") continue;
+
             // 現在処理中のxmlが無い場合は最初に見つかったxmlのファイル名を返す
             if (current == null) return fullpath;
 
