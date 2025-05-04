@@ -65,31 +65,5 @@ namespace Nijo.CodeGenerating {
                 yield return item;
             }
         }
-
-        /// <summary>
-        /// パスを最初にref-toが出現した箇所以降のみに絞り込む。
-        /// パス内にref-toが無い場合は空配列を返す
-        /// </summary>
-        public static IEnumerable<ISchemaPathNode> SinceRefEntry(this IEnumerable<ISchemaPathNode> path) {
-            var appearedRefTo = false;
-
-            foreach (var node in path) {
-                if (appearedRefTo) {
-                    yield return node;
-
-                } else if (node is RefToMember) {
-                    appearedRefTo = true;
-                }
-            }
-        }
-
-        /// <summary>
-        /// パスの各要素を、特に変換や指定をかけずそのままの物理名を返す
-        /// </summary>
-        public static IEnumerable<string> SelectPhysicalName(this IEnumerable<ISchemaPathNode> path) {
-            foreach (var node in path) {
-                yield return node.XElement.Name.LocalName;
-            }
-        }
     }
 }
