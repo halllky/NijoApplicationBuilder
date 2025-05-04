@@ -234,6 +234,28 @@ internal static class BasicNodeOptions {
     #endregion QueryModel用
 
 
+    #region CommandModel用
+    internal static NodeOption RefToObject = new() {
+        AttributeName = "RefToObject",
+        DisplayName = "参照先オブジェクト",
+        Type = E_NodeOptionType.String,
+        HelpText = $$"""
+            CommandModelはQueryModelの検索条件か画面表示用データのいずれかしか参照できない。
+            その2種のうちどちらを参照するかの指定。
+            """,
+        Validate = ctx => {
+            if (ctx.Value != "DisplayData" && ctx.Value != "SearchCondition") {
+                ctx.AddError("DisplayDataかSearchConditionのみ指定可能");
+            }
+        },
+        IsAvailableModelMembers = model => {
+            if (model is CommandModel) return true;
+            return false;
+        },
+    };
+    #endregion CommandModel用
+
+
     #region ValueMember用
     internal static NodeOption MaxLength = new() {
         AttributeName = "MaxLength",

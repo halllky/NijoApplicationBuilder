@@ -165,29 +165,29 @@
   <!-- コマンドモデル -->
   <在庫調整 Type="command-model">
     <在庫調整Parameter Type="child">
-      <担当者 Type="ref-to:従業員マスタ@search" />
-      <店舗 Type="ref-to:店舗マスタ@search" />
+      <担当者 Type="ref-to:従業員マスタ" RefToObject="SearchCondition" />
+      <店舗 Type="ref-to:店舗マスタ" RefToObject="SearchCondition" />
       <調整理由 Type="word" />
       <実施日時 Type="datetime" />
       <調整商品リスト Type="children">
-        <商品 Type="ref-to:商品マスタ@search" IsKey="True" />
-        <倉庫 Type="ref-to:倉庫マスタ@search" IsKey="True" />
+        <商品 Type="ref-to:商品マスタ" RefToObject="SearchCondition" IsKey="True" />
+        <倉庫 Type="ref-to:倉庫マスタ" RefToObject="SearchCondition" IsKey="True" />
         <現在数量 Type="int" />
         <調整後数量 Type="int" />
-        <過去履歴 Type="ref-to:商品マスタ.在庫情報.在庫状況履歴@display" />
+        <過去履歴 Type="ref-to:商品マスタ.在庫情報.在庫状況履歴" RefToObject="DisplayData" />
       </調整商品リスト>
       <権限確認 Type="child">
-        <権限レベル Type="ref-to:従業員マスタ.権限@display" />
-        <承認者 Type="ref-to:従業員マスタ@search" />
+        <権限レベル Type="ref-to:従業員マスタ.権限" RefToObject="DisplayData" />
+        <承認者 Type="ref-to:従業員マスタ" RefToObject="SearchCondition" />
       </権限確認>
-      <売上データ Type="ref-to:売上分析@search" />
+      <売上データ Type="ref-to:売上分析" RefToObject="SearchCondition" />
     </在庫調整Parameter>
     <在庫調整ReturnValue Type="child">
       <処理結果 Type="word" />
       <処理日時 Type="datetime" />
       <調整済み商品リスト Type="children">
-        <商品 Type="ref-to:商品マスタ@display" IsKey="True" />
-        <倉庫 Type="ref-to:倉庫マスタ@display" IsKey="True" />
+        <商品 Type="ref-to:商品マスタ" RefToObject="DisplayData" IsKey="True" />
+        <倉庫 Type="ref-to:倉庫マスタ" RefToObject="DisplayData" IsKey="True" />
         <調整前数量 Type="int" />
         <調整後数量 Type="int" />
         <差分 Type="int" />
@@ -197,7 +197,7 @@
         <エラーメッセージ Type="description" />
       </エラー情報>
       <承認情報 Type="child">
-        <承認者 Type="ref-to:従業員マスタ@display" />
+        <承認者 Type="ref-to:従業員マスタ" RefToObject="DisplayData" />
         <承認日時 Type="datetime" />
         <コメント Type="description" />
       </承認情報>
@@ -208,7 +208,9 @@
   <カテゴリマスタ Type="data-model" GenerateDefaultQueryModel="True">
     <カテゴリID Type="word" IsKey="True" DbName="CATEGORY_ID" />
     <カテゴリ名 Type="word" DbName="CATEGORY_NAME" />
-    <親カテゴリ Type="ref-to:カテゴリマスタ" DbName="PARENT_CATEGORY_ID" />
+
+    <!-- TODO: ツリー構造の集約は明らかに考慮できていないので一旦コメントアウト -->
+    <!-- <親カテゴリ Type="ref-to:カテゴリマスタ" DbName="PARENT_CATEGORY_ID" /> -->
   </カテゴリマスタ>
 
   <仕入先マスタ Type="data-model" GenerateDefaultQueryModel="True">
