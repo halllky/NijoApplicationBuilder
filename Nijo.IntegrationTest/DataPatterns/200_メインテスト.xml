@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<NijoApplicationBuilder RootNamespace="MyApp.Core">
+
+  <!-- GDQM かつ GenerateBatchUpdateCommand のデータモデル -->
+  <商品マスタ Type="data-model" GenerateDefaultQueryModel="True" GenerateBatchUpdateCommand="True">
+    <商品ID Type="word" IsKey="True" IsRequired="True" DbName="PRODUCT_ID" />
+    <商品名 Type="word" IsRequired="True" DbName="PRODUCT_NAME" />
+    <価格 Type="int" IsRequired="True" DbName="PRICE" />
+    <カテゴリ Type="ref-to:カテゴリマスタ" IsRequired="True" DbName="CATEGORY_ID" />
+    <仕入先 Type="ref-to:仕入先マスタ" IsRequired="False" DbName="SUPPLIER_ID" />
+    <商品詳細 Type="child" DbName="PRODUCT_DETAIL">
+      <説明文 Type="description" DbName="DESCRIPTION" />
+      <商品仕様 Type="child" DbName="PRODUCT_SPEC">
+        <重量 Type="int" DbName="WEIGHT" />
+        <サイズ Type="child" DbName="SIZE">
+          <幅 Type="int" DbName="WIDTH" />
+          <高さ Type="int" DbName="HEIGHT" />
+          <奥行 Type="int" DbName="DEPTH" />
+        </サイズ>
+      </商品仕様>
+      <付属品 Type="children" DbName="ACCESSORIES">
+        <付属品ID Type="word" IsKey="True" DbName="ACCESSORY_ID" />
+        <付属品名 Type="word" DbName="ACCESSORY_NAME" />
+        <数量 Type="int" DbName="QUANTITY" />
+      </付属品>
+    </商品詳細>
+    <在庫情報 Type="children" DbName="INVENTORY">
+      <倉庫 Type="ref-to:倉庫マスタ" IsKey="True" DbName="WAREHOUSE_ID" />
+      <在庫数 Type="int" DbName="STOCK_QUANTITY" />
+      <棚卸日時 Type="datetime" DbName="INVENTORY_DATE" />
+      <在庫状況履歴 Type="children" DbName="STOCK_HISTORY">
+        <履歴ID Type="word" IsKey="True" DbName="HISTORY_ID" />
+        <変更日時 Type="datetime" DbName="CHANGE_DATE" />
+        <変更前在庫数 Type="int" DbName="PREVIOUS_QUANTITY" />
+        <変更後在庫数 Type="int" DbName="CURRENT_QUANTITY" />
+        <担当者 Type="ref-to:従業員マスタ" DbName="STAFF_ID" />
+      </在庫状況履歴>
+    </在庫情報>
+  </商品マスタ>
+
+  <!-- GDQMでない複雑なデータ構造を持つデータモデル -->
+  <注文履歴 Type="data-model">
+    <注文ID Type="word" IsKey="True" IsRequired="True" DbName="ORDER_ID" />
+    <注文日時 Type="datetime" IsRequired="True" DbName="ORDER_DATE" />
+    <顧客 Type="ref-to:顧客マスタ" IsRequired="True" DbName="CUSTOMER_ID" />
+    <店舗 Type="ref-to:店舗マスタ" IsRequired="True" DbName="STORE_ID" />
+    <担当者 Type="ref-to:従業員マスタ" DbName="STAFF_ID" />
+    <注文明細 Type="children" DbName="ORDER_DETAILS">
+      <商品 Type="ref-to:商品マスタ" IsKey="True" DbName="PRODUCT_ID" />
+      <数量 Type="int" IsRequired="True" DbName="QUANTITY" />
+      <単価 Type="int" IsRequired="True" DbName="UNIT_PRICE" />
+      <小計 Type="int" IsRequired="True" DbName="SUBTOTAL" />
+      <割引情報 Type="child" DbName="DISCOUNT_INFO">
+        <割引コード Type="word" DbName="DISCOUNT_CODE" />
+        <割引率 Type="decimal" DbName="DISCOUNT_RATE" />
+        <割引額 Type="int" DbName="DISCOUNT_AMOUNT" />
+      </割引情報>
+    </注文明細>
+    <支払情報 Type="child" DbName="PAYMENT_INFO">
+      <支払方法 Type="payment_type" IsRequired="True" DbName="PAYMENT_TYPE" />
+      <支払日 Type="date" DbName="PAYMENT_DATE" />
+      <支払状況 Type="payment_status" DbName="PAYMENT_STATUS" />
+      <カード情報 Type="child" DbName="CARD_INFO">
+        <カード種類 Type="card_type" DbName="CARD_TYPE" />
+        <下4桁 Type="word" DbName="LAST_FOUR_DIGITS" />
+        <有効期限 Type="date" DbName="EXPIRY_DATE" />
+      </カード情報>
+    </支払情報>
+    <配送情報 Type="child" DbName="SHIPPING_INFO">
+      <配送方法 Type="shipping_method" IsRequired="True" DbName="SHIPPING_METHOD" />
+      <配送先住所 Type="child" DbName="SHIPPING_ADDRESS">
+        <郵便番号 Type="word" DbName="POSTAL_CODE" />
+        <都道府県 Type="word" DbName="PREFECTURE" />
+        <市区町村 Type="word" DbName="CITY" />
+        <番地建物名 Type="word" DbName="ADDRESS_LINE" />
+      </配送先住所>
+      <配送状況 Type="children" DbName="SHIPPING_STATUS">
+        <ステータス Type="shipping_status" IsKey="True" DbName="STATUS" />
+        <更新日時 Type="datetime" DbName="UPDATE_DATE" />
+        <備考 Type="description" DbName="REMARKS" />
+      </配送状況>
+    </配送情報>
+  </注文履歴>
+
+  <!-- GDQMだがGenerateBatchUpdateCommandではない -->
+  <顧客マスタ Type="data-model" GenerateDefaultQueryModel="True">
+    <顧客ID Type="word" IsKey="True" IsRequired="True" DbName="CUSTOMER_ID" />
+    <氏名 Type="word" IsRequired="True" DbName="CUSTOMER_NAME" />
+    <氏名カナ Type="word" DbName="CUSTOMER_KANA" />
+    <生年月日 Type="date" DbName="BIRTH_DATE" />
+    <性別 Type="gender_type" DbName="GENDER" />
+    <メールアドレス Type="word" DbName="EMAIL" />
+    <電話番号 Type="word" DbName="PHONE" />
+    <住所 Type="child" DbName="ADDRESS">
+      <郵便番号 Type="word" DbName="POSTAL_CODE" />
+      <都道府県 Type="word" DbName="PREFECTURE" />
+      <市区町村 Type="word" DbName="CITY" />
+      <番地建物名 Type="word" DbName="ADDRESS_LINE" />
+    </住所>
+    <会員情報 Type="child" DbName="MEMBERSHIP">
+      <会員ランク Type="member_rank" DbName="RANK" />
+      <入会日 Type="date" DbName="JOIN_DATE" />
+      <最終来店日 Type="date" DbName="LAST_VISIT" />
+      <ポイント履歴 Type="children" DbName="POINT_HISTORY">
+        <履歴ID Type="word" IsKey="True" DbName="HISTORY_ID" />
+        <日付 Type="date" DbName="DATE" />
+        <ポイント Type="int" DbName="POINTS" />
+        <理由 Type="word" DbName="REASON" />
+      </ポイント履歴>
+    </会員情報>
+  </顧客マスタ>
+
+  <!-- 主キーが外部参照1個だけから構成されるデータモデル -->
+  <従業員プロフィール Type="data-model">
+    <従業員 Type="ref-to:従業員マスタ" IsKey="True" DbName="EMPLOYEE_ID" />
+    <写真URL Type="word" DbName="PHOTO_URL" />
+    <自己紹介 Type="description" DbName="SELF_INTRODUCTION" />
+    <得意分野 Type="word" DbName="SPECIALTY" />
+    <資格 Type="children" DbName="QUALIFICATIONS">
+      <資格名 Type="word" IsKey="True" DbName="QUALIFICATION_NAME" />
+      <取得日 Type="date" DbName="ACQUISITION_DATE" />
+      <有効期限 Type="date" DbName="EXPIRY_DATE" />
+    </資格>
+  </従業員プロフィール>
+
+  <!-- 主キーが外部参照複数個から構成されるデータモデル -->
+  <シフト Type="data-model">
+    <従業員 Type="ref-to:従業員マスタ" IsKey="True" DbName="EMPLOYEE_ID" />
+    <店舗 Type="ref-to:店舗マスタ" IsKey="True" DbName="STORE_ID" />
+    <日付 Type="date" IsKey="True" DbName="DATE" />
+    <開始時間 Type="word" DbName="START_TIME" />
+    <終了時間 Type="word" DbName="END_TIME" />
+    <休憩時間 Type="int" DbName="BREAK_TIME" />
+    <備考 Type="description" DbName="REMARKS" />
+  </シフト>
+
+  <!-- 複雑なデータ構造をもったクエリモデル -->
+  <売上分析 Type="query-model">
+    <年月 Type="word" IsKey="True" />
+    <店舗 Type="ref-to:店舗マスタ" IsKey="True" />
+    <売上合計 Type="int" />
+    <客数 Type="int" />
+    <客単価 Type="int" />
+    <目標達成率 Type="decimal" />
+    <カテゴリ別売上 Type="children">
+      <カテゴリ Type="ref-to:カテゴリマスタ" IsKey="True" />
+      <売上金額 Type="int" />
+      <売上構成比 Type="decimal" />
+      <前年同月比 Type="decimal" />
+      <商品別売上 Type="children">
+        <商品 Type="ref-to:商品マスタ" IsKey="True" />
+        <売上金額 Type="int" />
+        <売上数量 Type="int" />
+        <平均単価 Type="int" />
+      </商品別売上>
+    </カテゴリ別売上>
+    <時間帯別売上 Type="children">
+      <時間帯 Type="word" IsKey="True" />
+      <売上金額 Type="int" />
+      <売上件数 Type="int" />
+      <平均客単価 Type="int" />
+    </時間帯別売上>
+  </売上分析>
+
+  <!-- コマンドモデル -->
+  <在庫調整 Type="command-model">
+    <在庫調整Parameter Type="child">
+      <担当者 Type="ref-to:従業員マスタ@search" />
+      <店舗 Type="ref-to:店舗マスタ@search" />
+      <調整理由 Type="word" />
+      <実施日時 Type="datetime" />
+      <調整商品リスト Type="children">
+        <商品 Type="ref-to:商品マスタ@search" IsKey="True" />
+        <倉庫 Type="ref-to:倉庫マスタ@search" IsKey="True" />
+        <現在数量 Type="int" />
+        <調整後数量 Type="int" />
+        <過去履歴 Type="ref-to:商品マスタ.在庫情報.在庫状況履歴@display" />
+      </調整商品リスト>
+      <権限確認 Type="child">
+        <権限レベル Type="ref-to:従業員マスタ.権限@display" />
+        <承認者 Type="ref-to:従業員マスタ@search" />
+      </権限確認>
+      <売上データ Type="ref-to:売上分析@search" />
+    </在庫調整Parameter>
+    <在庫調整ReturnValue Type="child">
+      <処理結果 Type="word" />
+      <処理日時 Type="datetime" />
+      <調整済み商品リスト Type="children">
+        <商品 Type="ref-to:商品マスタ@display" IsKey="True" />
+        <倉庫 Type="ref-to:倉庫マスタ@display" IsKey="True" />
+        <調整前数量 Type="int" />
+        <調整後数量 Type="int" />
+        <差分 Type="int" />
+      </調整済み商品リスト>
+      <エラー情報 Type="child">
+        <エラーコード Type="word" />
+        <エラーメッセージ Type="description" />
+      </エラー情報>
+      <承認情報 Type="child">
+        <承認者 Type="ref-to:従業員マスタ@display" />
+        <承認日時 Type="datetime" />
+        <コメント Type="description" />
+      </承認情報>
+    </在庫調整ReturnValue>
+  </在庫調整>
+
+  <!-- その他必要なエンティティ定義 -->
+  <カテゴリマスタ Type="data-model" GenerateDefaultQueryModel="True">
+    <カテゴリID Type="word" IsKey="True" DbName="CATEGORY_ID" />
+    <カテゴリ名 Type="word" DbName="CATEGORY_NAME" />
+    <親カテゴリ Type="ref-to:カテゴリマスタ" DbName="PARENT_CATEGORY_ID" />
+  </カテゴリマスタ>
+
+  <仕入先マスタ Type="data-model" GenerateDefaultQueryModel="True">
+    <仕入先ID Type="word" IsKey="True" DbName="SUPPLIER_ID" />
+    <仕入先名 Type="word" DbName="SUPPLIER_NAME" />
+    <担当者名 Type="word" DbName="CONTACT_PERSON" />
+    <電話番号 Type="word" DbName="PHONE" />
+    <メールアドレス Type="word" DbName="EMAIL" />
+  </仕入先マスタ>
+
+  <従業員マスタ Type="data-model" GenerateDefaultQueryModel="True">
+    <従業員ID Type="word" IsKey="True" DbName="EMPLOYEE_ID" />
+    <氏名 Type="word" DbName="EMPLOYEE_NAME" />
+    <メールアドレス Type="word" DbName="EMAIL" />
+    <役職 Type="position_type" DbName="POSITION" />
+    <入社日 Type="date" DbName="HIRE_DATE" />
+    <権限 Type="child" DbName="AUTHORITY">
+      <権限レベル Type="int" DbName="AUTHORITY_LEVEL" />
+      <権限名 Type="word" DbName="AUTHORITY_NAME" />
+    </権限>
+  </従業員マスタ>
+
+  <倉庫マスタ Type="data-model" GenerateDefaultQueryModel="True">
+    <倉庫ID Type="word" IsKey="True" DbName="WAREHOUSE_ID" />
+    <倉庫名 Type="word" DbName="WAREHOUSE_NAME" />
+    <住所 Type="child" DbName="ADDRESS">
+      <郵便番号 Type="word" DbName="POSTAL_CODE" />
+      <都道府県 Type="word" DbName="PREFECTURE" />
+      <市区町村 Type="word" DbName="CITY" />
+      <番地建物名 Type="word" DbName="ADDRESS_LINE" />
+    </住所>
+    <管理責任者 Type="ref-to:従業員マスタ" DbName="MANAGER_ID" />
+  </倉庫マスタ>
+
+  <店舗マスタ Type="data-model" GenerateDefaultQueryModel="True">
+    <店舗ID Type="word" IsKey="True" DbName="STORE_ID" />
+    <店舗名 Type="word" DbName="STORE_NAME" />
+    <電話番号 Type="word" DbName="PHONE" />
+    <住所 Type="child" DbName="ADDRESS">
+      <郵便番号 Type="word" DbName="POSTAL_CODE" />
+      <都道府県 Type="word" DbName="PREFECTURE" />
+      <市区町村 Type="word" DbName="CITY" />
+      <番地建物名 Type="word" DbName="ADDRESS_LINE" />
+    </住所>
+    <営業時間 Type="child" DbName="BUSINESS_HOURS">
+      <開店時間 Type="word" DbName="OPENING_TIME" />
+      <閉店時間 Type="word" DbName="CLOSING_TIME" />
+    </営業時間>
+    <店長 Type="ref-to:従業員マスタ" DbName="MANAGER_ID" />
+  </店舗マスタ>
+
+  <!-- 列挙型定義 -->
+  <payment_type Type="enum">
+    <現金 key="1" />
+    <クレジットカード key="2" />
+    <電子マネー key="3" />
+    <代金引換 key="4" />
+    <銀行振込 key="5" />
+  </payment_type>
+
+  <payment_status Type="enum">
+    <未払い key="1" />
+    <支払済 key="2" />
+    <一部支払い key="3" />
+    <キャンセル key="4" />
+  </payment_status>
+
+  <card_type Type="enum">
+    <VISA key="1" />
+    <MasterCard key="2" />
+    <JCB key="3" />
+    <AmericanExpress key="4" />
+    <DinersClub key="5" />
+  </card_type>
+
+  <shipping_method Type="enum">
+    <宅配便 key="1" />
+    <メール便 key="2" />
+    <店舗受取 key="3" />
+  </shipping_method>
+
+  <shipping_status Type="enum">
+    <準備中 key="1" />
+    <発送済 key="2" />
+    <配送中 key="3" />
+    <配達完了 key="4" />
+  </shipping_status>
+
+  <gender_type Type="enum">
+    <男性 key="1" />
+    <女性 key="2" />
+    <その他 key="3" />
+    <回答しない key="4" />
+  </gender_type>
+
+  <member_rank Type="enum">
+    <一般 key="1" />
+    <シルバー key="2" />
+    <ゴールド key="3" />
+    <プラチナ key="4" />
+  </member_rank>
+
+  <position_type Type="enum">
+    <一般社員 key="1" />
+    <主任 key="2" />
+    <課長 key="3" />
+    <部長 key="4" />
+    <役員 key="5" />
+  </position_type>
+</NijoApplicationBuilder>
