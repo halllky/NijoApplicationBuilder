@@ -32,7 +32,7 @@ namespace Nijo.SchemaParsing {
 
         internal string RenderTsSearchConditionType() {
             return $$"""
-                { '{{_xElement.Elements().Select(el => $"'{_ctx.GetDisplayName(el).Replace("'", "\\'")}'?: boolean").Join(", ")}} }
+                { {{_xElement.Elements().Select(el => $"'{_ctx.GetDisplayName(el).Replace("'", "\\'")}'?: boolean").Join(", ")}} }
                 """;
         }
 
