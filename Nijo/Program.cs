@@ -26,7 +26,6 @@ using Nijo.CodeGenerating;
 using Nijo.Models;
 
 [assembly: InternalsVisibleTo("Nijo.IntegrationTest")]
-[assembly: InternalsVisibleTo("Nijo.Ui")]
 
 namespace Nijo {
     public class Program {
