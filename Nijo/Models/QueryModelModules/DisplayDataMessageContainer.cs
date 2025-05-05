@@ -21,8 +21,11 @@ internal class DisplayDataMessageContainer : MessageContainer {
     internal override string TsTypeName => $"{_aggregate.PhysicalName}DisplayDataMessages";
 
     protected override IEnumerable<string> GetCsClassImplements() {
-        var saveCommandMessage = new SaveCommandMessageContainer(_aggregate);
-        yield return saveCommandMessage.InterfaceName;
+        // この集約がデータモデルの場合、登録更新削除処理で使われるメッセージの入れ物のインタフェースを実装する
+        if (_aggregate.GetRoot().Model is DataModel) {
+            var saveCommandMessage = new SaveCommandMessageContainer(_aggregate);
+            yield return saveCommandMessage.InterfaceName;
+        }
     }
 
     protected override IEnumerable<IMessageContainerMember> GetMembers() {
@@ -46,9 +49,12 @@ internal class DisplayDataMessageContainer : MessageContainer {
     }
 
     /// <summary>
-    /// Child, Children のプロパティは明示的にSaveCommandのメンバーにキャストする必要がある
+    /// この集約がデータモデルの場合、Child, Children のプロパティは明示的にSaveCommandのメンバーにキャストする必要がある
     /// </summary>
     protected override string RenderCSharpAdditionalSource() {
+        // この集約がデータモデルでないのであれば関係なし
+        if (_aggregate.GetRoot().Model is not DataModel) return SKIP_MARKER;
+
         var saveCommandMessage = new SaveCommandMessageContainer(_aggregate);
         var childMembers = GetMembers()
             .Where(member => member.NestedObject != null)

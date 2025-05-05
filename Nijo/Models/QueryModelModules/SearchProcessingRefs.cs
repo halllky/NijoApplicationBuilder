@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Nijo.Util.DotnetEx;
 using Microsoft.AspNetCore.Mvc;
+using System.Xml.Linq;
 
 namespace Nijo.Models.QueryModelModules {
     internal class SearchProcessingRefs {
@@ -222,6 +223,9 @@ namespace Nijo.Models.QueryModelModules {
             var sr = new Variable("searchResult", searchResult);
 
             // ------------------------------------------
+            // ルート集約と戻り値の多重度が1対多の場合に必要になる、どのChildrenがどんな名前の変数かの対応関係
+            var loopVarDict = new Dictionary<AggregateBase, Variable>();
+
             // 右辺の変数に使われる変数を定義する。右辺は集約ルートが起点になる。
             var rightInstances = CollectInstancesRecursively(sr).ToDictionary(kv => kv.Key, kv => kv.Value);
 
@@ -232,9 +236,11 @@ namespace Nijo.Models.QueryModelModules {
                 var valueMembers = currentInstance
                     .Create1To1PropertiesRecursively();
                 foreach (var member in valueMembers) {
+                    var vmType = (member.Metadata as IInstanceValuePropertyMetadata)?.Type;
+
                     yield return KeyValuePair.Create(
                         member.Metadata.SchemaPathNode.ToMappingKey(),
-                        member.GetJoinedPathFromInstance(E_CsTs.CSharp, "!."));
+                        vmType?.RenderCastToDomainType() + member.GetJoinedPathFromInstance(E_CsTs.CSharp, "!."));
                 }
 
                 // Children に対して再帰処理
@@ -245,6 +251,9 @@ namespace Nijo.Models.QueryModelModules {
                     } else if (member is SearchResult.SearchResultChildrenMember children) {
                         var childProperty = currentInstance.CreateProperty(children);
                         var loopVar = new Variable(children.Aggregate.GetLoopVarName(), children);
+
+                        loopVarDict[children.Aggregate] = loopVar; // あとで必要になるので登録しておく
+
                         foreach (var desc in CollectInstancesRecursively(loopVar, childProperty)) {
                             yield return desc;
                         }
@@ -292,7 +301,7 @@ namespace Nijo.Models.QueryModelModules {
                 var arrayPath = ((IInstanceProperty)arrayProperty).GetJoinedPathFromInstance(E_CsTs.CSharp, "!.");
 
                 // Selectのループ変数
-                var loopVar = new Variable("x", searchResult);
+                var loopVar = loopVarDict[thisAggregateAsNotEntry];
 
                 // 左辺
                 var left = new Variable("newステートメントなので変数名なし", displayData);

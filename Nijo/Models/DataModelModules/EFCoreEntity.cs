@@ -99,6 +99,9 @@ namespace Nijo.Models.DataModelModules {
             }
 
             foreach (var refFrom in Aggregate.GetRefFroms()) {
+                // クエリモデルやコマンドモデルから参照されることがあるが、それらはDBの実体ではないのでナビゲーションプロパティを張らない
+                if (refFrom.Owner.GetRoot().Model is not DataModel) continue;
+
                 yield return new NavigationOfRef(refFrom);
             }
         }
