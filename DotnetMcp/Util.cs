@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Microsoft.CodeAnalysis;
 
 namespace DotnetMcp;
 
@@ -43,6 +44,26 @@ partial class DotnetMcpTools {
             context = null;
             return false;
         }
+    }
+
+    /// <summary>
+    /// 指定されたソリューションの中から、指定されたファイルパスを持つドキュメントを探します。
+    /// </summary>
+    /// <param name="solution">ソリューション</param>
+    /// <param name="fileFullPath">ファイルパス</param>
+    /// <returns>見つかったドキュメント。見つからなかった場合は例外</returns>
+    private static Document GetDocument(this Solution solution, string fileFullPath) {
+        var lowerFilePath = fileFullPath.ToLower(); // 大文字小文字を区別しない
+        var documents = solution.Projects.SelectMany(p => p.Documents).ToArray();
+        var document = documents.FirstOrDefault(d => d.FilePath?.ToLower() == lowerFilePath);
+        if (document is null) {
+            throw new InvalidOperationException($$"""
+                指定されたファイルが見つかりません: {{fileFullPath}}
+                探索されたファイルは以下です。
+                {{string.Join("\r\n", documents.Select(d => d.FilePath))}}
+            """);
+        }
+        return document;
     }
 }
 

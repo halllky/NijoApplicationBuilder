@@ -54,13 +54,10 @@ namespace DotnetMcp {
             if (!TrySetup(out var ctx, out var error)) return error;
 
             try {
+                // ドキュメントを取得
                 using var workSpace = MSBuildWorkspace.Create();
                 var solution = await workSpace.OpenSolutionAsync(ctx.SolutionFileFullPath);
-                var documents = solution.Projects.SelectMany(p => p.Documents).ToArray();
-
-                // ドキュメントを探す
-                var document = documents.FirstOrDefault(d => d.FilePath == sourceFilePath)
-                    ?? throw new InvalidOperationException($"指定されたファイルが見つかりません: {sourceFilePath}");
+                var document = solution.GetDocument(sourceFilePath);
 
                 // ソースコード上の該当位置のシンタックスノードを探す
                 var linePosition = new LinePosition(lineNumber - 1, columnNumber - 1);
@@ -135,13 +132,10 @@ namespace DotnetMcp {
             if (!TrySetup(out var ctx, out var error)) return error;
 
             try {
+                // ドキュメントを取得
                 using var workSpace = MSBuildWorkspace.Create();
                 var solution = await workSpace.OpenSolutionAsync(ctx.SolutionFileFullPath);
-                var documents = solution.Projects.SelectMany(p => p.Documents).ToArray();
-
-                // ドキュメントを探す
-                var document = documents.FirstOrDefault(d => d.FilePath == sourceFilePath)
-                    ?? throw new InvalidOperationException($"指定されたファイルが見つかりません: {sourceFilePath}");
+                var document = solution.GetDocument(sourceFilePath);
 
                 // ソースコード上の該当位置のシンタックスノードを探す
                 var linePosition = new LinePosition(lineNumber - 1, columnNumber - 1);
@@ -183,6 +177,90 @@ namespace DotnetMcp {
                 return $$"""
                     シンボル {{symbol.Name}} は以下のソースコードで参照されています。
                     {{string.Join("\r\n", result.Select(r => $"* {r.FilePath}: {r.Line}行目 {r.Column}文字目 付近"))}}
+                    """;
+
+            } catch (Exception ex) {
+                ctx.WriteLog(ex.ToString());
+                return ex.ToString();
+            }
+        }
+
+        [McpServerTool(Name = "suggest_abstract_members"), Description(
+            "とあるC#のファイルの特定の位置に記載されているクラスについて、そのクラスが実装しなければならないインターフェースや抽象クラスのメンバーを一覧して返します。")]
+        public static async Task<string> SuggestAbstractMembers(
+            [Description("ソースコードのファイルパス。絶対パスで指定すること。")] string sourceFilePath,
+            [Description("ソースコードの何行目か")] string line,
+            [Description("ソースコードの当該行の何文字目か")] string character) {
+
+            // 引数のチェック
+            if (string.IsNullOrEmpty(sourceFilePath)) {
+                return $"{nameof(sourceFilePath)}は空文字列ではいけません。";
+            }
+            if (!Path.IsPathRooted(sourceFilePath)) {
+                return $"{nameof(sourceFilePath)}は絶対パスで指定してください。";
+            }
+            if (!int.TryParse(line, out var lineNumber)) {
+                return $"{nameof(line)}は整数で指定してください。指定された値: {line}";
+            }
+            if (!int.TryParse(character, out var columnNumber)) {
+                return $"{nameof(character)}は整数で指定してください。指定された値: {character}";
+            }
+
+            if (!TrySetup(out var ctx, out var error)) return error;
+
+            try {
+                // ドキュメントを取得
+                using var workSpace = MSBuildWorkspace.Create();
+                var solution = await workSpace.OpenSolutionAsync(ctx.SolutionFileFullPath);
+                var document = solution.GetDocument(sourceFilePath);
+
+                // ソースコード上の該当位置のシンタックスノードを探す
+                var linePosition = new LinePosition(lineNumber - 1, columnNumber - 1);
+                var syntaxTree = await document.GetSyntaxTreeAsync()
+                    ?? throw new InvalidOperationException($"ドキュメントのシンタックスツリーを取得できません: {sourceFilePath}");
+                var position = syntaxTree.GetText().Lines.GetPosition(linePosition);
+                var syntaxNode = syntaxTree.GetRoot().FindToken(position).Parent
+                    ?? throw new InvalidOperationException($"シンボルを取得できません: {sourceFilePath}, {lineNumber}, {columnNumber}");
+
+                // シンタックスノードからシンボルを取得
+                var semanticModel = await document.GetSemanticModelAsync()
+                    ?? throw new InvalidOperationException($"セマンティックモデルを取得できません: {sourceFilePath}");
+                var symbol = semanticModel.GetDeclaredSymbol(syntaxNode)
+                    ?? semanticModel.GetSymbolInfo(syntaxNode).Symbol
+                    ?? throw new InvalidOperationException($"シンボルを取得できません: {sourceFilePath}, {lineNumber}, {columnNumber}");
+
+                if (symbol is not INamedTypeSymbol namedTypeSymbol)
+                    throw new InvalidOperationException("指定されたシンボルはクラスではありません。");
+
+                // 実装済みメンバーを取得
+                var implementedMembers = new HashSet<ISymbol>(
+                    namedTypeSymbol.GetMembers().Where(m => !m.IsAbstract), SymbolEqualityComparer.Default);
+
+                // 実装しなければならないメンバーを取得（インターフェースおよび抽象基底クラスの全メンバー）
+                var requiredMembers = namedTypeSymbol.AllInterfaces
+                    .SelectMany(i => i.GetMembers().Select(m => namedTypeSymbol.FindImplementationForInterfaceMember(m)))
+                    .Concat(namedTypeSymbol.BaseType?.GetMembers().Where(m => m.IsAbstract) ?? Enumerable.Empty<ISymbol>())
+                    .Where(m => m != null)
+                    .Distinct(SymbolEqualityComparer.Default)
+                    .ToList();
+
+                // 未実装メンバー一覧
+                var unimplementedMembers = requiredMembers
+                    .Where(required => !implementedMembers.Any(impl => SymbolEqualityComparer.Default.Equals(impl, required)))
+                    .ToList();
+
+                // 結果を返す。
+                // * プロパティの場合
+                //   * 名前
+                //   * 戻り値の型
+                // * メソッドの場合
+                //   * 名前
+                //   * 戻り値の型
+                //   * 各パラメーターの型
+                //   * 各パラメーターの名前
+                return $$"""
+                    クラス {{namedTypeSymbol.Name}} は以下のメンバーを実装する必要があります。
+                    {{string.Join("\r\n", unimplementedMembers.Select(m => $"* {m?.ToDisplayString()}"))}}
                     """;
 
             } catch (Exception ex) {

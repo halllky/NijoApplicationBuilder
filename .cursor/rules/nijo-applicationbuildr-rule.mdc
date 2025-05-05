@@ -9,8 +9,10 @@ alwaysApply: true
 - 「アプリケーションテンプレート」とは、 [NIJO_APPLICATION_TEMPLATE.sln](mdc:Nijo.ApplicationTemplate.Ver1/NIJO_APPLICATION_TEMPLATE.sln) に属するソースコードを表します。
 
 ## 全般
+- ここはwindows環境です。
+  - ファイルの絶対パスは `/c:/aaa/bbb/ccc` ではなく `C:\\aaa\\bbb\\ccc` です。
+  - cursorエージェントがで使えるターミナルは Windows の powershell です。例えばLinuxのコマンドは使えないので注意してください。
 - 参照しようとしているフォルダに `README.md` という名前のファイルがある場合、 `README.md` を参照してください。
-- cursorエージェントがで使えるターミナルは Windows の powershell です。例えばLinuxのコマンドは使えないので注意してください。
 - このワークスペース内部の動作確認などのためにMCP `nijo-mcp` を用意しています。これを使うべき状況では積極的にこれを使ってください。
 
 ## エラー原因調査するときの注意事項
