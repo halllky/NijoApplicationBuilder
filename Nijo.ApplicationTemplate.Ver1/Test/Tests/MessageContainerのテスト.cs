@@ -14,7 +14,7 @@ internal class MessageContainerのテスト {
     [Test]
     public void ToJsonObjectのテスト() {
         // パスを意味のある値で初期化
-        var container = new 診察SaveCommandMessages(new List<string> { "診察" });
+        var container = new 診察記録SaveCommandMessages(new List<string> { "診察記録" });
 
         // ---------------------
         // Arrange
@@ -54,7 +54,7 @@ internal class MessageContainerのテスト {
     public void メッセージがないときのJSONは空になること() {
         // ---------------------
         // Arrange
-        var container = new 診察SaveCommandMessages(new List<string> { "診察" });
+        var container = new 診察記録SaveCommandMessages(new List<string> { "診察記録" });
         // メッセージを追加しない
 
         // ---------------------
@@ -70,7 +70,7 @@ internal class MessageContainerのテスト {
     public void HasErrorで子孫のエラーが検出できること() {
         // ---------------------
         // Arrange
-        var container = new 診察SaveCommandMessages(new List<string> { "診察" });
+        var container = new 診察記録SaveCommandMessages(new List<string> { "診察記録" });
 
         // 直接コンテナにエラーを追加
         container.AddError("直接のエラー");
@@ -87,7 +87,7 @@ internal class MessageContainerのテスト {
     public void 異なる添字の配列要素にメッセージがある場合() {
         // ---------------------
         // Arrange
-        var container = new 診察SaveCommandMessages(new List<string> { "診察" });
+        var container = new 診察記録SaveCommandMessages(new List<string> { "診察記録" });
 
         // 不連続なインデックスにメッセージを追加
         container.処方[1].用量.AddError("用量1のエラー");
@@ -128,7 +128,7 @@ internal class MessageContainerのテスト {
     public void 複数種類のメッセージをひとつのプロパティに追加できること() {
         // ---------------------
         // Arrange
-        var container = new 診察SaveCommandMessages(new List<string> { "診察" });
+        var container = new 診察記録SaveCommandMessages(new List<string> { "診察記録" });
 
         // エラー・警告・情報の3種類すべてをひとつのプロパティに追加
         container.診察開始時刻.AddError("診察開始時刻がNULLです。");
@@ -162,7 +162,7 @@ internal class MessageContainerのテスト {
     public void 複数のエラーメッセージを同じプロパティに追加できること() {
         // ---------------------
         // Arrange
-        var container = new 診察SaveCommandMessages(new List<string> { "診察" });
+        var container = new 診察記録SaveCommandMessages(new List<string> { "診察記録" });
 
         // 複数のエラーメッセージを同じプロパティに追加
         container.予約.AddError("予約IDが未入力です。");
@@ -194,7 +194,7 @@ internal class MessageContainerのテスト {
     public void 様々な階層のオブジェクトにメッセージを追加できること() {
         // ---------------------
         // Arrange
-        var container = new 診察SaveCommandMessages(new List<string> { "診察" });
+        var container = new 診察記録SaveCommandMessages(new List<string> { "診察記録" });
 
         // ルートオブジェクトにメッセージ追加
         container.AddError("全体的なエラーです。");
