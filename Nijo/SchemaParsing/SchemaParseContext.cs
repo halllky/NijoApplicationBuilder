@@ -42,9 +42,34 @@ public class SchemaParseContext {
     private const string NODE_TYPE_REFTO = "ref-to";
 
     /// <summary>
-    /// 物理名
+    /// 物理名。スキーマ内での物理名の衝突を考慮した値を返す。
     /// </summary>
     internal string GetPhysicalName(XElement xElement) {
+        var nodeType = GetNodeType(xElement);
+
+        // ルート集約の場合は単純に名前を返す。
+        // ルート集約の物理名の衝突はスキーマの検証時にエラーになるため、ここでは考えなくてよい
+        if (nodeType == E_NodeType.RootAggregate) {
+            return xElement.Name.LocalName;
+        }
+
+        // Child型またはChildren型、かつ名前衝突がある場合、「（直近の親のPhysicalName）の（LocalName）」
+        if (nodeType == E_NodeType.ChildAggregate || nodeType == E_NodeType.ChildrenAggregate) {
+            var duplicates = Document
+                // まずXML要素の名前がxElementのXML要素の名前と衝突している要素を絞り込む
+                .XPathSelectElements($"//{xElement.Name.LocalName}")
+                // そのうちChild型またはChildren型であるものを絞り込む
+                .Where(x => x != xElement
+                         && (x.Attribute(ATTR_NODE_TYPE)?.Value == NODE_TYPE_CHILD
+                         || x.Attribute(ATTR_NODE_TYPE)?.Value == NODE_TYPE_CHILDREN))
+                .Any();
+            if (duplicates) {
+                // 「（直近の親のPhysicalName）の（LocalName）」
+                return GetPhysicalName(xElement.Parent!) + "の" + xElement.Name.LocalName;
+            }
+        }
+
+        // それ以外の場合は単純にLocalNameを返す
         return xElement.Name.LocalName;
     }
     /// <summary>

@@ -30,7 +30,7 @@ public class DataPatternTest {
     /// DataPatternsフォルダ内のXMLファイルパスを取得するためのTestCaseSource
     /// </summary>
     /// <returns>XMLファイルパスのリスト</returns>
-    public static IEnumerable<string> GetXmlFilePaths() {
+    public static IEnumerable<TestCaseData> GetXmlFilePaths(string testName) {
         string dataPatternDir = Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", "..", "DataPatterns");
         dataPatternDir = Path.GetFullPath(dataPatternDir);
 
@@ -46,7 +46,9 @@ public class DataPatternTest {
             files = files.Where(f => f == testCase);
         }
 
-        return files;
+        foreach (var filename in files) {
+            yield return new TestCaseData(filename).SetName($"{testName}__{Path.GetFileNameWithoutExtension(filename)}");
+        }
     }
 
     [OneTimeSetUp]
@@ -100,12 +102,14 @@ public class DataPatternTest {
             """.Replace("\r\n", "\n"), new UTF8Encoding(false, false));
     }
 
+    public static IEnumerable<TestCaseData> TestCase_各種中間出力ダンプ => GetXmlFilePaths("各種中間出力ダンプ");
+
     /// <summary>
     /// コード自動生成に使われる各種メソッドの動作確認の目検用ファイルのダンプ
     /// </summary>
     /// <param name="xmlFileName">XMLファイル名</param>
     [Test]
-    [TestCaseSource(nameof(GetXmlFilePaths))]
+    [TestCaseSource(nameof(TestCase_各種中間出力ダンプ))]
     [Category("DataPattern")]
     public void 各種中間出力ダンプ(string fileName) {
         var workspaceRoot = Path.GetFullPath(Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", ".."));
@@ -146,8 +150,10 @@ public class DataPatternTest {
         Assert.Pass($"{fileName} のテストが完了しました");
     }
 
+    public static IEnumerable<TestCaseData> TestCase_各構造体のオブジェクトパスが正しく生成されるか確認 => GetXmlFilePaths("各構造体のオブジェクトパスが正しく生成されるか確認");
+
     [Test]
-    [TestCaseSource(nameof(GetXmlFilePaths))]
+    [TestCaseSource(nameof(TestCase_各構造体のオブジェクトパスが正しく生成されるか確認))]
     [Category("DataPattern")]
     public void 各構造体のオブジェクトパスが正しく生成されるか確認(string fileName) {
         var implementor = GetImplementor(fileName)
@@ -191,12 +197,14 @@ public class DataPatternTest {
         Assert.Pass($"{fileName} のテストが完了しました");
     }
 
+    public static IEnumerable<TestCaseData> TestCase_コンパイルエラーチェック => GetXmlFilePaths("コンパイルエラーチェック");
+
     /// <summary>
     /// XMLファイルごとのテスト
     /// </summary>
     /// <param name="xmlFileName">XMLファイル名</param>
     [Test]
-    [TestCaseSource(nameof(GetXmlFilePaths))]
+    [TestCaseSource(nameof(TestCase_コンパイルエラーチェック))]
     [Category("DataPattern")]
     public async Task コンパイルエラーチェック(string fileName) {
         var workspaceRoot = Path.GetFullPath(Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", ".."));

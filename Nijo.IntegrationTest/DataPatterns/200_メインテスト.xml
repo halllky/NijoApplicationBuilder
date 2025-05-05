@@ -174,10 +174,10 @@
         <倉庫 Type="ref-to:倉庫マスタ" RefToObject="SearchCondition" IsKey="True" />
         <現在数量 Type="int" />
         <調整後数量 Type="int" />
-        <過去履歴 Type="ref-to:商品マスタ.在庫情報.在庫状況履歴" RefToObject="DisplayData" />
+        <過去履歴 Type="ref-to:商品マスタ/在庫情報/在庫状況履歴" RefToObject="DisplayData" />
       </調整商品リスト>
       <権限確認 Type="child">
-        <権限レベル Type="ref-to:従業員マスタ.権限" RefToObject="DisplayData" />
+        <権限レベル Type="ref-to:従業員マスタ/権限" RefToObject="DisplayData" />
         <承認者 Type="ref-to:従業員マスタ" RefToObject="SearchCondition" />
       </権限確認>
       <売上データ Type="ref-to:売上分析" RefToObject="SearchCondition" />
