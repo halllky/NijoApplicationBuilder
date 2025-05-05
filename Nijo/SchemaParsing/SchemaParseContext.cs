@@ -522,7 +522,9 @@ public class SchemaParseContext {
             } else if (model is QueryModel) {
                 // クエリモデルからはクエリモデルの集約しか参照できない
                 if (TryGetModel(refTo, out var refToModel) && !(refToModel is QueryModel)) {
-                    bool isGDQM = refTo.Attribute(BasicNodeOptions.GenerateDefaultQueryModel.AttributeName)?.Value == "True";
+                    // GenerateDefaultQueryModelの値をより厳密に検証
+                    var isGDQM = HasGenerateDefaultQueryModelAttribute(refTo);
+
                     if (!isGDQM) {
                         errorMessage = $"クエリモデルの集約からはクエリモデルの集約または{BasicNodeOptions.GenerateDefaultQueryModel.AttributeName}属性が付与されたデータモデルしか参照できません。";
                         return false;
@@ -537,7 +539,9 @@ public class SchemaParseContext {
             } else if (model is CommandModel) {
                 // コマンドモデルからはクエリモデルの集約しか参照できない
                 if (TryGetModel(refTo, out var refToModel) && !(refToModel is QueryModel)) {
-                    bool isGDQM = refTo.Attribute(BasicNodeOptions.GenerateDefaultQueryModel.AttributeName)?.Value == "True";
+                    // GenerateDefaultQueryModelの値をより厳密に検証
+                    var isGDQM = HasGenerateDefaultQueryModelAttribute(refTo);
+
                     if (!isGDQM) {
                         errorMessage = $"コマンドモデルの集約からはクエリモデルの集約または{BasicNodeOptions.GenerateDefaultQueryModel.AttributeName}属性が付与されたデータモデルしか参照できません。";
                         return false;
@@ -621,5 +625,21 @@ public class SchemaParseContext {
             .Where(value => !string.IsNullOrEmpty(value))
             .Distinct()
             .OrderBy(charType => charType);
+    }
+
+    /// <summary>
+    /// 要素のルート集約要素を返します
+    /// </summary>
+    internal XElement GetRootAggregateElement(XElement element) {
+        return element.AncestorsAndSelf().Last(e => e.Parent == e.Document?.Root);
+    }
+
+    /// <summary>
+    /// 要素またはその親のルート集約にGenerateDefaultQueryModel属性が付与されているかを確認します
+    /// </summary>
+    internal bool HasGenerateDefaultQueryModelAttribute(XElement element) {
+        var rootElement = GetRootAggregateElement(element);
+        var gdqmAttr = rootElement.Attribute(BasicNodeOptions.GenerateDefaultQueryModel.AttributeName)?.Value;
+        return !string.IsNullOrEmpty(gdqmAttr) && gdqmAttr.Equals("True", StringComparison.OrdinalIgnoreCase);
     }
 }

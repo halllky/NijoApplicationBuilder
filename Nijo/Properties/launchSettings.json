@@ -10,14 +10,14 @@
       "workingDirectory": "..\\自動テストで作成されたプロジェクト",
       "hotReloadEnabled": true
     },
-    "Ver1のアプリケーションテンプレート": {
-      "commandName": "Project",
-      "commandLineArgs": "generate",
-      "workingDirectory": "..\\Nijo.ApplicationTemplate.Ver1"
-    },
-    "Ver1のアプリケーションテンプレートのdump": {
+    "Ver1のテンプレのdump": {
       "commandName": "Project",
       "commandLineArgs": "dump",
+      "workingDirectory": "..\\Nijo.ApplicationTemplate.Ver1"
+    },
+    "Ver1のテンプレのソース自動生成": {
+      "commandName": "Project",
+      "commandLineArgs": "generate",
       "workingDirectory": "..\\Nijo.ApplicationTemplate.Ver1"
     }
   }

@@ -105,7 +105,7 @@ namespace Nijo.Models {
                 // 参照先がクエリモデルまたはGDQMデータモデルか確認
                 var refToType = refToRoot.Attribute(SchemaParseContext.ATTR_NODE_TYPE)?.Value;
                 var isQueryModel = refToType == QueryModel.NODE_TYPE;
-                var isGDQM = refToRoot.Attribute(BasicNodeOptions.GenerateDefaultQueryModel.AttributeName)?.Value?.ToLower() == "true";
+                var isGDQM = context.HasGenerateDefaultQueryModelAttribute(refToRoot);
 
                 if (!isQueryModel && !isGDQM) {
                     addError(refElement, $"コマンドモデルの集約からは、クエリモデルまたは{BasicNodeOptions.GenerateDefaultQueryModel.AttributeName}属性が付与されたデータモデルの集約しか参照できません。");
