@@ -137,7 +137,28 @@ internal static class BasicNodeOptions {
             ChildやVariationには指定不可。Commandの要素にも指定不可。
             """,
         Validate = ctx => {
+            var nodeType = ctx.SchemaParseContext.GetNodeType(ctx.XElement);
 
+            // モデルの種類を判定
+            if (ctx.SchemaParseContext.TryGetModel(ctx.XElement, out var model)) {
+                // コマンドモデルの場合はキー属性を定義できない
+                if (model is CommandModel) {
+                    ctx.AddError("コマンドモデルでは主キー属性を定義できません。");
+                    return;
+                }
+
+                // データモデルの子集約には主キー属性を付与できない
+                if (model is DataModel && nodeType == E_NodeType.ChildAggregate) {
+                    ctx.AddError("データモデルの子集約には主キー属性を付与できません。");
+                    return;
+                }
+
+                // クエリモデルの子集約・子配列には主キー属性を付与できない
+                if (model is QueryModel && (nodeType == E_NodeType.ChildAggregate || nodeType == E_NodeType.ChildrenAggregate)) {
+                    ctx.AddError("クエリモデルの子集約・子配列には主キー属性を付与できません。");
+                    return;
+                }
+            }
         },
         IsAvailableModelMembers = model => {
             if (model is DataModel) return true;
@@ -155,7 +176,7 @@ internal static class BasicNodeOptions {
             新規登録処理や更新処理での必須入力チェック処理が自動生成されます。
             """,
         Validate = ctx => {
-
+            // 特に制約なし
         },
         IsAvailableModelMembers = model => {
             return true;
@@ -174,7 +195,17 @@ internal static class BasicNodeOptions {
             この項目を指定するとDataModelと全く同じ型のQueryModelのモジュールが生成される。
             """,
         Validate = ctx => {
+            // データモデルのルート集約のみ許可
+            if (ctx.NodeType != E_NodeType.RootAggregate) {
+                ctx.AddError("このオプションはルート集約にのみ指定できます。");
+                return;
+            }
 
+            if (ctx.SchemaParseContext.TryGetModel(ctx.XElement, out var model)) {
+                if (model is not DataModel) {
+                    ctx.AddError("このオプションはデータモデルにのみ指定できます。");
+                }
+            }
         },
         IsAvailableModelMembers = model => {
             return false;
@@ -190,7 +221,19 @@ internal static class BasicNodeOptions {
         Validate = ctx => {
             // このオプションを使用するためにはGenerateDefaultQueryModelの指定が必須
             if (ctx.XElement.Attribute(GenerateDefaultQueryModel.AttributeName) == null) {
-                ctx.AddError("このオプションを使用するためにはGenerateDefaultQueryModelの指定が必須");
+                ctx.AddError($"このオプションを使用するためには{GenerateDefaultQueryModel.AttributeName}属性の指定が必須です。");
+            }
+
+            // データモデルのルート集約のみ許可
+            if (ctx.NodeType != E_NodeType.RootAggregate) {
+                ctx.AddError("このオプションはルート集約にのみ指定できます。");
+                return;
+            }
+
+            if (ctx.SchemaParseContext.TryGetModel(ctx.XElement, out var model)) {
+                if (!(model is DataModel)) {
+                    ctx.AddError("このオプションはデータモデルにのみ指定できます。");
+                }
             }
         },
         IsAvailableModelMembers = model => {
@@ -209,7 +252,12 @@ internal static class BasicNodeOptions {
             このQueryModelが読み取り専用かどうか
             """,
         Validate = ctx => {
-
+            // クエリモデルのみ許可
+            if (ctx.SchemaParseContext.TryGetModel(ctx.XElement, out var model)) {
+                if (!(model is QueryModel)) {
+                    ctx.AddError("このオプションはクエリモデルにのみ指定できます。");
+                }
+            }
         },
         IsAvailableModelMembers = model => {
             if (model is QueryModel) return true;
@@ -224,7 +272,12 @@ internal static class BasicNodeOptions {
             画面上で追加削除されるタイミングが親と異なるかどうか。
             """,
         Validate = ctx => {
-
+            // クエリモデルのみ許可
+            if (ctx.SchemaParseContext.TryGetModel(ctx.XElement, out var model)) {
+                if (!(model is QueryModel)) {
+                    ctx.AddError("このオプションはクエリモデルにのみ指定できます。");
+                }
+            }
         },
         IsAvailableModelMembers = model => {
             if (model is QueryModel) return true;
@@ -235,6 +288,9 @@ internal static class BasicNodeOptions {
 
 
     #region CommandModel用
+    internal const string REF_TO_OBJECT_DISPLAY_DATA = "DisplayData";
+    internal const string REF_TO_OBJECT_SEARCH_CONDITION = "SearchCondition";
+
     internal static NodeOption RefToObject = new() {
         AttributeName = "RefToObject",
         DisplayName = "参照先オブジェクト",
@@ -242,10 +298,23 @@ internal static class BasicNodeOptions {
         HelpText = $$"""
             CommandModelはQueryModelの検索条件か画面表示用データのいずれかしか参照できない。
             その2種のうちどちらを参照するかの指定。
+            "{{REF_TO_OBJECT_DISPLAY_DATA}}"か"{{REF_TO_OBJECT_SEARCH_CONDITION}}"のみ指定可能。
             """,
         Validate = ctx => {
-            if (ctx.Value != "DisplayData" && ctx.Value != "SearchCondition") {
-                ctx.AddError("DisplayDataかSearchConditionのみ指定可能");
+            if (ctx.Value != REF_TO_OBJECT_DISPLAY_DATA && ctx.Value != REF_TO_OBJECT_SEARCH_CONDITION) {
+                ctx.AddError($"{REF_TO_OBJECT_DISPLAY_DATA}か{REF_TO_OBJECT_SEARCH_CONDITION}のみ指定可能です。");
+            }
+
+            // コマンドモデルでの外部参照の場合のみ許可
+            if (ctx.NodeType != E_NodeType.Ref) {
+                ctx.AddError("このオプションは外部参照（ref-to）にのみ指定できます。");
+                return;
+            }
+
+            if (ctx.SchemaParseContext.TryGetModel(ctx.XElement, out var model)) {
+                if (model is not CommandModel) {
+                    ctx.AddError("このオプションはコマンドモデルの外部参照にのみ指定できます。");
+                }
             }
         },
         IsAvailableModelMembers = model => {

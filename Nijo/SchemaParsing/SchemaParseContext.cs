@@ -39,7 +39,7 @@ public class SchemaParseContext {
 
     internal const string NODE_TYPE_CHILD = "child";
     internal const string NODE_TYPE_CHILDREN = "children";
-    private const string NODE_TYPE_REFTO = "ref-to";
+    internal const string NODE_TYPE_REFTO = "ref-to";
 
     /// <summary>
     /// 物理名。スキーマ内での物理名の衝突を考慮した値を返す。
@@ -337,10 +337,38 @@ public class SchemaParseContext {
         schema = new ApplicationSchema(xDocument, this);
         var errorsList = new List<(XElement, string)>();
 
+        // ルート集約の物理名の衝突チェック
+        var rootAggregates = xDocument.Root?.Elements() ?? [];
+        var rootPhysicalNames = new Dictionary<string, XElement>();
+
+        foreach (var root in rootAggregates) {
+            var rootName = GetPhysicalName(root);
+            if (rootPhysicalNames.TryGetValue(rootName, out var existingRoot)) {
+                errorsList.Add((root, $"ルート集約の物理名'{rootName}'が重複しています。モデルをまたいでの重複はできません。"));
+            } else {
+                rootPhysicalNames[rootName] = root;
+            }
+        }
+
         foreach (var el in xDocument.Root?.Descendants() ?? []) {
 
             var nodeType = GetNodeType(el);
             var typeAttrValue = el.Attribute(ATTR_NODE_TYPE)?.Value ?? string.Empty;
+
+            // 同じ親のメンバー同士での物理名の重複チェック
+            if (el.Parent != null && el.Parent != el.Document?.Root) {
+                var siblings = el.Parent.Elements().ToList();
+                var siblingPhysicalNames = new Dictionary<string, XElement>();
+
+                foreach (var sibling in siblings) {
+                    var physicalName = GetPhysicalName(sibling);
+                    if (siblingPhysicalNames.TryGetValue(physicalName, out var existingSibling) && existingSibling != sibling) {
+                        errorsList.Add((sibling, $"同じ親の下で物理名'{physicalName}'が重複しています。"));
+                    } else {
+                        siblingPhysicalNames[physicalName] = sibling;
+                    }
+                }
+            }
 
             // ノードの種類に基づくチェック
             switch (nodeType) {
@@ -366,10 +394,22 @@ public class SchemaParseContext {
 
                 // Child
                 case E_NodeType.ChildAggregate:
+                    // 主キー属性のチェック
+                    if (el.Elements().Any(member => member.Attribute(BasicNodeOptions.IsKey.AttributeName) != null)) {
+                        if (TryGetModel(el, out var childModel) && childModel is DataModel) {
+                            errorsList.Add((el, $"データモデルの子集約には主キー属性を付与することができません。"));
+                        }
+                    }
                     break;
 
                 // Children
                 case E_NodeType.ChildrenAggregate:
+                    // データモデルの子配列は必ず1個以上の主キーが必要
+                    if (TryGetModel(el, out var childrenModel) && childrenModel is DataModel) {
+                        if (el.Elements().All(member => member.Attribute(BasicNodeOptions.IsKey.AttributeName) == null)) {
+                            errorsList.Add((el, "データモデルの子配列は必ず1個以上の主キーを持たなければなりません。"));
+                        }
+                    }
                     break;
 
                 // ValueMember単位の検証
@@ -382,6 +422,10 @@ public class SchemaParseContext {
                     break;
 
                 case E_NodeType.Ref:
+                    // 外部参照のチェック
+                    if (!ValidateRefTo(el, out var refError)) {
+                        errorsList.Add((el, refError));
+                    }
                     break;
 
                 case E_NodeType.StaticEnumType:
@@ -408,13 +452,15 @@ public class SchemaParseContext {
 
         // エラー内容表示
         if (errorsList.Count > 0) {
+            logger.LogError("スキーマ定義にエラーがあります。");
+
             var errors = errorsList
                 .GroupBy(x => x.Item1)
                 .Select(x => new ValidationError {
                     XElement = x.Key,
                     Errors = x.Select(y => y.Item2).ToArray(),
                 });
-            var logBuilder = new StringBuilder();
+
             foreach (var err in errors) {
                 var path = err.XElement
                     .AncestorsAndSelf()
@@ -423,17 +469,137 @@ public class SchemaParseContext {
                     .Select(el => el.Name.LocalName)
                     .Join("/");
 
-                logBuilder.AppendLine(path);
-                foreach (var msg in err.Errors) {
-                    logBuilder.AppendLine($"  - {WithIndent(msg, "    ")}");
-                }
-                logBuilder.AppendLine();
+                var summary = err.Errors.Count >= 2
+                    ? $"{err.Errors.Count}件のエラー（{err.Errors.Join(", ")}）"
+                    : err.Errors.Single();
+                logger.LogError("  * {path}: {summary}", path, summary);
             }
-            logger.LogError(logBuilder.ToString());
         }
 
         return errorsList.Count == 0;
     }
+
+    /// <summary>
+    /// 外部参照のバリデーションを行います
+    /// </summary>
+    /// <param name="refElement">チェック対象のref-to要素</param>
+    /// <param name="errorMessage">エラーメッセージ（エラーがある場合）</param>
+    /// <returns>バリデーションが成功したかどうか</returns>
+    private bool ValidateRefTo(XElement refElement, out string errorMessage) {
+        errorMessage = string.Empty;
+
+        // ref-to:の後ろの部分を取得
+        var typeAttr = refElement.Attribute(ATTR_NODE_TYPE);
+        if (typeAttr == null || !typeAttr.Value.StartsWith(NODE_TYPE_REFTO + ":")) {
+            errorMessage = $"ref-to要素のType属性が正しくありません: {typeAttr?.Value}";
+            return false;
+        }
+
+        // 参照先の要素を見つける
+        var refTo = FindRefTo(refElement);
+        if (refTo == null) {
+            errorMessage = $"参照先が見つかりません: {typeAttr.Value}";
+            return false;
+        }
+
+        // 自身のツリーの集約を参照していないかチェック
+        var rootElement = refElement.AncestorsAndSelf().Last(e => e.Parent == e.Document?.Root);
+        var refToRoot = refTo.AncestorsAndSelf().Last(e => e.Parent == e.Document?.Root);
+
+        if (rootElement == refToRoot) {
+            errorMessage = "自身のツリーの集約を参照することはできません。";
+            return false;
+        }
+
+        // モデルの種類に基づく参照制約チェック
+        if (TryGetModel(refElement, out var model)) {
+            if (model is DataModel) {
+                // データモデルからはデータモデルの集約しか参照できない
+                if (TryGetModel(refTo, out var refToModel) && !(refToModel is DataModel)) {
+                    errorMessage = "データモデルの集約からはデータモデルの集約しか参照できません。";
+                    return false;
+                }
+            } else if (model is QueryModel) {
+                // クエリモデルからはクエリモデルの集約しか参照できない
+                if (TryGetModel(refTo, out var refToModel) && !(refToModel is QueryModel)) {
+                    bool isGDQM = refTo.Attribute(BasicNodeOptions.GenerateDefaultQueryModel.AttributeName)?.Value == "True";
+                    if (!isGDQM) {
+                        errorMessage = $"クエリモデルの集約からはクエリモデルの集約または{BasicNodeOptions.GenerateDefaultQueryModel.AttributeName}属性が付与されたデータモデルしか参照できません。";
+                        return false;
+                    }
+                }
+
+                // クエリモデルで循環参照を定義することはできない
+                if (HasCircularReference(refElement, refTo)) {
+                    errorMessage = "クエリモデルで循環参照を定義することはできません。";
+                    return false;
+                }
+            } else if (model is CommandModel) {
+                // コマンドモデルからはクエリモデルの集約しか参照できない
+                if (TryGetModel(refTo, out var refToModel) && !(refToModel is QueryModel)) {
+                    bool isGDQM = refTo.Attribute(BasicNodeOptions.GenerateDefaultQueryModel.AttributeName)?.Value == "True";
+                    if (!isGDQM) {
+                        errorMessage = $"コマンドモデルの集約からはクエリモデルの集約または{BasicNodeOptions.GenerateDefaultQueryModel.AttributeName}属性が付与されたデータモデルしか参照できません。";
+                        return false;
+                    }
+                }
+
+                // RefToObjectの指定がないとエラー
+                if (refElement.Attribute(BasicNodeOptions.RefToObject.AttributeName) == null) {
+                    errorMessage = $"コマンドモデルからクエリモデルを外部参照する場合、{BasicNodeOptions.RefToObject.AttributeName}属性を指定する必要があります。";
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 循環参照をチェックします
+    /// </summary>
+    /// <param name="source">参照元要素</param>
+    /// <param name="target">参照先要素</param>
+    /// <returns>循環参照がある場合true</returns>
+    private bool HasCircularReference(XElement source, XElement target) {
+        var visited = new HashSet<XElement>();
+        var queue = new Queue<XElement>();
+
+        queue.Enqueue(target);
+
+        while (queue.Count > 0) {
+            var current = queue.Dequeue();
+
+            if (!visited.Add(current)) {
+                continue;
+            }
+
+            // 参照を探す
+            foreach (var el in current.Descendants()) {
+                var typeAttr = el.Attribute(ATTR_NODE_TYPE);
+                if (typeAttr != null && typeAttr.Value.StartsWith(NODE_TYPE_REFTO + ":")) {
+                    var refTo = FindRefTo(el);
+                    if (refTo != null) {
+                        if (refTo == source) {
+                            // 循環参照発見
+                            return true;
+                        }
+                        queue.Enqueue(refTo);
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static string WithIndent(string text, string indent) {
+        if (string.IsNullOrEmpty(text)) return text;
+
+        var lines = text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        return string.Join(Environment.NewLine + indent, lines);
+    }
+
     public class ValidationError {
         public required XElement XElement { get; init; }
         public required IReadOnlyCollection<string> Errors { get; init; }

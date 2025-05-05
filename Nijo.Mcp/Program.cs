@@ -51,7 +51,7 @@ namespace Nijo.Mcp {
 
 
         #region アプリケーションテンプレート
-        private const string TOOL_CHECK_COMPILE_ERROR = "check_compile_error";
+        private const string TOOL_CHECK_COMPILE_ERROR = "generate_code";
         [McpServerTool(Name = TOOL_CHECK_COMPILE_ERROR), Description(
             "ソースコードの自動生成処理の最新化、自動生成処理のかけなおし、コンパイルエラーチェックを行います。")]
         public static async Task<string> GenerateCode([Description("nijo.xmlのファイルの絶対パス")] string nijoXmlFileFullPath) {

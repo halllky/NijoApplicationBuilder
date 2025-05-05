@@ -43,6 +43,84 @@ namespace Nijo.Models {
             } else if (context.GetNodeType(correctReturnValueElement) != E_NodeType.ChildAggregate) {
                 addError(correctReturnValueElement, $"{SchemaParseContext.NODE_TYPE_CHILD} 型である必要があります。");
             }
+
+            // コマンドモデルの集約には主キー属性を定義できない
+            ValidateNoKeyAttributes(rootAggregateElement, context, addError);
+
+            // 外部参照のチェック
+            ValidateRefTo(rootAggregateElement, context, addError);
+        }
+
+        /// <summary>
+        /// コマンドモデルでは主キー属性を定義できないことをチェックします
+        /// </summary>
+        private void ValidateNoKeyAttributes(XElement rootAggregateElement, SchemaParseContext context, Action<XElement, string> addError) {
+            // すべての集約（ルート集約、子集約、子配列）をチェック
+            var allAggregates = rootAggregateElement.DescendantsAndSelf()
+                .Where(el => el == rootAggregateElement ||
+                            el.Attribute(SchemaParseContext.ATTR_NODE_TYPE)?.Value == SchemaParseContext.NODE_TYPE_CHILD ||
+                            el.Attribute(SchemaParseContext.ATTR_NODE_TYPE)?.Value == SchemaParseContext.NODE_TYPE_CHILDREN);
+
+            foreach (var aggregate in allAggregates) {
+                var membersWithKey = aggregate.Elements()
+                    .Where(member => member.Attribute(BasicNodeOptions.IsKey.AttributeName) != null).ToList();
+
+                if (membersWithKey.Any()) {
+                    addError(aggregate, "コマンドモデルの集約には主キー属性を定義できません。");
+                    foreach (var member in membersWithKey) {
+                        addError(member, "コマンドモデルのメンバーに主キー属性を定義することはできません。");
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// コマンドモデルの外部参照をチェックします
+        /// </summary>
+        private void ValidateRefTo(XElement rootAggregateElement, SchemaParseContext context, Action<XElement, string> addError) {
+            // 自身を起点とするすべての外部参照を取得
+            var refElements = rootAggregateElement
+                .Descendants()
+                .Where(el => el.Attribute(SchemaParseContext.ATTR_NODE_TYPE)?.Value?.StartsWith(SchemaParseContext.NODE_TYPE_REFTO + ":") == true)
+                .ToList();
+
+            if (!refElements.Any()) return;
+
+            foreach (var refElement in refElements) {
+                var refTo = context.FindRefTo(refElement);
+                if (refTo == null) {
+                    addError(refElement, $"参照先の要素が見つかりません: {refElement.Attribute(SchemaParseContext.ATTR_NODE_TYPE)?.Value}");
+                    continue;
+                }
+
+                // 自身のツリーの集約を参照していないかチェック
+                var rootElement = refElement.AncestorsAndSelf().Last(e => e.Parent == e.Document?.Root);
+                var refToRoot = refTo.AncestorsAndSelf().Last(e => e.Parent == e.Document?.Root);
+
+                if (rootElement == refToRoot) {
+                    addError(refElement, "自身のツリーの集約を参照することはできません。");
+                    continue;
+                }
+
+                // 参照先がクエリモデルまたはGDQMデータモデルか確認
+                var refToType = refToRoot.Attribute(SchemaParseContext.ATTR_NODE_TYPE)?.Value;
+                var isQueryModel = refToType == QueryModel.NODE_TYPE;
+                var isGDQM = refToRoot.Attribute(BasicNodeOptions.GenerateDefaultQueryModel.AttributeName)?.Value?.ToLower() == "true";
+
+                if (!isQueryModel && !isGDQM) {
+                    addError(refElement, $"コマンドモデルの集約からは、クエリモデルまたは{BasicNodeOptions.GenerateDefaultQueryModel.AttributeName}属性が付与されたデータモデルの集約しか参照できません。");
+                }
+
+                // RefToObjectの指定があるかどうか
+                if (refElement.Attribute(BasicNodeOptions.RefToObject.AttributeName) == null) {
+                    addError(refElement, $"コマンドモデルからクエリモデルを外部参照する場合、{BasicNodeOptions.RefToObject.AttributeName}属性を指定する必要があります。");
+                } else {
+                    var refToObject = refElement.Attribute(BasicNodeOptions.RefToObject.AttributeName)?.Value;
+                    if (refToObject != BasicNodeOptions.REF_TO_OBJECT_DISPLAY_DATA && refToObject != BasicNodeOptions.REF_TO_OBJECT_SEARCH_CONDITION) {
+                        addError(refElement, $"{BasicNodeOptions.RefToObject.AttributeName}属性の値は「{BasicNodeOptions.REF_TO_OBJECT_DISPLAY_DATA}」または「{BasicNodeOptions.REF_TO_OBJECT_SEARCH_CONDITION}」である必要があります。");
+                    }
+                }
+            }
         }
 
         public void GenerateCode(CodeRenderingContext ctx, RootAggregate rootAggregate) {

@@ -16,13 +16,136 @@ namespace Nijo.Models {
     /// <see cref="DataModel"/> を変換して人間や外部システムが閲覧するための形に直した情報の形。
     /// </summary>
     internal class QueryModel : IModel {
-        public string SchemaName => "query-model";
+        internal const string NODE_TYPE = "query-model";
+        public string SchemaName => NODE_TYPE;
 
         public void Validate(XElement rootAggregateElement, SchemaParseContext context, Action<XElement, string> addError) {
             // ルート集約はURLにかかわるのでキー必須
             if (rootAggregateElement.Elements().All(member => member.Attribute(BasicNodeOptions.IsKey.AttributeName) == null)) {
                 addError(rootAggregateElement, "キーが指定されていません。");
             }
+
+            // 子集約には主キー属性を付与できない
+            var childAggregates = rootAggregateElement.Descendants()
+                .Where(el => el.Attribute(SchemaParseContext.ATTR_NODE_TYPE)?.Value == SchemaParseContext.NODE_TYPE_CHILD);
+            foreach (var childAggregate in childAggregates) {
+                var membersWithKey = childAggregate.Elements()
+                    .Where(member => member.Attribute(BasicNodeOptions.IsKey.AttributeName) != null).ToList();
+                if (membersWithKey.Any()) {
+                    addError(childAggregate, "クエリモデルの子集約には主キー属性を付与することができません。");
+                    foreach (var member in membersWithKey) {
+                        addError(member, "この子集約のメンバーに主キー属性を付与することはできません。");
+                    }
+                }
+            }
+
+            // 子配列には主キー属性を付与できない
+            var childrenAggregates = rootAggregateElement.Descendants()
+                .Where(el => el.Attribute(SchemaParseContext.ATTR_NODE_TYPE)?.Value == SchemaParseContext.NODE_TYPE_CHILDREN);
+            foreach (var childrenAggregate in childrenAggregates) {
+                var membersWithKey = childrenAggregate.Elements()
+                    .Where(member => member.Attribute(BasicNodeOptions.IsKey.AttributeName) != null).ToList();
+                if (membersWithKey.Any()) {
+                    addError(childrenAggregate, "クエリモデルの子配列には主キー属性を付与することができません。");
+                    foreach (var member in membersWithKey) {
+                        addError(member, "この子配列のメンバーに主キー属性を付与することはできません。");
+                    }
+                }
+            }
+
+            // 外部参照のチェック
+            ValidateRefTo(rootAggregateElement, context, addError);
+        }
+
+        /// <summary>
+        /// クエリモデルの外部参照をチェックします
+        /// </summary>
+        private void ValidateRefTo(XElement rootAggregateElement, SchemaParseContext context, Action<XElement, string> addError) {
+            // 自身を起点とするすべての外部参照を取得
+            var refElements = rootAggregateElement
+                .Descendants()
+                .Where(el => el.Attribute(SchemaParseContext.ATTR_NODE_TYPE)?.Value?.StartsWith("ref-to:") == true)
+                .ToList();
+
+            if (!refElements.Any()) return;
+
+            foreach (var refElement in refElements) {
+                var refTo = context.FindRefTo(refElement);
+                if (refTo == null) {
+                    addError(refElement, $"参照先の要素が見つかりません: {refElement.Attribute(SchemaParseContext.ATTR_NODE_TYPE)?.Value}");
+                    continue;
+                }
+
+                // 自身のツリーの集約を参照していないかチェック
+                var rootElement = refElement.AncestorsAndSelf().Last(e => e.Parent == e.Document?.Root);
+                var refToRoot = refTo.AncestorsAndSelf().Last(e => e.Parent == e.Document?.Root);
+
+                if (rootElement == refToRoot) {
+                    addError(refElement, "自身のツリーの集約を参照することはできません。");
+                    continue;
+                }
+
+                // 参照先がクエリモデルまたはGDQMデータモデルか確認
+                var refToType = refToRoot.Attribute(SchemaParseContext.ATTR_NODE_TYPE)?.Value;
+                var isQueryModel = refToType == "query-model";
+                var isGDQM = refToRoot.Attribute(BasicNodeOptions.GenerateDefaultQueryModel.AttributeName)?.Value?.ToLower() == "true";
+
+                if (!isQueryModel && !isGDQM) {
+                    addError(refElement, "クエリモデルの集約からは、クエリモデルまたはGenerateDefaultQueryModel属性が付与されたデータモデルの集約しか参照できません。");
+                }
+            }
+
+            // 循環参照チェック
+            if (HasCircularReferences(rootAggregateElement, context)) {
+                addError(rootAggregateElement, "クエリモデルで循環参照を定義することはできません。");
+            }
+        }
+
+        /// <summary>
+        /// クエリモデルの循環参照をチェックします
+        /// </summary>
+        private bool HasCircularReferences(XElement rootAggregateElement, SchemaParseContext context) {
+            var visited = new HashSet<XElement>();
+            var recStack = new HashSet<XElement>();
+
+            // DFSで循環参照を検出
+            bool HasCircular(XElement element) {
+                if (recStack.Contains(element)) {
+                    return true; // 循環参照発見
+                }
+
+                if (visited.Contains(element)) {
+                    return false; // 既に訪問済みで循環なし
+                }
+
+                visited.Add(element);
+                recStack.Add(element);
+
+                // この要素からの参照をチェック
+                var refElements = element.Descendants()
+                    .Where(el => el.Attribute(SchemaParseContext.ATTR_NODE_TYPE)?.Value?.StartsWith(SchemaParseContext.NODE_TYPE_REFTO + ":") == true);
+
+                foreach (var refElement in refElements) {
+                    var refTo = context.FindRefTo(refElement);
+                    if (refTo == null) continue;
+
+                    // 参照先のルート要素
+                    var refToRoot = refTo.AncestorsAndSelf().Last(e => e.Parent == e.Document?.Root);
+
+                    // 自身のツリー内の参照はスキップ
+                    var currentRoot = element.AncestorsAndSelf().Last(e => e.Parent == e.Document?.Root);
+                    if (refToRoot == currentRoot) continue;
+
+                    if (HasCircular(refToRoot)) {
+                        return true;
+                    }
+                }
+
+                recStack.Remove(element);
+                return false;
+            }
+
+            return HasCircular(rootAggregateElement);
         }
 
         public void GenerateCode(CodeRenderingContext ctx, RootAggregate rootAggregate) {
