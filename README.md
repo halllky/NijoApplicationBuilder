@@ -86,3 +86,83 @@ nijo.exe generate
 
 ## ライセンス
 このプロジェクトは[LICENSE.txt](./LICENSE.txt)の条件の下で提供されています。
+
+# TypeScript MCP
+
+TypeScript版 MCP (Model Context Protocol) ツールは、AIエージェントがTypeScriptのプロジェクトに関するタスクの遂行の精度を上げるためのものです。
+
+このツールは、.NET版MCPをTypeScriptに移植したもので、公式の [Model Context Protocol TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk) を使用しています。
+
+## 機能
+
+- `find_definition`: TypeScriptファイル内の特定位置にあるシンボルの定義を検索します
+- `find_references`: TypeScriptファイル内の特定位置にあるシンボルの参照を検索します
+- `suggest_abstract_members`: TypeScriptファイル内のクラスが実装すべきインターフェースメンバーを提案します
+
+## セットアップ
+
+1. 必要なパッケージをインストールします:
+
+```bash
+npm install
+```
+
+2. `appsettings.json`ファイルを設定します:
+
+```json
+{
+  "TypeScriptMcp": {
+    "ProjectPath": "<TypeScriptプロジェクトの絶対パス>",
+    "WorkDirectory": "work"
+  }
+}
+```
+
+## 使い方
+
+### 開発モードで実行
+
+```bash
+npm run dev
+```
+
+### ビルドして実行
+
+```bash
+npm run build
+npm start
+```
+
+## AI アシスタントとの連携
+
+このツールは、[Model Context Protocol](https://github.com/modelcontextprotocol/typescript-sdk)に準拠しており、AIアシスタントと直接連携できます。StandardIO通信を使用するため、AIアシスタントからツールを直接呼び出すことができます。
+
+## APIの使用例（非標準）
+
+このツールはHTTP APIも提供していた以前の実装とは異なり、現在はModel Context Protocolの標準に従って実装されています。従来のHTTPインターフェースが必要な場合は、以下の実装を参考にしてください：
+
+```typescript
+import express from 'express';
+import bodyParser from 'body-parser';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+
+// Express APIサーバーを追加
+const app = express();
+app.use(bodyParser.json());
+
+// MCP APIエンドポイント
+app.post('/api/mcp', (req, res) => {
+  try {
+    const { tool, params } = req.body;
+    // ここでMCPサーバーのツールを呼び出す処理を実装
+    res.json({ result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.listen(3000, () => {
+  console.log('HTTPサーバーがポート3000で起動しました');
+});
+```

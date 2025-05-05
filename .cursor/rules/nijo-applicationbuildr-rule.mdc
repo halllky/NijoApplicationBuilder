@@ -3,25 +3,16 @@ description:
 globs: 
 alwaysApply: true
 ---
-## 用語定義
-- 「スキーマ定義」とは「nijo.xml」で定義されるデータ構造や各種オプション属性の定義を表します。
-- 「ソースコード自動生成処理」とは、 [Nijo.csproj](mdc:Nijo/Nijo.csproj) プロジェクトおよびそこで実行される一連のソースコード生成処理を表します。
-- 「アプリケーションテンプレート」とは、 [NIJO_APPLICATION_TEMPLATE.sln](mdc:Nijo.ApplicationTemplate.Ver1/NIJO_APPLICATION_TEMPLATE.sln) に属するソースコードを表します。
-
-## 全般
 - ここはwindows環境です。
   - ファイルの絶対パスは `/c:/aaa/bbb/ccc` ではなく `C:\\aaa\\bbb\\ccc` です。
-  - cursorエージェントがで使えるターミナルは Windows の powershell です。例えばLinuxのコマンドは使えないので注意してください。
+  - あなたがで使えるターミナルは Windows の powershell です。したがって、例えば複数のコマンドを連続で実行する際に `&&` は使えません。
 - 参照しようとしているフォルダに `README.md` という名前のファイルがある場合、 `README.md` を参照してください。
 - このワークスペース内部の動作確認などのためにMCP `nijo-mcp` を用意しています。これを使うべき状況では積極的にこれを使ってください。
-
-## エラー原因調査するときの注意事項
-- コンパイルエラーが出ているファイルが [OverridedApplicationService.cs](mdc:自動テストで作成されたプロジェクト/Core/OverridedApplicationService.cs) の場合
-  - このファイルはユニットテスト実行時に [Implementors](mdc:Nijo.IntegrationTest/Implementors) フォルダ内部のソースから生成されます。Implementors内部の記述が [DataPatterns](mdc:Nijo.IntegrationTest/DataPatterns) におけるスキーマ定義と齟齬を起こしていないかを疑ってください。
-  - それが原因の場合は [Implementors](mdc:Nijo.IntegrationTest/Implementors) フォルダ内部のソースをスキーマ定義に合うよう修正してください。
-- コンパイルエラーが出ているファイルの先頭に `このファイルは自動生成されました。このファイルの内容を直接書き換えても、次回の自動生成処理で上書きされるのでご注意ください。` という文字があるとき、そのファイル自身だけでなく、そのファイルを自動生成する箇所も調査してください。
-
-## ソースコードを修正するときの必須事項
+- .NET の実装の補助のために `dotnet-mcp` を用意しています。これを使うべき状況では積極的にこれを使ってください。
+- TypeScript の実装の補助のために `typescript-mcp` を用意しています。これを使うべき状況では積極的にこれを使ってください。
 - ソースコードを修正するときは [.editorconfig](mdc:.editorconfig) を参考にしてください。
-- [Nijo.csproj](mdc:Nijo/Nijo.csproj) プロジェクトおよびそのプロジェクトに含まれるソースコードを修正するときは [CONTRIBUTING.md](mdc:Nijo/CONTRIBUTING.md) を参照してください。
 - コンパイルエラーが出ているファイルの先頭に `このファイルは自動生成されました。このファイルの内容を直接書き換えても、次回の自動生成処理で上書きされるのでご注意ください。` という文字があるとき、そのファイル自身ではなく、そのファイルを自動生成する箇所を修正してください。
+- このリポジトリは、大きく分けて、ソースコードを自動生成するプロジェクトと、自動生成されたあとのプロジェクトから成ります。頻出する用語の定義を以下に示します。
+  - 「スキーマ定義」とは「nijo.xml」という名前のファイルで定義されるデータ構造や各種オプション属性の定義を表します。
+  - 「ソースコード自動生成処理」とは、 [Nijo.csproj](mdc:Nijo/Nijo.csproj) プロジェクトおよびそこで実行される一連のソースコード生成処理を表します。
+  - 「アプリケーションテンプレート」とは、 [NIJO_APPLICATION_TEMPLATE.sln](mdc:Nijo.ApplicationTemplate.Ver1/NIJO_APPLICATION_TEMPLATE.sln) に属するソースコードを表します。
