@@ -145,106 +145,106 @@ namespace Nijo.Mcp {
             // この return 文の後には何も実行されない
         }
 
-        [McpServerTool(Name = "get_debug_info"), Description(
-            "ソースコード自動生成された方のアプリケーションのAPサーバーに問い合わせ、プロセスが実行中か否かや、接続先DBがどこかなどの情報を取得する。")]
-        public static async Task<string> GeDebugInfo() {
-            try {
-                using var workDirectory = WorkDirectory.Prepare();
-                return await デバッグ中サイト情報取得(workDirectory, TimeSpan.FromSeconds(5));
+        //[McpServerTool(Name = "get_debug_info"), Description(
+        //    "ソースコード自動生成された方のアプリケーションのAPサーバーに問い合わせ、プロセスが実行中か否かや、接続先DBがどこかなどの情報を取得する。")]
+        //public static async Task<string> GeDebugInfo() {
+        //    try {
+        //        using var workDirectory = WorkDirectory.Prepare();
+        //        return await デバッグ中サイト情報取得(workDirectory, TimeSpan.FromSeconds(5));
 
-            } catch (Exception ex) {
-                return ex.ToString();
-            }
-        }
+        //    } catch (Exception ex) {
+        //        return ex.ToString();
+        //    }
+        //}
 
-        [McpServerTool(Name = "get_debug_info_er_diagram"), Description(
-            "ソースコード自動生成された方のアプリケーションのAPサーバーに問い合わせ、テーブル定義のER図をmermaid形式で返す。" +
-            "このツールを使用するためには、予め start_debugging でアプリケーションが実行開始されている必要がある。")]
-        public static async Task<string> GeDebugInfoErDiagram() {
-            try {
-                using var httpClient = new HttpClient() {
-                    BaseAddress = new Uri(DOTNET_URL),
-                };
-                var response = await httpClient.GetAsync("/api/debug-info/er-diagram");
+        //[McpServerTool(Name = "get_debug_info_er_diagram"), Description(
+        //    "ソースコード自動生成された方のアプリケーションのAPサーバーに問い合わせ、テーブル定義のER図をmermaid形式で返す。" +
+        //    "このツールを使用するためには、予め start_debugging でアプリケーションが実行開始されている必要がある。")]
+        //public static async Task<string> GeDebugInfoErDiagram() {
+        //    try {
+        //        using var httpClient = new HttpClient() {
+        //            BaseAddress = new Uri(DOTNET_URL),
+        //        };
+        //        var response = await httpClient.GetAsync("/api/debug-info/er-diagram");
 
-                if (!response.IsSuccessStatusCode) {
-                    return $$"""
-                    アプリケーションの実行設定の問い合わせに失敗しました。
-                    start_debugging でアプリケーションが実行開始されていない可能性があります。
-                    """;
-                }
+        //        if (!response.IsSuccessStatusCode) {
+        //            return $$"""
+        //            アプリケーションの実行設定の問い合わせに失敗しました。
+        //            start_debugging でアプリケーションが実行開始されていない可能性があります。
+        //            """;
+        //        }
 
-                return await response.Content.ReadAsStringAsync();
+        //        return await response.Content.ReadAsStringAsync();
 
-            } catch (Exception ex) {
-                return ex.ToString();
-            }
-        }
+        //    } catch (Exception ex) {
+        //        return ex.ToString();
+        //    }
+        //}
 
-        [McpServerTool(Name = "reset_debug_database"), Description(
-            "ソースコード自動生成された方のアプリケーションのデータベースをリセットし、ダミーデータを投入します。" +
-            "このツールを使用するためには、予め start_debugging でアプリケーションが実行開始されている必要があります。")]
-        public static async Task<string> ResetDebugDatabase() {
-            try {
-                using var httpClient = new HttpClient() {
-                    BaseAddress = new Uri(DOTNET_URL),
-                };
+        //[McpServerTool(Name = "reset_debug_database"), Description(
+        //    "ソースコード自動生成された方のアプリケーションのデータベースをリセットし、ダミーデータを投入します。" +
+        //    "このツールを使用するためには、予め start_debugging でアプリケーションが実行開始されている必要があります。")]
+        //public static async Task<string> ResetDebugDatabase() {
+        //    try {
+        //        using var httpClient = new HttpClient() {
+        //            BaseAddress = new Uri(DOTNET_URL),
+        //        };
 
-                try {
-                    var content = new StringContent("", Encoding.UTF8, "application/json"); // 空のJSONコンテンツを作成
-                    var response = await httpClient.PostAsync("/api/debug-info/destroy-and-reset-database", content); // contentを渡す
-                    var responseBody = await response.Content.ReadAsStringAsync();
+        //        try {
+        //            var content = new StringContent("", Encoding.UTF8, "application/json"); // 空のJSONコンテンツを作成
+        //            var response = await httpClient.PostAsync("/api/debug-info/destroy-and-reset-database", content); // contentを渡す
+        //            var responseBody = await response.Content.ReadAsStringAsync();
 
-                    if (!response.IsSuccessStatusCode) {
-                        return $"データベースのリセットに失敗しました (HTTP {(int)response.StatusCode}): {responseBody}";
-                    }
+        //            if (!response.IsSuccessStatusCode) {
+        //                return $"データベースのリセットに失敗しました (HTTP {(int)response.StatusCode}): {responseBody}";
+        //            }
 
-                    return $"データベースのリセットとダミーデータの投入が完了しました: {responseBody}";
+        //            return $"データベースのリセットとダミーデータの投入が完了しました: {responseBody}";
 
-                } catch (HttpRequestException ex) {
-                    return $"APIエンドポイントへの接続に失敗しました。start_debugging でアプリケーションが実行開始されているか確認してください。 Error: {ex.Message}";
-                } catch (Exception ex) {
-                    return $"予期せぬエラーが発生しました: {ex.Message}";
-                }
+        //        } catch (HttpRequestException ex) {
+        //            return $"APIエンドポイントへの接続に失敗しました。start_debugging でアプリケーションが実行開始されているか確認してください。 Error: {ex.Message}";
+        //        } catch (Exception ex) {
+        //            return $"予期せぬエラーが発生しました: {ex.Message}";
+        //        }
 
-            } catch (Exception ex) {
-                return ex.ToString();
-            }
-        }
+        //    } catch (Exception ex) {
+        //        return ex.ToString();
+        //    }
+        //}
 
-        [McpServerTool(Name = "execute_debug_sql"), Description(
-            "指定されたSQLクエリを実行し、結果を返します。SELECT文のみ実行可能です。" +
-            "このツールを使用するためには、予め start_debugging でアプリケーションが実行開始されている必要がある。")]
-        public static async Task<string> ExecuteDebugSql([Description("実行するSQLクエリ")] string sql) {
-            try {
-                using var httpClient = new HttpClient() {
-                    BaseAddress = new Uri(DOTNET_URL),
-                };
+        //[McpServerTool(Name = "execute_debug_sql"), Description(
+        //    "指定されたSQLクエリを実行し、結果を返します。SELECT文のみ実行可能です。" +
+        //    "このツールを使用するためには、予め start_debugging でアプリケーションが実行開始されている必要がある。")]
+        //public static async Task<string> ExecuteDebugSql([Description("実行するSQLクエリ")] string sql) {
+        //    try {
+        //        using var httpClient = new HttpClient() {
+        //            BaseAddress = new Uri(DOTNET_URL),
+        //        };
 
-                try {
-                    var requestBody = JsonSerializer.Serialize(new { sql });
-                    var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+        //        try {
+        //            var requestBody = JsonSerializer.Serialize(new { sql });
+        //            var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 
-                    var response = await httpClient.PostAsync("/api/debug-info/execute-sql", content);
+        //            var response = await httpClient.PostAsync("/api/debug-info/execute-sql", content);
 
-                    var responseBody = await response.Content.ReadAsStringAsync();
+        //            var responseBody = await response.Content.ReadAsStringAsync();
 
-                    if (!response.IsSuccessStatusCode) {
-                        return $"SQLの実行に失敗しました (HTTP {(int)response.StatusCode}): {responseBody}";
-                    }
+        //            if (!response.IsSuccessStatusCode) {
+        //                return $"SQLの実行に失敗しました (HTTP {(int)response.StatusCode}): {responseBody}";
+        //            }
 
-                    // 成功時はJSONをそのまま返す
-                    return responseBody;
+        //            // 成功時はJSONをそのまま返す
+        //            return responseBody;
 
-                } catch (HttpRequestException ex) {
-                    return $"APIエンドポイントへの接続に失敗しました。start_debugging でアプリケーションが実行開始されているか確認してください。 Error: {ex.Message}";
-                } catch (Exception ex) {
-                    return $"予期せぬエラーが発生しました: {ex.Message}";
-                }
-            } catch (Exception ex) {
-                return ex.ToString();
-            }
-        }
+        //        } catch (HttpRequestException ex) {
+        //            return $"APIエンドポイントへの接続に失敗しました。start_debugging でアプリケーションが実行開始されているか確認してください。 Error: {ex.Message}";
+        //        } catch (Exception ex) {
+        //            return $"予期せぬエラーが発生しました: {ex.Message}";
+        //        }
+        //    } catch (Exception ex) {
+        //        return ex.ToString();
+        //    }
+        //}
         #endregion アプリケーションテンプレート
 
 
@@ -380,162 +380,162 @@ namespace Nijo.Mcp {
         #endregion NUnit
 
 
-        #region 自動テストで作成されたプロジェクト
-        private const string TOOL_START_IMPLEMENTATION_SESSION = "start_implementation_session";
-        private const string TOOL_CONTINUE_IMPLEMENTATION_SESSION = "continue_implementation_session";
-        private const string NEXT_ACTION_FILE = "SESSION_NEXT_ACTION";
+        //#region 自動テストで作成されたプロジェクト
+        //private const string TOOL_START_IMPLEMENTATION_SESSION = "start_implementation_session";
+        //private const string TOOL_CONTINUE_IMPLEMENTATION_SESSION = "continue_implementation_session";
+        //private const string NEXT_ACTION_FILE = "SESSION_NEXT_ACTION";
 
-        [McpServerTool(Name = TOOL_START_IMPLEMENTATION_SESSION), Description(
-            "Nijo.IntegrationTest の DataPatterns フォルダにあるXMLと対応する OverridedApplicationService などの実装を作成するセッションを開始する。")]
-        public static async Task<string> StartImplementationSession() {
-            using (var workDirectory = WorkDirectory.Prepare()) {
-                var nextActionFile = Path.Combine(workDirectory.DirectoryPath, NEXT_ACTION_FILE);
-                if (File.Exists(nextActionFile)) File.Delete(nextActionFile);
-            }
-            return await NextImplementationSession();
-        }
+        //[McpServerTool(Name = TOOL_START_IMPLEMENTATION_SESSION), Description(
+        //    "Nijo.IntegrationTest の DataPatterns フォルダにあるXMLと対応する OverridedApplicationService などの実装を作成するセッションを開始する。")]
+        //public static async Task<string> StartImplementationSession() {
+        //    using (var workDirectory = WorkDirectory.Prepare()) {
+        //        var nextActionFile = Path.Combine(workDirectory.DirectoryPath, NEXT_ACTION_FILE);
+        //        if (File.Exists(nextActionFile)) File.Delete(nextActionFile);
+        //    }
+        //    return await NextImplementationSession();
+        //}
 
-        [McpServerTool(Name = TOOL_CONTINUE_IMPLEMENTATION_SESSION), Description(
-            $"{TOOL_START_IMPLEMENTATION_SESSION} ツール内の指示により呼び出されるツール。")]
-        public static async Task<string> NextImplementationSession() {
-            string? nextActionFile = null;
-            try {
-                using var workDirectory = WorkDirectory.Prepare();
+        //[McpServerTool(Name = TOOL_CONTINUE_IMPLEMENTATION_SESSION), Description(
+        //    $"{TOOL_START_IMPLEMENTATION_SESSION} ツール内の指示により呼び出されるツール。")]
+        //public static async Task<string> NextImplementationSession() {
+        //    string? nextActionFile = null;
+        //    try {
+        //        using var workDirectory = WorkDirectory.Prepare();
 
-                if (!await 既存デバッグプロセス中止(workDirectory)) {
-                    return workDirectory.WithMainLogContents("既存デバッグプロセス中止に失敗しました。");
-                }
+        //        if (!await 既存デバッグプロセス中止(workDirectory)) {
+        //            return workDirectory.WithMainLogContents("既存デバッグプロセス中止に失敗しました。");
+        //        }
 
-                // このファイルに状態を記録し、AIエージェントに対話的に指示を送る
-                nextActionFile = Path.Combine(workDirectory.DirectoryPath, NEXT_ACTION_FILE);
-                var currentPatternFile = Path.Combine(workDirectory.DirectoryPath, "SESSION_CURRENT_PATTERN");
+        //        // このファイルに状態を記録し、AIエージェントに対話的に指示を送る
+        //        nextActionFile = Path.Combine(workDirectory.DirectoryPath, NEXT_ACTION_FILE);
+        //        var currentPatternFile = Path.Combine(workDirectory.DirectoryPath, "SESSION_CURRENT_PATTERN");
 
-                const string NEXT_IMPL_REACT = "::Reactの画面を実装させる::";
-                const string NEXT_TRY_COMPLIE = "::コンパイルエラーが出なくなるまで修正を繰り返させる::";
-                const string NEXT_FORWARD = "::次のデータパターンXMLに進む::";
+        //        const string NEXT_IMPL_REACT = "::Reactの画面を実装させる::";
+        //        const string NEXT_TRY_COMPLIE = "::コンパイルエラーが出なくなるまで修正を繰り返させる::";
+        //        const string NEXT_FORWARD = "::次のデータパターンXMLに進む::";
 
-                // セッション開始（DataPatternの最初のファイルでセットアップを行なう）
-                if (!File.Exists(nextActionFile)) {
-                    var nextPatternXmlFullPath = GetNextDataPatternXmlFullPath(null) ?? throw new InvalidOperationException("DataPatternsフォルダにxmlが1個も無い");
+        //        // セッション開始（DataPatternの最初のファイルでセットアップを行なう）
+        //        if (!File.Exists(nextActionFile)) {
+        //            var nextPatternXmlFullPath = GetNextDataPatternXmlFullPath(null) ?? throw new InvalidOperationException("DataPatternsフォルダにxmlが1個も無い");
 
-                    File.WriteAllText(nextActionFile, NEXT_IMPL_REACT);
-                    File.WriteAllText(currentPatternFile, nextPatternXmlFullPath);
+        //            File.WriteAllText(nextActionFile, NEXT_IMPL_REACT);
+        //            File.WriteAllText(currentPatternFile, nextPatternXmlFullPath);
 
-                    return await SetupNextPatternAndEchoImplementAppSrv($$"""
-                        下記スキーマ定義それぞれについて、自動生成されたソースを利用したアプリケーションの実装を開始します。
-                        {{string.Join(Environment.NewLine, Directory.GetFiles(DATA_PATTERN_DIR).Select(filename => $$"""
-                        * {{Path.GetFileName(filename)}}
-                        """))}}
+        //            return await SetupNextPatternAndEchoImplementAppSrv($$"""
+        //                下記スキーマ定義それぞれについて、自動生成されたソースを利用したアプリケーションの実装を開始します。
+        //                {{string.Join(Environment.NewLine, Directory.GetFiles(DATA_PATTERN_DIR).Select(filename => $$"""
+        //                * {{Path.GetFileName(filename)}}
+        //                """))}}
 
-                        以下の指示に従いソースコードの実装を進めてください。
+        //                以下の指示に従いソースコードの実装を進めてください。
 
-                        ---------------------------
-                        """, workDirectory, nextPatternXmlFullPath, deleteAll: true);
-                }
+        //                ---------------------------
+        //                """, workDirectory, nextPatternXmlFullPath, deleteAll: true);
+        //        }
 
-                // 1つ前のセッションの指示を読み取る
-                var nextAction = File.ReadAllText(nextActionFile);
-                var currentPatternXmlFullPath = File.ReadAllText(currentPatternFile);
+        //        // 1つ前のセッションの指示を読み取る
+        //        var nextAction = File.ReadAllText(nextActionFile);
+        //        var currentPatternXmlFullPath = File.ReadAllText(currentPatternFile);
 
-                switch (nextAction) {
-                    // Reactの実装を促す
-                    case NEXT_IMPL_REACT:
-                        File.WriteAllText(nextActionFile, NEXT_TRY_COMPLIE);
-                        return $$"""
-                            下記TypeScriptファイル内の関数（React Router のルーティング定義）と、
-                            当該ルーティングで定義される画面のソースコードを、下記スキーマ定義のデータ構造に合うように実装してください。
+        //        switch (nextAction) {
+        //            // Reactの実装を促す
+        //            case NEXT_IMPL_REACT:
+        //                File.WriteAllText(nextActionFile, NEXT_TRY_COMPLIE);
+        //                return $$"""
+        //                    下記TypeScriptファイル内の関数（React Router のルーティング定義）と、
+        //                    当該ルーティングで定義される画面のソースコードを、下記スキーマ定義のデータ構造に合うように実装してください。
 
-                            * 実装対象: {{Path.Combine(DATA_PATTERN_REVEALED_DIR, "react", "src", "pages", "index.tsx")}}
-                            * スキーマ定義: {{Path.Combine(DATA_PATTERN_REVEALED_DIR, "nijo.xml")}}
+        //                    * 実装対象: {{Path.Combine(DATA_PATTERN_REVEALED_DIR, "react", "src", "pages", "index.tsx")}}
+        //                    * スキーマ定義: {{Path.Combine(DATA_PATTERN_REVEALED_DIR, "nijo.xml")}}
 
-                            実装例は以下を参考にしてください。
+        //                    実装例は以下を参考にしてください。
 
-                            * "{{Path.Combine(DATA_PATTERN_REVEALED_DIR, "react", "src", "pages", "index.tsx")}}" 内部でコメントアウトされたソース
-                            * "{{Path.Combine(DATA_PATTERN_REVEALED_DIR, "react", "src", "debug-rooms")}}" フォルダ内のサンプル
-                            * "{{Path.Combine(DATA_PATTERN_REVEALED_DIR, "react", "src", "pages")}}" 直下にある「画面実装例」フォルダの中身（TypeScriptコンパイラに認識させないために拡張子を ".tsx.SAMPLE" にしています）
+        //                    * "{{Path.Combine(DATA_PATTERN_REVEALED_DIR, "react", "src", "pages", "index.tsx")}}" 内部でコメントアウトされたソース
+        //                    * "{{Path.Combine(DATA_PATTERN_REVEALED_DIR, "react", "src", "debug-rooms")}}" フォルダ内のサンプル
+        //                    * "{{Path.Combine(DATA_PATTERN_REVEALED_DIR, "react", "src", "pages")}}" 直下にある「画面実装例」フォルダの中身（TypeScriptコンパイラに認識させないために拡張子を ".tsx.SAMPLE" にしています）
 
-                            実装完了後、 "{{TOOL_CONTINUE_IMPLEMENTATION_SESSION}}" ツールを呼び出してください。
-                            """;
+        //                    実装完了後、 "{{TOOL_CONTINUE_IMPLEMENTATION_SESSION}}" ツールを呼び出してください。
+        //                    """;
 
-                    // コンパイルエラーが出なくなるまで繰り返させる
-                    case NEXT_TRY_COMPLIE:
-                        File.WriteAllText(nextActionFile, NEXT_FORWARD);
-                        return $$"""
-                            "{{TOOL_CHECK_COMPILE_ERROR}}" ツールを "{{Path.Combine(DATA_PATTERN_REVEALED_DIR, "nijo.xml")}}" で呼び出し、
-                            あなたがこれまでに実装した C#, TypeScript のソースでコンパイルエラーが出ないかどうかの確認を行なってください。
-                            ツール実行後、以下いずれかの対応を行なってください。
+        //            // コンパイルエラーが出なくなるまで繰り返させる
+        //            case NEXT_TRY_COMPLIE:
+        //                File.WriteAllText(nextActionFile, NEXT_FORWARD);
+        //                return $$"""
+        //                    "{{TOOL_CHECK_COMPILE_ERROR}}" ツールを "{{Path.Combine(DATA_PATTERN_REVEALED_DIR, "nijo.xml")}}" で呼び出し、
+        //                    あなたがこれまでに実装した C#, TypeScript のソースでコンパイルエラーが出ないかどうかの確認を行なってください。
+        //                    ツール実行後、以下いずれかの対応を行なってください。
 
-                            * エラーが無かった場合
-                              * "{{TOOL_CONTINUE_IMPLEMENTATION_SESSION}}" ツールを呼び出してください。
-                            * エラーがあった場合
-                              * あなたが実装したソースコードが原因であれば、ソースコードを修正し、再度 "{{TOOL_CHECK_COMPILE_ERROR}}" ツールを呼んでください。
-                              * 自動生成されたソースコード中に問題があるなど、あなたが実装したソースコードに原因が無い場合、 "{{TOOL_CONTINUE_IMPLEMENTATION_SESSION}}" ツールを呼んでください。
-                            """;
+        //                    * エラーが無かった場合
+        //                      * "{{TOOL_CONTINUE_IMPLEMENTATION_SESSION}}" ツールを呼び出してください。
+        //                    * エラーがあった場合
+        //                      * あなたが実装したソースコードが原因であれば、ソースコードを修正し、再度 "{{TOOL_CHECK_COMPILE_ERROR}}" ツールを呼んでください。
+        //                      * 自動生成されたソースコード中に問題があるなど、あなたが実装したソースコードに原因が無い場合、 "{{TOOL_CONTINUE_IMPLEMENTATION_SESSION}}" ツールを呼んでください。
+        //                    """;
 
-                    // AIエージェントが実装した成果を保存し、次のパターンへ進む
-                    case NEXT_FORWARD:
+        //            // AIエージェントが実装した成果を保存し、次のパターンへ進む
+        //            case NEXT_FORWARD:
 
-                        // スナップショットフォルダを決定
-                        var snapshotDir = Path.Combine(DATA_PATTERN_IMPLEMENTORS_DIR, Path.GetFileNameWithoutExtension(currentPatternXmlFullPath));
-                        AIエージェントの実装成果をスナップショットフォルダに保存する(currentPatternXmlFullPath, snapshotDir);
+        //                // スナップショットフォルダを決定
+        //                var snapshotDir = Path.Combine(DATA_PATTERN_IMPLEMENTORS_DIR, Path.GetFileNameWithoutExtension(currentPatternXmlFullPath));
+        //                AIエージェントの実装成果をスナップショットフォルダに保存する(currentPatternXmlFullPath, snapshotDir);
 
-                        // コンパイラーの結果をログ出力しておく
-                        await コンパイルエラーチェック(workDirectory, DATA_PATTERN_REVEALED_DIR);
-                        File.Copy(
-                            workDirectory.MainLogFullPath,
-                            Path.Combine(snapshotDir, "build.log"));
+        //                // コンパイラーの結果をログ出力しておく
+        //                await コンパイルエラーチェック(workDirectory, DATA_PATTERN_REVEALED_DIR);
+        //                File.Copy(
+        //                    workDirectory.MainLogFullPath,
+        //                    Path.Combine(snapshotDir, "build.log"));
 
-                        var next = GetNextDataPatternXmlFullPath(currentPatternXmlFullPath);
-                        if (next != null) {
-                            File.WriteAllText(nextActionFile, NEXT_IMPL_REACT);
-                            File.WriteAllText(currentPatternFile, next);
+        //                var next = GetNextDataPatternXmlFullPath(currentPatternXmlFullPath);
+        //                if (next != null) {
+        //                    File.WriteAllText(nextActionFile, NEXT_IMPL_REACT);
+        //                    File.WriteAllText(currentPatternFile, next);
 
-                            return await SetupNextPatternAndEchoImplementAppSrv($$"""
-                                スキーマ定義 "{{Path.GetFileName(currentPatternXmlFullPath)}}" の実装を完了しました。続いて "{{Path.GetFileName(next)}}" の実装に移ります。
-                                """, workDirectory, next, deleteAll: false);
+        //                    return await SetupNextPatternAndEchoImplementAppSrv($$"""
+        //                        スキーマ定義 "{{Path.GetFileName(currentPatternXmlFullPath)}}" の実装を完了しました。続いて "{{Path.GetFileName(next)}}" の実装に移ります。
+        //                        """, workDirectory, next, deleteAll: false);
 
-                        } else {
-                            return $$"""
-                                タスクは完了です。
-                                """;
-                        }
+        //                } else {
+        //                    return $$"""
+        //                        タスクは完了です。
+        //                        """;
+        //                }
 
-                    default:
-                        throw new InvalidOperationException($"不正な状態: {nextAction}");
-                }
+        //            default:
+        //                throw new InvalidOperationException($"不正な状態: {nextAction}");
+        //        }
 
-                // ファイルコピー => ソースコード自動生成かけなおし => アプリケーションサービスクラスの実装を指示
-                static async Task<string> SetupNextPatternAndEchoImplementAppSrv(
-                    string messagePrefix,
-                    WorkDirectory workDirectory,
-                    string nextPatternXmlFullPath,
-                    bool deleteAll) {
-                    if (!await アプリケーションテンプレートを自動テストで作成されたプロジェクトにコピーする(workDirectory, nextPatternXmlFullPath, deleteAll)) {
-                        return workDirectory.WithMainLogContents("アプリケーションテンプレートの「自動テストで作成されたプロジェクト」へのコピーに失敗しました。");
-                    }
-                    if (!await ソースコード自動生成かけなおし(workDirectory, DATA_PATTERN_REVEALED_DIR)) {
-                        return workDirectory.WithMainLogContents("ソースコードの自動生成に失敗しました。");
-                    }
-                    return $$"""
-                        {{messagePrefix}}
+        //        // ファイルコピー => ソースコード自動生成かけなおし => アプリケーションサービスクラスの実装を指示
+        //        static async Task<string> SetupNextPatternAndEchoImplementAppSrv(
+        //            string messagePrefix,
+        //            WorkDirectory workDirectory,
+        //            string nextPatternXmlFullPath,
+        //            bool deleteAll) {
+        //            if (!await アプリケーションテンプレートを自動テストで作成されたプロジェクトにコピーする(workDirectory, nextPatternXmlFullPath, deleteAll)) {
+        //                return workDirectory.WithMainLogContents("アプリケーションテンプレートの「自動テストで作成されたプロジェクト」へのコピーに失敗しました。");
+        //            }
+        //            if (!await ソースコード自動生成かけなおし(workDirectory, DATA_PATTERN_REVEALED_DIR)) {
+        //                return workDirectory.WithMainLogContents("ソースコードの自動生成に失敗しました。");
+        //            }
+        //            return $$"""
+        //                {{messagePrefix}}
 
-                        下記C#ファイル内のクラス "OverridedApplicationService" は "AutoGeneratedApplicationService" を継承します。
-                        基底クラスではいくつかのabstractメソッドが宣言されているため、具象クラス側でそれらをオーバライドして実装する必要があります。
-                        各種abstractメソッドをオーバライドし、下記スキーマ定義のデータ構造に合うように実装してください。
-                        実装例は当該C#ファイル内のコメントを参照してください。
+        //                下記C#ファイル内のクラス "OverridedApplicationService" は "AutoGeneratedApplicationService" を継承します。
+        //                基底クラスではいくつかのabstractメソッドが宣言されているため、具象クラス側でそれらをオーバライドして実装する必要があります。
+        //                各種abstractメソッドをオーバライドし、下記スキーマ定義のデータ構造に合うように実装してください。
+        //                実装例は当該C#ファイル内のコメントを参照してください。
 
-                        * 実装対象: {{Path.Combine(DATA_PATTERN_REVEALED_DIR, "Core", "OverridedApplicationService.cs")}}
-                        * スキーマ定義: {{Path.Combine(DATA_PATTERN_REVEALED_DIR, "nijo.xml")}}
+        //                * 実装対象: {{Path.Combine(DATA_PATTERN_REVEALED_DIR, "Core", "OverridedApplicationService.cs")}}
+        //                * スキーマ定義: {{Path.Combine(DATA_PATTERN_REVEALED_DIR, "nijo.xml")}}
 
-                        実装完了後、 "{{TOOL_CONTINUE_IMPLEMENTATION_SESSION}}" ツールを呼び出してください。
-                        """;
-                }
+        //                実装完了後、 "{{TOOL_CONTINUE_IMPLEMENTATION_SESSION}}" ツールを呼び出してください。
+        //                """;
+        //        }
 
-            } catch (Exception ex) {
-                if (nextActionFile != null && File.Exists(nextActionFile)) File.Delete(nextActionFile);
-                return ex.ToString();
-            }
-        }
-        #endregion 自動テストで作成されたプロジェクト
+        //    } catch (Exception ex) {
+        //        if (nextActionFile != null && File.Exists(nextActionFile)) File.Delete(nextActionFile);
+        //        return ex.ToString();
+        //    }
+        //}
+        //#endregion 自動テストで作成されたプロジェクト
     }
 }
