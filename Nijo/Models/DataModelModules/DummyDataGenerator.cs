@@ -17,7 +17,7 @@ namespace Nijo.Models.DataModelModules {
         private static string CreateAggregateMethodName(RootAggregate rootAggregate) => $"CreateRandom{rootAggregate.PhysicalName}";
         private static string CreatePatternMethodName(RootAggregate rootAggregate) => $"CreatePatternsOf{rootAggregate.PhysicalName}";
         private static string GetValueMemberValueMethodName(IValueMemberType type) => $"GetRandom{type.TypePhysicalName}";
-        private static string GeneratedList(RootAggregate aggregate) => $"Generated{aggregate.PhysicalName}";
+        private static string GeneratedList(AggregateBase aggregate) => $"Generated{aggregate.PhysicalName}";
 
         private readonly List<RootAggregate> _rootAggregates = [];
 
@@ -136,29 +136,46 @@ namespace Nijo.Models.DataModelModules {
 
             static string RenderCreatePatternMethod(RootAggregate rootAggregate) {
                 var saveCommand = new SaveCommand(rootAggregate, SaveCommand.E_Type.Create);
-                var keyVMs = rootAggregate.GetKeyVMs().ToArray();
 
                 // 唯一の主キーがenum型か判定
-                if (keyVMs.Length == 1 && keyVMs[0].Type is Nijo.ValueMemberTypes.StaticEnumMember enumType) {
-                    // enum型のC#型名
-                    var enumTypeName = enumType.CsDomainTypeName;
+                var keys = rootAggregate.GetOwnKeys().ToArray();
+                var isSingleKeyEnum = keys.Length == 1 && keys[0] is ValueMember vm1 && vm1.Type is ValueMemberTypes.StaticEnumMember;
+                var isSingleKeyRefTo = keys.Length == 1 && keys[0] is RefToMember;
+
+                if (isSingleKeyEnum) {
+                    // 唯一の主キーがenum型の場合はその型の値の数だけループしてパターンを作成
+                    var enumType = ((ValueMember)keys[0]).Type;
                     return $$"""
-                    /// <summary>{{rootAggregate.DisplayName}}のテストデータのパターン作成</summary>
-                    protected virtual IEnumerable<{{saveCommand.CsClassNameCreate}}> {{CreatePatternMethodName(rootAggregate)}}({{DUMMY_DATA_GENERATE_CONTEXT}} context) {
-                        for (var i = 0; i < Enum.GetValues<{{enumTypeName}}>().Length; i++) {
-                            yield return {{CreateAggregateMethodName(rootAggregate)}}(context, i);
+                        /// <summary>{{rootAggregate.DisplayName}}のテストデータのパターン作成</summary>
+                        protected virtual IEnumerable<{{saveCommand.CsClassNameCreate}}> {{CreatePatternMethodName(rootAggregate)}}({{DUMMY_DATA_GENERATE_CONTEXT}} context) {
+                            for (var i = 0; i < Enum.GetValues<{{enumType.CsDomainTypeName}}>().Length; i++) {
+                                yield return {{CreateAggregateMethodName(rootAggregate)}}(context, i);
+                            }
                         }
-                    }
-                    """;
+                        """;
+
+                } else if (isSingleKeyRefTo) {
+                    // 唯一の主キーがrefto型の場合は作成済みの参照先データの数だけループしてパターンを作成
+                    var refTo = (RefToMember)keys[0];
+                    return $$"""
+                        /// <summary>{{rootAggregate.DisplayName}}のテストデータのパターン作成</summary>
+                        protected virtual IEnumerable<{{saveCommand.CsClassNameCreate}}> {{CreatePatternMethodName(rootAggregate)}}({{DUMMY_DATA_GENERATE_CONTEXT}} context) {
+                            for (var i = 0; i < context.{{GeneratedList(refTo.RefTo)}}.Count; i++) {
+                                yield return {{CreateAggregateMethodName(rootAggregate)}}(context, i);
+                            }
+                        }
+                        """;
+
                 } else {
+                    // 主キーが特殊でない場合はとりあえず適当に20件作成
                     return $$"""
-                    /// <summary>{{rootAggregate.DisplayName}}のテストデータのパターン作成</summary>
-                    protected virtual IEnumerable<{{saveCommand.CsClassNameCreate}}> {{CreatePatternMethodName(rootAggregate)}}({{DUMMY_DATA_GENERATE_CONTEXT}} context) {
-                        for (var i = 0; i < 20; i++) {
-                            yield return {{CreateAggregateMethodName(rootAggregate)}}(context, i);
+                        /// <summary>{{rootAggregate.DisplayName}}のテストデータのパターン作成</summary>
+                        protected virtual IEnumerable<{{saveCommand.CsClassNameCreate}}> {{CreatePatternMethodName(rootAggregate)}}({{DUMMY_DATA_GENERATE_CONTEXT}} context) {
+                            for (var i = 0; i < 20; i++) {
+                                yield return {{CreateAggregateMethodName(rootAggregate)}}(context, i);
+                            }
                         }
-                    }
-                    """;
+                        """;
                 }
             }
 
@@ -176,16 +193,17 @@ namespace Nijo.Models.DataModelModules {
 
                 static IEnumerable<string> RenderBody(SaveCommand saveCommand) {
 
-                    // 唯一の主キーがenum型か判定
-                    var keyVMs = saveCommand.Aggregate.GetKeyVMs().ToArray();
-                    var isSingleKeyEnum = keyVMs.Length == 1 && keyVMs[0].Type is Nijo.ValueMemberTypes.StaticEnumMember;
+                    // 唯一の主キーがenumまたはreftoかを判定
+                    var keys = saveCommand.Aggregate.GetOwnKeys().ToArray();
+                    var isSingleKeyEnum = keys.Length == 1 && keys[0] is ValueMember vm1 && vm1.Type is ValueMemberTypes.StaticEnumMember;
+                    var isSingleKeyRefTo = keys.Length == 1 && keys[0] is RefToMember;
 
                     foreach (var member in saveCommand.GetMembers()) {
                         if (member is SaveCommand.SaveCommandValueMember vm) {
 
                             // 唯一の主キーがenumである場合はキー重複を避ける必要があるのでランダム値にする余地がない
                             if (isSingleKeyEnum && member.IsKey) {
-                                var enumTypeName = keyVMs[0].Type.CsDomainTypeName;
+                                var enumTypeName = ((ValueMember)keys[0]).Type.CsDomainTypeName;
                                 var loopVar = saveCommand.Aggregate is RootAggregate
                                     ? "itemIndex"
                                     : "i";
@@ -226,11 +244,14 @@ namespace Nijo.Models.DataModelModules {
 
                             if (refTo.Member.IsKey) {
                                 // refがキーの場合はキー重複を防ぐためインデックス順に振る
+                                var loopVar = saveCommand.Aggregate is RootAggregate
+                                    ? "itemIndex"
+                                    : "i";
                                 yield return $$"""
                                     {{member.PhysicalName}} = context.{{GeneratedList(refToRoot)}}
                                         {{convertToKeyClass}}
-                                        .ElementAtOrDefault(itemIndex)
-                                        ?? throw new InvalidOperationException($"{{owner}}の{{memberName}}のキー重複を防ぐため{{refToName}}には少なくとも{itemIndex + 1}件のデータがある必要がありますが、{context.{{GeneratedList(refToRoot)}}.Count}件しかありません。"),
+                                        .ElementAtOrDefault({{loopVar}})
+                                        ?? throw new InvalidOperationException($"{{owner}}の{{memberName}}のキー重複を防ぐため{{refToName}}には少なくとも{{{loopVar}} + 1}件のデータがある必要がありますが、{context.{{GeneratedList(refToRoot)}}.Count}件しかありません。"),
                                     """;
 
                             } else if (refTo.Member.IsRequired) {
@@ -262,21 +283,39 @@ namespace Nijo.Models.DataModelModules {
                                 """;
 
                         } else if (member is SaveCommand.SaveCommandChildrenMember children) {
-                            // childrenの唯一の主キーがenum型か判定
-                            var childrenKeyVMs = children.Aggregate.GetKeyVMs().ToArray();
-                            var isChildrenSingleKeyEnum = childrenKeyVMs.Length == 1 && childrenKeyVMs[0].Type is Nijo.ValueMemberTypes.StaticEnumMember;
+                            // childrenの唯一の主キーがenumまたはreftoかを判定
+                            var childrenKeys = children.Aggregate.GetOwnKeys().ToArray();
+                            var isChildrenSingleKeyEnum = childrenKeys.Length == 1 && childrenKeys[0] is ValueMember vm2 && vm2.Type is ValueMemberTypes.StaticEnumMember;
+                            var isChildrenSingleKeyRefTo = childrenKeys.Length == 1 && childrenKeys[0] is RefToMember;
 
-                            // キー重複を防ぐためにはenum型の場合はランダム値にする余地がないので Enum.GetValuesの数だけループ。
-                            // それ以外の場合は適当にとりあえず4件作成する
-                            var generateLoop = isChildrenSingleKeyEnum
-                                ? $"Enumerable.Range(0, Enum.GetValues<{childrenKeyVMs[0].Type.CsDomainTypeName}>().Length)"
-                                : "Enumerable.Range(0, 4)";
+                            if (isChildrenSingleKeyEnum) {
+                                // キー重複を防ぐためにはenum型の場合はランダム値にする余地がないので Enum.GetValuesの数だけループ。
+                                var enumType = ((ValueMember)childrenKeys[0]).Type;
 
-                            yield return $$"""
-                                {{member.PhysicalName}} = {{generateLoop}}.Select(i => new {{children.CsClassNameCreate}} {
-                                    {{WithIndent(RenderBody(children), "    ")}}
-                                }).ToList(),
-                                """;
+                                yield return $$"""
+                                    {{member.PhysicalName}} = Enumerable.Range(0, Enum.GetValues<{{enumType.CsDomainTypeName}}>().Length).Select(i => new {{children.CsClassNameCreate}} {
+                                        {{WithIndent(RenderBody(children), "    ")}}
+                                    }).ToList(),
+                                    """;
+
+                            } else if (isChildrenSingleKeyRefTo) {
+                                // キー重複を防ぐためにはreftoの場合はランダム値にする余地がないので 参照先のデータの数だけループ。
+                                var refToMember = (RefToMember)childrenKeys[0];
+                                yield return $$"""
+                                    {{member.PhysicalName}} = Enumerable.Range(0, context.{{GeneratedList(refToMember.RefTo)}}.Count).Select(i => new {{children.CsClassNameCreate}} {
+                                        {{WithIndent(RenderBody(children), "    ")}}
+                                    }).ToList(),
+                                    """;
+
+                            } else {
+                                // キーが特殊でない場合は適当にとりあえず4件作成する
+                                yield return $$"""
+                                    {{member.PhysicalName}} = Enumerable.Range(0, 4).Select(i => new {{children.CsClassNameCreate}} {
+                                        {{WithIndent(RenderBody(children), "    ")}}
+                                    }).ToList(),
+                                    """;
+                            }
+
 
                         } else {
 
