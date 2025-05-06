@@ -350,6 +350,19 @@ public class SchemaParseContext {
             }
         }
 
+        // 同じテーブル名を複数の集約で定義することはできない
+        var tableNameGroups = xDocument.Root
+            ?.Descendants()
+            .Where(el => GetNodeType(el).HasFlag(E_NodeType.Aggregate))
+            .GroupBy(el => GetDbName(el))
+            ?? [];
+        foreach (var group in tableNameGroups) {
+            if (group.Count() == 1) continue;
+            foreach (var el in group) {
+                errorsList.Add((el, $"同じテーブル名'{group.Key}'を複数の集約で定義することはできません。"));
+            }
+        }
+
         foreach (var el in xDocument.Root?.Descendants() ?? []) {
 
             var nodeType = GetNodeType(el);

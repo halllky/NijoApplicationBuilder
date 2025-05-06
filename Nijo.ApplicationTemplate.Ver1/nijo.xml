@@ -91,7 +91,7 @@
     <性別 Type="gender_type" DbName="GENDER" />
     <メールアドレス Type="word" DbName="EMAIL" MaxLength="100" />
     <電話番号 Type="word" DbName="PHONE" MaxLength="20" />
-    <住所 Type="child" DbName="ADDRESS">
+    <住所 Type="child" DbName="CUSTOMER_ADDRESS">
       <郵便番号 Type="word" DbName="POSTAL_CODE" MaxLength="8" />
       <都道府県 Type="word" DbName="PREFECTURE" MaxLength="10" />
       <市区町村 Type="word" DbName="CITY" MaxLength="20" />
@@ -289,7 +289,7 @@
   <倉庫マスタ Type="data-model" GenerateDefaultQueryModel="True">
     <倉庫ID Type="word" IsKey="True" DbName="WAREHOUSE_ID" MaxLength="10" />
     <倉庫名 Type="word" DbName="WAREHOUSE_NAME" MaxLength="50" />
-    <住所 Type="child" DbName="ADDRESS">
+    <住所 Type="child" DbName="WAREHOUSE_ADDRESS">
       <郵便番号 Type="word" DbName="POSTAL_CODE" MaxLength="8" />
       <都道府県 Type="word" DbName="PREFECTURE" MaxLength="10" />
       <市区町村 Type="word" DbName="CITY" MaxLength="20" />
@@ -302,7 +302,7 @@
     <店舗ID Type="word" IsKey="True" DbName="STORE_ID" MaxLength="10" />
     <店舗名 Type="word" DbName="STORE_NAME" MaxLength="50" />
     <電話番号 Type="word" DbName="PHONE" MaxLength="20" />
-    <住所 Type="child" DbName="ADDRESS">
+    <住所 Type="child" DbName="STORE_ADDRESS">
       <郵便番号 Type="word" DbName="POSTAL_CODE" MaxLength="8" />
       <都道府県 Type="word" DbName="PREFECTURE" MaxLength="10" />
       <市区町村 Type="word" DbName="CITY" MaxLength="20" />
