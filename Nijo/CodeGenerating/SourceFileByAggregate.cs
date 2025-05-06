@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using Nijo.Parts.Common;
 
 namespace Nijo.CodeGenerating {
     /// <summary>
@@ -227,6 +228,7 @@ namespace Nijo.CodeGenerating {
                 import * as ReactRouter from "react-router-dom"
                 import { UUID } from "uuidjs"
                 import * as Util from "./util"
+                import * as EnumDefs from "./{{Path.GetFileNameWithoutExtension(EnumFile.TS_FILENAME)}}"
                 {{refToModules.SelectTextTemplate(modules => $$"""
                 import { {{modules.Value.Join(", ")}} } from "{{modules.Key}}"
                 """)}}

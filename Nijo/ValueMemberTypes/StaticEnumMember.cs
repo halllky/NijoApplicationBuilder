@@ -31,7 +31,7 @@ namespace Nijo.ValueMemberTypes {
         public string SchemaTypeName => _xElement.Name.LocalName;
         public string CsDomainTypeName => _parser.CsEnumName;
         public string CsPrimitiveTypeName => _parser.CsEnumName;
-        public string TsTypeName => _parser.TsTypeName;
+        public string TsTypeName => $"EnumDefs.{_parser.TsTypeName}";
 
         ValueMemberSearchBehavior? IValueMemberType.SearchBehavior => new() {
             FilterCsTypeName = _parser.CsSearchConditionClassName,
