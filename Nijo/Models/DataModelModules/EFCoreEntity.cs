@@ -58,13 +58,16 @@ namespace Nijo.Models.DataModelModules {
         /// </list>
         /// </summary>
         internal IEnumerable<EFCoreEntityColumn> GetColumns() {
-            var parent = Aggregate.GetParent();
-            if (parent != null) {
-                foreach (var member in parent.GetKeyVMs()) {
+
+            // 子孫テーブルは祖先のキーを継承する
+            var ancestors = Aggregate.EnumerateAncestors().ToArray();
+            foreach (var ancestor in ancestors) {
+                foreach (var member in ancestor.GetKeyVMs()) {
                     yield return new ParentKeyMember(member);
                 }
             }
 
+            // 自身のキー
             foreach (var member in Aggregate.GetMembers()) {
                 if (member is ValueMember vm) {
                     yield return new OwnColumnMember(vm);
