@@ -220,59 +220,6 @@ namespace Nijo.Models.DataModelModules {
                                     """;
                             }
 
-                            // SaveCommand から KeyClass への変換
-                            [Obsolete]
-                            static IEnumerable<string> RenderKeyClassBodyConverting(KeyClass.IKeyClassStructure keyClassStructure) {
-                                foreach (var member in keyClassStructure.GetOwnMembers()) {
-                                    if (member is KeyClass.KeyClassValueMember vm) {
-                                        var path = vm.Member
-                                            .GetPathFromRoot()
-                                            .AsSaveCommand();
-                                        yield return $$"""
-                                            {{member.PhysicalName}} = cmd.{{path.Join(".")}},
-                                            """;
-
-                                    } else if (member is KeyClass.KeyClassRefMember rm) {
-                                        yield return $$"""
-                                            {{member.PhysicalName}} = new() {
-                                                {{WithIndent(RenderKeyClassBodyConverting(rm.MemberKeyClassEntry), "    ")}}
-                                            },
-                                            """;
-
-                                    } else if (member is KeyClass.KeyClassEntry pm) {
-                                        yield return $$"""
-                                            {{member.PhysicalName}} = new() {
-                                                {{WithIndent(RenderKeyClassBodyConverting(pm), "    ")}}
-                                            },
-                                            """;
-
-                                    } else {
-                                        throw new NotImplementedException();
-                                    }
-                                }
-                            }
-
-                            //// SaveCommand の配列から KeyClass の配列へ変換するソースをレンダリングする
-                            //static IEnumerable<string> RenderConvertFromSaveCommandArrayToKeyClassArray(SaveCommand.SaveCommandRefMember refTo) {
-                            //    var pathFromRoot = refTo.Member.RefTo.GetPathFromRoot();
-                            //    foreach (var agg in pathFromRoot) {
-                            //        if (agg is RootAggregate) {
-                            //            continue;
-
-                            //        } else if (agg is ChildAggregate child) {
-                            //            var saveCommandMember = new SaveCommand.SaveCommandChildMember(child, SaveCommand.E_Type.Create);
-                            //            treePath.Add($".Select(x => x.{saveCommandMember.PhysicalName})");
-
-                            //        } else if (agg is ChildrenAggregate children) {
-                            //            var saveCommandMember = new SaveCommand.SaveCommandChildrenMember(children, SaveCommand.E_Type.Create);
-                            //            treePath.Add($".SelectMany(x => x.{saveCommandMember.PhysicalName})");
-
-                            //        } else {
-                            //            throw new NotImplementedException();
-                            //        }
-                            //    }
-                            //}
-
                         } else if (member is SaveCommand.SaveCommandChildMember child) {
                             yield return $$"""
                                 {{member.PhysicalName}} = new() {
