@@ -3,6 +3,7 @@ using Nijo.CodeGenerating.Helpers;
 using Nijo.ImmutableSchema;
 using Nijo.Models;
 using Nijo.Models.QueryModelModules;
+using Nijo.Parts.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -103,7 +104,7 @@ namespace Nijo.Models.CommandModelModules {
             }
             private readonly ValueMember _vm;
 
-            IValueMemberType IInstanceValuePropertyMetadata.Type => _vm.Type;
+            public IValueMemberType Type => _vm.Type;
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _vm;
             string IInstancePropertyMetadata.PropertyName => _vm.PhysicalName;
 
@@ -173,17 +174,28 @@ namespace Nijo.Models.CommandModelModules {
                     {{_rm.PhysicalName}}: {{initFunction}}(),
                     """;
             }
+
+            /// <summary>
+            /// このメンバーに対応するメッセージの入れ物
+            /// </summary>
+            internal MessageContainer GetMessageContainer() {
+                return _rm.RefToObject switch {
+                    RefToMember.E_RefToObject.SearchCondition => new SearchConditionMessageContainer(_rm.RefTo),
+                    RefToMember.E_RefToObject.DisplayData => new DisplayDataMessageContainer(_rm.RefTo),
+                    _ => throw new InvalidOperationException(),
+                };
+            }
         }
         internal class CommandDescendantMember : ICommandMember, IInstanceStructurePropertyMetadata {
             internal CommandDescendantMember(AggregateBase aggregate) {
-                _aggregate = aggregate;
+                Aggregate = aggregate;
             }
-            private readonly AggregateBase _aggregate;
+            internal AggregateBase Aggregate { get; }
 
-            internal string CsType => $"{_aggregate.GetRoot().PhysicalName}Parameter_{_aggregate.PhysicalName}";
-            internal string DisplayName => _aggregate.DisplayName;
+            internal string CsType => $"{Aggregate.GetRoot().PhysicalName}Parameter_{Aggregate.PhysicalName}";
+            internal string DisplayName => Aggregate.DisplayName;
             internal IEnumerable<ICommandMember> GetMembers() {
-                foreach (var m in _aggregate.GetMembers()) {
+                foreach (var m in Aggregate.GetMembers()) {
                     yield return m switch {
                         ValueMember vm => new CommandValueMember(vm),
                         RefToMember rm => new CommandRefToMember(rm),
@@ -194,25 +206,25 @@ namespace Nijo.Models.CommandModelModules {
                 }
             }
 
-            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _aggregate;
-            string IInstancePropertyMetadata.PropertyName => _aggregate.PhysicalName;
+            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Aggregate;
+            string IInstancePropertyMetadata.PropertyName => Aggregate.PhysicalName;
             string IInstanceStructurePropertyMetadata.CsType => CsType;
-            bool IInstanceStructurePropertyMetadata.IsArray => _aggregate is ChildrenAggregate;
+            bool IInstanceStructurePropertyMetadata.IsArray => Aggregate is ChildrenAggregate;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetMembers();
 
             string ICommandMember.RenderCSharpDeclaration(CodeRenderingContext ctx) {
-                var csTypeWithArray = _aggregate is ChildrenAggregate ? $"List<{CsType}>" : CsType;
+                var csTypeWithArray = Aggregate is ChildrenAggregate ? $"List<{CsType}>" : CsType;
 
                 return $$"""
-                    public {{csTypeWithArray}} {{_aggregate.PhysicalName}} { get; set; } = new();
+                    public {{csTypeWithArray}} {{Aggregate.PhysicalName}} { get; set; } = new();
                     """;
             }
 
             string ICommandMember.RenderTypeScriptDeclaration(CodeRenderingContext ctx) {
-                var array = _aggregate is ChildrenAggregate ? "[]" : "";
+                var array = Aggregate is ChildrenAggregate ? "[]" : "";
 
                 return $$"""
-                    {{_aggregate.PhysicalName}}: {
+                    {{Aggregate.PhysicalName}}: {
                     {{GetMembers().SelectTextTemplate(member => $$"""
                       {{WithIndent(member.RenderTypeScriptDeclaration(ctx), "  ")}}
                     """)}}
@@ -220,13 +232,13 @@ namespace Nijo.Models.CommandModelModules {
                     """;
             }
             string ICommandMember.RenderTsInitializer() {
-                if (_aggregate is ChildrenAggregate) {
+                if (Aggregate is ChildrenAggregate) {
                     return $$"""
-                        {{_aggregate.PhysicalName}}: [],
+                        {{Aggregate.PhysicalName}}: [],
                         """;
                 } else {
                     return $$"""
-                        {{_aggregate.PhysicalName}}: {
+                        {{Aggregate.PhysicalName}}: {
                         {{GetMembers().SelectTextTemplate(member => $$"""
                           {{WithIndent(member.RenderTsInitializer(), "  ")}}
                         """)}}

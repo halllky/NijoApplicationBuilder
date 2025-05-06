@@ -68,7 +68,7 @@ namespace Nijo.Models.CommandModelModules {
 
         internal string RenderAspNetCoreControllerAction(CodeRenderingContext ctx) {
             var param = new ParameterOrReturnValue(_rootAggregate, ParameterOrReturnValue.E_Type.Parameter);
-            var paramMessages = new ParameterTypeMessageContainer(_rootAggregate);
+            var paramMessages = new ParameterTypeMessageContainer(_rootAggregate.GetCommandModelParameterChild());
             var returnValue = new ParameterOrReturnValue(_rootAggregate, ParameterOrReturnValue.E_Type.ReturnValue);
 
             return $$"""
@@ -87,7 +87,7 @@ namespace Nijo.Models.CommandModelModules {
 
         internal string RenderAppSrvMethods(CodeRenderingContext ctx) {
             var param = new ParameterOrReturnValue(_rootAggregate, ParameterOrReturnValue.E_Type.Parameter);
-            var paramMessage = new ParameterTypeMessageContainer(_rootAggregate);
+            var paramMessage = new ParameterTypeMessageContainer(_rootAggregate.GetCommandModelParameterChild());
             var returnValue = new ParameterOrReturnValue(_rootAggregate, ParameterOrReturnValue.E_Type.ReturnValue);
 
             return $$"""

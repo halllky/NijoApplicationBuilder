@@ -133,8 +133,8 @@ namespace Nijo.Models {
             aggregateFile.AddTypeScriptFunction(parameterType.RenderNewObjectFn());
 
             // データ型: パラメータ型メッセージ
-            var parameterMessages = new ParameterTypeMessageContainer(rootAggregate);
-            aggregateFile.AddCSharpClass(parameterMessages.RenderCSharp(), "Class_ParameterMessage");
+            var parameterMessages = new ParameterTypeMessageContainer(rootAggregate.GetCommandModelParameterChild());
+            aggregateFile.AddCSharpClass(ParameterTypeMessageContainer.RenderCSharpRecursively(rootAggregate), "Class_ParameterMessage");
             aggregateFile.AddTypeScriptTypeDef(parameterMessages.RenderTypeScript());
             ctx.Use<MessageContainer.BaseClass>().Register(parameterMessages.CsClassName, parameterMessages.CsClassName);
 
