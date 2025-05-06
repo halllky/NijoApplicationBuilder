@@ -39,6 +39,34 @@ export const useHttpRequest = () => {
     }
   }, [msgContext])
 
+  /** POSTリクエストを行なう。 */
+  const post = React.useCallback(async <TReturnValue = unknown, TRequestBody = unknown>(
+    /** バックエンドのURL（ドメイン部分除く） */
+    subDirectory: string,
+    /** リクエストボディ */
+    requestBody: TRequestBody,
+  ): Promise<TReturnValue | undefined> => {
+
+    try {
+      const url = getBackendUrl(subDirectory)
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      })
+      if (!response.ok) {
+        msgContext.error(handleUnknownResponse(response))
+        return undefined
+      }
+      const json = await response.json() as TReturnValue
+      return json
+    } catch (error) {
+      msgContext.error(handleUnknownError(error))
+    }
+  }, [msgContext])
+
   /** ComplexPost（ASP.NET Core 側のPresentationContextの仕組みと統合されたPOSTリクエスト） */
   const complexPost = React.useCallback(async <TReturnValue = unknown, TRequestBody = unknown>(
     /** バックエンドのURL（ドメイン部分除く） */
@@ -133,7 +161,7 @@ export const useHttpRequest = () => {
     }
   }, [msgContext, toastContext])
 
-  return { get, complexPost }
+  return { get, post, complexPost }
 }
 
 // --------------------------------------------
