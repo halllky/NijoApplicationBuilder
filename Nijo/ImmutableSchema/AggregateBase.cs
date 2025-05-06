@@ -226,9 +226,12 @@ namespace Nijo.ImmutableSchema {
         #region 外部参照
         /// <summary>
         /// この集約がメソッドの引数の集約の唯一のキーか否かを返します。
+        /// なお、引数の集約がChildrenの場合、Childrenは親の主キーを継承するため、必ずfalseになります。
         /// </summary>
         /// <param name="refFrom">参照元</param>
         public bool IsSingleKeyOf(AggregateBase refFrom) {
+            if (refFrom is ChildrenAggregate) return false;
+
             var keys = refFrom.GetOwnKeys().ToArray();
             if (keys.Length != 1) return false;
             if (keys[0] is not RefToMember rm) return false;
