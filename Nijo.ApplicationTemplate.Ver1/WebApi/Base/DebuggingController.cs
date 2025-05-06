@@ -215,7 +215,7 @@ public class DebuggingController : ControllerBase {
                 await dbContext.Database.EnsureCreatedAsync();
 
                 // ダミーデータを投入
-                var generator = new DummyDataGenerator();
+                var generator = new OverridedDummyDataGenerator();
                 var dbDescriptor = new DummyDataDbOutput(dbContext);
                 await generator.GenerateAsync(dbDescriptor);
             }

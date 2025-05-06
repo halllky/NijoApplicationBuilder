@@ -16,7 +16,7 @@ partial class DB接続あり_更新あり {
         using var util = TestUtilBuilder.Build();
         using var scope = util.CreateScope();
 
-        var generator = new DummyDataGenerator();
+        var generator = new OverridedDummyDataGenerator();
         var dbDescriptor = new DummyDataDbOutput(scope.App.DbContext);
 
         Assert.DoesNotThrowAsync(async () => {

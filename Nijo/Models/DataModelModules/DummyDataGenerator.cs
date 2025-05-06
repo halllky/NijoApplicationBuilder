@@ -56,7 +56,7 @@ namespace Nijo.Models.DataModelModules {
                     /// <summary>
                     /// デバッグ用のダミーデータ作成処理
                     /// </summary>
-                    public class {{CLASS_NAME}} {
+                    public abstract class {{CLASS_NAME}} {
 
                         /// <summary>
                         /// ダミーデータ作成処理を実行します。
@@ -136,8 +136,22 @@ namespace Nijo.Models.DataModelModules {
 
             static string RenderCreatePatternMethod(RootAggregate rootAggregate) {
                 var saveCommand = new SaveCommand(rootAggregate, SaveCommand.E_Type.Create);
+                var keyVMs = rootAggregate.GetKeyVMs().ToArray();
 
-                return $$"""
+                // 唯一の主キーがenum型か判定
+                if (keyVMs.Length == 1 && keyVMs[0].Type is Nijo.ValueMemberTypes.StaticEnumMember enumType) {
+                    // enum型のC#型名
+                    var enumTypeName = enumType.CsDomainTypeName;
+                    return $$"""
+                    /// <summary>{{rootAggregate.DisplayName}}のテストデータのパターン作成</summary>
+                    protected virtual IEnumerable<{{saveCommand.CsClassNameCreate}}> {{CreatePatternMethodName(rootAggregate)}}({{DUMMY_DATA_GENERATE_CONTEXT}} context) {
+                        for (var i = 0; i < Enum.GetValues<{{enumTypeName}}>().Length; i++) {
+                            yield return {{CreateAggregateMethodName(rootAggregate)}}(context, i);
+                        }
+                    }
+                    """;
+                } else {
+                    return $$"""
                     /// <summary>{{rootAggregate.DisplayName}}のテストデータのパターン作成</summary>
                     protected virtual IEnumerable<{{saveCommand.CsClassNameCreate}}> {{CreatePatternMethodName(rootAggregate)}}({{DUMMY_DATA_GENERATE_CONTEXT}} context) {
                         for (var i = 0; i < 20; i++) {
@@ -145,6 +159,7 @@ namespace Nijo.Models.DataModelModules {
                         }
                     }
                     """;
+                }
             }
 
             static string RenderCreateRootAggregateMethod(RootAggregate rootAggregate) {
@@ -160,8 +175,27 @@ namespace Nijo.Models.DataModelModules {
                     """;
 
                 static IEnumerable<string> RenderBody(SaveCommand saveCommand) {
+
+                    // 唯一の主キーがenum型か判定
+                    var keyVMs = saveCommand.Aggregate.GetKeyVMs().ToArray();
+                    var isSingleKeyEnum = keyVMs.Length == 1 && keyVMs[0].Type is Nijo.ValueMemberTypes.StaticEnumMember;
+
                     foreach (var member in saveCommand.GetMembers()) {
                         if (member is SaveCommand.SaveCommandValueMember vm) {
+
+                            // 唯一の主キーがenumである場合はキー重複を避ける必要があるのでランダム値にする余地がない
+                            if (isSingleKeyEnum && member.IsKey) {
+                                var enumTypeName = keyVMs[0].Type.CsDomainTypeName;
+                                var loopVar = saveCommand.Aggregate is RootAggregate
+                                    ? "itemIndex"
+                                    : "i";
+
+                                yield return $$"""
+                                    {{member.PhysicalName}} = Enum.GetValues<{{enumTypeName}}>().ElementAt({{loopVar}}),
+                                    """;
+                                continue;
+                            }
+
                             var path = new List<string>();
 
                             var root = vm.Member.Owner.GetRoot();
@@ -174,8 +208,8 @@ namespace Nijo.Models.DataModelModules {
                             path.Add(vm.PhysicalName);
 
                             yield return $$"""
-                                {{member.PhysicalName}} = {{GetValueMemberValueMethodName(vm.Member.Type)}}(context, context.Metadata.{{path.Join(".")}}),
-                                """;
+                                    {{member.PhysicalName}} = {{GetValueMemberValueMethodName(vm.Member.Type)}}(context, context.Metadata.{{path.Join(".")}}),
+                                    """;
 
                         } else if (member is SaveCommand.SaveCommandRefMember refTo) {
                             // contextに登録されているインスタンスから適当なものを選んでキーに変換する
@@ -228,8 +262,18 @@ namespace Nijo.Models.DataModelModules {
                                 """;
 
                         } else if (member is SaveCommand.SaveCommandChildrenMember children) {
+                            // childrenの唯一の主キーがenum型か判定
+                            var childrenKeyVMs = children.Aggregate.GetKeyVMs().ToArray();
+                            var isChildrenSingleKeyEnum = childrenKeyVMs.Length == 1 && childrenKeyVMs[0].Type is Nijo.ValueMemberTypes.StaticEnumMember;
+
+                            // キー重複を防ぐためにはenum型の場合はランダム値にする余地がないので Enum.GetValuesの数だけループ。
+                            // それ以外の場合は適当にとりあえず4件作成する
+                            var generateLoop = isChildrenSingleKeyEnum
+                                ? $"Enumerable.Range(0, Enum.GetValues<{childrenKeyVMs[0].Type.CsDomainTypeName}>().Length)"
+                                : "Enumerable.Range(0, 4)";
+
                             yield return $$"""
-                                {{member.PhysicalName}} = Enumerable.Range(0, 4).Select(_ => new {{children.CsClassNameCreate}} {
+                                {{member.PhysicalName}} = {{generateLoop}}.Select(i => new {{children.CsClassNameCreate}} {
                                     {{WithIndent(RenderBody(children), "    ")}}
                                 }).ToList(),
                                 """;
