@@ -129,8 +129,8 @@ namespace Nijo.Parts.Common {
                 imports.Add(($"./{rootAggregate.PhysicalName}", modules.ToArray()));
             }
             foreach (var rootAggregate in _commandModels) {
-                var param = new ParameterType(rootAggregate);
-                var returnType = new ReturnValue(rootAggregate);
+                var param = new ParameterOrReturnValue(rootAggregate, ParameterOrReturnValue.E_Type.Parameter);
+                var returnType = new ParameterOrReturnValue(rootAggregate, ParameterOrReturnValue.E_Type.ReturnValue);
 
                 imports.Add((
                     $"./{rootAggregate.PhysicalName}",
@@ -138,6 +138,7 @@ namespace Nijo.Parts.Common {
                         param.TsTypeName,
                         param.TsNewObjectFunction,
                         returnType.TsTypeName,
+                        returnType.TsNewObjectFunction,
                     }));
             }
 
@@ -237,14 +238,24 @@ namespace Nijo.Parts.Common {
                       '{{agg.PhysicalName}}': {{new SearchCondition.Entry(agg).TsTypeName}}
                     """)}}
                     }
+                    //#endregion QueryModelのモジュールの型マッピング
 
+
+                    //#region Commandのモジュールの型マッピング
                     /** Commandパラメータ型一覧 */
                     export interface CommandParamTypeMap {
                     {{_commandModels.SelectTextTemplate(agg => $$"""
-                      '{{agg.PhysicalName}}': {{new ParameterType(agg).TsTypeName}}
+                      '{{agg.PhysicalName}}': {{new ParameterOrReturnValue(agg, ParameterOrReturnValue.E_Type.Parameter).TsTypeName}}
                     """)}}
                     }
-                    //#endregion QueryModelのモジュールの型マッピング
+
+                    /** Command戻り値型一覧 */
+                    export interface CommandReturnTypeMap {
+                    {{_commandModels.SelectTextTemplate(agg => $$"""
+                      '{{agg.PhysicalName}}': {{new ParameterOrReturnValue(agg, ParameterOrReturnValue.E_Type.ReturnValue).TsTypeName}}
+                    """)}}
+                    }
+                    //#endregion Commandのモジュールの型マッピング
 
 
                     //#region オブジェクトの新規作成関数
@@ -272,7 +283,14 @@ namespace Nijo.Parts.Common {
                     /** Commandパラメータ新規作成関数 */
                     export const createNewCommandParamFunctions: { [K in {{COMMAND_MODEL_TYPE}}]: (() => CommandParamTypeMap[K]) } = {
                     {{_commandModels.SelectTextTemplate(agg => $$"""
-                      '{{agg.PhysicalName}}': {{new ParameterType(agg).TsNewObjectFunction}},
+                      '{{agg.PhysicalName}}': {{new ParameterOrReturnValue(agg, ParameterOrReturnValue.E_Type.Parameter).TsNewObjectFunction}},
+                    """)}}
+                    }
+
+                    /** Command戻り値新規作成関数 */
+                    export const createNewCommandReturnTypeFunctions: { [K in {{COMMAND_MODEL_TYPE}}]: (() => CommandReturnTypeMap[K]) } = {
+                    {{_commandModels.SelectTextTemplate(agg => $$"""
+                      '{{agg.PhysicalName}}': {{new ParameterOrReturnValue(agg, ParameterOrReturnValue.E_Type.ReturnValue).TsNewObjectFunction}},
                     """)}}
                     }
                     //#endregion オブジェクトの新規作成関数

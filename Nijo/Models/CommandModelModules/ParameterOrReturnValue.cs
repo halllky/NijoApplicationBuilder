@@ -9,25 +9,40 @@ using System.Linq;
 
 namespace Nijo.Models.CommandModelModules {
     /// <summary>
-    /// コマンドのパラメータ型定義
+    /// コマンドのパラメータ、または戻り値の型
     /// </summary>
-    internal class ParameterType : IInstancePropertyOwnerMetadata {
-        internal ParameterType(RootAggregate aggregate) {
+    internal class ParameterOrReturnValue : IInstancePropertyOwnerMetadata {
+
+        internal enum E_Type {
+            Parameter,
+            ReturnValue,
+        }
+
+        internal ParameterOrReturnValue(RootAggregate aggregate, E_Type type) {
             _rootAggregate = aggregate;
+            _type = type;
         }
         private readonly RootAggregate _rootAggregate;
+        private readonly E_Type _type;
 
-        internal string CsClassName => $"{_rootAggregate.PhysicalName}Parameter";
-        internal string TsTypeName => $"{_rootAggregate.PhysicalName}Parameter";
+        internal string CsClassName => _type == E_Type.Parameter
+            ? $"{_rootAggregate.PhysicalName}Parameter"
+            : $"{_rootAggregate.PhysicalName}ReturnValue";
+        internal string TsTypeName => _type == E_Type.Parameter
+            ? $"{_rootAggregate.PhysicalName}Parameter"
+            : $"{_rootAggregate.PhysicalName}ReturnValue";
 
-        internal IEnumerable<ICommandParameterMember> GetMembers() {
-            var param = _rootAggregate.GetCommandModelParameterChild();
-            foreach (var member in param.GetMembers()) {
+        internal IEnumerable<ICommandMember> GetMembers() {
+            var objectRoot = _type == E_Type.Parameter
+                ? _rootAggregate.GetCommandModelParameterChild()
+                : _rootAggregate.GetCommandModelReturnValueChild();
+
+            foreach (var member in objectRoot.GetMembers()) {
                 yield return member switch {
-                    ValueMember vm => new CommandParameterValueMember(vm),
-                    RefToMember rm => new CommandParameterRefToMember(rm),
-                    ChildAggregate child => new CommandParameterDescendantMember(child),
-                    ChildrenAggregate children => new CommandParameterDescendantMember(children),
+                    ValueMember vm => new CommandValueMember(vm),
+                    RefToMember rm => new CommandRefToMember(rm),
+                    ChildAggregate child => new CommandDescendantMember(child),
+                    ChildrenAggregate children => new CommandDescendantMember(children),
                     _ => throw new InvalidOperationException(),
                 };
             }
@@ -35,10 +50,12 @@ namespace Nijo.Models.CommandModelModules {
         IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetMembers();
 
         internal string RenderCSharpRecursively(CodeRenderingContext ctx) {
-            var descendants = _rootAggregate
-                .GetCommandModelParameterChild()
+            var objectRoot = _type == E_Type.Parameter
+                ? _rootAggregate.GetCommandModelParameterChild()
+                : _rootAggregate.GetCommandModelReturnValueChild();
+            var descendants = objectRoot
                 .EnumerateDescendants()
-                .Select(descendant => new CommandParameterDescendantMember(descendant));
+                .Select(descendant => new CommandDescendantMember(descendant));
 
             return $$"""
                 /// <summary>
@@ -75,13 +92,13 @@ namespace Nijo.Models.CommandModelModules {
         }
 
         #region メンバー
-        internal interface ICommandParameterMember : IInstancePropertyMetadata {
+        internal interface ICommandMember : IInstancePropertyMetadata {
             string RenderCSharpDeclaration(CodeRenderingContext ctx);
             string RenderTypeScriptDeclaration(CodeRenderingContext ctx);
             string RenderTsInitializer();
         }
-        internal class CommandParameterValueMember : ICommandParameterMember, IInstanceValuePropertyMetadata {
-            internal CommandParameterValueMember(ValueMember vm) {
+        internal class CommandValueMember : ICommandMember, IInstanceValuePropertyMetadata {
+            internal CommandValueMember(ValueMember vm) {
                 _vm = vm;
             }
             private readonly ValueMember _vm;
@@ -90,25 +107,25 @@ namespace Nijo.Models.CommandModelModules {
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _vm;
             string IInstancePropertyMetadata.PropertyName => _vm.PhysicalName;
 
-            string ICommandParameterMember.RenderCSharpDeclaration(CodeRenderingContext ctx) {
+            string ICommandMember.RenderCSharpDeclaration(CodeRenderingContext ctx) {
                 return $$"""
                     public {{_vm.Type.CsDomainTypeName}}? {{_vm.PhysicalName}} { get; set; }
                     """;
             }
-            string ICommandParameterMember.RenderTypeScriptDeclaration(CodeRenderingContext ctx) {
+            string ICommandMember.RenderTypeScriptDeclaration(CodeRenderingContext ctx) {
                 return $$"""
                     {{_vm.PhysicalName}}: {{_vm.Type.TsTypeName}} | undefined
                     """;
             }
-            string ICommandParameterMember.RenderTsInitializer() {
+            string ICommandMember.RenderTsInitializer() {
                 return $$"""
                     {{_vm.PhysicalName}}: undefined,
                     """;
             }
 
         }
-        internal class CommandParameterRefToMember : ICommandParameterMember, IInstanceStructurePropertyMetadata {
-            internal CommandParameterRefToMember(RefToMember rm) {
+        internal class CommandRefToMember : ICommandMember, IInstanceStructurePropertyMetadata {
+            internal CommandRefToMember(RefToMember rm) {
                 _rm = rm;
             }
             private readonly RefToMember _rm;
@@ -130,12 +147,12 @@ namespace Nijo.Models.CommandModelModules {
                 return obj.GetMembers();
             }
 
-            string ICommandParameterMember.RenderCSharpDeclaration(CodeRenderingContext ctx) {
+            string ICommandMember.RenderCSharpDeclaration(CodeRenderingContext ctx) {
                 return $$"""
                     public {{CsType}} {{_rm.PhysicalName}} { get; set; } = new();
                     """;
             }
-            string ICommandParameterMember.RenderTypeScriptDeclaration(CodeRenderingContext ctx) {
+            string ICommandMember.RenderTypeScriptDeclaration(CodeRenderingContext ctx) {
                 string type = _rm.RefToObject switch {
                     RefToMember.E_RefToObject.SearchCondition => new SearchCondition.Entry((RootAggregate)_rm.RefTo).TsTypeName,
                     RefToMember.E_RefToObject.DisplayData => new DisplayData(_rm.RefTo).TsTypeName,
@@ -146,7 +163,7 @@ namespace Nijo.Models.CommandModelModules {
                     {{_rm.PhysicalName}}: {{type}}
                     """;
             }
-            string ICommandParameterMember.RenderTsInitializer() {
+            string ICommandMember.RenderTsInitializer() {
                 var initFunction = _rm.RefToObject switch {
                     RefToMember.E_RefToObject.SearchCondition => new SearchCondition.Entry((RootAggregate)_rm.RefTo).TsNewObjectFunction,
                     RefToMember.E_RefToObject.DisplayData => new DisplayData(_rm.RefTo).TsNewObjectFunction,
@@ -157,21 +174,21 @@ namespace Nijo.Models.CommandModelModules {
                     """;
             }
         }
-        internal class CommandParameterDescendantMember : ICommandParameterMember, IInstanceStructurePropertyMetadata {
-            internal CommandParameterDescendantMember(AggregateBase aggregate) {
+        internal class CommandDescendantMember : ICommandMember, IInstanceStructurePropertyMetadata {
+            internal CommandDescendantMember(AggregateBase aggregate) {
                 _aggregate = aggregate;
             }
             private readonly AggregateBase _aggregate;
 
             internal string CsType => $"{_aggregate.GetRoot().PhysicalName}Parameter_{_aggregate.PhysicalName}";
             internal string DisplayName => _aggregate.DisplayName;
-            internal IEnumerable<ICommandParameterMember> GetMembers() {
+            internal IEnumerable<ICommandMember> GetMembers() {
                 foreach (var m in _aggregate.GetMembers()) {
                     yield return m switch {
-                        ValueMember vm => new CommandParameterValueMember(vm),
-                        RefToMember rm => new CommandParameterRefToMember(rm),
-                        ChildAggregate child => new CommandParameterDescendantMember(child),
-                        ChildrenAggregate children => new CommandParameterDescendantMember(children),
+                        ValueMember vm => new CommandValueMember(vm),
+                        RefToMember rm => new CommandRefToMember(rm),
+                        ChildAggregate child => new CommandDescendantMember(child),
+                        ChildrenAggregate children => new CommandDescendantMember(children),
                         _ => throw new InvalidOperationException(),
                     };
                 }
@@ -183,7 +200,7 @@ namespace Nijo.Models.CommandModelModules {
             bool IInstanceStructurePropertyMetadata.IsArray => _aggregate is ChildrenAggregate;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetMembers();
 
-            string ICommandParameterMember.RenderCSharpDeclaration(CodeRenderingContext ctx) {
+            string ICommandMember.RenderCSharpDeclaration(CodeRenderingContext ctx) {
                 var csTypeWithArray = _aggregate is ChildrenAggregate ? $"List<{CsType}>" : CsType;
 
                 return $$"""
@@ -191,7 +208,7 @@ namespace Nijo.Models.CommandModelModules {
                     """;
             }
 
-            string ICommandParameterMember.RenderTypeScriptDeclaration(CodeRenderingContext ctx) {
+            string ICommandMember.RenderTypeScriptDeclaration(CodeRenderingContext ctx) {
                 var array = _aggregate is ChildrenAggregate ? "[]" : "";
 
                 return $$"""
@@ -202,7 +219,7 @@ namespace Nijo.Models.CommandModelModules {
                     }{{array}}
                     """;
             }
-            string ICommandParameterMember.RenderTsInitializer() {
+            string ICommandMember.RenderTsInitializer() {
                 if (_aggregate is ChildrenAggregate) {
                     return $$"""
                         {{_aggregate.PhysicalName}}: [],
@@ -225,7 +242,7 @@ namespace Nijo.Models.CommandModelModules {
         internal string TsNewObjectFunction => $"createNew{TsTypeName}";
         internal string RenderNewObjectFn() {
             return $$"""
-                /** {{_rootAggregate.DisplayName}}のパラメータオブジェクトの新規作成関数 */
+                /** {{_rootAggregate.DisplayName}}の{{(_type == E_Type.Parameter ? "パラメータ" : "戻り値")}}オブジェクトの新規作成関数 */
                 export const {{TsNewObjectFunction}} = (): {{TsTypeName}} => ({
                 {{GetMembers().SelectTextTemplate(member => $$"""
                   {{WithIndent(member.RenderTsInitializer(), "  ")}}

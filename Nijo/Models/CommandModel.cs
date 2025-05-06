@@ -127,7 +127,7 @@ namespace Nijo.Models {
             var aggregateFile = new SourceFileByAggregate(rootAggregate);
 
             // データ型: パラメータ型定義
-            var parameterType = new ParameterType(rootAggregate);
+            var parameterType = new ParameterOrReturnValue(rootAggregate, ParameterOrReturnValue.E_Type.Parameter);
             aggregateFile.AddCSharpClass(parameterType.RenderCSharpRecursively(ctx), "Class_Parameter");
             aggregateFile.AddTypeScriptTypeDef(parameterType.RenderTypeScript(ctx));
             aggregateFile.AddTypeScriptFunction(parameterType.RenderNewObjectFn());
@@ -139,9 +139,10 @@ namespace Nijo.Models {
             ctx.Use<MessageContainer.BaseClass>().Register(parameterMessages.CsClassName, parameterMessages.CsClassName);
 
             // データ型: 戻り値型定義
-            var returnType = new ReturnValue(rootAggregate);
-            aggregateFile.AddCSharpClass(returnType.RenderCSharp(ctx), "Class_ReturnValue");
+            var returnType = new ParameterOrReturnValue(rootAggregate, ParameterOrReturnValue.E_Type.ReturnValue);
+            aggregateFile.AddCSharpClass(returnType.RenderCSharpRecursively(ctx), "Class_ReturnValue");
             aggregateFile.AddTypeScriptTypeDef(returnType.RenderTypeScript(ctx));
+            aggregateFile.AddTypeScriptFunction(returnType.RenderNewObjectFn());
 
             // 処理: TypeScript用マッピング、Webエンドポイント、本処理抽象メソッド
             var commandProcessing = new CommandProcessing(rootAggregate);
