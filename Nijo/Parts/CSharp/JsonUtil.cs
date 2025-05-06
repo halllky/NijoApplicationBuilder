@@ -1,4 +1,6 @@
 using Nijo.CodeGenerating;
+using Nijo.ImmutableSchema;
+using Nijo.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +12,15 @@ namespace Nijo.Parts.CSharp {
     /// C#側の既定のJSONシリアライズ設定に関する各種処理
     /// </summary>
     internal class JsonUtil : IMultiAggregateSourceFile {
+
+        /// <summary>
+        /// 値オブジェクトの変換処理の登録
+        /// </summary>
+        internal JsonUtil AddValueObject(RootAggregate rootAggregate) {
+            _valueObjectRootAggregates.Add(rootAggregate);
+            return this;
+        }
+        private readonly List<RootAggregate> _valueObjectRootAggregates = [];
 
         void IMultiAggregateSourceFile.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {
             // 特になし
@@ -51,7 +62,9 @@ namespace Nijo.Parts.CSharp {
                             option.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 
                             // ValueObjectのJSONシリアライズ登録
-                            // TODO ver.1
+                    {{_valueObjectRootAggregates.SelectTextTemplate(agg => $$"""
+                            option.Converters.Add(new {{agg.PhysicalName}}.{{ValueObjectModel.JSON_CONVERTER_NAME}}());
+                    """)}}
 
                             return option;
                         }

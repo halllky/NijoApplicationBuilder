@@ -17,6 +17,8 @@ namespace Nijo.Models {
     /// </summary>
     internal class ValueObjectModel : IModel {
         internal const string SCHEMA_NAME = "value-object";
+        internal const string JSON_CONVERTER_NAME = "JsonConverter";
+
         public string SchemaName => SCHEMA_NAME;
 
         public void Validate(XElement rootAggregateElement, SchemaParseContext context, Action<XElement, string> addError) {
@@ -28,6 +30,9 @@ namespace Nijo.Models {
             ctx.CoreLibrary(dir => {
                 dir.Generate(RenderCSharp(rootAggregate, ctx));
             });
+
+            // JSONシリアライズの登録
+            ctx.Use<Parts.CSharp.JsonUtil>().AddValueObject(rootAggregate);
 
             // TypeScript定義の生成
             ctx.ReactProject(dir => {
@@ -44,6 +49,7 @@ namespace Nijo.Models {
                 FileName = $"{rootAggregate.PhysicalName}.cs",
                 Contents = $$"""
                     using System.Diagnostics.CodeAnalysis;
+                    using System.Text.Json;
 
                     namespace {{ctx.Config.RootNamespace}};
 
@@ -93,6 +99,23 @@ namespace Nijo.Models {
                         public override string ToString() {
                             return _value;
                         }
+
+                        #region JSONシリアライズ
+                        public class {{JSON_CONVERTER_NAME}} : System.Text.Json.Serialization.JsonConverter<{{aggregateName}}?> {
+                            public override {{aggregateName}}? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
+                                var strValue = reader.GetString();
+                                if (strValue == null) {
+                                    return null;
+                                } else {
+                                    return new {{aggregateName}}(strValue);
+                                }
+                            }
+
+                            public override void Write(Utf8JsonWriter writer, {{aggregateName}}? value, JsonSerializerOptions options) {
+                                writer.WriteStringValue(value?._value);
+                            }
+                        }
+                        #endregion JSONシリアライズ
                     }
                     """,
             };
