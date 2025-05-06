@@ -144,9 +144,22 @@ export class TypeScriptFinder {
         throw new Error(`指定された位置にノードが見つかりません: ${sourceFilePath}, ${line}, ${character}`);
       }
 
+      // --- デバッグログ追加 ---
+      console.log(`[DEBUG] Found node at position ${line}:${character}`);
+      console.log(`[DEBUG] Node Kind: ${ts.SyntaxKind[node.kind]}`);
+      console.log(`[DEBUG] Node Text: ${node.getText()}`);
+      if (ts.isVariableDeclaration(node)) {
+        console.log(`[DEBUG] VariableDeclaration Name Kind: ${ts.SyntaxKind[node.name.kind]}`);
+        console.log(`[DEBUG] VariableDeclaration Name Text: ${node.name.getText()}`);
+      }
+      // --- デバッグログ追加 ここまで ---
+
       // シンボルを取得
       const symbol = this.getSymbolAtLocation(node);
       if (!symbol) {
+        // --- デバッグログ追加 ---
+        console.log(`[DEBUG] Symbol not found for node kind: ${ts.SyntaxKind[node.kind]}`);
+        // --- デバッグログ追加 ここまで ---
         throw new Error(`シンボルが見つかりません: ${sourceFilePath}, ${line}, ${character}`);
       }
 
@@ -259,11 +272,23 @@ export class TypeScriptFinder {
    * 指定されたノードのシンボルを取得
    */
   private getSymbolAtLocation(node: ts.Node): ts.Symbol | undefined {
-    if (ts.isIdentifier(node)) {
-      return this.typeChecker.getSymbolAtLocation(node);
-    }
+    // if (ts.isIdentifier(node)) {
+    //   return this.typeChecker.getSymbolAtLocation(node);
+    // } else if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
+    //   // 変数宣言の場合は、宣言名からシンボルを取得
+    //   return this.typeChecker.getSymbolAtLocation(node.name);
+    // } else if (ts.isFunctionDeclaration(node) && node.name && ts.isIdentifier(node.name)) {
+    //   // 関数宣言の場合
+    //   return this.typeChecker.getSymbolAtLocation(node.name);
+    // } else if (ts.isClassDeclaration(node) && node.name && ts.isIdentifier(node.name)) {
+    //   // クラス宣言の場合
+    //   return this.typeChecker.getSymbolAtLocation(node.name);
+    // }
+    // // 他の宣言タイプ (Interface, Enum, TypeAliasなど) も必要に応じて追加
 
-    return undefined;
+    // return undefined;
+
+    return this.typeChecker.getSymbolAtLocation(node);
   }
 
   /**

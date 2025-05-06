@@ -21,7 +21,7 @@ async function setupServer() {
 
   // find_definition: シンボルの定義情報を検索するツール
   server.tool(
-    'find_definition',
+    'find_ts_definition',
     {
       sourceFilePath: z.string().min(1, 'ファイルパスは必須です'),
       line: z.string().regex(/^\d+$/, '行番号は数値を指定してください'),
@@ -80,7 +80,7 @@ async function setupServer() {
 
   // find_references: シンボルの参照を検索するツール
   server.tool(
-    'find_references',
+    'find_ts_references',
     {
       sourceFilePath: z.string().min(1, 'ファイルパスは必須です'),
       line: z.string().regex(/^\d+$/, '行番号は数値を指定してください'),
@@ -128,60 +128,6 @@ async function setupServer() {
           content: [{
             type: 'text',
             text: `シンボル ${result.name} は以下のソースコードで参照されています。\n${locationsText}`
-          }]
-        };
-      } catch (ex: any) {
-        context.writeLog(ex.toString());
-        return { content: [{ type: 'text', text: ex.toString() }] };
-      }
-    }
-  );
-
-  // suggest_abstract_members: クラスが実装すべきメンバーを提案するツール
-  server.tool(
-    'suggest_abstract_members',
-    {
-      sourceFilePath: z.string().min(1, 'ファイルパスは必須です'),
-      line: z.string().regex(/^\d+$/, '行番号は数値を指定してください'),
-      character: z.string().regex(/^\d+$/, '文字位置は数値を指定してください')
-    },
-    async ({ sourceFilePath, line, character }) => {
-      // 引数のチェック
-      if (!path.isAbsolute(sourceFilePath)) {
-        return {
-          content: [{ type: 'text', text: 'sourceFilePathは絶対パスで指定してください。' }]
-        };
-      }
-
-      const lineNumber = parseInt(line, 10);
-      const columnNumber = parseInt(character, 10);
-      const { context, error } = trySetup();
-
-      if (error) {
-        return { content: [{ type: 'text', text: error }] };
-      }
-
-      if (!context) {
-        return { content: [{ type: 'text', text: 'コンテキストの初期化に失敗しました。' }] };
-      }
-
-      try {
-        // TypeScriptプロジェクトを解析
-        const finder = new TypeScriptFinder(context.projectPath);
-        const requiredMembers = finder.findRequiredMembers(sourceFilePath, lineNumber, columnNumber);
-
-        if (requiredMembers.length === 0) {
-          return {
-            content: [{ type: 'text', text: 'このクラスは実装する必要のあるメンバーがありません。' }]
-          };
-        }
-
-        const membersText = requiredMembers.map(m => `* ${m}`).join('\n');
-
-        return {
-          content: [{
-            type: 'text',
-            text: `このクラスは以下のメンバーを実装する必要があります。\n${membersText}`
           }]
         };
       } catch (ex: any) {
