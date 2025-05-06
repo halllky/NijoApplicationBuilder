@@ -64,7 +64,7 @@ internal class QueryModelUnitTest : IMultiAggregateSourceFile {
                     {{SearchCondition.Entry.TAKE_CS}} = 10,
                 };
 
-                Assert.DoesNotThrowAsync(() => scope.App.{{SearchProcessing.LOAD_METHOD}}(searchCondition, scope.PresentationContext));
+                Assert.DoesNotThrow(() => scope.App.{{SearchProcessing.LOAD_METHOD}}(searchCondition, scope.PresentationContext));
             }
             """;
     }
