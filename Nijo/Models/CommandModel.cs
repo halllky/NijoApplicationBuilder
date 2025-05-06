@@ -128,7 +128,7 @@ namespace Nijo.Models {
 
             // データ型: パラメータ型定義
             var parameterType = new ParameterType(rootAggregate);
-            aggregateFile.AddCSharpClass(parameterType.RenderCSharp(ctx), "Class_Parameter");
+            aggregateFile.AddCSharpClass(parameterType.RenderCSharpRecursively(ctx), "Class_Parameter");
             aggregateFile.AddTypeScriptTypeDef(parameterType.RenderTypeScript(ctx));
             aggregateFile.AddTypeScriptFunction(parameterType.RenderNewObjectFn());
 

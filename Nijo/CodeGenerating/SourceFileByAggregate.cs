@@ -212,12 +212,30 @@ namespace Nijo.CodeGenerating {
             var refToModules = new Dictionary<string, List<string>>();
             foreach (var group in refTos) {
                 var fileName = $"./{group.Key.PhysicalName}";
-                var refEntries = group.Select(agg => new Models.QueryModelModules.DisplayDataRef.Entry(agg));
-
                 var modules = new List<string>();
+
+                // DisplayData（Ref）
+                var refEntries = group.Select(agg => new Models.QueryModelModules.DisplayDataRef.Entry(agg));
                 foreach (var refEntry in refEntries) {
                     modules.Add(refEntry.TsTypeName);
                     modules.Add(refEntry.TsNewObjectFunction);
+                }
+
+                // DisplayData
+                foreach (var agg in group) {
+                    var displayData = new Models.QueryModelModules.DisplayData(agg);
+                    modules.Add(displayData.TsTypeName);
+                    modules.Add(displayData.TsNewObjectFunction);
+                }
+
+                // SearchCondition
+                var searchConditionList = group
+                    .Select(agg => agg.GetRoot())
+                    .Distinct()
+                    .Select(agg => new Models.QueryModelModules.SearchCondition.Entry(agg));
+                foreach (var searchCondition in searchConditionList) {
+                    modules.Add(searchCondition.TsTypeName);
+                    modules.Add(searchCondition.TsNewObjectFunction);
                 }
 
                 refToModules.Add(fileName, modules);

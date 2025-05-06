@@ -53,6 +53,21 @@ namespace Nijo.ImmutableSchema {
         public bool IsKey => _xElement.Attribute(BasicNodeOptions.IsKey.AttributeName) != null;
         /// <summary>必須か否か</summary>
         public bool IsRequired => _xElement.Attribute(BasicNodeOptions.IsRequired.AttributeName) != null;
+
+        /// <summary>
+        /// Commandのパラメータや戻り値でクエリモデルを参照する際の、そのクエリモデルのどのモジュールを参照するかの指定。
+        /// </summary>
+        public E_RefToObject? RefToObject => _xElement.Attribute(BasicNodeOptions.RefToObject.AttributeName)?.Value switch {
+            BasicNodeOptions.REF_TO_OBJECT_SEARCH_CONDITION => E_RefToObject.SearchCondition,
+            BasicNodeOptions.REF_TO_OBJECT_DISPLAY_DATA => E_RefToObject.DisplayData,
+            null => null,
+            _ => throw new InvalidOperationException(),
+        };
+
+        public enum E_RefToObject {
+            SearchCondition,
+            DisplayData,
+        }
         #endregion モデル毎に定義される属性
 
         #region 等価比較
