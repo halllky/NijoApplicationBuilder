@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Text.Json.Nodes;
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 //Console.WriteLine(Nijo.Mcp.NijoMcpTools.GenerateCode(@"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.ApplicationTemplate.Ver1\nijo.xml"));
 //Console.WriteLine(await Nijo.Mcp.NijoMcpTools.StartDebugging(@"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.ApplicationTemplate.Ver1\nijo.xml"));
@@ -378,6 +379,199 @@ namespace Nijo.Mcp {
             }
         }
         #endregion NUnit
+
+
+        #region タスク
+        private const string TOOL_START_TASK = "start_task";
+        private const string TOOL_REPORT_TASK = "report_task";
+
+        private const string NEXT_TASK_DIR = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\タスク";
+        private const string PROCESSING_TASK_DIR = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\タスク\進行中";
+        private const string PROCESSING_TASK_SUMMARY_FILE = @"SUMMARY.md";
+        private const string COMPLETED_TASK_DIR = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\タスク\完了";
+
+        [McpServerTool(Name = TOOL_START_TASK), Description(
+            "現在累積されている指示書のうち最も優先順位が高い指示書に記載されたタスクを開始する。")]
+        public static string StartTask() {
+            try {
+                // 進行中フォルダ、完了フォルダが無ければ作成
+                if (!Directory.Exists(PROCESSING_TASK_DIR)) Directory.CreateDirectory(PROCESSING_TASK_DIR);
+                if (!Directory.Exists(COMPLETED_TASK_DIR)) Directory.CreateDirectory(COMPLETED_TASK_DIR);
+
+                // 進行中のタスクがある場合はその内容を返す
+                var nextTask = FindNextTask(withSummary: true);
+                if (nextTask != null) {
+                    return nextTask;
+                }
+
+                // 進行中のタスクが無い場合、次のタスクを用意する。
+                // タスクフォルダ直下にあるmdファイルをファイル名の昇順で列挙し、最初にヒットしたものを次のタスクとする。
+                var nextTaskMarkdown = Directory
+                    .GetFiles(NEXT_TASK_DIR, "*.md")
+                    .OrderBy(file => Path.GetFileName(file))
+                    .FirstOrDefault();
+                if (nextTaskMarkdown == null) {
+                    return "現在積み残しとなっているタスクはありません。";
+                }
+
+                // 次のタスクを進行中フォルダに移動する。
+                // AIエージェントに逐次指示を出すようにするため、以下のルールでファイルを分割する。
+                // - mdファイル中に最初に登場する「## （数字2文字）」より前の部分は、作業概要とみなし、summary.mdに出力する。
+                // - それ以降の部分は、「## （数字2文字）」ごとにファイルを分割し、それぞれを次のタスクとみなし、「（数字2文字）.md」ファイルに出力する。
+                using var fs = File.OpenRead(nextTaskMarkdown);
+                using var reader = new StreamReader(fs);
+                var currentSectionNumber = (string?)null; // nullの場合は、summary.mdに出力する。
+                var currentSectionContents = new StringBuilder();
+                string? line;
+                while ((line = reader.ReadLine()) != null) {
+                    var match = Regex.Match(line, @"^## (\d{2})$");
+                    if (match.Success) {
+                        // これまでに読み込んだ内容を「進行中」フォルダ下のmdファイルに出力する。
+                        // まだ summary.md に出力していない場合は、その内容を summary.md に出力する。
+                        var filename = currentSectionNumber == null
+                            ? Path.Combine(PROCESSING_TASK_DIR, PROCESSING_TASK_SUMMARY_FILE)
+                            : Path.Combine(PROCESSING_TASK_DIR, $"{currentSectionNumber}.md");
+
+                        File.WriteAllText(filename, currentSectionContents.ToString());
+                        currentSectionContents.Clear();
+                        currentSectionNumber = match.Groups[1].Value;
+
+                    } else {
+                        currentSectionContents.AppendLine(line);
+                    }
+                }
+
+                return FindNextTask(withSummary: true) ?? throw new InvalidOperationException("次のタスクが見つかりません。");
+
+            } catch (Exception ex) {
+                return ex.ToString();
+            }
+        }
+
+        [McpServerTool(Name = TOOL_REPORT_TASK), Description(
+            "現在のタスクの進捗状況を報告する。")]
+        public static string ReportTask(
+            [Description("タスクの進捗結果。完了なら'0'を、作業未完了なら'1'を指定してください。")] string result,
+            [Description("タスクの進捗状況の詳細")] string detail) {
+
+            try {
+                // 進行中フォルダ、完了フォルダが無ければ作成
+                if (!Directory.Exists(PROCESSING_TASK_DIR)) Directory.CreateDirectory(PROCESSING_TASK_DIR);
+                if (!Directory.Exists(COMPLETED_TASK_DIR)) Directory.CreateDirectory(COMPLETED_TASK_DIR);
+
+                // 進行中のステップ番号を取得。
+                // 進行中のステップ番号が無い場合は、どの作業についての完了報告かを特定できないので、エラーとする。
+                var currentStepFileName = Directory
+                    .GetFiles(PROCESSING_TASK_DIR)
+                    .Where(file => Regex.IsMatch(Path.GetFileName(file), @"^\d{2}\.md$"))
+                    .OrderBy(file => Path.GetFileName(file))
+                    .FirstOrDefault();
+                if (currentStepFileName == null) {
+                    return "現在進行中の作業はありません。";
+                }
+
+                // 入力チェック
+                if (result != "0" && result != "1") {
+                    return $$"""
+                        タスクの進捗結果は'0'か'1'のみ指定できます。
+                        完了なら'0'を、作業未完了なら'1'を指定してください。
+                        """;
+                }
+
+                // 完了の場合
+                if (result == "0") {
+                    // - 進行中フォルダにある最初の「（数字2文字）.md」ファイルを完了フォルダに移動する。
+                    // - 進捗の詳細を完了フォルダの「（数字2文字）.COMPLETED.md」ファイルに出力する。
+                    // - 「（数字2文字）.INCOMPLETE.md」ファイルは削除する。
+                    var completedStepFilePath = Path.Combine(COMPLETED_TASK_DIR, $"{Path.GetFileNameWithoutExtension(currentStepFileName)}.COMPLETED.md");
+                    File.Move(currentStepFileName, completedStepFilePath, overwrite: true);
+                    File.WriteAllText(completedStepFilePath, detail);
+                    File.Delete(Path.Combine(PROCESSING_TASK_DIR, $"{Path.GetFileNameWithoutExtension(currentStepFileName)}.INCOMPLETE.md"));
+
+                    // 次のステップを探す。無ければタスク完了
+                    var nextTask = FindNextTask(withSummary: false);
+                    if (nextTask != null) {
+                        return nextTask;
+                    }
+
+                    // summary.md を完了フォルダに移動させて作業完了
+                    var summaryFilePath = Path.Combine(PROCESSING_TASK_DIR, PROCESSING_TASK_SUMMARY_FILE);
+                    var completedSummaryFilePath = Path.Combine(COMPLETED_TASK_DIR, PROCESSING_TASK_SUMMARY_FILE);
+                    File.Move(summaryFilePath, completedSummaryFilePath, overwrite: true);
+
+                    return "タスクは完了です。";
+                }
+
+                // 作業未完了の場合
+                else {
+                    // - 進行中フォルダの「（数字2文字）.md」ファイルはそのまま。
+                    // - 進捗の詳細を進行中フォルダの「（数字2文字）.INCOMPLETE.md」ファイルに出力する。
+                    var incompleteStepFilePath = Path.Combine(PROCESSING_TASK_DIR, $"{Path.GetFileNameWithoutExtension(currentStepFileName)}.INCOMPLETE.md");
+                    File.WriteAllText(incompleteStepFilePath, detail);
+
+                    return "タスクの遂行を中断します。";
+                }
+
+            } catch (Exception ex) {
+                return ex.ToString();
+            }
+        }
+
+        /// <summary>
+        /// 進行中フォルダにファイルがある場合、以下を結合した文字列を返す。無い場合はnullを返す。
+        /// - 作業の目的、概要（進行中フォルダにあるファイルのうち、SUMMARY.md の内容）
+        /// - 次のタスク（進行中フォルダにある「（数字2文字）.md」という名称規則に合致するファイルのうち、ファイル名昇順で最初のもの）
+        /// </summary>
+        private static string? FindNextTask(bool withSummary) {
+            // 次のタスクを取得
+            var nextTask = Directory
+                .GetFiles(PROCESSING_TASK_DIR)
+                .Where(file => Regex.IsMatch(Path.GetFileName(file), @"^\d{2}\.md$"))
+                .OrderBy(file => Path.GetFileName(file))
+                .FirstOrDefault();
+
+            // 次のタスクが無い
+            if (nextTask == null) {
+                return null;
+            }
+
+            // 次のタスクの内容を取得
+            var nextTaskContents = File.ReadAllText(nextTask);
+
+            // 「（数字2文字）.INCOMPLETE.md」ファイルがある場合は、その内容を追加する
+            var incompleteStepFilePath = Path.Combine(PROCESSING_TASK_DIR, $"{Path.GetFileNameWithoutExtension(nextTask)}.INCOMPLETE.md");
+            if (File.Exists(incompleteStepFilePath)) {
+                nextTaskContents += $$"""
+                    -------
+                    なお、このタスクは以前別のエージェントが遂行しましたが、完了していません。
+                    その際の遂行結果は以下のように報告されています:
+
+                    > {{File.ReadAllText(incompleteStepFilePath)}}
+                    """;
+            }
+
+            var summaryFilePath = Path.Combine(PROCESSING_TASK_DIR, PROCESSING_TASK_SUMMARY_FILE);
+            var summary = withSummary && File.Exists(summaryFilePath)
+                ? File.ReadAllText(summaryFilePath)
+                : string.Empty;
+
+            return $$"""
+                {{(string.IsNullOrEmpty(summary) ? $$"""
+
+                """ : $$"""
+                {{summary}}
+                -------
+
+                次のタスク:
+
+                """)}}
+                {{nextTaskContents}}
+
+                -------
+                作業が完了した場合、または作業に行き詰った場合、 "{{TOOL_REPORT_TASK}}" ツールを呼び出してください。
+                """;
+        }
+        #endregion タスク
 
 
         //#region 自動テストで作成されたプロジェクト
