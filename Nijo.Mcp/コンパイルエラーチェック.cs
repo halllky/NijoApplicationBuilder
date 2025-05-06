@@ -49,14 +49,14 @@ partial class NijoMcpTools {
             startInfo.FileName = "cmd";
             startInfo.Arguments = $"/c \"{csharpCmd}\"";
             startInfo.UseShellExecute = false;
-        }, workDirectory, TimeSpan.FromSeconds(25));
+        }, workDirectory, TimeSpan.FromSeconds(60));
 
         var typeScriptExitCode = await ExecuteProcess("tsc -b --noEmit", startInfo => {
             startInfo.WorkingDirectory = Path.Combine(nijoXmlDir, "react");
             startInfo.FileName = "cmd";
             startInfo.Arguments = $"/c \"{typeScriptCmd}\"";
             startInfo.UseShellExecute = false;
-        }, workDirectory, TimeSpan.FromSeconds(25));
+        }, workDirectory, TimeSpan.FromSeconds(60));
 
         return csharpExitCode == 0 && typeScriptExitCode == 0;
     }

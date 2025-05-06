@@ -388,15 +388,14 @@ namespace Nijo.Mcp {
         private const string NEXT_TASK_DIR = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.Mcp.作業指示書";
         private const string PROCESSING_TASK_DIR = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.Mcp.作業指示書\進行中";
         private const string PROCESSING_TASK_SUMMARY_FILE = @"SUMMARY.md";
-        private const string COMPLETED_TASK_DIR = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.Mcp.作業指示書\完了";
+        private const string ORIGINAL_TASK_DIR = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.Mcp.作業指示書\進行中\作業指示書原本";
 
         [McpServerTool(Name = TOOL_START_TASK), Description(
             "現在累積されている指示書のうち最も優先順位が高い指示書に記載されたタスクを開始する。")]
         public static string StartTask() {
             try {
-                // 進行中フォルダ、完了フォルダが無ければ作成
+                // 進行中フォルダが無ければ作成
                 if (!Directory.Exists(PROCESSING_TASK_DIR)) Directory.CreateDirectory(PROCESSING_TASK_DIR);
-                if (!Directory.Exists(COMPLETED_TASK_DIR)) Directory.CreateDirectory(COMPLETED_TASK_DIR);
 
                 // 進行中のタスクがある場合はその内容を返す
                 var nextTask = FindNextTask(withSummary: true);
@@ -418,14 +417,17 @@ namespace Nijo.Mcp {
                 // AIエージェントに逐次指示を出すようにするため、以下のルールでファイルを分割する。
                 // - mdファイル中に最初に登場する「## （数字2文字）」より前の部分は、作業概要とみなし、summary.mdに出力する。
                 // - それ以降の部分は、「## （数字2文字）」ごとにファイルを分割し、それぞれを次のタスクとみなし、「（数字2文字）.md」ファイルに出力する。
+                // - 原本を進行中フォルダの中の原本フォルダ内部にコピーする。
                 using var fs = File.OpenRead(nextTaskMarkdown);
                 using var reader = new StreamReader(fs);
                 var currentSectionNumber = (string?)null; // nullの場合は、summary.mdに出力する。
                 var currentSectionContents = new StringBuilder();
-                string? line;
-                while ((line = reader.ReadLine()) != null) {
-                    var match = Regex.Match(line, @"^## (\d{2})$");
-                    if (match.Success) {
+                while (true) {
+                    var line = reader.ReadLine();
+                    var isFileEnd = line == null;
+
+                    var match = Regex.Match(line ?? "", @"^## (\d{2})$");
+                    if (isFileEnd || match.Success) {
                         // これまでに読み込んだ内容を「進行中」フォルダ下のmdファイルに出力する。
                         // まだ summary.md に出力していない場合は、その内容を summary.md に出力する。
                         var filename = currentSectionNumber == null
@@ -433,6 +435,9 @@ namespace Nijo.Mcp {
                             : Path.Combine(PROCESSING_TASK_DIR, $"{currentSectionNumber}.md");
 
                         File.WriteAllText(filename, currentSectionContents.ToString());
+
+                        if (isFileEnd) break;
+
                         currentSectionContents.Clear();
                         currentSectionNumber = match.Groups[1].Value;
 
@@ -440,6 +445,10 @@ namespace Nijo.Mcp {
                         currentSectionContents.AppendLine(line);
                     }
                 }
+
+                // 原本を進行中フォルダの中の原本フォルダ内部にコピーする。
+                if (!Directory.Exists(ORIGINAL_TASK_DIR)) Directory.CreateDirectory(ORIGINAL_TASK_DIR);
+                File.Move(nextTaskMarkdown, Path.Combine(ORIGINAL_TASK_DIR, Path.GetFileName(nextTaskMarkdown)), overwrite: true);
 
                 return FindNextTask(withSummary: true) ?? throw new InvalidOperationException("次のタスクが見つかりません。");
 
@@ -455,9 +464,8 @@ namespace Nijo.Mcp {
             [Description("タスクの進捗状況の詳細")] string detail) {
 
             try {
-                // 進行中フォルダ、完了フォルダが無ければ作成
+                // 進行中フォルダが無ければ作成
                 if (!Directory.Exists(PROCESSING_TASK_DIR)) Directory.CreateDirectory(PROCESSING_TASK_DIR);
-                if (!Directory.Exists(COMPLETED_TASK_DIR)) Directory.CreateDirectory(COMPLETED_TASK_DIR);
 
                 // 進行中のステップ番号を取得。
                 // 進行中のステップ番号が無い場合は、どの作業についての完了報告かを特定できないので、エラーとする。
@@ -469,6 +477,14 @@ namespace Nijo.Mcp {
                 if (currentStepFileName == null) {
                     return "現在進行中の作業はありません。";
                 }
+
+                // 完了フォルダを用意する。完了フォルダはタスクフォルダ直下の、作業指示書原本の名を冠したフォルダ。
+                var originalTaskFullName = Directory
+                    .GetFiles(ORIGINAL_TASK_DIR)
+                    .FirstOrDefault()
+                    ?? throw new InvalidOperationException("作業指示書原本が見つかりません。");
+                var completedTaskDir = Path.Combine(NEXT_TASK_DIR, Path.GetFileNameWithoutExtension(originalTaskFullName));
+                if (!Directory.Exists(completedTaskDir)) Directory.CreateDirectory(completedTaskDir);
 
                 // 入力チェック
                 if (result != "0" && result != "1") {
@@ -483,21 +499,22 @@ namespace Nijo.Mcp {
                     // - 進行中フォルダにある最初の「（数字2文字）.md」ファイルを完了フォルダに移動する。
                     // - 進捗の詳細を完了フォルダの「（数字2文字）.COMPLETED.md」ファイルに出力する。
                     // - 「（数字2文字）.INCOMPLETE.md」ファイルは削除する。
-                    var completedStepFilePath = Path.Combine(COMPLETED_TASK_DIR, $"{Path.GetFileNameWithoutExtension(currentStepFileName)}.COMPLETED.md");
+                    var completedStepFilePath = Path.Combine(completedTaskDir, $"{Path.GetFileNameWithoutExtension(currentStepFileName)}.COMPLETED.md");
                     File.Move(currentStepFileName, completedStepFilePath, overwrite: true);
                     File.WriteAllText(completedStepFilePath, detail);
                     File.Delete(Path.Combine(PROCESSING_TASK_DIR, $"{Path.GetFileNameWithoutExtension(currentStepFileName)}.INCOMPLETE.md"));
 
-                    // 次のステップを探す。無ければタスク完了
+                    // 次のステップを探す
                     var nextTask = FindNextTask(withSummary: false);
                     if (nextTask != null) {
                         return nextTask;
                     }
 
-                    // summary.md を完了フォルダに移動させて作業完了
+                    // 全ての作業が完了したら作業指示書原本と summary.md を完了フォルダに移動させて作業完了
                     var summaryFilePath = Path.Combine(PROCESSING_TASK_DIR, PROCESSING_TASK_SUMMARY_FILE);
-                    var completedSummaryFilePath = Path.Combine(COMPLETED_TASK_DIR, PROCESSING_TASK_SUMMARY_FILE);
+                    var completedSummaryFilePath = Path.Combine(completedTaskDir, PROCESSING_TASK_SUMMARY_FILE);
                     File.Move(summaryFilePath, completedSummaryFilePath, overwrite: true);
+                    File.Move(originalTaskFullName, Path.Combine(completedTaskDir, Path.GetFileName(originalTaskFullName)), overwrite: true);
 
                     return "タスクは完了です。";
                 }
