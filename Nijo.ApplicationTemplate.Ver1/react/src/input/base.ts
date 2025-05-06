@@ -18,4 +18,11 @@ export type CustomInputComponentProps<
   control: ReactHookForm.Control<TField>
   /** className。レイアウトの微調整に使用する */
   className?: string
+  /** react-hook-formの`Controller`に渡されるバリデーションルール */
+  rules?: Omit<
+    ReactHookForm.RegisterOptions<TField, TPath>,
+    "valueAsNumber" | "valueAsDate" | "setValueAs" | "disabled"
+  >
+  /** 読み取り専用か否か */
+  readOnly?: boolean
 }

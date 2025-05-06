@@ -385,10 +385,10 @@ namespace Nijo.Mcp {
         private const string TOOL_START_TASK = "start_task";
         private const string TOOL_REPORT_TASK = "report_task";
 
-        private const string NEXT_TASK_DIR = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\タスク";
-        private const string PROCESSING_TASK_DIR = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\タスク\進行中";
+        private const string NEXT_TASK_DIR = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.Mcp.作業指示書";
+        private const string PROCESSING_TASK_DIR = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.Mcp.作業指示書\進行中";
         private const string PROCESSING_TASK_SUMMARY_FILE = @"SUMMARY.md";
-        private const string COMPLETED_TASK_DIR = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\タスク\完了";
+        private const string COMPLETED_TASK_DIR = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.Mcp.作業指示書\完了";
 
         [McpServerTool(Name = TOOL_START_TASK), Description(
             "現在累積されている指示書のうち最も優先順位が高い指示書に記載されたタスクを開始する。")]

@@ -15,9 +15,15 @@ export const Word = <
     <ReactHookForm.Controller
       control={props.control}
       name={props.name}
+      rules={props.rules}
       render={({ field }) => (
         <div className={`flex flex-col ${props.className ?? ''}`}>
-          <input type="text" {...field} className="border border-gray-300 p-1" />
+          <input
+            type="text"
+            {...field}
+            readOnly={props.readOnly}
+            className="border border-gray-300 p-1"
+          />
           <FieldErrorView name={props.name} />
         </div>
       )}
