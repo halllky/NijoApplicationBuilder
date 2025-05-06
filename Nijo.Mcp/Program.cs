@@ -418,31 +418,32 @@ namespace Nijo.Mcp {
                 // - mdファイル中に最初に登場する「## （数字2文字）」より前の部分は、作業概要とみなし、summary.mdに出力する。
                 // - それ以降の部分は、「## （数字2文字）」ごとにファイルを分割し、それぞれを次のタスクとみなし、「（数字2文字）.md」ファイルに出力する。
                 // - 原本を進行中フォルダの中の原本フォルダ内部にコピーする。
-                using var fs = File.OpenRead(nextTaskMarkdown);
-                using var reader = new StreamReader(fs);
-                var currentSectionNumber = (string?)null; // nullの場合は、summary.mdに出力する。
-                var currentSectionContents = new StringBuilder();
-                while (true) {
-                    var line = reader.ReadLine();
-                    var isFileEnd = line == null;
+                using (var fs = File.OpenRead(nextTaskMarkdown))
+                using (var reader = new StreamReader(fs)) {
+                    var currentSectionNumber = (string?)null; // nullの場合は、summary.mdに出力する。
+                    var currentSectionContents = new StringBuilder();
+                    while (true) {
+                        var line = reader.ReadLine();
+                        var isFileEnd = line == null;
 
-                    var match = Regex.Match(line ?? "", @"^## (\d{2})$");
-                    if (isFileEnd || match.Success) {
-                        // これまでに読み込んだ内容を「進行中」フォルダ下のmdファイルに出力する。
-                        // まだ summary.md に出力していない場合は、その内容を summary.md に出力する。
-                        var filename = currentSectionNumber == null
-                            ? Path.Combine(PROCESSING_TASK_DIR, PROCESSING_TASK_SUMMARY_FILE)
-                            : Path.Combine(PROCESSING_TASK_DIR, $"{currentSectionNumber}.md");
+                        var match = Regex.Match(line ?? "", @"^## (\d{2})$");
+                        if (isFileEnd || match.Success) {
+                            // これまでに読み込んだ内容を「進行中」フォルダ下のmdファイルに出力する。
+                            // まだ summary.md に出力していない場合は、その内容を summary.md に出力する。
+                            var filename = currentSectionNumber == null
+                                ? Path.Combine(PROCESSING_TASK_DIR, PROCESSING_TASK_SUMMARY_FILE)
+                                : Path.Combine(PROCESSING_TASK_DIR, $"{currentSectionNumber}.md");
 
-                        File.WriteAllText(filename, currentSectionContents.ToString());
+                            File.WriteAllText(filename, currentSectionContents.ToString());
 
-                        if (isFileEnd) break;
+                            if (isFileEnd) break;
 
-                        currentSectionContents.Clear();
-                        currentSectionNumber = match.Groups[1].Value;
+                            currentSectionContents.Clear();
+                            currentSectionNumber = match.Groups[1].Value;
 
-                    } else {
-                        currentSectionContents.AppendLine(line);
+                        } else {
+                            currentSectionContents.AppendLine(line);
+                        }
                     }
                 }
 
