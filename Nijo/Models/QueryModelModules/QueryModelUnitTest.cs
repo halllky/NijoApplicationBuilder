@@ -56,7 +56,7 @@ internal class QueryModelUnitTest : IMultiAggregateSourceFile {
 
         return $$"""
             [Test(Description = "無条件検索でエラーが出ないか確認({{rootAggregate.DisplayName.Replace("\"", "\\\"")}})")]
-            public void NonConditionLoadTest{{index:0000}}() {
+            public void 無条件検索でエラーが出ないか確認_{{rootAggregate.PhysicalName}}() {
                 using var util = {{TestUtil.GET_UTIL}};
                 using var scope = util.CreateScope<{{searchConditionMessage.CsClassName}}>();
                 var searchCondition = new {{searchCondition.CsClassName}} {
