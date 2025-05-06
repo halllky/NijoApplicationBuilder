@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 namespace MyApp.Test.Tests;
 
 
+[Category("MessageContainerのテスト")]
 internal class MessageContainerのテスト {
 
     [Test]
