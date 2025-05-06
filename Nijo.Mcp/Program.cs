@@ -249,136 +249,136 @@ namespace Nijo.Mcp {
         #endregion アプリケーションテンプレート
 
 
-        #region NUnit
-        private const string TOOL_HOW_TO_RUN_TEST = "how_to_run_test";
-        [McpServerTool(Name = TOOL_HOW_TO_RUN_TEST), Description(
-            $"nijo.slnに含まれるすべてのユニットテストを列挙し、 {TOOL_RUN_TEST} ツールのフィルターの使用例を示します。")]
-        public static async Task<string> HowToRunTest() {
-            try {
-                using var workDirectory = WorkDirectory.Prepare();
-                workDirectory.WriteToMainLog($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [NijoMcpTools.HowToRunTest] HowToRunTest method called.");
+        //#region NUnit
+        //private const string TOOL_HOW_TO_RUN_TEST = "how_to_run_test";
+        //[McpServerTool(Name = TOOL_HOW_TO_RUN_TEST), Description(
+        //    $"nijo.slnに含まれるすべてのユニットテストを列挙し、 {TOOL_RUN_TEST} ツールのフィルターの使用例を示します。")]
+        //public static async Task<string> HowToRunTest() {
+        //    try {
+        //        using var workDirectory = WorkDirectory.Prepare();
+        //        workDirectory.WriteToMainLog($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [NijoMcpTools.HowToRunTest] HowToRunTest method called.");
 
-                // cmdファイルを作成してテスト一覧を取得
-                var cmdFilePath = Path.Combine(workDirectory.DirectoryPath, "list_tests.cmd");
-                var testListOutputFile = Path.Combine(workDirectory.DirectoryPath, "test_list_output.txt");
-                RenderCmdFile(cmdFilePath, $$"""
-                    chcp 65001
-                    @echo off
-                    dotnet test "{{NIJO_SLN}}" --list-tests > "{{testListOutputFile}}" 2>&1
-                    exit /b %errorlevel%
-                    """);
+        //        // cmdファイルを作成してテスト一覧を取得
+        //        var cmdFilePath = Path.Combine(workDirectory.DirectoryPath, "list_tests.cmd");
+        //        var testListOutputFile = Path.Combine(workDirectory.DirectoryPath, "test_list_output.txt");
+        //        RenderCmdFile(cmdFilePath, $$"""
+        //            chcp 65001
+        //            @echo off
+        //            dotnet test "{{NIJO_SLN}}" --list-tests > "{{testListOutputFile}}" 2>&1
+        //            exit /b %errorlevel%
+        //            """);
 
-                var exitCode = await ExecuteProcess("cmd-list-tests", startInfo => {
-                    startInfo.FileName = "cmd.exe";
-                    startInfo.ArgumentList.Add("/c");
-                    startInfo.ArgumentList.Add(cmdFilePath);
-                }, workDirectory, TimeSpan.FromMinutes(5));
+        //        var exitCode = await ExecuteProcess("cmd-list-tests", startInfo => {
+        //            startInfo.FileName = "cmd.exe";
+        //            startInfo.ArgumentList.Add("/c");
+        //            startInfo.ArgumentList.Add(cmdFilePath);
+        //        }, workDirectory, TimeSpan.FromMinutes(5));
 
-                // テスト一覧ファイルが存在するか確認
-                if (!File.Exists(testListOutputFile)) {
-                    return workDirectory.WithMainLogContents("テスト一覧結果ファイルが見つかりません。");
-                }
-                // テスト一覧ファイルの内容を読み取る
-                var testListOutput = File.ReadAllText(testListOutputFile);
+        //        // テスト一覧ファイルが存在するか確認
+        //        if (!File.Exists(testListOutputFile)) {
+        //            return workDirectory.WithMainLogContents("テスト一覧結果ファイルが見つかりません。");
+        //        }
+        //        // テスト一覧ファイルの内容を読み取る
+        //        var testListOutput = File.ReadAllText(testListOutputFile);
 
 
-                if (exitCode != 0) {
-                    return $"ユニットテストの列挙に失敗しました。\n\n{testListOutput}";
-                }
+        //        if (exitCode != 0) {
+        //            return $"ユニットテストの列挙に失敗しました。\n\n{testListOutput}";
+        //        }
 
-                // ログの内容から "--list-tests" の実際の出力部分を抽出（より堅牢な方法が必要な場合あり）。
-                // この文字が見つからない場合はログの内容をそのまま表示する。
-                const string LIST_TESTS_MARKER = "The following Tests are available:";
-                var listTestsIndex = testListOutput.IndexOf(LIST_TESTS_MARKER);
-                var actualTestList = listTestsIndex >= 0
-                    ? testListOutput.Substring(listTestsIndex)
-                    : testListOutput;
+        //        // ログの内容から "--list-tests" の実際の出力部分を抽出（より堅牢な方法が必要な場合あり）。
+        //        // この文字が見つからない場合はログの内容をそのまま表示する。
+        //        const string LIST_TESTS_MARKER = "The following Tests are available:";
+        //        var listTestsIndex = testListOutput.IndexOf(LIST_TESTS_MARKER);
+        //        var actualTestList = listTestsIndex >= 0
+        //            ? testListOutput.Substring(listTestsIndex)
+        //            : testListOutput;
 
-                return $$"""
-                    ユニットテストの列挙とフィルターの使用例:
+        //        return $$"""
+        //            ユニットテストの列挙とフィルターの使用例:
 
-                    {{actualTestList}}
+        //            {{actualTestList}}
 
-                    --- run_test フィルターの使用例 (NUnit) ---
+        //            --- run_test フィルターの使用例 (NUnit) ---
 
-                    フィルター式は `<Property><Operator><Value>[|&<Expression>]` の形式です。
-                    演算子:
-                      `=`   : 完全一致
-                      `!=`  : 完全一致ではない
-                      `~`   : 含む
-                      `!~`  : 含まない
+        //            フィルター式は `<Property><Operator><Value>[|&<Expression>]` の形式です。
+        //            演算子:
+        //              `=`   : 完全一致
+        //              `!=`  : 完全一致ではない
+        //              `~`   : 含む
+        //              `!~`  : 含まない
 
-                    プロパティ (NUnitの場合):
-                      - FullyQualifiedName: 名前空間を含む完全なテスト名 (例: NUnitNamespace.UnitTest1.TestMethod1)
-                      - Name: テストメソッド名 (例: TestMethod1)
-                      - TestCategory: [Category("...")] 属性 (例: CategoryA)
-                      - Priority: [Priority(X)] 属性 (例: 2)
+        //            プロパティ (NUnitの場合):
+        //              - FullyQualifiedName: 名前空間を含む完全なテスト名 (例: NUnitNamespace.UnitTest1.TestMethod1)
+        //              - Name: テストメソッド名 (例: TestMethod1)
+        //              - TestCategory: [Category("...")] 属性 (例: CategoryA)
+        //              - Priority: [Priority(X)] 属性 (例: 2)
 
-                    使用例:
-                      - 特定のテストメソッドを実行: `run_test --testFilter "FullyQualifiedName=NUnitNamespace.UnitTest1.TestMethod1"`
-                      - 名前に "TestMethod" を含むテストを実行: `run_test --testFilter "Name~TestMethod"`
-                      - 特定のクラス内のすべてのテストを実行: `run_test --testFilter "FullyQualifiedName~NUnitNamespace.UnitTest1"`
-                      - 特定のテストを除外: `run_test --testFilter "FullyQualifiedName!=NUnitNamespace.UnitTest1.TestMethod1"`
-                      - 特定のカテゴリのテストを実行: `run_test --testFilter "TestCategory=CategoryA"`
-                      - 複数の条件 (OR): `run_test --testFilter "TestCategory=CategoryA|Priority=1"`
-                      - 複数の条件 (AND): `run_test --testFilter "FullyQualifiedName~UnitTest1&TestCategory=CategoryA"`
-                      - 複雑な条件: `run_test --testFilter "(FullyQualifiedName~UnitTest1&TestCategory=CategoryA)|Priority=1"`
+        //            使用例:
+        //              - 特定のテストメソッドを実行: `run_test --testFilter "FullyQualifiedName=NUnitNamespace.UnitTest1.TestMethod1"`
+        //              - 名前に "TestMethod" を含むテストを実行: `run_test --testFilter "Name~TestMethod"`
+        //              - 特定のクラス内のすべてのテストを実行: `run_test --testFilter "FullyQualifiedName~NUnitNamespace.UnitTest1"`
+        //              - 特定のテストを除外: `run_test --testFilter "FullyQualifiedName!=NUnitNamespace.UnitTest1.TestMethod1"`
+        //              - 特定のカテゴリのテストを実行: `run_test --testFilter "TestCategory=CategoryA"`
+        //              - 複数の条件 (OR): `run_test --testFilter "TestCategory=CategoryA|Priority=1"`
+        //              - 複数の条件 (AND): `run_test --testFilter "FullyQualifiedName~UnitTest1&TestCategory=CategoryA"`
+        //              - 複雑な条件: `run_test --testFilter "(FullyQualifiedName~UnitTest1&TestCategory=CategoryA)|Priority=1"`
 
-                    詳細: https://learn.microsoft.com/ja-jp/dotnet/core/testing/selective-unit-tests?pivots=nunit
-                    """;
+        //            詳細: https://learn.microsoft.com/ja-jp/dotnet/core/testing/selective-unit-tests?pivots=nunit
+        //            """;
 
-            } catch (Exception ex) {
-                return ex.ToString();
-            }
-        }
+        //    } catch (Exception ex) {
+        //        return ex.ToString();
+        //    }
+        //}
 
-        private const string TOOL_RUN_TEST = "run_test";
-        [McpServerTool(Name = TOOL_RUN_TEST), Description(
-            $"指定されたユニットテストを実行し、結果を返します。フィルターの指定方法は {TOOL_HOW_TO_RUN_TEST} を実行して確認してください。")]
-        public static async Task<string> RunTest([Description("実行するテストの名前またはフィルター式")] string testFilter) {
-            try {
-                if (string.IsNullOrEmpty(testFilter)) {
-                    return "実行するテストの名前またはフィルター式を指定してください。";
-                }
+        //private const string TOOL_RUN_TEST = "run_test";
+        //[McpServerTool(Name = TOOL_RUN_TEST), Description(
+        //    $"指定されたユニットテストを実行し、結果を返します。フィルターの指定方法は {TOOL_HOW_TO_RUN_TEST} を実行して確認してください。")]
+        //public static async Task<string> RunTest([Description("実行するテストの名前またはフィルター式")] string testFilter) {
+        //    try {
+        //        if (string.IsNullOrEmpty(testFilter)) {
+        //            return "実行するテストの名前またはフィルター式を指定してください。";
+        //        }
 
-                using var workDirectory = WorkDirectory.Prepare();
-                workDirectory.WriteToMainLog($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [NijoMcpTools.RunTest] RunTest method called with filter: {testFilter}");
+        //        using var workDirectory = WorkDirectory.Prepare();
+        //        workDirectory.WriteToMainLog($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [NijoMcpTools.RunTest] RunTest method called with filter: {testFilter}");
 
-                // cmdファイルを作成
-                var cmdFilePath = Path.Combine(workDirectory.DirectoryPath, "run_test.cmd");
-                var testOutputFile = Path.Combine(workDirectory.DirectoryPath, "test_output.txt");
-                RenderCmdFile(cmdFilePath, $$"""
-                    chcp 65001
-                    @echo off
-                    dotnet test "{{NIJO_SLN}}" --filter "{{testFilter}}" -v normal > "{{testOutputFile}}" 2>&1
-                    exit /b %errorlevel%
-                    """);
+        //        // cmdファイルを作成
+        //        var cmdFilePath = Path.Combine(workDirectory.DirectoryPath, "run_test.cmd");
+        //        var testOutputFile = Path.Combine(workDirectory.DirectoryPath, "test_output.txt");
+        //        RenderCmdFile(cmdFilePath, $$"""
+        //            chcp 65001
+        //            @echo off
+        //            dotnet test "{{NIJO_SLN}}" --filter "{{testFilter}}" -v normal > "{{testOutputFile}}" 2>&1
+        //            exit /b %errorlevel%
+        //            """);
 
-                // cmdファイルを実行
-                var exitCode = await ExecuteProcess("cmd-run-test", startInfo => {
-                    startInfo.FileName = "cmd.exe";
-                    startInfo.ArgumentList.Add("/c");
-                    startInfo.ArgumentList.Add(cmdFilePath);
-                }, workDirectory, TimeSpan.FromMinutes(10));
+        //        // cmdファイルを実行
+        //        var exitCode = await ExecuteProcess("cmd-run-test", startInfo => {
+        //            startInfo.FileName = "cmd.exe";
+        //            startInfo.ArgumentList.Add("/c");
+        //            startInfo.ArgumentList.Add(cmdFilePath);
+        //        }, workDirectory, TimeSpan.FromMinutes(10));
 
-                // テスト結果ファイルが存在するか確認
-                if (!File.Exists(testOutputFile)) {
-                    return workDirectory.WithMainLogContents("テスト結果ファイルが見つかりません。");
-                }
+        //        // テスト結果ファイルが存在するか確認
+        //        if (!File.Exists(testOutputFile)) {
+        //            return workDirectory.WithMainLogContents("テスト結果ファイルが見つかりません。");
+        //        }
 
-                // テスト結果ファイルの内容を読み取る
-                var testOutput = File.ReadAllText(testOutputFile);
+        //        // テスト結果ファイルの内容を読み取る
+        //        var testOutput = File.ReadAllText(testOutputFile);
 
-                if (exitCode != 0) {
-                    return $"ユニットテストの実行に失敗しました。\n\n{testOutput}";
-                }
+        //        if (exitCode != 0) {
+        //            return $"ユニットテストの実行に失敗しました。\n\n{testOutput}";
+        //        }
 
-                return $"ユニットテストの実行が完了しました。\n\n{testOutput}";
-            } catch (Exception ex) {
-                return ex.ToString();
-            }
-        }
-        #endregion NUnit
+        //        return $"ユニットテストの実行が完了しました。\n\n{testOutput}";
+        //    } catch (Exception ex) {
+        //        return ex.ToString();
+        //    }
+        //}
+        //#endregion NUnit
 
 
         #region タスク
