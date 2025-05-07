@@ -236,7 +236,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
 
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
-    getScrollElement: () => tableBodyRef.current,
+    getScrollElement: () => tableContainerRef.current,
     estimateSize: () => 35,
     overscan: 5,
   });
