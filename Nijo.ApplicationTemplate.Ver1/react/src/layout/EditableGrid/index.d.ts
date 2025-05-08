@@ -21,9 +21,9 @@ export type EditableGridProps<TRow extends ReactHookForm.FieldValues> = {
   className?: string
 
   /** TanStack Tableの行選択状態 */
-  rowSelection: Record<string, boolean>
+  rowSelection?: Record<string, boolean>
   /** 行選択状態が変更されたときに呼び出されるコールバック */
-  onRowSelectionChange: (updater: React.SetStateAction<Record<string, boolean>>) => void
+  onRowSelectionChange?: (updater: React.SetStateAction<Record<string, boolean>>) => void
 }
 
 /** EditableGridのref */

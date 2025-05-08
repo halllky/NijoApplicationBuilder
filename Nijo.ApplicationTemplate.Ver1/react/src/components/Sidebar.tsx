@@ -38,8 +38,8 @@ const Sidebar: React.FC = () => {
       <nav className="flex-1 p-4">
         <ul className="space-y-2">
 
-          {sideMenuItems.map((route) => (
-            <li key={route.path}>
+          {sideMenuItems.map((route, index) => (
+            <li key={index}>
               <ReactRouter.NavLink
                 to={route.path ?? ''}
                 className={({ isActive }) =>

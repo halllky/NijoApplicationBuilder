@@ -19,7 +19,7 @@ export const HyperLink = (props: HyperLinkProps) => {
       {props.children}
     </ReactRouter.NavLink>
   ) : (
-    <a href={props.href} className={`text-sky-600 underline ${props.className ?? ''}`}>
+    <a href={props.href} target="_blank" className={`text-sky-600 underline ${props.className ?? ''}`}>
       {props.children}
     </a>
   )

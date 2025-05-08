@@ -1,6 +1,5 @@
-import * as ReactHookForm from "react-hook-form"
 import * as React from "react"
-import { useContext } from "react"
+import * as ReactHookForm from "react-hook-form"
 
 type ValidationMessage = {
   message: string;
@@ -29,12 +28,12 @@ export const FieldErrorView = (props: {
   className?: string
 }) => {
   // サーバー側エラーを取得
-  const { errors } = ReactHookForm.useFormState();
+  const formContext = ReactHookForm.useFormContext();
   // クライアント側エラーを取得
-  const clientSideValidator = useContext(ClientSideValidatorContext);
+  const clientSideValidator = React.useContext(ClientSideValidatorContext);
 
   // 対象フィールドのサーバー側エラー取得
-  const fieldError = errors[props.name];
+  const fieldError = formContext?.formState?.errors[props.name];
 
   // クライアント側エラーを取得
   const clientSideErrors = clientSideValidator.getValidationMessages(props.name);

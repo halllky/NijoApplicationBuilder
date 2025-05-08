@@ -463,4 +463,4 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
       </table>
     </div>
   );
-}) as (<TRow extends ReactHookForm.FieldValues, >(props: EditableGridProps<TRow> & { ref: React.ForwardedRef<EditableGridRef<TRow>> }) => React.ReactNode);
+}) as (<TRow extends ReactHookForm.FieldValues, >(props: EditableGridProps<TRow> & { ref?: React.ForwardedRef<EditableGridRef<TRow>> }) => React.ReactNode);

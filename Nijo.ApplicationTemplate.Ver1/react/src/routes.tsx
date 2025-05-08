@@ -12,7 +12,6 @@ import { DateInputExample } from './examples/DateInputExample'
 import { EditableGridExample } from './examples/EditableGridExample'
 import { VFormExample } from './examples/VFormExample'
 import { PageFrameExample } from './examples/PageFrameExample'
-import { MainLayoutExample } from './examples/MainLayoutExample'
 
 /** RouteObject に sideMenuLabel を追加した型 */
 export type RouteObjectWithSideMenuSetting = ReactRouter.RouteObject & {
@@ -49,7 +48,6 @@ export const getRouter = (): RouteObjectWithSideMenuSetting[] => {
         { path: "editable-grid", element: <EditableGridExample /> },
         { path: "vform", element: <VFormExample /> },
         { path: "page-frame", element: <PageFrameExample /> },
-        { path: "main-layout", element: <MainLayoutExample /> },
       ]
     })
   }

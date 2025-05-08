@@ -3,6 +3,7 @@ import React from "react";
 type PageFrameProps = {
   headerContent?: React.ReactNode
   children?: React.ReactNode
+  className?: string
 };
 
 /** 画面の枠 */
@@ -16,7 +17,7 @@ export const PageFrame = (props: PageFrameProps) => {
       </div>
 
       {/* ページ本体 */}
-      <div className="flex-1 overflow-auto">
+      <div className={`flex-1 overflow-auto ${props.className ?? ''}`}>
         {props.children}
       </div>
 
