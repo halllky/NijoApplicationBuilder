@@ -109,7 +109,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     handleMouseMove
   } = useDragSelection(setActiveCell, setSelectedRange)
 
-  // キーボード操作の管理をフックに移動
+  // キーボード操作
   useGridKeyboard({
     activeCell,
     selectedRange,
@@ -315,12 +315,10 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                   className="border border-gray-300 px-1 relative text-left select-none"
                   style={{ width: header.getSize() }}
                 >
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
+                  {!header.isPlaceholder && flexRender(
+                    header.column.columnDef.header,
+                    header.getContext()
+                  )}
                   {header.column.getCanResize() && (
                     <div
                       onMouseDown={header.getResizeHandler()}
@@ -335,7 +333,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
           ))}
         </thead>
         <tbody ref={tableBodyRef} className="grid-body">
-          {/* 上部パディング行 */}
+          {/* 仮想化のための上部パディング行 */}
           {paddingTop > 0 && (
             <tr>
               <td
@@ -345,7 +343,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
             </tr>
           )}
 
-          {/* 仮想化された行 */}
+          {/* 画面のスクロール範囲内に表示されている行のみレンダリングされる */}
           {virtualItems.map(virtualRow => {
             const row = tableRows[virtualRow.index];
             if (!row) return null;
@@ -356,6 +354,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                 className="bg-gray-100"
                 style={{ height: `${virtualRow.size}px` }}
               >
+                {/* 画面のスクロール範囲内に表示されている列のみレンダリングされる */}
                 {row.getVisibleCells().map(cell => {
                   const rowIndex = row.index;
                   const colIndex = cell.column.id === 'rowHeader' ? -1 : columnDefs.findIndex((col: EditableGridColumnDef<TRow>) =>
@@ -367,6 +366,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                     rowIndex >= selectedRange.startRow && rowIndex <= selectedRange.endRow &&
                     colIndex >= selectedRange.startCol && colIndex <= selectedRange.endCol);
 
+                  // 行選択チェックボックス列
                   if (cell.column.id === 'rowHeader') {
                     return (
                       <td
@@ -384,6 +384,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                     );
                   }
 
+                  // データ列
                   return (
                     <td
                       key={cell.id}
@@ -411,7 +412,8 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                       }}
                       tabIndex={0}
                     >
-                      {isEditing && isActive ? (
+                      {/* セル編集中の場合はinput要素をレンダリング */}
+                      {isEditing && isActive && (
                         <input
                           type="text"
                           value={editValue}
@@ -427,7 +429,10 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                           autoFocus
                           className="w-full h-full p-1 border-none outline-none"
                         />
-                      ) : (
+                      )}
+
+                      {/* セル編集中でない場合はdiv要素をレンダリング */}
+                      {(!isEditing || !isActive) && (
                         <div className="select-none overflow-hidden text-ellipsis whitespace-nowrap">
                           {cell.getValue()?.toString() || ''}
                         </div>
@@ -439,7 +444,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
             );
           })}
 
-          {/* 下部パディング行 */}
+          {/* 仮想化のための下部パディング行 */}
           {paddingBottom > 0 && (
             <tr>
               <td

@@ -18,13 +18,13 @@ export const getRouter = (): RouteObjectWithSideMenuSetting[] => {
   // トップページ
   pages.push({ index: true, element: <Home />, sideMenuLabel: "ホーム" })
 
-  // QueryModelの各種画面
-  pages.push(...getQueryModelRoutes())
-
   // サンプル画面。開発環境でのみ表示する。
   if (import.meta.env.DEV) {
     pages.push(getExamplePagesRoutes())
   }
+
+  // QueryModelの各種画面
+  pages.push(...getQueryModelRoutes())
 
   return pages
 }
