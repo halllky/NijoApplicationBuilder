@@ -38,7 +38,6 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   const {
     rows,
     getColumnDefs,
-    onChangeCell,
     showCheckBox,
     isReadOnly,
     className
@@ -49,8 +48,10 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   const tableBodyRef = useRef<HTMLTableSectionElement>(null);
 
   // 列定義の取得
-  const cellType = useCellTypes<TRow>();
-  const columnDefs = getColumnDefs(cellType);
+  const cellType = useCellTypes<TRow>()
+  const columnDefs = React.useMemo(() => {
+    return getColumnDefs(cellType)
+  }, [getColumnDefs, cellType])
 
   // 列のデフォルトサイズ (8rem をピクセル換算。環境依存可能性あり)
   const defaultColumnWidth = 128;
@@ -77,8 +78,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     return false;
   }, [isReadOnly, rows]);
 
-  // 選択状態の管理をフックに移動
-  const selection = useSelection(rows.length);
+  // 選択状態
   const {
     activeCell,
     selectedRange,
@@ -90,10 +90,9 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     handleToggleAllRows,
     handleToggleRow,
     selectRows
-  } = selection;
+  } = useSelection(rows.length)
 
-  // 編集機能の管理をフックに移動
-  const editing = useEditing<TRow>(rows, columnDefs, onChangeCell, isReadOnly);
+  // 編集機能
   const {
     isEditing,
     editValue,
@@ -101,15 +100,14 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     confirmEdit,
     cancelEdit,
     handleEditValueChange
-  } = editing;
+  } = useEditing<TRow>(props, columnDefs, isReadOnly)
 
-  // ドラッグ選択機能の管理をフックに移動
-  const dragSelection = useDragSelection(setActiveCell, setSelectedRange);
+  // ドラッグ選択機能
   const {
     isDragging,
     handleMouseDown,
     handleMouseMove
-  } = dragSelection;
+  } = useDragSelection(setActiveCell, setSelectedRange)
 
   // キーボード操作の管理をフックに移動
   useGridKeyboard({

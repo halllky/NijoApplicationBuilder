@@ -32,9 +32,9 @@ export const 商品マスタ詳細編集画面 = () => {
   const [在庫情報RowSelection, set在庫情報RowSelection] = React.useState<Record<string, boolean>>({});
 
   // --- Field Arrays --- (EditableGrid用)
-  const { fields: 付属品Fields, append: append付属品, remove: remove付属品 } =
+  const { fields: 付属品Fields, update: update付属品, append: append付属品, remove: remove付属品 } =
     ReactHookForm.useFieldArray({ control, name: "商品詳細.付属品" });
-  const { fields: 在庫情報Fields, append: append在庫情報, remove: remove在庫情報 } =
+  const { fields: 在庫情報Fields, update: update在庫情報, append: append在庫情報, remove: remove在庫情報 } =
     ReactHookForm.useFieldArray({ control, name: "在庫情報" });
 
   // 在庫情報内の在庫状況履歴のFieldArray (各在庫情報行ごとに必要になるが、一旦保留)
@@ -229,11 +229,7 @@ export const 商品マスタ詳細編集画面 = () => {
                   getColumnDefs={get付属品ColumnDefs}
                   rowSelection={付属品RowSelection}
                   onRowSelectionChange={set付属品RowSelection}
-                  onChangeCell={(rowIndex, fieldName, value) => {
-                    // ネストされたパスに対応するためにsetValueを使用
-                    // @ts-ignore 型エラーを抑制
-                    setValue(`商品詳細.付属品.${rowIndex}.${fieldName}`, value);
-                  }}
+                  onCellEdited={e => update付属品(e.rowIndex, e.newRow)}
                 />
               </Layout.VForm3.FullWidthItem>
             </div>
@@ -256,11 +252,7 @@ export const 商品マスタ詳細編集画面 = () => {
                 getColumnDefs={get在庫情報ColumnDefs}
                 rowSelection={在庫情報RowSelection}
                 onRowSelectionChange={set在庫情報RowSelection}
-                onChangeCell={(rowIndex, fieldName, value) => {
-                  // ネストされたパスに対応するためにsetValueを使用
-                  // @ts-ignore 型エラーを抑制
-                  setValue(`在庫情報.${rowIndex}.${fieldName}`, value);
-                }}
+                onCellEdited={e => update在庫情報(e.rowIndex, e.newRow)}
               />
             </Layout.VForm3.FullWidthItem>
 

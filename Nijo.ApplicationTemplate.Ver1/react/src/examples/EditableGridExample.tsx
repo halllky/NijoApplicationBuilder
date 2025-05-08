@@ -1,6 +1,6 @@
 import * as Layout from '../layout'
 import { EditableGrid } from '../layout/EditableGrid'
-import type { EditableGridRef, GetColumnDefsFunction } from '../layout/EditableGrid/index.d'
+import type { CellValueEditedEvent, EditableGridRef, GetColumnDefsFunction } from '../layout/EditableGrid/index.d'
 import { type ColumnDefFactories } from '../layout/EditableGrid/useCellTypes'
 import { useRef, useState, useCallback } from 'react'
 
@@ -26,27 +26,28 @@ export function EditableGridExample() {
     cellType.number('price', '価格', { defaultWidth: '100' }),
   ], [])
 
-  const handleChangeCell = useCallback(
-    (rowIndex: number, fieldPath: string, newValue: any) => {
-      setRowData((prev) =>
-        prev.map((row, i) => {
-          if (i !== rowIndex) return row
-          return { ...row, [fieldPath]: newValue }
-        })
-      )
-    },
-    []
-  )
+  const handleChangeCell: CellValueEditedEvent<MyRowData> = useCallback(e => {
+    setRowData(prev => {
+      const clone = [...prev]
+      clone[e.rowIndex] = e.newRow
+      return clone
+    })
+  }, [])
 
   return (
-    <Layout.PageFrame>
-      <h1>編集可能グリッド (EditableGrid)</h1>
+    <Layout.PageFrame
+      headerContent={(
+        <Layout.PageFrameTitle>
+          編集可能グリッド (EditableGrid)
+        </Layout.PageFrameTitle>
+      )}
+    >
       <div style={{ height: 400 }}>
         <EditableGrid<MyRowData>
           ref={gridRef}
           rows={rowData}
           getColumnDefs={getColumnDefs}
-          onChangeCell={handleChangeCell}
+          onCellEdited={handleChangeCell}
           showCheckBox
           rowSelection={rowSelection}
           onRowSelectionChange={setRowSelection}

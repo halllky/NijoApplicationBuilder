@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { getValueByPath, setValueByPath } from "../EditableGrid.utils";
 import type * as ReactHookForm from 'react-hook-form';
-import { EditableGridColumnDef } from "../index.d";
+import { EditableGridColumnDef, CellValueEditedEvent, EditableGridProps } from "../index.d";
 
 export interface UseEditingReturn<TRow extends ReactHookForm.FieldValues> {
   isEditing: boolean;
@@ -13,11 +13,17 @@ export interface UseEditingReturn<TRow extends ReactHookForm.FieldValues> {
 }
 
 export function useEditing<TRow extends ReactHookForm.FieldValues>(
-  rows: TRow[],
+  props: EditableGridProps<TRow>,
   columnDefs: EditableGridColumnDef<TRow>[],
-  onChangeCell?: (rowIndex: number, fieldPath: string, newValue: any) => void,
   isGridReadOnly?: boolean | ((row: TRow, rowIndex: number) => boolean),
 ): UseEditingReturn<TRow> {
+
+  const {
+    rows,
+    onCellEdited,
+    cloneRow,
+  } = props;
+
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState<string>("");
   const [editingCell, setEditingCell] = useState<{ rowIndex: number; colIndex: number } | null>(null);
@@ -56,7 +62,7 @@ export function useEditing<TRow extends ReactHookForm.FieldValues>(
 
     const { rowIndex, colIndex } = editingCell;
 
-    if (!onChangeCell || getIsReadOnly(rowIndex)) {
+    if (!onCellEdited || getIsReadOnly(rowIndex)) {
       setIsEditing(false);
       setEditingCell(null);
       return;
@@ -98,12 +104,15 @@ export function useEditing<TRow extends ReactHookForm.FieldValues>(
       newValue = originalValue; // エラー時は元の値に戻す
     }
 
-    // 変更があったセルの情報(rowIndex, fieldPath, newValue)を渡す
-    onChangeCell(rowIndex, colDef.fieldPath, newValue);
+    // 変更があったセルの情報(rowIndex, oldRow, newRow)を渡す。
+    // 行のオブジェクトのディープコピーをとり、該当の
+    const newRow = cloneRow ? cloneRow(targetRow) : structuredClone(targetRow);
+    setValueByPath(newRow, fieldPath, newValue);
+    onCellEdited({ rowIndex, oldRow: targetRow, newRow });
 
     setIsEditing(false);
     setEditingCell(null);
-  }, [onChangeCell, getIsReadOnly, columnDefs, rows, editValue, editingCell]);
+  }, [onCellEdited, getIsReadOnly, columnDefs, rows, editValue, editingCell, cloneRow]);
 
   // 編集値の変更ハンドラ
   const handleEditValueChange = useCallback((value: string) => {

@@ -36,9 +36,9 @@ export const 売上分析詳細編集画面 = () => {
   // 商品別売上GridのRowSelectionはカテゴリ別Grid内で管理する必要がある
 
   // --- Field Arrays ---
-  const { fields: カテゴリ別売上Fields, append: appendカテゴリ別売上, remove: removeカテゴリ別売上 } =
+  const { fields: カテゴリ別売上Fields, update: updateカテゴリ別売上, append: appendカテゴリ別売上, remove: removeカテゴリ別売上 } =
     ReactHookForm.useFieldArray({ control, name: "カテゴリ別売上" });
-  const { fields: 時間帯別売上Fields, append: append時間帯別売上, remove: remove時間帯別売上 } =
+  const { fields: 時間帯別売上Fields, update: update時間帯別売上, append: append時間帯別売上, remove: remove時間帯別売上 } =
     ReactHookForm.useFieldArray({ control, name: "時間帯別売上" });
   // 商品別売上FieldArrayはカテゴリ別Grid内で管理
 
@@ -211,10 +211,7 @@ export const 売上分析詳細編集画面 = () => {
                 getColumnDefs={getカテゴリ別売上ColumnDefs}
                 rowSelection={カテゴリ別売上RowSelection} // サブGridを含む場合は必須
                 onRowSelectionChange={setカテゴリ別売上RowSelection} // サブGridを含む場合は必須
-                onChangeCell={(rowIndex, fieldName, value) => {
-                  // @ts-ignore setValueの型エラー抑制
-                  setValue(`カテゴリ別売上.${rowIndex}.${fieldName}`, value);
-                }}
+                onCellEdited={e => updateカテゴリ別売上(e.rowIndex, e.newRow)}
               />
             </Layout.VForm3.FullWidthItem>
 
@@ -237,10 +234,7 @@ export const 売上分析詳細編集画面 = () => {
                 getColumnDefs={get時間帯別売上ColumnDefs}
                 rowSelection={時間帯別売上RowSelection}
                 onRowSelectionChange={set時間帯別売上RowSelection}
-                onChangeCell={(rowIndex, fieldName, value) => {
-                  // @ts-ignore setValueの型エラー抑制
-                  setValue(`時間帯別売上.${rowIndex}.${fieldName}`, value);
-                }}
+                onCellEdited={e => update時間帯別売上(e.rowIndex, e.newRow)}
               />
             </Layout.VForm3.FullWidthItem>
 
@@ -269,7 +263,7 @@ const 商品別売上Grid: React.FC<商品別売上GridProps> = ({
   // setParentRowSelectionState
 }) => {
   const namePrefix = `カテゴリ別売上.${parentRowIndex}.商品別売上` as const;
-  const { fields, append, remove } = ReactHookForm.useFieldArray({
+  const { fields, update, append, remove } = ReactHookForm.useFieldArray({
     control,
     name: namePrefix
   });
@@ -304,10 +298,7 @@ const 商品別売上Grid: React.FC<商品別売上GridProps> = ({
         getColumnDefs={getColumnDefs}
         rowSelection={商品別売上RowSelection} // ローカル状態を渡す
         onRowSelectionChange={set商品別売上RowSelection} // ローカル状態セッターを渡す
-        onChangeCell={(rowIndex, fieldName, value) => {
-          // @ts-ignore setValueの型エラー抑制
-          setValue(`${namePrefix}.${rowIndex}.${fieldName}`, value);
-        }}
+        onCellEdited={e => update(e.rowIndex, e.newRow)}
       />
     </div>
   );

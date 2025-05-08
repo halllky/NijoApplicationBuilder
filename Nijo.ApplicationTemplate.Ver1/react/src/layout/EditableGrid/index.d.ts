@@ -11,8 +11,14 @@ export type EditableGridProps<TRow extends ReactHookForm.FieldValues> = {
   rows: TRow[]
   /** 列定義を取得する関数。この関数の参照が変わる度にグリッドが再レンダリングされるため、原則として `useCallback` を使用すること。 */
   getColumnDefs: GetColumnDefsFunction<TRow>
+
   /** セルデータが変更されたときのコールバック */
-  onChangeCell?: (rowIndex: number, fieldPath: string, newValue: any) => void
+  onCellEdited?: CellValueEditedEvent<TRow>
+  /** クリップボードからの貼り付けが行われたときのコールバック。セルの範囲選択のうえまとめてペーストされることがあるので、複数行分が一気に発火される。 */
+  onPasted?: CellValuePastedEvent<TRow>
+  /** 編集時、ペースト時に利用される、行オブジェクトのクローンのロジック。未指定の場合は window.structuredClone を使用する。 */
+  cloneRow?: (item: TRow) => TRow
+
   /** 行ヘッダのチェックボックスを表示するかどうか。 */
   showCheckBox?: boolean | ((row: TRow, rowIndex: number) => boolean)
   /** グリッドを読み取り専用にするかどうか。 */
@@ -25,6 +31,22 @@ export type EditableGridProps<TRow extends ReactHookForm.FieldValues> = {
   /** 行選択状態が変更されたときに呼び出されるコールバック */
   onRowSelectionChange?: (updater: React.SetStateAction<Record<string, boolean>>) => void
 }
+
+/** セルデータが変更されたときのコールバック */
+export type CellValueEditedEvent<TRow extends ReactHookForm.FieldValues> = (e: {
+  rowIndex: number
+  oldRow: TRow
+  newRow: TRow
+}) => void
+
+/** クリップボードからの貼り付けが行われたときのコールバック。セルの範囲選択のうえまとめてペーストされることがあるので、複数行分が一気に発火される。 */
+export type CellValuePastedEvent<TRow extends ReactHookForm.FieldValues> = (e: {
+  pastedRows: {
+    rowIndex: number
+    oldRow: TRow
+    newRow: TRow
+  }[]
+}) => void
 
 /** EditableGridのref */
 export type EditableGridRef<TRow extends ReactHookForm.FieldValues> = {
