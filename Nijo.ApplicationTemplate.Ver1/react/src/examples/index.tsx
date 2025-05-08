@@ -24,40 +24,43 @@ export default function ComponentExampleIndex() {
       <p className="text-sm">
         各コンポーネントの詳細な仕様や実装例はそれぞれのリンク先画面を参照してください。
       </p>
+      <div className="flex flex-col gap-4 px-12 py-2">
+        <h2 className="text-sm text-gray-500">入力フォーム</h2>
+        <LinkAndBasicExample title="文字列入力" to="word">
+          <Input.Word name="word" control={control} />
+        </LinkAndBasicExample>
+        <LinkAndBasicExample title="数値入力" to="number-input">
+          <Input.NumberInput name="number" control={control} />
+        </LinkAndBasicExample>
+        <LinkAndBasicExample title="日付入力" to="date-input">
+          <Input.DateInput name="date" control={control} />
+        </LinkAndBasicExample>
+        <LinkAndBasicExample title="ボタン" to="icon-button">
+          <div className="flex flex-wrap gap-2">
+            <Input.IconButton>ボタン例</Input.IconButton>
+            <Input.IconButton fill>ボタン例</Input.IconButton>
+            <Input.IconButton outline>ボタン例</Input.IconButton>
+          </div>
+        </LinkAndBasicExample>
+        <LinkAndBasicExample title="ハイパーリンク" to="hyperlink">
+          <Input.HyperLink href={hyperLink ?? ''}>リンク例</Input.HyperLink>
+        </LinkAndBasicExample>
 
-      <hr className="border-gray-300" />
+        <hr className="border-gray-300" />
 
-      <h2 className="text-sm text-gray-500">入力フォーム</h2>
-      <LinkAndBasicExample title="文字列入力" to="word">
-        <Input.Word name="word" control={control} />
-      </LinkAndBasicExample>
-      <LinkAndBasicExample title="数値入力" to="number-input">
-        <Input.NumberInput name="number" control={control} />
-      </LinkAndBasicExample>
-      <LinkAndBasicExample title="日付入力" to="date-input">
-        <Input.DateInput name="date" control={control} />
-      </LinkAndBasicExample>
-      <LinkAndBasicExample title="ボタン" to="icon-button">
-        <Input.IconButton>ボタン例</Input.IconButton>
-      </LinkAndBasicExample>
-      <LinkAndBasicExample title="ハイパーリンク" to="hyperlink">
-        <Input.HyperLink href={hyperLink ?? ''}>リンク例</Input.HyperLink>
-      </LinkAndBasicExample>
-
-      <hr className="border-gray-300" />
-
-      <h2 className="text-sm text-gray-500">レイアウト</h2>
-      <LinkAndBasicExample title="ページフレーム" to="page-frame">
-        <span className="text-sm text-gray-500">
-          ※サンプル割愛※
-        </span>
-      </LinkAndBasicExample>
-      <LinkAndBasicExample title="グリッドレイアウト" to="editable-grid">
-        <EditableGridExample rhfMethods={rhfMethods} />
-      </LinkAndBasicExample>
-      <LinkAndBasicExample title="フォームレイアウト" to="vform">
-        <VFormExample rhfMethods={rhfMethods} />
-      </LinkAndBasicExample>
+        <h2 className="text-sm text-gray-500">レイアウト</h2>
+        <LinkAndBasicExample title="ページフレーム" to="page-frame">
+          <span className="text-sm text-gray-500">
+            ※サンプル割愛※
+          </span>
+        </LinkAndBasicExample>
+        <LinkAndBasicExample title="グリッドレイアウト" to="editable-grid">
+          <EditableGridExample rhfMethods={rhfMethods} />
+        </LinkAndBasicExample>
+        <LinkAndBasicExample title="フォームレイアウト" to="vform">
+          <VFormExample rhfMethods={rhfMethods} />
+        </LinkAndBasicExample>
+      </div>
     </Layout.PageFrame>
   )
 }
@@ -68,7 +71,7 @@ const LinkAndBasicExample = (props: {
   children?: React.ReactNode
 }) => {
   return (
-    <div className="flex items-start gap-2 ml-4">
+    <div className="flex items-start gap-2 ml-8">
       <Input.HyperLink to={props.to} className="basis-40">
         {props.title}
       </Input.HyperLink>

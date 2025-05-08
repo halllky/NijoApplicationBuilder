@@ -1,20 +1,36 @@
 import React from "react"
 
+/** ボタン。アイコンをつけることができます。 */
 export const IconButton = (args: {
+  /** デフォルトでは type="button" ですが、この属性を true にすると type="submit" になります。 */
   submit?: boolean
+  /** クリック時処理 */
   onClick?: React.MouseEventHandler
+  /** 塗りつぶし */
   fill?: boolean
+  /** 枠線 */
   outline?: boolean
+  /** 下線 */
   underline?: boolean
+  /** ちょっと小さめになります。 */
   mini?: boolean
+  /** 読み込み中であることを示すインジケーターが表示されます。 */
   loading?: boolean
+  /** テキストを非表示にし、アイコンだけを表示します。 */
   hideText?: boolean
+  /** アイコン。 */
   icon?: React.ElementType
+  /** アイコンを右側に配置します。 */
   iconRight?: boolean
+  /** テキスト */
   children?: React.ReactNode
+  /** インライン表示 */
   inline?: boolean
+  /** タブインデックス */
   tabIndex?: number
+  /** 細かいレイアウトの微調整に使用 */
   className?: string
+  /** このボタンをクリックしたときに送信するformのid */
   form?: string
 }) => {
 
