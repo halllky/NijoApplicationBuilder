@@ -3,6 +3,7 @@ import type * as ReactHookForm from 'react-hook-form'
 import { GetColumnDefsFunction } from "../cellType"
 import type { ColumnDef as TanStackColumnDef } from '@tanstack/react-table'
 import type { CellTypeDefs } from '../cellType/cellTypeDefinition'
+import type { ColumnDefFactories } from './useCellTypes'
 
 /** EditableGridのプロパティ */
 export type EditableGridProps<TRow extends ReactHookForm.FieldValues> = {
