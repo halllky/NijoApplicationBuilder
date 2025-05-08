@@ -1,7 +1,34 @@
+import React from 'react'
+import * as ReactRouter from 'react-router-dom'
 import * as ReactHookForm from 'react-hook-form'
 import * as Input from '../input'
 import * as Layout from '../layout'
-import React from 'react'
+import { RouteObjectWithSideMenuSetting } from '../routes'
+import { WordExample } from './WordExample'
+import { NumberInputExample } from './NumberInputExample'
+import { HyperLinkExample } from './HyperLinkExample'
+import { IconButtonExample } from './IconButtonExample'
+import { DateInputExample } from './DateInputExample'
+import { EditableGridExample } from './EditableGridExample'
+import { VFormExample } from './VFormExample'
+import { PageFrameExample } from './PageFrameExample'
+
+export const getExamplePagesRoutes = (): RouteObjectWithSideMenuSetting => ({
+  path: "/examples/",
+  element: <ReactRouter.Outlet />,
+  sideMenuLabel: "【開発用】UI実装例",
+  children: [
+    { index: true, element: <ComponentExampleIndex /> },
+    { path: "word", element: <WordExample /> },
+    { path: "number-input", element: <NumberInputExample /> },
+    { path: "hyperlink", element: <HyperLinkExample /> },
+    { path: "icon-button", element: <IconButtonExample /> },
+    { path: "date-input", element: <DateInputExample /> },
+    { path: "editable-grid", element: <EditableGridExample /> },
+    { path: "vform", element: <VFormExample /> },
+    { path: "page-frame", element: <PageFrameExample /> },
+  ]
+})
 
 /** UIコンポーネントへのリンク一覧を表示するコンポーネント */
 export default function ComponentExampleIndex() {
@@ -55,10 +82,10 @@ export default function ComponentExampleIndex() {
           </span>
         </LinkAndBasicExample>
         <LinkAndBasicExample title="グリッドレイアウト" to="editable-grid">
-          <EditableGridExample rhfMethods={rhfMethods} />
+          <ComponentExampleIndex_EditableGrid rhfMethods={rhfMethods} />
         </LinkAndBasicExample>
         <LinkAndBasicExample title="フォームレイアウト" to="vform">
-          <VFormExample rhfMethods={rhfMethods} />
+          <ComponentExampleIndex_VForm rhfMethods={rhfMethods} />
         </LinkAndBasicExample>
       </div>
     </Layout.PageFrame>
@@ -117,7 +144,7 @@ const getDefaultValues = (): ExampleIndexFormType => ({
 
 // --------------------------
 
-const EditableGridExample = ({ rhfMethods }: {
+const ComponentExampleIndex_EditableGrid = ({ rhfMethods }: {
   rhfMethods: ReactHookForm.UseFormReturn<ExampleIndexFormType>
 }) => {
 
@@ -141,7 +168,7 @@ const EditableGridExample = ({ rhfMethods }: {
 
 // --------------------------
 
-const VFormExample = ({ rhfMethods: { control } }: {
+const ComponentExampleIndex_VForm = ({ rhfMethods: { control } }: {
   rhfMethods: ReactHookForm.UseFormReturn<ExampleIndexFormType>
 }) => {
 

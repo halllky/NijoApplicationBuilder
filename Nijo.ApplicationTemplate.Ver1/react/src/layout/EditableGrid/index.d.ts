@@ -62,6 +62,8 @@ export type GetColumnDefsFunction<TRow extends ReactHookForm.FieldValues> = (cel
 
 /** EditableGridの列定義 */
 export type EditableGridColumnDef<TRow extends ReactHookForm.FieldValues> = EditableGridColumnDefOptions<TRow> & {
+  /** 列ヘッダに表示する文字列 */
+  header: string
   /** react-hook-formのフィールドパス。フォームのルートからではなく行データのルートからのパスを指定する。 */
   fieldPath?: ReactHookForm.Path<TRow>
   /** セルのデータ型 */
@@ -70,10 +72,12 @@ export type EditableGridColumnDef<TRow extends ReactHookForm.FieldValues> = Edit
 
 /** EditableGridの列定義のうち、セル型によらず共通のプロパティ。 */
 export type EditableGridColumnDefOptions<TRow extends ReactHookForm.FieldValues> = {
-  /** 列のヘッダーテキスト */
-  header: string
+  /** 列ヘッダに必須を表すマークが表示されるかどうか。これをtrueにしても内容のチェックが行われるわけではない。 */
+  required?: boolean
   /** 画面初期表示時の列の幅 */
   defaultWidth?: number | string
   /** 列が読み取り専用かどうか */
   isReadOnly?: boolean | ((row: TRow, rowIndex: number) => boolean)
+  /** @deprecated このオプションは廃止されました。 `isReadOnly` を使用してください。 */
+  editable?: boolean
 }
