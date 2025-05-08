@@ -1,4 +1,5 @@
 import React from "react"
+import "./IconButton.css"
 
 /** ボタン。アイコンをつけることができます。 */
 export const IconButton = (args: {
