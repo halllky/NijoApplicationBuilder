@@ -7,7 +7,6 @@ export const useCellTypes = <TRow extends ReactHookForm.FieldValues>(): ColumnDe
     return {
       header,
       fieldPath: fieldName,
-      cellType: "text",
       ...options,
     };
   };
@@ -16,7 +15,6 @@ export const useCellTypes = <TRow extends ReactHookForm.FieldValues>(): ColumnDe
     return {
       header,
       fieldPath: fieldName,
-      cellType: "number",
       ...options,
     };
   };
@@ -25,7 +23,6 @@ export const useCellTypes = <TRow extends ReactHookForm.FieldValues>(): ColumnDe
     return {
       header,
       fieldPath: fieldName,
-      cellType: "date",
       ...options,
     };
   };
@@ -34,7 +31,6 @@ export const useCellTypes = <TRow extends ReactHookForm.FieldValues>(): ColumnDe
     return {
       header,
       fieldPath: fieldName,
-      cellType: "boolean",
       ...options,
     };
   };

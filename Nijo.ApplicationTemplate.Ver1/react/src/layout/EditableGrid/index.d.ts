@@ -1,8 +1,5 @@
 import * as React from "react"
 import type * as ReactHookForm from 'react-hook-form'
-import { GetColumnDefsFunction } from "../cellType"
-import type { ColumnDef as TanStackColumnDef } from '@tanstack/react-table'
-import type { CellTypeDefs } from '../cellType/cellTypeDefinition'
 import type { ColumnDefFactories } from './useCellTypes'
 
 /** EditableGridのプロパティ */
@@ -84,7 +81,7 @@ export interface CellSelectionRange {
  *
  * @param cellType セル型定義ヘルパー関数の一覧。
  */
-export type GetColumnDefsFunction<TRow extends ReactHookForm.FieldValues> = (cellType: ColumnDefFactories<TRow>) => CellTypeColumnDef<TRow>[]
+export type GetColumnDefsFunction<TRow extends ReactHookForm.FieldValues> = (cellType: ColumnDefFactories<TRow>) => EditableGridColumnDef<TRow>[]
 
 
 /** EditableGridの列定義 */
@@ -93,8 +90,6 @@ export type EditableGridColumnDef<TRow extends ReactHookForm.FieldValues> = Edit
   header: string
   /** react-hook-formのフィールドパス。フォームのルートからではなく行データのルートからのパスを指定する。 */
   fieldPath?: ReactHookForm.Path<TRow>
-  /** セルのデータ型 */
-  cellType?: keyof CellTypeDefs<TRow>['components']
 }
 
 /** EditableGridの列定義のうち、セル型によらず共通のプロパティ。 */
