@@ -148,7 +148,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
 
         return (
           <div
-            className="flex justify-center items-center border-b border-r border-gray-200"
+            className="flex justify-center items-center border-b border-r border-gray-300"
             onClick={handleClick}
             style={{ height: ESTIMATED_ROW_HEIGHT }}
           >
@@ -181,7 +181,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
           header: ({ header }) => {
             return (
               <div
-                className="pl-1 border-b border-r border-gray-200 select-none truncate"
+                className="pl-1 border-b border-r border-gray-300 select-none truncate"
                 style={{ width: header.getSize() }}
               >
                 {colDef.header}
@@ -304,7 +304,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                 const isFixedColumn = !!headerMeta?.isFixed;
                 const isRowHeader = !!headerMeta?.isRowHeader;
 
-                let className = 'bg-gray-100 relative text-left select-none'
+                let className = 'bg-gray-200 relative text-left select-none'
                 if (isRowHeader) className += ' sticky left-0 z-20'
                 else if (isFixedColumn) className += ' sticky z-10'
 
@@ -354,11 +354,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
             if (!row) return null;
 
             return (
-              <tr
-                key={row.id}
-                className="bg-gray-100"
-                style={{ height: `${virtualRow.size}px` }}
-              >
+              <tr key={row.id} style={{ height: `${virtualRow.size}px` }}>
                 {row.getVisibleCells().map(cell => {
                   const rowIndex = row.index;
                   // 行ヘッダー列を除いた可視列の配列を取得し、その中でのインデックスを colIndex とする
@@ -378,11 +374,11 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                     return (
                       <td
                         key={cell.id}
-                        className="bg-gray-100 align-middle text-center sticky left-0"
+                        className="bg-gray-200 align-middle text-center sticky left-0"
                         style={{ width: cell.column.getSize() }}
                       >
                         <div
-                          className="h-full flex justify-center items-center border-r border-gray-200"
+                          className="h-full flex justify-center items-center border-r border-gray-300"
                           style={{ width: cell.column.getSize(), height: ESTIMATED_ROW_HEIGHT }}
                         >
                           {getShouldShowCheckBox(rowIndex) && (
