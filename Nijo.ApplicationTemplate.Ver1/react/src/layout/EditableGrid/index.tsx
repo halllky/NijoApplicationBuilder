@@ -7,7 +7,8 @@ import {
   useReactTable,
   type Row,
   type Cell,
-  flexRender
+  flexRender,
+  ColumnSizingState
 } from '@tanstack/react-table';
 import {
   useVirtualizer,
@@ -27,9 +28,6 @@ import { useSelection } from "./EditableGrid.hooks/useSelection";
 import { useEditing } from "./EditableGrid.hooks/useEditing";
 import { useGridKeyboard } from "./EditableGrid.hooks/useGridKeyboard";
 import { useDragSelection } from "./EditableGrid.hooks/useDragSelection";
-
-/** 推定行高さ */
-const ESTIMATED_ROW_HEIGHT = 25
 
 /**
  * 編集可能なグリッドを表示するコンポーネント
@@ -60,7 +58,9 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   const defaultColumnWidth = 128;
 
   // 列状態 (サイズ変更用)
-  const [columnSizing, setColumnSizing] = useState({});
+  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>(() => ({
+    'rowHeader': ROW_HEADER_WIDTH
+  }));
 
   // チェックボックス表示判定
   const getShouldShowCheckBox = useCallback((rowIndex: number): boolean => {
@@ -131,7 +131,6 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     // 行ヘッダー（チェックボックス列）
     columnHelper.display({
       id: 'rowHeader',
-      size: 28,
       enableResizing: false,
       header: ({ table }) => {
         const handleClick = (e: React.MouseEvent) => {
@@ -145,8 +144,9 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
 
         return (
           <div
-            className="flex justify-center items-center cursor-pointer"
-            onClick={handleClick} // onClickハンドラを追加
+            className="flex justify-center items-center border-b border-r border-gray-200"
+            onClick={handleClick}
+            style={{ height: ESTIMATED_ROW_HEIGHT }}
           >
             {showCheckBox && (
               <input
@@ -159,27 +159,39 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
           </div>
         );
       },
+      meta: {
+        isFixed: true,
+        isRowHeader: true,
+      } satisfies ColumnMetadataInternal<TRow>,
     }),
     // 列ヘッダーとデータ列
     ...columnDefs
-      .map((colDef: EditableGridColumnDef<TRow>, colIndex: number) => ({
-        colDef,
-        accessor: columnHelper.accessor((row: TRow) => {
-          // fieldPathがある場合そのパスに対応する値を取得
-          if (colDef.fieldPath) {
-            return getValueByPath(row, colDef.fieldPath);
-          }
-          return undefined;
-        }, {
-          id: `col-${colIndex}`,
-          header: colDef.header,
+      .map((colDef: EditableGridColumnDef<TRow>, colIndex: number) => {
+        const accessor = (row: TRow) => colDef.fieldPath
+          ? getValueByPath(row, colDef.fieldPath)
+          : undefined
+        const tableColumnDef = columnHelper.accessor(accessor, {
+          id: `col-${colIndex}`, // 元のインデックスをIDに使用
           size: colDef.defaultWidth ?? defaultColumnWidth,
           enableResizing: colDef.enableResizing ?? true,
-        }),
-      }))
-      .filter(x => !x.colDef.invisible) // 非表示の列を除外
-      .map(x => x.accessor)
-  ], [columnDefs, showCheckBox, allRowsSelected, handleToggleAllRows, getShouldShowCheckBox, selectedRows, handleToggleRow, activeCell, selectedRange, handleCellClick, getIsReadOnly, startEditing, isEditing, editValue, handleEditValueChange, confirmEdit, cancelEdit, columnHelper]);
+          header: ({ header }) => {
+            return (
+              <div
+                className="pl-1 border-b border-r border-gray-200 select-none truncate"
+                style={{ width: header.getSize() }}
+              >
+                {colDef.header}
+              </div>
+            )
+          },
+          meta: {
+            isFixed: colDef.isFixed,
+            originalColDef: colDef,
+          } satisfies ColumnMetadataInternal<TRow>,
+        });
+        return tableColumnDef;
+      })
+  ], [columnDefs, showCheckBox, allRowsSelected, handleToggleAllRows, columnHelper, rows.length, setActiveCell]); // 依存配列を適切に設定
 
   const table = useReactTable({
     data: rows,
@@ -187,6 +199,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     columnResizeMode: 'onChange',
     state: {
       columnSizing,
+      columnVisibility: Object.fromEntries(columnDefs.map((colDef, i) => [`col-${i}`, !colDef.invisible])),
     },
     onColumnSizingChange: setColumnSizing,
     getCoreRowModel: getCoreRowModel(),
@@ -275,46 +288,57 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
       }}
     >
       <table
-        className={`table-fixed border-separate border-spacing-0`}
+        className={`table-fixed border-collapse border-spacing-0`}
         style={{ minWidth: tableTotalWidth }}
       >
-        {/* 列幅を設定するためのcolgroup要素 */}
+        {/* 列幅を設定するためのcolgroup要素。table.getAllLeafColumns() を使うことで非表示の列を除外 */}
         <colgroup>
-          {columnDefs.map((colDef: EditableGridColumnDef<TRow>, colIndex: number) => (
-            <col key={colIndex} style={{ width: table.getAllLeafColumns()[colIndex]?.getSize() ?? colDef.defaultWidth ?? defaultColumnWidth }} />
+          {table.getAllLeafColumns().map(column => (
+            <col key={column.id} style={{ width: column.getSize() }} />
           ))}
         </colgroup>
 
+        {/* 列ヘッダ */}
         <thead className="sticky top-0 z-10 grid-header-group">
           {table.getHeaderGroups().map(headerGroup => (
             <tr key={headerGroup.id}>
-              {headerGroup.headers.map(header => (
-                <th
-                  key={header.id}
-                  className={`border-b border-r border-gray-200 bg-gray-100 px-1 relative text-left select-none ${header.id === 'rowHeader' ? 'sticky left-0 z-20' : ''}`}
-                  style={{ width: header.getSize() }}
-                >
-                  {/* 列ヘッダのテキスト */}
-                  {!header.isPlaceholder && (
-                    <div className="select-none truncate" style={{ width: header.getSize() }}>
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                    </div>
-                  )}
+              {headerGroup.headers.map(header => {
+                const headerMeta: ColumnMetadataInternal<TRow> | undefined = header.column.columnDef.meta;
+                const isFixedColumn = !!headerMeta?.isFixed;
+                const isRowHeader = !!headerMeta?.isRowHeader;
 
-                  {/* 列幅を変更できる場合はサイズ変更ハンドラを設定 */}
-                  {header.column.getCanResize() && (
-                    <div
-                      onMouseDown={header.getResizeHandler()}
-                      onTouchStart={header.getResizeHandler()}
-                      className={`absolute top-0 right-0 h-full w-1.5 cursor-col-resize select-none touch-none ${header.column.getIsResizing() ? 'bg-blue-500 opacity-50' : 'hover:bg-gray-400'}`}
-                    >
-                    </div>
-                  )}
-                </th>
-              ))}
+                let className = 'bg-gray-100 relative text-left select-none'
+                if (isRowHeader) className += ' sticky left-0 z-20'
+                else if (isFixedColumn) className += ' sticky z-10'
+
+                console.log(header.id, header.getStart())
+
+                return (
+                  <th
+                    key={header.id}
+                    className={className}
+                    style={{
+                      width: header.getSize(),
+                      left: isFixedColumn ? `${header.getStart()}px` : undefined,
+                    }}
+                  >
+                    {!header.isPlaceholder && flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
+
+                    {/* 列幅を変更できる場合はサイズ変更ハンドラを設定 */}
+                    {header.column.getCanResize() && (
+                      <div
+                        onMouseDown={header.getResizeHandler()}
+                        onTouchStart={header.getResizeHandler()}
+                        className={`absolute top-0 right-0 h-full w-1.5 cursor-col-resize select-none touch-none ${header.column.getIsResizing() ? 'bg-blue-500 opacity-50' : 'hover:bg-gray-400'}`}
+                      >
+                      </div>
+                    )}
+                  </th>
+                );
+              })}
             </tr>
           ))}
         </thead>
@@ -340,13 +364,13 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                 className="bg-gray-100"
                 style={{ height: `${virtualRow.size}px` }}
               >
-                {/* 画面のスクロール範囲内に表示されている列のみレンダリングされる */}
                 {row.getVisibleCells().map(cell => {
                   const rowIndex = row.index;
                   // 行ヘッダー列を除いた可視列の配列を取得し、その中でのインデックスを colIndex とする
-                  const visibleDataColumns = table.getAllLeafColumns().filter(c => c.id !== 'rowHeader');
-                  const colIndex = cell.column.id === 'rowHeader'
-                    ? -1
+                  const cellMeta = cell.column.columnDef.meta as ColumnMetadataInternal<TRow> | undefined;
+                  const visibleDataColumns = table.getAllLeafColumns().filter(c => !(c.columnDef.meta as ColumnMetadataInternal<TRow>)?.isRowHeader);
+                  const colIndex = cellMeta?.isRowHeader
+                    ? -1 // 行ヘッダーの場合
                     : visibleDataColumns.findIndex(c => c.id === cell.column.id);
 
                   const isActive = activeCell?.rowIndex === rowIndex && activeCell?.colIndex === colIndex;
@@ -355,33 +379,45 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                     colIndex >= selectedRange.startCol && colIndex <= selectedRange.endCol);
 
                   // 行選択チェックボックス列
-                  if (cell.column.id === 'rowHeader') {
+                  if (cellMeta?.isRowHeader) {
                     return (
                       <td
                         key={cell.id}
-                        className="border-r border-gray-200 align-middle text-center sticky left-0 bg-gray-100"
+                        className="bg-gray-100 align-middle text-center sticky left-0"
                         style={{ width: cell.column.getSize() }}
                       >
-                        <RowCheckboxCell
-                          rowIndex={rowIndex}
-                          isChecked={selectedRows.has(rowIndex)}
-                          onToggle={(checked) => handleToggleRow(rowIndex, checked)}
-                          showCheckBox={getShouldShowCheckBox(rowIndex)}
-                        />
+                        <div
+                          className="h-full flex justify-center items-center border-r border-gray-200"
+                          style={{ width: cell.column.getSize(), height: ESTIMATED_ROW_HEIGHT }}
+                        >
+                          {showCheckBox && (
+                            <input
+                              type="checkbox"
+                              checked={selectedRows.has(rowIndex)}
+                              onChange={(e) => handleToggleRow(rowIndex, e.target.checked)}
+                              aria-label={`行${rowIndex + 1}を選択`}
+                            />
+                          )}
+                        </div>
                       </td>
                     );
                   }
 
                   // データ列
-                  let dataColumnClassName = 'border-r border-gray-200 outline-none px-1 align-middle'
+                  let dataColumnClassName = 'outline-none align-middle'
                   if (isActive) dataColumnClassName += ' bg-blue-200'
-                  if (isInRange) dataColumnClassName += ' bg-blue-100'
+                  else if (isInRange) dataColumnClassName += ' bg-blue-100'
+                  else dataColumnClassName += ' bg-gray-100'
+                  if (cellMeta?.isFixed) dataColumnClassName += ` sticky` // z-indexをつけるとボディ列が列ヘッダより手前にきてしまうので設定しない
 
                   return (
                     <td
                       key={cell.id}
                       className={dataColumnClassName}
-                      style={{ width: cell.column.getSize() }}
+                      style={{
+                        width: cell.column.getSize(),
+                        left: cellMeta?.isFixed ? `${cell.column.getStart()}px` : undefined,
+                      }}
                       onClick={(e) => handleCellClick(e, rowIndex, colIndex)}
                       onDoubleClick={() => {
                         if (!getIsReadOnly(rowIndex)) {
@@ -419,17 +455,17 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                             }
                           }}
                           autoFocus
-                          className="w-full h-full border-none outline-none"
+                          className="w-full pl-1 border-r border-gray-200 outline-none"
                         />
                       )}
 
                       {/* セル編集中でない場合はdiv要素をレンダリング */}
                       {(!isEditing || !isActive) && (
                         <div
-                          className="select-none truncate"
+                          className="pl-1 border-r border-gray-200 select-none truncate"
                           style={{ width: cell.column.getSize() }}
                         >
-                          {cell.getValue()?.toString() || ''}
+                          {cell.getValue()?.toString() || ''}&nbsp;
                         </div>
                       )}
                     </td>
@@ -462,3 +498,17 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     </div>
   );
 }) as (<TRow extends ReactHookForm.FieldValues, >(props: EditableGridProps<TRow> & { ref?: React.ForwardedRef<EditableGridRef<TRow>> }) => React.ReactNode);
+
+// ------------------------------------
+
+/** このファイル内部でのみ使用 */
+type ColumnMetadataInternal<TRow extends ReactHookForm.FieldValues> = {
+  isFixed?: boolean
+  isRowHeader?: boolean
+  originalColDef?: EditableGridColumnDef<TRow>
+}
+
+/** 推定行高さ */
+const ESTIMATED_ROW_HEIGHT = 24
+/** 行ヘッダー列の幅 */
+const ROW_HEADER_WIDTH = 32

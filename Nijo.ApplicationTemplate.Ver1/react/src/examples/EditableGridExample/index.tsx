@@ -64,7 +64,7 @@ const BasicGridExample = () => {
   const gridRef = React.useRef<EditableGridRef<MyRowData>>(null)
 
   // 少ない列を表示 or とても多い列を表示
-  const [columnCountType, setColumnCountType] = React.useState<'less' | 'many'>('less')
+  const [columnCountType, setColumnCountType] = React.useState<'less' | 'many'>('many')
 
   // 列定義
   const getColumnDefs: GetColumnDefsFunction<MyRowData> = React.useCallback((cellType: ColumnDefFactories<MyRowData>) => [
@@ -117,7 +117,7 @@ const BasicGridExample = () => {
         showCheckBox
         rowSelection={rowSelection}
         onRowSelectionChange={setRowSelection}
-        className="h-[160px] w-full border border-gray-300"
+        className="h-[240px] w-full border border-gray-300"
       />
       <div className="flex items-center gap-4">
         <span className="text-sm text-gray-500">
@@ -141,5 +141,14 @@ const getDefaultValue = (): MyFormData => ({
     { id: 1, make: "Toyota", model: "Celica", price: 35000 },
     { id: 2, make: "Ford", model: "Mondeo", price: 32000 },
     { id: 3, make: "Porsche", model: "Boxster", price: 72000 },
+    { id: 4, make: "Toyota", model: "Celica", price: 35000 },
+    { id: 5, make: "Ford", model: "Mondeo", price: 32000 },
+    { id: 6, make: "Porsche", model: "Boxster", price: 72000 },
+    { id: 7, make: "Toyota", model: "Celica", price: 35000 },
+    { id: 8, make: "Ford", model: "Mondeo", price: 32000 },
+    { id: 9, make: "Porsche", model: "Boxster", price: 72000 },
+    { id: 10, make: "Toyota", model: "Celica", price: 35000 },
+    { id: 11, make: "Ford", model: "Mondeo", price: 32000 },
+    { id: 12, make: "Porsche", model: "Boxster", price: 72000 },
   ]
 })
