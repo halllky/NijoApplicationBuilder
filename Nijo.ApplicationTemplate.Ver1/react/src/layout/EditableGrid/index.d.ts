@@ -104,6 +104,8 @@ export type EditableGridColumnDefOptions<TRow extends ReactHookForm.FieldValues>
   enableResizing?: boolean
   /** 列が非表示になるかどうか */
   invisible?: boolean
+  /** 列が固定されるかどうか */
+  isFixed?: boolean
   /** @deprecated このオプションは廃止されました。 `isReadOnly` を使用してください。 */
   editable?: boolean
 }

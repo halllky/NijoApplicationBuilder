@@ -285,13 +285,13 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
           ))}
         </colgroup>
 
-        <thead className="sticky top-0 z-10 bg-gray-100 grid-header-group">
+        <thead className="sticky top-0 z-10 grid-header-group">
           {table.getHeaderGroups().map(headerGroup => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map(header => (
                 <th
                   key={header.id}
-                  className="border-b border-r border-gray-200 px-1 relative text-left select-none"
+                  className={`border-b border-r border-gray-200 bg-gray-100 px-1 relative text-left select-none ${header.id === 'rowHeader' ? 'sticky left-0 z-20' : ''}`}
                   style={{ width: header.getSize() }}
                 >
                   {/* 列ヘッダのテキスト */}
@@ -359,7 +359,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                     return (
                       <td
                         key={cell.id}
-                        className="border-r border-gray-200 align-middle text-center"
+                        className="border-r border-gray-200 align-middle text-center sticky left-0 bg-gray-100"
                         style={{ width: cell.column.getSize() }}
                       >
                         <RowCheckboxCell
@@ -373,10 +373,14 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                   }
 
                   // データ列
+                  let dataColumnClassName = 'border-r border-gray-200 outline-none px-1 align-middle'
+                  if (isActive) dataColumnClassName += ' bg-blue-200'
+                  if (isInRange) dataColumnClassName += ' bg-blue-100'
+
                   return (
                     <td
                       key={cell.id}
-                      className={`border-r border-gray-200 outline-none px-1 align-middle ${isActive ? 'bg-blue-200' : ''} ${isInRange ? 'bg-blue-100' : ''}`}
+                      className={dataColumnClassName}
                       style={{ width: cell.column.getSize() }}
                       onClick={(e) => handleCellClick(e, rowIndex, colIndex)}
                       onDoubleClick={() => {
