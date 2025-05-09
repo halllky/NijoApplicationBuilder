@@ -161,20 +161,24 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
       },
     }),
     // 列ヘッダーとデータ列
-    ...columnDefs.map((colDef: EditableGridColumnDef<TRow>, colIndex: number) =>
-      columnHelper.accessor((row: TRow) => {
-        // fieldPathがある場合そのパスに対応する値を取得
-        if (colDef.fieldPath) {
-          return getValueByPath(row, colDef.fieldPath);
-        }
-        return undefined;
-      }, {
-        id: `col-${colIndex}`,
-        header: colDef.header,
-        size: colDef.defaultWidth ?? defaultColumnWidth,
-        enableResizing: colDef.enableResizing ?? true,
-      })
-    )
+    ...columnDefs
+      .map((colDef: EditableGridColumnDef<TRow>, colIndex: number) => ({
+        colDef,
+        accessor: columnHelper.accessor((row: TRow) => {
+          // fieldPathがある場合そのパスに対応する値を取得
+          if (colDef.fieldPath) {
+            return getValueByPath(row, colDef.fieldPath);
+          }
+          return undefined;
+        }, {
+          id: `col-${colIndex}`,
+          header: colDef.header,
+          size: colDef.defaultWidth ?? defaultColumnWidth,
+          enableResizing: colDef.enableResizing ?? true,
+        }),
+      }))
+      .filter(x => !x.colDef.invisible) // 非表示の列を除外
+      .map(x => x.accessor)
   ], [columnDefs, showCheckBox, allRowsSelected, handleToggleAllRows, getShouldShowCheckBox, selectedRows, handleToggleRow, activeCell, selectedRange, handleCellClick, getIsReadOnly, startEditing, isEditing, editValue, handleEditValueChange, confirmEdit, cancelEdit, columnHelper]);
 
   const table = useReactTable({
@@ -277,7 +281,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
         {/* 列幅を設定するためのcolgroup要素 */}
         <colgroup>
           {columnDefs.map((colDef: EditableGridColumnDef<TRow>, colIndex: number) => (
-            <col key={`col-${colIndex}`} style={{ width: table.getAllLeafColumns()[colIndex]?.getSize() ?? colDef.defaultWidth ?? defaultColumnWidth }} />
+            <col key={colIndex} style={{ width: table.getAllLeafColumns()[colIndex]?.getSize() ?? colDef.defaultWidth ?? defaultColumnWidth }} />
           ))}
         </colgroup>
 

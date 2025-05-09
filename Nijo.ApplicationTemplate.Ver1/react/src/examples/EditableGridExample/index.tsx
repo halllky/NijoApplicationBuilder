@@ -17,6 +17,13 @@ type MyRowData = {
   make: string
   model: string
   price: number
+  description1?: string
+  description2?: string
+  description3?: string
+  description4?: string
+  description5?: string
+  description6?: string
+  description7?: string
 }
 
 export function EditableGridExample() {
@@ -56,12 +63,22 @@ const BasicGridExample = () => {
   // 画面側からグリッド内部の状態を参照ないし操作する場合はrefを使用する。
   const gridRef = React.useRef<EditableGridRef<MyRowData>>(null)
 
+  // 少ない列を表示 or とても多い列を表示
+  const [columnCountType, setColumnCountType] = React.useState<'less' | 'many'>('less')
+
   // 列定義
   const getColumnDefs: GetColumnDefsFunction<MyRowData> = React.useCallback((cellType: ColumnDefFactories<MyRowData>) => [
     cellType.text('make', 'メーカー', { defaultWidth: 150 }),
     cellType.text('model', 'モデル', { defaultWidth: 150 }),
     cellType.number('price', '価格', { defaultWidth: 100 }),
-  ], [])
+    cellType.text('description1', '説明1', { defaultWidth: 100, invisible: columnCountType !== 'many' }),
+    cellType.text('description2', '説明2', { defaultWidth: 100, invisible: columnCountType !== 'many' }),
+    cellType.text('description3', '説明3', { defaultWidth: 100, invisible: columnCountType !== 'many' }),
+    cellType.text('description4', '説明4', { defaultWidth: 100, invisible: columnCountType !== 'many' }),
+    cellType.text('description5', '説明5', { defaultWidth: 100, invisible: columnCountType !== 'many' }),
+    cellType.text('description6', '説明6', { defaultWidth: 100, invisible: columnCountType !== 'many' }),
+    cellType.text('description7', '説明7', { defaultWidth: 100, invisible: columnCountType !== 'many' }),
+  ], [columnCountType])
 
   // セル変更時イベント
   const handleChangeCell: CellValueEditedEvent<MyRowData> = useEvent(e => {
@@ -79,11 +96,18 @@ const BasicGridExample = () => {
     remove(selectedRows)
   })
 
+  // コンソール出力
+  const handleConsoleLog = useEvent(() => {
+    console.table(fields)
+  })
+
   return (
     <div className="flex flex-col flex-wrap gap-1">
       <div className="flex gap-2">
         <Input.IconButton outline onClick={handleAddRow}>行追加</Input.IconButton>
         <Input.IconButton outline onClick={handleDeleteRow}>行削除</Input.IconButton>
+        <div className="flex-1"></div>
+        <Input.IconButton outline onClick={handleConsoleLog}>コンソール出力</Input.IconButton>
       </div>
       <EditableGrid<MyRowData>
         ref={gridRef}
@@ -95,6 +119,19 @@ const BasicGridExample = () => {
         onRowSelectionChange={setRowSelection}
         className="h-[160px] w-full border border-gray-300"
       />
+      <div className="flex items-center gap-4">
+        <span className="text-sm text-gray-500">
+          列定義の動的切り替え:
+        </span>
+        <label className="flex items-center gap-1">
+          <input type="radio" name="columnCountType" value="less" checked={columnCountType === 'less'} onChange={() => setColumnCountType('less')} />
+          少ない列を表示
+        </label>
+        <label className="flex items-center gap-1">
+          <input type="radio" name="columnCountType" value="many" checked={columnCountType === 'many'} onChange={() => setColumnCountType('many')} />
+          とても多い列を表示
+        </label>
+      </div>
     </div>
   )
 }
