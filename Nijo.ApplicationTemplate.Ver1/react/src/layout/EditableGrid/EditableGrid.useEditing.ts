@@ -7,6 +7,7 @@ export interface UseEditingReturn<TRow extends ReactHookForm.FieldValues> {
   isEditing: boolean;
   editValue: string;
   startEditing: (rowIndex: number, colIndex: number) => void;
+  startEditingWithCharacter: (rowIndex: number, colIndex: number, char: string) => void;
   confirmEdit: () => void;
   cancelEdit: () => void;
   handleEditValueChange: (value: string) => void;
@@ -50,6 +51,23 @@ export function useEditing<TRow extends ReactHookForm.FieldValues>(
 
     let value = getValueByPath(row, fieldPath);
     setEditValue(value?.toString() || '');
+    setIsEditing(true);
+    setEditingCell({ rowIndex, colIndex });
+  }, [getIsReadOnly, rows, columnDefs]);
+
+  // 文字入力による編集開始
+  const startEditingWithCharacter = useCallback((rowIndex: number, colIndex: number, char: string) => {
+    if (getIsReadOnly(rowIndex)) return;
+
+    const colDef = columnDefs[colIndex];
+    const fieldPath = colDef?.fieldPath;
+    if (!fieldPath) return;
+
+    const row = rows[rowIndex];
+    if (!row) return;
+
+    // 初期値として入力された文字をセット
+    setEditValue(char);
     setIsEditing(true);
     setEditingCell({ rowIndex, colIndex });
   }, [getIsReadOnly, rows, columnDefs]);
@@ -130,6 +148,7 @@ export function useEditing<TRow extends ReactHookForm.FieldValues>(
     isEditing,
     editValue,
     startEditing,
+    startEditingWithCharacter,
     confirmEdit,
     cancelEdit,
     handleEditValueChange

@@ -93,6 +93,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     isEditing,
     editValue,
     startEditing,
+    startEditingWithCharacter,
     confirmEdit,
     cancelEdit,
     handleEditValueChange
@@ -122,6 +123,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     setActiveCell,
     setSelectedRange,
     startEditing,
+    startEditingWithCharacter,
     getIsReadOnly,
     rowVirtualizer,
     tableContainerRef,
@@ -448,7 +450,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                             }
                           }}
                           autoFocus
-                          className="w-full pl-1 border-r border-gray-200 outline-none"
+                          className="w-full pl-1 outline outline-blue-500"
                         />
                       )}
 

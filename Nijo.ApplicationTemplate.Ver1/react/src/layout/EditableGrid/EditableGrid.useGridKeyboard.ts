@@ -1,6 +1,8 @@
 import { useEffect, useCallback, useRef } from "react";
 import { CellPosition, CellSelectionRange } from ".";
 import type { Virtualizer } from '@tanstack/react-virtual';
+import * as Util from "../../util";
+import useEvent from "react-use-event-hook";
 
 export interface UseGridKeyboardProps {
   activeCell: CellPosition | null;
@@ -11,6 +13,7 @@ export interface UseGridKeyboardProps {
   setActiveCell: (cell: CellPosition | null) => void;
   setSelectedRange: (range: CellSelectionRange | null) => void;
   startEditing: (rowIndex: number, colIndex: number) => void;
+  startEditingWithCharacter: (rowIndex: number, colIndex: number, char: string) => void;
   getIsReadOnly: (rowIndex: number) => boolean;
   rowVirtualizer: Virtualizer<HTMLDivElement, Element>;
   tableContainerRef: React.RefObject<HTMLDivElement | null>;
@@ -25,14 +28,16 @@ export function useGridKeyboard({
   setActiveCell,
   setSelectedRange,
   startEditing,
+  startEditingWithCharacter,
   getIsReadOnly,
   rowVirtualizer,
   tableContainerRef,
 }: UseGridKeyboardProps) {
   const anchorCellRef = useRef<CellPosition | null>(null);
+  const { isComposing } = Util.useIME();
 
   // クリップボードへのコピー処理
-  const handleCopy = useCallback((e: ClipboardEvent) => {
+  const handleCopy = useEvent((e: ClipboardEvent) => {
     if (!selectedRange || !e.clipboardData) return;
 
     const startRow = Math.min(selectedRange.startRow, selectedRange.endRow);
@@ -43,10 +48,35 @@ export function useGridKeyboard({
     // このイベントハンドラではクリップボードデータを直接操作できないため、
     // 呼び出し元から行データとカラム定義を渡す必要があります。
     // このフックでは基本的なキーボードナビゲーションのみ扱います。
-  }, [selectedRange]);
+  });
+
+  // キー入力イベントハンドラ
+  const handleKeyInput = useEvent((e: KeyboardEvent) => {
+    if (isEditing || !activeCell || isComposing) return;
+
+    // ナビゲーションに使うキーは無視（別のハンドラで処理）
+    const navigationKeys = [
+      'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+      'Tab', 'Enter', 'Escape', 'Home', 'End', 'PageUp', 'PageDown',
+      'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
+      'Control', 'Alt', 'Shift', 'Meta'
+    ];
+
+    // 修飾キーが押されている場合は編集開始しない
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+    if (e.key && e.key.length === 1 && !navigationKeys.includes(e.key)) {
+      const { rowIndex, colIndex } = activeCell;
+
+      if (!getIsReadOnly(rowIndex)) {
+        e.preventDefault();
+        startEditingWithCharacter(rowIndex, colIndex, e.key);
+      }
+    }
+  });
 
   // キーボードイベントハンドラ
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+  const handleKeyDown = useEvent((e: KeyboardEvent) => {
     if (!activeCell || isEditing) return;
 
     const { rowIndex, colIndex } = activeCell;
@@ -250,15 +280,17 @@ export function useGridKeyboard({
         }
         break;
     }
-  }, [activeCell, selectedRange, rowCount, colCount, isEditing, getIsReadOnly, setActiveCell, setSelectedRange, startEditing, rowVirtualizer, tableContainerRef]);
+  });
 
   // イベントリスナーの設定
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keypress', handleKeyInput);
     document.addEventListener('copy', handleCopy);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keypress', handleKeyInput);
       document.removeEventListener('copy', handleCopy);
     };
-  }, [activeCell, selectedRange, isEditing, rowCount, colCount, setActiveCell, setSelectedRange, startEditing, getIsReadOnly, rowVirtualizer, tableContainerRef, handleKeyDown, handleCopy]);
+  }, [handleKeyDown, handleKeyInput, handleCopy]);
 }
