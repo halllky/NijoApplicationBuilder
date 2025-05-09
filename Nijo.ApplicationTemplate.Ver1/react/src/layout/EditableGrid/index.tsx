@@ -5,14 +5,11 @@ import {
   createColumnHelper,
   getCoreRowModel,
   useReactTable,
-  type Row,
-  type Cell,
   flexRender,
   ColumnSizingState
 } from '@tanstack/react-table';
 import {
   useVirtualizer,
-  type VirtualItem,
   notUndefined
 } from '@tanstack/react-virtual';
 import { useCellTypes } from "./useCellTypes";
@@ -20,7 +17,6 @@ import type * as ReactHookForm from 'react-hook-form';
 import { getValueByPath } from "./EditableGrid.utils";
 
 // コンポーネントのインポート
-import { RowCheckboxCell } from "./EditableGrid.RowCheckboxCell";
 import { EmptyDataMessage } from "./EditableGrid.EmptyDataMessage";
 
 // カスタムフックのインポート
@@ -53,9 +49,6 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   const columnDefs = React.useMemo(() => {
     return getColumnDefs(cellType)
   }, [getColumnDefs, cellType])
-
-  // 列のデフォルトサイズ (8rem をピクセル換算。環境依存可能性あり)
-  const defaultColumnWidth = 128;
 
   // 列状態 (サイズ変更用)
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>(() => ({
@@ -141,7 +134,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     columnHelper.display({
       id: 'rowHeader',
       enableResizing: false,
-      header: ({ table }) => {
+      header: () => {
         const handleClick = (e: React.MouseEvent) => {
           e.stopPropagation(); // イベント伝播を停止
 
@@ -181,7 +174,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
           : undefined
         const tableColumnDef = columnHelper.accessor(accessor, {
           id: `col-${colIndex}`, // 元のインデックスをIDに使用
-          size: colDef.defaultWidth ?? defaultColumnWidth,
+          size: colDef.defaultWidth ?? DEFAULT_COLUMN_WIDTH,
           enableResizing: colDef.enableResizing ?? true,
           header: ({ header }) => {
             return (
@@ -214,7 +207,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     getCoreRowModel: getCoreRowModel(),
     enableColumnResizing: true,
     defaultColumn: {
-      size: defaultColumnWidth,
+      size: DEFAULT_COLUMN_WIDTH,
       minSize: 8,
       maxSize: 500,
     },
@@ -390,7 +383,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                           className="h-full flex justify-center items-center border-r border-gray-200"
                           style={{ width: cell.column.getSize(), height: ESTIMATED_ROW_HEIGHT }}
                         >
-                          {showCheckBox && (
+                          {getShouldShowCheckBox(rowIndex) && (
                             <input
                               type="checkbox"
                               checked={selectedRows.has(rowIndex)}
@@ -512,3 +505,5 @@ type ColumnMetadataInternal<TRow extends ReactHookForm.FieldValues> = {
 const ESTIMATED_ROW_HEIGHT = 24
 /** 行ヘッダー列の幅 */
 const ROW_HEADER_WIDTH = 32
+/** デフォルトの列幅。8rem をピクセル換算。環境依存可能性あり */
+const DEFAULT_COLUMN_WIDTH = 128

@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { getValueByPath, setValueByPath } from "../EditableGrid.utils";
 import type * as ReactHookForm from 'react-hook-form';
-import { EditableGridColumnDef, CellValueEditedEvent, EditableGridProps } from "../index.d";
+import { EditableGridColumnDef, EditableGridProps } from "../index.d";
 
 export interface UseEditingReturn<TRow extends ReactHookForm.FieldValues> {
   isEditing: boolean;

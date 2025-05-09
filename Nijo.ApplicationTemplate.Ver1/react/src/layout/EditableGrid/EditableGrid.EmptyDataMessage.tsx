@@ -6,7 +6,7 @@ import { memo } from 'react';
  */
 export const EmptyDataMessage = memo(() => (
   <div
-    className="p-4 text-center text-gray-500"
+    className="p-4 text-center text-gray-500 select-none"
     role="status"
     aria-live="polite"
   >
