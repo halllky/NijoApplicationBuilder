@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef } from "react";
-import { CellPosition, CellSelectionRange } from "../index.d";
+import { CellPosition, CellSelectionRange } from ".";
 import type { Virtualizer } from '@tanstack/react-virtual';
 
 export interface UseGridKeyboardProps {

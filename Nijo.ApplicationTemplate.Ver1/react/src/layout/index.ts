@@ -1,5 +1,5 @@
 export * from "./EditableGrid"
-export * from "./EditableGrid/index.d"
+export * from "./EditableGrid/types"
 export * from "./EditableGrid/useCellTypes"
 export * from "./MultiView"
 export * from "./PageFrame"

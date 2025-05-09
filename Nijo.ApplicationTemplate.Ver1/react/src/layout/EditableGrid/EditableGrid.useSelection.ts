@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { CellPosition, CellSelectionRange } from "../index.d";
+import { CellPosition, CellSelectionRange } from ".";
 
 export interface UseSelectionReturn {
   activeCell: CellPosition | null;

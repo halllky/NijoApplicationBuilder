@@ -1,5 +1,5 @@
 import * as ReactHookForm from "react-hook-form"
-import { EditableGridColumnDef, EditableGridColumnDefOptions } from "./index.d"
+import { EditableGridColumnDef, EditableGridColumnDefOptions } from "./types"
 
 /** 列定義ヘルパー関数の一覧を返します。 */
 export const useCellTypes = <TRow extends ReactHookForm.FieldValues>(): ColumnDefFactories<TRow> => {

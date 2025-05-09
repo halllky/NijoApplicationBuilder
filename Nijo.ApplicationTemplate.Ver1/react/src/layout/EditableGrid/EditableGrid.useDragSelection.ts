@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { CellPosition, CellSelectionRange } from "../index.d";
+import { CellPosition, CellSelectionRange } from ".";
 
 export interface UseDragSelectionReturn {
   isDragging: boolean;

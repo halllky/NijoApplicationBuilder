@@ -4,7 +4,7 @@ import * as ReactHookForm from 'react-hook-form'
 import * as Layout from '../../layout'
 import * as Input from '../../input'
 import { EditableGrid } from '../../layout/EditableGrid'
-import type { CellValueEditedEvent, EditableGridRef, GetColumnDefsFunction } from '../../layout/EditableGrid/index.d'
+import type { CellValueEditedEvent, EditableGridRef, GetColumnDefsFunction } from '../../layout/EditableGrid/types'
 import { type ColumnDefFactories } from '../../layout/EditableGrid/useCellTypes'
 
 /** 画面全体のフォームの型 */
