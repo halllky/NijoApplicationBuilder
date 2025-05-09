@@ -93,7 +93,7 @@ const BasicGridExample = () => {
         showCheckBox
         rowSelection={rowSelection}
         onRowSelectionChange={setRowSelection}
-        className="h-[160px] w-full"
+        className="h-[160px] w-full border border-gray-300"
       />
     </div>
   )

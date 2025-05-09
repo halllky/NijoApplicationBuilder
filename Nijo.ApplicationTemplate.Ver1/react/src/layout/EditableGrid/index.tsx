@@ -28,6 +28,9 @@ import { useEditing } from "./EditableGrid.hooks/useEditing";
 import { useGridKeyboard } from "./EditableGrid.hooks/useGridKeyboard";
 import { useDragSelection } from "./EditableGrid.hooks/useDragSelection";
 
+/** 推定行高さ */
+const ESTIMATED_ROW_HEIGHT = 25
+
 /**
  * 編集可能なグリッドを表示するコンポーネント
 */
@@ -128,19 +131,11 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     // 行ヘッダー（チェックボックス列）
     columnHelper.display({
       id: 'rowHeader',
-      size: 32,
+      size: 28,
       enableResizing: false,
       header: ({ table }) => {
         const handleClick = (e: React.MouseEvent) => {
           e.stopPropagation(); // イベント伝播を停止
-
-          // 全セルを選択
-          setSelectedRange({
-            startRow: 0,
-            startCol: 0,
-            endRow: rows.length - 1,
-            endCol: columnDefs.length - 1
-          });
 
           // アクティブセルを左上ボディセルに設定
           if (rows.length > 0 && columnDefs.length > 0) {
@@ -150,13 +145,13 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
 
         return (
           <div
-            className="h-10 flex justify-center items-center cursor-pointer"
+            className="flex justify-center items-center cursor-pointer"
             onClick={handleClick} // onClickハンドラを追加
           >
             {showCheckBox && (
               <input
                 type="checkbox"
-                checked={table.getIsAllRowsSelected()}
+                checked={allRowsSelected}
                 onChange={(e) => handleToggleAllRows(e.target.checked)}
                 aria-label="全行選択"
               />
@@ -194,7 +189,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     enableColumnResizing: true,
     defaultColumn: {
       size: defaultColumnWidth,
-      minSize: 50,
+      minSize: 8,
       maxSize: 500,
     },
   });
@@ -208,13 +203,13 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => tableContainerRef.current,
-    estimateSize: () => 35,
+    estimateSize: () => ESTIMATED_ROW_HEIGHT,
     overscan: 5,
   });
 
   const virtualItems = rowVirtualizer.getVirtualItems();
 
-  // Before/After 行の高さを計算
+  // 実際に表示されていない行の余白部分の高さを計算
   const [paddingTop, paddingBottom] = useMemo(() => {
     if (!virtualItems.length) {
       return [0, 0];
@@ -261,7 +256,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
           const y = e.clientY - rect.top;
 
           // 行インデックスの計算（仮想化を考慮）
-          const rowHeight = 35; // 推定行高さ
+          const rowHeight = ESTIMATED_ROW_HEIGHT; // 推定行高さ
           const visibleStartRow = Math.floor(tableBodyRef.current.scrollTop / rowHeight);
           const rowIndex = visibleStartRow + Math.floor(y / rowHeight);
 
@@ -276,7 +271,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
       }}
     >
       <table
-        className="border-collapse table-fixed"
+        className={`table-fixed border-separate border-spacing-0`}
         style={{ minWidth: tableTotalWidth }}
       >
         {/* 列幅を設定するためのcolgroup要素 */}
@@ -292,7 +287,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
               {headerGroup.headers.map(header => (
                 <th
                   key={header.id}
-                  className="border border-gray-300 px-1 relative text-left select-none"
+                  className="border-b border-r border-gray-200 px-1 relative text-left select-none"
                   style={{ width: header.getSize() }}
                 >
                   {/* 列ヘッダのテキスト */}
@@ -360,7 +355,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                     return (
                       <td
                         key={cell.id}
-                        className="border border-gray-300 align-middle text-center"
+                        className="border-r border-gray-200 align-middle text-center"
                         style={{ width: cell.column.getSize() }}
                       >
                         <RowCheckboxCell
@@ -377,7 +372,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                   return (
                     <td
                       key={cell.id}
-                      className={`border border-gray-300 outline-none px-1 align-middle ${isActive ? 'bg-blue-200' : ''} ${isInRange ? 'bg-blue-100' : ''}`}
+                      className={`border-r border-gray-200 outline-none px-1 align-middle ${isActive ? 'bg-blue-200' : ''} ${isInRange ? 'bg-blue-100' : ''}`}
                       style={{ width: cell.column.getSize() }}
                       onClick={(e) => handleCellClick(e, rowIndex, colIndex)}
                       onDoubleClick={() => {
@@ -416,7 +411,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                             }
                           }}
                           autoFocus
-                          className="w-full h-full p-1 border-none outline-none"
+                          className="w-full h-full border-none outline-none"
                         />
                       )}
 

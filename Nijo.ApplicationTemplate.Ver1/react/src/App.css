@@ -13,7 +13,9 @@
   }
 
   :root {
-    font-family: "Cascadia Mono", "BIZ UDGothic", system-ui, Avenir, Helvetica, Arial, sans-serif;
+    font-family: "Noto Sans JP", sans-serif;
+    font-optical-sizing: auto;
+    /* font-family: "Cascadia Mono", "BIZ UDGothic", system-ui, Avenir, Helvetica, Arial, sans-serif; */
   }
 }
 
