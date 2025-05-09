@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useRef } from "react";
 import { CellPosition, CellSelectionRange } from "../index.d";
+import type { Virtualizer } from '@tanstack/react-virtual';
 
 export interface UseGridKeyboardProps {
   activeCell: CellPosition | null;
@@ -11,6 +12,8 @@ export interface UseGridKeyboardProps {
   setSelectedRange: (range: CellSelectionRange | null) => void;
   startEditing: (rowIndex: number, colIndex: number) => void;
   getIsReadOnly: (rowIndex: number) => boolean;
+  rowVirtualizer: Virtualizer<HTMLDivElement, Element>;
+  tableContainerRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export function useGridKeyboard({
@@ -22,7 +25,9 @@ export function useGridKeyboard({
   setActiveCell,
   setSelectedRange,
   startEditing,
-  getIsReadOnly
+  getIsReadOnly,
+  rowVirtualizer,
+  tableContainerRef,
 }: UseGridKeyboardProps) {
   const anchorCellRef = useRef<CellPosition | null>(null);
 
@@ -42,9 +47,31 @@ export function useGridKeyboard({
 
   // キーボードイベントハンドラ
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (!activeCell) return;
+    if (!activeCell || isEditing) return;
 
     const { rowIndex, colIndex } = activeCell;
+    let newRowIndex = rowIndex;
+    let newColIndex = colIndex;
+
+    // スクロール処理を関数化
+    const scrollToCell = (rIndex: number, cIndex: number, isVertical: boolean) => {
+      if (isVertical) {
+        rowVirtualizer.scrollToIndex(rIndex, { align: 'auto' });
+      } else {
+        // 列方向のスクロール
+        const tableElement = tableContainerRef.current;
+        if (tableElement) {
+          // ヘッダーから対象列の要素を探す (より堅牢な方法は列IDを使うことだが、ここでは簡略化)
+          // 注意: この方法は表示されている列ヘッダーのみを対象とし、colIndexが可視列のインデックスであることを前提とします。
+          //       実際には、React TableのAPIや列定義と照らし合わせてDOM要素を特定する必要があるかもしれません。
+          const thSelector = `thead th:nth-child(${cIndex + 2})`; // +1 for 1-based index, +1 for rowHeader column
+          const thElement = tableElement.querySelector(thSelector) as HTMLElement | null;
+          if (thElement) {
+            thElement.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+          }
+        }
+      }
+    };
 
     // Shiftキーが押されていない場合、または anchorCell が未設定の場合にアンカーを更新
     if (!e.shiftKey || !anchorCellRef.current) {
@@ -54,12 +81,6 @@ export function useGridKeyboard({
     // 編集モード中は矢印キーを処理しない
     if (isEditing) return;
 
-    // Shiftキーを押した状態でのキー操作時、範囲選択の開始位置を保持
-    // const rangeStart = selectedRange ?
-    //  { rowIndex: selectedRange.startRow, colIndex: selectedRange.startCol } :
-    //  { rowIndex, colIndex };
-    // ↑ 不要になったのでコメントアウト
-
     // アンカーセルが存在しない場合は処理しない（Shiftキーが押された最初のイベントより前）
     const anchorCell = anchorCellRef.current;
     if (e.shiftKey && !anchorCell) return;
@@ -68,8 +89,9 @@ export function useGridKeyboard({
       case 'ArrowUp':
         e.preventDefault();
         if (rowIndex > 0) {
-          const newRowIndex = rowIndex - 1;
+          newRowIndex = rowIndex - 1;
           setActiveCell({ rowIndex: newRowIndex, colIndex });
+          rowVirtualizer.scrollToIndex(newRowIndex, { align: 'center' });
 
           if (e.shiftKey && anchorCell) { // anchorCell の存在を確認
             // 範囲選択（Shift + 矢印キー）
@@ -94,8 +116,9 @@ export function useGridKeyboard({
       case 'ArrowDown':
         e.preventDefault();
         if (rowIndex < rowCount - 1) {
-          const newRowIndex = rowIndex + 1;
+          newRowIndex = rowIndex + 1;
           setActiveCell({ rowIndex: newRowIndex, colIndex });
+          rowVirtualizer.scrollToIndex(newRowIndex, { align: 'center' });
 
           if (e.shiftKey && anchorCell) { // anchorCell の存在を確認
             // 範囲選択（Shift + 矢印キー）
@@ -120,8 +143,9 @@ export function useGridKeyboard({
       case 'ArrowLeft':
         e.preventDefault();
         if (colIndex > 0) {
-          const newColIndex = colIndex - 1;
+          newColIndex = colIndex - 1;
           setActiveCell({ rowIndex, colIndex: newColIndex });
+          scrollToCell(rowIndex, newColIndex, false);
 
           if (e.shiftKey && anchorCell) { // anchorCell の存在を確認
             // 範囲選択（Shift + 矢印キー）
@@ -146,8 +170,9 @@ export function useGridKeyboard({
       case 'ArrowRight':
         e.preventDefault();
         if (colIndex < colCount - 1) {
-          const newColIndex = colIndex + 1;
+          newColIndex = colIndex + 1;
           setActiveCell({ rowIndex, colIndex: newColIndex });
+          scrollToCell(rowIndex, newColIndex, false);
 
           if (e.shiftKey && anchorCell) { // anchorCell の存在を確認
             // 範囲選択（Shift + 矢印キー）
@@ -182,6 +207,7 @@ export function useGridKeyboard({
           // 前のセル
           if (colIndex > 0) {
             setActiveCell({ rowIndex, colIndex: colIndex - 1 });
+            scrollToCell(rowIndex, colIndex - 1, false);
             setSelectedRange({
               startRow: rowIndex,
               startCol: colIndex - 1,
@@ -191,6 +217,7 @@ export function useGridKeyboard({
           } else if (rowIndex > 0) {
             // 前の行の最後のセル
             setActiveCell({ rowIndex: rowIndex - 1, colIndex: colCount - 1 });
+            rowVirtualizer.scrollToIndex(rowIndex - 1, { align: 'center' });
             setSelectedRange({
               startRow: rowIndex - 1,
               startCol: colCount - 1,
@@ -202,6 +229,7 @@ export function useGridKeyboard({
           // 次のセル
           if (colIndex < colCount - 1) {
             setActiveCell({ rowIndex, colIndex: colIndex + 1 });
+            scrollToCell(rowIndex, colIndex + 1, false);
             setSelectedRange({
               startRow: rowIndex,
               startCol: colIndex + 1,
@@ -211,6 +239,7 @@ export function useGridKeyboard({
           } else if (rowIndex < rowCount - 1) {
             // 次の行の最初のセル
             setActiveCell({ rowIndex: rowIndex + 1, colIndex: 0 });
+            rowVirtualizer.scrollToIndex(rowIndex + 1, { align: 'center' });
             setSelectedRange({
               startRow: rowIndex + 1,
               startCol: 0,
@@ -221,7 +250,7 @@ export function useGridKeyboard({
         }
         break;
     }
-  }, [activeCell, selectedRange, rowCount, colCount, isEditing, getIsReadOnly, setActiveCell, setSelectedRange, startEditing]);
+  }, [activeCell, selectedRange, rowCount, colCount, isEditing, getIsReadOnly, setActiveCell, setSelectedRange, startEditing, rowVirtualizer, tableContainerRef]);
 
   // イベントリスナーの設定
   useEffect(() => {
@@ -231,5 +260,5 @@ export function useGridKeyboard({
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('copy', handleCopy);
     };
-  }, [handleKeyDown, handleCopy]);
+  }, [activeCell, selectedRange, isEditing, rowCount, colCount, setActiveCell, setSelectedRange, startEditing, getIsReadOnly, rowVirtualizer, tableContainerRef, handleKeyDown, handleCopy]);
 }

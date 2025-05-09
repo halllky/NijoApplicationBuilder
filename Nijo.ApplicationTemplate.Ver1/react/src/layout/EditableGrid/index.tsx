@@ -113,6 +113,13 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   } = useDragSelection(setActiveCell, setSelectedRange)
 
   // キーボード操作
+  const rowVirtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => ESTIMATED_ROW_HEIGHT,
+    overscan: 5,
+  });
+
   useGridKeyboard({
     activeCell,
     selectedRange,
@@ -122,7 +129,9 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     setActiveCell,
     setSelectedRange,
     startEditing,
-    getIsReadOnly
+    getIsReadOnly,
+    rowVirtualizer,
+    tableContainerRef,
   });
 
   // テーブル定義
@@ -217,13 +226,6 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   // 仮想化設定
   const { rows: tableRows } = table.getRowModel();
 
-  const rowVirtualizer = useVirtualizer({
-    count: rows.length,
-    getScrollElement: () => tableContainerRef.current,
-    estimateSize: () => ESTIMATED_ROW_HEIGHT,
-    overscan: 5,
-  });
-
   const virtualItems = rowVirtualizer.getVirtualItems();
 
   // 実際に表示されていない行の余白部分の高さを計算
@@ -310,8 +312,6 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                 let className = 'bg-gray-100 relative text-left select-none'
                 if (isRowHeader) className += ' sticky left-0 z-20'
                 else if (isFixedColumn) className += ' sticky z-10'
-
-                console.log(header.id, header.getStart())
 
                 return (
                   <th
