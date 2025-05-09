@@ -41,7 +41,8 @@ export function useEditing<TRow extends ReactHookForm.FieldValues>(
   const startEditing = useCallback((rowIndex: number, colIndex: number) => {
     if (getIsReadOnly(rowIndex)) return;
 
-    const fieldPath = columnDefs[colIndex]?.fieldPath;
+    const colDef = columnDefs[colIndex];
+    const fieldPath = colDef?.fieldPath;
     if (!fieldPath) return;
 
     const row = rows[rowIndex];

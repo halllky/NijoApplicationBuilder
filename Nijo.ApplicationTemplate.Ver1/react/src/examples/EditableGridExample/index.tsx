@@ -58,9 +58,9 @@ const BasicGridExample = () => {
 
   // 列定義
   const getColumnDefs: GetColumnDefsFunction<MyRowData> = React.useCallback((cellType: ColumnDefFactories<MyRowData>) => [
-    cellType.text('make', 'メーカー', { defaultWidth: '150' }),
-    cellType.text('model', 'モデル', { defaultWidth: '150' }),
-    cellType.number('price', '価格', { defaultWidth: '100' }),
+    cellType.text('make', 'メーカー', { defaultWidth: 150 }),
+    cellType.text('model', 'モデル', { defaultWidth: 150 }),
+    cellType.number('price', '価格', { defaultWidth: 100 }),
   ], [])
 
   // セル変更時イベント

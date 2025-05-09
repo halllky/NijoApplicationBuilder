@@ -9,7 +9,12 @@ import type { ColumnDefFactories } from './useCellTypes'
 export type EditableGridProps<TRow extends ReactHookForm.FieldValues> = {
   /** 行のデータ。通常はuseFieldArrayの返り値を渡す。 */
   rows: TRow[]
-  /** 列定義を取得する関数。この関数の参照が変わる度にグリッドが再レンダリングされるため、原則として `useCallback` を使用すること。 */
+  /**
+   * 列定義を取得する関数。
+   * この関数の参照が変わる度にグリッドが再レンダリングされるため、原則として `useCallback` を使用すること。
+   * 列の順番で識別子を振っているため、動的に列が変わる場合であっても、常に同じ数の列定義を返すこと。
+   * 非表示の列については `invisible` オプションを使用すること。
+   */
   getColumnDefs: GetColumnDefsFunction<TRow>
 
   /** セルデータが変更されたときのコールバック */
@@ -96,10 +101,14 @@ export type EditableGridColumnDef<TRow extends ReactHookForm.FieldValues> = Edit
 export type EditableGridColumnDefOptions<TRow extends ReactHookForm.FieldValues> = {
   /** 列ヘッダに必須を表すマークが表示されるかどうか。これをtrueにしても内容のチェックが行われるわけではない。 */
   required?: boolean
-  /** 画面初期表示時の列の幅 */
-  defaultWidth?: number | string
+  /** 画面初期表示時の列の幅（pxで指定） */
+  defaultWidth?: number
   /** 列が読み取り専用かどうか */
   isReadOnly?: boolean | ((row: TRow, rowIndex: number) => boolean)
+  /** 列の幅を変更できるかどうか */
+  enableResizing?: boolean
+  /** 列が非表示になるかどうか */
+  invisible?: boolean
   /** @deprecated このオプションは廃止されました。 `isReadOnly` を使用してください。 */
   editable?: boolean
 }

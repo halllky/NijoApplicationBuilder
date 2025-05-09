@@ -164,48 +164,21 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
           </div>
         );
       },
-      cell: ({ row }: { row: Row<TRow> }) => {
-        const rowIndex = row.index;
-        return (
-          <div className="h-8 flex justify-center items-center">
-            {getShouldShowCheckBox(rowIndex) && (
-              <input
-                type="checkbox"
-                checked={selectedRows.has(rowIndex)}
-                onChange={(e) => handleToggleRow(rowIndex, e.target.checked)}
-                aria-label={`行${rowIndex + 1}を選択`}
-              />
-            )}
-          </div>
-        );
-      },
     }),
     // 列ヘッダーとデータ列
     ...columnDefs.map((colDef: EditableGridColumnDef<TRow>, colIndex: number) =>
-      columnHelper.accessor(
-        (row: TRow) => {
-          // fieldPathがある場合そのパスに対応する値を取得
-          if (colDef.fieldPath) {
-            return getValueByPath(row, colDef.fieldPath);
-          }
-          return undefined;
-        },
-        {
-          id: colDef.fieldPath || `col-${colIndex}`,
-          header: colDef.header,
-          size: typeof colDef.defaultWidth === 'string' ? parseInt(colDef.defaultWidth, 10) : (colDef.defaultWidth ?? defaultColumnWidth),
-          enableResizing: true,
-          cell: ({ getValue }: { getValue: () => any }) => {
-            // tbody側で編集/表示の切り替えやイベントハンドラを設定するため、
-            // ここでは単純に値を表示する or 基本的なラッパーコンポーネントを返す程度に留める
-            return (
-              <div className="p-1 h-8 w-full overflow-hidden text-ellipsis whitespace-nowrap">
-                {getValue()?.toString() || ''}
-              </div>
-            );
-          }
+      columnHelper.accessor((row: TRow) => {
+        // fieldPathがある場合そのパスに対応する値を取得
+        if (colDef.fieldPath) {
+          return getValueByPath(row, colDef.fieldPath);
         }
-      )
+        return undefined;
+      }, {
+        id: `col-${colIndex}`,
+        header: colDef.header,
+        size: colDef.defaultWidth ?? defaultColumnWidth,
+        enableResizing: colDef.enableResizing ?? true,
+      })
     )
   ], [columnDefs, showCheckBox, allRowsSelected, handleToggleAllRows, getShouldShowCheckBox, selectedRows, handleToggleRow, activeCell, selectedRange, handleCellClick, getIsReadOnly, startEditing, isEditing, editValue, handleEditValueChange, confirmEdit, cancelEdit, columnHelper]);
 
@@ -306,6 +279,13 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
         className="border-collapse table-fixed"
         style={{ minWidth: tableTotalWidth }}
       >
+        {/* 列幅を設定するためのcolgroup要素 */}
+        <colgroup>
+          {columnDefs.map((colDef: EditableGridColumnDef<TRow>, colIndex: number) => (
+            <col key={`col-${colIndex}`} style={{ width: table.getAllLeafColumns()[colIndex]?.getSize() ?? colDef.defaultWidth ?? defaultColumnWidth }} />
+          ))}
+        </colgroup>
+
         <thead className="sticky top-0 z-10 bg-gray-100 grid-header-group">
           {table.getHeaderGroups().map(headerGroup => (
             <tr key={headerGroup.id}>
@@ -315,10 +295,17 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                   className="border border-gray-300 px-1 relative text-left select-none"
                   style={{ width: header.getSize() }}
                 >
-                  {!header.isPlaceholder && flexRender(
-                    header.column.columnDef.header,
-                    header.getContext()
+                  {/* 列ヘッダのテキスト */}
+                  {!header.isPlaceholder && (
+                    <div className="select-none truncate" style={{ width: header.getSize() }}>
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                    </div>
                   )}
+
+                  {/* 列幅を変更できる場合はサイズ変更ハンドラを設定 */}
                   {header.column.getCanResize() && (
                     <div
                       onMouseDown={header.getResizeHandler()}
@@ -357,9 +344,11 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                 {/* 画面のスクロール範囲内に表示されている列のみレンダリングされる */}
                 {row.getVisibleCells().map(cell => {
                   const rowIndex = row.index;
-                  const colIndex = cell.column.id === 'rowHeader' ? -1 : columnDefs.findIndex((col: EditableGridColumnDef<TRow>) =>
-                    col.fieldPath === cell.column.id || `col-${col.fieldPath}` === cell.column.id
-                  );
+                  // 行ヘッダー列を除いた可視列の配列を取得し、その中でのインデックスを colIndex とする
+                  const visibleDataColumns = table.getAllLeafColumns().filter(c => c.id !== 'rowHeader');
+                  const colIndex = cell.column.id === 'rowHeader'
+                    ? -1
+                    : visibleDataColumns.findIndex(c => c.id === cell.column.id);
 
                   const isActive = activeCell?.rowIndex === rowIndex && activeCell?.colIndex === colIndex;
                   const isInRange = Boolean(selectedRange &&
@@ -388,7 +377,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                   return (
                     <td
                       key={cell.id}
-                      className={`border border-gray-300 outline-none p-1 align-middle ${isActive ? 'bg-blue-200' : ''} ${isInRange ? 'bg-blue-100' : ''}`}
+                      className={`border border-gray-300 outline-none px-1 align-middle ${isActive ? 'bg-blue-200' : ''} ${isInRange ? 'bg-blue-100' : ''}`}
                       style={{ width: cell.column.getSize() }}
                       onClick={(e) => handleCellClick(e, rowIndex, colIndex)}
                       onDoubleClick={() => {
@@ -433,7 +422,10 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
 
                       {/* セル編集中でない場合はdiv要素をレンダリング */}
                       {(!isEditing || !isActive) && (
-                        <div className="select-none overflow-hidden text-ellipsis whitespace-nowrap">
+                        <div
+                          className="select-none truncate"
+                          style={{ width: cell.column.getSize() }}
+                        >
                           {cell.getValue()?.toString() || ''}
                         </div>
                       )}
