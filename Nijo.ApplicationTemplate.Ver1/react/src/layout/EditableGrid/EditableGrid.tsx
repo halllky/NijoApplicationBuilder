@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useRef, useState, useCallback, useEffect, useImperativeHandle, useMemo } from "react";
-import { EditableGridProps, EditableGridRef, EditableGridColumnDef } from "./types";
+import { EditableGridProps, EditableGridRef, EditableGridColumnDef, EditableGridColumnDefRenderCell } from "./types";
 import {
   createColumnHelper,
   getCoreRowModel,
@@ -164,8 +164,8 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
         );
       },
       meta: {
-        isFixed: true,
         isRowHeader: true,
+        originalColDef: undefined,
       } satisfies ColumnMetadataInternal<TRow>,
     }),
     // 列ヘッダーとデータ列
@@ -189,8 +189,8 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
             )
           },
           meta: {
-            isFixed: colDef.isFixed,
             originalColDef: colDef,
+            isRowHeader: false,
           } satisfies ColumnMetadataInternal<TRow>,
         });
         return tableColumnDef;
@@ -300,8 +300,8 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
           {table.getHeaderGroups().map(headerGroup => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map(header => {
-                const headerMeta: ColumnMetadataInternal<TRow> | undefined = header.column.columnDef.meta;
-                const isFixedColumn = !!headerMeta?.isFixed;
+                const headerMeta = header.column.columnDef.meta as ColumnMetadataInternal<TRow> | undefined
+                const isFixedColumn = !!headerMeta?.originalColDef?.isFixed;
                 const isRowHeader = !!headerMeta?.isRowHeader;
 
                 let className = 'bg-gray-200 relative text-left select-none'
@@ -399,7 +399,10 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                   if (isActive) dataColumnClassName += ' bg-blue-200'
                   else if (isInRange) dataColumnClassName += ' bg-blue-100'
                   else dataColumnClassName += ' bg-gray-100'
-                  if (cellMeta?.isFixed) dataColumnClassName += ` sticky` // z-indexをつけるとボディ列が列ヘッダより手前にきてしまうので設定しない
+                  if (cellMeta?.originalColDef?.isFixed) dataColumnClassName += ` sticky` // z-indexをつけるとボディ列が列ヘッダより手前にきてしまうので設定しない
+
+                  // 画面側でレンダリング処理が決められている場合はそれを使用、決まっていないなら単にtoString
+                  const renderCell = (cell.column.columnDef.meta as ColumnMetadataInternal<TRow>)?.originalColDef?.renderCell
 
                   return (
                     <td
@@ -407,7 +410,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                       className={dataColumnClassName}
                       style={{
                         width: cell.column.getSize(),
-                        left: cellMeta?.isFixed ? `${cell.column.getStart()}px` : undefined,
+                        left: cellMeta?.originalColDef?.isFixed ? `${cell.column.getStart()}px` : undefined,
                       }}
                       onClick={(e) => handleCellClick(e, rowIndex, colIndex)}
                       onDoubleClick={() => {
@@ -456,7 +459,8 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                           className="pl-1 border-r border-gray-200 select-none truncate"
                           style={{ width: cell.column.getSize() }}
                         >
-                          {cell.getValue()?.toString() || ''}&nbsp;
+                          {renderCell?.(cell.getContext()) ?? cell.getValue()?.toString()}
+                          &nbsp;
                         </div>
                       )}
                     </td>
@@ -494,9 +498,8 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
 
 /** このファイル内部でのみ使用 */
 type ColumnMetadataInternal<TRow extends ReactHookForm.FieldValues> = {
-  isFixed?: boolean
-  isRowHeader?: boolean
-  originalColDef?: EditableGridColumnDef<TRow>
+  isRowHeader: boolean | undefined
+  originalColDef: EditableGridColumnDef<TRow> | undefined
 }
 
 /** 推定行高さ */

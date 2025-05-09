@@ -41,7 +41,7 @@ export function EditableGridExample() {
         編集可能なグリッドです。<br />
         オプションの指定により読み取り専用とすることもできます。<br />
         基本的に、React Hook Form の useFieldArray と組み合わせて使用します。<br />
-        行・列ともに仮想化されており、画面内に表示されている範囲のみがレンダリングされます。<br />
+        行は仮想化されており、画面内に表示されている範囲のみがレンダリングされます。<br />
         TanStack の React Table および TanStack Virtual を使用しています。
       </p>
 
@@ -70,7 +70,16 @@ const BasicGridExample = () => {
   const getColumnDefs: GetColumnDefsFunction<MyRowData> = React.useCallback((cellType: ColumnDefFactories<MyRowData>) => [
     cellType.text('make', 'メーカー', { defaultWidth: 150, isFixed: true }),
     cellType.text('model', 'モデル', { defaultWidth: 150 }),
-    cellType.number('price', '価格', { defaultWidth: 100 }),
+
+    cellType.number('price', '価格', {
+      defaultWidth: 100,
+      // レンダリング処理のカスタマイズの例。ここでは、価格が負の数なら赤字で表示する。
+      renderCell: (cell) => {
+        const price = cell.getValue() as number
+        return price < 0 ? <span className="text-rose-600">{price}</span> : price
+      },
+    }),
+
     cellType.text('description1', '説明1', { defaultWidth: 100, invisible: columnCountType !== 'many' }),
     cellType.text('description2', '説明2', { defaultWidth: 100, invisible: columnCountType !== 'many' }),
     cellType.text('description3', '説明3', { defaultWidth: 100, invisible: columnCountType !== 'many' }),
@@ -96,6 +105,11 @@ const BasicGridExample = () => {
     remove(selectedRows)
   })
 
+  // 1000行追加
+  const handleAdd1000Rows = useEvent(() => {
+    append(Array.from({ length: 1000 }, (_, i) => ({ id: fields.length + i + 1, make: '', model: '', price: i })))
+  })
+
   // コンソール出力
   const handleConsoleLog = useEvent(() => {
     console.table(fields)
@@ -106,6 +120,8 @@ const BasicGridExample = () => {
       <div className="flex gap-2">
         <Input.IconButton outline onClick={handleAddRow}>行追加</Input.IconButton>
         <Input.IconButton outline onClick={handleDeleteRow}>行削除</Input.IconButton>
+        <div className="basis-2"></div>
+        <Input.IconButton outline onClick={handleAdd1000Rows}>1000行追加</Input.IconButton>
         <div className="flex-1"></div>
         <Input.IconButton outline onClick={handleConsoleLog}>コンソール出力</Input.IconButton>
       </div>
@@ -125,11 +141,11 @@ const BasicGridExample = () => {
         </span>
         <label className="flex items-center gap-1">
           <input type="radio" name="columnCountType" value="less" checked={columnCountType === 'less'} onChange={() => setColumnCountType('less')} />
-          少ない列を表示
+          一部の列だけ表示
         </label>
         <label className="flex items-center gap-1">
           <input type="radio" name="columnCountType" value="many" checked={columnCountType === 'many'} onChange={() => setColumnCountType('many')} />
-          とても多い列を表示
+          すべての列を表示
         </label>
       </div>
     </div>
@@ -142,7 +158,7 @@ const getDefaultValue = (): MyFormData => ({
     { id: 2, make: "Ford", model: "Mondeo", price: 32000 },
     { id: 3, make: "Porsche", model: "Boxster", price: 72000 },
     { id: 4, make: "Toyota", model: "Celica", price: 35000 },
-    { id: 5, make: "Ford", model: "Mondeo", price: 32000 },
+    { id: 5, make: "Ford", model: "Mondeo", price: -32000 },
     { id: 6, make: "Porsche", model: "Boxster", price: 72000 },
     { id: 7, make: "Toyota", model: "Celica", price: 35000 },
     { id: 8, make: "Ford", model: "Mondeo", price: 32000 },

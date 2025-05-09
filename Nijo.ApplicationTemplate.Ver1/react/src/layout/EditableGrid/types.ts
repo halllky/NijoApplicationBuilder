@@ -1,6 +1,7 @@
 import * as React from "react"
 import type * as ReactHookForm from 'react-hook-form'
 import type { ColumnDefFactories } from './useCellTypes'
+import { CellContext } from "@tanstack/react-table"
 
 /** EditableGridのプロパティ */
 export type EditableGridProps<TRow extends ReactHookForm.FieldValues> = {
@@ -106,6 +107,10 @@ export type EditableGridColumnDefOptions<TRow extends ReactHookForm.FieldValues>
   invisible?: boolean
   /** 列が固定されるかどうか */
   isFixed?: boolean
+  /** セルのレンダリング処理をカスタマイズする関数。 */
+  renderCell?: EditableGridColumnDefRenderCell<TRow>
   /** @deprecated このオプションは廃止されました。 `isReadOnly` を使用してください。 */
   editable?: boolean
 }
+
+export type EditableGridColumnDefRenderCell<TRow extends ReactHookForm.FieldValues> = (cell: CellContext<TRow, unknown>) => React.ReactNode
