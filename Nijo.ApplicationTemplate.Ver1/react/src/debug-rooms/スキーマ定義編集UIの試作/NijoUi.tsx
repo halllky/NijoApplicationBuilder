@@ -23,8 +23,10 @@ export const NijoUi = ({ className }: {
 
   // 選択中のルート集約
   const [selectedRootAggregateIndex, setSelectedRootAggregateIndex] = React.useState<number | null>(null)
+  const [selectedRootAggregateId, setSelectedRootAggregateId] = React.useState<string | undefined>(undefined)
   const handleSelected = useEvent((rootAggregateIndex: number) => {
     setSelectedRootAggregateIndex(rootAggregateIndex)
+    setSelectedRootAggregateId(form.getValues(`xmlElementTrees.${rootAggregateIndex}.xmlElements.0.id`))
   })
 
   return (
@@ -32,7 +34,11 @@ export const NijoUi = ({ className }: {
 
       {/* サイドメニュー */}
       <ReactResizablePanels.Panel defaultSize={20}>
-        <NijoUiSideMenu formMethods={form} onSelected={handleSelected} />
+        <NijoUiSideMenu
+          formMethods={form}
+          selectedRootAggregateId={selectedRootAggregateId}
+          onSelected={handleSelected}
+        />
       </ReactResizablePanels.Panel>
 
       <ReactResizablePanels.PanelResizeHandle />

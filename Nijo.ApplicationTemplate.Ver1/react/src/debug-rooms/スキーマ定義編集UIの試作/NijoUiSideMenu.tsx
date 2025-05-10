@@ -8,9 +8,10 @@ import * as Input from "../../input"
 import useEvent from "react-use-event-hook"
 import { ApplicationState, ATTR_TYPE, TYPE_COMMAND_MODEL, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, TYPE_STATIC_ENUM_MODEL, TYPE_VALUE_OBJECT_MODEL, XmlElementItem } from "./types"
 
-export const NijoUiSideMenu = ({ formMethods, onSelected }: {
+export const NijoUiSideMenu = ({ formMethods, onSelected, selectedRootAggregateId }: {
   formMethods: ReactHookForm.UseFormReturn<ApplicationState>
   onSelected: (rootAggregateIndex: number) => void
+  selectedRootAggregateId: string | undefined
 }) => {
   const { control } = formMethods
   const { fields, append } = ReactHookForm.useFieldArray({ control, name: 'xmlElementTrees' })
@@ -106,7 +107,7 @@ export const NijoUiSideMenu = ({ formMethods, onSelected }: {
           <li
             key={menuItem.id}
             onClick={() => handleSelected(menuItem)}
-            className="flex items-center gap-px cursor-pointer"
+            className={`flex items-center gap-px cursor-pointer ${selectedRootAggregateId === menuItem.id ? 'bg-gray-100' : ''}`}
           >
             <div style={{ flexBasis: `${menuItem.indent * 1.2}rem` }}></div>
             <SideMenuItemIcon menuItem={menuItem} collapsedItems={collapsedItems} />
@@ -118,6 +119,9 @@ export const NijoUiSideMenu = ({ formMethods, onSelected }: {
   )
 }
 
+/**
+ * サイドメニューの要素のアイコン
+ */
 const SideMenuItemIcon = ({ menuItem, collapsedItems }: {
   menuItem: SideMenuItem
   collapsedItems: Set<string>

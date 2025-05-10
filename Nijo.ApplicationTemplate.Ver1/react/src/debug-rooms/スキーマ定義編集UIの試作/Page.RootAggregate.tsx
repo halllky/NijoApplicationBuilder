@@ -7,6 +7,7 @@ import * as Layout from "../../layout"
 import { ApplicationState, ATTR_TYPE, XmlElementItem } from "./types"
 import useEvent from "react-use-event-hook"
 import { UUID } from "uuidjs"
+
 /**
  * Data, Query, Command のルート集約1件を表示・編集するページ。
  */
