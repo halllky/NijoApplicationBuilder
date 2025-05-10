@@ -7,9 +7,26 @@ export default function () {
       headerContent={(
         <PageFrameTitle>スキーマ定義編集UI</PageFrameTitle>
       )}
-      className="p-8"
+      className="flex flex-col"
     >
-      <NijoUi className="h-full w-full border border-gray-500" />
+      <ul className="p-1 text-xs text-gray-600 list-inside list-disc">
+        <li>
+          nijo.xml をGUIから編集する画面。
+          Windows Forms の WebView2 コントロールに埋め込んで使う。
+        </li>
+        <li>
+          ビルド時は「npm run build:nijo-ui」を実行して、そのあとに「dotnet build Nijo.csproj」を実行する。
+          Nijo.csproj のビルド時、nijo.exe の埋め込みリソースとしてこのReactアプリを埋め込んでいる。
+          viteのmode機能を使い、modeが "nijo-ui" の場合は
+          通常のアプリケーション全体ではなくこの下に見えている画面がメインに表示されるようにしている。
+        </li>
+        <li>
+          デバッグ時は、「npm run dev」と「nijo.exe run-ui-service」を並行して実行する。
+        </li>
+      </ul>
+      <div className="flex-1 p-8">
+        <NijoUi className="w-full h-full border border-gray-500" />
+      </div>
     </PageFrame>
   )
 }
