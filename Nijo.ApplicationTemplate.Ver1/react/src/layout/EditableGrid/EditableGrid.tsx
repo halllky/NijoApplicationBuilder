@@ -183,10 +183,12 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
           enableResizing: colDef.enableResizing ?? true,
           header: ({ header }) => (
             <div
-              className="flex pl-1 border-b border-r border-gray-300 text-gray-700 font-normal select-none truncate"
+              className="flex pl-1 border-b border-r border-gray-300 text-gray-700 font-normal select-none"
               style={{ width: header.getSize() }}
             >
-              {colDef.header}&nbsp;
+              <span className="truncate">
+                {colDef.header}
+              </span>
             </div>
           ),
           meta: {

@@ -113,6 +113,23 @@ export type EditableGridColumnDefOptions<TRow extends ReactHookForm.FieldValues>
   renderCell?: EditableGridColumnDefRenderCell<TRow>
   /** @deprecated このオプションは廃止されました。 `isReadOnly` を使用してください。 */
   editable?: boolean
+
+  /** 編集開始時に呼び出される関数 */
+  onStartEditing?: EditableGridColumnDefOnStartEditing<TRow>
 }
 
+/** セルのレンダリング処理をカスタマイズする関数。 */
 export type EditableGridColumnDefRenderCell<TRow extends ReactHookForm.FieldValues> = (cell: CellContext<TRow, unknown>) => React.ReactNode
+
+/** 編集開始時に呼び出される関数 */
+export type EditableGridColumnDefOnStartEditing<TRow extends ReactHookForm.FieldValues> = (e: {
+  rowIndex: number
+  row: TRow
+  /**
+   * この関数を呼んで値を渡すとエディタでの編集が開始される。
+   * 未指定の場合は `fieldPath` の値で行オブジェクトの値が参照される。
+   * それも指定されていない場合はそのセルは編集不可とみなす。
+   */
+  setEditorValue: (value: string) => void
+}) => void
+

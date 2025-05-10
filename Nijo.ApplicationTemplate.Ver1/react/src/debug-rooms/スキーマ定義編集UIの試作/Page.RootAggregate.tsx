@@ -7,6 +7,7 @@ import * as Layout from "../../layout"
 import { ApplicationState, ATTR_TYPE, XmlElementAttribute, XmlElementItem } from "./types"
 import useEvent from "react-use-event-hook"
 import { UUID } from "uuidjs"
+import { useAttrDefs } from "./useAttrDefs"
 
 /**
  * Data, Query, Command のルート集約1件を表示・編集するページ。
@@ -17,9 +18,9 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
   className?: string
 }) => {
   const gridRef = React.useRef<Layout.EditableGridRef<GridRowType>>(null)
-  const { control, getValues } = formMethods
+  const { control } = formMethods
   const { fields, insert, remove, update } = ReactHookForm.useFieldArray({ control, name: `xmlElementTrees.${rootAggregateIndex}.xmlElements` })
-  const attributeDefs = getValues(`attributeDefs`)
+  const attributeDefs = useAttrDefs()
 
   // メンバーグリッドの列定義
   const getColumnDefs: Layout.GetColumnDefsFunction<GridRowType> = React.useCallback(cellType => {
@@ -36,12 +37,9 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
         renderCell: renderTypeCell,
       }),
       // Attributes（Typeだけはコンボボックスなので除外）
-      ...attributeDefs.filter(attrDef => attrDef.attributeName !== ATTR_TYPE).map(attrDef => ({
-        id: attrDef.attributeName,
-        header: attrDef.attributeName,
-        defaultWidth: 120,
-        renderCell: createAttributeCellRenderer(attrDef),
-      })),
+      ...Array.from(attributeDefs.values())
+        .filter(attrDef => attrDef.attributeName !== ATTR_TYPE)
+        .map(attrDef => createAttributeCell(attrDef, cellType)),
     ]
   }, [attributeDefs])
 
@@ -194,16 +192,26 @@ const renderTypeCell = (context: ReactTable.CellContext<GridRowType, unknown>) =
   )
 }
 
-/** 属性のセルのレイアウト */
-const createAttributeCellRenderer = (attrDef: XmlElementAttribute): ((context: ReactTable.CellContext<GridRowType, unknown>) => React.ReactNode) => {
-  return context => {
-    const value = context.row.original.attributes?.get(attrDef.attributeName)
-    return (
-      <PlainCell>
-        {value}
-      </PlainCell>
-    )
-  }
+/** 属性のセル */
+const createAttributeCell = (
+  attrDef: XmlElementAttribute,
+  cellType: Layout.ColumnDefFactories<GridRowType>
+) => {
+  return cellType.other(attrDef.displayName, {
+    defaultWidth: 120,
+    onStartEditing: e => {
+      // 編集開始時に値を設定
+      e.setEditorValue(e.row.attributes?.get(attrDef.attributeName) ?? '')
+    },
+    renderCell: context => {
+      const value = context.row.original.attributes?.get(attrDef.attributeName)
+      return (
+        <PlainCell>
+          {value}
+        </PlainCell>
+      )
+    },
+  })
 }
 
 const PlainCell = ({ children, className }: {

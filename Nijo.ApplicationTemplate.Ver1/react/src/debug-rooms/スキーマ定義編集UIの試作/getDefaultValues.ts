@@ -148,21 +148,21 @@ export const getDefaultValues = (): ApplicationState => {
   // - type は `NodeOption` クラスの `Type` に同じ。 `string` か `bool` のどちらかしか無い
   // - "Type" だけは特別
   const attributeDefs: XmlElementAttribute[] = [
-    { attributeName: ATTR_TYPE, type: 'select', getOptions: getAttrTypeOptions },
-    { attributeName: 'DisplayName' as XmlElementAttributeName, type: 'string' },
-    { attributeName: 'DbName' as XmlElementAttributeName, type: 'string' },
-    { attributeName: 'LatinName' as XmlElementAttributeName, type: 'string' },
-    { attributeName: 'IsKey' as XmlElementAttributeName, type: 'bool' },
-    { attributeName: 'IsRequired' as XmlElementAttributeName, type: 'bool' },
-    { attributeName: 'GenerateDefaultQueryModel' as XmlElementAttributeName, type: 'bool' },
-    { attributeName: 'GenerateBatchUpdateCommand' as XmlElementAttributeName, type: 'bool' },
-    { attributeName: 'IsReadOnly' as XmlElementAttributeName, type: 'bool' },
-    { attributeName: 'HasLifeCycle' as XmlElementAttributeName, type: 'bool' },
-    { attributeName: 'MaxLength' as XmlElementAttributeName, type: 'string' },
-    { attributeName: 'CharacterType' as XmlElementAttributeName, type: 'string' },
-    { attributeName: 'TotalDigit' as XmlElementAttributeName, type: 'string' },
-    { attributeName: 'DecimalPlace' as XmlElementAttributeName, type: 'string' },
-    { attributeName: 'SequenceName' as XmlElementAttributeName, type: 'string' },
+    { attributeName: ATTR_TYPE, displayName: '種類', type: 'select', getOptions: getAttrTypeOptions },
+    { attributeName: 'DisplayName' as XmlElementAttributeName, displayName: '表示名', type: 'string' },
+    { attributeName: 'DbName' as XmlElementAttributeName, displayName: 'データベース名', type: 'string' },
+    { attributeName: 'LatinName' as XmlElementAttributeName, displayName: 'ラテン語名', type: 'string' },
+    { attributeName: 'IsKey' as XmlElementAttributeName, displayName: '主キー', type: 'bool' },
+    { attributeName: 'IsRequired' as XmlElementAttributeName, displayName: '必須', type: 'bool' },
+    { attributeName: 'GenerateDefaultQueryModel' as XmlElementAttributeName, displayName: 'デフォルトのクエリモデルを生成', type: 'bool' },
+    { attributeName: 'GenerateBatchUpdateCommand' as XmlElementAttributeName, displayName: 'バッチ更新コマンドを生成', type: 'bool' },
+    { attributeName: 'IsReadOnly' as XmlElementAttributeName, displayName: '読み取り専用', type: 'bool' },
+    { attributeName: 'HasLifeCycle' as XmlElementAttributeName, displayName: '独立ライフサイクル', type: 'bool' },
+    { attributeName: 'MaxLength' as XmlElementAttributeName, displayName: '最大文字数', type: 'string' },
+    { attributeName: 'CharacterType' as XmlElementAttributeName, displayName: '文字種', type: 'string' },
+    { attributeName: 'TotalDigit' as XmlElementAttributeName, displayName: '整数部小数部合計桁数', type: 'string' },
+    { attributeName: 'DecimalPlace' as XmlElementAttributeName, displayName: '小数点以下の桁数', type: 'string' },
+    { attributeName: 'SequenceName' as XmlElementAttributeName, displayName: 'シーケンス名', type: 'string' },
   ]
 
 

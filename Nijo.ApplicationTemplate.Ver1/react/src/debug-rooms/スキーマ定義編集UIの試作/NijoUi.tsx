@@ -8,6 +8,7 @@ import { ApplicationState } from "./types"
 import { NijoUiSideMenu } from "./NijoUiSideMenu"
 import { getDefaultValues } from "./getDefaultValues"
 import { PageRootAggregate } from "./Page.RootAggregate"
+import { AttrDefsProvider } from "./useAttrDefs"
 
 /**
  * nijo.xmlをUIで編集できる画面の試作。
@@ -30,31 +31,33 @@ export const NijoUi = ({ className }: {
   })
 
   return (
-    <ReactResizablePanels.PanelGroup direction="horizontal" className={className}>
+    <AttrDefsProvider control={form.control}>
+      <ReactResizablePanels.PanelGroup direction="horizontal" className={className}>
 
-      {/* サイドメニュー */}
-      <ReactResizablePanels.Panel defaultSize={20}>
-        <NijoUiSideMenu
-          formMethods={form}
-          selectedRootAggregateId={selectedRootAggregateId}
-          onSelected={handleSelected}
-        />
-      </ReactResizablePanels.Panel>
-
-      <ReactResizablePanels.PanelResizeHandle />
-
-      {/* メインコンテンツ */}
-      <ReactResizablePanels.Panel>
-        {selectedRootAggregateIndex !== null && (
-          <PageRootAggregate
-            key={selectedRootAggregateIndex}
-            rootAggregateIndex={selectedRootAggregateIndex}
+        {/* サイドメニュー */}
+        <ReactResizablePanels.Panel defaultSize={20}>
+          <NijoUiSideMenu
             formMethods={form}
-            className="pl-1 pt-1"
+            selectedRootAggregateId={selectedRootAggregateId}
+            onSelected={handleSelected}
           />
-        )}
-      </ReactResizablePanels.Panel>
+        </ReactResizablePanels.Panel>
 
-    </ReactResizablePanels.PanelGroup>
+        <ReactResizablePanels.PanelResizeHandle />
+
+        {/* メインコンテンツ */}
+        <ReactResizablePanels.Panel>
+          {selectedRootAggregateIndex !== null && (
+            <PageRootAggregate
+              key={selectedRootAggregateIndex}
+              rootAggregateIndex={selectedRootAggregateIndex}
+              formMethods={form}
+              className="pl-1 pt-1"
+            />
+          )}
+        </ReactResizablePanels.Panel>
+
+      </ReactResizablePanels.PanelGroup>
+    </AttrDefsProvider>
   )
 }

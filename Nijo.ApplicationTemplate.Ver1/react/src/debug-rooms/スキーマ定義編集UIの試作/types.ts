@@ -54,6 +54,8 @@ export type XmlElementAttributeName = string & { _brand: 'XmlElementAttributeNam
 export type XmlElementAttribute = {
   /** この属性の識別子。XML要素の属性名になる。 */
   attributeName: XmlElementAttributeName
+  /** この属性の画面表示上の名称。 */
+  displayName: string
 } & (XmlElementStringAttribute | XmlElementBoolAttribute | XmlElementSelectAttribute)
 
 /** XML要素の属性の種類定義（文字列属性） */

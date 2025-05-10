@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { getValueByPath, setValueByPath } from "./EditableGrid.utils";
 import type * as ReactHookForm from 'react-hook-form';
 import { EditableGridColumnDef, EditableGridProps } from ".";
+import useEvent from "react-use-event-hook";
 
 export interface UseEditingReturn<TRow extends ReactHookForm.FieldValues> {
   isEditing: boolean;
@@ -38,33 +39,40 @@ export function useEditing<TRow extends ReactHookForm.FieldValues>(
     return false;
   }, [isGridReadOnly, rows]);
 
-  // 編集開始
-  const startEditing = useCallback((rowIndex: number, colIndex: number) => {
+  // 現在のセルの値をベースに編集を開始する
+  const startEditingByCurrentValue = useCallback((rowIndex: number, colIndex: number) => {
     if (getIsReadOnly(rowIndex)) return;
 
     const colDef = columnDefs[colIndex];
-    const fieldPath = colDef?.fieldPath;
-    if (!fieldPath) return;
 
-    const row = rows[rowIndex];
-    if (!row) return;
-
-    let value = getValueByPath(row, fieldPath);
-    setEditValue(value?.toString() || '');
-    setIsEditing(true);
-    setEditingCell({ rowIndex, colIndex });
+    // まず `onStartEditing` が指定されているかどうかを確認
+    let editorValue: string | undefined = undefined;
+    if (colDef?.onStartEditing) {
+      colDef.onStartEditing({
+        rowIndex,
+        row: rows[rowIndex],
+        setEditorValue: value => editorValue = value,
+      });
+    }
+    // `onStartEditing` による編集開始処理が指定されていない場合は `fieldPath` の参照を試みる
+    if (editorValue === undefined) {
+      const fieldPath = colDef?.fieldPath;
+      if (fieldPath) {
+        const row = rows[rowIndex];
+        editorValue = getValueByPath(row, fieldPath)?.toString() ?? ''
+      }
+    }
+    // 上記いずれかで編集用の値が設定されていれば編集開始
+    if (editorValue !== undefined) {
+      setEditValue(editorValue);
+      setIsEditing(true);
+      setEditingCell({ rowIndex, colIndex });
+    }
   }, [getIsReadOnly, rows, columnDefs]);
 
-  // 文字入力による編集開始
+  // キーボードで入力された文字をベースにして編集開始
   const startEditingWithCharacter = useCallback((rowIndex: number, colIndex: number, char: string) => {
     if (getIsReadOnly(rowIndex)) return;
-
-    const colDef = columnDefs[colIndex];
-    const fieldPath = colDef?.fieldPath;
-    if (!fieldPath) return;
-
-    const row = rows[rowIndex];
-    if (!row) return;
 
     // 初期値として入力された文字をセット
     setEditValue(char);
@@ -73,7 +81,7 @@ export function useEditing<TRow extends ReactHookForm.FieldValues>(
   }, [getIsReadOnly, rows, columnDefs]);
 
   // 編集確定
-  const confirmEdit = useCallback(() => {
+  const confirmEdit = useEvent(() => {
     if (!editingCell) {
       setIsEditing(false);
       return;
@@ -87,6 +95,7 @@ export function useEditing<TRow extends ReactHookForm.FieldValues>(
       return;
     }
 
+    const targetRow = rows[rowIndex];
     const fieldPath = columnDefs[colIndex]?.fieldPath;
     if (!fieldPath) {
       setIsEditing(false);
@@ -94,44 +103,15 @@ export function useEditing<TRow extends ReactHookForm.FieldValues>(
       return;
     }
 
-    const targetRow = rows[rowIndex];
-    const colDef = columnDefs[colIndex];
-
-    if (!targetRow || !colDef || !colDef.fieldPath) {
-      setIsEditing(false);
-      setEditingCell(null);
-      return;
-    }
-
-    const originalValue = getValueByPath(targetRow, colDef.fieldPath);
-    let newValue: any = editValue;
-
-    try {
-      // 元の値の型に合わせて変換
-      if (typeof originalValue === 'number') {
-        newValue = Number(editValue);
-        // NaNチェックを追加
-        if (isNaN(newValue)) {
-          newValue = originalValue; // NaNの場合は元の値に戻す
-        }
-      } else if (typeof originalValue === 'boolean') {
-        newValue = editValue.toLowerCase() === 'true';
-      }
-      // 文字列型はそのままnewValue（=editValue）を使用
-    } catch (e) {
-      console.error("型変換エラー", e);
-      newValue = originalValue; // エラー時は元の値に戻す
-    }
-
-    // 変更があったセルの情報(rowIndex, oldRow, newRow)を渡す。
-    // 行のオブジェクトのディープコピーをとり、該当の
+    // onCellEdited イベントを呼ぶ。
+    // 状態の変更は画面側に任せる。
     const newRow = cloneRow ? cloneRow(targetRow) : structuredClone(targetRow);
-    setValueByPath(newRow, fieldPath, newValue);
+    setValueByPath(newRow, fieldPath, editValue);
     onCellEdited({ rowIndex, oldRow: targetRow, newRow });
 
     setIsEditing(false);
     setEditingCell(null);
-  }, [onCellEdited, getIsReadOnly, columnDefs, rows, editValue, editingCell, cloneRow]);
+  });
 
   // 編集値の変更ハンドラ
   const handleEditValueChange = useCallback((value: string) => {
@@ -147,7 +127,7 @@ export function useEditing<TRow extends ReactHookForm.FieldValues>(
   return {
     isEditing,
     editValue,
-    startEditing,
+    startEditing: startEditingByCurrentValue,
     startEditingWithCharacter,
     confirmEdit,
     cancelEdit,
