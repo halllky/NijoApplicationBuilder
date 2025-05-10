@@ -31,14 +31,8 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
         isFixed: true,
         renderCell: renderLocalNameCell,
       }),
-      // Type
-      cellType.other('種類', {
-        defaultWidth: 120,
-        renderCell: renderTypeCell,
-      }),
-      // Attributes（Typeだけはコンボボックスなので除外）
+      // Attributes（Type含む）
       ...Array.from(attributeDefs.values())
-        .filter(attrDef => attrDef.attributeName !== ATTR_TYPE)
         .map(attrDef => createAttributeCell(attrDef, cellType)),
     ]
   }, [attributeDefs])
@@ -182,17 +176,6 @@ const renderLocalNameCell = (context: ReactTable.CellContext<GridRowType, unknow
   )
 }
 
-/** 種類のセルのレイアウト */
-const renderTypeCell = (context: ReactTable.CellContext<GridRowType, unknown>) => {
-  const type = context.row.original.attributes[ATTR_TYPE]
-
-  return (
-    <PlainCell>
-      {type}
-    </PlainCell>
-  )
-}
-
 /** 属性のセル */
 const createAttributeCell = (
   attrDef: XmlElementAttribute,
@@ -200,10 +183,11 @@ const createAttributeCell = (
 ) => {
   return cellType.other(attrDef.displayName, {
     defaultWidth: 120,
+    // 編集開始時処理
     onStartEditing: e => {
-      // セル編集エディタの初期値を設定
       e.setEditorInitialValue(e.row.attributes[attrDef.attributeName] ?? '')
     },
+    // 編集終了時処理
     onEndEditing: e => {
       const clone = window.structuredClone(e.row)
       if (e.value.trim() === '') {
@@ -213,6 +197,7 @@ const createAttributeCell = (
       }
       e.setEditedRow(clone)
     },
+    // セルのレンダリング
     renderCell: context => {
       const value = context.row.original.attributes[attrDef.attributeName]
       return (
@@ -223,6 +208,8 @@ const createAttributeCell = (
     },
   })
 }
+
+// -----------------------------
 
 const PlainCell = ({ children, className }: {
   children?: React.ReactNode

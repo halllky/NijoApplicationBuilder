@@ -1,5 +1,6 @@
 import * as ReactHookForm from "react-hook-form"
-import { EditableGridColumnDef, EditableGridColumnDefOnEndEditing, EditableGridColumnDefOptions } from "./types"
+import { EditableGridColumnDef, EditableGridColumnDefOnEndEditing, EditableGridColumnDefOnStartEditing, EditableGridColumnDefOptions } from "./types"
+import { getValueByPath, setValueByPath } from "./EditableGrid.utils";
 
 /** 列定義ヘルパー関数の一覧を返します。 */
 export const useCellTypes = <TRow extends ReactHookForm.FieldValues>(): ColumnDefFactories<TRow> => {
@@ -9,6 +10,10 @@ export const useCellTypes = <TRow extends ReactHookForm.FieldValues>(): ColumnDe
       return {
         header,
         fieldPath,
+        onStartEditing: e => {
+          const value = getValueByPath(e.row, fieldPath) as string | undefined
+          e.setEditorInitialValue(value?.toString() ?? '')
+        },
         onEndEditing: getDefaultOnEndEditing(fieldPath),
         ...options,
       };
@@ -18,6 +23,10 @@ export const useCellTypes = <TRow extends ReactHookForm.FieldValues>(): ColumnDe
       return {
         header,
         fieldPath,
+        onStartEditing: e => {
+          const value = getValueByPath(e.row, fieldPath) as number | undefined
+          e.setEditorInitialValue(value?.toString() ?? '')
+        },
         onEndEditing: getDefaultOnEndEditing(fieldPath),
         ...options,
       };
@@ -27,6 +36,10 @@ export const useCellTypes = <TRow extends ReactHookForm.FieldValues>(): ColumnDe
       return {
         header,
         fieldPath,
+        onStartEditing: e => {
+          const value = getValueByPath(e.row, fieldPath) as string | undefined
+          e.setEditorInitialValue(value?.toString() ?? '')
+        },
         onEndEditing: getDefaultOnEndEditing(fieldPath),
         ...options,
       };
@@ -36,6 +49,10 @@ export const useCellTypes = <TRow extends ReactHookForm.FieldValues>(): ColumnDe
       return {
         header,
         fieldPath,
+        onStartEditing: e => {
+          const value = getValueByPath(e.row, fieldPath) as boolean | undefined
+          e.setEditorInitialValue(value?.toString() ?? '')
+        },
         onEndEditing: getDefaultOnEndEditing(fieldPath),
         ...options,
       };
@@ -54,10 +71,8 @@ export const useCellTypes = <TRow extends ReactHookForm.FieldValues>(): ColumnDe
 /** fieldPath でバインドされる列の既定の行への変更反映ロジック */
 const getDefaultOnEndEditing = <TRow extends ReactHookForm.FieldValues>(fieldPath: ReactHookForm.FieldPath<TRow>): EditableGridColumnDefOnEndEditing<TRow> => {
   return e => {
-    // structuredClone でオブジェクトを複製し、
-    // React hook form の set でネストされたオブジェクトにも安全に値を設定する。
     const clone = window.structuredClone(e.row)
-    ReactHookForm.set(clone, fieldPath, e.value)
+    setValueByPath(clone, fieldPath, e.value)
     e.setEditedRow(clone)
   }
 }

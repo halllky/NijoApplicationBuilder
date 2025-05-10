@@ -485,6 +485,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                           style={{ width: cell.column.getSize() }}
                         >
                           {renderCell?.(cell.getContext()) ?? cell.getValue()?.toString()}
+                          &nbsp;
                         </div>
                       )}
                     </td>

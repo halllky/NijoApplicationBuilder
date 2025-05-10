@@ -1,5 +1,4 @@
 import { useState, useCallback } from "react";
-import { getValueByPath, setValueByPath } from "./EditableGrid.utils";
 import type * as ReactHookForm from 'react-hook-form';
 import { EditableGridColumnDef, EditableGridProps } from ".";
 import useEvent from "react-use-event-hook";
@@ -44,29 +43,20 @@ export function useEditing<TRow extends ReactHookForm.FieldValues>(
 
     const colDef = columnDefs[colIndex];
 
-    // まず `onStartEditing` が指定されているかどうかを確認
+    // `onStartEditing` で編集開始時の値を決定する。
+    // 決定できなければ編集を開始しない。
     let editorValue: string | undefined = undefined;
-    if (colDef?.onStartEditing) {
-      colDef.onStartEditing({
-        rowIndex,
-        row: rows[rowIndex],
-        setEditorInitialValue: value => editorValue = value,
-      });
-    }
-    // `onStartEditing` による編集開始処理が指定されていない場合は `fieldPath` の参照を試みる
-    if (editorValue === undefined) {
-      const fieldPath = colDef?.fieldPath;
-      if (fieldPath) {
-        const row = rows[rowIndex];
-        editorValue = getValueByPath(row, fieldPath)?.toString() ?? ''
-      }
-    }
-    // 上記いずれかで編集用の値が設定されていれば編集開始
-    if (editorValue !== undefined) {
-      setEditValue(editorValue);
-      setIsEditing(true);
-      setEditingCell({ rowIndex, colIndex });
-    }
+    if (!colDef?.onStartEditing) return
+    colDef.onStartEditing({
+      rowIndex,
+      row: rows[rowIndex],
+      setEditorInitialValue: value => editorValue = value,
+    });
+    if (editorValue === undefined) return
+
+    setEditValue(editorValue);
+    setIsEditing(true);
+    setEditingCell({ rowIndex, colIndex });
   }, [getIsReadOnly, rows, columnDefs]);
 
   // キーボードで入力された文字をベースにして編集開始
