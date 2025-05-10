@@ -187,7 +187,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
               style={{ width: header.getSize() }}
             >
               <span className="truncate">
-                {colDef.header}
+                {colDef.header === '' ? '\u00A0' : colDef.header}
               </span>
             </div>
           ),
