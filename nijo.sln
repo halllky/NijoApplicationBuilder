@@ -19,6 +19,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyApp.WebApi", "Nijo.Applic
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotnetMcp", "DotnetMcp\DotnetMcp.csproj", "{8AF1675E-F963-08E1-34A4-CBE02F68EDF1}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ソリューション項目", "ソリューション項目", "{2022CB0F-8BAF-F49E-0C48-8EF4C96EC109}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nijo.Ui", "Nijo.Ui\Nijo.Ui.csproj", "{17588ACA-93BA-3D15-B624-82A3E0064035}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -125,6 +129,18 @@ Global
 		{8AF1675E-F963-08E1-34A4-CBE02F68EDF1}.Release|x64.Build.0 = Release|Any CPU
 		{8AF1675E-F963-08E1-34A4-CBE02F68EDF1}.Release|x86.ActiveCfg = Release|Any CPU
 		{8AF1675E-F963-08E1-34A4-CBE02F68EDF1}.Release|x86.Build.0 = Release|Any CPU
+		{17588ACA-93BA-3D15-B624-82A3E0064035}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{17588ACA-93BA-3D15-B624-82A3E0064035}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{17588ACA-93BA-3D15-B624-82A3E0064035}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{17588ACA-93BA-3D15-B624-82A3E0064035}.Debug|x64.Build.0 = Debug|Any CPU
+		{17588ACA-93BA-3D15-B624-82A3E0064035}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{17588ACA-93BA-3D15-B624-82A3E0064035}.Debug|x86.Build.0 = Debug|Any CPU
+		{17588ACA-93BA-3D15-B624-82A3E0064035}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{17588ACA-93BA-3D15-B624-82A3E0064035}.Release|Any CPU.Build.0 = Release|Any CPU
+		{17588ACA-93BA-3D15-B624-82A3E0064035}.Release|x64.ActiveCfg = Release|Any CPU
+		{17588ACA-93BA-3D15-B624-82A3E0064035}.Release|x64.Build.0 = Release|Any CPU
+		{17588ACA-93BA-3D15-B624-82A3E0064035}.Release|x86.ActiveCfg = Release|Any CPU
+		{17588ACA-93BA-3D15-B624-82A3E0064035}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

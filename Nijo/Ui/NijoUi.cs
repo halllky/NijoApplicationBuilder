@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
@@ -18,9 +20,9 @@ namespace Nijo.Ui;
 /// スキーマ定義をGUIで編集するアプリケーションのために、
 /// nijo.xml を読み込んだり、バリデーションを行ったり、XMLファイルの保存を行ったりする。
 /// </summary>
-internal class NijoUi {
+public class NijoUi {
 
-    internal NijoUi(GeneratedProject project) {
+    public NijoUi(GeneratedProject project) {
         _project = project;
     }
     private readonly GeneratedProject _project;
@@ -28,7 +30,7 @@ internal class NijoUi {
     /// <summary>
     /// Reactアプリケーションからのリクエストを受け取るWebサーバーを設定して返す
     /// </summary>
-    internal WebApplication BuildWebApplication(ILogger logger) {
+    public WebApplication BuildWebApplication(ILogger logger) {
         var builder = WebApplication.CreateBuilder();
 
         // React側のデバッグのためにポートが異なっていてもアクセスできるようにする
@@ -44,6 +46,24 @@ internal class NijoUi {
         var app = builder.Build();
         app.UseRouting();
         app.UseCors(CORS_POLICY_NAME);
+
+        // React.js のビルド後html（js, css がすべて1つのhtmlファイル内にバンドルされているもの）を返す。
+        // ここのルーティング名は React Router で設定している該当の画面と合わせる必要あり
+        app.MapGet("/nijo-ui", async context => {
+            var assembly = Assembly.GetExecutingAssembly();
+
+            // このプロジェクトのプロジェクト名 + csprojで指定したリソース名 + 実ファイル名(index.html)
+            const string RESOURCE_NAME = "Nijo.GuiWebAppHtml.index.html";
+
+            using var stream = assembly.GetManifestResourceStream(RESOURCE_NAME)
+                ?? throw new InvalidOperationException($"htmlファイルが見つかりません。{assembly.GetName().Name}のビルド前に 'npm run build:nijo-ui' が実行されたか確認してください。");
+
+            using var reader = new StreamReader(stream);
+            var html = await reader.ReadToEndAsync();
+
+            context.Response.ContentType = "text/html";
+            await context.Response.WriteAsync(html);
+        });
 
         // 画面初期表示時データ読み込み処理
         app.MapGet("/load", async context => {

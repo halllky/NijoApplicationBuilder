@@ -3,7 +3,8 @@ import * as ReactRouter from "react-router-dom"
 import { Home } from "./pages/Home"
 import getQueryModelRoutes from "./pages"
 import { getExamplePagesRoutes } from "./examples"
-import SchemaDefinitionEditUI from "./debug-rooms/スキーマ定義編集UIの試作"
+import SchemaDefinitionEditUI, { NIJOUI_CLIENT_ROUTE } from "./debug-rooms/スキーマ定義編集UIの試作"
+
 /** RouteObject に sideMenuLabel を追加した型 */
 export type RouteObjectWithSideMenuSetting = ReactRouter.RouteObject & {
   /** この値がundefinedでないものは、サイドメニューに表示される。 */
@@ -23,10 +24,8 @@ export const getRouter = (): RouteObjectWithSideMenuSetting[] => {
     pages.push(getExamplePagesRoutes())
   }
 
-  // デバッグ画面
-  if (import.meta.env.DEV) {
-    pages.push({ path: 'debug-rooms', element: <SchemaDefinitionEditUI />, sideMenuLabel: "【開発用】スキーマ定義編集UIの試作" })
-  }
+  // XMLスキーマ定義編集UI
+  pages.push({ path: NIJOUI_CLIENT_ROUTE, element: <SchemaDefinitionEditUI />, sideMenuLabel: "【開発用】XMLスキーマ定義編集UIの試作" })
 
   // QueryModelの各種画面
   pages.push(...getQueryModelRoutes())

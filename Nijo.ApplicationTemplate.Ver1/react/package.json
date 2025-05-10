@@ -8,6 +8,7 @@
     "dev:redirect": "node start-vite.mjs",
     "tsc": "tsc -b --noEmit",
     "build": "tsc -b && vite build",
+    "build:nijo-ui": "tsc -b --noEmit && vite build --mode nijo-ui",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -36,6 +37,7 @@
     "globals": "^15.15.0",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.24.1",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "vite-plugin-singlefile": "^2.2.0"
   }
 }

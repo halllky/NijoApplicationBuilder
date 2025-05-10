@@ -1,5 +1,6 @@
 import * as React from "react"
 import * as ReactHookForm from "react-hook-form"
+import * as ReactRouter from "react-router-dom"
 import * as ReactResizablePanels from "react-resizable-panels"
 import * as Layout from "../../layout"
 import * as Input from "../../input"
@@ -8,6 +9,7 @@ import { ApplicationState } from "./types"
 import { NijoUiSideMenu } from "./NijoUiSideMenu"
 import { PageRootAggregate } from "./NijoUi.RootAggregate"
 import { AttrDefsProvider } from "./useAttrDefs"
+import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS } from "."
 
 const SERVER_DOMAIN = import.meta.env.DEV
   ? 'https://localhost:8081'
@@ -94,14 +96,20 @@ const AfterLoaded = ({ defaultValues, onSave, className }: {
   const form = ReactHookForm.useForm<ApplicationState>({
     defaultValues: defaultValues,
   })
+  const xmlElementTrees = ReactHookForm.useWatch({ name: 'xmlElementTrees', control: form.control })
 
   // 選択中のルート集約
-  const [selectedRootAggregateIndex, setSelectedRootAggregateIndex] = React.useState<number | null>(null)
-  const [selectedRootAggregateId, setSelectedRootAggregateId] = React.useState<string | undefined>(undefined)
+  const navigate = ReactRouter.useNavigate()
+  const urlParams = ReactRouter.useParams()
+  const selectedRootAggregateId = urlParams[NIJOUI_CLIENT_ROUTE_PARAMS.AGGREGATE_ID]
   const handleSelected = useEvent((rootAggregateIndex: number) => {
-    setSelectedRootAggregateIndex(rootAggregateIndex)
-    setSelectedRootAggregateId(form.getValues(`xmlElementTrees.${rootAggregateIndex}.xmlElements.0.id`))
+    const aggregateId = form.getValues(`xmlElementTrees.${rootAggregateIndex}.xmlElements.0.id`)
+    navigate(getNavigationUrl(aggregateId))
   })
+  const selectedRootAggregateIndex = React.useMemo((): number | undefined => {
+    if (!selectedRootAggregateId) return undefined
+    return xmlElementTrees.findIndex(tree => tree.xmlElements[0].id === selectedRootAggregateId)
+  }, [selectedRootAggregateId, xmlElementTrees])
 
   return (
     <AttrDefsProvider control={form.control}>
@@ -121,9 +129,14 @@ const AfterLoaded = ({ defaultValues, onSave, className }: {
 
         {/* メインコンテンツ */}
         <ReactResizablePanels.Panel>
-          {selectedRootAggregateIndex !== null && (
+          {selectedRootAggregateIndex === -1 && (
+            <div className="p-1 text-sm text-gray-500">
+              対象の集約が見つかりません。（ID: {selectedRootAggregateId}）
+            </div>
+          )}
+          {selectedRootAggregateIndex !== undefined && selectedRootAggregateIndex !== -1 && (
             <PageRootAggregate
-              key={selectedRootAggregateIndex}
+              key={selectedRootAggregateId} // URL更新のたびに再描画させる
               rootAggregateIndex={selectedRootAggregateIndex}
               formMethods={form}
               className="pl-1 pt-1"

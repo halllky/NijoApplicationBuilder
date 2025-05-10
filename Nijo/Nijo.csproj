@@ -74,6 +74,7 @@
     <EmbeddedResource Remove="C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo\..\Nijo.IntegrationTest\DataPatterns\012_スカラメンバー網羅.xml" />
 
     <EmbeddedResource Remove="C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo\..\Xml設定GUI\dist\index.html" />
+    <EmbeddedResource LinkBase="GuiWebAppHtml" Include="$(ProjectDir)..\Nijo.ApplicationTemplate.Ver1\react\dist\index.html" Condition="Exists('$(ProjectDir)..\Nijo.ApplicationTemplate.Ver1\react\dist\index.html')" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
