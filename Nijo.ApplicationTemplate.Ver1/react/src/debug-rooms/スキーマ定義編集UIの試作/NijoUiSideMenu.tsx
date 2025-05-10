@@ -1,4 +1,5 @@
 import * as React from "react"
+import * as ReactRouter from "react-router-dom"
 import * as ReactHookForm from "react-hook-form"
 import * as ReactResizablePanels from "react-resizable-panels"
 import * as Icon from "@heroicons/react/24/solid"
@@ -7,6 +8,7 @@ import * as Layout from "../../layout"
 import * as Input from "../../input"
 import useEvent from "react-use-event-hook"
 import { ApplicationState, ATTR_GENERATE_BATCH_UPDATE_COMMAND, ATTR_GENERATE_DEFAULT_QUERY_MODEL, ATTR_TYPE, TYPE_COMMAND_MODEL, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, TYPE_STATIC_ENUM_MODEL, TYPE_VALUE_OBJECT_MODEL, XmlElementItem } from "./types"
+import { getNavigationUrl } from "./index"
 
 export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAggregateId }: {
   onSave: (applicationState: ApplicationState) => void
@@ -119,8 +121,16 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
         </Input.IconButton>
       </div>
 
-      {/* 集約ツリーの一覧 */}
+      {/* メニュー */}
       <ul className="flex-1 flex flex-col overflow-y-auto">
+
+        {/* アプリケーション名 */}
+        <li className="flex items-center gap-1 px-1 py-1 border-r border-gray-300">
+          <ReactRouter.Link to={getNavigationUrl()} className="flex-1 text-sm font-bold truncate">
+            {formMethods.getValues('applicationName')}
+          </ReactRouter.Link>
+        </li>
+
         {menuItems.map((menuItem, index) => (
           <li
             key={menuItem.id}
@@ -174,6 +184,9 @@ const SideMenuItemIcon = ({ menuItem, collapsedItems }: {
   return <Icon.DocumentTextIcon className={`${className} text-gray-500`} />
 }
 
+/**
+ * サイドメニューの集約要素のラベル
+ */
 const SideMenuItemLabel = ({ menuItem, onClick }: { menuItem: SideMenuItem, onClick?: () => void }) => {
   return (
     <div className="flex-1 flex items-center gap-1 text-sm text-gray-600 pl-1 select-none truncate" onClick={onClick}>

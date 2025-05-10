@@ -1,6 +1,8 @@
 
 /** アプリケーション全体の状態 */
 export type ApplicationState = {
+  /** アプリケーション名。XMLのルート要素のLocalName。読み取り専用。 */
+  applicationName: string
   /** XML要素をルート集約ごとの塊に分類したもの。 */
   xmlElementTrees: ModelPageForm[]
   /** XML要素の属性定義。 */

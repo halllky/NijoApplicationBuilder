@@ -72,6 +72,7 @@ public class NijoUi {
 
             context.Response.ContentType = "application/json";
             await context.Response.WriteAsJsonAsync(new ApplicationState {
+                ApplicationName = xDocument.Root?.Name.LocalName ?? "",
                 XmlElementTrees = xDocument.Root?.Elements().Select(root => new ModelPageForm {
                     XmlElements = XmlElementItem.FromXElement(root).ToList(),
                 }).ToList() ?? [],

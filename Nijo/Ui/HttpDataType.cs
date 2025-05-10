@@ -19,6 +19,8 @@ namespace Nijo.Ui;
 /// アプリケーション全体の状態
 /// </summary>
 public class ApplicationState {
+    [JsonPropertyName("applicationName")]
+    public string ApplicationName { get; set; } = "";
     [JsonPropertyName("xmlElementTrees")]
     public List<ModelPageForm> XmlElementTrees { get; set; } = [];
     [JsonPropertyName("attributeDefs")]

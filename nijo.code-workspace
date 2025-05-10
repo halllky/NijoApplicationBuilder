@@ -100,6 +100,12 @@
           "cwd": "${workspaceFolder:NijoApplicationBuilder}/自動テストで作成されたプロジェクト"
         },
         "problemMatcher": []
+      },
+      {
+        "label": "Nijo: スキーマ定義編集UIのデバッグ実行を開始する",
+        "command": ".\\debug-nijoui.bat",
+        "type": "shell",
+        "problemMatcher": []
       }
     ]
   }
