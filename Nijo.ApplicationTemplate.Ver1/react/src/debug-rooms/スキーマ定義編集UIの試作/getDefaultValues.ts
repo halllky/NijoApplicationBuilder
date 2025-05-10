@@ -167,6 +167,7 @@ export const getDefaultValues = (): ApplicationState => {
 
 
   return {
+    applicationName: 'Nijo.ApplicationTemplate.Ver1',
     xmlElementTrees: xmlElementTreesWithoutId.map(tree => ({
       xmlElements: tree.map(el => ({ ...el, id: UUID.generate() })),
     })),

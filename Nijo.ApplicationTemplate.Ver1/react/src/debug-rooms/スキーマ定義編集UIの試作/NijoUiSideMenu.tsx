@@ -143,7 +143,7 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
             <SideMenuItemIcon menuItem={menuItem} collapsedItems={collapsedItems} />
             <SideMenuItemLabel menuItem={menuItem} />
             {selectedRootAggregateId === menuItem.id && (
-              <Input.IconButton icon={Icon.TrashIcon} outline mini hideText onClick={() => handleDeleteRootAggregate(menuItem)}>
+              <Input.IconButton icon={Icon.TrashIcon} mini hideText onClick={() => handleDeleteRootAggregate(menuItem)}>
                 削除
               </Input.IconButton>
             )}

@@ -103,9 +103,21 @@
       },
       {
         "label": "Nijo: スキーマ定義編集UIのデバッグ実行を開始する",
-        "command": ".\\debug-nijoui.bat",
+        "command": ".\\TASK_DEBUG.bat",
         "type": "shell",
-        "problemMatcher": []
+        "problemMatcher": [],
+        "options": {
+          "cwd": "${workspaceFolder:NijoApplicationBuilder}/Nijo.Ui"
+        },
+      },
+      {
+        "label": "Nijo: スキーマ定義編集UIのビルドおよび発行を行う",
+        "command": ".\\TASK_PUBLISH.bat",
+        "type": "shell",
+        "problemMatcher": [],
+        "options": {
+          "cwd": "${workspaceFolder:NijoApplicationBuilder}/Nijo.Ui"
+        },
       }
     ]
   }
