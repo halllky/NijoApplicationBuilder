@@ -45,6 +45,8 @@ export type XmlElementItem = {
   value?: string
   /** XML要素の属性 */
   attributes: Record<XmlElementAttributeName, string>
+  /** コメント */
+  comment?: string
 }
 
 /** XML要素の属性の識別子 */

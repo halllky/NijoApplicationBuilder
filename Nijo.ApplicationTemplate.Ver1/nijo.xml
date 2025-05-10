@@ -1,6 +1,5 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8"?>
 <NijoApplicationBuilder RootNamespace="MyApp.Core">
-
   <!-- GDQM かつ GenerateBatchUpdateCommand のデータモデル -->
   <商品マスタ Type="data-model" GenerateDefaultQueryModel="True" GenerateBatchUpdateCommand="True" LatinName="Product Master">
     <商品ID Type="word" IsKey="True" IsRequired="True" DbName="PRODUCT_ID" MaxLength="20" />
@@ -37,7 +36,6 @@
       </在庫状況履歴>
     </在庫情報>
   </商品マスタ>
-
   <!-- GDQMでない複雑なデータ構造を持つデータモデル -->
   <注文履歴 Type="data-model" LatinName="Order History">
     <注文ID Type="word" IsKey="True" IsRequired="True" DbName="ORDER_ID" MaxLength="20" />
@@ -81,7 +79,6 @@
       </配送状況>
     </配送情報>
   </注文履歴>
-
   <!-- GDQMだがGenerateBatchUpdateCommandではない -->
   <顧客マスタ Type="data-model" GenerateDefaultQueryModel="True" LatinName="Customer Master">
     <顧客ID Type="word" IsKey="True" IsRequired="True" DbName="CUSTOMER_ID" MaxLength="20" />
@@ -109,7 +106,6 @@
       </ポイント履歴>
     </会員情報>
   </顧客マスタ>
-
   <!-- 主キーが外部参照1個だけから構成されるデータモデル -->
   <従業員プロフィール Type="data-model" LatinName="Employee Profile">
     <従業員 Type="ref-to:従業員マスタ" IsKey="True" DbName="EMPLOYEE_ID" />
@@ -122,7 +118,6 @@
       <有効期限 Type="date" DbName="EXPIRY_DATE" />
     </資格>
   </従業員プロフィール>
-
   <!-- 主キーが外部参照複数個から構成されるデータモデル -->
   <シフト Type="data-model" LatinName="Shift Schedule">
     <従業員 Type="ref-to:従業員マスタ" IsKey="True" DbName="EMPLOYEE_ID" />
@@ -133,7 +128,6 @@
     <休憩時間 Type="int" DbName="BREAK_TIME" />
     <備考 Type="description" DbName="REMARKS" MaxLength="200" />
   </シフト>
-
   <!-- ref-toがさらにref-toを持つパターン（診察・予約連鎖） -->
   <予約 Type="data-model" GenerateDefaultQueryModel="True" LatinName="Reservation">
     <予約ID Type="word" IsKey="True" IsRequired="True" DbName="RESERVATION_ID" MaxLength="20" />
@@ -143,7 +137,6 @@
     <予約メモ Type="description" DbName="RESERVATION_NOTE" MaxLength="500" />
     <担当従業員 Type="ref-to:従業員マスタ" DbName="EMPLOYEE_ID" />
   </予約>
-
   <診察記録 Type="data-model" LatinName="Medical Examination">
     <予約 Type="ref-to:予約" IsKey="True" DbName="RESERVATION_ID" />
     <診察開始時刻 Type="datetime" DbName="START_TIME" />
@@ -161,7 +154,6 @@
       <備考 Type="description" DbName="REMARKS" MaxLength="200" />
     </処方>
   </診察記録>
-
   <!-- 複雑なデータ構造をもったクエリモデル -->
   <売上分析 Type="query-model" LatinName="Sales Analysis">
     <年月 Type="word" IsKey="True" />
@@ -189,7 +181,6 @@
       <平均客単価 Type="int" />
     </時間帯別売上>
   </売上分析>
-
   <!-- シンプルなCommandModelの構造 -->
   <簡易注文 Type="command-model" LatinName="Simple Order">
     <簡易注文Parameter Type="child">
@@ -204,7 +195,6 @@
       <注文番号 Type="word" />
     </簡易注文ReturnValue>
   </簡易注文>
-
   <!-- コマンドモデル -->
   <在庫調整 Type="command-model" LatinName="Inventory Adjustment">
     <在庫調整Parameter Type="child">
@@ -246,13 +236,11 @@
       </承認情報>
     </在庫調整ReturnValue>
   </在庫調整>
-
   <!-- 部署と従業員の年度ごとの所属関係（year型の使用） -->
   <部署 Type="data-model" GenerateDefaultQueryModel="True" DbName="BUSHO" LatinName="Department">
     <部署コード Type="word" IsKey="True" IsRequired="True" DbName="BUSHO_CD" MaxLength="10" />
     <部署名 Type="word" IsRequired="True" DbName="BUSHO_NAME" MaxLength="40" />
   </部署>
-
   <従業員マスタ Type="data-model" GenerateDefaultQueryModel="True" DbName="EMPLOYEE">
     <従業員ID Type="従業員ID型" IsKey="True" IsRequired="True" DbName="ID" />
     <氏名 Type="word" IsRequired="True" DbName="NAME" MaxLength="40" />
@@ -266,18 +254,15 @@
     </権限>
     <退職日 Type="date" DbName="TAISHOKU" />
   </従業員マスタ>
-
   <権限レベル Type="enum">
     <管理者 DisplayName="管理者" key="1" />
     <一般 DisplayName="一般" key="2" />
   </権限レベル>
-
   <!-- その他必要なエンティティ定義 -->
   <カテゴリマスタ Type="data-model" GenerateDefaultQueryModel="True">
     <カテゴリID Type="word" IsKey="True" DbName="CATEGORY_ID" MaxLength="10" />
     <カテゴリ名 Type="word" DbName="CATEGORY_NAME" MaxLength="50" />
   </カテゴリマスタ>
-
   <仕入先マスタ Type="data-model" GenerateDefaultQueryModel="True">
     <仕入先ID Type="word" IsKey="True" DbName="SUPPLIER_ID" MaxLength="10" />
     <仕入先名 Type="word" DbName="SUPPLIER_NAME" MaxLength="100" />
@@ -285,7 +270,6 @@
     <電話番号 Type="word" DbName="PHONE" MaxLength="20" />
     <メールアドレス Type="word" DbName="EMAIL" MaxLength="100" />
   </仕入先マスタ>
-
   <倉庫マスタ Type="data-model" GenerateDefaultQueryModel="True">
     <倉庫ID Type="word" IsKey="True" DbName="WAREHOUSE_ID" MaxLength="10" />
     <倉庫名 Type="word" DbName="WAREHOUSE_NAME" MaxLength="50" />
@@ -297,7 +281,6 @@
     </住所>
     <管理責任者 Type="ref-to:従業員マスタ" DbName="MANAGER_ID" />
   </倉庫マスタ>
-
   <店舗マスタ Type="data-model" GenerateDefaultQueryModel="True">
     <店舗ID Type="word" IsKey="True" DbName="STORE_ID" MaxLength="10" />
     <店舗名 Type="word" DbName="STORE_NAME" MaxLength="50" />
@@ -314,10 +297,8 @@
     </営業時間>
     <店長 Type="ref-to:従業員マスタ" DbName="MANAGER_ID" />
   </店舗マスタ>
-
   <!-- value-objectタイプの定義 -->
   <従業員ID型 Type="value-object" />
-
   <!-- 列挙型定義 (DisplayName属性の追加) -->
   <payment_type Type="enum">
     <現金 DisplayName="現金決済" key="1" />
@@ -326,14 +307,12 @@
     <代金引換 DisplayName="代金引換" key="4" />
     <銀行振込 DisplayName="銀行振込" key="5" />
   </payment_type>
-
   <payment_status Type="enum">
     <未払い DisplayName="未払い" key="1" />
     <支払済 DisplayName="支払済" key="2" />
     <一部支払い DisplayName="一部支払い" key="3" />
     <キャンセル DisplayName="キャンセル" key="4" />
   </payment_status>
-
   <card_type Type="enum">
     <VISA DisplayName="VISA Card" key="1" />
     <MasterCard DisplayName="Master Card" key="2" />
@@ -341,34 +320,29 @@
     <AmericanExpress DisplayName="American Express" key="4" />
     <DinersClub DisplayName="Diners Club" key="5" />
   </card_type>
-
   <shipping_method Type="enum">
     <宅配便 DisplayName="宅配便" key="1" />
     <メール便 DisplayName="メール便" key="2" />
     <店舗受取 DisplayName="店舗受取" key="3" />
   </shipping_method>
-
   <shipping_status Type="enum">
     <準備中 DisplayName="準備中" key="1" />
     <発送済 DisplayName="発送済" key="2" />
     <配送中 DisplayName="配送中" key="3" />
     <配達完了 DisplayName="配達完了" key="4" />
   </shipping_status>
-
   <gender_type Type="enum">
     <男性 DisplayName="男性" key="1" />
     <女性 DisplayName="女性" key="2" />
     <その他 DisplayName="その他" key="3" />
     <回答しない DisplayName="回答しない" key="4" />
   </gender_type>
-
   <member_rank Type="enum">
     <一般 DisplayName="一般会員" key="1" />
     <シルバー DisplayName="シルバー会員" key="2" />
     <ゴールド DisplayName="ゴールド会員" key="3" />
     <プラチナ DisplayName="プラチナ会員" key="4" />
   </member_rank>
-
   <position_type Type="enum">
     <一般社員 DisplayName="一般社員" key="1" />
     <主任 DisplayName="主任" key="2" />
@@ -376,7 +350,6 @@
     <部長 DisplayName="部長" key="4" />
     <役員 DisplayName="役員" key="5" />
   </position_type>
-
   <reservation_type Type="enum">
     <初診 DisplayName="初診（しょしん）" key="1" />
     <再診 DisplayName="再診（さいしん）" key="2" />

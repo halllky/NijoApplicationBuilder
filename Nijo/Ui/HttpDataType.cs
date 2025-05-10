@@ -47,9 +47,13 @@ public class ApplicationState {
             var logName = aggregateTree.XmlElements.Count > 0
                 ? $"{aggregateTree.XmlElements[0].LocalName}のツリー"
                 : $"第{i + 1}番目の集約ツリー";
-            if (XmlElementItem.TryConvertToRootAggregateXElement(aggregateTree.XmlElements, error => {
-                errors.Add($"{logName}: {error}");
-            }, out var rootAggregate)) {
+            if (XmlElementItem.TryConvertToRootAggregateXElement(
+                aggregateTree.XmlElements,
+                error => errors.Add($"{logName}: {error}"),
+                out var rootAggregate,
+                out var commentToRootAggregate)) {
+
+                if (commentToRootAggregate != null) xDocument.Root.Add(commentToRootAggregate);
                 xDocument.Root.Add(rootAggregate);
             }
         }
@@ -100,6 +104,8 @@ public class XmlElementItem {
     public string? Value { get; set; } = null;
     [JsonPropertyName("attributes")]
     public Dictionary<string, string> Attributes { get; set; } = [];
+    [JsonPropertyName("comment")]
+    public string? Comment { get; set; } = null;
 
     /// <summary>
     /// <see cref="XElement"/> を <see cref="XmlElementItem"/> のリストに変換する。
@@ -109,12 +115,19 @@ public class XmlElementItem {
         return EnumerateRecursive(element);
 
         static IEnumerable<XmlElementItem> EnumerateRecursive(XElement element) {
+            string? comment;
+            if (element.PreviousNode is XComment xComment && !string.IsNullOrWhiteSpace(xComment.Value)) {
+                comment = xComment.Value;
+            } else {
+                comment = null;
+            }
             yield return new XmlElementItem {
                 Id = Guid.NewGuid().ToString(),
                 Indent = element.Ancestors().Count() - 1,
                 LocalName = element.Name.LocalName,
                 Value = element.Value,
                 Attributes = element.Attributes().ToDictionary(a => a.Name.LocalName, a => a.Value),
+                Comment = comment,
             };
             foreach (var child in element.Elements()) {
                 foreach (var item in EnumerateRecursive(child)) {
@@ -128,20 +141,27 @@ public class XmlElementItem {
     /// <see cref="XmlElementItem"/> のリストを <see cref="XElement"/> のリストに変換する。
     /// ルート集約の塊ごとに変換する想定のため、引数のリストの先頭の要素のインデントは0、以降のインデントは1以上であることを前提とする。
     /// </summary>
-    public static bool TryConvertToRootAggregateXElement(IReadOnlyList<XmlElementItem> items, Action<string> logError, [NotNullWhen(true)] out XElement? rootAggregate) {
+    public static bool TryConvertToRootAggregateXElement(
+        IReadOnlyList<XmlElementItem> items,
+        Action<string> logError,
+        [NotNullWhen(true)] out XElement? rootAggregate,
+        out XComment? commentToRootAggregate) {
+
         if (items.Count == 0) {
             logError("要素がありません");
             rootAggregate = null;
+            commentToRootAggregate = null;
             return false;
         }
         if (items[0].Indent != 0) {
             logError($"先頭の要素のインデントが0であるべきところ{items[0].Indent}です");
             rootAggregate = null;
+            commentToRootAggregate = null;
             return false;
         }
 
-        var stack = new Stack<(int Indent, XElement Element)>();
-        var previous = ((int Indent, XElement Element)?)null;
+        var stack = new Stack<(int Indent, XElement Element, XComment? XComment)>();
+        var previous = ((int Indent, XElement Element, XComment? XComment)?)null;
         for (int i = 0; i < items.Count; i++) {
             var item = items[i];
 
@@ -149,53 +169,68 @@ public class XmlElementItem {
             if (item.LocalName == null) {
                 logError($"{i + 1}番目の要素の名前が空です");
                 rootAggregate = null;
+                commentToRootAggregate = null;
                 return false;
             }
-            var element = new XElement(item.LocalName);
-            if (!string.IsNullOrWhiteSpace(item.Value)) element.SetValue(item.Value);
+            var xComment = string.IsNullOrWhiteSpace(item.Comment)
+                ? null
+                : new XComment(item.Comment);
+            var xElement = new XElement(item.LocalName);
+            if (!string.IsNullOrWhiteSpace(item.Value)) xElement.SetValue(item.Value);
             foreach (var attribute in item.Attributes) {
                 if (string.IsNullOrWhiteSpace(attribute.Value)) continue;
-                element.SetAttributeValue(attribute.Key, attribute.Value);
+                xElement.SetAttributeValue(attribute.Key, attribute.Value);
             }
 
             // 前の要素が空ならば element はルート集約
             if (previous == null) {
-                previous = (item.Indent, element);
+                previous = (item.Indent, xElement, xComment);
                 stack.Push(previous.Value);
-                continue;
             }
 
             // ルートでないのにインデントが0ならばエラー
-            if (item.Indent == 0) {
+            else if (item.Indent == 0) {
                 logError($"{item.LocalName}: ルートでないのにインデントが0です");
                 rootAggregate = null;
+                commentToRootAggregate = null;
                 return false;
             }
 
             // itemのインデントが前の要素のインデントと同じなら、elementはstackの最上位の要素の子
-            if (item.Indent == previous.Value.Indent) {
-                previous = (item.Indent, element);
-                stack.Peek().Element.Add(element);
-                continue;
+            else if (item.Indent == previous.Value.Indent) {
+                previous = (item.Indent, xElement, xComment);
+
+                var parent = stack.Peek();
+                if (xComment != null) parent.Element.Add(xComment);
+                parent.Element.Add(xElement);
             }
 
             // itemのインデントが前の要素より深くなっていたら、前の要素が stack に積まれ、elementはその子
-            if (item.Indent > previous.Value.Indent) {
+            else if (item.Indent > previous.Value.Indent) {
                 stack.Push(previous.Value);
-                previous = (item.Indent, element);
-                stack.Peek().Element.Add(element);
-                continue;
+                previous = (item.Indent, xElement, xComment);
+
+                var parent = stack.Peek();
+                if (xComment != null) parent.Element.Add(xComment);
+                parent.Element.Add(xElement);
             }
 
             // itemのインデントが前の要素より浅くなっていたら、stackのうちインデントが浅いものが出現するまで pop して、そのうち最上位の要素の子にする
-            while (stack.Peek().Indent >= item.Indent) {
-                stack.Pop();
+            else {
+                while (stack.Peek().Indent >= item.Indent) {
+                    stack.Pop();
+                }
+                previous = (item.Indent, xElement, xComment);
+
+                var parent = stack.Peek();
+                if (xComment != null) parent.Element.Add(xComment);
+                parent.Element.Add(xElement);
             }
-            previous = (item.Indent, element);
-            stack.Peek().Element.Add(element);
         }
 
-        rootAggregate = stack.Reverse().First().Element;
+        var root = stack.Reverse().First();
+        rootAggregate = root.Element;
+        commentToRootAggregate = root.XComment;
         return true;
     }
 }

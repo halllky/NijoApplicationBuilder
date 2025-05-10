@@ -25,20 +25,27 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
 
   // メンバーグリッドの列定義
   const getColumnDefs: Layout.GetColumnDefsFunction<GridRowType> = React.useCallback(cellType => {
-    return [
-      // LocalName
-      cellType.text('localName', '', {
-        defaultWidth: 220,
-        isFixed: true,
-        renderCell: renderLocalNameCell,
-      }),
-      // Type
-      createAttributeCell(TYPE_COLUMN_DEF, cellType),
-      // Attributes（Type以外）
-      ...Array.from(attributeDefs.values())
-        .filter(attrDef => attrDef.attributeName !== ATTR_TYPE)
-        .map(attrDef => createAttributeCell(attrDef, cellType)),
-    ]
+    const columns: Layout.EditableGridColumnDef<GridRowType>[] = []
+
+    // LocalName
+    columns.push(cellType.text('localName', '', {
+      defaultWidth: 220,
+      isFixed: true,
+      renderCell: renderLocalNameCell,
+    }))
+
+    // Type
+    columns.push(createAttributeCell(TYPE_COLUMN_DEF, cellType))
+
+    // Attributes（Type以外）
+    columns.push(...Array.from(attributeDefs.values())
+      .filter(attrDef => attrDef.attributeName !== ATTR_TYPE)
+      .map(attrDef => createAttributeCell(attrDef, cellType)))
+
+    // コメント
+    columns.push(cellType.text('comment', 'コメント', { defaultWidth: 400 }))
+
+    return columns
   }, [attributeDefs])
 
   // 行挿入
