@@ -1,5 +1,5 @@
 import { UUID } from "uuidjs"
-import { getAttrTypeOptions } from "./getAttrTypeOptions"
+import { getAttrTypeOptions } from "./getAttrTypeColumnDef"
 import { ApplicationState, ATTR_TYPE, ValueMemberType, XmlElementAttribute, XmlElementAttributeName, XmlElementItem } from "./types"
 
 /**

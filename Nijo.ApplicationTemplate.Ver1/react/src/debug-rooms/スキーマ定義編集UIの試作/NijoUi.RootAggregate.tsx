@@ -8,6 +8,7 @@ import { ApplicationState, ATTR_TYPE, XmlElementAttribute, XmlElementItem } from
 import useEvent from "react-use-event-hook"
 import { UUID } from "uuidjs"
 import { useAttrDefs } from "./useAttrDefs"
+import { TYPE_COLUMN_DEF } from "./getAttrTypeColumnDef"
 
 /**
  * Data, Query, Command のルート集約1件を表示・編集するページ。
@@ -31,8 +32,11 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
         isFixed: true,
         renderCell: renderLocalNameCell,
       }),
-      // Attributes（Type含む）
+      // Type
+      createAttributeCell(TYPE_COLUMN_DEF, cellType),
+      // Attributes（Type以外）
       ...Array.from(attributeDefs.values())
+        .filter(attrDef => attrDef.attributeName !== ATTR_TYPE)
         .map(attrDef => createAttributeCell(attrDef, cellType)),
     ]
   }, [attributeDefs])

@@ -1,4 +1,4 @@
-import { ATTR_TYPE, TYPE_VALUE_OBJECT_MODEL, XmlElementItem, TYPE_STATIC_ENUM_MODEL, TYPE_COMMAND_MODEL, TYPE_CHILD, TYPE_CHILDREN, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, XmlElementSelectAttributeGetOptionFunction, XmlElementSelectAttributeOption, asTree } from "./types"
+import { ATTR_TYPE, TYPE_VALUE_OBJECT_MODEL, XmlElementItem, TYPE_STATIC_ENUM_MODEL, TYPE_COMMAND_MODEL, TYPE_CHILD, TYPE_CHILDREN, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, XmlElementSelectAttributeGetOptionFunction, XmlElementSelectAttributeOption, asTree, XmlElementAttribute } from "./types"
 
 // Typeの選択肢
 export const getAttrTypeOptions: XmlElementSelectAttributeGetOptionFunction = currentState => {
@@ -85,4 +85,12 @@ export const getAttrTypeOptions: XmlElementSelectAttributeGetOptionFunction = cu
     ...enumOrValueObjectTypes,
     ...refToTypes,
   ]
+}
+
+// Typeの列定義
+export const TYPE_COLUMN_DEF: XmlElementAttribute = {
+  attributeName: ATTR_TYPE,
+  displayName: '種類',
+  type: 'select',
+  getOptions: getAttrTypeOptions,
 }
