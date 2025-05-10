@@ -4,12 +4,6 @@
       "commandName": "Project",
       "hotReloadEnabled": true
     },
-    "nijo ui": {
-      "commandName": "Project",
-      "commandLineArgs": "ui --port 8081 --no-browser",
-      "workingDirectory": "..\\自動テストで作成されたプロジェクト",
-      "hotReloadEnabled": true
-    },
     "Ver1のテンプレのdump": {
       "commandName": "Project",
       "commandLineArgs": "dump",
@@ -19,6 +13,12 @@
       "commandName": "Project",
       "commandLineArgs": "generate",
       "workingDirectory": "..\\Nijo.ApplicationTemplate.Ver1"
+    },
+    "run-ui-service": {
+      "commandName": "Project",
+      "commandLineArgs": "run-ui-service --port 8081",
+      "workingDirectory": "..\\Nijo.ApplicationTemplate.Ver1",
+      "hotReloadEnabled": true
     }
   }
 }

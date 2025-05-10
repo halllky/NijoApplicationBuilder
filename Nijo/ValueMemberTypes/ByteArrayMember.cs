@@ -23,6 +23,7 @@ internal class ByteArrayMember : IValueMemberType {
     public string CsPrimitiveTypeName => "byte[]";
     public string TsTypeName => "/* バイト配列型のメンバーはクライアント側ソースにレンダリングされることはない想定 */";
     public UiConstraint.E_Type UiConstraintType => UiConstraint.E_Type.MemberConstraintBase;
+    public string DisplayName => "バイト配列";
 
     void IValueMemberType.Validate(XElement element, SchemaParseContext context, Action<XElement, string> addError) {
         // バイト配列型はDataModelにしか定義できない

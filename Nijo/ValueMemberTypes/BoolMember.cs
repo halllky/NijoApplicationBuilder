@@ -24,6 +24,7 @@ internal class BoolMember : IValueMemberType {
     string IValueMemberType.CsPrimitiveTypeName => "bool";
     string IValueMemberType.TsTypeName => "boolean";
     UiConstraint.E_Type IValueMemberType.UiConstraintType => UiConstraint.E_Type.MemberConstraintBase;
+    string IValueMemberType.DisplayName => "真偽値型";
 
     void IValueMemberType.Validate(XElement element, SchemaParseContext context, Action<XElement, string> addError) {
         // 真偽値型の検証

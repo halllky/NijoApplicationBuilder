@@ -24,6 +24,7 @@ internal class ValueObjectMember : IValueMemberType {
     string IValueMemberType.CsPrimitiveTypeName => "string";
     string IValueMemberType.TsTypeName => $"Util.{_ctx.GetPhysicalName(_xElement)}";
     UiConstraint.E_Type IValueMemberType.UiConstraintType => UiConstraint.E_Type.StringMemberConstraint;
+    string IValueMemberType.DisplayName => "値オブジェクト型";
 
     private readonly XElement _xElement;
     private readonly SchemaParseContext _ctx;

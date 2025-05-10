@@ -23,6 +23,7 @@ internal class Word : IValueMemberType {
     string IValueMemberType.CsPrimitiveTypeName => "string";
     string IValueMemberType.TsTypeName => "string";
     UiConstraint.E_Type IValueMemberType.UiConstraintType => UiConstraint.E_Type.StringMemberConstraint;
+    string IValueMemberType.DisplayName => "単語型";
 
     void IValueMemberType.Validate(XElement element, SchemaParseContext context, Action<XElement, string> addError) {
         // 特に追加の検証はありません。

@@ -92,6 +92,11 @@ namespace Nijo {
                 ["-c", "--cancel-file"],
                 description: "デバッグ実行の終了のトリガーは、通常はユーザーからのキー入力ですが、これを指定したときはこのファイルが存在したら終了と判定します。");
 
+            // GUI用のサービスが実行されるポート
+            var port = new Option<int?>(
+                ["-p", "--port"],
+                description: "GUI用のサービスが実行されるポートを明示的に指定します。");
+
             // ---------------------------------------------------
             // ** コマンド **
 
@@ -133,6 +138,14 @@ namespace Nijo {
                 description: "スキーマ定義で使用できるオプションを説明するドキュメントをMarkdown形式で出力します。");
             generateInternal.SetHandler(GenerateInternal);
             rootCommand.AddCommand(generateInternal);
+
+            // GUI用のサービスを展開する
+            var runUiService = new Command(
+                name: "run-ui-service",
+                description: "GUI用のサービスを展開します。")
+                { path, port };
+            runUiService.SetHandler(RunUiService, path, port);
+            rootCommand.AddCommand(runUiService);
 
             return rootCommand;
         }
@@ -342,6 +355,31 @@ namespace Nijo {
             RenderOptionsMd("DataModel.Options.md", new DataModel());
             RenderOptionsMd("QueryModel.Options.md", new QueryModel());
             RenderOptionsMd("CommandModel.Options.md", new CommandModel());
+        }
+
+        /// <summary>
+        /// GUI用のサービスを展開する
+        /// </summary>
+        private static async Task RunUiService(string? path, int? port) {
+            var logger = ILoggerExtension.CreateConsoleLogger();
+
+            // 既にプロジェクトが存在していることが前提
+            var projectRoot = path == null
+                ? Directory.GetCurrentDirectory()
+                : Path.Combine(Directory.GetCurrentDirectory(), path);
+            if (!GeneratedProject.TryOpen(projectRoot, out var project, out var error)) {
+                logger.LogError(error);
+                return;
+            }
+
+            // サービス内容定義
+            var nijoUi = new Ui.NijoUi(project);
+            var app = nijoUi.BuildWebApplication(logger);
+
+            // 起動
+            var url = $"https://localhost:{port ?? 5000}";
+            logger.LogInformation("GUI用のサービスを起動します: {url}", url);
+            await app.RunAsync(url);
         }
     }
 }

@@ -21,6 +21,7 @@ namespace Nijo.ValueMemberTypes {
         string IValueMemberType.CsDomainTypeName => "int";
         string IValueMemberType.CsPrimitiveTypeName => "int";
         string IValueMemberType.TsTypeName => "number";
+        string IValueMemberType.DisplayName => "シーケンス型";
 
         void IValueMemberType.Validate(XElement element, SchemaParseContext context, Action<XElement, string> addError) {
             // シーケンス型の検証

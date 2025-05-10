@@ -23,6 +23,7 @@ internal class DateMember : IValueMemberType {
     string IValueMemberType.CsPrimitiveTypeName => "DateOnly";
     string IValueMemberType.TsTypeName => "string";
     UiConstraint.E_Type IValueMemberType.UiConstraintType => UiConstraint.E_Type.MemberConstraintBase;
+    string IValueMemberType.DisplayName => "日付型";
 
     void IValueMemberType.Validate(XElement element, SchemaParseContext context, Action<XElement, string> addError) {
         // 日付型の検証

@@ -23,6 +23,7 @@ internal class IntMember : IValueMemberType {
     string IValueMemberType.CsPrimitiveTypeName => "int";
     string IValueMemberType.TsTypeName => "number";
     UiConstraint.E_Type IValueMemberType.UiConstraintType => UiConstraint.E_Type.NumberMemberConstraint;
+    string IValueMemberType.DisplayName => "整数型";
 
     void IValueMemberType.Validate(XElement element, SchemaParseContext context, Action<XElement, string> addError) {
         // 整数型の検証

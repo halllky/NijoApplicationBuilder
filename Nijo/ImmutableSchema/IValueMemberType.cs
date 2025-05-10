@@ -15,6 +15,14 @@ namespace Nijo.ImmutableSchema {
     /// 単語型、日付型、整数型、…など
     /// </summary>
     public interface IValueMemberType {
+        #region Ui
+        /// <summary>
+        /// UI上の表示名
+        /// </summary>
+        string DisplayName { get; }
+        #endregion Ui
+
+
         #region SchemaParsing
         /// <summary>
         /// XMLスキーマ定義でこの型を指定するときの型名

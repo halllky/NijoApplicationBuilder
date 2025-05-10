@@ -22,6 +22,7 @@ namespace Nijo.ValueMemberTypes {
         string IValueMemberType.CsPrimitiveTypeName => "string";
         string IValueMemberType.TsTypeName => "string";
         UiConstraint.E_Type IValueMemberType.UiConstraintType => UiConstraint.E_Type.StringMemberConstraint;
+        string IValueMemberType.DisplayName => "文章型";
 
         void IValueMemberType.Validate(XElement element, SchemaParseContext context, Action<XElement, string> addError) {
             // 文章型の検証

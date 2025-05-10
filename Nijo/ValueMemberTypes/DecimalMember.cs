@@ -23,6 +23,7 @@ internal class DecimalMember : IValueMemberType {
     string IValueMemberType.CsPrimitiveTypeName => "decimal";
     string IValueMemberType.TsTypeName => "number";
     UiConstraint.E_Type IValueMemberType.UiConstraintType => UiConstraint.E_Type.NumberMemberConstraint;
+    string IValueMemberType.DisplayName => "実数型";
 
     void IValueMemberType.Validate(XElement element, SchemaParseContext context, Action<XElement, string> addError) {
         // 実数型の検証

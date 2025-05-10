@@ -23,6 +23,7 @@ internal class YearMember : IValueMemberType {
     string IValueMemberType.CsPrimitiveTypeName => "int";
     string IValueMemberType.TsTypeName => "number";
     UiConstraint.E_Type IValueMemberType.UiConstraintType => UiConstraint.E_Type.NumberMemberConstraint;
+    string IValueMemberType.DisplayName => "年";
 
     void IValueMemberType.Validate(XElement element, SchemaParseContext context, Action<XElement, string> addError) {
         // 年型の検証
