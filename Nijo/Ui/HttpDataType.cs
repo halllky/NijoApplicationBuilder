@@ -27,14 +27,11 @@ public class ApplicationState {
     public List<ValueMemberType> ValueMemberTypes { get; set; } = [];
 
     /// <summary>
-    /// <see cref="ApplicationSchema"/> を構築する。
+    /// 新しい <see cref="XDocument"/> インスタンスを構築して返す。
     /// ValueMemberやAttributeDefsは、暫定的に、画面上で編集できないものとし、
     /// <see cref="SchemaParseRule.Default"/> から取得する。
     /// </summary>
-    internal bool TryBuildApplicationSchema(
-        XDocument original,
-        ICollection<string> errors,
-        [NotNullWhen(true)] out XDocument? xDocument) {
+    internal bool TryConvertToXDocument(XDocument original, ICollection<string> errors, [NotNullWhen(true)] out XDocument? xDocument) {
 
         xDocument = new XDocument(original);
         if (xDocument.Root == null) {
@@ -42,8 +39,17 @@ public class ApplicationState {
             xDocument = null;
             return false;
         }
-        foreach (var uiData in XmlElementTrees) {
-            if (XmlElementItem.TryConvertToRootAggregateXElement(uiData.XmlElements, errors, out var rootAggregate)) {
+
+        xDocument.Root.RemoveNodes();
+
+        for (int i = 0; i < XmlElementTrees.Count; i++) {
+            var aggregateTree = XmlElementTrees[i];
+            var logName = aggregateTree.XmlElements.Count > 0
+                ? $"{aggregateTree.XmlElements[0].LocalName}のツリー"
+                : $"第{i + 1}番目の集約ツリー";
+            if (XmlElementItem.TryConvertToRootAggregateXElement(aggregateTree.XmlElements, error => {
+                errors.Add($"{logName}: {error}");
+            }, out var rootAggregate)) {
                 xDocument.Root.Add(rootAggregate);
             }
         }
@@ -105,7 +111,7 @@ public class XmlElementItem {
         static IEnumerable<XmlElementItem> EnumerateRecursive(XElement element) {
             yield return new XmlElementItem {
                 Id = Guid.NewGuid().ToString(),
-                Indent = element.Ancestors().Count(),
+                Indent = element.Ancestors().Count() - 1,
                 LocalName = element.Name.LocalName,
                 Value = element.Value,
                 Attributes = element.Attributes().ToDictionary(a => a.Name.LocalName, a => a.Value),
@@ -122,27 +128,26 @@ public class XmlElementItem {
     /// <see cref="XmlElementItem"/> のリストを <see cref="XElement"/> のリストに変換する。
     /// ルート集約の塊ごとに変換する想定のため、引数のリストの先頭の要素のインデントは0、以降のインデントは1以上であることを前提とする。
     /// </summary>
-    public static bool TryConvertToRootAggregateXElement(
-        IReadOnlyList<XmlElementItem> items,
-        ICollection<string> errors,
-        [NotNullWhen(true)] out XElement? rootAggregate) {
+    public static bool TryConvertToRootAggregateXElement(IReadOnlyList<XmlElementItem> items, Action<string> logError, [NotNullWhen(true)] out XElement? rootAggregate) {
         if (items.Count == 0) {
-            errors.Add("要素がありません");
+            logError("要素がありません");
             rootAggregate = null;
             return false;
         }
         if (items[0].Indent != 0) {
-            errors.Add("先頭の要素のインデントが0ではありません");
+            logError($"先頭の要素のインデントが0であるべきところ{items[0].Indent}です");
             rootAggregate = null;
             return false;
         }
 
         var stack = new Stack<(int Indent, XElement Element)>();
         var previous = ((int Indent, XElement Element)?)null;
-        foreach (var item in items) {
+        for (int i = 0; i < items.Count; i++) {
+            var item = items[i];
+
             // XElementへの変換
             if (item.LocalName == null) {
-                errors.Add("要素名がありません");
+                logError($"{i + 1}番目の要素の名前が空です");
                 rootAggregate = null;
                 return false;
             }
@@ -162,7 +167,7 @@ public class XmlElementItem {
 
             // ルートでないのにインデントが0ならばエラー
             if (item.Indent == 0) {
-                errors.Add($"{item.LocalName}: ルートでないのにインデントが0です");
+                logError($"{item.LocalName}: ルートでないのにインデントが0です");
                 rootAggregate = null;
                 return false;
             }

@@ -9,6 +9,10 @@ import { NijoUiSideMenu } from "./NijoUiSideMenu"
 import { PageRootAggregate } from "./NijoUi.RootAggregate"
 import { AttrDefsProvider } from "./useAttrDefs"
 
+const SERVER_DOMAIN = import.meta.env.DEV
+  ? 'https://localhost:8081'
+  : ''
+
 /**
  * nijo.xmlをUIで編集できる画面の試作。
  * 最終的には、独立した WebView2 アプリケーションとして分離する予定。
@@ -23,16 +27,38 @@ export const NijoUi = ({ className }: {
   const load = useEvent(async () => {
     try {
       // Visual Studio で Nijo.csproj の run-ui-service コマンドを実行したときのポート
-      const response = await fetch(`https://localhost:8081/load`)
+      const response = await fetch(`${SERVER_DOMAIN}/load`)
       const schema = await response.json()
       setSchema(schema)
     } catch (error) {
+      console.error(error)
       setLoadError(error instanceof Error ? error.message : `不明なエラー(${error})`)
     }
   })
   React.useEffect(() => {
     load()
   }, [])
+
+  // 保存処理
+  const handleSave = useEvent(async (applicationState: ApplicationState) => {
+    try {
+      const response = await fetch(`${SERVER_DOMAIN}/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(applicationState),
+      })
+      if (!response.ok) {
+        const body = await response.json() as string[]
+        console.error(body)
+        window.alert(`保存に失敗しました:\n${body.join('\n')}`)
+        return
+      }
+      window.alert('保存に成功しました')
+    } catch (error) {
+      console.error(error)
+      window.alert(`保存に失敗しました: ${error instanceof Error ? error.message : `不明なエラー(${error})`}`)
+    }
+  })
 
   // 読み込み中
   if (schema === undefined && loadError === undefined) {
@@ -42,7 +68,11 @@ export const NijoUi = ({ className }: {
   // 読み込み完了
   if (schema !== undefined) {
     return (
-      <AfterLoaded defaultValues={schema} className={className} />
+      <AfterLoaded
+        defaultValues={schema}
+        onSave={handleSave}
+        className={className}
+      />
     )
   }
 
@@ -55,8 +85,9 @@ export const NijoUi = ({ className }: {
 }
 
 /** 画面初期表示時の読み込み完了後 */
-const AfterLoaded = ({ defaultValues, className }: {
+const AfterLoaded = ({ defaultValues, onSave, className }: {
   defaultValues: ApplicationState
+  onSave: (applicationState: ApplicationState) => void
   className?: string
 }) => {
 
@@ -79,6 +110,7 @@ const AfterLoaded = ({ defaultValues, className }: {
         {/* サイドメニュー */}
         <ReactResizablePanels.Panel defaultSize={20}>
           <NijoUiSideMenu
+            onSave={onSave}
             formMethods={form}
             selectedRootAggregateId={selectedRootAggregateId}
             onSelected={handleSelected}

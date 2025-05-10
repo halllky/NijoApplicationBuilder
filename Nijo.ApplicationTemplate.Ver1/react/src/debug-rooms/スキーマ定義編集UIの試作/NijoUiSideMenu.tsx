@@ -8,7 +8,8 @@ import * as Input from "../../input"
 import useEvent from "react-use-event-hook"
 import { ApplicationState, ATTR_GENERATE_BATCH_UPDATE_COMMAND, ATTR_GENERATE_DEFAULT_QUERY_MODEL, ATTR_TYPE, TYPE_COMMAND_MODEL, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, TYPE_STATIC_ENUM_MODEL, TYPE_VALUE_OBJECT_MODEL, XmlElementItem } from "./types"
 
-export const NijoUiSideMenu = ({ formMethods, onSelected, selectedRootAggregateId }: {
+export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAggregateId }: {
+  onSave: (applicationState: ApplicationState) => void
   formMethods: ReactHookForm.UseFormReturn<ApplicationState>
   onSelected: (rootAggregateIndex: number) => void
   selectedRootAggregateId: string | undefined
@@ -69,6 +70,11 @@ export const NijoUiSideMenu = ({ formMethods, onSelected, selectedRootAggregateI
 
   // ---------------------------------
 
+  // 保存処理
+  const handleSave = useEvent(() => {
+    onSave(formMethods.getValues())
+  })
+
   // 新しいルート集約を追加する。名前の入力は必須。
   const handleNewRootAggregate = useEvent(() => {
     const localName = prompt('ルート集約名を入力してください。')
@@ -95,7 +101,11 @@ export const NijoUiSideMenu = ({ formMethods, onSelected, selectedRootAggregateI
   return (
     <div className="h-full flex flex-col bg-gray-200">
       {/* ツールアイコン */}
-      <div className="flex items-center justify-end gap-1 px-1 py-1 border-r border-gray-300">
+      <div className="flex items-center gap-1 px-1 py-1 border-r border-gray-300">
+        <Input.IconButton icon={Icon.FolderArrowDownIcon} outline mini hideText onClick={handleSave}>
+          保存
+        </Input.IconButton>
+        <div className="flex-1"></div>
         <Input.IconButton icon={Icon.PlusIcon} outline mini hideText onClick={handleNewRootAggregate}>
           追加
         </Input.IconButton>

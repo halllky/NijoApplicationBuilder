@@ -68,7 +68,7 @@ internal class NijoUi {
                 var applicationState = await context.Request.ReadFromJsonAsync<ApplicationState>()
                     ?? throw new Exception("applicationState is null");
                 var errors = new List<string>();
-                if (!applicationState.TryBuildApplicationSchema(originalXDocument, errors, out var xDocument)) {
+                if (!applicationState.TryConvertToXDocument(originalXDocument, errors, out var xDocument)) {
                     context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                     context.Response.ContentType = "application/json";
                     await context.Response.WriteAsJsonAsync(errors);
@@ -103,7 +103,7 @@ internal class NijoUi {
                 var applicationState = await context.Request.ReadFromJsonAsync<ApplicationState>()
                     ?? throw new Exception("applicationState is null");
                 var errors = new List<string>();
-                if (!applicationState.TryBuildApplicationSchema(originalXDocument, errors, out var xDocument)) {
+                if (!applicationState.TryConvertToXDocument(originalXDocument, errors, out var xDocument)) {
                     context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                     context.Response.ContentType = "application/json";
                     await context.Response.WriteAsJsonAsync(errors);
