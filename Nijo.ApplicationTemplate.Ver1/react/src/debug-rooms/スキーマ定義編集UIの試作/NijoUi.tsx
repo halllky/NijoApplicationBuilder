@@ -7,7 +7,7 @@ import useEvent from "react-use-event-hook"
 import { ApplicationState } from "./types"
 import { NijoUiSideMenu } from "./NijoUiSideMenu"
 import { getDefaultValues } from "./getDefaultValues"
-import { PageRootAggregate } from "./Page.RootAggregate"
+import { PageRootAggregate } from "./NijoUi.RootAggregate"
 import { AttrDefsProvider } from "./useAttrDefs"
 
 /**
