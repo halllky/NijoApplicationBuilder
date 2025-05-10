@@ -261,7 +261,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   return (
     <div
       ref={tableContainerRef}
-      className={`overflow-auto resize-y bg-gray-200 relative ${className ?? ''}`}
+      className={`overflow-auto bg-gray-200 relative ${className ?? ''}`}
       onMouseMove={(e) => {
         if (isDragging && tableBodyRef.current) {
           // マウス位置からテーブル内の行と列のインデックスを計算

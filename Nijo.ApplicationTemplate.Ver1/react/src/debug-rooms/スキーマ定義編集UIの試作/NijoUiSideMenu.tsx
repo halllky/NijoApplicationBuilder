@@ -10,7 +10,7 @@ import { ApplicationState, ATTR_TYPE, TYPE_COMMAND_MODEL, TYPE_DATA_MODEL, TYPE_
 
 export const NijoUiSideMenu = ({ formMethods, onSelected }: {
   formMethods: ReactHookForm.UseFormReturn<ApplicationState>
-  onSelected: (tree: XmlElementItem[]) => void
+  onSelected: (rootAggregateIndex: number) => void
 }) => {
   const { control } = formMethods
   const { fields, append } = ReactHookForm.useFieldArray({ control, name: 'xmlElementTrees' })
@@ -33,7 +33,8 @@ export const NijoUiSideMenu = ({ formMethods, onSelected }: {
     // Data, Query, Command は入れ子にせずトップの階層に表示
     const dataQueryCommandTypes: SideMenuLeafItem[] = []
 
-    for (const tree of fields) {
+    for (let i = 0; i < fields.length; i++) {
+      const tree = fields[i]
       const rootAggregate = tree.xmlElements[0]
       const type = rootAggregate.attributes?.get(ATTR_TYPE)
       if (type === TYPE_STATIC_ENUM_MODEL || type === TYPE_VALUE_OBJECT_MODEL) {
@@ -44,6 +45,7 @@ export const NijoUiSideMenu = ({ formMethods, onSelected }: {
             displayName: rootAggregate.localName!,
             aggregateTree: tree.xmlElements,
             indent: 1,
+            rootAggregateIndex: i,
           })
         }
       } else {
@@ -53,6 +55,7 @@ export const NijoUiSideMenu = ({ formMethods, onSelected }: {
           displayName: rootAggregate.localName!,
           aggregateTree: tree.xmlElements,
           indent: 0,
+          rootAggregateIndex: i,
         })
       }
     }
@@ -84,7 +87,7 @@ export const NijoUiSideMenu = ({ formMethods, onSelected }: {
       })
     } else {
       // 集約ツリーを選択した旨を親に通知
-      onSelected(menuItem.aggregateTree)
+      onSelected(menuItem.rootAggregateIndex)
     }
   })
 
@@ -163,5 +166,6 @@ type SideMenuLeafItem = {
   indent: number
   displayName: string
   aggregateTree: XmlElementItem[]
+  rootAggregateIndex: number
   isContainer?: never
 }

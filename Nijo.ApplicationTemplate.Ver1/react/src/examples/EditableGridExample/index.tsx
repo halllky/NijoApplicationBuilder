@@ -133,7 +133,7 @@ const BasicGridExample = () => {
         showCheckBox
         rowSelection={rowSelection}
         onRowSelectionChange={setRowSelection}
-        className="h-[240px] w-full border border-gray-300"
+        className="h-[240px] w-full resize-y border border-gray-300"
       />
       <div className="flex items-center gap-4">
         <span className="text-sm text-gray-500">

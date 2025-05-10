@@ -35,11 +35,19 @@ export const useCellTypes = <TRow extends ReactHookForm.FieldValues>(): ColumnDe
     };
   };
 
+  const otherCellFactory: UnboundColumnDefFactory<TRow> = (header, options) => {
+    return {
+      header,
+      ...options,
+    };
+  }
+
   return {
     text: textCellFactory,
     number: numberCellFactory,
     date: dateCellFactory,
-    boolean: booleanCellFactory
+    boolean: booleanCellFactory,
+    other: otherCellFactory,
   };
 }
 
@@ -53,6 +61,8 @@ export type ColumnDefFactories<TRow extends ReactHookForm.FieldValues> = {
   date: BoundColumnDefFactory<TRow, string | undefined>
   /** 真偽値型の列を定義します。 */
   boolean: BoundColumnDefFactory<TRow, boolean>
+  /** その他の型の列を定義します。 */
+  other: UnboundColumnDefFactory<TRow>
 }
 
 /** フィールドの特定のプロパティと紐づいた列定義を生成する関数。 */
@@ -67,4 +77,8 @@ export type BoundColumnDefFactory<TRow extends ReactHookForm.FieldValues, TCellV
 
 /** ボタンなど、特定のプロパティと紐づかない列定義を生成する関数。 */
 export type UnboundColumnDefFactory<TRow extends ReactHookForm.FieldValues> = (
+  /** ヘッダーに表示する文字列 */
+  header: string,
+  /** オプション */
+  options?: EditableGridColumnDefOptions<TRow>
 ) => EditableGridColumnDef<TRow>
