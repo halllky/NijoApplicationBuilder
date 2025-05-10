@@ -15,7 +15,7 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
   selectedRootAggregateId: string | undefined
 }) => {
   const { control } = formMethods
-  const { fields, append } = ReactHookForm.useFieldArray({ control, name: 'xmlElementTrees' })
+  const { fields, append, remove } = ReactHookForm.useFieldArray({ control, name: 'xmlElementTrees' })
 
   const [collapsedItems, setCollapsedItems] = React.useState<Set<string>>(new Set())
 
@@ -98,6 +98,14 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
     }
   })
 
+  // ルート集約を削除する
+  const handleDeleteRootAggregate = useEvent((menuItem: SideMenuItem) => {
+    if (window.confirm(`${menuItem.displayName}を削除しますか？`)) {
+      const index = fields.findIndex(field => field.xmlElements[0].id === menuItem.id)
+      remove(index)
+    }
+  })
+
   return (
     <div className="h-full flex flex-col bg-gray-200">
       {/* ツールアイコン */}
@@ -113,7 +121,7 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
 
       {/* 集約ツリーの一覧 */}
       <ul className="flex-1 flex flex-col overflow-y-auto">
-        {menuItems.map(menuItem => (
+        {menuItems.map((menuItem, index) => (
           <li
             key={menuItem.id}
             onClick={() => handleSelected(menuItem)}
@@ -124,6 +132,11 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
             <div style={{ flexBasis: `${menuItem.indent * 1.2}rem` }}></div>
             <SideMenuItemIcon menuItem={menuItem} collapsedItems={collapsedItems} />
             <SideMenuItemLabel menuItem={menuItem} />
+            {selectedRootAggregateId === menuItem.id && (
+              <Input.IconButton icon={Icon.TrashIcon} outline mini hideText onClick={() => handleDeleteRootAggregate(menuItem)}>
+                削除
+              </Input.IconButton>
+            )}
           </li>
         ))}
         <li className="flex-1 border-r border-gray-300"></li>
