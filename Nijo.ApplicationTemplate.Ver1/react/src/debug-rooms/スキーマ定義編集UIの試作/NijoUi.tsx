@@ -6,7 +6,6 @@ import * as Input from "../../input"
 import useEvent from "react-use-event-hook"
 import { ApplicationState } from "./types"
 import { NijoUiSideMenu } from "./NijoUiSideMenu"
-import { getDefaultValues } from "./getDefaultValues"
 import { PageRootAggregate } from "./NijoUi.RootAggregate"
 import { AttrDefsProvider } from "./useAttrDefs"
 
@@ -18,8 +17,51 @@ export const NijoUi = ({ className }: {
   className?: string
 }) => {
 
+  // 画面初期表示時、サーバーからスキーマ情報を読み込む
+  const [schema, setSchema] = React.useState<ApplicationState>()
+  const [loadError, setLoadError] = React.useState<string>()
+  const load = useEvent(async () => {
+    try {
+      // Visual Studio で Nijo.csproj の run-ui-service コマンドを実行したときのポート
+      const response = await fetch(`https://localhost:8081/load`)
+      const schema = await response.json()
+      setSchema(schema)
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : `不明なエラー(${error})`)
+    }
+  })
+  React.useEffect(() => {
+    load()
+  }, [])
+
+  // 読み込み中
+  if (schema === undefined && loadError === undefined) {
+    return <Layout.NowLoading />
+  }
+
+  // 読み込み完了
+  if (schema !== undefined) {
+    return (
+      <AfterLoaded defaultValues={schema} className={className} />
+    )
+  }
+
+  // 上記以外は読み込みエラーとみなす
+  return (
+    <div className={className}>
+      読み込みでエラーが発生しました: {loadError}
+    </div>
+  )
+}
+
+/** 画面初期表示時の読み込み完了後 */
+const AfterLoaded = ({ defaultValues, className }: {
+  defaultValues: ApplicationState
+  className?: string
+}) => {
+
   const form = ReactHookForm.useForm<ApplicationState>({
-    defaultValues: getDefaultValues(),
+    defaultValues: defaultValues,
   })
 
   // 選択中のルート集約
