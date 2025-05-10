@@ -55,6 +55,8 @@ export type CellValuePastedEvent<TRow extends ReactHookForm.FieldValues> = (e: {
 export type EditableGridRef<TRow extends ReactHookForm.FieldValues> = {
   /** 現在選択されている行を取得する */
   getSelectedRows: () => { row: TRow, rowIndex: number }[]
+  /** 行頭のチェックボックスで選択されている行を取得する */
+  getCheckedRows: () => { row: TRow, rowIndex: number }[]
   /** 特定の行を選択する */
   selectRow: (startRowIndex: number, endRowIndex: number) => void
   getActiveCell: () => { rowIndex: number, colIndex: number } | undefined

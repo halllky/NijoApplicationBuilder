@@ -78,8 +78,8 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   const {
     activeCell,
     selectedRange,
-    selectedRows,
-    allRowsSelected,
+    checkedRows,
+    allRowsChecked,
     setActiveCell,
     setSelectedRange,
     handleCellClick,
@@ -155,7 +155,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
             {showCheckBox && (
               <input
                 type="checkbox"
-                checked={allRowsSelected}
+                checked={allRowsChecked}
                 onChange={(e) => handleToggleAllRows(e.target.checked)}
                 aria-label="全行選択"
               />
@@ -178,16 +178,14 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
           id: `col-${colIndex}`, // 元のインデックスをIDに使用
           size: colDef.defaultWidth ?? DEFAULT_COLUMN_WIDTH,
           enableResizing: colDef.enableResizing ?? true,
-          header: ({ header }) => {
-            return (
-              <div
-                className="pl-1 border-b border-r border-gray-300 select-none truncate"
-                style={{ width: header.getSize() }}
-              >
-                {colDef.header}
-              </div>
-            )
-          },
+          header: ({ header }) => (
+            <div
+              className="pl-1 border-b border-r border-gray-300 text-gray-700 font-normal select-none truncate"
+              style={{ width: header.getSize() }}
+            >
+              {colDef.header}&nbsp;
+            </div>
+          ),
           meta: {
             originalColDef: colDef,
             isRowHeader: false,
@@ -195,7 +193,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
         });
         return tableColumnDef;
       })
-  ], [columnDefs, showCheckBox, allRowsSelected, handleToggleAllRows, columnHelper, rows.length, setActiveCell]); // 依存配列を適切に設定
+  ], [columnDefs, showCheckBox, allRowsChecked, handleToggleAllRows, columnHelper, rows.length, setActiveCell]); // 依存配列を適切に設定
 
   const table = useReactTable({
     data: rows,
@@ -236,14 +234,22 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
 
   // ref用の公開メソッド
   useImperativeHandle(ref, () => ({
-    getSelectedRows: () => Array.from(selectedRows).map(rowIndex => ({
+    // チェックボックスで選択されている行
+    getCheckedRows: () => Array.from(checkedRows).map(rowIndex => ({
       row: rows[rowIndex],
       rowIndex,
     })),
+    // セルの範囲選択に含まれる行
+    getSelectedRows: () => {
+      if (!selectedRange) return []
+      return Array
+        .from({ length: selectedRange.endRow - selectedRange.startRow + 1 }, (_, i) => selectedRange.startRow + i)
+        .map(rowIndex => ({ row: rows[rowIndex], rowIndex }))
+    },
     selectRow: selectRows,
     getActiveCell: () => activeCell ?? undefined,
     getSelectedRange: () => selectedRange ?? undefined,
-  }), [selectedRows, rows, selectRows, activeCell, selectedRange]);
+  }), [checkedRows, rows, selectRows, activeCell, selectedRange]);
 
   // 初期状態設定
   useEffect(() => {
@@ -384,7 +390,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                           {getShouldShowCheckBox(rowIndex) && (
                             <input
                               type="checkbox"
-                              checked={selectedRows.has(rowIndex)}
+                              checked={checkedRows.has(rowIndex)}
                               onChange={(e) => handleToggleRow(rowIndex, e.target.checked)}
                               aria-label={`行${rowIndex + 1}を選択`}
                             />

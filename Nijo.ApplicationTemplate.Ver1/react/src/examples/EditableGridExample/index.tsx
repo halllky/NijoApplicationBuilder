@@ -101,7 +101,7 @@ const BasicGridExample = () => {
 
   // 行削除
   const handleDeleteRow = useEvent(() => {
-    const selectedRows = gridRef.current?.getSelectedRows().map(r => r.rowIndex) ?? []
+    const selectedRows = gridRef.current?.getCheckedRows().map(r => r.rowIndex) ?? []
     remove(selectedRows)
   })
 

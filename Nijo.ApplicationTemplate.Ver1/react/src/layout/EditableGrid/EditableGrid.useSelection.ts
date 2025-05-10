@@ -4,8 +4,10 @@ import { CellPosition, CellSelectionRange } from ".";
 export interface UseSelectionReturn {
   activeCell: CellPosition | null;
   selectedRange: CellSelectionRange | null;
-  selectedRows: Set<number>;
-  allRowsSelected: boolean;
+  /** 行頭のチェックボックスで選択されている行のインデックスの集合 */
+  checkedRows: Set<number>;
+  /** 全ての行がチェックボックスで選択されているかどうか */
+  allRowsChecked: boolean;
   setActiveCell: (cell: CellPosition | null) => void;
   setSelectedRange: (range: CellSelectionRange | null) => void;
   handleCellClick: (event: React.MouseEvent, rowIndex: number, colIndex: number) => void;
@@ -90,8 +92,8 @@ export function useSelection(totalRows: number): UseSelectionReturn {
   return {
     activeCell,
     selectedRange,
-    selectedRows,
-    allRowsSelected,
+    checkedRows: selectedRows,
+    allRowsChecked: allRowsSelected,
     setActiveCell,
     setSelectedRange,
     handleCellClick,

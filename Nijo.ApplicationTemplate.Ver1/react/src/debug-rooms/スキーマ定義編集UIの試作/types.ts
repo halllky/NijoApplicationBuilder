@@ -1,4 +1,5 @@
 
+/** アプリケーション全体の状態 */
 export type ApplicationState = {
   /** XML要素をルート集約ごとの塊に分類したもの。 */
   xmlElementTrees: ModelPageForm[]
@@ -7,7 +8,6 @@ export type ApplicationState = {
   /** 値メンバーの種類定義。 */
   valueMemberTypes: ValueMemberType[]
 }
-
 
 /** Model定義画面のデータ型定義 */
 export type ModelPageForm = {
@@ -74,6 +74,8 @@ export type XmlElementSelectAttribute = {
 export type XmlElementSelectAttributeGetOptionFunction = (state: ApplicationState) => XmlElementSelectAttributeOption[]
 export type XmlElementSelectAttributeOption = { id: string, displayName: string }
 
+// ---------------------------------
+
 export const ATTR_TYPE = 'Type' as XmlElementAttributeName
 export const TYPE_DATA_MODEL = 'data-model'
 export const TYPE_QUERY_MODEL = 'query-model'
@@ -82,3 +84,96 @@ export const TYPE_STATIC_ENUM_MODEL = 'enum'
 export const TYPE_VALUE_OBJECT_MODEL = 'value-object'
 export const TYPE_CHILD = 'child'
 export const TYPE_CHILDREN = 'children'
+
+// ---------------------------------
+
+/** 内部の状態はフラットなツリーとして保持されているが、それをツリー構造として扱うためのユーティリティ。 */
+export const asTree = (flat: XmlElementItem[]) => {
+  return {
+
+    /** 指定された要素のルートを取得する。 */
+    getRoot: (el: XmlElementItem): XmlElementItem => {
+      // 引数のエレメントより前の位置にある、インデント0の要素のうち直近のものがルート
+      const previousElements = flat.slice(0, flat.indexOf(el))
+      const root = previousElements.reverse().find(x => x.indent === 0)
+      if (!root) throw new Error('root not found') // 必ずルート集約はあるはず
+      return root
+    },
+
+    /** 指定された要素の親を取得する。 */
+    getParent: (el: XmlElementItem): XmlElementItem | undefined => {
+      // 引数のエレメントより前の位置にあり、
+      // インデントが引数のエレメントより小さいもののうち、直近にあるのが親。
+      // インデントは必ずしも1小さいとは限らない。
+      const previousElements = flat.slice(0, flat.indexOf(el))
+      const parent = previousElements.reverse().find(y => y.indent < el.indent)
+      return parent
+    },
+
+    /** 指定された要素の子を取得する。 */
+    getChildren: (el: XmlElementItem): XmlElementItem[] => {
+      // 引数のエレメントより後ろの位置にあり、
+      // インデントが引数のエレメントより大きいもののうち、
+      // そのエレメントと引数のエレメントの間にインデントが挟まるものがないものが子。
+      // 例えば以下の場合、b, d, eはaの子。cはbの子。
+      // - a
+      //   - b
+      //     - c
+      //   - d
+      //   - e
+      const belowElements = flat.slice(flat.indexOf(el) + 1)
+      const children: XmlElementItem[] = []
+      let currentIndent = el.indent + 1 // このインデントと同じまたはより浅いならば子
+      for (const y of belowElements) {
+        // currentIndentと同じまたはより浅いならば子
+        if (y.indent <= currentIndent) {
+          children.push(y)
+          currentIndent = y.indent
+          continue
+        }
+        // 引数のエレメントより浅いインデントの要素が登場したら探索を打ち切る
+        if (y.indent < el.indent) {
+          break
+        }
+      }
+      return children
+    },
+
+    /** 指定された要素の祖先を取得する。よりルート集約に近いほうが先。 */
+    getAncestors: (el: XmlElementItem): XmlElementItem[] => {
+      // 引数のエレメントより前の方向に辿っていき、
+      // インデントが現在のエレメントより小さいものを集める。
+      // よりルート集約に近いほうが先なので、最後に配列を逆転させてreturnする。
+      const previousElements = flat.slice(0, flat.indexOf(el))
+      let currentIndent = el.indent
+      const ancestors: XmlElementItem[] = []
+      for (const y of previousElements) {
+        if (y.indent < currentIndent) {
+          ancestors.push(y)
+          currentIndent = y.indent
+        }
+        // ルート集約（インデント0）に到達したら探索を打ち切る
+        if (y.indent === 0) {
+          break
+        }
+      }
+      return ancestors.reverse()
+    },
+
+    /** 指定された要素の子孫を取得する。 */
+    getDescendants: (el: XmlElementItem): XmlElementItem[] => {
+      // getChildrenのロジックのうち「直下の子」という条件を外したものが子孫。
+      const belowElements = flat.slice(flat.indexOf(el) + 1)
+      const descendants: XmlElementItem[] = []
+      for (const y of belowElements) {
+        // 引数のエレメントより浅いインデントの要素が登場したら探索を打ち切る
+        if (y.indent < el.indent) {
+          break
+        } else {
+          descendants.push(y)
+        }
+      }
+      return descendants
+    },
+  }
+}

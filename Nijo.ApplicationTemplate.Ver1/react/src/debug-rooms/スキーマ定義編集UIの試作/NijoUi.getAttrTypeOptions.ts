@@ -1,4 +1,4 @@
-import { ATTR_TYPE, TYPE_VALUE_OBJECT_MODEL, XmlElementItem, TYPE_STATIC_ENUM_MODEL, TYPE_COMMAND_MODEL, TYPE_CHILD, TYPE_CHILDREN, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, XmlElementSelectAttributeGetOptionFunction, XmlElementSelectAttributeOption } from "./types"
+import { ATTR_TYPE, TYPE_VALUE_OBJECT_MODEL, XmlElementItem, TYPE_STATIC_ENUM_MODEL, TYPE_COMMAND_MODEL, TYPE_CHILD, TYPE_CHILDREN, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, XmlElementSelectAttributeGetOptionFunction, XmlElementSelectAttributeOption, asTree } from "./types"
 
 // Typeの選択肢
 export const getAttrTypeOptions: XmlElementSelectAttributeGetOptionFunction = currentState => {
@@ -37,17 +37,19 @@ export const getAttrTypeOptions: XmlElementSelectAttributeGetOptionFunction = cu
       return false
     })
     .map(el => ({
-      id: `enum:${el.id}`,
+      id: el.attributes?.get(ATTR_TYPE) === TYPE_STATIC_ENUM_MODEL
+        ? `enum:${el.localName}`
+        : `value-object:${el.localName}`,
       displayName: el.localName!,
     }))
 
   // 外部参照（ref-to）
   const refToTypes: XmlElementSelectAttributeOption[] = []
-  for (const tree of currentState.xmlElementTrees) {
+  for (const flattenTree of currentState.xmlElementTrees) {
 
     // DataModel, QueryModel のツリー内の要素のみが外部参照可能とざっくりみなす。
     // ※ 厳密にその集約を参照可能か否かは保存時にサーバー側で判定する
-    const rootAggregate = tree.xmlElements[0]
+    const rootAggregate = flattenTree.xmlElements[0]
     if (rootAggregate.attributes?.get(ATTR_TYPE) !== TYPE_DATA_MODEL
       && rootAggregate.attributes?.get(ATTR_TYPE) !== TYPE_QUERY_MODEL) {
       continue
@@ -58,17 +60,19 @@ export const getAttrTypeOptions: XmlElementSelectAttributeGetOptionFunction = cu
     const candidateTypes: XmlElementItem[] = []
     if (rootAggregate.localName) candidateTypes.push(rootAggregate)
 
-    for (const element of tree.xmlElements.slice(1)) {
+    for (const element of flattenTree.xmlElements.slice(1)) {
       const type = element.attributes?.get(ATTR_TYPE)
       if (type !== TYPE_CHILD && type !== TYPE_CHILDREN) continue
       if (!element.localName) continue
       candidateTypes.push(element)
     }
 
-    // ref-to:... に変換
+    // ref-to:... に変換する。
+    // 参照先が子孫集約の場合は "ref-to:aaa/bbb/ccc" のようにルート集約からのパスを含める。
+    const tree = asTree(flattenTree.xmlElements)
     for (const candidate of candidateTypes) {
       refToTypes.push({
-        id: `ref-to:${candidate.id}`,
+        id: `ref-to:${tree.getAncestors(candidate).map(x => x.localName).join('/')}`,
         displayName: candidate.localName!,
       })
     }
