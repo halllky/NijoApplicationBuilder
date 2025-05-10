@@ -95,7 +95,7 @@ export const NijoUiSideMenu = ({ formMethods, onSelected, selectedRootAggregateI
   return (
     <div className="h-full flex flex-col gap-1 bg-gray-200">
       {/* ツールアイコン */}
-      <div className="flex justify-end gap-1 px-1 py-px">
+      <div className="flex items-center justify-end gap-1 px-1 py-1">
         <Input.IconButton icon={Icon.PlusIcon} outline mini hideText onClick={handleNewRootAggregate}>
           追加
         </Input.IconButton>

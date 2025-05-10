@@ -25,6 +25,9 @@ import { useEditing } from "./EditableGrid.useEditing";
 import { useGridKeyboard } from "./EditableGrid.useGridKeyboard";
 import { useDragSelection } from "./EditableGrid.useDragSelection";
 
+// CSS
+import "./EditableGrid.css";
+
 /**
  * 編集可能なグリッドを表示するコンポーネント
 */
@@ -180,7 +183,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
           enableResizing: colDef.enableResizing ?? true,
           header: ({ header }) => (
             <div
-              className="pl-1 border-b border-r border-gray-300 text-gray-700 font-normal select-none truncate"
+              className="flex pl-1 border-b border-r border-gray-300 text-gray-700 font-normal select-none truncate"
               style={{ width: header.getSize() }}
             >
               {colDef.header}&nbsp;
@@ -402,9 +405,20 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
 
                   // データ列
                   let dataColumnClassName = 'outline-none align-middle'
-                  if (isActive) dataColumnClassName += ' bg-blue-200'
-                  else if (isInRange) dataColumnClassName += ' bg-blue-100'
-                  else dataColumnClassName += ' bg-gray-100'
+
+                  if (isActive) {
+                    dataColumnClassName += ' bg-blue-200' // アクティブセル
+                  } else if (isInRange) {
+                    dataColumnClassName += ' bg-blue-100' // 選択範囲
+                  } else if (activeCell &&
+                    (rowIndex === activeCell.rowIndex || colIndex === activeCell.colIndex) &&
+                    !(rowIndex === activeCell.rowIndex && colIndex === activeCell.colIndex)
+                  ) {
+                    dataColumnClassName += ' editable-grid-active-cell-cross-direction' // アクティブセルの十字方向
+                  } else {
+                    dataColumnClassName += ' bg-gray-100' // その他
+                  }
+
                   if (cellMeta?.originalColDef?.isFixed) dataColumnClassName += ` sticky` // z-indexをつけるとボディ列が列ヘッダより手前にきてしまうので設定しない
 
                   // 画面側でレンダリング処理が決められている場合はそれを使用、決まっていないなら単にtoString
@@ -462,11 +476,10 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                       {/* セル編集中でない場合はdiv要素をレンダリング */}
                       {(!isEditing || !isActive) && (
                         <div
-                          className="pl-1 border-r border-gray-200 select-none truncate"
+                          className="flex pl-1 border-r border-gray-200 select-none truncate"
                           style={{ width: cell.column.getSize() }}
                         >
                           {renderCell?.(cell.getContext()) ?? cell.getValue()?.toString()}
-                          &nbsp;
                         </div>
                       )}
                     </td>

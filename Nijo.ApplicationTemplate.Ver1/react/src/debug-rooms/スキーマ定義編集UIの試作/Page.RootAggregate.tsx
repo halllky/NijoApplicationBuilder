@@ -4,7 +4,7 @@ import * as ReactTable from "@tanstack/react-table"
 import * as Icon from "@heroicons/react/24/solid"
 import * as Input from "../../input"
 import * as Layout from "../../layout"
-import { ApplicationState, ATTR_TYPE, XmlElementItem } from "./types"
+import { ApplicationState, ATTR_TYPE, XmlElementAttribute, XmlElementItem } from "./types"
 import useEvent from "react-use-event-hook"
 import { UUID } from "uuidjs"
 
@@ -17,8 +17,9 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
   className?: string
 }) => {
   const gridRef = React.useRef<Layout.EditableGridRef<GridRowType>>(null)
-  const { control } = formMethods
+  const { control, getValues } = formMethods
   const { fields, insert, remove, update } = ReactHookForm.useFieldArray({ control, name: `xmlElementTrees.${rootAggregateIndex}.xmlElements` })
+  const attributeDefs = getValues(`attributeDefs`)
 
   // メンバーグリッドの列定義
   const getColumnDefs: Layout.GetColumnDefsFunction<GridRowType> = React.useCallback(cellType => {
@@ -32,11 +33,17 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
       // Type
       cellType.other('種類', {
         defaultWidth: 120,
-        isFixed: true,
         renderCell: renderTypeCell,
       }),
+      // Attributes（Typeだけはコンボボックスなので除外）
+      ...attributeDefs.filter(attrDef => attrDef.attributeName !== ATTR_TYPE).map(attrDef => ({
+        id: attrDef.attributeName,
+        header: attrDef.attributeName,
+        defaultWidth: 120,
+        renderCell: createAttributeCellRenderer(attrDef),
+      })),
     ]
-  }, [])
+  }, [attributeDefs])
 
   // 行挿入
   const handleInsertRow = useEvent(() => {
@@ -148,15 +155,25 @@ type GridRowType = ReactHookForm.FieldArrayWithId<ApplicationState, `xmlElementT
 // --------------------------------------------
 
 /** LocalName のセルのレイアウト */
-const renderLocalNameCell = (context: ReactTable.CellContext<ReactHookForm.FieldArrayWithId<ApplicationState, `xmlElementTrees.${number}.xmlElements`, "id">, unknown>) => {
+const renderLocalNameCell = (context: ReactTable.CellContext<GridRowType, unknown>) => {
   const indent = context.row.original.indent
   const bold = indent === 0 ? 'font-bold' : '' // ルート集約は太字
 
   return (
-    <div className="max-w-full inline-flex text-center leading-none">
+    <div className="max-w-full inline-flex text-center">
 
       {/* インデント */}
-      <div style={{ width: indent * 20 }}></div>
+      {Array.from({ length: indent }).map((_, i) => (
+        <React.Fragment key={i}>
+          {/* インデントのテキスト */}
+          <div className="w-[20px] relative leading-none">
+            {i >= 1 && (
+              // インデントを表す縦線
+              <div className="absolute top-[-8px] bottom-[-8px] left-0 border-l border-gray-300 border-dotted leading-none"></div>
+            )}
+          </div>
+        </React.Fragment>
+      ))}
 
       <span className={`flex-1 truncate ${bold}`}>
         {context.cell.getValue() as string}
@@ -166,13 +183,38 @@ const renderLocalNameCell = (context: ReactTable.CellContext<ReactHookForm.Field
 }
 
 /** 種類のセルのレイアウト */
-const renderTypeCell = (context: ReactTable.CellContext<ReactHookForm.FieldArrayWithId<ApplicationState, `xmlElementTrees.${number}.xmlElements`, "id">, unknown>) => {
+const renderTypeCell = (context: ReactTable.CellContext<GridRowType, unknown>) => {
 
   const type = context.row.original.attributes?.get(ATTR_TYPE)
 
   return (
-    <div className="inline-flex text-center leading-none">
+    <PlainCell>
       {type}
+    </PlainCell>
+  )
+}
+
+/** 属性のセルのレイアウト */
+const createAttributeCellRenderer = (attrDef: XmlElementAttribute): ((context: ReactTable.CellContext<GridRowType, unknown>) => React.ReactNode) => {
+  return context => {
+    const value = context.row.original.attributes?.get(attrDef.attributeName)
+    return (
+      <PlainCell>
+        {value}
+      </PlainCell>
+    )
+  }
+}
+
+const PlainCell = ({ children, className }: {
+  children?: React.ReactNode
+  className?: string
+}) => {
+  return (
+    <div className={`max-w-full inline-flex text-center ${className ?? ''}`}>
+      <span className="flex-1 truncate">
+        {children}
+      </span>
     </div>
   )
 }
