@@ -79,6 +79,9 @@ export type XmlElementSelectAttributeOption = { id: string, displayName: string 
 // ---------------------------------
 
 export const ATTR_TYPE = 'Type' as XmlElementAttributeName
+export const ATTR_GENERATE_DEFAULT_QUERY_MODEL = 'GenerateDefaultQueryModel' as XmlElementAttributeName
+export const ATTR_GENERATE_BATCH_UPDATE_COMMAND = 'GenerateBatchUpdateCommand' as XmlElementAttributeName
+
 export const TYPE_DATA_MODEL = 'data-model'
 export const TYPE_QUERY_MODEL = 'query-model'
 export const TYPE_COMMAND_MODEL = 'command-model'

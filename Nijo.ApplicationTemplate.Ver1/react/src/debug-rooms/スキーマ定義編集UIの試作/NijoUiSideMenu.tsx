@@ -6,7 +6,7 @@ import { UUID } from "uuidjs"
 import * as Layout from "../../layout"
 import * as Input from "../../input"
 import useEvent from "react-use-event-hook"
-import { ApplicationState, ATTR_TYPE, TYPE_COMMAND_MODEL, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, TYPE_STATIC_ENUM_MODEL, TYPE_VALUE_OBJECT_MODEL, XmlElementItem } from "./types"
+import { ApplicationState, ATTR_GENERATE_BATCH_UPDATE_COMMAND, ATTR_GENERATE_DEFAULT_QUERY_MODEL, ATTR_TYPE, TYPE_COMMAND_MODEL, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, TYPE_STATIC_ENUM_MODEL, TYPE_VALUE_OBJECT_MODEL, XmlElementItem } from "./types"
 
 export const NijoUiSideMenu = ({ formMethods, onSelected, selectedRootAggregateId }: {
   formMethods: ReactHookForm.UseFormReturn<ApplicationState>
@@ -93,27 +93,30 @@ export const NijoUiSideMenu = ({ formMethods, onSelected, selectedRootAggregateI
   })
 
   return (
-    <div className="h-full flex flex-col gap-1 bg-gray-200">
+    <div className="h-full flex flex-col bg-gray-200">
       {/* ツールアイコン */}
-      <div className="flex items-center justify-end gap-1 px-1 py-1">
+      <div className="flex items-center justify-end gap-1 px-1 py-1 border-r border-gray-300">
         <Input.IconButton icon={Icon.PlusIcon} outline mini hideText onClick={handleNewRootAggregate}>
           追加
         </Input.IconButton>
       </div>
 
       {/* 集約ツリーの一覧 */}
-      <ul className="flex-1 flex flex-col gap-1 overflow-y-auto">
+      <ul className="flex-1 flex flex-col overflow-y-auto">
         {menuItems.map(menuItem => (
           <li
             key={menuItem.id}
             onClick={() => handleSelected(menuItem)}
-            className={`flex items-center gap-px cursor-pointer ${selectedRootAggregateId === menuItem.id ? 'bg-gray-100' : ''}`}
+            className={`flex items-center gap-px py-px cursor-pointer border-y ${selectedRootAggregateId === menuItem.id
+              ? 'bg-gray-100 border-gray-300'
+              : 'border-r border-r-gray-300 border-y-transparent'}`}
           >
             <div style={{ flexBasis: `${menuItem.indent * 1.2}rem` }}></div>
             <SideMenuItemIcon menuItem={menuItem} collapsedItems={collapsedItems} />
-            <SideMenuItemLabel>{menuItem.displayName}</SideMenuItemLabel>
+            <SideMenuItemLabel menuItem={menuItem} />
           </li>
         ))}
+        <li className="flex-1 border-r border-gray-300"></li>
       </ul>
     </div>
   )
@@ -138,9 +141,9 @@ const SideMenuItemIcon = ({ menuItem, collapsedItems }: {
 
   // ルート集約なら集約ごとのアイコンを表示
   const modelType = menuItem.aggregateTree[0].attributes[ATTR_TYPE]
-  if (modelType === TYPE_DATA_MODEL) return <Icon.CircleStackIcon className={`${className} text-orange-500`} />
-  if (modelType === TYPE_QUERY_MODEL) return <Icon.MagnifyingGlassIcon className={`${className} text-green-500`} />
-  if (modelType === TYPE_COMMAND_MODEL) return <Icon.ArrowPathIcon className={`${className} text-red-500`} />
+  if (modelType === TYPE_DATA_MODEL) return <Icon.CircleStackIcon className={`${className} text-orange-600`} />
+  if (modelType === TYPE_QUERY_MODEL) return <Icon.TableCellsIcon className={`${className} text-emerald-600`} />
+  if (modelType === TYPE_COMMAND_MODEL) return <Icon.CommandLineIcon className={`${className} text-sky-600`} />
   if (modelType === TYPE_STATIC_ENUM_MODEL) return <Icon.ListBulletIcon className={`${className} text-blue-500`} />
   if (modelType === TYPE_VALUE_OBJECT_MODEL) return <Icon.CubeTransparentIcon className={`${className} text-purple-500`} />
 
@@ -148,10 +151,19 @@ const SideMenuItemIcon = ({ menuItem, collapsedItems }: {
   return <Icon.DocumentTextIcon className={`${className} text-gray-500`} />
 }
 
-const SideMenuItemLabel = ({ children, onClick }: { children?: React.ReactNode, onClick?: () => void }) => {
+const SideMenuItemLabel = ({ menuItem, onClick }: { menuItem: SideMenuItem, onClick?: () => void }) => {
   return (
-    <div className="flex-1 text-sm text-gray-600 pl-1 select-none truncate" onClick={onClick}>
-      {children}
+    <div className="flex-1 flex items-center gap-1 text-sm text-gray-600 pl-1 select-none truncate" onClick={onClick}>
+      {menuItem.displayName}
+
+      {/* GDQMならQueryModelのアイコンをここに表示 */}
+      {!menuItem.isContainer && menuItem.aggregateTree[0].attributes[ATTR_GENERATE_DEFAULT_QUERY_MODEL] === 'True' && (
+        <Icon.TableCellsIcon className="w-4 h-4 min-w-4 min-h-4 text-emerald-600" />
+      )}
+      {/* バッチ更新コマンドを生成するなら、ここにアイコンを表示 */}
+      {!menuItem.isContainer && menuItem.aggregateTree[0].attributes[ATTR_GENERATE_BATCH_UPDATE_COMMAND] === 'True' && (
+        <Icon.CommandLineIcon className="w-4 h-4 min-w-4 min-h-4 text-sky-600" />
+      )}
     </div>
   )
 }
