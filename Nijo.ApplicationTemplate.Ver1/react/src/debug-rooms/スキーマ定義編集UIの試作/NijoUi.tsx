@@ -50,7 +50,7 @@ export const NijoUi = ({ className }: {
             key={selectedRootAggregateIndex}
             rootAggregateIndex={selectedRootAggregateIndex}
             formMethods={form}
-            className="p-1"
+            className="pl-1 pt-1"
           />
         )}
       </ReactResizablePanels.Panel>

@@ -162,6 +162,7 @@ const ComponentExampleIndex_EditableGrid = ({ rhfMethods }: {
     <Layout.EditableGrid
       rows={fields}
       getColumnDefs={getColumnDefs}
+      className="border border-gray-300"
     />
   )
 }

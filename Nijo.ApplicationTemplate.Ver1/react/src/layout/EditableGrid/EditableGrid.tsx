@@ -204,7 +204,10 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     columnResizeMode: 'onChange',
     state: {
       columnSizing,
-      columnVisibility: Object.fromEntries(columnDefs.map((colDef, i) => [`col-${i}`, !colDef.invisible])),
+      columnVisibility: {
+        'rowHeader': showCheckBox !== undefined && showCheckBox !== false,
+        ...Object.fromEntries(columnDefs.map((colDef, i) => [`col-${i}`, !colDef.invisible])),
+      },
     },
     onColumnSizingChange: setColumnSizing,
     getCoreRowModel: getCoreRowModel(),

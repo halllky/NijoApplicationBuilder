@@ -140,7 +140,7 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
           rows={fields}
           getColumnDefs={getColumnDefs}
           onCellEdited={handleCellEdited}
-          className="h-full"
+          className="h-full border-l border-t border-gray-300"
         />
       </div>
     </div>
