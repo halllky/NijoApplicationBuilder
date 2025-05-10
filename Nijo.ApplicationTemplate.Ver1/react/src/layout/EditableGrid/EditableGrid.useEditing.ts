@@ -22,8 +22,7 @@ export function useEditing<TRow extends ReactHookForm.FieldValues>(
 
   const {
     rows,
-    onCellEdited,
-    cloneRow,
+    onChangeRow,
   } = props;
 
   const [isEditing, setIsEditing] = useState(false);
@@ -51,7 +50,7 @@ export function useEditing<TRow extends ReactHookForm.FieldValues>(
       colDef.onStartEditing({
         rowIndex,
         row: rows[rowIndex],
-        setEditorValue: value => editorValue = value,
+        setEditorInitialValue: value => editorValue = value,
       });
     }
     // `onStartEditing` による編集開始処理が指定されていない場合は `fieldPath` の参照を試みる
@@ -88,26 +87,28 @@ export function useEditing<TRow extends ReactHookForm.FieldValues>(
     }
 
     const { rowIndex, colIndex } = editingCell;
+    const colDef = columnDefs[colIndex];
 
-    if (!onCellEdited || getIsReadOnly(rowIndex)) {
+    // 変更に必要な関数が指定されていない場合は処理中断
+    if (!onChangeRow || !colDef.onEndEditing || getIsReadOnly(rowIndex)) {
       setIsEditing(false);
       setEditingCell(null);
       return;
     }
 
-    const targetRow = rows[rowIndex];
-    const fieldPath = columnDefs[colIndex]?.fieldPath;
-    if (!fieldPath) {
-      setIsEditing(false);
-      setEditingCell(null);
-      return;
+    // 列定義の onEndEditing と onChangeRow を呼ぶ。
+    // 具体的に変更をオブジェクトに反映させるロジックはここでは定義しない。
+    const oldRow = rows[rowIndex];
+    let newRow: TRow | undefined = undefined;
+    colDef.onEndEditing({
+      rowIndex,
+      row: oldRow,
+      value: editValue,
+      setEditedRow: row => newRow = row,
+    })
+    if (newRow) {
+      onChangeRow({ changedRows: [{ rowIndex, oldRow, newRow }] });
     }
-
-    // onCellEdited イベントを呼ぶ。
-    // 状態の変更は画面側に任せる。
-    const newRow = cloneRow ? cloneRow(targetRow) : structuredClone(targetRow);
-    setValueByPath(newRow, fieldPath, editValue);
-    onCellEdited({ rowIndex, oldRow: targetRow, newRow });
 
     setIsEditing(false);
     setEditingCell(null);

@@ -4,7 +4,7 @@ import * as ReactHookForm from 'react-hook-form'
 import * as Layout from '../../layout'
 import * as Input from '../../input'
 import { EditableGrid } from '../../layout/EditableGrid'
-import type { CellValueEditedEvent, EditableGridRef, GetColumnDefsFunction } from '../../layout/EditableGrid/types'
+import type { RowChangeEvent, EditableGridRef, GetColumnDefsFunction } from '../../layout/EditableGrid/types'
 import { type ColumnDefFactories } from '../../layout/EditableGrid/useCellTypes'
 
 /** 画面全体のフォームの型 */
@@ -89,9 +89,11 @@ const BasicGridExample = () => {
     cellType.text('description7', '説明7', { defaultWidth: 100, invisible: columnCountType !== 'many' }),
   ], [columnCountType])
 
-  // セル変更時イベント
-  const handleChangeCell: CellValueEditedEvent<MyRowData> = useEvent(e => {
-    update(e.rowIndex, e.newRow)
+  // 行変更時イベント
+  const handleChangeRow: RowChangeEvent<MyRowData> = useEvent(e => {
+    for (const x of e.changedRows) {
+      update(x.rowIndex, x.newRow)
+    }
   })
 
   // 行追加
@@ -129,7 +131,7 @@ const BasicGridExample = () => {
         ref={gridRef}
         rows={fields}
         getColumnDefs={getColumnDefs}
-        onCellEdited={handleChangeCell}
+        onChangeRow={handleChangeRow}
         showCheckBox
         rowSelection={rowSelection}
         onRowSelectionChange={setRowSelection}

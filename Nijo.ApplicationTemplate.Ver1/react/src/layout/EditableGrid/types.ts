@@ -15,12 +15,12 @@ export type EditableGridProps<TRow extends ReactHookForm.FieldValues> = {
    */
   getColumnDefs: GetColumnDefsFunction<TRow>
 
-  /** セルデータが変更されたときのコールバック */
-  onCellEdited?: CellValueEditedEvent<TRow>
-  /** クリップボードからの貼り付けが行われたときのコールバック。セルの範囲選択のうえまとめてペーストされることがあるので、複数行分が一気に発火される。 */
-  onPasted?: CellValuePastedEvent<TRow>
-  /** 編集時、ペースト時に利用される、行オブジェクトのクローンのロジック。未指定の場合は window.structuredClone を使用する。 */
-  cloneRow?: (item: TRow) => TRow
+  /**
+   * 行の値が変更されたあとに発火される。
+   * クリップボードからの貼り付けが行われたときのコールバック。
+   * クリップボードからのペーストの場合はセルの範囲選択のうえまとめてペーストされることがあるので、複数行分が一気に発火される。
+   */
+  onChangeRow?: RowChangeEvent<TRow>
 
   /** 行ヘッダのチェックボックスを表示するかどうか。 */
   showCheckBox?: boolean | ((row: TRow, rowIndex: number) => boolean)
@@ -35,16 +35,13 @@ export type EditableGridProps<TRow extends ReactHookForm.FieldValues> = {
   onRowSelectionChange?: (updater: React.SetStateAction<Record<string, boolean>>) => void
 }
 
-/** セルデータが変更されたときのコールバック */
-export type CellValueEditedEvent<TRow extends ReactHookForm.FieldValues> = (e: {
-  rowIndex: number
-  oldRow: TRow
-  newRow: TRow
-}) => void
-
-/** クリップボードからの貼り付けが行われたときのコールバック。セルの範囲選択のうえまとめてペーストされることがあるので、複数行分が一気に発火される。 */
-export type CellValuePastedEvent<TRow extends ReactHookForm.FieldValues> = (e: {
-  pastedRows: {
+/**
+ * 行の値が変更されたあとに発火される。
+ * クリップボードからの貼り付けが行われたときのコールバック。
+ * クリップボードからのペーストの場合はセルの範囲選択のうえまとめてペーストされることがあるので、複数行分が一気に発火される。
+ */
+export type RowChangeEvent<TRow extends ReactHookForm.FieldValues> = (e: {
+  changedRows: {
     rowIndex: number
     oldRow: TRow
     newRow: TRow
@@ -116,6 +113,8 @@ export type EditableGridColumnDefOptions<TRow extends ReactHookForm.FieldValues>
 
   /** 編集開始時に呼び出される関数 */
   onStartEditing?: EditableGridColumnDefOnStartEditing<TRow>
+  /** 編集終了時に呼び出される関数 */
+  onEndEditing?: EditableGridColumnDefOnEndEditing<TRow>
 }
 
 /** セルのレンダリング処理をカスタマイズする関数。 */
@@ -130,6 +129,19 @@ export type EditableGridColumnDefOnStartEditing<TRow extends ReactHookForm.Field
    * 未指定の場合は `fieldPath` の値で行オブジェクトの値が参照される。
    * それも指定されていない場合はそのセルは編集不可とみなす。
    */
-  setEditorValue: (value: string) => void
+  setEditorInitialValue: (value: string) => void
 }) => void
 
+/** 編集終了時に呼び出される関数 */
+export type EditableGridColumnDefOnEndEditing<TRow extends ReactHookForm.FieldValues> = (e: {
+  rowIndex: number
+  /** 変更前の行 */
+  row: TRow
+  /** 編集されたあとの値 */
+  value: string
+  /**
+   * 編集されたあとの行を設定する関数。
+   * この関数を呼ばないと編集結果がテーブルのプロパティの `onChangeRow` まで反映されない。
+   */
+  setEditedRow: (row: TRow) => void
+}) => void

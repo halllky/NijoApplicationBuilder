@@ -196,7 +196,11 @@ export const 従業員マスタ詳細編集画面 = () => {
                 getColumnDefs={get所属部署ColumnDefs}
                 rowSelection={所属部署RowSelection}
                 onRowSelectionChange={set所属部署RowSelection}
-                onCellEdited={(e) => update所属部署(e.rowIndex, e.newRow)}
+                onChangeRow={e => {
+                  for (const x of e.changedRows) {
+                    update所属部署(x.rowIndex, x.newRow)
+                  }
+                }}
               />
             </Layout.VForm3.FullWidthItem>
 
@@ -218,7 +222,11 @@ export const 従業員マスタ詳細編集画面 = () => {
                 getColumnDefs={get権限ColumnDefs}
                 rowSelection={権限RowSelection}
                 onRowSelectionChange={set権限RowSelection}
-                onCellEdited={e => update権限(e.rowIndex, e.newRow)}
+                onChangeRow={e => {
+                  for (const x of e.changedRows) {
+                    update権限(x.rowIndex, x.newRow)
+                  }
+                }}
               />
             </Layout.VForm3.FullWidthItem>
 

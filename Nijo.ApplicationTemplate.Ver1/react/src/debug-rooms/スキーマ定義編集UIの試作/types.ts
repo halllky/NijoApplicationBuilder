@@ -44,7 +44,7 @@ export type XmlElementItem = {
   /** XML要素の値 */
   value?: string
   /** XML要素の属性 */
-  attributes?: Map<XmlElementAttributeName, string>
+  attributes: Record<XmlElementAttributeName, string>
 }
 
 /** XML要素の属性の識別子 */

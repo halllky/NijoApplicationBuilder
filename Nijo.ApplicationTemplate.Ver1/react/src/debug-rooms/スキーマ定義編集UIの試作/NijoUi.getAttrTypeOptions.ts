@@ -31,13 +31,13 @@ export const getAttrTypeOptions: XmlElementSelectAttributeGetOptionFunction = cu
     .flatMap(m => m.xmlElements)
     .filter(el => {
       if (!el.localName) return false
-      const type = el.attributes?.get(ATTR_TYPE)
+      const type = el.attributes[ATTR_TYPE]
       if (type === TYPE_STATIC_ENUM_MODEL) return true
       if (type === TYPE_VALUE_OBJECT_MODEL) return true
       return false
     })
     .map(el => ({
-      id: el.attributes?.get(ATTR_TYPE) === TYPE_STATIC_ENUM_MODEL
+      id: el.attributes[ATTR_TYPE] === TYPE_STATIC_ENUM_MODEL
         ? `enum:${el.localName}`
         : `value-object:${el.localName}`,
       displayName: el.localName!,
@@ -50,8 +50,8 @@ export const getAttrTypeOptions: XmlElementSelectAttributeGetOptionFunction = cu
     // DataModel, QueryModel のツリー内の要素のみが外部参照可能とざっくりみなす。
     // ※ 厳密にその集約を参照可能か否かは保存時にサーバー側で判定する
     const rootAggregate = flattenTree.xmlElements[0]
-    if (rootAggregate.attributes?.get(ATTR_TYPE) !== TYPE_DATA_MODEL
-      && rootAggregate.attributes?.get(ATTR_TYPE) !== TYPE_QUERY_MODEL) {
+    if (rootAggregate.attributes[ATTR_TYPE] !== TYPE_DATA_MODEL
+      && rootAggregate.attributes[ATTR_TYPE] !== TYPE_QUERY_MODEL) {
       continue
     }
 
@@ -61,7 +61,7 @@ export const getAttrTypeOptions: XmlElementSelectAttributeGetOptionFunction = cu
     if (rootAggregate.localName) candidateTypes.push(rootAggregate)
 
     for (const element of flattenTree.xmlElements.slice(1)) {
-      const type = element.attributes?.get(ATTR_TYPE)
+      const type = element.attributes[ATTR_TYPE]
       if (type !== TYPE_CHILD && type !== TYPE_CHILDREN) continue
       if (!element.localName) continue
       candidateTypes.push(element)

@@ -37,7 +37,7 @@ export const NijoUiSideMenu = ({ formMethods, onSelected, selectedRootAggregateI
     for (let i = 0; i < fields.length; i++) {
       const tree = fields[i]
       const rootAggregate = tree.xmlElements[0]
-      const type = rootAggregate.attributes?.get(ATTR_TYPE)
+      const type = rootAggregate.attributes[ATTR_TYPE]
       if (type === TYPE_STATIC_ENUM_MODEL || type === TYPE_VALUE_OBJECT_MODEL) {
         // 列挙体 or 値オブジェクト。「属性種類定義」が折り畳みされていたら表示しない
         if (!collapsedItems.has('member-types')) {
@@ -73,7 +73,7 @@ export const NijoUiSideMenu = ({ formMethods, onSelected, selectedRootAggregateI
   const handleNewRootAggregate = useEvent(() => {
     const localName = prompt('ルート集約名を入力してください。')
     if (!localName) return
-    append({ xmlElements: [{ id: UUID.generate(), indent: 0, localName }] })
+    append({ xmlElements: [{ id: UUID.generate(), indent: 0, localName, attributes: {} }] })
   })
 
   // 集約ツリーを選択したときの処理
@@ -137,7 +137,7 @@ const SideMenuItemIcon = ({ menuItem, collapsedItems }: {
   }
 
   // ルート集約なら集約ごとのアイコンを表示
-  const modelType = menuItem.aggregateTree[0].attributes?.get(ATTR_TYPE)
+  const modelType = menuItem.aggregateTree[0].attributes[ATTR_TYPE]
   if (modelType === TYPE_DATA_MODEL) return <Icon.CircleStackIcon className={`${className} text-orange-500`} />
   if (modelType === TYPE_QUERY_MODEL) return <Icon.MagnifyingGlassIcon className={`${className} text-green-500`} />
   if (modelType === TYPE_COMMAND_MODEL) return <Icon.ArrowPathIcon className={`${className} text-red-500`} />

@@ -48,7 +48,7 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
     const selectedRange = gridRef.current?.getSelectedRange()
     if (!selectedRange) {
       // 選択範囲が無い場合はルート集約の直下に1行挿入
-      insert(0, { id: UUID.generate(), indent: 0, localName: '' })
+      insert(0, { id: UUID.generate(), indent: 0, localName: '', attributes: {} })
     } else {
       // 選択範囲がある場合は選択されている行と同じだけの行を選択範囲の前に挿入。
       // ただしルート集約が選択範囲に含まれる場合はルート集約の下に挿入する
@@ -60,7 +60,7 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
         id: UUID.generate(),
         indent,
         localName: '',
-        attributes: new Map(),
+        attributes: {},
       }) satisfies XmlElementItem)
       insert(insertPosition, insertRows)
     }
@@ -71,7 +71,7 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
     const selectedRange = gridRef.current?.getSelectedRange()
     if (!selectedRange) {
       // 選択範囲が無い場合はルート集約の直下に1行挿入
-      insert(0, { id: UUID.generate(), indent: 0, localName: '' })
+      insert(0, { id: UUID.generate(), indent: 0, localName: '', attributes: {} })
     } else {
       // 選択範囲がある場合は選択されている行と同じだけの行を選択範囲の下に挿入
       const insertPosition = selectedRange.endRow + 1
@@ -80,7 +80,7 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
         id: UUID.generate(),
         indent,
         localName: '',
-        attributes: new Map(),
+        attributes: {},
       }) satisfies XmlElementItem)
       insert(insertPosition, insertRows)
     }
@@ -116,9 +116,11 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
     }
   })
 
-  // セル編集
-  const handleCellEdited: Layout.CellValueEditedEvent<GridRowType> = useEvent(e => {
-    update(e.rowIndex, e.newRow)
+  // セル編集 or クリップボード貼り付け
+  const handleChangeRow: Layout.RowChangeEvent<GridRowType> = useEvent(e => {
+    for (const x of e.changedRows) {
+      update(x.rowIndex, x.newRow)
+    }
   })
 
   return (
@@ -137,7 +139,7 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
           ref={gridRef}
           rows={fields}
           getColumnDefs={getColumnDefs}
-          onCellEdited={handleCellEdited}
+          onChangeRow={handleChangeRow}
           className="h-full border-l border-t border-gray-300"
         />
       </div>
@@ -182,8 +184,7 @@ const renderLocalNameCell = (context: ReactTable.CellContext<GridRowType, unknow
 
 /** 種類のセルのレイアウト */
 const renderTypeCell = (context: ReactTable.CellContext<GridRowType, unknown>) => {
-
-  const type = context.row.original.attributes?.get(ATTR_TYPE)
+  const type = context.row.original.attributes[ATTR_TYPE]
 
   return (
     <PlainCell>
@@ -200,11 +201,20 @@ const createAttributeCell = (
   return cellType.other(attrDef.displayName, {
     defaultWidth: 120,
     onStartEditing: e => {
-      // 編集開始時に値を設定
-      e.setEditorValue(e.row.attributes?.get(attrDef.attributeName) ?? '')
+      // セル編集エディタの初期値を設定
+      e.setEditorInitialValue(e.row.attributes[attrDef.attributeName] ?? '')
+    },
+    onEndEditing: e => {
+      const clone = window.structuredClone(e.row)
+      if (e.value.trim() === '') {
+        delete clone.attributes[attrDef.attributeName]
+      } else {
+        clone.attributes[attrDef.attributeName] = e.value
+      }
+      e.setEditedRow(clone)
     },
     renderCell: context => {
-      const value = context.row.original.attributes?.get(attrDef.attributeName)
+      const value = context.row.original.attributes[attrDef.attributeName]
       return (
         <PlainCell>
           {value}

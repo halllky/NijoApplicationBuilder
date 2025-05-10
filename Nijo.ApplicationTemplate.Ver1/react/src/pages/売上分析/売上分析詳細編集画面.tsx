@@ -211,7 +211,11 @@ export const 売上分析詳細編集画面 = () => {
                 getColumnDefs={getカテゴリ別売上ColumnDefs}
                 rowSelection={カテゴリ別売上RowSelection} // サブGridを含む場合は必須
                 onRowSelectionChange={setカテゴリ別売上RowSelection} // サブGridを含む場合は必須
-                onCellEdited={e => updateカテゴリ別売上(e.rowIndex, e.newRow)}
+                onChangeRow={e => {
+                  for (const x of e.changedRows) {
+                    updateカテゴリ別売上(x.rowIndex, x.newRow)
+                  }
+                }}
               />
             </Layout.VForm3.FullWidthItem>
 
@@ -234,7 +238,11 @@ export const 売上分析詳細編集画面 = () => {
                 getColumnDefs={get時間帯別売上ColumnDefs}
                 rowSelection={時間帯別売上RowSelection}
                 onRowSelectionChange={set時間帯別売上RowSelection}
-                onCellEdited={e => update時間帯別売上(e.rowIndex, e.newRow)}
+                onChangeRow={e => {
+                  for (const x of e.changedRows) {
+                    update時間帯別売上(x.rowIndex, x.newRow)
+                  }
+                }}
               />
             </Layout.VForm3.FullWidthItem>
 
@@ -298,7 +306,11 @@ const 商品別売上Grid: React.FC<商品別売上GridProps> = ({
         getColumnDefs={getColumnDefs}
         rowSelection={商品別売上RowSelection} // ローカル状態を渡す
         onRowSelectionChange={set商品別売上RowSelection} // ローカル状態セッターを渡す
-        onCellEdited={e => update(e.rowIndex, e.newRow)}
+        onChangeRow={e => {
+          for (const x of e.changedRows) {
+            update(x.rowIndex, x.newRow)
+          }
+        }}
       />
     </div>
   );

@@ -229,7 +229,11 @@ export const 商品マスタ詳細編集画面 = () => {
                   getColumnDefs={get付属品ColumnDefs}
                   rowSelection={付属品RowSelection}
                   onRowSelectionChange={set付属品RowSelection}
-                  onCellEdited={e => update付属品(e.rowIndex, e.newRow)}
+                  onChangeRow={e => {
+                    for (const x of e.changedRows) {
+                      update付属品(x.rowIndex, x.newRow)
+                    }
+                  }}
                 />
               </Layout.VForm3.FullWidthItem>
             </div>
@@ -252,7 +256,11 @@ export const 商品マスタ詳細編集画面 = () => {
                 getColumnDefs={get在庫情報ColumnDefs}
                 rowSelection={在庫情報RowSelection}
                 onRowSelectionChange={set在庫情報RowSelection}
-                onCellEdited={e => update在庫情報(e.rowIndex, e.newRow)}
+                onChangeRow={e => {
+                  for (const x of e.changedRows) {
+                    update在庫情報(x.rowIndex, x.newRow)
+                  }
+                }}
               />
             </Layout.VForm3.FullWidthItem>
 

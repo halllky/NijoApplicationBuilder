@@ -1,55 +1,68 @@
 import * as ReactHookForm from "react-hook-form"
-import { EditableGridColumnDef, EditableGridColumnDefOptions } from "./types"
+import { EditableGridColumnDef, EditableGridColumnDefOnEndEditing, EditableGridColumnDefOptions } from "./types"
 
 /** 列定義ヘルパー関数の一覧を返します。 */
 export const useCellTypes = <TRow extends ReactHookForm.FieldValues>(): ColumnDefFactories<TRow> => {
-  const textCellFactory: BoundColumnDefFactory<TRow, string | undefined> = (fieldName, header, options) => {
-    return {
-      header,
-      fieldPath: fieldName,
-      ...options,
-    };
-  };
-
-  const numberCellFactory: BoundColumnDefFactory<TRow, number | undefined> = (fieldName, header, options) => {
-    return {
-      header,
-      fieldPath: fieldName,
-      ...options,
-    };
-  };
-
-  const dateCellFactory: BoundColumnDefFactory<TRow, string | undefined> = (fieldName, header, options) => {
-    return {
-      header,
-      fieldPath: fieldName,
-      ...options,
-    };
-  };
-
-  const booleanCellFactory: BoundColumnDefFactory<TRow, boolean> = (fieldName, header, options) => {
-    return {
-      header,
-      fieldPath: fieldName,
-      ...options,
-    };
-  };
-
-  const otherCellFactory: UnboundColumnDefFactory<TRow> = (header, options) => {
-    return {
-      header,
-      ...options,
-    };
-  }
-
   return {
-    text: textCellFactory,
-    number: numberCellFactory,
-    date: dateCellFactory,
-    boolean: booleanCellFactory,
-    other: otherCellFactory,
+    /** 既定の文字列型セル */
+    text: (fieldPath, header, options) => {
+      return {
+        header,
+        fieldPath,
+        onEndEditing: getDefaultOnEndEditing(fieldPath),
+        ...options,
+      };
+    },
+    /** 既定の数値型セル */
+    number: (fieldPath, header, options) => {
+      return {
+        header,
+        fieldPath,
+        onEndEditing: getDefaultOnEndEditing(fieldPath),
+        ...options,
+      };
+    },
+    /** 既定の日付型セル */
+    date: (fieldPath, header, options) => {
+      return {
+        header,
+        fieldPath,
+        onEndEditing: getDefaultOnEndEditing(fieldPath),
+        ...options,
+      };
+    },
+    /** 既定の真偽値型セル */
+    boolean: (fieldPath, header, options) => {
+      return {
+        header,
+        fieldPath,
+        onEndEditing: getDefaultOnEndEditing(fieldPath),
+        ...options,
+      };
+    },
+    /** その他の型のセル */
+    other: (header, options) => {
+      return {
+        header,
+        ...options,
+      };
+    },
   };
 }
+
+// -----------------------------------------
+/** fieldPath でバインドされる列の既定の行への変更反映ロジック */
+const getDefaultOnEndEditing = <TRow extends ReactHookForm.FieldValues>(fieldPath: ReactHookForm.FieldPath<TRow>): EditableGridColumnDefOnEndEditing<TRow> => {
+  return e => {
+    // structuredClone でオブジェクトを複製し、
+    // React hook form の set でネストされたオブジェクトにも安全に値を設定する。
+    const clone = window.structuredClone(e.row)
+    ReactHookForm.set(clone, fieldPath, e.value)
+    e.setEditedRow(clone)
+  }
+}
+
+// -----------------------------------------
 
 /** このアプリケーションで定義可能な、グリッドの列定義の種類の一覧 */
 export type ColumnDefFactories<TRow extends ReactHookForm.FieldValues> = {
