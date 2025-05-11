@@ -64,7 +64,7 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
       // ただしルート集約が選択範囲に含まれる場合はルート集約の下に挿入する
       const insertPosition = selectedRange.startRow <= 0
         ? 1 // ルート集約の直下
-        : (selectedRange.startRow - 1) // 選択範囲の前
+        : selectedRange.startRow // 選択範囲の前
       const indent = fields[insertPosition]?.indent ?? 1
       const insertRows = Array.from({ length: selectedRange.endRow - selectedRange.startRow + 1 }, (_, i) => ({
         uniqueId: UUID.generate(),
