@@ -355,4 +355,72 @@
     <再診 DisplayName="再診（さいしん）" key="2" />
     <検査 DisplayName="検査（けんさ）" key="3" />
   </reservation_type>
+  <!-- Childrenへの参照をキーに含むデータモデル -->
+  <在庫調査報告 Type="data-model" GenerateDefaultQueryModel="True" LatinName="Inventory Survey Report">
+    <対象在庫 Type="ref-to:商品マスタ/在庫情報" IsKey="True" DbName="INVENTORY_REF" />
+    <調査日 Type="date" IsRequired="True" DbName="SURVEY_DATE" />
+    <調査担当者 Type="ref-to:従業員マスタ" IsRequired="True" DbName="SURVEYOR_ID" />
+    <実地棚卸数 Type="int" IsRequired="True" DbName="ACTUAL_COUNT" />
+    <在庫差異 Type="int" DbName="INVENTORY_DIFF" />
+    <調査メモ Type="description" DbName="SURVEY_NOTE" MaxLength="500" />
+    <写真URL Type="word" DbName="PHOTO_URL" MaxLength="200" />
+    <アクション Type="children" DbName="ACTIONS">
+      <アクションID Type="word" IsKey="True" DbName="ACTION_ID" MaxLength="20" />
+      <アクション種別 Type="action_type" DbName="ACTION_TYPE" />
+      <実施状況 Type="status_type" DbName="STATUS" />
+      <実施日 Type="date" DbName="ACTION_DATE" />
+      <実施担当者 Type="ref-to:従業員マスタ" DbName="EXECUTOR_ID" />
+      <アクション詳細 Type="description" DbName="ACTION_DETAIL" MaxLength="500" />
+    </アクション>
+  </在庫調査報告>
+  <!-- 在庫調査報告用の列挙型 -->
+  <action_type Type="enum">
+    <補充 DisplayName="在庫補充" key="1" />
+    <調整 DisplayName="在庫調整" key="2" />
+    <破棄 DisplayName="商品破棄" key="3" />
+    <移動 DisplayName="在庫移動" key="4" />
+    <確認 DisplayName="再確認" key="5" />
+  </action_type>
+  <status_type Type="enum">
+    <未実施 DisplayName="未実施" key="1" />
+    <実施中 DisplayName="実施中" key="2" />
+    <完了 DisplayName="完了" key="3" />
+    <中止 DisplayName="中止" key="4" />
+  </status_type>
+  <!-- Childrenへの参照をキーに含むデータモデルのChildrenへの参照をキーに含むデータモデル -->
+  <アクション結果 Type="data-model" GenerateDefaultQueryModel="True" LatinName="Action Result">
+    <対象アクション Type="ref-to:在庫調査報告/アクション" IsKey="True" DbName="ACTION_REF" />
+    <結果日時 Type="datetime" IsRequired="True" DbName="RESULT_DATETIME" />
+    <結果担当者 Type="ref-to:従業員マスタ" IsRequired="True" DbName="RESULT_STAFF_ID" />
+    <成果 Type="int" DbName="ACHIEVEMENT" />
+    <結果状態 Type="result_status" IsRequired="True" DbName="RESULT_STATUS" />
+    <添付資料 Type="children" DbName="ATTACHMENTS">
+      <資料ID Type="word" IsKey="True" DbName="DOCUMENT_ID" MaxLength="20" />
+      <資料名 Type="word" IsRequired="True" DbName="DOCUMENT_NAME" MaxLength="100" />
+      <資料種別 Type="document_type" DbName="DOCUMENT_TYPE" />
+      <ファイルパス Type="word" DbName="FILE_PATH" MaxLength="200" />
+      <登録日時 Type="datetime" DbName="REGISTER_DATETIME" />
+    </添付資料>
+    <フィードバック Type="description" DbName="FEEDBACK" MaxLength="1000" />
+    <次回アクション Type="child" DbName="NEXT_ACTION">
+      <アクション種別 Type="action_type" DbName="NEXT_ACTION_TYPE" />
+      <予定日 Type="date" DbName="PLANNED_DATE" />
+      <担当者 Type="ref-to:従業員マスタ" DbName="NEXT_STAFF_ID" />
+      <内容 Type="description" DbName="NEXT_CONTENT" MaxLength="500" />
+    </次回アクション>
+  </アクション結果>
+  <!-- アクション結果用の列挙型 -->
+  <result_status Type="enum">
+    <成功 DisplayName="成功" key="1" />
+    <部分的成功 DisplayName="部分的成功" key="2" />
+    <失敗 DisplayName="失敗" key="3" />
+    <保留 DisplayName="保留" key="4" />
+  </result_status>
+  <document_type Type="enum">
+    <写真 DisplayName="写真" key="1" />
+    <報告書 DisplayName="報告書" key="2" />
+    <請求書 DisplayName="請求書" key="3" />
+    <納品書 DisplayName="納品書" key="4" />
+    <その他 DisplayName="その他" key="5" />
+  </document_type>
 </NijoApplicationBuilder>
