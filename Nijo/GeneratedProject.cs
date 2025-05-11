@@ -24,6 +24,41 @@ namespace Nijo {
 
         private const string NIJO_XML = "nijo.xml";
 
+        /// <summary>
+        /// 新しいNijoApplicationBuilderプロジェクトを作成します。
+        /// </summary>
+        /// <param name="projectRoot">プロジェクトのルートディレクトリの絶対パス。</param>
+        /// <param name="project">作成されたプロジェクト。</param>
+        /// <param name="error">エラー情報。</param>
+        /// <returns>プロジェクトが作成された場合は true、作成できなかった場合は false。</returns>
+        public static bool TryCreateNewProject(string projectRoot, [NotNullWhen(true)] out GeneratedProject? project, [NotNullWhen(false)] out string? error) {
+            if (Directory.Exists(projectRoot)) {
+                project = null;
+                error = $"フォルダが存在します: {projectRoot}";
+                return false;
+            }
+
+            // Ver1フォルダをまるごとコピーする（暫定措置）
+            const string VER1_ROOT = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.ApplicationTemplate.Ver1";
+            if (!Directory.Exists(VER1_ROOT)) {
+                project = null;
+                error = $"テンプレートフォルダが存在しません: {VER1_ROOT}";
+                return false;
+            }
+            DirectoryHelper.CopyDirectoryRecursively(VER1_ROOT, projectRoot);
+
+            project = new GeneratedProject(Path.GetFullPath(projectRoot));
+            error = null;
+            return true;
+        }
+
+        /// <summary>
+        /// 既存のNijoApplicationBuilderプロジェクトを開きます。
+        /// </summary>
+        /// <param name="projectRoot">プロジェクトのルートディレクトリの絶対パス。</param>
+        /// <param name="project">開いたプロジェクト。</param>
+        /// <param name="error">エラー情報。</param>
+        /// <returns>プロジェクトが開けた場合は true、開けなかった場合は false。</returns>
         public static bool TryOpen(string projectRoot, [NotNullWhen(true)] out GeneratedProject? project, [NotNullWhen(false)] out string? error) {
             if (!Directory.Exists(projectRoot)) {
                 project = null;
