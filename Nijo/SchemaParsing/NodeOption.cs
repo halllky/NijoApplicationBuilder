@@ -208,7 +208,7 @@ internal static class BasicNodeOptions {
             }
         },
         IsAvailableModelMembers = model => {
-            return false;
+            return model is DataModel;
         },
     };
     internal static NodeOption GenerateBatchUpdateCommand = new() {
@@ -393,7 +393,7 @@ internal static class BasicNodeOptions {
 
         },
         IsAvailableModelMembers = model => {
-            return true;
+            return model is DataModel;
         },
     };
     #endregion ValueMember用

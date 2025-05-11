@@ -24,7 +24,7 @@ export default function () {
           デバッグ時は、「npm run dev」と「nijo.exe run-ui-service」を並行して実行する。
         </li>
       </ul>
-      <div className="flex-1 p-8">
+      <div className="flex-1 p-8 overflow-hidden">
         <NijoUi className="w-full h-full border border-gray-500" />
       </div>
     </PageFrame>

@@ -174,7 +174,14 @@ const SideMenuItemIcon = ({ menuItem, collapsedItems }: {
 
   // ルート集約なら集約ごとのアイコンを表示
   const modelType = menuItem.aggregateTree[0].attributes[ATTR_TYPE]
-  if (modelType === TYPE_DATA_MODEL) return <Icon.CircleStackIcon className={`${className} text-orange-600`} />
+  if (modelType === TYPE_DATA_MODEL) {
+    if (menuItem.aggregateTree[0].attributes[ATTR_GENERATE_DEFAULT_QUERY_MODEL] === 'True') {
+      // DataModelの場合、QueryModelを生成するのであればQueryModelのアイコンも併記する
+      return <DataAndQueryModelIcon className={className} />
+    } else {
+      return <Icon.CircleStackIcon className={`${className} text-orange-600`} />
+    }
+  }
   if (modelType === TYPE_QUERY_MODEL) return <Icon.TableCellsIcon className={`${className} text-emerald-600`} />
   if (modelType === TYPE_COMMAND_MODEL) return <Icon.CommandLineIcon className={`${className} text-sky-600`} />
   if (modelType === TYPE_STATIC_ENUM_MODEL) return <Icon.ListBulletIcon className={`${className} text-blue-500`} />
@@ -184,6 +191,16 @@ const SideMenuItemIcon = ({ menuItem, collapsedItems }: {
   return <Icon.DocumentTextIcon className={`${className} text-gray-500`} />
 }
 
+/** DataModelとQueryModelを混ぜたもの */
+export const DataAndQueryModelIcon = ({ className }: { className?: string }) => {
+  return (
+    <div className={`${className} relative`}>
+      <Icon.TableCellsIcon className={`w-[12px] h-[12px] text-emerald-600 absolute top-0 left-0`} />
+      <Icon.CircleStackIcon className={`w-[12px] h-[12px] text-orange-600 absolute bottom-0 right-0`} />
+    </div>
+  )
+}
+
 /**
  * サイドメニューの集約要素のラベル
  */
@@ -191,15 +208,6 @@ const SideMenuItemLabel = ({ menuItem, onClick }: { menuItem: SideMenuItem, onCl
   return (
     <div className="flex-1 flex items-center gap-1 text-sm text-gray-600 pl-1 select-none truncate" onClick={onClick}>
       {menuItem.displayName}
-
-      {/* GDQMならQueryModelのアイコンをここに表示 */}
-      {!menuItem.isContainer && menuItem.aggregateTree[0].attributes[ATTR_GENERATE_DEFAULT_QUERY_MODEL] === 'True' && (
-        <Icon.TableCellsIcon className="w-4 h-4 min-w-4 min-h-4 text-emerald-600" />
-      )}
-      {/* バッチ更新コマンドを生成するなら、ここにアイコンを表示 */}
-      {!menuItem.isContainer && menuItem.aggregateTree[0].attributes[ATTR_GENERATE_BATCH_UPDATE_COMMAND] === 'True' && (
-        <Icon.CommandLineIcon className="w-4 h-4 min-w-4 min-h-4 text-sky-600" />
-      )}
     </div>
   )
 }

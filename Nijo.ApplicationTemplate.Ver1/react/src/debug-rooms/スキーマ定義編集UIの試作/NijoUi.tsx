@@ -125,7 +125,7 @@ const AfterLoaded = ({ defaultValues, onSave, className }: {
           />
         </ReactResizablePanels.Panel>
 
-        <ReactResizablePanels.PanelResizeHandle />
+        <ReactResizablePanels.PanelResizeHandle className="w-1" />
 
         {/* メインコンテンツ */}
         <ReactResizablePanels.Panel>
