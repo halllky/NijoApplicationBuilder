@@ -23,32 +23,31 @@ namespace Nijo.Ui {
         ///  the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent() {
-            button1 = new Button();
+            button1 = new System.Windows.Forms.Button();
             SuspendLayout();
-            // 
+            //
             // button1
-            // 
-            button1.Location = new Point(80, 53);
+            //
+            button1.Location = new System.Drawing.Point(12, 12);
             button1.Name = "button1";
-            button1.Size = new Size(255, 23);
+            button1.Size = new System.Drawing.Size(75, 23);
             button1.TabIndex = 0;
-            button1.Text = "Nijo.ApplicationTemplate.Ver1を開く（暫定）";
+            button1.Text = "OK";
             button1.UseVisualStyleBackColor = true;
-            button1.Click += button1_Click;
-            // 
+            //
             // WorkSpaceSelector
-            // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
-            AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(412, 227);
+            //
+            AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            ClientSize = new System.Drawing.Size(800, 450);
             Controls.Add(button1);
             Name = "WorkSpaceSelector";
-            Text = "Form1";
+            Text = "WorkSpaceSelector";
             ResumeLayout(false);
         }
 
         #endregion
 
-        private Button button1;
+        private System.Windows.Forms.Button button1;
     }
 }
