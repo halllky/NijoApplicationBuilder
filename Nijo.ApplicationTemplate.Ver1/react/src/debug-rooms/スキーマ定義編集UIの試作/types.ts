@@ -1,4 +1,3 @@
-
 /** アプリケーション全体の状態 */
 export type ApplicationState = {
   /** アプリケーション名。XMLのルート要素のLocalName。読み取り専用。 */
@@ -60,6 +59,8 @@ export type XmlElementAttribute = {
   attributeName: XmlElementAttributeName
   /** この属性の画面表示上の名称。 */
   displayName: string
+  /** この属性が使用可能なモデルの種類の配列。 */
+  availableModels: string[]
 } & (XmlElementStringAttribute | XmlElementBoolAttribute | XmlElementSelectAttribute)
 
 /** XML要素の属性の種類定義（文字列属性） */

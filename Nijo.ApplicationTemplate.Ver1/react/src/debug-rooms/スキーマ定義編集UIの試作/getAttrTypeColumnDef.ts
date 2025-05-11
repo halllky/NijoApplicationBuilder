@@ -93,4 +93,5 @@ export const TYPE_COLUMN_DEF: XmlElementAttribute = {
   displayName: '種類',
   type: 'select',
   getOptions: getAttrTypeOptions,
+  availableModels: ['data-model', 'query-model', 'command-model', 'enum', 'value-object']
 }

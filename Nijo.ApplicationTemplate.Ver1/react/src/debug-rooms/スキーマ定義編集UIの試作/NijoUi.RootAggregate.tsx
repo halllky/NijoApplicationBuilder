@@ -38,15 +38,20 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
     columns.push(createAttributeCell(TYPE_COLUMN_DEF, cellType))
 
     // Attributes（Type以外）
+    // ルート集約のモデルタイプを取得（最初の行のType属性）
+    const rootModelType = fields[0]?.attributes[ATTR_TYPE]
+
+    // rootModelTypeに対応する属性のみをフィルタリング
     columns.push(...Array.from(attributeDefs.values())
       .filter(attrDef => attrDef.attributeName !== ATTR_TYPE)
+      .filter(attrDef => rootModelType && attrDef.availableModels.includes(rootModelType))
       .map(attrDef => createAttributeCell(attrDef, cellType)))
 
     // コメント
     columns.push(cellType.text('comment', 'コメント', { defaultWidth: 400 }))
 
     return columns
-  }, [attributeDefs])
+  }, [attributeDefs, fields])
 
   // 行挿入
   const handleInsertRow = useEvent(() => {
