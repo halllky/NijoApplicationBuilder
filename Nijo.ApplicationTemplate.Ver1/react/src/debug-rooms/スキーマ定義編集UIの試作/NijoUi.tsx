@@ -116,7 +116,7 @@ const AfterLoaded = ({ defaultValues, onSave, className }: {
       <ReactResizablePanels.PanelGroup direction="horizontal" className={className}>
 
         {/* サイドメニュー */}
-        <ReactResizablePanels.Panel defaultSize={20}>
+        <ReactResizablePanels.Panel defaultSize={20} minSize={8} collapsible>
           <NijoUiSideMenu
             onSave={onSave}
             formMethods={form}

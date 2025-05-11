@@ -104,9 +104,9 @@ export const IconButton = (args: {
       )}
 
       {/* テキスト */}
-      {!args.hideText && args.children && (
+      {args.children && (
         <span className={`text-sm whitespace-nowrap relative ${(args.loading && !args.icon ? '' : '')}`}>
-          {args.children}
+          {args.hideText ? '\u00A0' : args.children}
           {args.loading && !args.icon && (
             <div className={`absolute inset-0 m-auto ${nowLoadingStyle}`}></div>
           )}

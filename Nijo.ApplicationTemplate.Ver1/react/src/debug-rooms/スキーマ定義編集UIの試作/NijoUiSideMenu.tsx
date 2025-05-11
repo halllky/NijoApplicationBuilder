@@ -110,33 +110,28 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
 
   return (
     <div className="h-full flex flex-col bg-gray-200">
-      {/* ツールアイコン */}
+      {/* アプリケーション名 & ツールアイコン */}
       <div className="flex items-center gap-1 px-1 py-1 border-r border-gray-300">
-        <Input.IconButton icon={Icon.FolderArrowDownIcon} outline mini hideText onClick={handleSave}>
-          保存
-        </Input.IconButton>
+        <ReactRouter.Link to={getNavigationUrl()} className="text-sm font-bold truncate">
+          {formMethods.getValues('applicationName')}
+        </ReactRouter.Link>
         <div className="flex-1"></div>
+        <Input.IconButton icon={Icon.FolderArrowDownIcon} outline mini hideText onClick={handleSave}>
+          変更をnijo.xmlに保存する
+        </Input.IconButton>
         <Input.IconButton icon={Icon.PlusIcon} outline mini hideText onClick={handleNewRootAggregate}>
-          追加
+          新しいルート集約を追加する
         </Input.IconButton>
       </div>
 
       {/* メニュー */}
       <ul className="flex-1 flex flex-col overflow-y-auto">
-
-        {/* アプリケーション名 */}
-        <li className="flex items-center gap-1 px-1 py-1 border-r border-gray-300">
-          <ReactRouter.Link to={getNavigationUrl()} className="flex-1 text-sm font-bold truncate">
-            {formMethods.getValues('applicationName')}
-          </ReactRouter.Link>
-        </li>
-
         {menuItems.map((menuItem, index) => (
           <li
             key={menuItem.id}
             onClick={() => handleSelected(menuItem)}
             className={`flex items-center gap-px py-px cursor-pointer border-y ${selectedRootAggregateId === menuItem.id
-              ? 'bg-gray-100 border-gray-300'
+              ? 'bg-white border-gray-300'
               : 'border-r border-r-gray-300 border-y-transparent'}`}
           >
             <div style={{ flexBasis: `${menuItem.indent * 1.2}rem` }}></div>
@@ -188,7 +183,7 @@ const SideMenuItemIcon = ({ menuItem, collapsedItems }: {
   if (modelType === TYPE_VALUE_OBJECT_MODEL) return <Icon.CubeTransparentIcon className={`${className} text-purple-500`} />
 
   // 不明な種類のルート集約
-  return <Icon.DocumentTextIcon className={`${className} text-gray-500`} />
+  return <Icon.QuestionMarkCircleIcon className={`${className} text-gray-500`} />
 }
 
 /** DataModelとQueryModelを混ぜたもの */
