@@ -149,6 +149,12 @@ public class NijoUi {
             }
         });
 
+        // 上位のいずれにも該当しないエンドポイントへのリクエストはReact画面にリダイレクト
+        app.MapGet("/{*path}", context => {
+            context.Response.Redirect("/nijo-ui");
+            return Task.CompletedTask;
+        });
+
         return app;
     }
 }
