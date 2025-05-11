@@ -114,9 +114,14 @@ public class XmlElementItem {
     /// </summary>
     /// <param name="element">ルート集約</param>
     public static IEnumerable<XmlElementItem> FromXElement(XElement element) {
+        // このルート要素がスキーマ定義全体の中で何番目の要素か
+        var indexOfThisRoot = element.ElementsBeforeSelf().Count();
+        // 一意な識別子を生成するためのカウンタ
+        var currentCount = 0;
+
         return EnumerateRecursive(element);
 
-        static IEnumerable<XmlElementItem> EnumerateRecursive(XElement element) {
+        IEnumerable<XmlElementItem> EnumerateRecursive(XElement element) {
             string? comment;
             if (element.PreviousNode is XComment xComment && !string.IsNullOrWhiteSpace(xComment.Value)) {
                 comment = xComment.Value;
@@ -124,7 +129,7 @@ public class XmlElementItem {
                 comment = null;
             }
             yield return new XmlElementItem {
-                Id = Guid.NewGuid().ToString(),
+                Id = $"{indexOfThisRoot:0000}_{currentCount++:0000}",
                 Indent = element.Ancestors().Count() - 1,
                 LocalName = element.Name.LocalName,
                 Value = element.Value,
