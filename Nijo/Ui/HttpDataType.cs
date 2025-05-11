@@ -96,8 +96,8 @@ public class ValueMemberType {
 /// XML要素1個分と対応するデータ型
 /// </summary>
 public class XmlElementItem {
-    [JsonPropertyName("id")]
-    public string Id { get; set; } = "";
+    [JsonPropertyName("uniqueId")]
+    public string UniqueId { get; set; } = "";
     [JsonPropertyName("indent")]
     public int Indent { get; set; } = 0;
     [JsonPropertyName("localName")]
@@ -129,7 +129,7 @@ public class XmlElementItem {
                 comment = null;
             }
             yield return new XmlElementItem {
-                Id = $"{indexOfThisRoot:0000}_{currentCount++:0000}",
+                UniqueId = $"{indexOfThisRoot:0000}_{currentCount++:0000}",
                 Indent = element.Ancestors().Count() - 1,
                 LocalName = element.Name.LocalName,
                 Value = element.Value,

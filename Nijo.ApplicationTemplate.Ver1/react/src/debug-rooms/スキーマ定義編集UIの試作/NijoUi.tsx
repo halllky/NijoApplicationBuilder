@@ -103,12 +103,12 @@ const AfterLoaded = ({ defaultValues, onSave, className }: {
   const urlParams = ReactRouter.useParams()
   const selectedRootAggregateId = urlParams[NIJOUI_CLIENT_ROUTE_PARAMS.AGGREGATE_ID]
   const handleSelected = useEvent((rootAggregateIndex: number) => {
-    const aggregateId = form.getValues(`xmlElementTrees.${rootAggregateIndex}.xmlElements.0.id`)
+    const aggregateId = form.getValues(`xmlElementTrees.${rootAggregateIndex}.xmlElements.0.uniqueId`)
     navigate(getNavigationUrl(aggregateId))
   })
   const selectedRootAggregateIndex = React.useMemo((): number | undefined => {
     if (!selectedRootAggregateId) return undefined
-    return xmlElementTrees.findIndex(tree => tree.xmlElements[0].id === selectedRootAggregateId)
+    return xmlElementTrees.findIndex(tree => tree.xmlElements[0].uniqueId === selectedRootAggregateId)
   }, [selectedRootAggregateId, xmlElementTrees])
 
   return (

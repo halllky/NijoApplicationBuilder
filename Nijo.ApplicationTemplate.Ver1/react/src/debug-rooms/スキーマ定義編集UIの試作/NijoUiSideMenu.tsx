@@ -45,7 +45,7 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
         // 列挙体 or 値オブジェクト。「属性種類定義」が折り畳みされていたら表示しない
         if (!collapsedItems.has('member-types')) {
           enumOrValueObjectTypes.push({
-            id: rootAggregate.id,
+            id: rootAggregate.uniqueId,
             displayName: rootAggregate.localName!,
             aggregateTree: tree.xmlElements,
             indent: 1,
@@ -55,7 +55,7 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
       } else {
         // Data, Query, Command のルート集約
         dataQueryCommandTypes.push({
-          id: rootAggregate.id,
+          id: rootAggregate.uniqueId,
           displayName: rootAggregate.localName!,
           aggregateTree: tree.xmlElements,
           indent: 0,
@@ -81,7 +81,7 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
   const handleNewRootAggregate = useEvent(() => {
     const localName = prompt('ルート集約名を入力してください。')
     if (!localName) return
-    append({ xmlElements: [{ id: UUID.generate(), indent: 0, localName, attributes: {} }] })
+    append({ xmlElements: [{ uniqueId: UUID.generate(), indent: 0, localName, attributes: {} }] })
   })
 
   // 集約ツリーを選択したときの処理
@@ -103,7 +103,7 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
   // ルート集約を削除する
   const handleDeleteRootAggregate = useEvent((menuItem: SideMenuItem) => {
     if (window.confirm(`${menuItem.displayName}を削除しますか？`)) {
-      const index = fields.findIndex(field => field.xmlElements[0].id === menuItem.id)
+      const index = fields.findIndex(field => field.xmlElements[0].uniqueId === menuItem.id)
       remove(index)
     }
   })

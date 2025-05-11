@@ -58,7 +58,7 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
     const selectedRange = gridRef.current?.getSelectedRange()
     if (!selectedRange) {
       // 選択範囲が無い場合はルート集約の直下に1行挿入
-      insert(0, { id: UUID.generate(), indent: 0, localName: '', attributes: {} })
+      insert(0, { uniqueId: UUID.generate(), indent: 0, localName: '', attributes: {} })
     } else {
       // 選択範囲がある場合は選択されている行と同じだけの行を選択範囲の前に挿入。
       // ただしルート集約が選択範囲に含まれる場合はルート集約の下に挿入する
@@ -67,7 +67,7 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
         : (selectedRange.startRow - 1) // 選択範囲の前
       const indent = fields[insertPosition]?.indent ?? 1
       const insertRows = Array.from({ length: selectedRange.endRow - selectedRange.startRow + 1 }, (_, i) => ({
-        id: UUID.generate(),
+        uniqueId: UUID.generate(),
         indent,
         localName: '',
         attributes: {},
@@ -81,13 +81,13 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
     const selectedRange = gridRef.current?.getSelectedRange()
     if (!selectedRange) {
       // 選択範囲が無い場合はルート集約の直下に1行挿入
-      insert(0, { id: UUID.generate(), indent: 0, localName: '', attributes: {} })
+      insert(0, { uniqueId: UUID.generate(), indent: 0, localName: '', attributes: {} })
     } else {
       // 選択範囲がある場合は選択されている行と同じだけの行を選択範囲の下に挿入
       const insertPosition = selectedRange.endRow + 1
       const indent = fields[insertPosition]?.indent ?? 1
       const insertRows = Array.from({ length: selectedRange.endRow - selectedRange.startRow + 1 }, (_, i) => ({
-        id: UUID.generate(),
+        uniqueId: UUID.generate(),
         indent,
         localName: '',
         attributes: {},
