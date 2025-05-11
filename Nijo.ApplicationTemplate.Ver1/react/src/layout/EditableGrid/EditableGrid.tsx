@@ -24,6 +24,7 @@ import { useSelection } from "./EditableGrid.useSelection";
 import { useEditing } from "./EditableGrid.useEditing";
 import { useGridKeyboard } from "./EditableGrid.useGridKeyboard";
 import { useDragSelection } from "./EditableGrid.useDragSelection";
+import { useCopyPaste } from "./EditableGrid.useCopyPaste";
 
 // CSS
 import "./EditableGrid.css";
@@ -101,6 +102,17 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     cancelEdit,
     handleEditValueChange
   } = useEditing<TRow>(props, columnDefs, isReadOnly)
+
+  // コピー＆ペースト機能
+  const { handleCopy, handlePaste } = useCopyPaste({
+    rows,
+    columnDefs,
+    activeCell,
+    selectedRange,
+    isEditing,
+    getIsReadOnly,
+    props
+  });
 
   // ドラッグ選択機能
   const {
@@ -297,6 +309,8 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
           }
         }
       }}
+      onCopy={handleCopy}
+      onPaste={handlePaste}
     >
       <table
         className={`table-fixed border-collapse border-spacing-0`}
