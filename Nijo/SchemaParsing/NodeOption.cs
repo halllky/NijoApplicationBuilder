@@ -179,7 +179,10 @@ internal static class BasicNodeOptions {
             // 特に制約なし
         },
         IsAvailableModelMembers = model => {
-            return true;
+            if (model is DataModel) return true;
+            if (model is QueryModel) return true;
+            if (model is CommandModel) return true;
+            return false;
         },
     };
 
@@ -359,7 +362,10 @@ internal static class BasicNodeOptions {
 
         },
         IsAvailableModelMembers = model => {
-            return true;
+            if (model is DataModel) return true;
+            if (model is QueryModel) return true;
+            if (model is CommandModel) return true;
+            return false;
         },
     };
     internal static NodeOption CharacterType = new() {
@@ -373,7 +379,10 @@ internal static class BasicNodeOptions {
 
         },
         IsAvailableModelMembers = model => {
-            return true;
+            if (model is DataModel) return true;
+            if (model is QueryModel) return true;
+            if (model is CommandModel) return true;
+            return false;
         },
     };
     internal static NodeOption TotalDigit = new() {
@@ -387,7 +396,10 @@ internal static class BasicNodeOptions {
 
         },
         IsAvailableModelMembers = model => {
-            return true;
+            if (model is DataModel) return true;
+            if (model is QueryModel) return true;
+            if (model is CommandModel) return true;
+            return false;
         },
     };
     internal static NodeOption DecimalPlace = new() {
@@ -401,7 +413,10 @@ internal static class BasicNodeOptions {
 
         },
         IsAvailableModelMembers = model => {
-            return true;
+            if (model is DataModel) return true;
+            if (model is QueryModel) return true;
+            if (model is CommandModel) return true;
+            return false;
         },
     };
     internal static NodeOption SequenceName = new() {
