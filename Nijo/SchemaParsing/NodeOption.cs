@@ -325,6 +325,28 @@ internal static class BasicNodeOptions {
     #endregion CommandModel用
 
 
+    #region StaticEnumModel用
+    internal static NodeOption StaticEnumValue = new() {
+        AttributeName = Models.StaticEnumModelModules.StaticEnumValueDef.ATTR_KEY,
+        DisplayName = "静的列挙型値",
+        Type = E_NodeOptionType.String,
+        HelpText = $$"""
+            静的列挙型の区分値を指定します。
+            C#のenumの値となるため、整数で指定してください。
+            """,
+        Validate = ctx => {
+            // 整数値のみ許可
+            if (!int.TryParse(ctx.Value, out _)) {
+                ctx.AddError("整数値で指定してください。");
+            }
+        },
+        IsAvailableModelMembers = model => {
+            return model is StaticEnumModel;
+        },
+    };
+    #endregion StaticEnumModel用
+
+
     #region ValueMember用
     internal static NodeOption MaxLength = new() {
         AttributeName = "MaxLength",

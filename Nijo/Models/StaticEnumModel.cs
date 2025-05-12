@@ -25,7 +25,7 @@ namespace Nijo.Models {
 
             foreach (var valueElement in enumValues) {
                 // (1) キー（key="1" など）が定義されていない値が含まれる場合はエラー
-                var keyAttr = valueElement.Attribute("key");
+                var keyAttr = valueElement.Attribute(StaticEnumValueDef.ATTR_KEY);
                 if (keyAttr == null) {
                     addError(valueElement, $"key属性が定義されていません。整数値を指定してください。");
                     continue;

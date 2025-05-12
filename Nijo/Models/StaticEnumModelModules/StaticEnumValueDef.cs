@@ -14,7 +14,7 @@ namespace Nijo.Models.StaticEnumModelModules {
     /// </summary>
     internal class StaticEnumValueDef : IAggregateMember {
 
-        private const string ATTR_KEY = "key";
+        internal const string ATTR_KEY = "key";
 
         internal StaticEnumValueDef(XElement xElement, SchemaParseContext ctx, ISchemaPathNode? previous) {
             _xElement = xElement;

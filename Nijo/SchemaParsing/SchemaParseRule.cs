@@ -64,6 +64,8 @@ public class SchemaParseRule {
             BasicNodeOptions.GenerateDefaultQueryModel,
             BasicNodeOptions.GenerateBatchUpdateCommand,
             BasicNodeOptions.IsReadOnly,
+            BasicNodeOptions.RefToObject,
+            BasicNodeOptions.StaticEnumValue,
             BasicNodeOptions.HasLifeCycle,
             BasicNodeOptions.MaxLength,
             BasicNodeOptions.CharacterType,
