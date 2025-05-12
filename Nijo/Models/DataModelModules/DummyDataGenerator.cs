@@ -119,7 +119,7 @@ namespace Nijo.Models.DataModelModules {
                         } else if (node is ChildAggregate child) {
                             var parent = (AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない");
                             var nav = new EFCoreEntity.NavigationOfParentChild(parent, child);
-                            selected.Add($".Select(e => e.{nav.Principal.OtherSidePhysicalName})");
+                            selected.Add($".Select(e => e.{nav.Principal.OtherSidePhysicalName}).OfType<{nav.Principal.GetOtherSideCsTypeName()}>()");
 
                         } else if (node is ChildrenAggregate children) {
                             var parent = (AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない");
@@ -157,10 +157,36 @@ namespace Nijo.Models.DataModelModules {
                 } else if (isSingleKeyRefTo) {
                     // 唯一の主キーがrefto型の場合は作成済みの参照先データの数だけループしてパターンを作成
                     var refTo = (RefToMember)keys[0];
+
+                    // 参照先データの件数
+                    string arrayCount;
+                    if (refTo.RefTo is RootAggregate) {
+                        arrayCount = $"context.{GeneratedList(refTo.RefTo)}.Count";
+                    } else {
+                        var pathFromRoot = new List<string>();
+                        foreach (var node in refTo.RefTo.GetPathFromRoot()) {
+                            if (node is RootAggregate) {
+                                pathFromRoot.Add($"{GeneratedList(node)}");
+
+                            } else if (node is ChildAggregate child) {
+                                var parent = (AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない");
+                                var nav = new EFCoreEntity.NavigationOfParentChild(parent, child);
+                                pathFromRoot.Add($"Select(x => x.{nav.Principal.OtherSidePhysicalName}).OfType<{nav.Principal.GetOtherSideCsTypeName()}>()");
+
+                            } else if (node is ChildrenAggregate children) {
+                                var parent = (AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない");
+                                var nav = new EFCoreEntity.NavigationOfParentChild(parent, children);
+                                pathFromRoot.Add($"SelectMany(x => x.{nav.Principal.OtherSidePhysicalName})");
+                            }
+                        }
+                        arrayCount = $"context.{pathFromRoot.Join(".")}.Count()";
+                    }
+
                     return $$"""
                         /// <summary>{{rootAggregate.DisplayName}}のテストデータのパターン作成</summary>
                         protected virtual IEnumerable<{{saveCommand.CsClassNameCreate}}> {{CreatePatternMethodName(rootAggregate)}}({{DUMMY_DATA_GENERATE_CONTEXT}} context) {
-                            for (var i = 0; i < context.{{GeneratedList(refTo.RefTo)}}.Count; i++) {
+                            var count = {{arrayCount}};
+                            for (var i = 0; i < count; i++) {
                                 yield return {{CreateAggregateMethodName(rootAggregate)}}(context, i);
                             }
                         }
