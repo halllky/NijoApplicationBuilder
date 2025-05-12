@@ -264,14 +264,22 @@ namespace Nijo.Models.QueryModelModules {
             var searchCondition = new SearchCondition.Entry(_rootAggregate);
             var searchResult = new SearchResult(_rootAggregate);
 
+            // 右辺のプロパティを定義（クエリに使用するSearchResultオブジェクト）
+            var queryVar = new Variable("e", searchResult);
+            var queryVarMembers = queryVar
+                .CreatePropertiesRecursively()
+                .ToDictionary(p => p.Metadata.SchemaPathNode.ToMappingKey());
+
             var sortMembers = searchCondition
                 .EnumerateSortMembersRecursively()
                 .Select(m => {
                     var literal = m.GetLiteral();
+                    // マッピングキーを使用して右辺のプロパティを取得
+                    var property = queryVarMembers.GetValueOrDefault(m.Member.ToMappingKey());
                     return new {
                         AscLiteral = literal + SearchCondition.ASC_SUFFIX,
                         DescLiteral = literal + SearchCondition.DESC_SUFFIX,
-                        Path = m.Member.GetPathFromEntry().AsSearchResult().Join("!."),
+                        Path = property?.GetJoinedPathFromInstance(E_CsTs.CSharp, "!.") ?? throw new InvalidOperationException($"右辺に対応するプロパティが見つかりません: {m.Member.ToMappingKey()}"),
                     };
                 })
                 .ToArray();
@@ -286,11 +294,11 @@ namespace Nijo.Models.QueryModelModules {
                         sorted = sortOption switch {
                 {{sortMembers.SelectTextTemplate(m => $$"""
                             "{{m.AscLiteral}}" => sorted == null
-                                ? query.OrderBy(e => e.{{m.Path}})
-                                : sorted.ThenBy(e => e.{{m.Path}}),
+                                ? query.OrderBy(e => {{m.Path}})
+                                : sorted.ThenBy(e => {{m.Path}}),
                             "{{m.DescLiteral}}" => sorted == null
-                                ? query.OrderByDescending(e => e.{{m.Path}})
-                                : sorted.ThenByDescending(e => e.{{m.Path}}),
+                                ? query.OrderByDescending(e => {{m.Path}})
+                                : sorted.ThenByDescending(e => {{m.Path}}),
                 """)}}
                             _ => throw new InvalidOperationException($"ソート条件 '{sortOption}' が不正です。"),
                         };
