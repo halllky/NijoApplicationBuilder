@@ -248,13 +248,35 @@ namespace Nijo.Models.DataModelModules {
         /// <summary>
         /// 更新処理引数クラスの参照先キー項目
         /// </summary>
-        internal class SaveCommandRefMember : KeyClass.KeyClassEntry {
-            internal SaveCommandRefMember(RefToMember refTo) : base(refTo.RefTo) {
+        internal class SaveCommandRefMember : ISaveCommandMember, IInstanceStructurePropertyMetadata {
+            internal SaveCommandRefMember(RefToMember refTo) {
                 Member = refTo;
+                RefEntry = new KeyClass.KeyClassEntry(refTo.RefTo);
             }
             internal RefToMember Member { get; }
-            public override string PhysicalName => Member.PhysicalName;
-            public override string DisplayName => Member.DisplayName;
+            internal KeyClass.KeyClassEntry RefEntry { get; }
+
+            bool ISaveCommandMember.IsKey => Member.IsKey;
+            ISchemaPathNode ISaveCommandMember.Member => Member;
+            string ISaveCommandMember.PhysicalName => Member.PhysicalName;
+            string ISaveCommandMember.CsCreateType => RefEntry.ClassName;
+            string ISaveCommandMember.CsUpdateType => RefEntry.ClassName;
+            string ISaveCommandMember.CsDeleteType => RefEntry.ClassName;
+
+            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Member;
+            string IInstancePropertyMetadata.PropertyName => Member.PhysicalName;
+            string IInstanceStructurePropertyMetadata.CsType => RefEntry.ClassName;
+            bool IInstanceStructurePropertyMetadata.IsArray => false;
+
+            IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
+                return ((IInstancePropertyOwnerMetadata)RefEntry).GetMembers();
+            }
+            string ISaveCommandMember.RenderDeclaring() {
+                return $$"""
+                    /// <summary>{{Member.DisplayName}}</summary>
+                    public required {{RefEntry.ClassName}}? {{Member.PhysicalName}} { get; set; }
+                    """;
+            }
         }
         /// <summary>
         /// 更新処理引数クラスの子メンバー
@@ -425,7 +447,7 @@ namespace Nijo.CodeGenerating {
                         if (!isOutOfEntryTree) {
                             // エントリーの集約内部から外に出る瞬間の場合
                             var member = new SaveCommand.SaveCommandRefMember(refTo);
-                            yield return member.PhysicalName;
+                            yield return member.Member.PhysicalName;
 
                             isOutOfEntryTree = true;
                             continue;

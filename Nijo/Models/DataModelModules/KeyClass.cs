@@ -20,7 +20,7 @@ namespace Nijo.Models.DataModelModules {
         /// <see cref="IKeyClassMember"/> インターフェースを備えている理由は、
         /// エントリーが子孫かつこのクラスがその子孫の親の場合、このクラスは子孫のキーのメンバーになりうるため。
         /// </summary>
-        internal class KeyClassEntry : IKeyClassMember, IKeyClassStructure, SaveCommand.ISaveCommandMember, IInstanceStructurePropertyMetadata {
+        internal class KeyClassEntry : IKeyClassMember, IKeyClassStructure, IInstanceStructurePropertyMetadata {
             internal KeyClassEntry(AggregateBase aggregate) {
                 _aggregate = aggregate;
             }

@@ -121,7 +121,7 @@ namespace Nijo.CodeGenerating {
                         if (!isOutOfEntryTree) {
                             // エントリーの集約内部から外に出る瞬間の場合
                             var member = new SaveCommand.SaveCommandRefMember(refTo);
-                            yield return member.PhysicalName;
+                            yield return member.Member.PhysicalName;
 
                             isOutOfEntryTree = true;
 

@@ -235,7 +235,7 @@ namespace Nijo.Models.DataModelModules {
                             var keyClass = new KeyClass.KeyClassEntry(refTo.Member.RefTo.AsEntry());
 
                             var owner = refTo.Member.Owner.DisplayName.Replace("\"", "\\\"");
-                            var memberName = refTo.DisplayName.Replace("\"", "\\\"");
+                            var memberName = refTo.Member.DisplayName.Replace("\"", "\\\"");
                             var refToName = refTo.Member.RefTo.DisplayName.Replace("\"", "\\\"");
 
                             var convertToKeyClass = refTo.Member.RefTo.GetPathFromRoot().Any(agg => agg is ChildrenAggregate)
