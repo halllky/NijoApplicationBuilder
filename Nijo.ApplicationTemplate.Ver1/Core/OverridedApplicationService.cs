@@ -242,6 +242,20 @@ partial class OverridedApplicationService {
         });
     }
 
+    protected override IQueryable<在庫調査報告SearchResult> CreateQuerySource(在庫調査報告SearchCondition searchCondition, IPresentationContext<在庫調査報告SearchConditionMessages> context) {
+        return DbContext.在庫調査報告DbSet.Select(e => new 在庫調査報告SearchResult {
+            // TODO: 在庫調査報告SearchResult クラスの定義を参照し、検索結果を実装してください。
+            Version = (int)e.Version!,
+        });
+    }
+
+    protected override IQueryable<アクション結果SearchResult> CreateQuerySource(アクション結果SearchCondition searchCondition, IPresentationContext<アクション結果SearchConditionMessages> context) {
+        return DbContext.アクション結果DbSet.Select(e => new アクション結果SearchResult {
+            // TODO: アクション結果SearchResult クラスの定義を参照し、検索結果を実装してください。
+            Version = (int)e.Version!,
+        });
+    }
+
     public override Task<在庫調整ReturnValue> Execute(在庫調整Parameter parameter, IPresentationContext<在庫調整ParameterMessages> context) {
         // TODO: 在庫調整コマンドの処理を実装してください。
         return Task.FromResult(new 在庫調整ReturnValue());
