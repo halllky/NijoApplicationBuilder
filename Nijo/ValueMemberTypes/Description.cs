@@ -43,7 +43,7 @@ namespace Nijo.ValueMemberTypes {
 
                 return $$"""
                     if (!string.IsNullOrWhiteSpace({{fullpathNullable}})) {
-                        var trimmed = {{fullpathNotNull}}.Trim();
+                        var trimmed = {{fullpathNotNull}}!.Trim();
                     {{If(isMany, () => $$"""
                         {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join("!.")}}!.Any(y => y.{{ctx.Query.Metadata.PropertyName}}!.Contains(trimmed)));
                     """).Else(() => $$"""

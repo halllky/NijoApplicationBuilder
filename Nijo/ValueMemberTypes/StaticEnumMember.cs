@@ -50,7 +50,7 @@ namespace Nijo.ValueMemberTypes {
                     if ({{fullpathNullable}}?.{{StaticEnumSearchCondition.ANY_CHECKED}}() == true) {
                         var array = new List<{{CsPrimitiveTypeName}}>();
                     {{_parser.GetItemPhysicalNames().SelectTextTemplate(physicalName => $$"""
-                        if ({{fullpathNotNull}}.{{physicalName}}) array.Add({{CsPrimitiveTypeName}}.{{physicalName}});
+                        if ({{fullpathNotNull}}!.{{physicalName}}) array.Add({{CsPrimitiveTypeName}}.{{physicalName}});
                     """)}}
                     {{If(isMany, () => $$"""
                         {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join("!.")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} != null && array.Contains(y.{{ctx.Query.Metadata.PropertyName}}.Value)));
