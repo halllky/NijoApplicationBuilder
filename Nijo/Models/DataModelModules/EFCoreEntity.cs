@@ -427,6 +427,7 @@ namespace Nijo.Models.DataModelModules {
             }
         }
         internal class PrincipalOrRelevant : IInstanceStructurePropertyMetadata {
+            internal required NavigationProperty NavigationProperty { get; init; }
             internal required AggregateBase ThisSide { get; init; }
             internal required AggregateBase OtherSide { get; init; }
             internal required string OtherSidePhysicalName { get; init; }
@@ -440,7 +441,11 @@ namespace Nijo.Models.DataModelModules {
                 IInstancePropertyOwnerMetadata otherSideEfCoreEntity = new EFCoreEntity(OtherSide);
                 foreach (var member in otherSideEfCoreEntity.GetMembers()) {
                     // 無限ループに陥るのでこのインスタンス自身は列挙しない
-                    if (member is PrincipalOrRelevant por && (por.OtherSide == this.ThisSide || por.ThisSide == this.OtherSide)) continue;
+                    if (member is PrincipalOrRelevant por && por.OtherSide == this.ThisSide) continue;
+
+                    // 無限ループに陥るので被参照ナビゲーションプロパティは列挙しない。
+                    // IInstancePropertyOwnerMetadata.GetMembers で被参照ナビゲーションプロパティを列挙したい状況もおそらく無いはず……多分
+                    if (NavigationProperty is NavigationOfRef refNav && refNav.Relation.RefTo == ThisSide) continue;
 
                     yield return member;
                 }
@@ -478,12 +483,14 @@ namespace Nijo.Models.DataModelModules {
         internal class NavigationOfParentChild : NavigationProperty {
             internal NavigationOfParentChild(AggregateBase parent, AggregateBase child) {
                 Principal = new() {
+                    NavigationProperty = this,
                     ThisSide = parent,
                     OtherSide = child,
                     OtherSideIsMany = child is ChildrenAggregate,
                     OtherSidePhysicalName = child.PhysicalName,
                 };
                 Relevant = new() {
+                    NavigationProperty = this,
                     ThisSide = child,
                     OtherSide = parent,
                     OtherSideIsMany = false,
@@ -514,12 +521,14 @@ namespace Nijo.Models.DataModelModules {
                 Relation = relation;
 
                 Principal = new() {
+                    NavigationProperty = this,
                     ThisSide = relation.RefTo,
                     OtherSide = relation.Owner,
                     OtherSideIsMany = !relation.RefTo.IsSingleKeyOf(relation.Owner),
                     OtherSidePhysicalName = $"RefFrom{relation.Owner.PhysicalName}_{relation.PhysicalName}",
                 };
                 Relevant = new() {
+                    NavigationProperty = this,
                     ThisSide = relation.Owner,
                     OtherSide = relation.RefTo,
                     OtherSideIsMany = false,
@@ -568,78 +577,5 @@ namespace Nijo.Models.DataModelModules {
                 }
             }
         }
-    }
-}
-
-namespace Nijo.CodeGenerating {
-    partial class SchemaPathNodeExtensions {
-
-        /// <summary>
-        /// <see cref="GetPathFromEntry(ISchemaPathNode)"/> の結果を <see cref="EFCoreEntity"/> のルールに沿ったパスとして返す
-        /// </summary>
-        public static IEnumerable<string> AsDbEntity(this IEnumerable<ISchemaPathNode> path) {
-            var entry = path.FirstOrDefault()?.GetEntry();
-            RefToMember? refEntry = null;
-            var isAncestorsMember = false;
-
-            foreach (var node in path) {
-                if (node == entry) continue; // パスの一番最初（エントリー）はスキップ
-                if (node.PreviousNode is RefToMember) continue; // refの1つ次の要素の名前はrefで列挙済みのためスキップ
-
-                // 外部参照のナビゲーションプロパティを辿るパス
-                if (node is RefToMember refTo) {
-                    var previous = (AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("reftoの前は必ず参照元集約か参照先集約になるのでありえない");
-                    var nav = new EFCoreEntity.NavigationOfRef(refTo);
-
-                    // 参照元から参照先へ辿るパス
-                    if (previous == refTo.Owner) {
-                        yield return nav.Relevant.OtherSidePhysicalName;
-                        refEntry = refTo;
-                        continue;
-                    }
-                    // 参照先から参照元へ辿るパス
-                    if (previous == refTo.RefTo) {
-                        yield return nav.Principal.OtherSidePhysicalName;
-                        continue;
-                    }
-                    throw new InvalidOperationException("reftoの前は必ず参照元集約か参照先集約になるのでありえない");
-                }
-
-                // 親子間のナビゲーションプロパティを辿るパス
-                if (node is AggregateBase curr && node.PreviousNode is AggregateBase prev) {
-
-                    // 子から親へ辿るパス
-                    if (curr.IsParentOf(prev)) {
-                        var nav = new EFCoreEntity.NavigationOfParentChild(curr, prev);
-                        yield return nav.Relevant.OtherSidePhysicalName;
-                        isAncestorsMember = true;
-                        continue;
-                    }
-                    // 親から子へ辿るパス
-                    if (curr.IsChildOf(prev)) {
-                        var nav = new EFCoreEntity.NavigationOfParentChild(prev, curr);
-                        yield return nav.Principal.OtherSidePhysicalName;
-                        continue;
-                    }
-                    throw new InvalidOperationException("必ず 親→子, 子→親 のどちらかになるのでありえない");
-                }
-
-                // 末端のメンバー
-                if (node is not ValueMember vm) throw new InvalidOperationException("この分岐まで来るケースは値の場合しか無いのでありえない");
-                if (refEntry != null) {
-                    var member = new EFCoreEntity.OwnColumnMember(vm);
-                    yield return member.PhysicalName;
-
-                } else if (isAncestorsMember) {
-                    var member = new EFCoreEntity.ParentKeyMember(vm);
-                    yield return member.PhysicalName;
-
-                } else {
-                    var member = new EFCoreEntity.OwnColumnMember(vm);
-                    yield return member.PhysicalName;
-                }
-            }
-        }
-
     }
 }

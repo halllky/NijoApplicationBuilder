@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Nijo.CodeGenerating.Helpers;
 
 namespace Nijo.Models.DataModelModules {
     /// <summary>
@@ -28,6 +29,12 @@ namespace Nijo.Models.DataModelModules {
             var dbEntity = new EFCoreEntity(_rootAggregate);
             var messages = new SaveCommandMessageContainer(_rootAggregate);
 
+            var selectKeysLeft = new Variable("e", dbEntity)
+                .CreateProperties()
+                .ToArray();
+            var pkValueCandidates = new Variable("afterDbEntity", dbEntity)
+                .CreateProperties()
+                .ToArray();
             var keys = _rootAggregate
                 .GetKeyVMs()
                 .Select((vm, i) => {
@@ -40,7 +47,12 @@ namespace Nijo.Models.DataModelModules {
                         LogTemplate = $"{vm.DisplayName.Replace("\"", "\\\"")}: {{key{i}}}",
                         SaveCommandFullPath = fullpath.AsSaveCommand().ToArray(),
                         SaveCommandMessageFullPath = fullpath.AsSaveCommandMessage().ToArray(),
-                        DbEntityFullPath = fullpath.AsDbEntity().ToArray(),
+                        SingleOrDefaultLeft = selectKeysLeft
+                            .Single(x => x.Metadata.SchemaPathNode.ToMappingKey() == vm.ToMappingKey())
+                            .GetJoinedPathFromInstance(E_CsTs.CSharp, "!."),
+                        DbEntityFullPath = pkValueCandidates
+                            .Single(x => x.Metadata.SchemaPathNode.ToMappingKey() == vm.ToMappingKey())
+                            .GetJoinedPathFromInstance(E_CsTs.CSharp, "?."),
                     };
                 })
                 .ToArray();
@@ -81,7 +93,7 @@ namespace Nijo.Models.DataModelModules {
                         {{source}}
                 """)}}
                         .SingleOrDefault(e {{WithIndent(keys.SelectTextTemplate((vm, i) => $$"""
-                                           {{(i == 0 ? "=>" : "&&")}} e.{{vm.DbEntityFullPath.Join("!.")}} == {{vm.TempVarName}}
+                                           {{(i == 0 ? "=>" : "&&")}} {{vm.SingleOrDefaultLeft}} == {{vm.TempVarName}}
                                            """), "                           ")}});
 
                     if (beforeDbEntity == null) {
@@ -183,7 +195,7 @@ namespace Nijo.Models.DataModelModules {
                         return;
                     }
 
-                    Log.Info("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}データを更新しました。（{{keys.Select(x => x.LogTemplate).Join(", ")}}）", {{keys.Select(x => $"afterDbEntity.{x.DbEntityFullPath.Join("?.")}").Join(", ")}});
+                    Log.Info("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}データを更新しました。（{{keys.Select(x => x.LogTemplate).Join(", ")}}）", {{keys.Select(x => x.DbEntityFullPath).Join(", ")}});
                     Log.Debug("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}} 更新パラメータ: {0}", command.ToJson());
                 }
                 /// <summary>
@@ -240,105 +252,56 @@ namespace Nijo.Models.DataModelModules {
         internal static IEnumerable<string> RenderDescendantAttaching(RootAggregate rootAggregate) {
             var descendantDbEntities = rootAggregate.EnumerateDescendants().ToArray();
 
+            var rootDbEntity = new EFCoreEntity(rootAggregate);
+            var variablePathInfo = new Variable("※この変数名は使用されない※", rootDbEntity)
+                .CreatePropertiesRecursively()
+                .Where(p => p is InstanceStructureProperty)
+                .ToDictionary(x => x.Metadata.SchemaPathNode.ToMappingKey());
+
             for (int i = 0; i < descendantDbEntities.Length; i++) {
-                var builder = new StringBuilder();
-                var paths = descendantDbEntities[i].GetPathFromEntry().ToArray();
-                var before = $"before{descendantDbEntities[i].PhysicalName}_{i}";
-                var after_ = $"after{descendantDbEntities[i].PhysicalName}_{i}";
+                var tempBefore = $"before{descendantDbEntities[i].PhysicalName}_{i}";
+                var tempAfter = $"after{descendantDbEntities[i].PhysicalName}_{i}";
 
-                // before, after それぞれの子孫インスタンスを一次配列に格納する
-                void RenderEntityArray(bool renderBefore) {
-                    var tempVar = renderBefore ? before : after_;
-
-                    if (paths.Any(node => node is ChildrenAggregate)) {
-                        // 子集約までの経路の途中に配列が含まれる場合
-                        builder.Append(renderBefore
-                            ? $"var {tempVar} = (beforeDbEntity"
-                            : $"var {tempVar} = (afterDbEntity");
-
-                        var select = false;
-                        foreach (var node in paths) {
-                            // Children
-                            if (node is ChildrenAggregate children) {
-                                var nav = new EFCoreEntity.NavigationOfParentChild((AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない"), children);
-                                builder.Append(select
-                                    ? $".SelectMany(x => x.{nav.Principal.OtherSidePhysicalName})"
-                                    : $"?.{nav.Principal.OtherSidePhysicalName}");
-                                select = true;
-                                continue;
-                            }
-                            // Child
-                            if (node is ChildAggregate child) {
-                                var nav = new EFCoreEntity.NavigationOfParentChild((AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない"), child);
-                                builder.Append(select
-                                    ? $".Select(x => x.{nav.Principal.OtherSidePhysicalName})"
-                                    : $"?.{nav.Principal.OtherSidePhysicalName}");
-                                continue;
-                            }
-                        }
-
-                        var dbEntity = new EFCoreEntity(descendantDbEntities[i]);
-                        builder.AppendLine($$"""
-                            .OfType<{{dbEntity.CsClassName}}>() ?? Enumerable.Empty<{{dbEntity.CsClassName}}>()).ToArray();
-                            """);
-
-                    } else {
-                        // 子集約までの経路の途中に配列が含まれない場合
-                        var source = renderBefore ? "beforeDbEntity" : "afterDbEntity";
-                        var dbEntity = new EFCoreEntity(descendantDbEntities[i]);
-                        builder.AppendLine($$"""
-                            var {{tempVar}} = new {{dbEntity.CsClassName}}?[] {
-                                {{source}}?.{{paths.AsDbEntity().Join("?.")}},
-                            }.Where(x => x != null).OfType<{{dbEntity.CsClassName}}>().ToArray();
-                            """);
-                    }
-                }
-                RenderEntityArray(true);
-                RenderEntityArray(false);
-
-                // ChangeState変更
-                if (descendantDbEntities[i] is ChildAggregate) {
-                    // Child型の場合は、オプショナル（0または1）の考慮を行う。
-                    // 1. 子テーブルが元々存在し、更新後も存在する場合 → UPDATE
-                    // 2. 子テーブルが元々存在せず、更新後に存在する場合 → INSERT
-                    // 3. 子テーブルが元々存在するが、更新後に存在しない場合 → DELETE
-                    builder.AppendLine($$"""
-                        if ({{after_}}.Any()) {
-                            var a = {{after_}}.First();
-                            if ({{before}}.Any()) {
-                                // 1. 子テーブルが元々存在し、更新後も存在する場合 → UPDATE
-                                DbContext.Entry(a).State = EntityState.Modified;
-                            } else {
-                                // 2. 子テーブルが元々存在せず、更新後に存在する場合 → INSERT
-                                DbContext.Entry(a).State = EntityState.Added;
-                            }
-                        } else if ({{before}}.Any()) {
-                            // 3. 子テーブルが元々存在するが、更新後に存在しない場合 → DELETE
-                            var b = {{before}}.First();
-                            DbContext.Entry(b).State = EntityState.Deleted;
-                        }
-                        """);
-                } else {
-                    // Children型の場合
-                    builder.AppendLine($$"""
-                        foreach (var a in {{after_}}) {
-                            var b = {{before}}.SingleOrDefault(b => b.{{EFCoreEntity.KEYEQUALS}}(a));
+                // ChangeState変更。Child型の場合は、オプショナル（親テーブル1に対しChildは0または1）の考慮を行う。
+                // 1. 子テーブルが元々存在し、更新後も存在する場合 → UPDATE
+                // 2. 子テーブルが元々存在せず、更新後に存在する場合 → INSERT
+                // 3. 子テーブルが元々存在するが、更新後に存在しない場合 → DELETE
+                var arrayPath = variablePathInfo[descendantDbEntities[i].ToMappingKey()].GetFlattenArrayPath(E_CsTs.CSharp, out var isMany);
+                if (isMany) {
+                    yield return $$"""
+                        var {{tempBefore}} = beforeDbEntity.{{arrayPath.Join("?.")}} ?? [];
+                        var {{tempAfter}} = afterDbEntity.{{arrayPath.Join("?.")}} ?? [];
+                        foreach (var a in {{tempAfter}}) {
+                            var b = {{tempBefore}}.SingleOrDefault(b => b.{{EFCoreEntity.KEYEQUALS}}(a));
                             if (b == null) {
-                                DbContext.Entry(a).State = EntityState.Added;
+                                DbContext.Entry(a).State = EntityState.Added; // 子テーブルが元々存在せず、更新後に存在する場合 → INSERT
                             } else {
-                                DbContext.Entry(a).State = EntityState.Modified;
+                                DbContext.Entry(a).State = EntityState.Modified; // 子テーブルが元々存在し、更新後も存在する場合 → UPDATE
                             }
                         }
-                        foreach (var b in {{before}}) {
-                            var a = {{after_}}.SingleOrDefault(a => a.{{EFCoreEntity.KEYEQUALS}}(b));
+                        foreach (var b in {{tempBefore}}) {
+                            var a = {{tempAfter}}.SingleOrDefault(a => a.{{EFCoreEntity.KEYEQUALS}}(b));
                             if (a == null) {
-                                DbContext.Entry(b).State = EntityState.Deleted;
+                                DbContext.Entry(b).State = EntityState.Deleted; // 子テーブルが元々存在するが、更新後に存在しない場合 → DELETE
                             }
                         }
-                        """);
-                }
+                        """;
 
-                yield return builder.ToString();
+                } else {
+                    yield return $$"""
+                        var {{tempBefore}} = beforeDbEntity.{{arrayPath.Join("?.")}};
+                        var {{tempAfter}} = afterDbEntity.{{arrayPath.Join("?.")}};
+                        if ({{tempAfter}} != null) {
+                            if ({{tempBefore}} != null) {
+                                DbContext.Entry({{tempAfter}}).State = EntityState.Modified; // 子テーブルが元々存在し、更新後も存在する場合 → UPDATE
+                            } else {
+                                DbContext.Entry({{tempAfter}}).State = EntityState.Added; // 子テーブルが元々存在せず、更新後に存在する場合 → INSERT
+                            }
+                        } else if ({{tempBefore}} != null) {
+                            DbContext.Entry({{tempBefore}}).State = EntityState.Deleted; // 子テーブルが元々存在するが、更新後に存在しない場合 → DELETE
+                        }
+                        """;
+                }
             }
         }
 
@@ -348,68 +311,30 @@ namespace Nijo.Models.DataModelModules {
         internal static IEnumerable<string> RenderDescendantDetaching(RootAggregate rootAggregate, string rootEntityName) {
             var descendantDbEntities = rootAggregate.EnumerateDescendants().ToArray();
 
+            var rootDbEntity = new EFCoreEntity(rootAggregate);
+            var variablePathInfo = new Variable("※この変数名は使用されない※", rootDbEntity)
+                .CreatePropertiesRecursively()
+                .Where(p => p is InstanceStructureProperty)
+                .ToDictionary(x => x.Metadata.SchemaPathNode.ToMappingKey());
+
             for (int i = 0; i < descendantDbEntities.Length; i++) {
-                var builder = new StringBuilder();
-                var paths = descendantDbEntities[i].GetPathFromEntry().Skip(1).ToArray();
-                var after_ = $"after{descendantDbEntities[i].PhysicalName}_{i}";
-
-                // before, after それぞれの子孫インスタンスを一次配列に格納する
-                void RenderEntityArray() {
-                    var tempVar = after_;
-
-                    if (paths.Any(path => path is ChildrenAggregate)) {
-                        // 子集約までの経路の途中に配列が含まれる場合
-                        builder.Append($"var {tempVar} = {rootEntityName}");
-
-                        var select = false;
-                        foreach (var node in paths) {
-                            // Children
-                            if (node is ChildrenAggregate children) {
-                                var nav = new EFCoreEntity.NavigationOfParentChild((AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない"), children);
-                                builder.Append(select
-                                    ? $".SelectMany(x => x.{nav.Principal.OtherSidePhysicalName})"
-                                    : $"?.{nav.Principal.OtherSidePhysicalName}");
-                                select = true;
-                                continue;
-                            }
-                            // Child
-                            if (node is ChildAggregate child) {
-                                var nav = new EFCoreEntity.NavigationOfParentChild((AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない"), child);
-                                builder.Append(select
-                                    ? $".Select(x => x.{nav.Principal.OtherSidePhysicalName})"
-                                    : $"?.{nav.Principal.OtherSidePhysicalName}");
-                                continue;
-                            }
-
-                            throw new InvalidOperationException("子孫列挙なのでChildかChildrenしかありえない");
+                var temp = $"after{descendantDbEntities[i].PhysicalName}_{i}";
+                var arrayPath = variablePathInfo[descendantDbEntities[i].ToMappingKey()].GetFlattenArrayPath(E_CsTs.CSharp, out var isMany);
+                if (isMany) {
+                    yield return $$"""
+                        var {{temp}} = {{rootEntityName}}.{{arrayPath.Join("?.")}} ?? [];
+                        foreach (var a in {{temp}}) {
+                            DbContext.Entry(a).State = EntityState.Detached;
                         }
-
-                        var efCoreEntity = new EFCoreEntity(descendantDbEntities[i]);
-                        builder.AppendLine($".OfType<{efCoreEntity.CsClassName}>() ?? Enumerable.Empty<{efCoreEntity.CsClassName}>();");
-
-                    } else {
-                        // 子集約までの経路の途中に配列が含まれない場合
-                        var efCoreEntity = new EFCoreEntity(descendantDbEntities[i]);
-                        var childPath = paths.Select(node => new EFCoreEntity.NavigationOfParentChild(
-                            (AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない"),
-                            (AggregateBase?)node ?? throw new InvalidOperationException("ありえない")));
-                        builder.AppendLine($$"""
-                            var {{tempVar}} = new {{efCoreEntity.CsClassName}}?[] {
-                                {{rootEntityName}}.{{childPath.Select(p => p.Principal.OtherSidePhysicalName).Join("?.")}},
-                            }.Where(x => x != null).OfType<{{efCoreEntity.CsClassName}}>().ToArray();
-                            """);
-                    }
+                        """;
+                } else {
+                    yield return $$"""
+                        var {{temp}} = {{rootEntityName}}.{{arrayPath.Join("?.")}};
+                        if ({{temp}} != null) {
+                            DbContext.Entry({{temp}}).State = EntityState.Detached;
+                        }
+                        """;
                 }
-                RenderEntityArray();
-
-                // ChangeState変更
-                builder.AppendLine($$"""
-                    foreach (var a in {{after_}}) {
-                        DbContext.Entry(a).State = EntityState.Detached;
-                    }
-                    """);
-
-                yield return builder.ToString();
             }
         }
         #endregion Create/Update/Deleleで共通

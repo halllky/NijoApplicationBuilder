@@ -6,6 +6,7 @@ using Nijo.ValueMemberTypes;
 using Nijo.Parts.Common;
 using System;
 using System.Linq;
+using Nijo.CodeGenerating.Helpers;
 
 namespace Nijo.Models.DataModelModules {
     /// <summary>
@@ -26,11 +27,16 @@ namespace Nijo.Models.DataModelModules {
             var dbEntity = new EFCoreEntity(_rootAggregate);
             var messages = new SaveCommandMessageContainer(_rootAggregate);
 
+            var pkValueCandidates = new Variable("dbEntity", dbEntity)
+                .CreateProperties()
+                .ToArray();
             var keys = _rootAggregate
                 .GetKeyVMs()
                 .Select((vm, i) => new {
                     LogTemplate = $"{vm.DisplayName.Replace("\"", "\\\"")}: {{key{i}}}",
-                    DbEntityFullPath = vm.GetPathFromEntry().AsDbEntity(),
+                    DbEntityFullPath = pkValueCandidates
+                        .Single(x => x.Metadata.SchemaPathNode.ToMappingKey() == vm.ToMappingKey())
+                        .GetJoinedPathFromInstance(E_CsTs.CSharp, "?."),
                 })
                 .ToArray();
 
@@ -125,7 +131,7 @@ namespace Nijo.Models.DataModelModules {
                         return;
                     }
 
-                    Log.Info("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}データを新規登録しました。（{{keys.Select(x => x.LogTemplate).Join(", ")}}）", {{keys.Select(x => $"dbEntity.{x.DbEntityFullPath.Join("?.")}").Join(", ")}});
+                    Log.Info("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}データを新規登録しました。（{{keys.Select(x => x.LogTemplate).Join(", ")}}）", {{keys.Select(x => x.DbEntityFullPath).Join(", ")}});
                     Log.Debug("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}} 新規登録パラメータ: {0}", command.ToJson());
                 }
                 /// <summary>

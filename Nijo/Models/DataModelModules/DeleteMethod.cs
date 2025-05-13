@@ -5,6 +5,7 @@ using Nijo.Util.DotnetEx;
 using Nijo.Parts.Common;
 using System;
 using System.Linq;
+using Nijo.CodeGenerating.Helpers;
 
 namespace Nijo.Models.DataModelModules {
     /// <summary>
@@ -25,6 +26,12 @@ namespace Nijo.Models.DataModelModules {
             var dbEntity = new EFCoreEntity(_rootAggregate);
             var messages = new SaveCommandMessageContainer(_rootAggregate);
 
+            var selectKeysLeft = new Variable("e", dbEntity)
+                .CreateProperties()
+                .ToArray();
+            var pkValueCandidates = new Variable("dbEntity", dbEntity)
+                .CreateProperties()
+                .ToArray();
             var keyClass = new KeyClass.KeyClassEntry(_rootAggregate);
             var keys = _rootAggregate
                 .GetKeyVMs()
@@ -38,7 +45,12 @@ namespace Nijo.Models.DataModelModules {
                         LogTemplate = $"{vm.DisplayName.Replace("\"", "\\\"")}: {{key{i}}}",
                         SaveCommandFullPath = fullpath.AsSaveCommand().ToArray(),
                         SaveCommandMessageFullPath = fullpath.AsSaveCommandMessage().ToArray(),
-                        DbEntityFullPath = fullpath.AsDbEntity().ToArray(),
+                        SingleOrDefaultLeft = selectKeysLeft
+                            .Single(x => x.Metadata.SchemaPathNode.ToMappingKey() == vm.ToMappingKey())
+                            .GetJoinedPathFromInstance(E_CsTs.CSharp, "!."),
+                        DbEntityFullPath = pkValueCandidates
+                            .Single(x => x.Metadata.SchemaPathNode.ToMappingKey() == vm.ToMappingKey())
+                            .GetJoinedPathFromInstance(E_CsTs.CSharp, "?."),
                     };
                 })
                 .ToArray();
@@ -74,7 +86,7 @@ namespace Nijo.Models.DataModelModules {
                         {{source}}
                 """)}}
                         .SingleOrDefault(e {{WithIndent(keys.SelectTextTemplate((vm, i) => $$"""
-                                           {{(i == 0 ? "=>" : "&&")}} e.{{vm.DbEntityFullPath.Join("!.")}} == {{vm.TempVarName}}
+                                           {{(i == 0 ? "=>" : "&&")}} {{vm.SingleOrDefaultLeft}} == {{vm.TempVarName}}
                                            """), "                           ")}});
 
                     if (dbEntity == null) {
@@ -154,7 +166,7 @@ namespace Nijo.Models.DataModelModules {
                         return;
                     }
 
-                    Log.Info("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}データを物理削除しました。（{{keys.Select(x => x.LogTemplate).Join(", ")}}）", {{keys.Select(x => $"dbEntity.{x.DbEntityFullPath.Join("?.")}").Join(", ")}});
+                    Log.Info("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}データを物理削除しました。（{{keys.Select(x => x.LogTemplate).Join(", ")}}）", {{keys.Select(x => x.DbEntityFullPath).Join(", ")}});
                     Log.Debug("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}} 削除パラメータ: {0}", command.ToJson());
                 }
                 /// <summary>
