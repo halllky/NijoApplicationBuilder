@@ -303,6 +303,7 @@ namespace Nijo.Models.DataModelModules {
                                 e.{{fk.PhysicalName}},
                 """)}}
                             })
+                            .IsRequired(false)
                             .OnDelete({{nameof(DeleteBehavior)}}.{{nav.PrincipalDeletedBehavior}})
                             .HasConstraintName("{{nav.GetConstraintName().Replace("\"", "\\\"")}}");
                 """)}}

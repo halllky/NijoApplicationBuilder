@@ -253,8 +253,8 @@ namespace Nijo.Models.DataModelModules {
                     if (paths.Any(node => node is ChildrenAggregate)) {
                         // 子集約までの経路の途中に配列が含まれる場合
                         builder.Append(renderBefore
-                            ? $"var {tempVar} = beforeDbEntity"
-                            : $"var {tempVar} = afterDbEntity");
+                            ? $"var {tempVar} = (beforeDbEntity"
+                            : $"var {tempVar} = (afterDbEntity");
 
                         var select = false;
                         foreach (var node in paths) {
@@ -263,7 +263,7 @@ namespace Nijo.Models.DataModelModules {
                                 var nav = new EFCoreEntity.NavigationOfParentChild((AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない"), children);
                                 builder.Append(select
                                     ? $".SelectMany(x => x.{nav.Principal.OtherSidePhysicalName})"
-                                    : $".{nav.Principal.OtherSidePhysicalName}");
+                                    : $"?.{nav.Principal.OtherSidePhysicalName}");
                                 select = true;
                                 continue;
                             }
@@ -272,14 +272,14 @@ namespace Nijo.Models.DataModelModules {
                                 var nav = new EFCoreEntity.NavigationOfParentChild((AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない"), child);
                                 builder.Append(select
                                     ? $".Select(x => x.{nav.Principal.OtherSidePhysicalName})"
-                                    : $".{nav.Principal.OtherSidePhysicalName}");
+                                    : $"?.{nav.Principal.OtherSidePhysicalName}");
                                 continue;
                             }
                         }
 
                         var dbEntity = new EFCoreEntity(descendantDbEntities[i]);
                         builder.AppendLine($$"""
-                            .OfType<{{dbEntity.CsClassName}}>() ?? Enumerable.Empty<{{dbEntity.CsClassName}}>();
+                            .OfType<{{dbEntity.CsClassName}}>() ?? Enumerable.Empty<{{dbEntity.CsClassName}}>()).ToArray();
                             """);
 
                     } else {
@@ -288,8 +288,8 @@ namespace Nijo.Models.DataModelModules {
                         var dbEntity = new EFCoreEntity(descendantDbEntities[i]);
                         builder.AppendLine($$"""
                             var {{tempVar}} = new {{dbEntity.CsClassName}}?[] {
-                                {{source}}.{{paths.AsDbEntity().Join(".")}},
-                            }.OfType<{{dbEntity.CsClassName}}>().ToArray();
+                                {{source}}?.{{paths.AsDbEntity().Join("?.")}},
+                            }.Where(x => x != null).OfType<{{dbEntity.CsClassName}}>().ToArray();
                             """);
                     }
                 }
@@ -297,22 +297,46 @@ namespace Nijo.Models.DataModelModules {
                 RenderEntityArray(false);
 
                 // ChangeState変更
-                builder.AppendLine($$"""
-                    foreach (var a in {{after_}}) {
-                        var b = {{before}}.SingleOrDefault(b => b.{{EFCoreEntity.KEYEQUALS}}(a));
-                        if (b == null) {
-                            DbContext.Entry(a).State = EntityState.Added;
-                        } else {
-                            DbContext.Entry(a).State = EntityState.Modified;
-                        }
-                    }
-                    foreach (var b in {{before}}) {
-                        var a = {{after_}}.SingleOrDefault(a => a.{{EFCoreEntity.KEYEQUALS}}(b));
-                        if (a == null) {
+                if (descendantDbEntities[i] is ChildAggregate) {
+                    // Child型の場合は、オプショナル（0または1）の考慮を行う。
+                    // 1. 子テーブルが元々存在し、更新後も存在する場合 → UPDATE
+                    // 2. 子テーブルが元々存在せず、更新後に存在する場合 → INSERT
+                    // 3. 子テーブルが元々存在するが、更新後に存在しない場合 → DELETE
+                    builder.AppendLine($$"""
+                        if ({{after_}}.Any()) {
+                            var a = {{after_}}.First();
+                            if ({{before}}.Any()) {
+                                // 1. 子テーブルが元々存在し、更新後も存在する場合 → UPDATE
+                                DbContext.Entry(a).State = EntityState.Modified;
+                            } else {
+                                // 2. 子テーブルが元々存在せず、更新後に存在する場合 → INSERT
+                                DbContext.Entry(a).State = EntityState.Added;
+                            }
+                        } else if ({{before}}.Any()) {
+                            // 3. 子テーブルが元々存在するが、更新後に存在しない場合 → DELETE
+                            var b = {{before}}.First();
                             DbContext.Entry(b).State = EntityState.Deleted;
                         }
-                    }
-                    """);
+                        """);
+                } else {
+                    // Children型の場合
+                    builder.AppendLine($$"""
+                        foreach (var a in {{after_}}) {
+                            var b = {{before}}.SingleOrDefault(b => b.{{EFCoreEntity.KEYEQUALS}}(a));
+                            if (b == null) {
+                                DbContext.Entry(a).State = EntityState.Added;
+                            } else {
+                                DbContext.Entry(a).State = EntityState.Modified;
+                            }
+                        }
+                        foreach (var b in {{before}}) {
+                            var a = {{after_}}.SingleOrDefault(a => a.{{EFCoreEntity.KEYEQUALS}}(b));
+                            if (a == null) {
+                                DbContext.Entry(b).State = EntityState.Deleted;
+                            }
+                        }
+                        """);
+                }
 
                 yield return builder.ToString();
             }
@@ -372,7 +396,7 @@ namespace Nijo.Models.DataModelModules {
                         builder.AppendLine($$"""
                             var {{tempVar}} = new {{efCoreEntity.CsClassName}}?[] {
                                 {{rootEntityName}}.{{childPath.Select(p => p.Principal.OtherSidePhysicalName).Join("?.")}},
-                            }.OfType<{{efCoreEntity.CsClassName}}>().ToArray();
+                            }.Where(x => x != null).OfType<{{efCoreEntity.CsClassName}}>().ToArray();
                             """);
                     }
                 }

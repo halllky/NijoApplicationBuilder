@@ -306,7 +306,7 @@ namespace Nijo.Models.DataModelModules {
                 };
                 return $$"""
                     /// <summary>{{DisplayName}}</summary>
-                    public required {{className}} {{PhysicalName}} { get; set; }
+                    public required {{className}}? {{PhysicalName}} { get; set; }
                     """;
             }
         }
@@ -389,9 +389,13 @@ namespace Nijo.Models.DataModelModules {
                     if (nav.Relevant.ThisSide is ChildAggregate child) {
                         // Child
                         var childEntity = new EFCoreEntity(nav.Relevant.ThisSide);
+                        var childPath = rigthMembers.TryGetValue(child.ToMappingKey(), out var cs)
+                            ? $"{cs.Root.Name}.{cs.GetPathFromInstance().Select(p => p.Metadata.PropertyName).Join("?.")}"
+                            : throw new InvalidOperationException($"右辺にChildのXElementが無い: {child}");
 
+                        // childPath が null でない場合のみ Child を生成
                         yield return $$"""
-                            {{nav.Principal.OtherSidePhysicalName}} = new() {
+                            {{nav.Principal.OtherSidePhysicalName}} = {{childPath}} == null ? null : new() {
                                 {{WithIndent(RenderToDbEntityBody(childEntity, right, rigthMembers), "    ")}}
                             },
                             """;
