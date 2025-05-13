@@ -368,7 +368,7 @@ namespace Nijo.Models.DataModelModules {
                                 var nav = new EFCoreEntity.NavigationOfParentChild((AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない"), children);
                                 builder.Append(select
                                     ? $".SelectMany(x => x.{nav.Principal.OtherSidePhysicalName})"
-                                    : $".{nav.Principal.OtherSidePhysicalName}");
+                                    : $"?.{nav.Principal.OtherSidePhysicalName}");
                                 select = true;
                                 continue;
                             }
@@ -377,7 +377,7 @@ namespace Nijo.Models.DataModelModules {
                                 var nav = new EFCoreEntity.NavigationOfParentChild((AggregateBase?)node.PreviousNode ?? throw new InvalidOperationException("ありえない"), child);
                                 builder.Append(select
                                     ? $".Select(x => x.{nav.Principal.OtherSidePhysicalName})"
-                                    : $".{nav.Principal.OtherSidePhysicalName}");
+                                    : $"?.{nav.Principal.OtherSidePhysicalName}");
                                 continue;
                             }
 
