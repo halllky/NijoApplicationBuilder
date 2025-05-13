@@ -83,9 +83,18 @@ namespace Nijo.ImmutableSchema {
         }
         /// <summary>
         /// キー項目のうち <see cref="ValueMember"/> を列挙します。
-        /// つまりキーに <see cref="RefToMember"/> が含まれるならばそのRefのメンバーを列挙します。
+        /// つまりキーに <see cref="RefToMember"/> が含まれるならばそのRefの値メンバーを、
+        /// キーに親が含まれるならば親の値メンバーを列挙します。
         /// </summary>
         public IEnumerable<ValueMember> GetKeyVMs() {
+            // 親および祖先のキー項目を列挙
+            var parent = GetParent();
+            if (parent != null) {
+                foreach (var parentKeyVm in parent.GetKeyVMs()) {
+                    yield return parentKeyVm;
+                }
+            }
+            // 自身のメンバーからキー項目を列挙
             foreach (var member in GetMembers()) {
                 if (member is ValueMember vm && vm.IsKey) {
                     yield return vm;
