@@ -536,9 +536,14 @@ namespace Nijo.Models.DataModelModules {
             }
             internal override IEnumerable<EFCoreEntityColumn> GetRelevantForeignKeys() {
                 var child = new EFCoreEntity(Relevant.ThisSide);
-                return child
-                    .GetColumns()
-                    .OfType<ParentKeyMember>();
+                var childColumns = child.GetColumns();
+
+                // 子の主キーのうち、親の主キーのいずれかとマッピングキーが合致するものが親子間の外部キー
+                var parentKeys = Principal.ThisSide
+                    .GetKeyVMs()
+                    .Select(vm => vm.ToMappingKey())
+                    .ToHashSet();
+                return childColumns.Where(c => parentKeys.Contains(c.Member.ToMappingKey()));
             }
         }
 
