@@ -36,7 +36,7 @@ partial class OverridedApplicationService {
 
     protected override IQueryable<商品マスタSearchResult> CreateQuerySource(商品マスタSearchCondition searchCondition, IPresentationContext<商品マスタSearchConditionMessages> context) {
         return DbContext.商品マスタDbSet.Select(e => new 商品マスタSearchResult {
-            商品ID = e.商品ID,
+            ID = e.ID,
             商品名 = e.商品名,
             価格 = e.価格,
             カテゴリ_カテゴリID = e.カテゴリ_カテゴリID,
@@ -57,7 +57,7 @@ partial class OverridedApplicationService {
                 数量 = acc.数量,
             }).ToList(),
             在庫情報 = e.在庫情報.Select(inv => new 在庫情報SearchResult {
-                倉庫_倉庫ID = inv.倉庫_倉庫ID,
+                倉庫_ID = inv.倉庫_ID,
                 倉庫_倉庫名 = inv.倉庫!.倉庫名,
                 倉庫_住所_郵便番号 = inv.倉庫!.倉庫マスタの住所!.郵便番号,
                 倉庫_住所_都道府県 = inv.倉庫!.倉庫マスタの住所!.都道府県,
@@ -220,7 +220,7 @@ partial class OverridedApplicationService {
 
     protected override IQueryable<倉庫マスタSearchResult> CreateQuerySource(倉庫マスタSearchCondition searchCondition, IPresentationContext<倉庫マスタSearchConditionMessages> context) {
         return DbContext.倉庫マスタDbSet.Select(e => new 倉庫マスタSearchResult {
-            倉庫ID = e.倉庫ID,
+            ID = e.ID,
             倉庫名 = e.倉庫名,
             住所_郵便番号 = e.倉庫マスタの住所!.郵便番号,
             住所_都道府県 = e.倉庫マスタの住所!.都道府県,

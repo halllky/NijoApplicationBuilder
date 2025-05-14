@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Nijo.CodeGenerating;
 using Nijo.CodeGenerating.Helpers;
 using Nijo.ImmutableSchema;
-using Nijo.Models.DataModelModules;
 using Nijo.Parts.CSharp;
 using Nijo.Util.DotnetEx;
 using Nijo.ValueMemberTypes;
@@ -59,24 +58,50 @@ namespace Nijo.Models.DataModelModules {
         /// </summary>
         internal IEnumerable<EFCoreEntityColumn> GetColumns() {
 
-            //// 子孫テーブルは祖先のキーを継承する
             var parent = Aggregate.GetParent();
             if (parent != null) {
-                foreach (var parentKey in parent.GetKeyVMs()) {
-                    yield return new ParentKeyMember(parentKey);
+                foreach (var parentKey in EnumerateKeysRecursively(parent, null, ["Parent"])) {
+                    yield return parentKey;
                 }
             }
 
-            // 自身のキー
             foreach (var member in Aggregate.GetMembers()) {
                 if (member is ValueMember vm) {
+                    // 自身のキー
                     yield return new OwnColumnMember(vm);
 
                 } else if (member is RefToMember refTo) {
-                    foreach (var refToKey in refTo.RefTo.GetKeyVMs()) {
-                        yield return new RefKeyMember(refTo, refToKey);
+                    foreach (var refToKey in EnumerateKeysRecursively(refTo.RefTo, refTo, [refTo.PhysicalName])) {
+                        yield return refToKey;
                     }
                 }
+            }
+
+            // 親や参照先の集約のキーを辿る。
+            // 子孫テーブルは祖先のキーを継承する。
+            // 参照元は参照先のキーを継承する（FOREIGN KEY）。
+            static IEnumerable<EFCoreEntityColumn> EnumerateKeysRecursively(AggregateBase parentOrRef, RefToMember? refEntry, IEnumerable<string> path) {
+                // 親のさらに親
+                var ancestor = parentOrRef.GetParent();
+                if (ancestor != null) {
+                    foreach (var ancestorKey in EnumerateKeysRecursively(ancestor, refEntry, [.. path, "Parent"])) {
+                        yield return ancestorKey;
+                    }
+                }
+
+                foreach (var member in parentOrRef.GetMembers()) {
+                    if (member is ValueMember vm && vm.IsKey) {
+                        yield return refEntry != null
+                            ? new RefKeyMember(refEntry, vm, path) // 祖先かつ参照先の場合は参照先が優先
+                            : new ParentKeyMember(vm, path);
+
+                    } else if (member is RefToMember refTo && refTo.IsKey) {
+                        foreach (var refToKey in EnumerateKeysRecursively(refTo.RefTo, refEntry ?? refTo, [.. path, refTo.PhysicalName])) {
+                            yield return refToKey;
+                        }
+                    }
+                }
+
             }
         }
 
@@ -375,30 +400,34 @@ namespace Nijo.Models.DataModelModules {
         /// 子テーブルに定義される、親テーブルの主キーを継承したカラム
         /// </summary>
         internal class ParentKeyMember : EFCoreEntityColumn {
-            internal ParentKeyMember(ValueMember member) {
+            internal ParentKeyMember(ValueMember member, IEnumerable<string> path) {
                 Member = member;
+                PhysicalName = $"{path.Join("_")}_{member.PhysicalName}";
+                DbName = $"{path.Join("_")}_{member.DbName}";
             }
             internal override ValueMember Member { get; }
             internal override string CsType => Member.Type.CsPrimitiveTypeName;
-            internal override string PhysicalName => $"Parent_{Member.PhysicalName}";
+            internal override string PhysicalName { get; }
             internal override string DisplayName => Member.DisplayName;
-            internal override string DbName => $"Parent_{Member.DbName}";
+            internal override string DbName { get; }
             internal override bool IsKey => true;
         }
         /// <summary>
         /// 外部参照がある場合の、参照先のキーを継承したカラム
         /// </summary>
         internal class RefKeyMember : EFCoreEntityColumn {
-            internal RefKeyMember(RefToMember refEntry, ValueMember member) {
+            internal RefKeyMember(RefToMember refEntry, ValueMember member, IEnumerable<string> path) {
                 RefEntry = refEntry;
                 Member = member;
+                PhysicalName = $"{path.Join("_")}_{member.PhysicalName}";
+                DbName = $"{path.Join("_")}_{member.DbName}";
             }
             internal RefToMember RefEntry { get; }
             internal override ValueMember Member { get; }
             internal override string CsType => Member.Type.CsPrimitiveTypeName;
-            internal override string PhysicalName => $"{RefEntry.PhysicalName}_{Member.PhysicalName}";
+            internal override string PhysicalName { get; }
             internal override string DisplayName => Member.DisplayName;
-            internal override string DbName => $"{RefEntry.PhysicalName}_{Member.DbName}";
+            internal override string DbName { get; }
             internal override bool IsKey => RefEntry.IsKey;
         }
         #endregion メンバー

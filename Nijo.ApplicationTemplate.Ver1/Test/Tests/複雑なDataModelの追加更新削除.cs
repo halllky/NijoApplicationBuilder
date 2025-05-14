@@ -38,11 +38,11 @@ partial class DB接続あり_更新あり {
         using (var tran = await scope.App.DbContext.Database.BeginTransactionAsync()) {
             var category1 = scope.App.DbContext.カテゴリマスタDbSet.OrderBy(x => x.カテゴリID).First();
             var supplier1 = scope.App.DbContext.仕入先マスタDbSet.OrderBy(x => x.仕入先ID).First();
-            var warehouse1 = scope.App.DbContext.倉庫マスタDbSet.OrderBy(x => x.倉庫ID).First();
+            var warehouse1 = scope.App.DbContext.倉庫マスタDbSet.OrderBy(x => x.ID).First();
             var employee1 = scope.App.DbContext.従業員マスタDbSet.OrderBy(x => x.従業員ID).First();
 
             await scope.App.Create商品マスタAsync(new() {
-                商品ID = "PROD001",
+                ID = "PROD001",
                 商品名 = "テスト商品1",
                 価格 = 1000,
                 カテゴリ = new() { カテゴリID = category1.カテゴリID },
@@ -67,7 +67,7 @@ partial class DB接続あり_更新あり {
                 },
                 在庫情報 = new List<在庫情報CreateCommand> {
                     new() {
-                        倉庫 = new() { 倉庫ID = warehouse1.倉庫ID },
+                        倉庫 = new() { ID = warehouse1.ID },
                         在庫数 = 100,
                         棚卸日時 = DateTime.Now,
                         在庫状況履歴 = new List<在庫状況履歴CreateCommand> {
@@ -104,11 +104,11 @@ partial class DB接続あり_更新あり {
         using (var tran = await scope.App.DbContext.Database.BeginTransactionAsync()) {
             var category1 = scope.App.DbContext.カテゴリマスタDbSet.OrderBy(x => x.カテゴリID).First();
             var supplier1 = scope.App.DbContext.仕入先マスタDbSet.OrderBy(x => x.仕入先ID).First();
-            var warehouse1 = scope.App.DbContext.倉庫マスタDbSet.OrderBy(x => x.倉庫ID).First();
+            var warehouse1 = scope.App.DbContext.倉庫マスタDbSet.OrderBy(x => x.ID).First();
             var employee1 = scope.App.DbContext.従業員マスタDbSet.OrderBy(x => x.従業員ID).First();
 
             await scope.App.Update商品マスタAsync(new() {
-                商品ID = "PROD001",
+                ID = "PROD001",
                 商品名 = "テスト商品1-更新",
                 価格 = 1500,
                 カテゴリ = new() { カテゴリID = category1.カテゴリID },
@@ -133,7 +133,7 @@ partial class DB接続あり_更新あり {
                 },
                 在庫情報 = new List<在庫情報UpdateCommand> {
                     new() {
-                        倉庫 = new() { 倉庫ID = warehouse1.倉庫ID },
+                        倉庫 = new() { ID = warehouse1.ID },
                         在庫数 = 150,
                         棚卸日時 = DateTime.Now,
                         在庫状況履歴 = new List<在庫状況履歴UpdateCommand> {
@@ -188,10 +188,10 @@ partial class DB接続あり_更新あり {
         using (var tran = await scope.App.DbContext.Database.BeginTransactionAsync()) {
             var category1 = scope.App.DbContext.カテゴリマスタDbSet.OrderBy(x => x.カテゴリID).First();
             var supplier1 = scope.App.DbContext.仕入先マスタDbSet.OrderBy(x => x.仕入先ID).First();
-            var warehouse1 = scope.App.DbContext.倉庫マスタDbSet.OrderBy(x => x.倉庫ID).First();
+            var warehouse1 = scope.App.DbContext.倉庫マスタDbSet.OrderBy(x => x.ID).First();
 
             await scope.App.Update商品マスタAsync(new() {
-                商品ID = "PROD001",
+                ID = "PROD001",
                 商品名 = "テスト商品1-更新",
                 価格 = 1500,
                 カテゴリ = new() { カテゴリID = category1.カテゴリID },
@@ -212,7 +212,7 @@ partial class DB接続あり_更新あり {
                 },
                 在庫情報 = new List<在庫情報UpdateCommand> {
                     new() {
-                        倉庫 = new() { 倉庫ID = warehouse1.倉庫ID },
+                        倉庫 = new() { ID = warehouse1.ID },
                         在庫数 = 150,
                         棚卸日時 = DateTime.Now,
                         在庫状況履歴 = new List<在庫状況履歴UpdateCommand>() // 履歴を空にして削除
@@ -242,11 +242,11 @@ partial class DB接続あり_更新あり {
         using (var tran = await scope.App.DbContext.Database.BeginTransactionAsync()) {
             var category1 = scope.App.DbContext.カテゴリマスタDbSet.OrderBy(x => x.カテゴリID).First();
             var supplier1 = scope.App.DbContext.仕入先マスタDbSet.OrderBy(x => x.仕入先ID).First();
-            var warehouse1 = scope.App.DbContext.倉庫マスタDbSet.OrderBy(x => x.倉庫ID).First();
+            var warehouse1 = scope.App.DbContext.倉庫マスタDbSet.OrderBy(x => x.ID).First();
             var employee1 = scope.App.DbContext.従業員マスタDbSet.OrderBy(x => x.従業員ID).First();
 
             await scope.App.Update商品マスタAsync(new() {
-                商品ID = "PROD001",
+                ID = "PROD001",
                 商品名 = "テスト商品1-更新",
                 価格 = 1500,
                 カテゴリ = new() { カテゴリID = category1.カテゴリID },
@@ -271,7 +271,7 @@ partial class DB接続あり_更新あり {
                 },
                 在庫情報 = new List<在庫情報UpdateCommand> {
                     new() {
-                        倉庫 = new() { 倉庫ID = warehouse1.倉庫ID },
+                        倉庫 = new() { ID = warehouse1.ID },
                         在庫数 = 150,
                         棚卸日時 = DateTime.Now,
                         在庫状況履歴 = new List<在庫状況履歴UpdateCommand> { // 履歴を再追加
@@ -316,7 +316,7 @@ partial class DB接続あり_更新あり {
             var supplier1 = scope.App.DbContext.仕入先マスタDbSet.OrderBy(x => x.仕入先ID).First();
 
             await scope.App.Update商品マスタAsync(new() {
-                商品ID = "PROD001",
+                ID = "PROD001",
                 商品名 = "テスト商品1-更新",
                 価格 = 1500,
                 カテゴリ = new() { カテゴリID = category1.カテゴリID },

@@ -2,7 +2,7 @@
 <NijoApplicationBuilder RootNamespace="MyApp.Core">
   <!-- GDQM かつ GenerateBatchUpdateCommand のデータモデル -->
   <商品マスタ Type="data-model" GenerateDefaultQueryModel="True" GenerateBatchUpdateCommand="True" LatinName="Product Master">
-    <商品ID Type="word" IsKey="True" IsRequired="True" DbName="PRODUCT_ID" MaxLength="20" />
+    <ID Type="word" IsKey="True" IsRequired="True" DbName="PRODUCT_ID" MaxLength="20" />
     <商品名 Type="word" IsRequired="True" DbName="PRODUCT_NAME" MaxLength="100" />
     <価格 Type="int" IsRequired="True" DbName="PRICE" />
     <カテゴリ Type="ref-to:カテゴリマスタ" IsRequired="True" DbName="CATEGORY_ID" />
@@ -271,7 +271,7 @@
     <メールアドレス Type="word" DbName="EMAIL" MaxLength="100" />
   </仕入先マスタ>
   <倉庫マスタ Type="data-model" GenerateDefaultQueryModel="True">
-    <倉庫ID Type="word" IsKey="True" DbName="WAREHOUSE_ID" MaxLength="10" />
+    <ID Type="word" IsKey="True" DbName="WAREHOUSE_ID" MaxLength="10" />
     <倉庫名 Type="word" DbName="WAREHOUSE_NAME" MaxLength="50" />
     <住所 Type="child" DbName="WAREHOUSE_ADDRESS">
       <郵便番号 Type="word" DbName="POSTAL_CODE" MaxLength="8" />
