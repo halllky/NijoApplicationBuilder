@@ -245,6 +245,9 @@ namespace Nijo.Models {
                 ctx.Use<Metadata>().Add(rootAggregate);
             }
 
+            // 定数: メタデータ（画面用リフレクション）
+            ctx.Use<MetadataForPage>().Add(rootAggregate);
+
             // ユニットテスト
             ctx.Use<QueryModelUnitTest>().Add(rootAggregate);
         }

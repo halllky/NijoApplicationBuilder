@@ -48,8 +48,10 @@ namespace Nijo.Models {
             var enumFile = ctx.Use<EnumFile>();
             var parser = new EnumDefParser(((ISchemaPathNode)rootAggregate).XElement, ctx.SchemaParser);
 
+
             // データ型: enum, リテラル型定義
             var staticEnum = new StaticEnumDef(parser, rootAggregate);
+            enumFile.Register(staticEnum);
             enumFile.AddCSharpSource(staticEnum.RenderCSharp());
             enumFile.AddTypeScriptSource(staticEnum.RenderTypeScript());
 

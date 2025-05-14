@@ -18,7 +18,7 @@ namespace Nijo.ValueMemberTypes;
 /// 値オブジェクトを表すC#のクラスを参照する型
 /// </summary>
 internal class ValueObjectMember : IValueMemberType {
-    string IValueMemberType.TypePhysicalName => _ctx.GetPhysicalName(_xElement);
+    public string TypePhysicalName => _ctx.GetPhysicalName(_xElement);
     string IValueMemberType.SchemaTypeName => _ctx.GetPhysicalName(_xElement);
     string IValueMemberType.CsDomainTypeName => _ctx.GetPhysicalName(_xElement);
     string IValueMemberType.CsPrimitiveTypeName => "string";

@@ -33,6 +33,8 @@ public class SchemaParseContext {
     public IReadOnlyDictionary<string, IModel> Models { get; }
     private readonly SchemaParseRule _rule;
     private readonly IReadOnlyDictionary<string, IValueMemberType> _valueMemberTypes;
+    /// <summary>enum, value-object を除いた値型の一覧</summary>
+    public IEnumerable<IValueMemberType> ValueMemberTypes => _rule.ValueMemberTypes;
 
     private const string ATTR_IS = "is";
     internal const string ATTR_NODE_TYPE = "Type";
@@ -229,7 +231,7 @@ public class SchemaParseContext {
     /// このスキーマで定義されている静的区分の種類を返します。
     /// </summary>
     /// <returns></returns>
-    private IReadOnlyDictionary<string, ValueMemberTypes.StaticEnumMember> GetStaticEnumMembers() {
+    internal IReadOnlyDictionary<string, ValueMemberTypes.StaticEnumMember> GetStaticEnumMembers() {
         return Document.Root
             ?.Elements()
             .Where(el => el.Attribute(ATTR_NODE_TYPE)?.Value == EnumDefParser.SCHEMA_NAME)
@@ -241,7 +243,7 @@ public class SchemaParseContext {
     /// このスキーマで定義されている値オブジェクト型を返します。
     /// </summary>
     /// <returns></returns>
-    private IReadOnlyDictionary<string, ValueMemberTypes.ValueObjectMember> GetValueObjectMembers() {
+    internal IReadOnlyDictionary<string, ValueMemberTypes.ValueObjectMember> GetValueObjectMembers() {
         return Document.Root
             ?.Elements()
             .Where(el => el.Attribute(ATTR_NODE_TYPE)?.Value == ValueObjectModel.SCHEMA_NAME)
