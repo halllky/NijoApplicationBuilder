@@ -12,7 +12,7 @@ export const PageFrame = (props: PageFrameProps) => {
     <div className="flex flex-col h-full">
 
       {/* 画面ヘッダ部 */}
-      <div className="flex items-center p-1 gap-2 border-b">
+      <div className="flex flex-wrap items-center p-1 gap-2 border-b">
         {props.headerContent}
       </div>
 
