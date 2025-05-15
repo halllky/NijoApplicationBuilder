@@ -32,6 +32,31 @@ export const Word = <
 }
 
 /**
+ * 文章テキストエリア
+ */
+export const Description = <
+  TField extends ReactHookForm.FieldValues,
+  TPath extends ReactHookForm.FieldPathByValue<TField, string | undefined>
+>(props: CustomInputComponentProps<string | undefined, TField, TPath>) => {
+  return (
+    <ReactHookForm.Controller
+      control={props.control}
+      name={props.name}
+      rules={props.rules}
+      render={({ field }) => (
+        <div className={`flex flex-col ${props.className ?? ''}`}>
+          <textarea
+            {...field}
+            className="border border-gray-300 p-1"
+          />
+          <FieldErrorView name={props.name} />
+        </div>
+      )}
+    />
+  )
+}
+
+/**
  * 数値入力フォーム
  */
 export const NumberInput = <
