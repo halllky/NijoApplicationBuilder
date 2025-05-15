@@ -3,13 +3,10 @@
 /* オリジナルのスタイル設定を必要に応じて残します */
 @layer base {
 
-  html,
-  body,
-  #root {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
+  :root {
+    font-family: "Noto Sans JP", sans-serif;
+    font-optical-sizing: auto;
+    /* font-family: "Cascadia Mono", "BIZ UDGothic", system-ui, Avenir, Helvetica, Arial, sans-serif; */
   }
 }
 
