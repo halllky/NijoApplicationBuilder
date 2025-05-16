@@ -13,7 +13,7 @@ export const 商品マスタ一覧検索画面 = () => {
 
   /** 一覧表示のカラム定義 */
   const getColumnDefs: Layout.GetColumnDefsFunction<商品マスタDisplayData> = React.useCallback(cellType => [
-    cellType.text("values.商品ID", "商品ID"),
+    cellType.text("values.ID", "商品ID"),
     cellType.text("values.商品名", "商品名"),
     cellType.number("values.価格", "価格"),
     cellType.text("values.カテゴリ.カテゴリ名", "カテゴリ"),
@@ -39,7 +39,7 @@ export const 商品マスタ一覧検索画面 = () => {
         <VForm3.Root labelWidth="8rem">
           <VForm3.BreakPoint>
             <VForm3.Item label="商品ID">
-              <Input.Word name="filter.商品ID" control={control} />
+              <Input.Word name="filter.ID" control={control} />
             </VForm3.Item>
             <VForm3.Item label="商品名">
               <Input.Word name="filter.商品名" control={control} />
