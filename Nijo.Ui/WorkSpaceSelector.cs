@@ -138,8 +138,10 @@ namespace Nijo.Ui {
                 LoadRecentWorkspaces();
 
                 // WorkSpace画面を開く
+                this.Hide();
                 using var workSpace = new WorkSpace(project);
                 workSpace.ShowDialog();
+                this.Show();
             } else {
                 MessageBox.Show($"ワークスペースを開けませんでした: {error}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -174,8 +176,10 @@ namespace Nijo.Ui {
                 LoadRecentWorkspaces();
 
                 // 作成したワークスペースを開く
+                this.Hide();
                 using var workSpace = new WorkSpace(project);
                 workSpace.ShowDialog();
+                this.Show();
             } else {
                 MessageBox.Show($"ワークスペースの作成に失敗しました: {error}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
