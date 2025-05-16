@@ -65,9 +65,9 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
       }
     }
     return [
+      ...dataQueryCommandTypes,
       memberTypes,
       ...enumOrValueObjectTypes,
-      ...dataQueryCommandTypes,
     ]
   }, [fields, collapsedItems])
 
@@ -175,7 +175,7 @@ const SideMenuItem = ({ isActive, onClick, children }: {
 }) => {
   return (
     <li className={`flex items-center gap-px py-px cursor-pointer border-y ${isActive
-      ? 'bg-gray-100 border-gray-300'
+      ? 'bg-white border-gray-300'
       : 'border-r border-r-gray-300 border-y-transparent'}`} onClick={onClick}>
       {children}
     </li>
