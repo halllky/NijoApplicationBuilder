@@ -10,6 +10,7 @@ import { NijoUiSideMenu } from "./NijoUiSideMenu"
 import { PageRootAggregate } from "./NijoUi.RootAggregate"
 import { AttrDefsProvider } from "./useAttrDefs"
 import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS } from "."
+import { Outlet, useOutletContext } from "react-router-dom"
 
 const SERVER_DOMAIN = import.meta.env.DEV
   ? 'https://localhost:8081'
@@ -104,12 +105,8 @@ const AfterLoaded = ({ defaultValues, onSave, className }: {
   const selectedRootAggregateId = urlParams[NIJOUI_CLIENT_ROUTE_PARAMS.AGGREGATE_ID]
   const handleSelected = useEvent((rootAggregateIndex: number) => {
     const aggregateId = form.getValues(`xmlElementTrees.${rootAggregateIndex}.xmlElements.0.uniqueId`)
-    navigate(getNavigationUrl(aggregateId))
+    navigate(getNavigationUrl({ aggregateId }))
   })
-  const selectedRootAggregateIndex = React.useMemo((): number | undefined => {
-    if (!selectedRootAggregateId) return undefined
-    return xmlElementTrees.findIndex(tree => tree.xmlElements[0].uniqueId === selectedRootAggregateId)
-  }, [selectedRootAggregateId, xmlElementTrees])
 
   return (
     <AttrDefsProvider control={form.control}>
@@ -129,22 +126,58 @@ const AfterLoaded = ({ defaultValues, onSave, className }: {
 
         {/* メインコンテンツ */}
         <ReactResizablePanels.Panel>
-          {selectedRootAggregateIndex === -1 && (
-            <div className="p-1 text-sm text-gray-500">
-              対象の集約が見つかりません。（ID: {selectedRootAggregateId}）
-            </div>
-          )}
-          {selectedRootAggregateIndex !== undefined && selectedRootAggregateIndex !== -1 && (
-            <PageRootAggregate
-              key={selectedRootAggregateId} // URL更新のたびに再描画させる
-              rootAggregateIndex={selectedRootAggregateIndex}
-              formMethods={form}
-              className="pl-1 pt-1"
-            />
-          )}
+          <Outlet context={{ form, selectedRootAggregateId, xmlElementTrees }} />
         </ReactResizablePanels.Panel>
 
       </ReactResizablePanels.PanelGroup>
     </AttrDefsProvider>
   )
 }
+
+// Outlet の context の型定義
+export type NijoUiOutletContextType = {
+  form: ReactHookForm.UseFormReturn<ApplicationState>;
+  selectedRootAggregateId?: string;
+  xmlElementTrees: ApplicationState['xmlElementTrees'];
+}
+
+// ----------------------------
+
+/** Outlet経由で表示されるメインコンテンツエリアのコンポーネント */
+export const NijoUiMainContent = () => {
+  const { form, selectedRootAggregateId, xmlElementTrees } = useOutletContext<NijoUiOutletContextType>();
+  const selectedRootAggregateIndex = React.useMemo((): number | undefined => {
+    if (!selectedRootAggregateId) return undefined;
+    if (!xmlElementTrees) return undefined; // 初期ロード時など xmlElementTrees が未定義の場合
+    return xmlElementTrees.findIndex(tree => tree.xmlElements[0].uniqueId === selectedRootAggregateId);
+  }, [selectedRootAggregateId, xmlElementTrees]);
+
+  if (selectedRootAggregateId === undefined) {
+    return (
+      <div className="p-1 text-sm text-gray-500">
+        左側のメニューから項目を選択してください。
+      </div>
+    );
+  }
+
+  if (selectedRootAggregateIndex === -1) {
+    return (
+      <div className="p-1 text-sm text-gray-500">
+        対象の集約が見つかりません。（ID: {selectedRootAggregateId}）
+      </div>
+    );
+  }
+
+  if (selectedRootAggregateIndex !== undefined && selectedRootAggregateIndex !== -1) {
+    return (
+      <PageRootAggregate
+        key={selectedRootAggregateId} // URL更新のたびに再描画させる
+        rootAggregateIndex={selectedRootAggregateIndex}
+        formMethods={form}
+        className="pl-1 pt-1"
+      />
+    );
+  }
+
+  return null; // 上記以外は何も表示しない
+};

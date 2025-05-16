@@ -1,7 +1,10 @@
 import { PageFrame, PageFrameTitle } from "../../layout";
-import { NijoUi } from "./NijoUi";
+import { RouteObjectWithSideMenuSetting } from "../../routes";
+import { Outlet } from "react-router-dom";
+import { NijoUi, NijoUiMainContent } from "./NijoUi";
+import { NijoUiDebugMenu } from "./NijoUiDebugMenu";
 
-export default function () {
+const SchemaDefinitionEditUI = () => {
   return (
     <PageFrame
       headerContent={(
@@ -25,7 +28,7 @@ export default function () {
         </li>
       </ul>
       <div className="flex-1 p-8 overflow-hidden">
-        <NijoUi className="w-full h-full border border-gray-500" />
+        <Outlet />
       </div>
     </PageFrame>
   )
@@ -35,8 +38,37 @@ export default function () {
 // ナビゲーション
 
 /** ナビゲーション用URLを取得する。 */
-export const getNavigationUrl = (aggregateId?: string): string => {
-  return `/nijo-ui/${aggregateId ?? ''}`
+export const getNavigationUrl = (arg?
+  : { aggregateId?: string, page?: never }
+  | { aggregateId?: never, page: 'debug-menu' }
+): string => {
+  if (arg?.page === 'debug-menu') {
+    return '/nijo-ui/debug-menu'
+  } else {
+    return `/nijo-ui/${arg?.aggregateId ?? ''}`
+  }
+}
+
+/** ルーティングパス */
+export const getNijoUiRoutes = (): RouteObjectWithSideMenuSetting[] => {
+  return [{
+    path: '/nijo-ui',
+    element: <SchemaDefinitionEditUI />,
+    sideMenuLabel: "【開発用】XMLスキーマ定義編集UIの試作",
+    children: [{
+      element: <NijoUi className="w-full h-full border border-gray-500" />,
+      children: [{
+        index: true,
+        element: <NijoUiMainContent />,
+      }, {
+        path: `:aggregateId`,
+        element: <NijoUiMainContent />,
+      }, {
+        path: 'debug-menu',
+        element: <NijoUiDebugMenu />,
+      }],
+    }]
+  }]
 }
 
 /** ルーティングパラメーター */
@@ -44,5 +76,3 @@ export const NIJOUI_CLIENT_ROUTE_PARAMS = {
   /** ルート集約単位の画面の表示に使われるID */
   AGGREGATE_ID: 'aggregateId',
 }
-/** ルーティングパス */
-export const NIJOUI_CLIENT_ROUTE = `/nijo-ui/:${NIJOUI_CLIENT_ROUTE_PARAMS.AGGREGATE_ID}?`

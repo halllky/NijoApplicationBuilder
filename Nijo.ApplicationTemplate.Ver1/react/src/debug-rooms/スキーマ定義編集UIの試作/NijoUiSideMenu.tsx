@@ -7,7 +7,7 @@ import { UUID } from "uuidjs"
 import * as Layout from "../../layout"
 import * as Input from "../../input"
 import useEvent from "react-use-event-hook"
-import { ApplicationState, ATTR_GENERATE_BATCH_UPDATE_COMMAND, ATTR_GENERATE_DEFAULT_QUERY_MODEL, ATTR_TYPE, TYPE_COMMAND_MODEL, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, TYPE_STATIC_ENUM_MODEL, TYPE_VALUE_OBJECT_MODEL, XmlElementItem } from "./types"
+import { ApplicationState, ATTR_GENERATE_DEFAULT_QUERY_MODEL, ATTR_TYPE, TYPE_COMMAND_MODEL, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, TYPE_STATIC_ENUM_MODEL, TYPE_VALUE_OBJECT_MODEL, XmlElementItem } from "./types"
 import { getNavigationUrl } from "./index"
 
 export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAggregateId }: {
@@ -18,6 +18,7 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
 }) => {
   const { control } = formMethods
   const { fields, append, remove } = ReactHookForm.useFieldArray({ control, name: 'xmlElementTrees' })
+  const navigate = ReactRouter.useNavigate()
 
   const [collapsedItems, setCollapsedItems] = React.useState<Set<string>>(new Set())
 
@@ -127,26 +128,57 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
       {/* メニュー */}
       <ul className="flex-1 flex flex-col overflow-y-auto">
         {menuItems.map((menuItem, index) => (
-          <li
+          <SideMenuItem
             key={menuItem.id}
+            isActive={selectedRootAggregateId === menuItem.id}
             onClick={() => handleSelected(menuItem)}
-            className={`flex items-center gap-px py-px cursor-pointer border-y ${selectedRootAggregateId === menuItem.id
-              ? 'bg-white border-gray-300'
-              : 'border-r border-r-gray-300 border-y-transparent'}`}
           >
             <div style={{ flexBasis: `${menuItem.indent * 1.2}rem` }}></div>
             <SideMenuItemIcon menuItem={menuItem} collapsedItems={collapsedItems} />
-            <SideMenuItemLabel menuItem={menuItem} />
+            <SideMenuItemLabel onClick={() => handleSelected(menuItem)}>
+              {menuItem.displayName}
+            </SideMenuItemLabel>
             {selectedRootAggregateId === menuItem.id && (
               <Input.IconButton icon={Icon.TrashIcon} mini hideText onClick={() => handleDeleteRootAggregate(menuItem)}>
                 削除
               </Input.IconButton>
             )}
-          </li>
+          </SideMenuItem>
         ))}
         <li className="flex-1 border-r border-gray-300"></li>
       </ul>
+
+      {/* ボトム部分 */}
+      <ul className="flex flex-col">
+        <li className="basis-2 border-r border-gray-300"></li>
+        <ReactRouter.NavLink to={getNavigationUrl({ page: 'debug-menu' })}>
+          {({ isActive }) => (
+            <SideMenuItem isActive={isActive} onClick={() => navigate(getNavigationUrl({ page: 'debug-menu' }))}>
+              <>
+                <Icon.PlayIcon className={`${SIDEMENU_ICON_CLASSNAME} text-emerald-600`} />
+                <SideMenuItemLabel>
+                  デバッグメニュー
+                </SideMenuItemLabel>
+              </>
+            </SideMenuItem>
+          )}
+        </ReactRouter.NavLink>
+      </ul>
     </div>
+  )
+}
+
+const SideMenuItem = ({ isActive, onClick, children }: {
+  isActive: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) => {
+  return (
+    <li className={`flex items-center gap-px py-px cursor-pointer border-y ${isActive
+      ? 'bg-gray-100 border-gray-300'
+      : 'border-r border-r-gray-300 border-y-transparent'}`} onClick={onClick}>
+      {children}
+    </li>
   )
 }
 
@@ -157,14 +189,13 @@ const SideMenuItemIcon = ({ menuItem, collapsedItems }: {
   menuItem: SideMenuItem
   collapsedItems: Set<string>
 }): React.ReactNode => {
-  const className = 'w-4 h-4 min-w-4 min-h-4'
 
   // コンテナなら折り畳み/展開のアイコンを表示
   if (menuItem.isContainer) {
     if (collapsedItems.has(menuItem.id))
-      return <Icon.ChevronDownIcon className={`${className} text-gray-500`} />
+      return <Icon.ChevronDownIcon className={`${SIDEMENU_ICON_CLASSNAME} text-gray-500`} />
     else
-      return <Icon.ChevronRightIcon className={`${className} text-gray-500`} />
+      return <Icon.ChevronRightIcon className={`${SIDEMENU_ICON_CLASSNAME} text-gray-500`} />
   }
 
   // ルート集約なら集約ごとのアイコンを表示
@@ -172,19 +203,21 @@ const SideMenuItemIcon = ({ menuItem, collapsedItems }: {
   if (modelType === TYPE_DATA_MODEL) {
     if (menuItem.aggregateTree[0].attributes[ATTR_GENERATE_DEFAULT_QUERY_MODEL] === 'True') {
       // DataModelの場合、QueryModelを生成するのであればQueryModelのアイコンも併記する
-      return <DataAndQueryModelIcon className={className} />
+      return <DataAndQueryModelIcon className={SIDEMENU_ICON_CLASSNAME} />
     } else {
-      return <Icon.CircleStackIcon className={`${className} text-orange-600`} />
+      return <Icon.CircleStackIcon className={`${SIDEMENU_ICON_CLASSNAME} text-orange-600`} />
     }
   }
-  if (modelType === TYPE_QUERY_MODEL) return <Icon.TableCellsIcon className={`${className} text-emerald-600`} />
-  if (modelType === TYPE_COMMAND_MODEL) return <Icon.CommandLineIcon className={`${className} text-sky-600`} />
-  if (modelType === TYPE_STATIC_ENUM_MODEL) return <Icon.ListBulletIcon className={`${className} text-blue-500`} />
-  if (modelType === TYPE_VALUE_OBJECT_MODEL) return <Icon.CubeTransparentIcon className={`${className} text-purple-500`} />
+  if (modelType === TYPE_QUERY_MODEL) return <Icon.TableCellsIcon className={`${SIDEMENU_ICON_CLASSNAME} text-emerald-600`} />
+  if (modelType === TYPE_COMMAND_MODEL) return <Icon.CommandLineIcon className={`${SIDEMENU_ICON_CLASSNAME} text-sky-600`} />
+  if (modelType === TYPE_STATIC_ENUM_MODEL) return <Icon.ListBulletIcon className={`${SIDEMENU_ICON_CLASSNAME} text-blue-500`} />
+  if (modelType === TYPE_VALUE_OBJECT_MODEL) return <Icon.CubeTransparentIcon className={`${SIDEMENU_ICON_CLASSNAME} text-purple-500`} />
 
   // 不明な種類のルート集約
-  return <Icon.QuestionMarkCircleIcon className={`${className} text-gray-500`} />
+  return <Icon.QuestionMarkCircleIcon className={`${SIDEMENU_ICON_CLASSNAME} text-gray-500`} />
 }
+/** サイドメニューのアイコンのクラス名 */
+const SIDEMENU_ICON_CLASSNAME = 'w-4 h-4 min-w-4 min-h-4'
 
 /** DataModelとQueryModelを混ぜたもの */
 export const DataAndQueryModelIcon = ({ className }: { className?: string }) => {
@@ -199,10 +232,13 @@ export const DataAndQueryModelIcon = ({ className }: { className?: string }) => 
 /**
  * サイドメニューの集約要素のラベル
  */
-const SideMenuItemLabel = ({ menuItem, onClick }: { menuItem: SideMenuItem, onClick?: () => void }) => {
+const SideMenuItemLabel = ({ onClick, children }: {
+  onClick?: () => void
+  children: React.ReactNode
+}) => {
   return (
     <div className="flex-1 flex items-center gap-1 text-sm text-gray-600 pl-1 select-none truncate" onClick={onClick}>
-      {menuItem.displayName}
+      {children}
     </div>
   )
 }
