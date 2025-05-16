@@ -67,7 +67,7 @@ export const NijoUiDebugMenu = () => {
   }
 
   return (
-    <div className="p-2 font-sans">
+    <div className="p-2">
       <h2 className="text-xl font-semibold mb-4">デバッグメニュー</h2>
 
       <hr className="border-gray-300 my-2" />

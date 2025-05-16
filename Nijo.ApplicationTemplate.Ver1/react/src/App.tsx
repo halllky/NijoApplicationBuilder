@@ -3,23 +3,29 @@ import * as ReactRouter from 'react-router-dom'
 import MainLayout from "./layout/MainLayout"
 import { getRouter } from './routes'
 import * as Util from './util'
-import { NijoUi } from './debug-rooms/スキーマ定義編集UIの試作/NijoUi'
+import { getNijoUiRoutesForEmbedded } from './debug-rooms/スキーマ定義編集UIの試作'
 
 // Windows Form 埋め込み用のビルドの場合はスキーマ定義編集画面を表示
-const IS_EMBEDDED = import.meta.env.MODE === 'nijo-ui'
+export const IS_EMBEDDED = () => import.meta.env.MODE === 'nijo-ui'
 
 function App() {
   const router = React.useMemo(() => {
-    return ReactRouter.createBrowserRouter([{
-      path: "/",
-      element: (
-        <ContextProviders>
-          {IS_EMBEDDED && <NijoUi />}
-          {!IS_EMBEDDED && <MainLayout />}
-        </ContextProviders>
-      ),
-      children: getRouter(),
-    }])
+    if (!IS_EMBEDDED()) {
+      // 通常の自動生成されたアプリケーションの動作確認
+      return ReactRouter.createBrowserRouter([{
+        path: "/",
+        element: (
+          <ContextProviders>
+            <MainLayout />
+          </ContextProviders>
+        ),
+        children: getRouter(),
+      }])
+
+    } else {
+      // Windows Form 埋め込み用のビルド
+      return ReactRouter.createBrowserRouter(getNijoUiRoutesForEmbedded())
+    }
   }, [])
 
   return (
@@ -28,7 +34,7 @@ function App() {
 }
 
 /** 各種コンテキストプロバイダー */
-const ContextProviders = ({ children }: { children: React.ReactNode }) => {
+export const ContextProviders = ({ children }: { children: React.ReactNode }) => {
   return (
     <Util.IMEProvider>
       {children}

@@ -3,6 +3,7 @@ import { RouteObjectWithSideMenuSetting } from "../../routes";
 import { Outlet } from "react-router-dom";
 import { NijoUi, NijoUiMainContent } from "./NijoUi";
 import { NijoUiDebugMenu } from "./NijoUiDebugMenu";
+import { ContextProviders } from "../../App";
 
 const SchemaDefinitionEditUI = () => {
   return (
@@ -54,7 +55,7 @@ export const getNavigationUrl = (arg?
 }
 
 /** ルーティングパス */
-export const getNijoUiRoutes = (): RouteObjectWithSideMenuSetting[] => {
+export const getNijoUiRoutesForDebug = (): RouteObjectWithSideMenuSetting[] => {
   return [{
     path: '/nijo-ui',
     element: <SchemaDefinitionEditUI />,
@@ -71,6 +72,27 @@ export const getNijoUiRoutes = (): RouteObjectWithSideMenuSetting[] => {
         path: 'debug-menu',
         element: <NijoUiDebugMenu />,
       }],
+    }]
+  }]
+}
+
+export const getNijoUiRoutesForEmbedded = (): RouteObjectWithSideMenuSetting[] => {
+  return [{
+    path: '/nijo-ui',
+    element: (
+      <ContextProviders>
+        <NijoUi className="w-full h-full border border-gray-500" />
+      </ContextProviders>
+    ),
+    children: [{
+      index: true,
+      element: <NijoUiMainContent />,
+    }, {
+      path: `:aggregateId`,
+      element: <NijoUiMainContent />,
+    }, {
+      path: 'debug-menu',
+      element: <NijoUiDebugMenu />,
     }]
   }]
 }

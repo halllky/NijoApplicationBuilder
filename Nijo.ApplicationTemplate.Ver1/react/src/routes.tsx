@@ -3,8 +3,9 @@ import * as ReactRouter from "react-router-dom"
 import { Home } from "./pages/Home"
 import getQueryModelRoutes from "./pages"
 import { getExamplePagesRoutes } from "./examples"
-import { getNijoUiRoutes } from "./debug-rooms/スキーマ定義編集UIの試作"
+import { getNijoUiRoutesForDebug } from "./debug-rooms/スキーマ定義編集UIの試作"
 import { getReflectionPages } from "./pages-reflection"
+import { IS_EMBEDDED } from "./App"
 
 /** RouteObject に sideMenuLabel を追加した型 */
 export type RouteObjectWithSideMenuSetting = ReactRouter.RouteObject & {
@@ -26,7 +27,9 @@ export const getRouter = (): RouteObjectWithSideMenuSetting[] => {
   }
 
   // XMLスキーマ定義編集UI
-  pages.push(...getNijoUiRoutes())
+  if (import.meta.env.DEV && !IS_EMBEDDED()) {
+    pages.push(...getNijoUiRoutesForDebug())
+  }
 
   // // QueryModelの各種画面
   // pages.push(...getQueryModelRoutes())

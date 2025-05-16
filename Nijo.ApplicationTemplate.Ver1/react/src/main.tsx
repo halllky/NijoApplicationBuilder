@@ -1,10 +1,10 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import App from './App.tsx'
+import App, { IS_EMBEDDED } from './App.tsx'
 
 // CSSの読み込み
 import './App.css'
-if (import.meta.env.mode === 'nijo-ui') {
+if (IS_EMBEDDED()) {
   import('./App.NijoUi.css')
 } else {
   import('./App.ReflectionPage.css')
