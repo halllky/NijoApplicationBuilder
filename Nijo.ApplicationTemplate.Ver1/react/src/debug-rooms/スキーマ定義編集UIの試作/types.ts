@@ -187,3 +187,20 @@ export const asTree = (flat: XmlElementItem[]) => {
     },
   }
 }
+
+/**
+ * デバッグプロセスの状態。
+ * このクラスのデータ構造はC#側と合わせる必要あり
+ */
+export type DebugProcessState = {
+  /** 現在実行中のNijoApplicationBuilderのNode.jsのデバッグプロセスと推測されるPID */
+  estimatedPidOfNodeJs?: number
+  /** 現在実行中のNijoApplicationBuilderのASP.NET Coreのデバッグプロセスと推測されるPID */
+  estimatedPidOfAspNetCore?: number
+  /** Node.jsのデバッグURL */
+  nodeJsDebugUrl?: string
+  /** ASP.NET CoreのデバッグURL（swagger-ui） */
+  aspNetCoreDebugUrl?: string
+  /** PID推測時のコンソール出力 */
+  consoleOut?: string
+};

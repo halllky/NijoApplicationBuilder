@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -124,5 +125,20 @@ public static class ProcessExtension {
         } catch (Exception ex) {
             return $"Failed to task kill (PID = {pid}): {ex.Message}";
         }
+    }
+
+    /// <summary>
+    /// .cmd ファイルを、文字コードや行末処理を加えたうえで出力する。
+    /// 特にdotnetコマンド（暗黙的にutf8で実行される）を呼び出す状況を考慮している。
+    /// </summary>
+    /// <param name="cmdFilePath">ファイルパス</param>
+    /// <param name="cmdFileContent">ファイルの内容</param>
+    /// <param name="fileEncoding">エンコード。既定ではBOMなしUTF8</param>
+    public static void RenderCmdFile(string cmdFilePath, string cmdFileContent, Encoding? fileEncoding = null) {
+        File.WriteAllText(
+            cmdFilePath,
+            // cmd処理中にchcpしたときは各行の改行コードの前にスペースが無いと上手く動かないので
+            cmdFileContent.ReplaceLineEndings(" \r\n"),
+            fileEncoding ?? new UTF8Encoding(false, false));
     }
 }

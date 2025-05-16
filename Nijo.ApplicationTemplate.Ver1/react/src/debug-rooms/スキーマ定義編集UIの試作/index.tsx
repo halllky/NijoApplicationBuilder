@@ -27,11 +27,15 @@ const SchemaDefinitionEditUI = () => {
           デバッグ時は、「npm run dev」と「nijo.exe run-ui-service」を並行して実行する。
         </li>
       </ul>
-      <div className="flex-1 p-8 overflow-hidden">
+      <div className="flex-1 p-8 overflow-hidden" style={FONT_FAMILY}>
         <Outlet />
       </div>
     </PageFrame>
   )
+}
+
+const FONT_FAMILY: React.CSSProperties = {
+  fontFamily: '"Noto Sans JP", "BIZ UDGothic", sans-serif'
 }
 
 // ----------------------------

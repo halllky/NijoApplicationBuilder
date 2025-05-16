@@ -12,7 +12,7 @@ import { AttrDefsProvider } from "./useAttrDefs"
 import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS } from "."
 import { Outlet, useOutletContext } from "react-router-dom"
 
-const SERVER_DOMAIN = import.meta.env.DEV
+export const SERVER_DOMAIN = import.meta.env.DEV
   ? 'https://localhost:8081'
   : ''
 

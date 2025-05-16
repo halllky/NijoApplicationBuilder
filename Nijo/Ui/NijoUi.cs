@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
@@ -32,6 +33,12 @@ public class NijoUi {
     /// </summary>
     public WebApplication BuildWebApplication(ILogger logger) {
         var builder = WebApplication.CreateBuilder();
+
+        // JSONオプション
+        builder.Services.ConfigureHttpJsonOptions(options => {
+            options.SerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+            options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        });
 
         // React側のデバッグのためにポートが異なっていてもアクセスできるようにする
         const string CORS_POLICY_NAME = "AllowAll";
@@ -148,6 +155,9 @@ public class NijoUi {
                 await context.Response.WriteAsJsonAsync(new[] { ex.Message });
             }
         });
+
+        // デバッグ用ツール
+        new DebugTools(_project).ConfigureWebApplication(app);
 
         // 上位のいずれにも該当しないエンドポイントへのリクエストはReact画面にリダイレクト
         app.MapGet("/{*path}", context => {

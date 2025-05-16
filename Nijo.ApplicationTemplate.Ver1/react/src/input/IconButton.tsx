@@ -15,6 +15,8 @@ export const IconButton = (args: {
   underline?: boolean
   /** ちょっと小さめになります。 */
   mini?: boolean
+  /** ボタンを無効にします。 */
+  disabled?: boolean
   /** 読み込み中であることを示すインジケーターが表示されます。 */
   loading?: boolean
   /** テキストを非表示にし、アイコンだけを表示します。 */
@@ -54,7 +56,7 @@ export const IconButton = (args: {
     //   ? ` text-color-0 bg-color-button-loading`
     //   : ` text-color-0 bg-color-button`
   } else if (args.outline) {
-    className += args.loading
+    className += args.loading || args.disabled
       ? ' button-style-outline-loading'
       : ' button-style-outline'
 
@@ -62,7 +64,7 @@ export const IconButton = (args: {
     //   ? ` border border-color-5 text-color-5`
     //   : ` border border-color-7`
   } else if (args.underline) {
-    className += args.loading
+    className += args.loading || args.disabled
       ? ' button-style-link-loading'
       : ' button-style-link'
 
@@ -70,7 +72,7 @@ export const IconButton = (args: {
     //   ? ` pr-1 text-sky-300 border-b border-sky-300`
     //   : ` pr-1 text-sky-600 border-b border-sky-600`
   } else {
-    className += args.loading
+    className += args.loading || args.disabled
       ? ' button-style-text-loading'
       : ' button-style-text'
   }
