@@ -11,14 +11,21 @@ namespace Nijo.Util.DotnetEx;
 public static class ProcessExtension {
 
     /// <summary>
+    /// 標準出力か標準エラー出力かの別
+    /// </summary>
+    public enum E_STD {
+        StdOut,
+        StdErr,
+    }
+
+    /// <summary>
     /// Process.Startのラッパーメソッド
     /// </summary>
-    /// <param name="logName">ログ出力名</param>
     /// <param name="editStartInfo">StartInfoをカスタマイズする</param>
-    /// <param name="logOut">ログ</param>
+    /// <param name="logOut">標準出力 or 標準エラー出力</param>
     /// <param name="timeout">タイムアウト。既定は30秒</param>
     /// <returns>EXIT CODE</returns>
-    public static async Task<int> ExecuteProcessAsync(string logName, Action<ProcessStartInfo> editStartInfo, Action<string> logOut, TimeSpan? timeout = null) {
+    public static async Task<int> ExecuteProcessAsync(Action<ProcessStartInfo> editStartInfo, Action<E_STD, string> logOut, TimeSpan? timeout = null) {
         using var process = new Process();
         process.StartInfo.UseShellExecute = false;
         process.StartInfo.CreateNoWindow = true;
@@ -31,33 +38,31 @@ public static class ProcessExtension {
         process.OutputDataReceived += (sender, e) => {
             try {
                 if (e.Data != null) {
-                    logOut($"[{logName} stdout] {e.Data}");
+                    logOut(E_STD.StdOut, e.Data);
                 } else {
-                    logOut($"[{logName} event] OutputDataReceived: Stream closed (Data is null).");
+                    logOut(E_STD.StdOut, $"OutputDataReceived: Stream closed (Data is null).");
                 }
             } catch (InvalidOperationException ioex) {
                 // プロセス終了時などにストリームが閉じられてこの例外が発生することがあるため、無視する
-                logOut($"[{logName} event] Caught InvalidOperationException in OutputDataReceived (likely harmless): {ioex.Message}");
+                logOut(E_STD.StdOut, $"Caught InvalidOperationException in OutputDataReceived (likely harmless): {ioex.Message}");
             } catch (Exception ex) {
-                logOut($"[{logName} event] EXCEPTION in OutputDataReceived: {ex.ToString()}");
+                logOut(E_STD.StdOut, $"EXCEPTION in OutputDataReceived: {ex.ToString()}");
             }
         };
         process.ErrorDataReceived += (sender, e) => {
             try {
                 if (e.Data != null) {
-                    logOut($"[{logName} stderr] {e.Data}");
+                    logOut(E_STD.StdErr, e.Data);
                 } else {
-                    logOut($"[{logName} event] ErrorDataReceived: Stream closed (Data is null).");
+                    logOut(E_STD.StdErr, $"ErrorDataReceived: Stream closed (Data is null).");
                 }
             } catch (InvalidOperationException ioex) {
                 // プロセス終了時などにストリームが閉じられてこの例外が発生することがあるため、ログのみ出力して無視する
-                logOut($"[{logName} event] Caught InvalidOperationException in ErrorDataReceived (likely harmless): {ioex.Message}");
+                logOut(E_STD.StdErr, $"Caught InvalidOperationException in ErrorDataReceived (likely harmless): {ioex.Message}");
             } catch (Exception ex) {
-                logOut($"[{logName} event] EXCEPTION in ErrorDataReceived: {ex.ToString()}");
+                logOut(E_STD.StdErr, $"EXCEPTION in ErrorDataReceived: {ex.ToString()}");
             }
         };
-
-        logOut($"[{logName}] 開始");
 
         process.Start();
 
@@ -66,14 +71,12 @@ public static class ProcessExtension {
         var timeoutLimit = DateTime.Now.Add(timeout ?? TimeSpan.FromSeconds(30));
         while (true) {
             if (DateTime.Now > timeoutLimit) {
-                logOut($"[{logName}] プロセスがタイムアウトしました。");
                 EnsureKill(process);
                 process.CancelOutputRead();
                 process.CancelErrorRead();
-                return 1;
+                throw new TimeoutException();
 
             } else if (process.HasExited) {
-                logOut($"[{logName}] 終了（終了コード: {process.ExitCode}）");
                 process.CancelOutputRead();
                 process.CancelErrorRead();
                 return process.ExitCode;
