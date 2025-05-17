@@ -90,7 +90,13 @@ export const MultiView = ({ rootAggregatePhysicalName, metadata, schema }: {
         <Panel collapsible minSize={8}>
           <form onSubmit={form.handleSubmit(executeSearch)} className="h-full overflow-y-auto p-4">
             <Layout.VForm2.LabelText>検索条件</Layout.VForm2.LabelText>
-            <ReflectionForm metadata={metadata} schema={schema} formMethods={form as unknown as ReactHookForm.UseFormReturn<ReactHookForm.FieldValues>} />
+            <ReflectionForm
+              mode="search-condition"
+              metadataPhysicalName={rootAggregatePhysicalName}
+              metadata={metadata}
+              schema={schema}
+              formMethods={form as unknown as ReactHookForm.UseFormReturn<ReactHookForm.FieldValues>}
+            />
           </form>
         </Panel>
 

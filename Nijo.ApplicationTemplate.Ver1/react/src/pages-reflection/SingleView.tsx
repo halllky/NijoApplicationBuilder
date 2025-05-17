@@ -7,7 +7,8 @@ import { MetadataSchema } from "./getSchema"
 import { ReflectionForm } from "./Parts.Form"
 
 /** QueryModel1件の詳細を閲覧・編集する画面 */
-export const SingleView = ({ metadata, schema }: {
+export const SingleView = ({ rootAggregatePhysicalName, metadata, schema }: {
+  rootAggregatePhysicalName: string
   metadata: MetadataForPage.StructureMetadata
   schema: MetadataSchema
 }) => {
@@ -24,7 +25,13 @@ export const SingleView = ({ metadata, schema }: {
       )}
       className="p-4"
     >
-      <ReflectionForm metadata={metadata} schema={schema} formMethods={form} />
+      <ReflectionForm
+        mode="single-view"
+        metadataPhysicalName={rootAggregatePhysicalName}
+        metadata={metadata}
+        schema={schema}
+        formMethods={form}
+      />
     </Layout.PageFrame>
   )
 }

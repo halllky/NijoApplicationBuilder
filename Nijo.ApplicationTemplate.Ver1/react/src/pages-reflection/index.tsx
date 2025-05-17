@@ -24,6 +24,7 @@ export const getReflectionPages = (): RouteObjectWithSideMenuSetting[] => {
     // ルート集約と対応する詳細画面
     const singleView = (
       <SingleView
+        rootAggregatePhysicalName={rootAggregatePhysicalName}
         metadata={structureMetadata}
         schema={schema}
       />

@@ -11,7 +11,7 @@ const SchemaDefinitionEditUI = () => {
       headerContent={(
         <PageFrameTitle>スキーマ定義編集UI</PageFrameTitle>
       )}
-      className="flex flex-col"
+      className="flex flex-col relative"
     >
       <ul className="p-1 text-xs text-gray-600 list-inside list-disc">
         <li>

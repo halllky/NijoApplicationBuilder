@@ -6,7 +6,7 @@ import { MetadataSchema } from "./getSchema"
 /** Form内部でのみ使用するコンテキスト */
 export type ReflectionFormContext = {
   rootAggregate: QueryModelType
-  as: "single-view" | "search-condition"
+  mode: "single-view" | "search-condition"
   schema: MetadataSchema
   formMethods: ReactHookForm.UseFormReturn<ReactHookForm.FieldValues>
 }

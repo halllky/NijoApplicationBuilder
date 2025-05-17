@@ -14,6 +14,7 @@ export type SearchDialogComponent = () => React.ReactNode
  */
 export const createSearchDialogContents = (
   metadata: MetadataForPage.RefMetadata,
+  rootAggregatePhysicalName: string,
   schema: MetadataSchema,
   formMethods: ReactHookForm.UseFormReturn<ReactHookForm.FieldValues>
 ): SearchDialogComponent => {
@@ -27,7 +28,13 @@ export const createSearchDialogContents = (
       <PanelGroup direction="vertical">
         <Panel collapsible minSize={8}>
           <div className="h-full overflow-y-auto">
-            <ReflectionForm metadata={refToAggregateMetadata} schema={schema} formMethods={formMethods} />
+            <ReflectionForm
+              mode="search-condition"
+              metadataPhysicalName={rootAggregatePhysicalName}
+              metadata={refToAggregateMetadata}
+              schema={schema}
+              formMethods={formMethods}
+            />
           </div>
         </Panel>
 
