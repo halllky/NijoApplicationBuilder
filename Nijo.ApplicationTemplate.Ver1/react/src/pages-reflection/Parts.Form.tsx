@@ -226,11 +226,15 @@ const MemberComponent = ({ physicalName, member, ancestorsPath }: {
           <Input.CheckBox
             control={control}
             name={`${ancestorsPath}.${physicalName}.Trueのみ`}
-          />
+          >
+            Trueのみ
+          </Input.CheckBox>
           <Input.CheckBox
             control={control}
             name={`${ancestorsPath}.${physicalName}.Falseのみ`}
-          />
+          >
+            Falseのみ
+          </Input.CheckBox>
         </Layout.VForm2.Item>
       )
     }

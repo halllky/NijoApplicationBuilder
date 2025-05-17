@@ -20,8 +20,8 @@ internal class YearMonthMember : IValueMemberType {
     string IValueMemberType.TypePhysicalName => "YearMonth";
     string IValueMemberType.SchemaTypeName => "yearmonth";
     string IValueMemberType.CsDomainTypeName => "YearMonth";
-    string IValueMemberType.CsPrimitiveTypeName => "int";
-    string IValueMemberType.TsTypeName => "number";
+    string IValueMemberType.CsPrimitiveTypeName => "int"; // DBには yyyymm の6桁で保存する
+    string IValueMemberType.TsTypeName => "string"; // TypeScriptでは yyyy/mm で扱う
     UiConstraint.E_Type IValueMemberType.UiConstraintType => UiConstraint.E_Type.NumberMemberConstraint;
     string IValueMemberType.DisplayName => "年月型";
 
@@ -38,7 +38,9 @@ internal class YearMonthMember : IValueMemberType {
     };
 
     void IValueMemberType.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {
-        // 特になし
+        // JSONシリアライズの登録
+        ctx.Use<Parts.CSharp.JsonUtil>().AddConverterClass($"new YearMonth.YearMonthJsonConverter()");
+
     }
 
     string IValueMemberType.RenderCreateDummyDataValueBody(CodeRenderingContext ctx) {
@@ -261,7 +263,7 @@ internal class YearMonthMember : IValueMemberType {
                         }
 
                         public override void Write(Utf8JsonWriter writer, YearMonth value, JsonSerializerOptions options) {
-                            writer.WriteNumberValue(value.Value);
+                            writer.WriteStringValue($"{value.Year:0000}/{value.Month:00}");
                         }
                     }
                 }

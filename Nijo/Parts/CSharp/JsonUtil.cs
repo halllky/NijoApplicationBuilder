@@ -11,7 +11,7 @@ namespace Nijo.Parts.CSharp {
     /// <summary>
     /// C#側の既定のJSONシリアライズ設定に関する各種処理
     /// </summary>
-    internal class JsonUtil : IMultiAggregateSourceFile {
+    public class JsonUtil : IMultiAggregateSourceFile {
 
         /// <summary>
         /// 値オブジェクトの変換処理の登録
@@ -21,6 +21,16 @@ namespace Nijo.Parts.CSharp {
             return this;
         }
         private readonly List<RootAggregate> _valueObjectRootAggregates = [];
+
+        /// <summary>
+        /// JSONシリアライズクラスの登録
+        /// </summary>
+        /// <param name="newStatement">「new クラス名()」の文字列</param>
+        public JsonUtil AddConverterClass(string newStatement) {
+            _converterClasses.Add(newStatement);
+            return this;
+        }
+        private readonly List<string> _converterClasses = [];
 
         void IMultiAggregateSourceFile.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {
             // 特になし
@@ -64,6 +74,11 @@ namespace Nijo.Parts.CSharp {
                             // ValueObjectのJSONシリアライズ登録
                     {{_valueObjectRootAggregates.SelectTextTemplate(agg => $$"""
                             option.Converters.Add(new {{agg.PhysicalName}}.{{ValueObjectModel.JSON_CONVERTER_NAME}}());
+                    """)}}
+
+                            // 追加のJSONシリアライズクラスの登録
+                    {{_converterClasses.SelectTextTemplate(stmt => $$"""
+                            option.Converters.Add({{stmt}});
                     """)}}
 
                             return option;

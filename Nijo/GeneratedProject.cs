@@ -162,6 +162,10 @@ namespace Nijo {
                     handled.Add(src);
                 }
             }
+            // ValueMemberTypeについても同様に依存関係の登録を行う
+            foreach (var vmType in parseContext.GetValueMemberTypes()) {
+                vmType.RegisterDependencies(ctx);
+            }
 
             // スキーマ定義にかかわらず必ず生成されるモジュールの登録
             ctx.Use<ApplicationService>();
