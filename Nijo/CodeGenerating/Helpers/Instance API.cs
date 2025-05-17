@@ -286,6 +286,8 @@ public static partial class CodeGeneratingHelperExtensions {
             if (!previousIsArray && currentIsArray) {
                 previousIsArray = true;
             }
+
+            previous = current;
         }
         return path.ToString();
     }

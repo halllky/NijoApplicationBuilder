@@ -259,18 +259,20 @@ namespace Nijo.Models.DataModelModules {
                 .ToDictionary(x => x.Metadata.SchemaPathNode.ToMappingKey());
 
             for (int i = 0; i < descendantDbEntities.Length; i++) {
-                var tempBefore = $"before{descendantDbEntities[i].PhysicalName}_{i}";
-                var tempAfter = $"after{descendantDbEntities[i].PhysicalName}_{i}";
+                var descAggregate = descendantDbEntities[i];
+                var descDbEntity = new EFCoreEntity(descAggregate);
+                var tempBefore = $"before{descAggregate.PhysicalName}_{i}";
+                var tempAfter = $"after{descAggregate.PhysicalName}_{i}";
 
                 // ChangeState変更。Child型の場合は、オプショナル（親テーブル1に対しChildは0または1）の考慮を行う。
                 // 1. 子テーブルが元々存在し、更新後も存在する場合 → UPDATE
                 // 2. 子テーブルが元々存在せず、更新後に存在する場合 → INSERT
                 // 3. 子テーブルが元々存在するが、更新後に存在しない場合 → DELETE
-                var arrayPath = variablePathInfo[descendantDbEntities[i].ToMappingKey()].GetFlattenArrayPath(E_CsTs.CSharp, out var isMany);
+                var arrayPath = variablePathInfo[descAggregate.ToMappingKey()].GetFlattenArrayPath(E_CsTs.CSharp, out var isMany);
                 if (isMany) {
                     yield return $$"""
-                        var {{tempBefore}} = beforeDbEntity.{{arrayPath.Join("?.")}} ?? [];
-                        var {{tempAfter}} = afterDbEntity.{{arrayPath.Join("?.")}} ?? [];
+                        var {{tempBefore}} = beforeDbEntity.{{arrayPath.Join("?.")}}?.OfType<{{descDbEntity.CsClassName}}>() ?? [];
+                        var {{tempAfter}} = afterDbEntity.{{arrayPath.Join("?.")}}?.OfType<{{descDbEntity.CsClassName}}>() ?? [];
                         foreach (var a in {{tempAfter}}) {
                             var b = {{tempBefore}}.SingleOrDefault(b => b.{{EFCoreEntity.KEYEQUALS}}(a));
                             if (b == null) {
@@ -318,11 +320,13 @@ namespace Nijo.Models.DataModelModules {
                 .ToDictionary(x => x.Metadata.SchemaPathNode.ToMappingKey());
 
             for (int i = 0; i < descendantDbEntities.Length; i++) {
-                var temp = $"after{descendantDbEntities[i].PhysicalName}_{i}";
-                var arrayPath = variablePathInfo[descendantDbEntities[i].ToMappingKey()].GetFlattenArrayPath(E_CsTs.CSharp, out var isMany);
+                var descAggregate = descendantDbEntities[i];
+                var descDbEntity = new EFCoreEntity(descAggregate);
+                var temp = $"after{descAggregate.PhysicalName}_{i}";
+                var arrayPath = variablePathInfo[descAggregate.ToMappingKey()].GetFlattenArrayPath(E_CsTs.CSharp, out var isMany);
                 if (isMany) {
                     yield return $$"""
-                        var {{temp}} = {{rootEntityName}}.{{arrayPath.Join("?.")}} ?? [];
+                        var {{temp}} = {{rootEntityName}}.{{arrayPath.Join("?.")}}?.OfType<{{descDbEntity.CsClassName}}>() ?? [];
                         foreach (var a in {{temp}}) {
                             DbContext.Entry(a).State = EntityState.Detached;
                         }

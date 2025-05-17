@@ -46,14 +46,14 @@ internal class ValueObjectMember : IValueMemberType {
         RenderFiltering = ctx => {
             var query = ctx.Query.Root.Name;
             var fullpathNullable = ctx.SearchCondition.GetJoinedPathFromInstance(E_CsTs.CSharp, "?.");
-            var fullpathNotNull = ctx.SearchCondition.GetJoinedPathFromInstance(E_CsTs.CSharp, ".");
+            var fullpathNotNull = ctx.SearchCondition.GetJoinedPathFromInstance(E_CsTs.CSharp, "!.");
 
             var queryFullPath = ctx.Query.GetFlattenArrayPath(E_CsTs.CSharp, out var isMany);
             var queryOwnerFullPath = queryFullPath.SkipLast(1);
 
             return $$"""
                 if (!string.IsNullOrWhiteSpace({{fullpathNullable}})) {
-                    var trimmed = {{fullpathNotNull}}.Trim();
+                    var trimmed = {{fullpathNotNull}}!.Trim();
                 {{If(isMany, () => $$"""
                     {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join("!.")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}}!.Contains(trimmed)));
                 """).Else(() => $$"""

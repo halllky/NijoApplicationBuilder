@@ -606,8 +606,8 @@ namespace Nijo.Models.DataModelModules {
                     var nav = new NavigationOfParentChild(parent, child);
 
                     yield return i == 0
-                        ? $".Include(e => e.{nav.Principal.OtherSidePhysicalName})"      // クエリのエンティティ直下の場合はInclude
-                        : $".ThenInclude(e => e.{nav.Principal.OtherSidePhysicalName})"; // クエリのエンティティ直下でない場合はThenInclude
+                        ? $".Include(e => e!.{nav.Principal.OtherSidePhysicalName})"      // クエリのエンティティ直下の場合はInclude
+                        : $".ThenInclude(e => e!.{nav.Principal.OtherSidePhysicalName})"; // クエリのエンティティ直下でない場合はThenInclude
                 }
             }
         }
