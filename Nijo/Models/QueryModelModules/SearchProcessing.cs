@@ -239,6 +239,7 @@ namespace Nijo.Models.QueryModelModules {
                 protected virtual IQueryable<{{searchResult.CsClassName}}> {{CREATE_QUERY_SOURCE}}({{searchCondition.CsClassName}} searchCondition, {{PresentationContext.INTERFACE}}<{{searchConditionMessage.CsClassName}}> context) {
                     return this.DbContext.{{efCoreEntity.DbSetName}}.Select({{e.Name}} => new {{searchResult.CsClassName}} {
                         {{WithIndent(RenderMembers(newObject, rightMembers), "        ")}}
+                        {{SearchResult.VERSION}} = (int){{e.Name}}.{{DataModelModules.EFCoreEntity.VERSION}}!,
                     });
                 }
                 """;
