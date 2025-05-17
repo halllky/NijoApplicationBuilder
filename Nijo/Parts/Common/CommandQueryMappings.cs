@@ -170,7 +170,7 @@ namespace Nijo.Parts.Common {
                     export type {{REFERED_QUERY_MODEL_TYPE}}
                     {{If(referedRefEntires.Values.SelectMany(x => x).Any(), () => $$"""
                     {{referedRefEntires.Values.SelectMany(x => x).SelectTextTemplate((refEntry, i) => $$"""
-                      {{(i == 0 ? "=" : "|")}} '{{refEntry.Aggregate.PhysicalName}}'
+                      {{(i == 0 ? "=" : "|")}} '{{refEntry.Aggregate.RefEntryName}}'
                     """)}}
                     """).Else(() => $$"""
                       = never
@@ -257,25 +257,25 @@ namespace Nijo.Parts.Common {
                       /** RefTarget型一覧 */
                       export interface TypeMap {
                     {{referedRefEntires.Values.SelectMany(x => x).SelectTextTemplate(refEntry => $$"""
-                        '{{refEntry.Aggregate.PhysicalName}}': {{refEntry.TsTypeName}}
+                        '{{refEntry.Aggregate.RefEntryName}}': {{refEntry.TsTypeName}}
                     """)}}
                       }
                       /** RefTarget新規作成関数 */
                       export const create: { [K in {{REFERED_QUERY_MODEL_TYPE}}]: (() => TypeMap[K]) } = {
                     {{referedRefEntires.Values.SelectMany(x => x).SelectTextTemplate(refEntry => $$"""
-                        '{{refEntry.Aggregate.PhysicalName}}': {{refEntry.TsNewObjectFunction}},
+                        '{{refEntry.Aggregate.RefEntryName}}': {{refEntry.TsNewObjectFunction}},
                     """)}}
                       }
                       /** 主キーの抽出関数 */
                       export const extractKeys: { [K in {{REFERED_QUERY_MODEL_TYPE}}]: ((data: TypeMap[K]) => unknown[]) } = {
                     {{referedRefEntires.Values.SelectMany(x => x).SelectTextTemplate(refEntry => $$"""
-                        '{{refEntry.Aggregate.PhysicalName}}': {{refEntry.PkExtractFunctionName}},
+                        '{{refEntry.Aggregate.RefEntryName}}': {{refEntry.PkExtractFunctionName}},
                     """)}}
                       }
                       /** 主キーの設定関数 */
                       export const assignKeys: { [K in {{REFERED_QUERY_MODEL_TYPE}}]: ((data: TypeMap[K], keys: unknown[]) => void) } = {
                     {{referedRefEntires.Values.SelectMany(x => x).SelectTextTemplate(refEntry => $$"""
-                        '{{refEntry.Aggregate.PhysicalName}}': {{refEntry.PkAssignFunctionName}} as (data: {{refEntry.TsTypeName}}, keys: unknown[]) => void,
+                        '{{refEntry.Aggregate.RefEntryName}}': {{refEntry.PkAssignFunctionName}} as (data: {{refEntry.TsTypeName}}, keys: unknown[]) => void,
                     """)}}
                       }
                     }

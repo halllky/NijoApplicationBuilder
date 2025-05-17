@@ -39,7 +39,7 @@ internal class MetadataForPage : IMultiAggregateSourceFile {
             FileName = "metadata-for-page.ts",
             Contents = $$"""
 
-                import { {{CommandQueryMappings.QUERY_MODEL_TYPE}} } from ".."
+                import { {{CommandQueryMappings.QUERY_MODEL_TYPE}}, {{CommandQueryMappings.REFERED_QUERY_MODEL_TYPE}} } from ".."
                 import * as EnumDefs from "../enum-defs"
 
                 /** 画面の自動生成のためのメタデータ */
@@ -234,14 +234,11 @@ internal class MetadataForPage : IMultiAggregateSourceFile {
 
         string ITypeScriptModule.Render(CodeRenderingContext ctx) {
 
-            // 参照先のパスはルート集約から
-            var path = _refTo.RefTo.EnumerateThisAndAncestors().Select(agg => agg.PhysicalName).Join("/");
-
             return $$"""
                 '{{_refTo.PhysicalName}}': {
                   displayName: '{{_refTo.DisplayName.Replace("\'", "\\\'")}}',
                   type: 'ref-to',
-                  refTo: '{{path}}',
+                  refTo: '{{_refTo.RefTo.RefEntryName}}',
                 {{If(_refTo.IsKey, () => $$"""
                   isKey: true,
                 """)}}
@@ -263,7 +260,7 @@ internal class MetadataForPage : IMultiAggregateSourceFile {
                   /** 型 */
                   type: 'ref-to'
                   /** 参照先。参照先が子孫集約の場合はルート集約からのパスのスラッシュ区切り */
-                  refTo: string
+                  refTo: {{CommandQueryMappings.REFERED_QUERY_MODEL_TYPE}}
                   /** キーか否か */
                   isKey?: boolean
                   /** 必須か否か */

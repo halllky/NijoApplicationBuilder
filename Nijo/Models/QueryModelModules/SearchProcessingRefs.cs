@@ -37,7 +37,7 @@ namespace Nijo.Models.QueryModelModules {
                 var searchProcess = new SearchProcessingRefs(rootAggregate);
 
                 return new {
-                    EscapedPhysicalName = refEntry.Aggregate.PhysicalName.Replace("'", "\\'"),
+                    EscapedPhysicalName = refEntry.Aggregate.RefEntryName,
                     Endpoint = controller.GetActionNameForClient(searchProcess.ControllerActionLoad),
                     ParamType = searchCondition.TsTypeName,
                     ReturnType = $"Util.{SearchProcessingReturn.TYPE_TS}<{refEntry.TsTypeName}>",

@@ -45,6 +45,12 @@ namespace Nijo.ImmutableSchema {
         public string LatinName => _ctx.GetLatinName(_xElement);
 
         /// <summary>
+        /// この集約が参照先エントリーとして参照された場合の名前。
+        /// スキーマ定義xmlのType属性の表記と一致しているとメタデータを使った処理が書きやすくて嬉しいので合わせている。
+        /// </summary>
+        public string RefEntryName => $"ref-to:{EnumerateThisAndAncestors().Select(a => a.PhysicalName).Join("/")}";
+
+        /// <summary>
         /// この集約が持つメンバーを列挙します。
         /// <list type="bullet">
         /// <item>親: 列挙しません。</item>
