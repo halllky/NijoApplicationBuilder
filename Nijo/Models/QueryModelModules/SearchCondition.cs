@@ -195,6 +195,31 @@ namespace Nijo.Models.QueryModelModules {
                     """;
             }
             #endregion TypeScript側のオブジェクト新規作成関数
+
+
+            #region 主キーアサイン関数
+            internal string PkAssignFunctionName => $"assign{_entryAggregate.PhysicalName}SearchConditionKeys";
+            internal string RenderPkAssignFunction() {
+                var keys = _entryAggregate.GetKeyVMs().ToArray();
+                var dataProperties = new Variable("obj", this)
+                    .Create1To1PropertiesRecursively()
+                    .ToDictionary(p => p.Metadata.SchemaPathNode.ToMappingKey());
+
+                return $$"""
+                    /** {{_entryAggregate.DisplayName}}の主キーを設定します。 */
+                    export const {{PkAssignFunctionName}} = (obj: {{TsTypeName}}, keys: [{{keys.Select(k => $"{k.PhysicalName}: {k.Type.TsTypeName} | undefined").Join(", ")}}]) => {
+                      if (keys.length !== {{keys.Length}}) {
+                        console.error(`主キーの数が一致しません。個数は{{keys.Length}}であるべきところ${keys.length}個です。`);
+                        return
+                      }
+                    {{keys.SelectTextTemplate((k, i) => $$"""
+                      {{dataProperties[k.ToMappingKey()].GetJoinedPathFromInstance(E_CsTs.TypeScript, ".")}} = keys[{{i}}]
+                    """)}}
+                    }
+                    """;
+            }
+
+            #endregion 主キーアサイン関数
         }
 
 

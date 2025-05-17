@@ -114,6 +114,7 @@ namespace Nijo.Parts.Common {
                 var modules = new List<string> {
                     searchCondition.TsTypeName,
                     searchCondition.TsNewObjectFunction,
+                    searchCondition.PkAssignFunctionName,
                     displayData.TsTypeName,
                     displayData.TsNewObjectFunction,
                     displayData.PkExtractFunctionName,
@@ -295,6 +296,12 @@ namespace Nijo.Parts.Common {
                       export const create: { [K in {{QUERY_MODEL_TYPE}}]: (() => TypeMap[K]) } = {
                     {{_queryModels.SelectTextTemplate(agg => $$"""
                         '{{agg.PhysicalName}}': {{new SearchCondition.Entry(agg).TsNewObjectFunction}},
+                    """)}}
+                      }
+                      /** 主キー項目設定関数 */
+                      export const assignKeys: { [K in {{QUERY_MODEL_TYPE}}]: ((data: TypeMap[K], keys: unknown[]) => void) } = {
+                    {{_queryModels.SelectTextTemplate(agg => $$"""
+                        '{{agg.PhysicalName}}': {{new SearchCondition.Entry(agg).PkAssignFunctionName}} as (data: {{new SearchCondition.Entry(agg).TsTypeName}}, keys: unknown[]) => void,
                     """)}}
                       }
                     }

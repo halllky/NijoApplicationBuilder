@@ -166,6 +166,7 @@ namespace Nijo.Models {
             aggregateFile.AddTypeScriptTypeDef(SearchCondition.Entry.RenderTypeScriptRecursively(rootAggregate, ctx));
             aggregateFile.AddTypeScriptTypeDef(searchCondition.RenderTypeScriptSortableMemberType());
             aggregateFile.AddTypeScriptFunction(searchCondition.RenderNewObjectFunction());
+            aggregateFile.AddTypeScriptFunction(searchCondition.RenderPkAssignFunction());
 
             // データ型: 検索条件メッセージ
             var searchConditionMessages = new SearchConditionMessageContainer(rootAggregate);
