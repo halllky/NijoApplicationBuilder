@@ -195,9 +195,9 @@ namespace Nijo.Models.QueryModelModules {
             internal virtual string TsTypeName => $"{_aggregate.PhysicalName}SearchConditionFilter";
 
             bool IInstanceStructurePropertyMetadata.IsArray => false;
-            string IInstanceStructurePropertyMetadata.CsType => CsClassName;
+            string IInstanceStructurePropertyMetadata.GetTypeName(E_CsTs csts) => csts == E_CsTs.CSharp ? CsClassName : TsTypeName;
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => ISchemaPathNode.Empty;
-            string IInstancePropertyMetadata.PropertyName => Entry.FILTER_CS;
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => csts == E_CsTs.CSharp ? Entry.FILTER_CS : Entry.FILTER_TS;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetOwnMembers();
 
             /// <summary>
@@ -305,7 +305,7 @@ namespace Nijo.Models.QueryModelModules {
             internal IEnumerable<string> RenderNewObjectFunctionMemberLiteral() {
                 foreach (var member in GetOwnMembers()) {
                     yield return $$"""
-                        {{member.PropertyName}}: {{member.RenderTsNewObjectFunctionValue()}},
+                        {{member.GetPropertyName(E_CsTs.TypeScript)}}: {{member.RenderTsNewObjectFunctionValue()}},
                         """;
                 }
             }
@@ -346,7 +346,7 @@ namespace Nijo.Models.QueryModelModules {
             string IFilterMember.RenderTsNewObjectFunctionValue() => Member.Type.SearchBehavior!.RenderTsNewObjectFunctionValue();
 
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Member;
-            string IInstancePropertyMetadata.PropertyName => Member.PhysicalName;
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => Member.PhysicalName;
             IValueMemberType IInstanceValuePropertyMetadata.Type => Member.Type;
         }
         /// <summary>
@@ -383,9 +383,9 @@ namespace Nijo.Models.QueryModelModules {
             }
 
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _rm;
-            string IInstancePropertyMetadata.PropertyName => _rm.PhysicalName;
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => _rm.PhysicalName;
             bool IInstanceStructurePropertyMetadata.IsArray => false; // 検索条件なのでChildrenであっても配列ではない
-            string IInstanceStructurePropertyMetadata.CsType => ChildFilter.CsClassName;
+            string IInstanceStructurePropertyMetadata.GetTypeName(E_CsTs csts) => csts == E_CsTs.CSharp ? ChildFilter.CsClassName : ChildFilter.TsTypeName;
 
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
                 return ((IInstancePropertyOwnerMetadata)ChildFilter).GetMembers();

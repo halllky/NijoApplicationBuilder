@@ -29,21 +29,21 @@ namespace Nijo.Models.CommandModelModules {
             foreach (var member in parameter.GetMembers()) {
                 if (member is ParameterOrReturnValue.CommandDescendantMember descendant) {
                     yield return new ContainerMemberImpl {
-                        PhysicalName = member.PropertyName,
+                        PhysicalName = member.GetPropertyName(E_CsTs.CSharp),
                         DisplayName = member.DisplayName,
                         NestedObject = new ParameterTypeMessageContainer(descendant.Aggregate),
                         CsType = null,
                     };
                 } else if (member is ParameterOrReturnValue.CommandValueMember) {
                     yield return new ContainerMemberImpl {
-                        PhysicalName = member.PropertyName,
+                        PhysicalName = member.GetPropertyName(E_CsTs.CSharp),
                         DisplayName = member.DisplayName,
                         NestedObject = null,
                         CsType = null,
                     };
                 } else if (member is ParameterOrReturnValue.CommandRefToMember refToMember) {
                     yield return new ContainerMemberImpl {
-                        PhysicalName = member.PropertyName,
+                        PhysicalName = member.GetPropertyName(E_CsTs.CSharp),
                         DisplayName = member.DisplayName,
                         NestedObject = refToMember.GetMessageContainer(),
                         CsType = null,

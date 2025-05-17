@@ -317,7 +317,7 @@ namespace Nijo.Models.QueryModelModules {
 
                     if (member is InstanceValueProperty vp) {
                         yield return $$"""
-                            {{member.Metadata.PropertyName}} = {{rightInstances.GetValueOrDefault(vp.Metadata.SchemaPathNode.ToMappingKey())}},
+                            {{member.Metadata.GetPropertyName(E_CsTs.CSharp)}} = {{rightInstances.GetValueOrDefault(vp.Metadata.SchemaPathNode.ToMappingKey())}},
                             """;
 
                     } else if (member is InstanceStructureProperty sp) {
@@ -329,7 +329,7 @@ namespace Nijo.Models.QueryModelModules {
                             var left = new Variable("newステートメントなので変数名なし", childrenMetadata);
 
                             yield return $$"""
-                                {{member.Metadata.PropertyName}} = {{arrayPath}}!.Select({{loopVarName}} => new {{childrenMetadata.CsClassName}} {
+                                {{member.Metadata.GetPropertyName(E_CsTs.CSharp)}} = {{arrayPath}}!.Select({{loopVarName}} => new {{childrenMetadata.CsClassName}} {
                                     {{WithIndent(RenderBody(left), "    ")}}
                                 }).ToList(),
                                 """;
@@ -339,7 +339,7 @@ namespace Nijo.Models.QueryModelModules {
                             var left = new Variable("newステートメントなので変数名なし", childrenMetadata);
 
                             yield return $$"""
-                                {{member.Metadata.PropertyName}} = new() {
+                                {{member.Metadata.GetPropertyName(E_CsTs.CSharp)}} = new() {
                                     {{WithIndent(RenderBody(left), "    ")}}
                                 },
                                 """;

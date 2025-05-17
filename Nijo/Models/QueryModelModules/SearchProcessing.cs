@@ -251,13 +251,13 @@ namespace Nijo.Models.QueryModelModules {
                     if (prop is InstanceValueProperty valueProp) {
                         var right = rightMembers[valueProp.Metadata.SchemaPathNode.ToMappingKey()];
                         yield return $$"""
-                            {{valueProp.Metadata.PropertyName}} = {{right.GetJoinedPathFromInstance(E_CsTs.CSharp, "!.")}},
+                            {{valueProp.Metadata.GetPropertyName(E_CsTs.CSharp)}} = {{right.GetJoinedPathFromInstance(E_CsTs.CSharp, "!.")}},
                             """;
 
                     } else if (prop is InstanceStructureProperty structureProp) {
                         if (!structureProp.Metadata.IsArray) {
                             yield return $$"""
-                                {{structureProp.Metadata.PropertyName}} = new() {
+                                {{structureProp.Metadata.GetPropertyName(E_CsTs.CSharp)}} = new() {
                                     {{WithIndent(RenderMembers(structureProp, rightMembers), "    ")}}
                                 },
                                 """;
@@ -275,7 +275,7 @@ namespace Nijo.Models.QueryModelModules {
                             var arrayPath = rightMembers[leftMetadata.Aggregate.ToMappingKey()];
 
                             yield return $$"""
-                                {{structureProp.Metadata.PropertyName}} = {{arrayPath.GetJoinedPathFromInstance(E_CsTs.CSharp, "!.")}}!.Select({{loopVar.Name}} => new {{leftMetadata.CsClassName}} {
+                                {{structureProp.Metadata.GetPropertyName(E_CsTs.CSharp)}} = {{arrayPath.GetJoinedPathFromInstance(E_CsTs.CSharp, "!.")}}!.Select({{loopVar.Name}} => new {{leftMetadata.CsClassName}} {
                                     {{WithIndent(RenderMembers(structureProp, overridedDict), "    ")}}
                                 }).ToList(),
                                 """;
@@ -426,12 +426,12 @@ namespace Nijo.Models.QueryModelModules {
                         var right = rightMembers[vm.Member.ToMappingKey()];
 
                         yield return $$"""
-                            {{member.PropertyName}} = {{vm.Member.Type.RenderCastToDomainType()}}{{right.GetJoinedPathFromInstance(E_CsTs.CSharp, "!.")}},
+                            {{member.GetPropertyName(E_CsTs.CSharp)}} = {{vm.Member.Type.RenderCastToDomainType()}}{{right.GetJoinedPathFromInstance(E_CsTs.CSharp, "!.")}},
                             """;
 
                     } else if (member is DisplayData.DisplayDataRefMember refTo) {
                         yield return $$"""
-                            {{member.PropertyName}} = new() {
+                            {{member.GetPropertyName(E_CsTs.CSharp)}} = new() {
                                 {{WithIndent(RenderRefMember(refTo.RefEntry, rightInstance, rightMembers), "    ")}}
                             },
                             """;

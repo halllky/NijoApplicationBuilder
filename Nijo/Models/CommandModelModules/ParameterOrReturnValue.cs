@@ -106,7 +106,7 @@ namespace Nijo.Models.CommandModelModules {
 
             public IValueMemberType Type => _vm.Type;
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _vm;
-            string IInstancePropertyMetadata.PropertyName => _vm.PhysicalName;
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => _vm.PhysicalName;
 
             string ICommandMember.RenderCSharpDeclaration(CodeRenderingContext ctx) {
                 return $$"""
@@ -131,14 +131,18 @@ namespace Nijo.Models.CommandModelModules {
             }
             private readonly RefToMember _rm;
 
-            public string CsType => _rm.RefToObject switch {
-                RefToMember.E_RefToObject.SearchCondition => new SearchCondition.Entry((RootAggregate)_rm.RefTo).CsClassName,
-                RefToMember.E_RefToObject.DisplayData => new DisplayData(_rm.RefTo).CsClassName,
+            public string GetTypeName(E_CsTs csts) => _rm.RefToObject switch {
+                RefToMember.E_RefToObject.SearchCondition => csts == E_CsTs.CSharp
+                    ? new SearchCondition.Entry((RootAggregate)_rm.RefTo).CsClassName
+                    : new SearchCondition.Entry((RootAggregate)_rm.RefTo).TsTypeName,
+                RefToMember.E_RefToObject.DisplayData => csts == E_CsTs.CSharp
+                    ? new DisplayData(_rm.RefTo).CsClassName
+                    : new DisplayData(_rm.RefTo).TsTypeName,
                 _ => throw new InvalidOperationException(),
             };
             bool IInstanceStructurePropertyMetadata.IsArray => false;
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _rm;
-            string IInstancePropertyMetadata.PropertyName => _rm.PhysicalName;
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => _rm.PhysicalName;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
                 IInstancePropertyOwnerMetadata obj = _rm.RefToObject switch {
                     RefToMember.E_RefToObject.SearchCondition => new SearchCondition.Entry((RootAggregate)_rm.RefTo),
@@ -150,7 +154,7 @@ namespace Nijo.Models.CommandModelModules {
 
             string ICommandMember.RenderCSharpDeclaration(CodeRenderingContext ctx) {
                 return $$"""
-                    public {{CsType}} {{_rm.PhysicalName}} { get; set; } = new();
+                    public {{GetTypeName(E_CsTs.CSharp)}} {{_rm.PhysicalName}} { get; set; } = new();
                     """;
             }
             string ICommandMember.RenderTypeScriptDeclaration(CodeRenderingContext ctx) {
@@ -207,8 +211,8 @@ namespace Nijo.Models.CommandModelModules {
             }
 
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Aggregate;
-            string IInstancePropertyMetadata.PropertyName => Aggregate.PhysicalName;
-            string IInstanceStructurePropertyMetadata.CsType => CsType;
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => Aggregate.PhysicalName;
+            string IInstanceStructurePropertyMetadata.GetTypeName(E_CsTs csts) => CsType;
             bool IInstanceStructurePropertyMetadata.IsArray => Aggregate is ChildrenAggregate;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetMembers();
 

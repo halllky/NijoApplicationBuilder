@@ -30,21 +30,21 @@ namespace Nijo.Models.QueryModelModules {
                     var from = {{cast}}{{fullpathNotNull}}!.From;
                     var to = {{cast}}{{fullpathNotNull}}!.To;
                 {{If(isMany, () => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} >= from && y.{{ctx.Query.Metadata.PropertyName}} <= to));
+                    {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.GetPropertyName(E_CsTs.CSharp)}} >= from && y.{{ctx.Query.Metadata.GetPropertyName(E_CsTs.CSharp)}} <= to));
                 """).Else(() => $$"""
                     {{query}} = {{query}}.Where(x => x.{{queryFullPath.Join(".")}} >= from && x.{{queryFullPath.Join(".")}} <= to);
                 """)}}
                 } else if ({{fullpathNullable}}?.From != null) {
                     var from = {{cast}}{{fullpathNotNull}}!.From;
                 {{If(isMany, () => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} >= from));
+                    {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.GetPropertyName(E_CsTs.CSharp)}} >= from));
                 """).Else(() => $$"""
                     {{query}} = {{query}}.Where(x => x.{{queryFullPath.Join(".")}} >= from);
                 """)}}
                 } else if ({{fullpathNullable}}?.To != null) {
                     var to = {{cast}}{{fullpathNotNull}}!.To;
                 {{If(isMany, () => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} <= to));
+                    {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.GetPropertyName(E_CsTs.CSharp)}} <= to));
                 """).Else(() => $$"""
                     {{query}} = {{query}}.Where(x => x.{{queryFullPath.Join(".")}} <= to);
                 """)}}

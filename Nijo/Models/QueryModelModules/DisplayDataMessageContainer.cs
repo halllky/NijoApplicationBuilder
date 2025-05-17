@@ -32,7 +32,7 @@ internal class DisplayDataMessageContainer : MessageContainer {
         var displayData = new DisplayData(_aggregate);
         foreach (var member in displayData.Values.GetMembers()) {
             yield return new ContainerMemberImpl {
-                PhysicalName = member.PropertyName,
+                PhysicalName = member.GetPropertyName(E_CsTs.CSharp),
                 DisplayName = member.DisplayName,
                 NestedObject = null,
                 CsType = null,

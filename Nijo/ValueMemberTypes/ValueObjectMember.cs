@@ -55,7 +55,7 @@ internal class ValueObjectMember : IValueMemberType {
                 if (!string.IsNullOrWhiteSpace({{fullpathNullable}})) {
                     var trimmed = {{fullpathNotNull}}!.Trim();
                 {{If(isMany, () => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join("!.")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}}!.Contains(trimmed)));
+                    {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join("!.")}}.Any(y => y.{{ctx.Query.Metadata.GetPropertyName(E_CsTs.CSharp)}}!.Contains(trimmed)));
                 """).Else(() => $$"""
                     {{query}} = {{query}}.Where(x => x.{{queryFullPath.Join("!.")}}!.Contains(trimmed));
                 """)}}

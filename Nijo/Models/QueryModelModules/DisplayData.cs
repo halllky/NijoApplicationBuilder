@@ -220,7 +220,7 @@ namespace Nijo.Models.QueryModelModules {
                     public bool {{ALL_READONLY_CS}} { get; set; }
                 {{Values.GetMembers().SelectTextTemplate(member => $$"""
                     /// <summary>{{member.DisplayName}}が読み取り専用か否か</summary>
-                    public bool {{member.PropertyName}} { get; set; }
+                    public bool {{member.GetPropertyName(E_CsTs.CSharp)}} { get; set; }
                 """)}}
                 }
                 """;
@@ -259,7 +259,7 @@ namespace Nijo.Models.QueryModelModules {
                     {{ALL_READONLY_TS}}?: boolean
                 {{Values.GetMembers().SelectTextTemplate(member => $$"""
                     /** {{member.DisplayName}}が読み取り専用か否か */
-                    {{member.PropertyName}}?: boolean
+                    {{member.GetPropertyName(E_CsTs.TypeScript)}}?: boolean
                 """)}}
                   }
                 }
@@ -279,9 +279,11 @@ namespace Nijo.Models.QueryModelModules {
             private readonly AggregateBase _aggregate;
 
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => ISchemaPathNode.Empty;
-            string IInstancePropertyMetadata.PropertyName => VALUES_CS;
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => csts == E_CsTs.CSharp ? VALUES_CS : VALUES_TS;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
-            string IInstanceStructurePropertyMetadata.CsType => new DisplayData(_aggregate).ValueCsClassName;
+            string IInstanceStructurePropertyMetadata.GetTypeName(E_CsTs csts) => csts == E_CsTs.CSharp
+                ? new DisplayData(_aggregate).ValueCsClassName
+                : throw new InvalidOperationException("この分岐にくることは無いはず");
 
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetMembers();
 
@@ -323,7 +325,7 @@ namespace Nijo.Models.QueryModelModules {
 
             IValueMemberType IInstanceValuePropertyMetadata.Type => Member.Type;
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Member;
-            string IInstancePropertyMetadata.PropertyName => PropertyName;
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => PropertyName;
 
             public bool IsRequired => Member.IsKey || Member.IsRequired;
             public string? CharacterType => Member.CharacterType;
@@ -390,8 +392,10 @@ namespace Nijo.Models.QueryModelModules {
 
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Member;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
-            string IInstancePropertyMetadata.PropertyName => PropertyName;
-            string IInstanceStructurePropertyMetadata.CsType => RefEntry.CsClassName;
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => PropertyName;
+            string IInstanceStructurePropertyMetadata.GetTypeName(E_CsTs csts) => csts == E_CsTs.CSharp
+                ? RefEntry.CsClassName
+                : RefEntry.TsTypeName;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetMembers();
         }
         #endregion Values
@@ -414,7 +418,7 @@ namespace Nijo.Models.QueryModelModules {
                 return $$"""
                     {{VALUES_TS}}: {
                     {{displayData.Values.GetMembers().SelectTextTemplate(m => $$"""
-                      {{m.PropertyName}}: Util.{{m.UiConstraintType}}
+                      {{m.GetPropertyName(E_CsTs.TypeScript)}}: Util.{{m.UiConstraintType}}
                     """)}}
                     }
                     {{displayData.GetChildMembers().SelectTextTemplate(desc => $$"""
@@ -439,7 +443,7 @@ namespace Nijo.Models.QueryModelModules {
                 return $$"""
                     {{VALUES_TS}}: {
                     {{displayData.Values.GetMembers().SelectTextTemplate(m => $$"""
-                      {{m.PropertyName}}: {
+                      {{m.GetPropertyName(E_CsTs.TypeScript)}}: {
                     {{If(m.IsRequired, () => $$"""
                         {{UiConstraint.MEMBER_REQUIRED}}: true,
                     """)}}
@@ -499,7 +503,7 @@ namespace Nijo.Models.QueryModelModules {
                 export const {{TsNewObjectFunction}} = (): {{TsTypeName}} => ({
                   {{VALUES_TS}}: {
                 {{Values.GetMembers().SelectTextTemplate(m => $$"""
-                    {{m.PropertyName}}: {{m.RenderNewObjectCreation()}},
+                    {{m.GetPropertyName(E_CsTs.TypeScript)}}: {{m.RenderNewObjectCreation()}},
                 """)}}
                   },
                 {{If(HasLifeCycle, () => $$"""
@@ -548,8 +552,8 @@ namespace Nijo.Models.QueryModelModules {
 
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _child;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
-            string IInstancePropertyMetadata.PropertyName => PhysicalName;
-            string IInstanceStructurePropertyMetadata.CsType => CsClassName;
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => PhysicalName;
+            string IInstanceStructurePropertyMetadata.GetTypeName(E_CsTs csts) => csts == E_CsTs.CSharp ? CsClassName : TsTypeName;
         }
 
         internal class DisplayDataChildrenDescendant : DisplayDataDescendant, IInstanceStructurePropertyMetadata {
@@ -569,8 +573,8 @@ namespace Nijo.Models.QueryModelModules {
 
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Aggregate;
             bool IInstanceStructurePropertyMetadata.IsArray => true;
-            string IInstancePropertyMetadata.PropertyName => PhysicalName;
-            string IInstanceStructurePropertyMetadata.CsType => CsClassName;
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => PhysicalName;
+            string IInstanceStructurePropertyMetadata.GetTypeName(E_CsTs csts) => csts == E_CsTs.CSharp ? CsClassName : TsTypeName;
         }
         #endregion Valuesの外に定義されるメンバー（Child, Children）
 
@@ -620,17 +624,17 @@ namespace Nijo.Models.QueryModelModules {
                 foreach (var member in left.GetMembers()) {
                     if (member is IInstanceValuePropertyMetadata vp) {
                         var rightPath = rigthMembers.TryGetValue(member.SchemaPathNode.ToMappingKey(), out var source)
-                            ? $"{source.Root.Name}.{source.GetPathFromInstance().Select(p => p.Metadata.PropertyName).Join("?.")}"
+                            ? $"{source.Root.Name}.{source.GetPathFromInstance().Select(p => p.Metadata.GetPropertyName(E_CsTs.CSharp)).Join("?.")}"
                             : "null";
                         yield return $$"""
-                            {{member.PropertyName}} = {{rightPath}},
+                            {{member.GetPropertyName(E_CsTs.CSharp)}} = {{rightPath}},
                             """;
 
                     } else if (member is IInstanceStructurePropertyMetadata sp) {
 
                         if (sp.IsArray) {
                             var arrayPath = rigthMembers.TryGetValue(sp.SchemaPathNode.ToMappingKey(), out var source)
-                                ? $"{source.Root.Name}.{source.GetPathFromInstance().Select(p => p.Metadata.PropertyName).Join("?.")}"
+                                ? $"{source.Root.Name}.{source.GetPathFromInstance().Select(p => p.Metadata.GetPropertyName(E_CsTs.CSharp)).Join("?.")}"
                               : throw new InvalidOperationException($"右辺にChildrenのXElementが無い: {sp.DisplayName}");
 
                             // 辞書に、ラムダ式内部で右辺に使用できるプロパティを加える
@@ -641,14 +645,14 @@ namespace Nijo.Models.QueryModelModules {
                             }
 
                             yield return $$"""
-                                {{member.PropertyName}} = {{arrayPath}}?.Select({{loopVar.Name}} => new {{sp.CsType}}() {
+                                {{member.GetPropertyName(E_CsTs.CSharp)}} = {{arrayPath}}?.Select({{loopVar.Name}} => new {{sp.GetTypeName(E_CsTs.CSharp)}}() {
                                     {{WithIndent(RenderBody(sp, loopVar, dict2), "    ")}}
                                 }).ToList() ?? [],
                                 """;
 
                         } else {
                             yield return $$"""
-                                {{member.PropertyName}} = new() {
+                                {{member.GetPropertyName(E_CsTs.CSharp)}} = new() {
                                     {{WithIndent(RenderBody(sp, right, rigthMembers), "    ")}}
                                 },
                                 """;

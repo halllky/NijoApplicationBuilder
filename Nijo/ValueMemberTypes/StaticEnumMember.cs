@@ -53,7 +53,7 @@ namespace Nijo.ValueMemberTypes {
                         if ({{fullpathNotNull}}!.{{physicalName}}) array.Add({{CsPrimitiveTypeName}}.{{physicalName}});
                     """)}}
                     {{If(isMany, () => $$"""
-                        {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join("!.")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} != null && array.Contains(y.{{ctx.Query.Metadata.PropertyName}}.Value)));
+                        {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join("!.")}}.Any(y => y.{{ctx.Query.Metadata.GetPropertyName(E_CsTs.CSharp)}} != null && array.Contains(y.{{ctx.Query.Metadata.GetPropertyName(E_CsTs.CSharp)}}.Value)));
                     """).Else(() => $$"""
                         {{query}} = {{query}}.Where(x => x.{{queryFullPath.Join("!.")}} != null && array.Contains(x.{{queryFullPath.Join("!.")}}.Value));
                     """)}}

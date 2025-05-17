@@ -269,7 +269,7 @@ namespace Nijo.Models.QueryModelModules {
         /// </summary>
         internal interface IRefDisplayDataMember : IInstancePropertyMetadata {
             string PhysicalName { get; }
-            string CsType { get; }
+            string GetTypeName(E_CsTs csts);
             string RenderDeclaringCSharp();
             string RenderDeclaringTypeScript();
         }
@@ -285,15 +285,15 @@ namespace Nijo.Models.QueryModelModules {
 
             public string PhysicalName => Member.PhysicalName;
             public string DisplayName => Member.DisplayName;
-            public string CsType => Member.Type.CsDomainTypeName;
+            public string GetTypeName(E_CsTs csts) => csts == E_CsTs.CSharp ? Member.Type.CsDomainTypeName : Member.Type.TsTypeName;
 
             IValueMemberType IInstanceValuePropertyMetadata.Type => Member.Type;
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Member;
-            string IInstancePropertyMetadata.PropertyName => PhysicalName;
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => PhysicalName;
 
             string IRefDisplayDataMember.RenderDeclaringCSharp() {
                 return $$"""
-                    public {{CsType}}? {{PhysicalName}} { get; set; }
+                    public {{GetTypeName(E_CsTs.CSharp)}}? {{PhysicalName}} { get; set; }
                     """;
             }
 
@@ -315,15 +315,15 @@ namespace Nijo.Models.QueryModelModules {
 
             public string PhysicalName => _member.PhysicalName;
             public string DisplayName => _member.DisplayName;
-            public string CsType => CsClassName;
+            public string GetTypeName(E_CsTs csts) => csts == E_CsTs.CSharp ? CsClassName : TsTypeName;
 
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _member;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
-            string IInstancePropertyMetadata.PropertyName => PhysicalName;
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => PhysicalName;
 
             string IRefDisplayDataMember.RenderDeclaringCSharp() {
                 return $$"""
-                    public {{CsType}} {{PhysicalName}} { get; set; } = new();
+                    public {{GetTypeName(E_CsTs.CSharp)}} {{PhysicalName}} { get; set; } = new();
                     """;
             }
 
@@ -347,16 +347,18 @@ namespace Nijo.Models.QueryModelModules {
 
             public string PhysicalName => _member.PhysicalName;
             public string DisplayName => _member.DisplayName;
-            public string CsType => $"{_member.PhysicalName}RefTargetVia{_member.PreviousNode!.XElement.Name.LocalName.ToCSharpSafe()}";
-            internal override string CsClassName => CsType;
+            public string GetTypeName(E_CsTs csts) => csts == E_CsTs.CSharp
+                ? $"{_member.PhysicalName}RefTargetVia{_member.PreviousNode!.XElement.Name.LocalName.ToCSharpSafe()}"
+                : $"{_member.PhysicalName}RefTargetVia{_member.PreviousNode!.XElement.Name.LocalName.ToCSharpSafe()}";
+            internal override string CsClassName => GetTypeName(E_CsTs.CSharp);
 
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _member;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
-            string IInstancePropertyMetadata.PropertyName => PhysicalName;
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => PhysicalName;
 
             string IRefDisplayDataMember.RenderDeclaringCSharp() {
                 return $$"""
-                    public {{CsType}} {{PhysicalName}} { get; set; } = new();
+                    public {{GetTypeName(E_CsTs.CSharp)}} {{PhysicalName}} { get; set; } = new();
                     """;
             }
 
@@ -382,16 +384,16 @@ namespace Nijo.Models.QueryModelModules {
 
             public string PhysicalName => ChildrenAggregate.PhysicalName;
             public string DisplayName => ChildrenAggregate.DisplayName;
-            public string CsType => $"{ChildrenAggregate.PhysicalName}RefTargetVia{ChildrenAggregate.PreviousNode!.XElement.Name.LocalName.ToCSharpSafe()}";
-            internal override string CsClassName => CsType;
+            public string GetTypeName(E_CsTs csts) => $"{ChildrenAggregate.PhysicalName}RefTargetVia{ChildrenAggregate.PreviousNode!.XElement.Name.LocalName.ToCSharpSafe()}";
+            internal override string CsClassName => GetTypeName(E_CsTs.CSharp);
 
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => ChildrenAggregate;
             bool IInstanceStructurePropertyMetadata.IsArray => true;
-            string IInstancePropertyMetadata.PropertyName => PhysicalName;
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => PhysicalName;
 
             string IRefDisplayDataMember.RenderDeclaringCSharp() {
                 return $$"""
-                    public List<{{CsType}}> {{PhysicalName}} { get; set; } = [];
+                    public List<{{GetTypeName(E_CsTs.CSharp)}}> {{PhysicalName}} { get; set; } = [];
                     """;
             }
 
@@ -417,16 +419,16 @@ namespace Nijo.Models.QueryModelModules {
 
             public string PhysicalName => "Parent";
             public string DisplayName => _parent.DisplayName;
-            public string CsType => $"{_parent.PhysicalName}RefTargetVia{_parent.PreviousNode!.XElement.Name.LocalName.ToCSharpSafe()}";
-            internal override string CsClassName => CsType;
+            public string GetTypeName(E_CsTs csts) => $"{_parent.PhysicalName}RefTargetVia{_parent.PreviousNode!.XElement.Name.LocalName.ToCSharpSafe()}";
+            internal override string CsClassName => GetTypeName(E_CsTs.CSharp);
 
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _parent;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
-            string IInstancePropertyMetadata.PropertyName => PhysicalName;
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => PhysicalName;
 
             string IRefDisplayDataMember.RenderDeclaringCSharp() {
                 return $$"""
-                    public {{CsType}} {{PhysicalName}} { get; set; } = new();
+                    public {{GetTypeName(E_CsTs.CSharp)}} {{PhysicalName}} { get; set; } = new();
                     """;
             }
 

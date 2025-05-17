@@ -175,7 +175,7 @@ public class ApplicationSchema {
 
                 IEnumerable<string> RenderProperty(IInstanceProperty property) {
                     // 集約
-                    yield return property.Owner == rootVariable ? "-" : property.Owner.Name;
+                    yield return property.Owner == rootVariable ? "-" : property.Owner.GetName(E_CsTs.CSharp);
 
                     // メンバー
                     yield return property.Metadata.DisplayName;

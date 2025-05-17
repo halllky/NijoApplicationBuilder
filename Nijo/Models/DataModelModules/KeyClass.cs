@@ -27,7 +27,7 @@ namespace Nijo.Models.DataModelModules {
             private readonly AggregateBase _aggregate;
 
             internal string ClassName => $"{_aggregate.PhysicalName}Key";
-            string IKeyClassMember.CsType => ClassName;
+            string IKeyClassMember.GetTypeName(E_CsTs csts) => ClassName;
 
             bool SaveCommand.ISaveCommandMember.IsKey => true;
             ISchemaPathNode SaveCommand.ISaveCommandMember.Member => _aggregate;
@@ -96,7 +96,7 @@ namespace Nijo.Models.DataModelModules {
                     public partial class {{ClassName}} {
                     {{GetOwnMembers().SelectTextTemplate(m => $$"""
                         /// <summary>{{m.DisplayName}}</summary>
-                        public required {{m.CsType}}? {{m.PhysicalName}} { get; set; }
+                        public required {{m.GetTypeName(E_CsTs.CSharp)}}? {{m.PhysicalName}} { get; set; }
                     """)}}
 
                         {{WithIndent(RenderCovertFromCreateCommand(), "    ")}}
@@ -253,8 +253,8 @@ namespace Nijo.Models.DataModelModules {
 
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _aggregate;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
-            string IInstanceStructurePropertyMetadata.CsType => ClassName;
-            string IInstancePropertyMetadata.PropertyName => PhysicalName;
+            string IInstanceStructurePropertyMetadata.GetTypeName(E_CsTs csts) => ClassName;
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => PhysicalName;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetOwnMembers();
         }
 
@@ -267,7 +267,7 @@ namespace Nijo.Models.DataModelModules {
             IEnumerable<IKeyClassMember> GetOwnMembers();
         }
         internal interface IKeyClassMember : SaveCommand.ISaveCommandMember {
-            string CsType { get; }
+            string GetTypeName(E_CsTs csts);
         }
         /// <summary>
         /// キー情報の値メンバー
@@ -275,12 +275,12 @@ namespace Nijo.Models.DataModelModules {
         internal class KeyClassValueMember : SaveCommand.SaveCommandValueMember, IKeyClassMember {
             internal KeyClassValueMember(ValueMember vm) : base(vm) { }
 
-            public string CsType => Member.Type.CsDomainTypeName;
+            public string GetTypeName(E_CsTs csts) => Member.Type.CsDomainTypeName;
 
             ISchemaPathNode SaveCommand.ISaveCommandMember.Member => Member;
-            string SaveCommand.ISaveCommandMember.CsCreateType => CsType;
-            string SaveCommand.ISaveCommandMember.CsUpdateType => CsType;
-            string SaveCommand.ISaveCommandMember.CsDeleteType => CsType;
+            string SaveCommand.ISaveCommandMember.CsCreateType => GetTypeName(E_CsTs.CSharp);
+            string SaveCommand.ISaveCommandMember.CsUpdateType => GetTypeName(E_CsTs.CSharp);
+            string SaveCommand.ISaveCommandMember.CsDeleteType => GetTypeName(E_CsTs.CSharp);
         }
         /// <summary>
         /// キー情報の中に出てくる他の集約のキー
@@ -295,12 +295,12 @@ namespace Nijo.Models.DataModelModules {
 
             public string PhysicalName => Member.PhysicalName;
             public string DisplayName => Member.DisplayName;
-            public string CsType => MemberKeyClassEntry.ClassName;
+            public string GetTypeName(E_CsTs csts) => MemberKeyClassEntry.ClassName;
 
             ISchemaPathNode SaveCommand.ISaveCommandMember.Member => Member;
-            string SaveCommand.ISaveCommandMember.CsCreateType => CsType;
-            string SaveCommand.ISaveCommandMember.CsUpdateType => CsType;
-            string SaveCommand.ISaveCommandMember.CsDeleteType => CsType;
+            string SaveCommand.ISaveCommandMember.CsCreateType => GetTypeName(E_CsTs.CSharp);
+            string SaveCommand.ISaveCommandMember.CsUpdateType => GetTypeName(E_CsTs.CSharp);
+            string SaveCommand.ISaveCommandMember.CsDeleteType => GetTypeName(E_CsTs.CSharp);
 
             public IEnumerable<IKeyClassMember> GetOwnMembers() {
                 var p = Member.RefTo.GetParent();
@@ -321,13 +321,13 @@ namespace Nijo.Models.DataModelModules {
             bool SaveCommand.ISaveCommandMember.IsKey => true;
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Member;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
-            string IInstancePropertyMetadata.PropertyName => PhysicalName;
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => PhysicalName;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetOwnMembers();
 
             string SaveCommand.ISaveCommandMember.RenderDeclaring() {
                 return $$"""
                     /// <summary>{{DisplayName}}</summary>
-                    public required {{CsType}} {{PhysicalName}} { get; set; }
+                    public required {{GetTypeName(E_CsTs.CSharp)}} {{PhysicalName}} { get; set; }
                     """;
             }
         }

@@ -28,7 +28,7 @@ public interface IInstanceValuePropertyMetadata : IInstancePropertyMetadata {
 /// </summary>
 public interface IInstanceStructurePropertyMetadata : IInstancePropertyMetadata, IInstancePropertyOwnerMetadata {
     /// <summary>配列の場合は List や [] 抜きのクラス名</summary>
-    string CsType { get; }
+    string GetTypeName(E_CsTs csts);
     bool IsArray { get; }
 }
 
@@ -37,8 +37,8 @@ public interface IInstanceStructurePropertyMetadata : IInstancePropertyMetadata,
 /// </summary>
 public interface IInstancePropertyMetadata {
     ISchemaPathNode SchemaPathNode { get; }
-    string PropertyName { get; }
-    string DisplayName => PropertyName; // TODO ver.1
+    string GetPropertyName(E_CsTs csts);
+    string DisplayName => GetPropertyName(E_CsTs.CSharp); // TODO ver.1
 }
 
 // ------------------------------------------
@@ -62,7 +62,7 @@ public interface IInstanceProperty {
 /// </summary>
 public interface IInstancePropertyOwner {
     /// <summary>変数名 or プロパティ名</summary>
-    string Name { get; }
+    string GetName(E_CsTs csts);
     /// <inheritdoc cref="IInstancePropertyMetadata"/>
     IInstancePropertyOwnerMetadata Metadata { get; }
 }
@@ -84,6 +84,7 @@ public sealed class Variable : IInstancePropertyOwner {
         Metadata = metadata;
     }
     public string Name { get; }
+    string IInstancePropertyOwner.GetName(E_CsTs csts) => Name;
     public IInstancePropertyOwnerMetadata Metadata { get; }
 }
 /// <summary>
@@ -98,7 +99,7 @@ public sealed class InstanceValueProperty : IInstanceProperty {
     IInstancePropertyMetadata IInstanceProperty.Metadata => Metadata;
 
     public override string ToString() {
-        return $"{Metadata.PropertyName}(InstanceValueProperty)";
+        return $"{Metadata.GetPropertyName(E_CsTs.CSharp)}(InstanceValueProperty)";
     }
 }
 /// <summary>
@@ -112,10 +113,10 @@ public sealed class InstanceStructureProperty : IInstanceProperty, IInstanceProp
 
     IInstancePropertyMetadata IInstanceProperty.Metadata => Metadata;
     IInstancePropertyOwnerMetadata IInstancePropertyOwner.Metadata => Metadata;
-    string IInstancePropertyOwner.Name => Metadata.PropertyName;
+    string IInstancePropertyOwner.GetName(E_CsTs csts) => Metadata.GetPropertyName(csts);
 
     public override string ToString() {
-        return $"{Metadata.PropertyName}(InstanceStructureProperty)";
+        return $"{Metadata.GetPropertyName(E_CsTs.CSharp)}(InstanceStructureProperty)";
     }
 }
 
@@ -276,10 +277,10 @@ public static partial class CodeGeneratingHelperExtensions {
             // メンバー名
             if (previousIsArray) {
                 path.Append(currentIsArray
-                    ? $"{selectMany}(e => e.{current.Metadata.PropertyName})"
-                    : $"{select}(e => e.{current.Metadata.PropertyName})");
+                    ? $"{selectMany}(e => e.{current.Metadata.GetPropertyName(csts)})"
+                    : $"{select}(e => e.{current.Metadata.GetPropertyName(csts)})");
             } else {
-                path.Append(current.Metadata.PropertyName);
+                path.Append(current.Metadata.GetPropertyName(csts));
             }
 
             // このメンバーが1対多なら以降のパスは Select, SelectMany（JSの場合は map, flatMap）になる
@@ -318,10 +319,10 @@ public static partial class CodeGeneratingHelperExtensions {
 
                 if (isMany) {
                     path.Add(csts == E_CsTs.CSharp
-                        ? $"SelectMany(x => x.{prop.Metadata.PropertyName})"
-                        : $"flatMap(x => x.{prop.Metadata.PropertyName})");
+                        ? $"SelectMany(x => x.{prop.Metadata.GetPropertyName(csts)})"
+                        : $"flatMap(x => x.{prop.Metadata.GetPropertyName(csts)})");
                 } else {
-                    path.Add(prop.Metadata.PropertyName);
+                    path.Add(prop.Metadata.GetPropertyName(csts));
                 }
 
                 isMany = true;
@@ -329,12 +330,12 @@ public static partial class CodeGeneratingHelperExtensions {
             } else if (isMany) {
                 // 単一のプロパティかつここまでに配列が登場している場合
                 path.Add(csts == E_CsTs.CSharp
-                    ? $"Select(x => x.{prop.Metadata.PropertyName})"
-                    : $"map(x => x.{prop.Metadata.PropertyName})");
+                    ? $"Select(x => x.{prop.Metadata.GetPropertyName(csts)})"
+                    : $"map(x => x.{prop.Metadata.GetPropertyName(csts)})");
 
             } else {
                 // 単一のプロパティかつここまでに配列が登場していない場合
-                path.Add(prop.Metadata.PropertyName);
+                path.Add(prop.Metadata.GetPropertyName(csts));
             }
         }
 

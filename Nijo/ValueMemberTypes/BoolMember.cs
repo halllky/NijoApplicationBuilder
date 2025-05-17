@@ -49,13 +49,13 @@ internal class BoolMember : IValueMemberType {
                 if ({{fullpathNullable}}?.AnyChecked() == true) {
                     if ({{fullpathNotNull}}.Trueのみ) {
                 {{If(isMany, () => $$"""
-                        {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} == true));
+                        {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.GetPropertyName(E_CsTs.CSharp)}} == true));
                 """).Else(() => $$"""
                         {{query}} = {{query}}.Where(x => x.{{queryFullPath.Join(".")}} == true);
                 """)}}
                     } else {
                 {{If(isMany, () => $$"""
-                        {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.PropertyName}} != true));
+                        {{query}} = {{query}}.Where(x => x.{{queryOwnerFullPath.Join(".")}}.Any(y => y.{{ctx.Query.Metadata.GetPropertyName(E_CsTs.CSharp)}} != true));
                 """).Else(() => $$"""
                         {{query}} = {{query}}.Where(x => x.{{queryFullPath.Join(".")}} != true);
                 """)}}

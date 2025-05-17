@@ -374,7 +374,7 @@ namespace Nijo.Models.DataModelModules {
             internal abstract bool IsKey { get; }
 
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Member;
-            string IInstancePropertyMetadata.PropertyName => PhysicalName;
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => PhysicalName;
             IValueMemberType IInstanceValuePropertyMetadata.Type => Member.Type;
 
             public override string ToString() {
@@ -464,8 +464,8 @@ namespace Nijo.Models.DataModelModules {
 
             bool IInstanceStructurePropertyMetadata.IsArray => OtherSideIsMany;
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => OtherSide;
-            string IInstancePropertyMetadata.PropertyName => OtherSidePhysicalName;
-            string IInstanceStructurePropertyMetadata.CsType => new EFCoreEntity(OtherSide).CsClassName;
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => OtherSidePhysicalName;
+            string IInstanceStructurePropertyMetadata.GetTypeName(E_CsTs csts) => new EFCoreEntity(OtherSide).CsClassName;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
                 IInstancePropertyOwnerMetadata otherSideEfCoreEntity = new EFCoreEntity(OtherSide);
                 foreach (var member in otherSideEfCoreEntity.GetMembers()) {

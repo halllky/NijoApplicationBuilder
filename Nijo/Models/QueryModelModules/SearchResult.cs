@@ -206,7 +206,7 @@ namespace Nijo.Models.QueryModelModules {
             private readonly ValueMember _valueMember;
             private string? _physicalName;
 
-            public string PropertyName => _physicalName ??= ((ISearchResultMember)this).GetPhysicalName();
+            public string GetPropertyName(E_CsTs csts) => _physicalName ??= ((ISearchResultMember)this).GetPhysicalName();
             IValueMemberType IInstanceValuePropertyMetadata.Type => _valueMember.Type;
             IAggregateMember ISearchResultMember.Member => _valueMember;
 
@@ -215,7 +215,7 @@ namespace Nijo.Models.QueryModelModules {
 
                 return $$"""
                     /// <summary>{{_valueMember.DisplayName}}</summary>
-                    public {{type}}? {{PropertyName}} { get; set; }
+                    public {{type}}? {{GetPropertyName(E_CsTs.CSharp)}} { get; set; }
                     """;
             }
         }
@@ -227,16 +227,16 @@ namespace Nijo.Models.QueryModelModules {
             internal new ChildrenAggregate Aggregate { get; }
             private string? _physicalName;
 
-            public string PropertyName => _physicalName ??= ((ISearchResultMember)this).GetPhysicalName();
+            public string GetPropertyName(E_CsTs csts) => _physicalName ??= ((ISearchResultMember)this).GetPhysicalName();
             bool IInstanceStructurePropertyMetadata.IsArray => true;
-            string IInstanceStructurePropertyMetadata.CsType => CsClassName;
+            string IInstanceStructurePropertyMetadata.GetTypeName(E_CsTs csts) => CsClassName;
             IAggregateMember ISearchResultMember.Member => Aggregate;
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() => GetMembers();
 
             string ISearchResultMember.RenderDeclaration() {
                 return $$"""
                     /// <summary>{{Aggregate.DisplayName}}</summary>
-                    public List<{{CsClassName}}> {{PropertyName}} { get; set; } = new();
+                    public List<{{CsClassName}}> {{GetPropertyName(E_CsTs.CSharp)}} { get; set; } = new();
                     """;
             }
         }
@@ -264,14 +264,14 @@ namespace Nijo.CodeGenerating {
                 // Children
                 if (node is ChildrenAggregate children) {
                     var member = new SearchResult.SearchResultChildrenMember(children);
-                    yield return member.PropertyName;
+                    yield return member.GetPropertyName(E_CsTs.CSharp);
                     continue;
                 }
 
                 // 末端のメンバー
                 if (node is ValueMember vm) {
                     var member = new SearchResult.SearchResultValueMember(vm);
-                    yield return member.PropertyName;
+                    yield return member.GetPropertyName(E_CsTs.CSharp);
                     continue;
                 }
 

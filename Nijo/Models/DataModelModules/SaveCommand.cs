@@ -236,7 +236,7 @@ namespace Nijo.Models.DataModelModules {
             public bool IsKey => Member.IsKey;
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Member;
             IValueMemberType IInstanceValuePropertyMetadata.Type => Member.Type;
-            string IInstancePropertyMetadata.PropertyName => PhysicalName;
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => PhysicalName;
 
             string ISaveCommandMember.RenderDeclaring() {
                 return $$"""
@@ -264,8 +264,8 @@ namespace Nijo.Models.DataModelModules {
             string ISaveCommandMember.CsDeleteType => RefEntry.ClassName;
 
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Member;
-            string IInstancePropertyMetadata.PropertyName => Member.PhysicalName;
-            string IInstanceStructurePropertyMetadata.CsType => RefEntry.ClassName;
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => Member.PhysicalName;
+            string IInstanceStructurePropertyMetadata.GetTypeName(E_CsTs csts) => RefEntry.ClassName;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
 
             IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
@@ -294,8 +294,8 @@ namespace Nijo.Models.DataModelModules {
             bool ISaveCommandMember.IsKey => false;
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Aggregate;
             bool IInstanceStructurePropertyMetadata.IsArray => false;
-            string IInstanceStructurePropertyMetadata.CsType => CsClassName;
-            string IInstancePropertyMetadata.PropertyName => PhysicalName;
+            string IInstanceStructurePropertyMetadata.GetTypeName(E_CsTs csts) => CsClassName;
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => PhysicalName;
 
             string ISaveCommandMember.RenderDeclaring() {
                 var className = Type switch {
@@ -327,8 +327,8 @@ namespace Nijo.Models.DataModelModules {
             bool ISaveCommandMember.IsKey => false;
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => base.Aggregate;
             bool IInstanceStructurePropertyMetadata.IsArray => true;
-            string IInstanceStructurePropertyMetadata.CsType => CsClassName;
-            string IInstancePropertyMetadata.PropertyName => PhysicalName;
+            string IInstanceStructurePropertyMetadata.GetTypeName(E_CsTs csts) => CsClassName;
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => PhysicalName;
 
             string ISaveCommandMember.RenderDeclaring() {
                 var className = Type switch {
@@ -373,7 +373,7 @@ namespace Nijo.Models.DataModelModules {
                 foreach (var col in left.GetColumns()) {
                     // シーケンス項目など登録と共に採番されるものはnullになる可能性がある
                     var sourcePath = rigthMembers.TryGetValue(col.Member.ToMappingKey(), out var source)
-                        ? $"{source.Root.Name}.{source.GetPathFromInstance().Select(p => p.Metadata.PropertyName).Join("?.")}"
+                        ? $"{source.Root.Name}.{source.GetPathFromInstance().Select(p => p.Metadata.GetPropertyName(E_CsTs.CSharp)).Join("?.")}"
                         : "null";
                     yield return $$"""
                         {{col.PhysicalName}} = {{col.Member.Type.RenderCastToPrimitiveType()}}{{sourcePath}},
@@ -390,7 +390,7 @@ namespace Nijo.Models.DataModelModules {
                         // Child
                         var childEntity = new EFCoreEntity(nav.Relevant.ThisSide);
                         var childPath = rigthMembers.TryGetValue(child.ToMappingKey(), out var cs)
-                            ? $"{cs.Root.Name}.{cs.GetPathFromInstance().Select(p => p.Metadata.PropertyName).Join("?.")}"
+                            ? $"{cs.Root.Name}.{cs.GetPathFromInstance().Select(p => p.Metadata.GetPropertyName(E_CsTs.CSharp)).Join("?.")}"
                             : throw new InvalidOperationException($"右辺にChildのXElementが無い: {child}");
 
                         // childPath が null でない場合のみ Child を生成
@@ -403,7 +403,7 @@ namespace Nijo.Models.DataModelModules {
                     } else if (nav.Relevant.ThisSide is ChildrenAggregate children) {
                         var childrenEntity = new EFCoreEntity(nav.Relevant.ThisSide);
                         var arrayPath = rigthMembers.TryGetValue(children.ToMappingKey(), out var source)
-                            ? $"{source.Root.Name}.{source.GetPathFromInstance().Select(p => p.Metadata.PropertyName).Join("?.")}"
+                            ? $"{source.Root.Name}.{source.GetPathFromInstance().Select(p => p.Metadata.GetPropertyName(E_CsTs.CSharp)).Join("?.")}"
                             : throw new InvalidOperationException($"右辺にChildrenのXElementが無い: {children}");
 
                         // 辞書に、ラムダ式内部で右辺に使用できるプロパティを加える
