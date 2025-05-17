@@ -119,7 +119,7 @@ namespace Nijo {
                 return false;
             }
 
-            var ctx = new CodeRenderingContext(this, GetConfig(), renderingOptions, parseContext, immutableSchema);
+            using var ctx = new CodeRenderingContext(this, GetConfig(), renderingOptions, parseContext, immutableSchema);
 
             logger.LogInformation("ソース自動生成開始");
 

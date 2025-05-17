@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
@@ -12,13 +13,18 @@ namespace Nijo.CodeGenerating {
     /// <summary>
     /// ソースコード自動生成のコンテキスト情報
     /// </summary>
-    public sealed class CodeRenderingContext : IMultiAggregateSourceFileManager {
+    public sealed class CodeRenderingContext : IMultiAggregateSourceFileManager, IDisposable {
         internal CodeRenderingContext(GeneratedProject project, GeneratedProjectOptions projectOptions, CodeRenderingOptions renderingOptions, SchemaParseContext xmlParseContext, ApplicationSchema immutableSchema) {
             Project = project;
             Config = projectOptions;
             RenderingOptions = renderingOptions;
             SchemaParser = xmlParseContext;
             _immutableSchema = immutableSchema;
+
+            lock (_lock) {
+                if (_currentContext != null) throw new InvalidOperationException("既に他のコード生成処理が開始されています。");
+                _currentContext = this;
+            }
         }
 
         public GeneratedProject Project { get; }
@@ -232,5 +238,19 @@ namespace Nijo.CodeGenerating {
                 .ToArray();
         }
         private string[]? _characterTypes;
+
+
+        #region シングルトン機構。あちこちのオブジェクトのかなり深いところからコンテキストを参照したいケースがあるので
+        /// <inheritdoc cref="CodeRenderingContext"/>
+        public static CodeRenderingContext CurrentContext => _currentContext ?? throw new InvalidOperationException("コード自動生成は開始されていません。");
+        private static CodeRenderingContext? _currentContext;
+        private static readonly Lock _lock = new();
+
+        void IDisposable.Dispose() {
+            lock (_lock) {
+                if (_currentContext == this) _currentContext = null;
+            }
+        }
+        #endregion シングルトン機構。あちこちのオブジェクトのかなり深いところからコンテキストを参照したいケースがあるので
     }
 }
