@@ -13,6 +13,8 @@ namespace Nijo.Models.QueryModelModules {
     /// 通常の一覧検索と参照先検索とで共通
     /// </summary>
     internal static class SearchCondition {
+        internal const string TS_BASE_TYPE_NAME = "SearchConditionBaseType";
+
         internal const string ASC_SUFFIX = "（昇順）";
         internal const string DESC_SUFFIX = "（降順）";
 
@@ -82,6 +84,28 @@ namespace Nijo.Models.QueryModelModules {
                     """;
             }
 
+
+            /// <summary>
+            /// 検索条件の基底型の型定義をレンダリングします。
+            /// </summary>
+            internal static SourceFile RenderTsBaseType() {
+                return new SourceFile {
+                    FileName = "search-condition-base-type.ts",
+                    Contents = $$"""
+                        /** 検索条件の基底型 */
+                        export type {{TS_BASE_TYPE_NAME}}<TFilter, TSortMember extends string> = {
+                          /** 絞り込み条件 */
+                          {{FILTER_TS}}: TFilter
+                          /** 並び順 */
+                          {{SORT_TS}}: (`${TSortMember}{{ASC_SUFFIX}}` | `${TSortMember}{{DESC_SUFFIX}}`)[]
+                          /** ページングに使用。検索結果のうち先頭から何件スキップするか。 */
+                          {{SKIP_TS}}?: number
+                          /** ページングに使用。検索結果のうち先頭から何件抽出するか。 */
+                          {{TAKE_TS}}?: number
+                        }
+                        """,
+                };
+            }
             /// <summary>
             /// ルート集約またはほかの集約から参照されている子孫集約の検索条件エントリークラスをレンダリングします。
             /// </summary>
@@ -90,19 +114,13 @@ namespace Nijo.Models.QueryModelModules {
 
                 return $$"""
                     /** {{rootAggregate.DisplayName}}の検索時の検索条件の型。 */
-                    export type {{entry.TsTypeName}} = {
-                      /** 絞り込み条件 */
-                      {{FILTER_TS}}: {
+                    export type {{entry.TsTypeName}} = Util.{{TS_BASE_TYPE_NAME}}<{{entry.FilterRoot.TsTypeName}}, {{entry.TypeScriptSortableMemberType}}>
+
+                    /** {{rootAggregate.DisplayName}}の検索時の検索条件の絞り込み条件の型。 */
+                    export type {{entry.FilterRoot.TsTypeName}} = {
                     {{entry.FilterRoot.RenderTypeScriptDeclaringLiteral().SelectTextTemplate(source => $$"""
-                        {{WithIndent(source, "    ")}}
+                      {{WithIndent(source, "  ")}}
                     """)}}
-                      }
-                      /** 並び順 */
-                      {{SORT_TS}}: (`${{{entry.TypeScriptSortableMemberType}}}{{ASC_SUFFIX}}` | `${{{entry.TypeScriptSortableMemberType}}}{{DESC_SUFFIX}}`)[]
-                      /** ページングに使用。検索結果のうち先頭から何件スキップするか。 */
-                      {{SKIP_TS}}?: number
-                      /** ページングに使用。検索結果のうち先頭から何件抽出するか。 */
-                      {{TAKE_TS}}?: number
                     }
                     """;
             }
@@ -368,11 +386,18 @@ namespace Nijo.Models.QueryModelModules {
                     """;
             }
             string IFilterMember.RenderTypeScriptDeclaring() {
-                return $$"""
-                    {{_rm.PhysicalName}}: {
-                      {{WithIndent(ChildFilter.RenderTypeScriptDeclaringLiteral(), "  ")}}
-                    }
-                    """;
+                if (_rm is RefToMember refTo) {
+                    var refToFilter = new Filter(refTo.RefTo.GetRoot()); // refの場合はref自体ではなくルート
+                    return $$"""
+                        {{_rm.PhysicalName}}?: {{refToFilter.TsTypeName}}
+                        """;
+                } else {
+                    return $$"""
+                        {{_rm.PhysicalName}}: {
+                          {{WithIndent(ChildFilter.RenderTypeScriptDeclaringLiteral(), "  ")}}
+                        }
+                        """;
+                }
             }
             string IFilterMember.RenderTsNewObjectFunctionValue() {
                 return $$"""

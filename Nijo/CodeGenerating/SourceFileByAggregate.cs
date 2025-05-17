@@ -234,7 +234,7 @@ namespace Nijo.CodeGenerating {
                     .Distinct()
                     .Select(agg => new Models.QueryModelModules.SearchCondition.Entry(agg));
                 foreach (var searchCondition in searchConditionList) {
-                    modules.Add(searchCondition.TsTypeName);
+                    modules.Add(searchCondition.FilterRoot.TsTypeName);
                     modules.Add(searchCondition.TsNewObjectFunction);
                 }
 

@@ -256,15 +256,15 @@ namespace Nijo.Models {
         }
 
         public void GenerateCode(CodeRenderingContext ctx) {
-            // 一覧検索の戻り値の型
             ctx.CoreLibrary(dir => {
                 dir.Directory("Util", utilDir => {
-                    utilDir.Generate(SearchProcessingReturn.RenderCSharp(ctx));
+                    utilDir.Generate(SearchProcessingReturn.RenderCSharp(ctx)); // 一覧検索の戻り値の型
                 });
             });
             ctx.ReactProject(dir => {
                 dir.Directory("util", utilDir => {
-                    utilDir.Generate(SearchProcessingReturn.RenderTypeScript());
+                    utilDir.Generate(SearchCondition.Entry.RenderTsBaseType()); // 検索条件の基底型
+                    utilDir.Generate(SearchProcessingReturn.RenderTypeScript()); // 一覧検索の戻り値の型
                 });
             });
         }
