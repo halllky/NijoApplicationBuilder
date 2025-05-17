@@ -226,8 +226,14 @@ namespace Nijo.Models.QueryModelModules {
                     if (member is ValueMember vm && vm.Type.SearchBehavior != null) {
                         yield return new FilterValueMember(vm);
 
-                    } else if (member is IRelationalMember rm) {
-                        yield return new FilterRelationalMember(rm);
+                    } else if (member is RefToMember refTo) {
+                        yield return new FilterRefMember(refTo);
+
+                    } else if (member is ChildAggregate child) {
+                        yield return new FilterChildOrChildrenMember(child);
+
+                    } else if (member is ChildrenAggregate children) {
+                        yield return new FilterChildOrChildrenMember(children);
                     }
                 }
             }
@@ -243,8 +249,13 @@ namespace Nijo.Models.QueryModelModules {
                         if (member is FilterValueMember vm) {
                             yield return vm;
 
-                        } else if (member is FilterRelationalMember rm) {
-                            foreach (var vm2 in rm.ChildFilter.GetValueMembersRecursively()) {
+                        } else if (member is FilterRefMember rm) {
+                            foreach (var vm2 in rm.RefToFilter.GetValueMembersRecursively()) {
+                                yield return vm2;
+                            }
+
+                        } else if (member is FilterChildOrChildrenMember child) {
+                            foreach (var vm2 in child.ChildFilter.GetValueMembersRecursively()) {
                                 yield return vm2;
                             }
 
@@ -368,12 +379,59 @@ namespace Nijo.Models.QueryModelModules {
             IValueMemberType IInstanceValuePropertyMetadata.Type => Member.Type;
         }
         /// <summary>
-        /// Child, Children, Ref 部分のフィルターのコンテナ
+        /// Ref 部分のフィルターのコンテナ
         /// </summary>
-        internal class FilterRelationalMember : IFilterMember, IInstanceStructurePropertyMetadata {
-            internal FilterRelationalMember(IRelationalMember member) {
-                _rm = member;
-                ChildFilter = new Filter(member.MemberAggregate);
+        internal class FilterRefMember : IFilterMember, IInstanceStructurePropertyMetadata {
+            internal FilterRefMember(RefToMember refTo) {
+                _rm = refTo;
+
+                // refの場合はref自体ではなくルート集約のフィルタを使用する。
+                // refエントリー自体を使用すると、その祖先要素をどう持つかがルート集約起点の場合と変わってしまい、変換が必要になる。
+                // そして変換が必要になる割には大してメリットがない。
+                RefToFilter = new Filter(refTo.RefTo.GetRoot());
+            }
+            private readonly RefToMember _rm;
+            internal Filter RefToFilter { get; }
+
+            ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => _rm;
+            bool IInstanceStructurePropertyMetadata.IsArray => false;
+
+            IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
+                return ((IInstancePropertyOwnerMetadata)RefToFilter).GetMembers();
+            }
+
+            string IInstancePropertyMetadata.GetPropertyName(E_CsTs csts) => _rm.PhysicalName;
+            string IInstanceStructurePropertyMetadata.GetTypeName(E_CsTs csts) => csts == E_CsTs.CSharp ? RefToFilter.CsClassName : RefToFilter.TsTypeName;
+
+            string IFilterMember.RenderCSharpDeclaring() {
+                return $$"""
+                    public {{RefToFilter.CsClassName}} {{_rm.PhysicalName}} { get; set; } = new();
+                    """;
+            }
+            string IFilterMember.RenderTypeScriptDeclaring() {
+                return $$"""
+                    {{_rm.PhysicalName}}: {{RefToFilter.TsTypeName}}
+                    """;
+            }
+            string IFilterMember.RenderTsNewObjectFunctionValue() {
+                return $$"""
+                    {
+                      {{WithIndent(RefToFilter.RenderNewObjectFunctionMemberLiteral(), "  ")}}
+                    }
+                    """;
+            }
+        }
+        /// <summary>
+        /// Child, Children 部分のフィルターのコンテナ
+        /// </summary>
+        internal class FilterChildOrChildrenMember : IFilterMember, IInstanceStructurePropertyMetadata {
+            internal FilterChildOrChildrenMember(ChildAggregate child) {
+                _rm = child;
+                ChildFilter = new Filter(child);
+            }
+            internal FilterChildOrChildrenMember(ChildrenAggregate children) {
+                _rm = children;
+                ChildFilter = new Filter(children);
             }
 
             private readonly IRelationalMember _rm;
@@ -386,18 +444,11 @@ namespace Nijo.Models.QueryModelModules {
                     """;
             }
             string IFilterMember.RenderTypeScriptDeclaring() {
-                if (_rm is RefToMember refTo) {
-                    var refToFilter = new Filter(refTo.RefTo.GetRoot()); // refの場合はref自体ではなくルート
-                    return $$"""
-                        {{_rm.PhysicalName}}?: {{refToFilter.TsTypeName}}
-                        """;
-                } else {
-                    return $$"""
-                        {{_rm.PhysicalName}}: {
-                          {{WithIndent(ChildFilter.RenderTypeScriptDeclaringLiteral(), "  ")}}
-                        }
-                        """;
-                }
+                return $$"""
+                    {{_rm.PhysicalName}}: {
+                      {{WithIndent(ChildFilter.RenderTypeScriptDeclaringLiteral(), "  ")}}
+                    }
+                    """;
             }
             string IFilterMember.RenderTsNewObjectFunctionValue() {
                 return $$"""
