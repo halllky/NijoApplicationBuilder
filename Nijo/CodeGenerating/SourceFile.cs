@@ -55,7 +55,7 @@ namespace Nijo.CodeGenerating {
                     {{(CallerFilePath != null ? $"{comment} ※ このファイルを生成したクラス  : {Path.GetFileName(CallerFilePath)}" : "")}}
                     {{(CallerMemberName != null ? $"{comment} ※ このファイルを生成したメソッド: {CallerMemberName}" : "")}}
                     {{(ext == ".css" ? "*/" : "")}}
-                    """);
+                    """.ReplaceLineEndings(newLine));
             }
 
             foreach (var line in Contents.Split(Environment.NewLine)) {
