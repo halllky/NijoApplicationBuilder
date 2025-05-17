@@ -659,5 +659,48 @@ namespace Nijo.Models.QueryModelModules {
             }
         }
         #endregion SaveCommandへの変換
+
+
+        #region 主キーの抽出と設定（URLなどのために使用）
+        internal string PkExtractFunctionName => $"extract{Aggregate.PhysicalName}Keys";
+        internal string PkAssignFunctionName => $"assign{Aggregate.PhysicalName}Keys";
+        internal string RenderExtractPrimaryKey() {
+            var keys = Aggregate.GetKeyVMs().ToArray();
+            var dataProperties = new Variable("data", this)
+                .Create1To1PropertiesRecursively()
+                .ToDictionary(p => p.Metadata.SchemaPathNode.ToMappingKey());
+
+            return $$"""
+                /** {{Aggregate.DisplayName}}の画面表示用データのインスタンスから主キーを抽出して配列にします。 */
+                export const {{PkExtractFunctionName}} = (data: {{TsTypeName}}): [{{keys.Select(k => $"{k.PhysicalName}: {k.Type.TsTypeName} | undefined").Join(", ")}}] => {
+                  return [
+                {{keys.SelectTextTemplate(k => $$"""
+                    {{dataProperties[k.ToMappingKey()].GetJoinedPathFromInstance(E_CsTs.TypeScript, ".")}},
+                """)}}
+                  ]
+                }
+                """;
+        }
+        internal string RenderAssignPrimaryKey() {
+            var keys = Aggregate.GetKeyVMs().ToArray();
+            var dataProperties = new Variable("data", this)
+                .Create1To1PropertiesRecursively()
+                .ToDictionary(p => p.Metadata.SchemaPathNode.ToMappingKey());
+
+            return $$"""
+                /** {{Aggregate.DisplayName}}の画面表示用データのインスタンスに主キーを設定します。 */
+                export const {{PkAssignFunctionName}} = (data: {{TsTypeName}}, keys: [{{keys.Select(k => $"{k.PhysicalName}: {k.Type.TsTypeName} | undefined").Join(", ")}}]): void => {
+                  if (keys.length !== {{keys.Length}}) {
+                    console.error(`主キーの数が一致しません。個数は{{keys.Length}}であるべきところ${keys.length}個です。`);
+                    return
+                  }
+                {{keys.SelectTextTemplate((k, i) => $$"""
+                  {{dataProperties[k.ToMappingKey()].GetJoinedPathFromInstance(E_CsTs.TypeScript, ".")}} = keys[{{i}}]
+                """)}}
+                }
+                """;
+        }
+        #endregion 主キーの抽出と設定（URLなどのために使用）
+
     }
 }

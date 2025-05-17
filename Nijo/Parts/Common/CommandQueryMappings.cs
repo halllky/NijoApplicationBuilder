@@ -116,6 +116,8 @@ namespace Nijo.Parts.Common {
                     searchCondition.TsNewObjectFunction,
                     displayData.TsTypeName,
                     displayData.TsNewObjectFunction,
+                    displayData.PkExtractFunctionName,
+                    displayData.PkAssignFunctionName,
                 };
 
                 // Ref関連モジュールは他から参照されているもののみを追加
@@ -230,6 +232,18 @@ namespace Nijo.Parts.Common {
                       export const create: { [K in {{QUERY_MODEL_TYPE}}]: (() => TypeMap[K]) } = {
                     {{_queryModels.SelectTextTemplate(agg => $$"""
                         '{{agg.PhysicalName}}': {{new DisplayData(agg).TsNewObjectFunction}},
+                    """)}}
+                      }
+                      /** 主キーの抽出関数 */
+                      export const extractKeys: { [K in {{QUERY_MODEL_TYPE}}]: ((data: TypeMap[K]) => unknown[]) } = {
+                    {{_queryModels.SelectTextTemplate(agg => $$"""
+                        '{{agg.PhysicalName}}': {{new DisplayData(agg).PkExtractFunctionName}},
+                    """)}}
+                      }
+                      /** 主キーの設定関数 */
+                      export const assignKeys: { [K in {{QUERY_MODEL_TYPE}}]: ((data: TypeMap[K], keys: unknown[]) => void) } = {
+                    {{_queryModels.SelectTextTemplate(agg => $$"""
+                        '{{agg.PhysicalName}}': {{new DisplayData(agg).PkAssignFunctionName}} as (data: {{new DisplayData(agg).TsTypeName}}, keys: unknown[]) => void,
                     """)}}
                       }
                     }

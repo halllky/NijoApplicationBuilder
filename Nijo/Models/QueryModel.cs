@@ -189,12 +189,15 @@ namespace Nijo.Models {
             // - UIの制約定義オブジェクト（文字種、maxlength, 桁, required）
             // - TS側オブジェクト作成関数
             // - 変換処理: SearchResult => DisplayData
+            // - 主キーの抽出・設定関数（URLなどのために使用）
             var displayData = new DisplayData(rootAggregate);
             aggregateFile.AddCSharpClass(DisplayData.RenderCSharpRecursively(rootAggregate, ctx), "Class_DisplayData");
             aggregateFile.AddTypeScriptTypeDef(DisplayData.RenderTypeScriptRecursively(rootAggregate, ctx));
             aggregateFile.AddTypeScriptTypeDef(displayData.RenderUiConstraintType(ctx));
             aggregateFile.AddTypeScriptTypeDef(displayData.RenderUiConstraintValue(ctx));
             aggregateFile.AddTypeScriptFunction(DisplayData.RenderTsNewObjectFunctionRecursively(rootAggregate, ctx));
+            aggregateFile.AddTypeScriptFunction(displayData.RenderExtractPrimaryKey());
+            aggregateFile.AddTypeScriptFunction(displayData.RenderAssignPrimaryKey());
 
             var deepEquals = new DeepEqual(rootAggregate);
             aggregateFile.AddTypeScriptFunction(deepEquals.RenderTypeScript());
