@@ -18,14 +18,14 @@ export const ReflectionForm = ({ metadata, schema, formMethods }: {
   }, [metadata])
 
   return (
-    <Layout.VForm3.Root>
-      <MemberComponentByBreakpoint formMethods={formMethods} members={members} />
-    </Layout.VForm3.Root>
+    <Layout.VForm2.Root estimatedLabelWidth="10rem">
+      <MemberComponentByAutoColumn formMethods={formMethods} members={members} />
+    </Layout.VForm2.Root>
   )
 }
 
-/** VForm3のラベルと値の組を折り返しの単位でグルーピングしたもの */
-const MemberComponentByBreakpoint = ({ formMethods, members }: {
+/** VForm2のラベルと値の組を折り返しの単位でグルーピングしたもの */
+const MemberComponentByAutoColumn = ({ formMethods, members }: {
   formMethods: ReactHookForm.UseFormReturn<ReactHookForm.FieldValues>
   members: { physicalName: string, member: MetadataForPage.StructureMetadataMember }[]
 }) => {
@@ -39,14 +39,12 @@ const MemberComponentByBreakpoint = ({ formMethods, members }: {
         return acc
       }
 
-      // それ以外は4個ずつグルーピングする
+      // それ以外はグルーピングする
       const lastGroup = acc[acc.length - 1]
       if (lastGroup === undefined) {
         acc.push({ members: [{ physicalName: member.physicalName, member: member.member }], fullWidth: false })
-      } else if (lastGroup.members.length < 4) {
-        lastGroup.members.push({ physicalName: member.physicalName, member: member.member })
       } else {
-        acc.push({ members: [{ physicalName: member.physicalName, member: member.member }], fullWidth: false })
+        lastGroup.members.push({ physicalName: member.physicalName, member: member.member })
       }
       return acc
     }, [] as { members: { physicalName: string, member: MetadataForPage.StructureMetadataMember }[], fullWidth: boolean }[])
@@ -57,17 +55,17 @@ const MemberComponentByBreakpoint = ({ formMethods, members }: {
       {groups.map(({ members, fullWidth }, index) => fullWidth ? (
         <MemberComponent key={index} physicalName={members[0].physicalName} member={members[0].member} formMethods={formMethods} />
       ) : (
-        <Layout.VForm3.BreakPoint key={index}>
+        <Layout.VForm2.AutoColumn key={index} childrenCount={members.length}>
           {members.map((member) => (
             <MemberComponent key={member.physicalName} physicalName={member.physicalName} member={member.member} formMethods={formMethods} />
           ))}
-        </Layout.VForm3.BreakPoint>
+        </Layout.VForm2.AutoColumn>
       ))}
     </>
   )
 }
 
-/** VForm3のラベルと値の組 */
+/** VForm2のラベルと値の組 */
 const MemberComponent = ({ physicalName, member, ancestorsPath, formMethods }: {
   /** メンバーの物理名 */
   physicalName: string
@@ -88,18 +86,18 @@ const MemberComponent = ({ physicalName, member, ancestorsPath, formMethods }: {
   if (member.type === "ChildAggregate" || member.type === "ChildrenAggregate") {
     const members = Object.entries(member.members).map(([key, member]) => ({ physicalName: key, member }))
     return (
-      <Layout.VForm3.FullWidthItem label={member.displayName}>
-        <MemberComponentByBreakpoint formMethods={formMethods} members={members} />
-      </Layout.VForm3.FullWidthItem>
+      <Layout.VForm2.Indent label={member.displayName}>
+        <MemberComponentByAutoColumn formMethods={formMethods} members={members} />
+      </Layout.VForm2.Indent>
     )
   }
 
   // 外部参照
   if (member.type === "ref-to") {
     return (
-      <Layout.VForm3.Item label={member.displayName} required={member.required}>
+      <Layout.VForm2.Item label={member.displayName} required={member.required}>
         TODO
-      </Layout.VForm3.Item>
+      </Layout.VForm2.Item>
     )
   }
 
@@ -109,92 +107,92 @@ const MemberComponent = ({ physicalName, member, ancestorsPath, formMethods }: {
     // 単語
     if (member.type === "word") {
       return (
-        <Layout.VForm3.Item label={member.displayName} required>
+        <Layout.VForm2.Item label={member.displayName} required>
           <Input.Word
             control={formMethods.control}
             name={`${ancestorsPath}.${physicalName}`}
           />
-        </Layout.VForm3.Item>
+        </Layout.VForm2.Item>
       )
     }
 
     // 文章
     if (member.type === "description") {
       return (
-        <Layout.VForm3.Item label={member.displayName} required>
+        <Layout.VForm2.Item label={member.displayName} required>
           <Input.Description
             control={formMethods.control}
             name={`${ancestorsPath}.${physicalName}`}
           />
-        </Layout.VForm3.Item>
+        </Layout.VForm2.Item>
       )
     }
 
     // 数値
     if (member.type === "int" || member.type === "decimal") {
       return (
-        <Layout.VForm3.Item label={member.displayName} required>
+        <Layout.VForm2.Item label={member.displayName} required>
           <Input.NumberInput
             control={formMethods.control}
             name={`${ancestorsPath}.${physicalName}`}
           />
-        </Layout.VForm3.Item>
+        </Layout.VForm2.Item>
       )
     }
 
     // 日付、日付時刻
     if (member.type === "date" || member.type === "datetime") {
       return (
-        <Layout.VForm3.Item label={member.displayName} required>
+        <Layout.VForm2.Item label={member.displayName} required>
           <Input.DateInput
             control={formMethods.control}
             name={`${ancestorsPath}.${physicalName}`}
           />
-        </Layout.VForm3.Item>
+        </Layout.VForm2.Item>
       )
     }
 
     // チェックボックス
     if (member.type === "bool") {
       return (
-        <Layout.VForm3.Item label={member.displayName} required>
+        <Layout.VForm2.Item label={member.displayName} required>
           <Input.CheckBox
             control={formMethods.control}
             name={`${ancestorsPath}.${physicalName}`}
           />
-        </Layout.VForm3.Item>
+        </Layout.VForm2.Item>
       )
     }
 
     return (
-      <Layout.VForm3.Item label={member.displayName} required>
+      <Layout.VForm2.Item label={member.displayName} required>
         TODO
-      </Layout.VForm3.Item>
+      </Layout.VForm2.Item>
     )
   }
 
   // 列挙型
   if (member.enumType !== undefined) {
     return (
-      <Layout.VForm3.Item label={member.displayName} required>
+      <Layout.VForm2.Item label={member.displayName} required>
         <Input.EnumSelect
           type={member.enumType}
           control={formMethods.control}
           name={`${ancestorsPath}.${physicalName}`}
         />
-      </Layout.VForm3.Item>
+      </Layout.VForm2.Item>
     )
   }
 
   // 値オブジェクト（UIは単語型のそれに倣う）
   if (member.valueObjectType !== undefined) {
     return (
-      <Layout.VForm3.Item label={member.displayName} required>
+      <Layout.VForm2.Item label={member.displayName} required>
         <Input.Word
           control={formMethods.control}
           name={`${ancestorsPath}.${physicalName}`}
         />
-      </Layout.VForm3.Item>
+      </Layout.VForm2.Item>
     )
   }
 }

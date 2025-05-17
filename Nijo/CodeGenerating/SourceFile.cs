@@ -41,6 +41,7 @@ namespace Nijo.CodeGenerating {
                 : "\n";
             var comment = ext switch {
                 ".sql" => "--",
+                ".css" => "",
                 _ => "//",
             };
             using var sw = new StreamWriter(filepath, append: false, encoding) {
@@ -49,10 +50,11 @@ namespace Nijo.CodeGenerating {
 
             if (ext != ".md") {
                 sw.WriteLine($$"""
+                    {{(ext == ".css" ? "/*" : "")}}
                     {{comment}} このファイルは自動生成されました。このファイルの内容を直接書き換えても、次回の自動生成処理で上書きされるのでご注意ください。
                     {{(CallerFilePath != null ? $"{comment} ※ このファイルを生成したクラス  : {Path.GetFileName(CallerFilePath)}" : "")}}
                     {{(CallerMemberName != null ? $"{comment} ※ このファイルを生成したメソッド: {CallerMemberName}" : "")}}
-
+                    {{(ext == ".css" ? "*/" : "")}}
                     """);
             }
 
