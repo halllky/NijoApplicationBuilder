@@ -185,7 +185,9 @@ namespace Nijo.Models.QueryModelModules {
                 /// <summary>
                 /// {{_rootAggregate.DisplayName}}のデータベースへの問い合わせデータ構造（SQLで言うSELECT句とFROM句）を定義する
                 /// </summary>
-                {{If(ctx.RenderingOptions.AllowNotImplemented, () => $$"""
+                {{If(_rootAggregate.Model is DataModel, () => $$"""
+                {{RenderDataModelQuerySource(ctx)}}
+                """).ElseIf(ctx.RenderingOptions.AllowNotImplemented, () => $$"""
                 protected virtual IQueryable<{{searchResult.CsClassName}}> {{CREATE_QUERY_SOURCE}}({{searchCondition.CsClassName}} searchCondition, {{PresentationContext.INTERFACE}}<{{searchConditionMessage.CsClassName}}> context) {
                     throw new NotImplementedException("クエリ構造が定義されていません。このメソッドをオーバライドし、{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}の各項目がどのテーブルから取得されるかを定義してください。");
                 }
@@ -210,6 +212,77 @@ namespace Nijo.Models.QueryModelModules {
                 }
                 #endregion 検索
                 """;
+        }
+
+        /// <summary>
+        /// クエリ構造の定義。DataModelとQueryModelの型が完全に一致する場合のみ自動生成できる。
+        /// </summary>
+        private string RenderDataModelQuerySource(CodeRenderingContext ctx) {
+            // 引数
+            var searchCondition = new SearchCondition.Entry(_rootAggregate);
+            var searchConditionMessage = new SearchConditionMessageContainer(_rootAggregate);
+
+            // 左辺（変換先）
+            var searchResult = new SearchResult(_rootAggregate);
+            var newObject = new Variable("※ここの名前は使われないので適当※", searchResult);
+
+            // 右辺（変換元）
+            var efCoreEntity = new DataModelModules.EFCoreEntity(_rootAggregate);
+            var e = new Variable("e", efCoreEntity);
+
+            var rightMembers = new Dictionary<SchemaNodeIdentity, IInstanceProperty>();
+            foreach (var prop in e.Create1To1PropertiesRecursively()) {
+                rightMembers[prop.Metadata.SchemaPathNode.ToMappingKey()] = prop;
+            }
+
+            return $$"""
+                /// <summary>
+                /// {{_rootAggregate.DisplayName}}のデータベースへの問い合わせデータ構造（SQLで言うSELECT句とFROM句）を定義する
+                /// </summary>
+                protected virtual IQueryable<{{searchResult.CsClassName}}> {{CREATE_QUERY_SOURCE}}({{searchCondition.CsClassName}} searchCondition, {{PresentationContext.INTERFACE}}<{{searchConditionMessage.CsClassName}}> context) {
+                    return this.DbContext.{{efCoreEntity.DbSetName}}.Select({{e.Name}} => new {{searchResult.CsClassName}} {
+                        {{WithIndent(RenderMembers(newObject, rightMembers), "        ")}}
+                    });
+                }
+                """;
+
+            static IEnumerable<string> RenderMembers(IInstancePropertyOwner left, IReadOnlyDictionary<SchemaNodeIdentity, IInstanceProperty> rightMembers) {
+                foreach (var prop in left.CreateProperties()) {
+                    if (prop is InstanceValueProperty valueProp) {
+                        var right = rightMembers[valueProp.Metadata.SchemaPathNode.ToMappingKey()];
+                        yield return $$"""
+                            {{valueProp.Metadata.PropertyName}} = {{right.GetJoinedPathFromInstance(E_CsTs.CSharp, "!.")}},
+                            """;
+
+                    } else if (prop is InstanceStructureProperty structureProp) {
+                        if (!structureProp.Metadata.IsArray) {
+                            yield return $$"""
+                                {{structureProp.Metadata.PropertyName}} = new() {
+                                    {{WithIndent(RenderMembers(structureProp, rightMembers), "    ")}}
+                                },
+                                """;
+                        } else {
+                            var leftMetadata = (SearchResult.SearchResultChildrenMember)structureProp.Metadata;
+                            var rightMetadata = new DataModelModules.EFCoreEntity(leftMetadata.Aggregate);
+                            var loopVar = new Variable(((ChildrenAggregate)rightMetadata.Aggregate).GetLoopVarName(), rightMetadata);
+
+                            // 辞書に、ラムダ式内部で右辺に使用できるプロパティを加える
+                            var overridedDict = new Dictionary<SchemaNodeIdentity, IInstanceProperty>(rightMembers);
+                            foreach (var m in loopVar.Create1To1PropertiesRecursively() ?? []) {
+                                overridedDict[m.Metadata.SchemaPathNode.ToMappingKey()] = m;
+                            }
+
+                            var arrayPath = rightMembers[leftMetadata.Aggregate.ToMappingKey()];
+
+                            yield return $$"""
+                                {{structureProp.Metadata.PropertyName}} = {{arrayPath.GetJoinedPathFromInstance(E_CsTs.CSharp, "!.")}}!.Select({{loopVar.Name}} => new {{leftMetadata.CsClassName}} {
+                                    {{WithIndent(RenderMembers(structureProp, overridedDict), "    ")}}
+                                }).ToList(),
+                                """;
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>
