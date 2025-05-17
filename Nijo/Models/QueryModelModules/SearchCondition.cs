@@ -45,6 +45,10 @@ namespace Nijo.Models.QueryModelModules {
             internal const string TAKE_CS = "Take";
             internal const string TAKE_TS = "take";
 
+            IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
+                yield return FilterRoot;
+            }
+
             /// <summary>
             /// ルート集約の検索条件エントリークラスをレンダリングします。
             /// </summary>
@@ -173,10 +177,6 @@ namespace Nijo.Models.QueryModelModules {
                     """;
             }
             #endregion TypeScript側のオブジェクト新規作成関数
-
-            IEnumerable<IInstancePropertyMetadata> IInstancePropertyOwnerMetadata.GetMembers() {
-                yield return FilterRoot;
-            }
         }
 
 
