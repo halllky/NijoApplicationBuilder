@@ -78,7 +78,7 @@ internal class ConfigurationInWebApi : DefaultConfigurationInWebApi {
         // 各項目の名前は `useHttpRequest.tsx` で定義されているものと合わせる必要がある
         var responseBody = new JsonObject();
         if (returnValue != null) {
-            responseBody["returnValue"] = JsonSerializer.Serialize(returnValue, returnValue.GetType(), jsonOptions);
+            responseBody["returnValue"] = JsonSerializer.SerializeToNode(returnValue, jsonOptions);
         }
         var confirms = new JsonArray();
         foreach (var text in ctx.Confirms) {
