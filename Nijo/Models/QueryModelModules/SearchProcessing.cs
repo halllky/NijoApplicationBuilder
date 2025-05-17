@@ -236,9 +236,6 @@ namespace Nijo.Models.QueryModelModules {
             }
 
             return $$"""
-                /// <summary>
-                /// {{_rootAggregate.DisplayName}}のデータベースへの問い合わせデータ構造（SQLで言うSELECT句とFROM句）を定義する
-                /// </summary>
                 protected virtual IQueryable<{{searchResult.CsClassName}}> {{CREATE_QUERY_SOURCE}}({{searchCondition.CsClassName}} searchCondition, {{PresentationContext.INTERFACE}}<{{searchConditionMessage.CsClassName}}> context) {
                     return this.DbContext.{{efCoreEntity.DbSetName}}.Select({{e.Name}} => new {{searchResult.CsClassName}} {
                         {{WithIndent(RenderMembers(newObject, rightMembers), "        ")}}
