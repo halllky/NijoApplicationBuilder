@@ -1,7 +1,22 @@
 @import "tailwindcss";
 
+/* テーマ変数の設定 */
+@layer theme {
+  :root {
+    /* フォントサイズの基本設定 */
+    --font-size-root: 14px;
+  }
+}
+
 /* オリジナルのスタイル設定を必要に応じて残します */
 @layer base {
+
+  html,
+  body,
+  #root {
+    font-size: var(--font-size-root);
+  }
+
   :root {
     font-family: "ＭＳ 明朝", sans-serif;
   }

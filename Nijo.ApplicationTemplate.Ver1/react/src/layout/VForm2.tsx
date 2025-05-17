@@ -170,7 +170,7 @@ const LabelText = ({ children }: {
   children?: React.ReactNode
 }) => {
   return (
-    <span className="select-none text-color-6 text-sm">
+    <span className="select-none">
       {children}
     </span>
   )
