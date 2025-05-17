@@ -135,6 +135,11 @@ namespace Nijo.Models.QueryModelModules {
                         yield return new RefDisplayDataChildMember(child);
 
                     } else if (member is ChildrenAggregate children && Aggregate.PreviousNode != (ISchemaPathNode)children) {
+
+                        // 参照先のChildrenを生成すると検索処理のSQLが複雑になりすぎて発行できないことがあるので
+                        // オプションで明示的に生成するよう指定が無い限りは生成されない
+                        if (!CodeRenderingContext.CurrentContext.Config.GenerateRefToChildrenDisplayData) continue;
+
                         yield return new RefDisplayDataChildrenMember(children);
                     }
                 }
@@ -374,7 +379,9 @@ namespace Nijo.Models.QueryModelModules {
         }
 
         /// <summary>
-        /// Children
+        /// Children。
+        /// 参照先のChildrenを生成すると検索処理のSQLが複雑になりすぎて発行できないことがあるので
+        /// オプションで明示的に生成するよう指定が無い限りは生成されない
         /// </summary>
         internal class RefDisplayDataChildrenMember : RefDisplayDataMemberContainer, IRefDisplayDataMember, IInstanceStructurePropertyMetadata {
             internal RefDisplayDataChildrenMember(ChildrenAggregate member) : base(member) {

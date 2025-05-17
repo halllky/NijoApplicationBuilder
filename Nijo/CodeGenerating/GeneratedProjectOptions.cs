@@ -60,6 +60,12 @@ namespace Nijo.CodeGenerating {
         [Description($"【省略可能】 {nameof(Models.DataModel)}から生成されるRDBMS上の集約ルートテーブルに付される、楽観排他制御用のバージョンのカラムの物理名")]
         public string VersionDbColumnName => _xDocument.Root?.Attribute(nameof(VersionDbColumnName))?.Value ?? Models.DataModelModules.EFCoreEntity.VERSION;
 
+        /// <summary>参照先の子孫要素を含めたデータを表示するかどうか</summary>
+        [Description(
+            $"【省略可能】{nameof(Models.QueryModel)}から生成される画面表示用オブジェクトのうち、外部参照の、親と1対多の関係にある子孫要素を表示するかどうか。" +
+            $"SQLが複雑になりすぎて性能に問題が出たり、EFCoreがそのようなクエリを生成できなかったりするため、既定では表示しないようにしている。")]
+        public bool GenerateRefToChildrenDisplayData => _xDocument.Root?.Attribute(nameof(GenerateRefToChildrenDisplayData))?.Value == "true";
+
         /// <summary>
         /// 開発環境におけるReact.jsのサーバーが展開されるURL。httpから始める必要あり。
         /// ASP.NET Core サーバーでのCORS設定に必要。
