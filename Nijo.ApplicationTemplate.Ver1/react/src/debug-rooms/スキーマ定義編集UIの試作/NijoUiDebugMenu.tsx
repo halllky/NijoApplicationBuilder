@@ -4,6 +4,7 @@ import * as Input from "../../input"
 import * as Layout from "../../layout"
 import { DebugProcessState } from "./types"
 import { SERVER_DOMAIN } from "./NijoUi"
+import useEvent from "react-use-event-hook"
 
 export const NijoUiDebugMenu = () => {
   const [debugState, setDebugState] = useState<DebugProcessState>()
@@ -49,6 +50,38 @@ export const NijoUiDebugMenu = () => {
     fetchDebugState()
   }, [])
 
+  const [startDebuggingProcessing, setStartDebuggingProcessing] = useState(false)
+  const startDebugging = useEvent(async () => {
+    if (anyCommandProcessing) return
+    setStartDebuggingProcessing(true)
+    const response = await fetch(`${SERVER_DOMAIN}/start-debugging`, {
+      method: 'POST',
+    })
+    if (!response.ok) {
+      throw new Error('Failed to start debugging')
+    }
+    const data: DebugProcessState = await response.json()
+    setDebugState(data)
+    setStartDebuggingProcessing(false)
+  })
+
+  const [stopDebuggingProcessing, setStopDebuggingProcessing] = useState(false)
+  const stopDebugging = useEvent(async () => {
+    if (anyCommandProcessing) return
+    setStopDebuggingProcessing(true)
+    const response = await fetch(`${SERVER_DOMAIN}/stop-debugging`, {
+      method: 'POST',
+    })
+    if (!response.ok) {
+      throw new Error('Failed to stop debugging')
+    }
+    const data: DebugProcessState = await response.json()
+    setDebugState(data)
+    setStopDebuggingProcessing(false)
+  })
+
+  const anyCommandProcessing = loading || startDebuggingProcessing || stopDebuggingProcessing
+
   const debugProcessIsRunning
     = debugState?.estimatedPidOfNodeJs !== undefined
     && debugState?.estimatedPidOfAspNetCore !== undefined
@@ -68,18 +101,33 @@ export const NijoUiDebugMenu = () => {
 
   return (
     <div className="p-2 h-full overflow-y-auto">
-      <h2 className="text-xl font-semibold mb-4">デバッグメニュー</h2>
+      <h2 className="flex items-center gap-2">
+        <span className="font-semibold">
+          デバッグメニュー
+        </span>
+        <div className="basis-4" />
+        <Input.IconButton icon={Icon.ArrowPathIcon} onClick={fetchDebugState} loading={anyCommandProcessing} outline mini>
+          再読み込み
+        </Input.IconButton>
+        <Input.IconButton icon={Icon.StopIcon} onClick={stopDebugging} loading={anyCommandProcessing} fill mini>
+          停止
+        </Input.IconButton>
+        <Input.IconButton icon={Icon.PlayIcon} onClick={startDebugging} loading={anyCommandProcessing} fill mini>
+          開始
+        </Input.IconButton>
+      </h2>
 
       <hr className="border-gray-300 my-2" />
 
-      <h3 className="flex items-center gap-2">
-        <span>
-          {state}
-        </span>
-        <Input.IconButton icon={Icon.ArrowPathIcon} onClick={fetchDebugState} loading={loading} outline mini>
-          再読み込み
-        </Input.IconButton>
-      </h3>
+      {debugState?.errorSummary && (
+        <div className="text-red-500 mt-3 p-1 bg-red-100 border border-rose-500">
+          {debugState.errorSummary}
+        </div>
+      )}
+
+      <span>
+        {state}
+      </span>
 
       {error && (
         <div className="text-red-500 mt-3 p-3 bg-red-100 border border-red-400 rounded">
@@ -95,12 +143,12 @@ export const NijoUiDebugMenu = () => {
       {debugState && !error && (
         <div className="flex flex-col gap-2 text-sm mt-2">
 
-          <table className="table-fixed self-start border-collapse border border-gray-300">
+          <table className="table-fixed border-collapse border border-gray-300">
             <thead>
               <tr className="border-b border-gray-300 bg-gray-200">
                 <th className="w-40 text-left"></th>
                 <th className="w-56 text-left">URL設定</th>
-                <th className="w-72 text-left">状態</th>
+                <th className="text-left">状態</th>
               </tr>
             </thead>
             <tbody>
@@ -112,7 +160,10 @@ export const NijoUiDebugMenu = () => {
                   </LinkText>
                 </td>
                 <td className="">
-                  <PidText pid={debugState.estimatedPidOfNodeJs} />
+                  <ProcessInfoText
+                    pid={debugState.estimatedPidOfNodeJs}
+                    processName={debugState.nodeJsProcessName}
+                  />
                 </td>
               </tr>
               <tr>
@@ -123,14 +174,17 @@ export const NijoUiDebugMenu = () => {
                   </LinkText>
                 </td>
                 <td className="">
-                  <PidText pid={debugState.estimatedPidOfAspNetCore} />
+                  <ProcessInfoText
+                    pid={debugState.estimatedPidOfAspNetCore}
+                    processName={debugState.aspNetCoreProcessName}
+                  />
                 </td>
               </tr>
             </tbody>
           </table>
 
           <details className="text-xs">
-            <summary className="cursor-pointer text-gray-600">プロセスID検索時コンソール出力</summary>
+            <summary className="cursor-pointer text-gray-600">処理詳細</summary>
             <pre className="bg-gray-800 text-white p-2 resize-y h-64 overflow-y-auto text-xs">
               {debugState.consoleOut || '(出力なし)'}
             </pre>
@@ -153,8 +207,8 @@ const LinkText = ({ url, children }: { url: string | undefined, children: React.
   )
 }
 
-/** プロセスIDを表示する。 */
-const PidText = ({ pid }: { pid: number | undefined }) => {
+/** プロセス情報を表示する。 */
+const ProcessInfoText = ({ pid, processName }: { pid: number | undefined, processName: string | undefined }) => {
   if (pid === undefined) {
     return (
       <span className="text-gray-400 text-xs">
@@ -164,7 +218,7 @@ const PidText = ({ pid }: { pid: number | undefined }) => {
   }
   return (
     <span className="">
-      実行中（推定PID: {pid}）
+      実行中（PID: {pid}, プロセス名: {processName}）
     </span>
   )
 }

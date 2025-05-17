@@ -32,8 +32,6 @@ public static class ProcessExtension {
         process.StartInfo.CreateNoWindow = true;
         process.StartInfo.RedirectStandardOutput = true; // 標準出力をリダイレクト
         process.StartInfo.RedirectStandardError = true;  // 標準エラーをリダイレクト
-        process.StartInfo.StandardOutputEncoding = Encoding.UTF8;
-        process.StartInfo.StandardErrorEncoding = Encoding.UTF8;
         editStartInfo(process.StartInfo);
 
         process.OutputDataReceived += (sender, e) => {
