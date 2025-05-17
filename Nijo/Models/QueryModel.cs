@@ -231,7 +231,7 @@ namespace Nijo.Models {
             //   - ApplicationService
             aggregateFile.AddCSharpClass(DisplayDataRef.RenderCSharpRecursively(rootAggregate, ctx), "Class_DisplayDataRef");
             aggregateFile.AddTypeScriptTypeDef(DisplayDataRef.RenderTypeScriptRecursively(rootAggregate, ctx));
-            aggregateFile.AddTypeScriptFunction(DisplayDataRef.RenderTypeScriptObjectCreationFunctionRecursively(rootAggregate, ctx));
+            aggregateFile.AddTypeScriptFunction(DisplayDataRef.RenderTypeScriptFunctionsRecursively(rootAggregate, ctx));
             aggregateFile.AddAppSrvMethod(SearchProcessingRefs.RenderAppSrvMethodRecursively(rootAggregate, ctx), "参照検索処理");
             aggregateFile.AddWebapiControllerAction(SearchProcessingRefs.RenderAspNetCoreControllerActionRecursively(rootAggregate, ctx));
 

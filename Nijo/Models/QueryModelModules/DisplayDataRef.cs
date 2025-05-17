@@ -77,7 +77,7 @@ namespace Nijo.Models.QueryModelModules {
                 """;
         }
 
-        internal static string RenderTypeScriptObjectCreationFunctionRecursively(RootAggregate rootAggregate, CodeRenderingContext ctx) {
+        internal static string RenderTypeScriptFunctionsRecursively(RootAggregate rootAggregate, CodeRenderingContext ctx) {
             var (entries, _) = GetReferedMembersRecursively(rootAggregate);
 
             return $$"""
@@ -87,6 +87,20 @@ namespace Nijo.Models.QueryModelModules {
 
                 """)}}
                 //#endregion 他の集約から参照されるときの画面表示用オブジェクトの新規作成関数
+
+                //#region 主キーの抽出
+                {{entries.SelectTextTemplate(entry => $$"""
+                {{entry.RenderExtractPrimaryKey()}}
+
+                """)}}
+                //#endregion 主キーの抽出
+
+                //#region 主キーの設定
+                {{entries.SelectTextTemplate(entry => $$"""
+                {{entry.RenderAssignPrimaryKey()}}
+
+                """)}}
+                //#endregion 主キーの設定
                 """;
         }
         #endregion レンダリング
@@ -202,6 +216,50 @@ namespace Nijo.Models.QueryModelModules {
                 }
             }
             #endregion TypeScript側オブジェクト新規作成関数
+
+
+            #region 主キーの抽出と設定
+            internal string PkExtractFunctionName => $"extract{Aggregate.PhysicalName}RefKeys";
+            internal string PkAssignFunctionName => $"assign{Aggregate.PhysicalName}RefKeys";
+            internal string RenderExtractPrimaryKey() {
+                var keys = Aggregate.GetKeyVMs().ToArray();
+                var dataProperties = new Variable("data", this)
+                    .Create1To1PropertiesRecursively()
+                    .ToDictionary(p => p.Metadata.SchemaPathNode.ToMappingKey());
+                return $$"""
+                    /**
+                     * {{Aggregate.DisplayName}}のオブジェクトから主キーを抽出します。
+                     */
+                    export const {{PkExtractFunctionName}} = (data: {{TsTypeName}}): [{{keys.Select(k => $"{k.PhysicalName}: {k.Type.TsTypeName} | undefined").Join(", ")}}] => {
+                      return [
+                    {{keys.SelectTextTemplate(k => $$"""
+                        {{dataProperties[k.ToMappingKey()].GetJoinedPathFromInstance(E_CsTs.TypeScript, ".")}},
+                    """)}}
+                      ]
+                    }
+                    """;
+            }
+            internal string RenderAssignPrimaryKey() {
+                var keys = Aggregate.GetKeyVMs().ToArray();
+                var dataProperties = new Variable("data", this)
+                    .Create1To1PropertiesRecursively()
+                    .ToDictionary(p => p.Metadata.SchemaPathNode.ToMappingKey());
+                return $$"""
+                    /**
+                     * {{Aggregate.DisplayName}}の主キーを引数のオブジェクトに設定します。
+                     */
+                    export const {{PkAssignFunctionName}} = (data: {{TsTypeName}}, keys: [{{keys.Select(k => $"{k.PhysicalName}: {k.Type.TsTypeName} | undefined").Join(", ")}}]): void => {
+                      if (keys.length !== {{keys.Length}}) {
+                        console.error(`主キーの数が一致しません。個数は{{keys.Length}}であるべきところ${keys.length}個です。`);
+                        return
+                      }
+                    {{keys.SelectTextTemplate((k, i) => $$"""
+                      {{dataProperties[k.ToMappingKey()].GetJoinedPathFromInstance(E_CsTs.TypeScript, ".")}} = keys[{{i}}]
+                    """)}}
+                    }
+                    """;
+            }
+            #endregion 主キーの抽出と設定
         }
 
 

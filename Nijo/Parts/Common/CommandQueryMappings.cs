@@ -125,6 +125,8 @@ namespace Nijo.Parts.Common {
                     foreach (var entry in refEntries) {
                         modules.Add(entry.TsTypeName);
                         modules.Add(entry.TsNewObjectFunction);
+                        modules.Add(entry.PkExtractFunctionName);
+                        modules.Add(entry.PkAssignFunctionName);
                     }
                 }
 
@@ -262,6 +264,18 @@ namespace Nijo.Parts.Common {
                       export const create: { [K in {{REFERED_QUERY_MODEL_TYPE}}]: (() => TypeMap[K]) } = {
                     {{referedRefEntires.Values.SelectMany(x => x).SelectTextTemplate(refEntry => $$"""
                         '{{refEntry.Aggregate.PhysicalName}}': {{refEntry.TsNewObjectFunction}},
+                    """)}}
+                      }
+                      /** 主キーの抽出関数 */
+                      export const extractKeys: { [K in {{REFERED_QUERY_MODEL_TYPE}}]: ((data: TypeMap[K]) => unknown[]) } = {
+                    {{referedRefEntires.Values.SelectMany(x => x).SelectTextTemplate(refEntry => $$"""
+                        '{{refEntry.Aggregate.PhysicalName}}': {{refEntry.PkExtractFunctionName}},
+                    """)}}
+                      }
+                      /** 主キーの設定関数 */
+                      export const assignKeys: { [K in {{REFERED_QUERY_MODEL_TYPE}}]: ((data: TypeMap[K], keys: unknown[]) => void) } = {
+                    {{referedRefEntires.Values.SelectMany(x => x).SelectTextTemplate(refEntry => $$"""
+                        '{{refEntry.Aggregate.PhysicalName}}': {{refEntry.PkAssignFunctionName}} as (data: {{refEntry.TsTypeName}}, keys: unknown[]) => void,
                     """)}}
                       }
                     }
