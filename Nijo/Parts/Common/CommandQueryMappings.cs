@@ -217,83 +217,98 @@ namespace Nijo.Parts.Common {
                     //#endregion Command,Queryの種類の一覧
 
 
-                    //#region QueryModelのモジュールの型マッピング
-                    /** DisplayData型一覧 */
-                    export interface DisplayDataTypeMap {
+                    //#region DisplayData
+                    /** 画面表示用データ */
+                    export namespace DisplayData {
+                      /** DisplayData型一覧 */
+                      export interface TypeMap {
                     {{_queryModels.SelectTextTemplate(agg => $$"""
-                      '{{agg.PhysicalName}}': {{new DisplayData(agg).TsTypeName}}
+                        '{{agg.PhysicalName}}': {{new DisplayData(agg).TsTypeName}}
                     """)}}
+                      }
+                      /** DisplayData新規作成関数 */
+                      export const create: { [K in {{QUERY_MODEL_TYPE}}]: (() => TypeMap[K]) } = {
+                    {{_queryModels.SelectTextTemplate(agg => $$"""
+                        '{{agg.PhysicalName}}': {{new DisplayData(agg).TsNewObjectFunction}},
+                    """)}}
+                      }
                     }
+                    //#endregion DisplayData
 
-                    /** RefTarget型一覧 */
-                    export interface RefTargetTypeMap {
+                    //#region RefTarget
+                    /** 画面表示用データ（外部参照） */
+                    export namespace RefTarget {
+                      /** RefTarget型一覧 */
+                      export interface TypeMap {
                     {{referedRefEntires.Values.SelectMany(x => x).SelectTextTemplate(refEntry => $$"""
-                      '{{refEntry.Aggregate.PhysicalName}}': {{refEntry.TsTypeName}}
+                        '{{refEntry.Aggregate.PhysicalName}}': {{refEntry.TsTypeName}}
                     """)}}
-                    }
-
-                    /** SearchCondition型一覧 */
-                    export interface SearchConditionTypeMap {
-                    {{_queryModels.SelectTextTemplate(agg => $$"""
-                      '{{agg.PhysicalName}}': {{new SearchCondition.Entry(agg).TsTypeName}}
-                    """)}}
-                    }
-                    //#endregion QueryModelのモジュールの型マッピング
-
-
-                    //#region Commandのモジュールの型マッピング
-                    /** Commandパラメータ型一覧 */
-                    export interface CommandParamTypeMap {
-                    {{_commandModels.SelectTextTemplate(agg => $$"""
-                      '{{agg.PhysicalName}}': {{new ParameterOrReturnValue(agg, ParameterOrReturnValue.E_Type.Parameter).TsTypeName}}
-                    """)}}
-                    }
-
-                    /** Command戻り値型一覧 */
-                    export interface CommandReturnTypeMap {
-                    {{_commandModels.SelectTextTemplate(agg => $$"""
-                      '{{agg.PhysicalName}}': {{new ParameterOrReturnValue(agg, ParameterOrReturnValue.E_Type.ReturnValue).TsTypeName}}
-                    """)}}
-                    }
-                    //#endregion Commandのモジュールの型マッピング
-
-
-                    //#region オブジェクトの新規作成関数
-                    /** DisplayData新規作成関数 */
-                    export const createNewDisplayDataFunctions: { [K in {{QUERY_MODEL_TYPE}}]: (() => DisplayDataTypeMap[K]) } = {
-                    {{_queryModels.SelectTextTemplate(agg => $$"""
-                      '{{agg.PhysicalName}}': {{new DisplayData(agg).TsNewObjectFunction}},
-                    """)}}
-                    }
-
-                    /** RefTarget新規作成関数 */
-                    export const createNewRefTargetFunctions: { [K in {{REFERED_QUERY_MODEL_TYPE}}]: (() => RefTargetTypeMap[K]) } = {
+                      }
+                      /** RefTarget新規作成関数 */
+                      export const create: { [K in {{REFERED_QUERY_MODEL_TYPE}}]: (() => TypeMap[K]) } = {
                     {{referedRefEntires.Values.SelectMany(x => x).SelectTextTemplate(refEntry => $$"""
-                      '{{refEntry.Aggregate.PhysicalName}}': {{refEntry.TsNewObjectFunction}},
+                        '{{refEntry.Aggregate.PhysicalName}}': {{refEntry.TsNewObjectFunction}},
                     """)}}
+                      }
                     }
+                    //#endregion RefTarget
 
-                    /** SearchCondition新規作成関数 */
-                    export const createNewSearchConditionFunctions: {[K in {{QUERY_MODEL_TYPE}}]: (() => SearchConditionTypeMap[K]) } = {
+
+                    //#region SearchCondition
+                    /** 検索条件 */
+                    export namespace SearchCondition {
+                      /** SearchCondition型一覧 */
+                      export interface TypeMap {
                     {{_queryModels.SelectTextTemplate(agg => $$"""
-                      '{{agg.PhysicalName}}': {{new SearchCondition.Entry(agg).TsNewObjectFunction}},
+                        '{{agg.PhysicalName}}': {{new SearchCondition.Entry(agg).TsTypeName}}
                     """)}}
+                      }
+                      /** SearchCondition新規作成関数 */
+                      export const create: { [K in {{QUERY_MODEL_TYPE}}]: (() => TypeMap[K]) } = {
+                    {{_queryModels.SelectTextTemplate(agg => $$"""
+                        '{{agg.PhysicalName}}': {{new SearchCondition.Entry(agg).TsNewObjectFunction}},
+                    """)}}
+                      }
                     }
+                    //#endregion SearchCondition
 
-                    /** Commandパラメータ新規作成関数 */
-                    export const createNewCommandParamFunctions: { [K in {{COMMAND_MODEL_TYPE}}]: (() => CommandParamTypeMap[K]) } = {
-                    {{_commandModels.SelectTextTemplate(agg => $$"""
-                      '{{agg.PhysicalName}}': {{new ParameterOrReturnValue(agg, ParameterOrReturnValue.E_Type.Parameter).TsNewObjectFunction}},
-                    """)}}
-                    }
 
-                    /** Command戻り値新規作成関数 */
-                    export const createNewCommandReturnTypeFunctions: { [K in {{COMMAND_MODEL_TYPE}}]: (() => CommandReturnTypeMap[K]) } = {
+                    //#region Commandパラメータ
+                    /** Commandパラメータ */
+                    export namespace CommandParam {
+                      /** Commandパラメータ型一覧 */
+                      export interface TypeMap {
                     {{_commandModels.SelectTextTemplate(agg => $$"""
-                      '{{agg.PhysicalName}}': {{new ParameterOrReturnValue(agg, ParameterOrReturnValue.E_Type.ReturnValue).TsNewObjectFunction}},
+                        '{{agg.PhysicalName}}': {{new ParameterOrReturnValue(agg, ParameterOrReturnValue.E_Type.Parameter).TsTypeName}}
                     """)}}
+                      }
+                      /** Commandパラメータ新規作成関数 */
+                      export const create: { [K in {{COMMAND_MODEL_TYPE}}]: (() => TypeMap[K]) } = {
+                    {{_commandModels.SelectTextTemplate(agg => $$"""
+                        '{{agg.PhysicalName}}': {{new ParameterOrReturnValue(agg, ParameterOrReturnValue.E_Type.Parameter).TsNewObjectFunction}},
+                    """)}}
+                      }
                     }
-                    //#endregion オブジェクトの新規作成関数
+                    //#endregion Commandパラメータ
+
+
+                    //#region Command戻り値
+                    /** Command戻り値 */
+                    export namespace CommandReturnValue {
+                      /** Command戻り値型一覧 */
+                      export interface TypeMap {
+                    {{_commandModels.SelectTextTemplate(agg => $$"""
+                        '{{agg.PhysicalName}}': {{new ParameterOrReturnValue(agg, ParameterOrReturnValue.E_Type.ReturnValue).TsTypeName}}
+                    """)}}
+                      }
+                      /** Command戻り値新規作成関数 */
+                      export const create: { [K in {{COMMAND_MODEL_TYPE}}]: (() => TypeMap[K]) } = {
+                    {{_commandModels.SelectTextTemplate(agg => $$"""
+                        '{{agg.PhysicalName}}': {{new ParameterOrReturnValue(agg, ParameterOrReturnValue.E_Type.ReturnValue).TsNewObjectFunction}},
+                    """)}}
+                      }
+                    }
+                    //#endregion Command戻り値
 
 
                     //#region SearchConditionソート可能メンバー
