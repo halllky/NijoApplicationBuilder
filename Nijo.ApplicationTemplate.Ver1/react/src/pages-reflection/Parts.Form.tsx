@@ -171,6 +171,11 @@ const MemberComponent = ({ memberName, member, ancestorsPath }: {
     )
   }
 
+  // SingleViewの場合、DisplayDataの値メンバーはvaluesという名前のオブジェクトの中にある
+  const valuesMemberPath = mode === "single-view"
+    ? `${ancestorsPath}.values.${memberName}`
+    : `${ancestorsPath}.${memberName}`
+
   // 一般ValueMember
   if (member.type !== undefined) {
 
@@ -180,7 +185,7 @@ const MemberComponent = ({ memberName, member, ancestorsPath }: {
         <Layout.VForm2.Item label={member.displayName} required={member.required && mode === "single-view"}>
           <Input.Word
             control={control}
-            name={`${ancestorsPath}.${memberName}`}
+            name={valuesMemberPath}
           />
         </Layout.VForm2.Item>
       )
@@ -192,7 +197,7 @@ const MemberComponent = ({ memberName, member, ancestorsPath }: {
         <Layout.VForm2.Item label={member.displayName} required={member.required}>
           <Input.Description
             control={control}
-            name={`${ancestorsPath}.${memberName}`}
+            name={valuesMemberPath}
           />
         </Layout.VForm2.Item>
       ) : (
@@ -200,7 +205,7 @@ const MemberComponent = ({ memberName, member, ancestorsPath }: {
         <Layout.VForm2.Item label={member.displayName}>
           <Input.Word
             control={control}
-            name={`${ancestorsPath}.${memberName}`}
+            name={valuesMemberPath}
           />
         </Layout.VForm2.Item>
       )
@@ -212,7 +217,7 @@ const MemberComponent = ({ memberName, member, ancestorsPath }: {
         <Layout.VForm2.Item label={member.displayName} required={member.required}>
           <Input.NumberInput
             control={control}
-            name={`${ancestorsPath}.${memberName}`}
+            name={valuesMemberPath}
           />
         </Layout.VForm2.Item>
       ) : (
@@ -221,13 +226,13 @@ const MemberComponent = ({ memberName, member, ancestorsPath }: {
           <div className="flex flex-wrap items-center gap-1">
             <Input.NumberInput
               control={control}
-              name={`${ancestorsPath}.${memberName}.from`}
+              name={`${valuesMemberPath}.from`}
               className="max-w-24"
             />
             ～
             <Input.NumberInput
               control={control}
-              name={`${ancestorsPath}.${memberName}.to`}
+              name={`${valuesMemberPath}.to`}
               className="max-w-24"
             />
           </div>
@@ -241,7 +246,7 @@ const MemberComponent = ({ memberName, member, ancestorsPath }: {
         <Layout.VForm2.Item label={member.displayName} required={member.required}>
           <Input.DateInput
             control={control}
-            name={`${ancestorsPath}.${memberName}`}
+            name={valuesMemberPath}
           />
         </Layout.VForm2.Item>
       ) : (
@@ -250,13 +255,13 @@ const MemberComponent = ({ memberName, member, ancestorsPath }: {
           <div className="flex flex-wrap items-center gap-1">
             <Input.DateInput
               control={control}
-              name={`${ancestorsPath}.${memberName}.from`}
+              name={`${valuesMemberPath}.from`}
               className="max-w-40"
             />
             ～
             <Input.DateInput
               control={control}
-              name={`${ancestorsPath}.${memberName}.to`}
+              name={`${valuesMemberPath}.to`}
               className="max-w-40"
             />
           </div>
@@ -270,7 +275,7 @@ const MemberComponent = ({ memberName, member, ancestorsPath }: {
         <Layout.VForm2.Item label={member.displayName} required={member.required}>
           <Input.CheckBox
             control={control}
-            name={`${ancestorsPath}.${memberName}`}
+            name={valuesMemberPath}
           />
         </Layout.VForm2.Item>
       ) : (
@@ -278,11 +283,11 @@ const MemberComponent = ({ memberName, member, ancestorsPath }: {
         <Layout.VForm2.Item label={member.displayName}>
           <Input.CheckBox
             control={control}
-            name={`${ancestorsPath}.${memberName}.Trueのみ`}
+            name={`${valuesMemberPath}.Trueのみ`}
           />
           <Input.CheckBox
             control={control}
-            name={`${ancestorsPath}.${memberName}.Falseのみ`}
+            name={`${valuesMemberPath}.Falseのみ`}
           />
         </Layout.VForm2.Item>
       )
@@ -304,7 +309,7 @@ const MemberComponent = ({ memberName, member, ancestorsPath }: {
         <Input.EnumSelect
           type={member.enumType}
           control={control}
-          name={`${ancestorsPath}.${memberName}`}
+          name={valuesMemberPath}
         />
       </Layout.VForm2.Item>
     ) : (
@@ -315,7 +320,7 @@ const MemberComponent = ({ memberName, member, ancestorsPath }: {
             <Input.CheckBox
               key={value}
               control={control}
-              name={`${ancestorsPath}.${memberName}.${value}`}
+              name={`${valuesMemberPath}.${value}`}
             >
               {value}
             </Input.CheckBox>
@@ -331,7 +336,7 @@ const MemberComponent = ({ memberName, member, ancestorsPath }: {
       <Layout.VForm2.Item label={member.displayName} required={member.required && mode === "single-view"}>
         <Input.Word
           control={control}
-          name={`${ancestorsPath}.${memberName}`}
+          name={valuesMemberPath}
         />
       </Layout.VForm2.Item>
     )

@@ -35,6 +35,16 @@ export const getSchema = () => {
     return keys
   }
 
+  // SingleViewのURLの主キーの名前を列挙する
+  const getSingleViewUrlKeys = (structureMetadata: MetadataForPage.StructureMetadata): `key${number}`[] => {
+    if (structureMetadata.type !== 'RootAggregate') throw new Error(`SingleViewのURLの主キーの名前を列挙するにはRootAggregateである必要があります。: ${structureMetadata.type}`)
+    const keys: `key${number}`[] = []
+    for (let i = 0; i < enumerateKeyVMs(structureMetadata).length; i++) {
+      keys.push(`key${i}`)
+    }
+    return keys
+  }
+
   return {
     /** 画面リフレクション用のメタデータ */
     metadata,
@@ -42,5 +52,7 @@ export const getSchema = () => {
     findRefTo,
     /** 主キーを列挙する。主キーがref-toの場合は参照先のキーを列挙する */
     enumerateKeyVMs,
+    /** SingleViewのURLの主キーの名前を列挙する */
+    getSingleViewUrlKeyNames: getSingleViewUrlKeys,
   }
 }
