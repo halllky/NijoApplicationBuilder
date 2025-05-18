@@ -284,13 +284,13 @@ const MemberComponent = ({ memberName, member, ancestorsPath }: {
           <div className="flex flex-wrap gap-x-2 gap-y-1">
             <Input.CheckBox
               control={control}
-              name={`${valuesMemberPath}.Trueのみ`}
+              name={`${valuesMemberPath}.trueのみ`}
             >
               Trueのみ
             </Input.CheckBox>
             <Input.CheckBox
               control={control}
-              name={`${valuesMemberPath}.Falseのみ`}
+              name={`${valuesMemberPath}.falseのみ`}
             >
               Falseのみ
             </Input.CheckBox>

@@ -83,10 +83,13 @@ internal class BoolMember : IValueMemberType {
                 FileName = "BooleanSearchCondition.cs",
                 Contents = $$"""
                     using System;
+                    using System.Text.Json.Serialization;
 
                     namespace {{ctx.Config.RootNamespace}} {
                         public class BooleanSearchCondition {
+                            [JsonPropertyName("trueのみ")]
                             public bool Trueのみ { get; set; }
+                            [JsonPropertyName("falseのみ")]
                             public bool Falseのみ { get; set; }
 
                             public bool AnyChecked() => Trueのみ || Falseのみ;
