@@ -281,14 +281,20 @@ const MemberComponent = ({ memberName, member, ancestorsPath }: {
       ) : (
         // 検索条件
         <Layout.VForm2.Item label={member.displayName}>
-          <Input.CheckBox
-            control={control}
-            name={`${valuesMemberPath}.Trueのみ`}
-          />
-          <Input.CheckBox
-            control={control}
-            name={`${valuesMemberPath}.Falseのみ`}
-          />
+          <div className="flex flex-wrap gap-x-2 gap-y-1">
+            <Input.CheckBox
+              control={control}
+              name={`${valuesMemberPath}.Trueのみ`}
+            >
+              Trueのみ
+            </Input.CheckBox>
+            <Input.CheckBox
+              control={control}
+              name={`${valuesMemberPath}.Falseのみ`}
+            >
+              Falseのみ
+            </Input.CheckBox>
+          </div>
         </Layout.VForm2.Item>
       )
     }

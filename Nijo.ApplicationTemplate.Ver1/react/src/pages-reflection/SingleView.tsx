@@ -110,8 +110,6 @@ const AfterLoaded = <
     defaultValues,
   })
 
-  console.log("AfterLoaded", defaultValues)
-
   return (
     <ReflectionForm
       mode="single-view"
