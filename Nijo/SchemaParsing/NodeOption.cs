@@ -269,10 +269,10 @@ internal static class BasicNodeOptions {
     };
     internal static NodeOption HasLifeCycle = new() {
         AttributeName = "HasLifeCycle",
-        DisplayName = "独立ライフサイクル",
+        DisplayName = "【廃止予定】独立ライフサイクル",
         Type = E_NodeOptionType.Boolean,
         HelpText = $$"""
-            画面上で追加削除されるタイミングが親と異なるかどうか。
+            【廃止予定】画面上で追加削除されるタイミングが親と異なるかどうか。
             """,
         Validate = ctx => {
             // クエリモデルのみ許可

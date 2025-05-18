@@ -383,10 +383,16 @@ namespace Nijo.Models.QueryModelModules {
         /// ToDisplayData
         /// </summary>
         private string RenderToDisplayData() {
-            var searchResult = new SearchResult(_rootAggregate);
+            // 左辺
             var displayData = new DisplayData(_rootAggregate);
+            var newObject = new Variable("※ここの名前は使われないので適当※", displayData);
 
-            var sr = new Variable("searchResult", searchResult);
+            // 右辺
+            var searchResult = new SearchResult(_rootAggregate);
+            var right = new Variable("searchResult", searchResult);
+            // var rightMembers = right
+            //     .Create1To1PropertiesRecursively()
+            //     .ToDictionary(x => x.Metadata.SchemaPathNode.ToMappingKey());
 
             return $$"""
                 /// <summary>
@@ -394,26 +400,22 @@ namespace Nijo.Models.QueryModelModules {
                 /// 検索条件には存在するが画面表示用データには存在しない項目は、この式の結果に含まれません。
                 /// </summary>
                 protected virtual Expression<Func<{{searchResult.CsClassName}}, {{displayData.CsClassName}}>> {{ToDisplayData}}() {
-                    return {{sr.Name}} => new {{displayData.CsClassName}}() {
+                    return {{right.Name}} => new {{displayData.CsClassName}}() {
                         {{DisplayData.VALUES_CS}} = new() {
-                            {{WithIndent(RenderMember(displayData, sr), "            ")}}
+                            {{WithIndent(RenderValueMembers(displayData, right), "            ")}}
                         },
-                {{If(displayData.HasLifeCycle, () => $$"""
+                {{displayData.GetChildMembers().SelectTextTemplate(child => $$"""
+                        {{WithIndent(RenderDescendantMember(child, right), "        ")}}
+                """)}}
                         {{DisplayData.EXISTS_IN_DB_CS}} = true,
                         {{DisplayData.WILL_BE_CHANGED_CS}} = false,
                         {{DisplayData.WILL_BE_DELETED_CS}} = false,
-                """)}}
-                {{If(displayData.HasVersion, () => $$"""
                         {{DisplayData.VERSION_CS}} = searchResult.{{SearchResult.VERSION}},
-                """)}}
-                {{displayData.GetChildMembers().SelectTextTemplate(child => $$"""
-                        // {{child.PhysicalName}} =
-                """)}}
                     };
                 }
                 """;
 
-            static IEnumerable<string> RenderMember(DisplayData left, IInstancePropertyOwner rightInstance) {
+            static IEnumerable<string> RenderValueMembers(DisplayData left, IInstancePropertyOwner rightInstance) {
                 // 右辺
                 var rightMembers = rightInstance
                     .CreatePropertiesRecursively()
@@ -472,6 +474,50 @@ namespace Nijo.Models.QueryModelModules {
                     } else {
                         throw new NotImplementedException();
                     }
+                }
+            }
+
+            static string RenderDescendantMember(DisplayData.DisplayDataDescendant displayData, IInstancePropertyOwner rightInstance) {
+                if (displayData.Aggregate is ChildAggregate child) {
+
+                    return $$"""
+                        {{displayData.PhysicalName}} = new() {
+                            {{DisplayData.VALUES_CS}} = new() {
+                                {{WithIndent(RenderValueMembers(displayData, rightInstance), "        ")}}
+                            },
+                        {{displayData.GetChildMembers().SelectTextTemplate(child => $$"""
+                            {{WithIndent(RenderDescendantMember(child, rightInstance), "    ")}}
+                        """)}}
+                            {{DisplayData.EXISTS_IN_DB_CS}} = true,
+                            {{DisplayData.WILL_BE_CHANGED_CS}} = false,
+                            {{DisplayData.WILL_BE_DELETED_CS}} = false,
+                        },
+                        """;
+
+                } else if (displayData.Aggregate is ChildrenAggregate children) {
+                    var mappingKey = children.ToMappingKey();
+                    var rightArray = rightInstance
+                        .CreatePropertiesRecursively()
+                        .SingleOrDefault(p => p.Metadata.SchemaPathNode.ToMappingKey() == mappingKey)
+                        ?? throw new InvalidOperationException($"{mappingKey}と対応するプロパティが見つかりません");
+                    var loopVar = new Variable(children.GetLoopVarName(), (IInstancePropertyOwnerMetadata)rightArray.Metadata);
+
+                    return $$"""
+                        {{displayData.PhysicalName}} = {{rightArray.GetJoinedPathFromInstance(E_CsTs.CSharp, "!.")}}.Select({{loopVar.Name}} => new {{displayData.CsClassName}} {
+                            {{DisplayData.VALUES_CS}} = new() {
+                                {{WithIndent(RenderValueMembers(displayData, loopVar), "        ")}}
+                            },
+                        {{displayData.GetChildMembers().SelectTextTemplate(child => $$"""
+                            {{WithIndent(RenderDescendantMember(child, loopVar), "    ")}}
+                        """)}}
+                            {{DisplayData.EXISTS_IN_DB_CS}} = true,
+                            {{DisplayData.WILL_BE_CHANGED_CS}} = false,
+                            {{DisplayData.WILL_BE_DELETED_CS}} = false,
+                        }).ToList(),
+                        """;
+
+                } else {
+                    throw new NotImplementedException();
                 }
             }
         }

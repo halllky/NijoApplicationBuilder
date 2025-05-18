@@ -322,8 +322,8 @@ namespace Nijo.ImmutableSchema {
             ? (AggregateBase?)PreviousNode ?? throw new InvalidOperationException() // パスの巻き戻しの場合
             : _ctx.ToAggregateBase(_xElement.Parent ?? throw new InvalidOperationException(), this);
 
-        /// <summary>画面上で追加削除されるタイミングが親と異なるかどうか</summary>
-        public bool HasLifeCycle => _xElement.Attribute(BasicNodeOptions.HasLifeCycle.AttributeName) != null;
+        /// <summary>【廃止予定】画面上で追加削除されるタイミングが親と異なるかどうか</summary>
+        public bool HasLifeCycle => true || _xElement.Attribute(BasicNodeOptions.HasLifeCycle.AttributeName) != null;
 
         AggregateBase IRelationalMember.MemberAggregate => this;
 
