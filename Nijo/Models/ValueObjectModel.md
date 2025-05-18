@@ -11,6 +11,9 @@
 ## C#の値オブジェクトクラス
 値オブジェクトを表すC#のクラスが生成される。
 このクラスは値の等価性比較を行うためのメソッドを持つ。
+また、`string`型との間で明示的なキャスト (`(string)valueObject` や `(ValueObject)stringValue`) が可能です。
 
 ## TypeScriptの型定義
 TypeScript側での型定義が生成される。
+具体的には、`string`型にユニークなブランド付けを行う公称型 (nominal typing) として定義され、他の文字列型との意図しない代入を防ぎます。
+例えば、`MyValueObject` という名前の値オブジェクトは `export type MyValueObject = string & { readonly __brand: unique symbol }` のように定義されます。

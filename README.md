@@ -1,3 +1,13 @@
+- [NijoApplicationBuilder - スキーマ駆動型アプリケーション生成フレームワーク](#nijoapplicationbuilder---スキーマ駆動型アプリケーション生成フレームワーク)
+  - [開発手順概要](#開発手順概要)
+    - [0. 初期設定](#0-初期設定)
+    - [1. スキーマ定義を作成](#1-スキーマ定義を作成)
+    - [2. コード自動生成を実行する](#2-コード自動生成を実行する)
+    - [3. 自動生成で賄えない機能を自前で実装する](#3-自動生成で賄えない機能を自前で実装する)
+  - [主要なプロジェクト構造](#主要なプロジェクト構造)
+  - [ライセンス](#ライセンス)
+
+
 # NijoApplicationBuilder - スキーマ駆動型アプリケーション生成フレームワーク
 NijoApplicationBuilderは、XMLベースのスキーマ定義からアプリケーションコードの一部を自動生成するフレームワークです。
 主として、特定の業務フローをサポートするためのアプリケーションのフルスクラッチ開発を補助することを主眼としています。
@@ -10,14 +20,25 @@ NijoApplicationBuilderは、XMLベースのスキーマ定義からアプリケ�
 より品質の高いアプリケーションのスクラッチ開発をサポートすることができます。
 
 - それぞれの技術スタックごとに適したオブジェクト構造定義（RDBMSのテーブル定義、C#のクラス、TypeScriptの型定義など）
-- 必須入力チェックやORMのデータ構造定義など、スキーマ定義から一意に決まる処理
+- ORM(Entity Framework Core)のモデル構造定義
+- データモデルに基づくCRUD操作
+- 必須入力チェックなどのデータ構造から自動的に決まるバリデーション処理
 
-## 主な機能
+また、当然ながらアプリケーションはデータ構造だけで完結することはできず、以下のような機能も必要になります。
 
-- **スキーマ定義のパース**: nijo.xmlのスキーマ定義を読み込み、解析します。
-  - ここでスキーマ定義内に矛盾がないかどうかの妥当性検証がおこなわれます。
-- **コード生成**: 定義されたモデルから各種ソースコードを自動生成します。
-  - コード生成前にスキーマ定義のパースが行なわれます。スキーマ定義にエラーがある場合はコードの自動生成は実行されません。
+- データ構造だけでは決まらない複雑な業務ルール
+- 画面, UIコンポーネント
+- 認証・認可
+- エラーハンドリング
+- ログ出力
+
+このフレームワークでは、ソースコードの自動生成を用いながら組み上げるアプリケーションのサンプルとして
+[Nijo.ApplicationTemplate.Ver1](./Nijo.ApplicationTemplate.Ver1/README.md) を用意しています。
+サンプルは SQLite や React.js を用いてアプリケーションを構築していますが、
+必ずしもこれらのライブラリに依存する必要はなく、必要に応じて別の技術基盤に変更することができます。
+
+開発者は、当該サンプルをベースに、システムごとの個別の要求に合わせて適宜技術基盤を組み換えつつ、
+ソースコードの自動生成処理を組み合わせることで、ビジネスロジックの実装に集中しながら堅牢なアプリケーションを効率的に構築することができます。
 
 ## 開発手順概要
 このツールを用いてアプリケーションを開発する大まかな手順を説明します。
@@ -49,10 +70,11 @@ nijo.exe new
 ### 1. スキーマ定義を作成
 開発を進めるにあたり、スキーマ定義が変更になることは頻繁に発生します。
 その都度、 `nijo.xml` を書き換えてください。
-詳細な仕様は [スキーマ定義仕様](./スキーマ定義仕様.md) を参照してください。
+スキーマ定義のより詳細な仕様や、nijo.xml の具体的な記述方法については、コード生成エンジンである [`Nijo` プロジェクトのドキュメント](./Nijo/README.md) を参照してください。
 
 ### 2. コード自動生成を実行する
 `nijo generate` コマンドを実行し、コード自動生成を実行します。
+このコマンド実行時には、スキーマ定義のバリデーションが行われ、不正な定義がある場合はエラーが出力されます。
 以下はWindowsでのコマンド実行例です。 `<nijo.xmlがあるフォルダ>` の箇所は各自の環境に応じて読み替えてください。
 
 ```cmd
@@ -69,100 +91,20 @@ nijo.exe generate
 
 以上、1, 2, 3 のサイクルを繰り返しながら、アプリケーションを完成させていってください。
 
-## プロジェクト構造
+## 主要なプロジェクト構造
 プロジェクトは以下の主要コンポーネントで構成されています。
 また、主要なフォルダには `README.md` ファイルを配置しています。
 そのフォルダに配置されているモジュールの責務や概要を把握するのに利用してください。
 
-- [`Nijo/`](./Nijo/): コード生成エンジン。XMLスキーマ解析とコード生成を行ないます。
+- [`Nijo/`](./Nijo/README.md): コード生成エンジン。XMLスキーマ解析とコード生成を行ないます。
   - [Models](Nijo/Models/README.md) : スキーマ定義から生成される各種モデルの実装
   - [ValueMemberTypes](Nijo/ValueMemberTypes/README.md) : 標準データ型の定義
   - [SchemaParsing](Nijo/SchemaParsing/README.md) : nijo.xmlのパース処理に関する実装
   - その他の生成ロジック
-- [`Nijo.ApplicationTemplate.Ver1/`](./Nijo.ApplicationTemplate.Ver1/): アプリケーションテンプレート。
+- [`Nijo.ApplicationTemplate.Ver1/`](./Nijo.ApplicationTemplate.Ver1/README.md): アプリケーションテンプレート。
 - [`Nijo.IntegrationTest/`](./Nijo.IntegrationTest/): ソースコード自動生成処理のユニットテスト。
   - `DataPatterns/`: テスト用のデータパターン
 
 
 ## ライセンス
 このプロジェクトは[LICENSE.txt](./LICENSE.txt)の条件の下で提供されています。
-
-# TypeScript MCP
-
-TypeScript版 MCP (Model Context Protocol) ツールは、AIエージェントがTypeScriptのプロジェクトに関するタスクの遂行の精度を上げるためのものです。
-
-このツールは、.NET版MCPをTypeScriptに移植したもので、公式の [Model Context Protocol TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk) を使用しています。
-
-## 機能
-
-- `find_definition`: TypeScriptファイル内の特定位置にあるシンボルの定義を検索します
-- `find_references`: TypeScriptファイル内の特定位置にあるシンボルの参照を検索します
-- `suggest_abstract_members`: TypeScriptファイル内のクラスが実装すべきインターフェースメンバーを提案します
-
-## セットアップ
-
-1. 必要なパッケージをインストールします:
-
-```bash
-npm install
-```
-
-2. `appsettings.json`ファイルを設定します:
-
-```json
-{
-  "TypeScriptMcp": {
-    "ProjectPath": "<TypeScriptプロジェクトの絶対パス>",
-    "WorkDirectory": "work"
-  }
-}
-```
-
-## 使い方
-
-### 開発モードで実行
-
-```bash
-npm run dev
-```
-
-### ビルドして実行
-
-```bash
-npm run build
-npm start
-```
-
-## AI アシスタントとの連携
-
-このツールは、[Model Context Protocol](https://github.com/modelcontextprotocol/typescript-sdk)に準拠しており、AIアシスタントと直接連携できます。StandardIO通信を使用するため、AIアシスタントからツールを直接呼び出すことができます。
-
-## APIの使用例（非標準）
-
-このツールはHTTP APIも提供していた以前の実装とは異なり、現在はModel Context Protocolの標準に従って実装されています。従来のHTTPインターフェースが必要な場合は、以下の実装を参考にしてください：
-
-```typescript
-import express from 'express';
-import bodyParser from 'body-parser';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-
-// Express APIサーバーを追加
-const app = express();
-app.use(bodyParser.json());
-
-// MCP APIエンドポイント
-app.post('/api/mcp', (req, res) => {
-  try {
-    const { tool, params } = req.body;
-    // ここでMCPサーバーのツールを呼び出す処理を実装
-    res.json({ result });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.listen(3000, () => {
-  console.log('HTTPサーバーがポート3000で起動しました');
-});
-```

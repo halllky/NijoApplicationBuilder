@@ -1,5 +1,5 @@
 # CommandModel コマンドモデル
-スキーマ定義での指定方法: '{{SchemaName}}'
+スキーマ定義での指定方法: `"command-model"`
 
 アクター（このアプリケーションのユーザまたは外部システム）がこのアプリケーションの状態や
 このアプリケーションのDataModelに何らかの変更を加えるときの操作のデータの形。
@@ -41,6 +41,12 @@ sequenceDiagram
 * CommandModelではパラメータの形も戻り値の形も両方ともスキーマ定義で指定する
   * Parameter子集約がコマンドへの入力パラメータとなる
   * ReturnValue子集約がコマンドからの戻り値となる
+
+## 外部参照時の制約
+CommandModelのパラメータ (`Parameter`) または戻り値 (`ReturnValue`) の中で、他のQueryModel（`generate-default-query-model`属性が付与されたDataModelも同様）を参照する場合、以下のうちどれを参照するかを指定する必要があります。
+
+* 画面表示用オブジェクト（DisplayData）
+* 検索条件用オブジェクト（SearchCondition）
 
 ## パラメータクラス（Parameter）
 コマンドのパラメータオブジェクトは、スキーマ定義で「xxxxxParameter」という物理名を持つ子集約として定義する。
