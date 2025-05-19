@@ -102,7 +102,8 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
   })
 
   // ルート集約を削除する
-  const handleDeleteRootAggregate = useEvent((menuItem: SideMenuItem) => {
+  const handleDeleteRootAggregate = useEvent((menuItem: SideMenuItem, e: React.MouseEvent<Element>) => {
+    e.stopPropagation()
     if (window.confirm(`${menuItem.displayName}を削除しますか？`)) {
       const index = fields.findIndex(field => field.xmlElements[0].uniqueId === menuItem.id)
       remove(index)
@@ -135,11 +136,11 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
           >
             <div style={{ flexBasis: `${menuItem.indent * 1.2}rem` }}></div>
             <SideMenuItemIcon menuItem={menuItem} collapsedItems={collapsedItems} />
-            <SideMenuItemLabel onClick={() => handleSelected(menuItem)}>
+            <SideMenuItemLabel>
               {menuItem.displayName}
             </SideMenuItemLabel>
             {selectedRootAggregateId === menuItem.id && (
-              <Input.IconButton icon={Icon.TrashIcon} mini hideText onClick={() => handleDeleteRootAggregate(menuItem)}>
+              <Input.IconButton icon={Icon.TrashIcon} mini hideText onClick={e => handleDeleteRootAggregate(menuItem, e)}>
                 削除
               </Input.IconButton>
             )}
