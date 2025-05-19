@@ -1,9 +1,9 @@
-import { PageFrame, PageFrameTitle } from "../../layout";
-import { RouteObjectWithSideMenuSetting } from "../../routes";
+import { PageFrame, PageFrameTitle } from "../layout";
+import { RouteObjectWithSideMenuSetting } from "../routes";
 import { Outlet } from "react-router-dom";
 import { NijoUi, NijoUiMainContent } from "./NijoUi";
 import { NijoUiDebugMenu } from "./NijoUiDebugMenu";
-import { ContextProviders } from "../../App";
+import { ContextProviders } from "../App";
 
 const SchemaDefinitionEditUI = () => {
   return (

@@ -3,7 +3,7 @@ import * as ReactRouter from "react-router-dom"
 import { Home } from "./pages/Home"
 import getQueryModelRoutes from "./pages"
 import { getExamplePagesRoutes } from "./examples"
-import { getNijoUiRoutesForDebug } from "./debug-rooms/スキーマ定義編集UIの試作"
+import { getNijoUiRoutesForDebug } from "./スキーマ定義編集UI"
 import { getReflectionPages } from "./pages-reflection"
 import { IS_EMBEDDED } from "./App"
 
