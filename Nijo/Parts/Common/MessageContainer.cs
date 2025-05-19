@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nijo.Parts.Common {
@@ -139,14 +140,17 @@ namespace Nijo.Parts.Common {
         internal class BaseClass : IMultiAggregateSourceFile {
 
             private readonly Dictionary<string, string> _registered = new();
+            private readonly Lock _lock = new();
             /// <summary>
             /// <see cref="GET_DEFAULT_CLASS"/> の内容を登録する。
             /// </summary>
             /// <param name="interfaceName"></param>
             /// <param name="concreteClassName"></param>
             internal BaseClass Register(string interfaceName, string concreteClassName) {
-                _registered.Add(interfaceName, concreteClassName);
-                return this;
+                lock (_lock) {
+                    _registered.Add(interfaceName, concreteClassName);
+                    return this;
+                }
             }
 
             void IMultiAggregateSourceFile.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {

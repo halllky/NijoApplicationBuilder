@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nijo.Parts.CSharp {
@@ -12,10 +13,14 @@ namespace Nijo.Parts.CSharp {
         public const string CURRENT_TIME = "CurrentTime";
         public const string CURRENT_USER = "CurrentUser";
 
+        private readonly Lock _lock = new();
         private readonly List<string> _sourceCode = [];
+
         public ApplicationService Add(string sourceCode) {
-            _sourceCode.Add(sourceCode);
-            return this;
+            lock (_lock) {
+                _sourceCode.Add(sourceCode);
+                return this;
+            }
         }
 
         public void RegisterDependencies(IMultiAggregateSourceFileManager ctx) {

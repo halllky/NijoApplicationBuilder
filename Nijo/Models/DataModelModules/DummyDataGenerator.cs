@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nijo.Models.DataModelModules {
@@ -20,10 +21,13 @@ namespace Nijo.Models.DataModelModules {
         private static string GeneratedList(AggregateBase aggregate) => $"Generated{aggregate.PhysicalName}";
 
         private readonly List<RootAggregate> _rootAggregates = [];
+        private readonly Lock _lock = new();
 
         internal DummyDataGenerator Add(RootAggregate rootAggregate) {
-            _rootAggregates.Add(rootAggregate);
-            return this;
+            lock (_lock) {
+                _rootAggregates.Add(rootAggregate);
+                return this;
+            }
         }
 
         void IMultiAggregateSourceFile.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {

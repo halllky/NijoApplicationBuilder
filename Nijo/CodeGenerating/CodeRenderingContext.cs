@@ -91,19 +91,21 @@ namespace Nijo.CodeGenerating {
 
 
         #region 複数の集約からレンダリングされるソースファイルの管理
+        private readonly Lock _useLock = new();
         /// <inheritdoc cref="IMultiAggregateSourceFileManager.Use{T}"/>
         public T Use<T>() where T : IMultiAggregateSourceFile, new() {
             if (_stopUseMultiAggregateSourceFiles) {
                 throw new InvalidOperationException($"{nameof(IMultiAggregateSourceFile)} のレンダリング中に {nameof(Use)} が呼ばれた可能性があります。");
             }
 
-            var instance = _multiAggregateSources.OfType<T>().SingleOrDefault();
-            if (instance == null) {
-                instance = new T();
-                _multiAggregateSources.Add(instance);
+            lock (_useLock) {
+                var instance = _multiAggregateSources.OfType<T>().SingleOrDefault();
+                if (instance == null) {
+                    instance = new T();
+                    _multiAggregateSources.Add(instance);
+                }
+                return instance;
             }
-
-            return instance;
         }
         /// <summary>
         /// 複数の集約から1つのファイルが生成される類のファイルを返します。

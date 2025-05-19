@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nijo.Models.QueryModelModules;
@@ -16,9 +17,13 @@ namespace Nijo.Models.QueryModelModules;
 internal class QueryModelUnitTest : IMultiAggregateSourceFile {
 
     private readonly List<RootAggregate> _rootAggregates = new();
+    private readonly Lock _lock = new();
+
     internal QueryModelUnitTest Add(RootAggregate rootAggregate) {
-        _rootAggregates.Add(rootAggregate);
-        return this;
+        lock (_lock) {
+            _rootAggregates.Add(rootAggregate);
+            return this;
+        }
     }
 
     void IMultiAggregateSourceFile.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {

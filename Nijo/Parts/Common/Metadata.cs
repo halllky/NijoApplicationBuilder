@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nijo.Parts.Common;
@@ -17,9 +18,12 @@ namespace Nijo.Parts.Common;
 internal class Metadata : IMultiAggregateSourceFile {
 
     private readonly List<AggregateBase> _aggregates = new();
+    private readonly Lock _lock = new();
     internal Metadata Add(AggregateBase aggregate) {
-        _aggregates.Add(aggregate);
-        return this;
+        lock (_lock) {
+            _aggregates.Add(aggregate);
+            return this;
+        }
     }
 
     internal const string CS_CLASSNAME = "Metadata";
@@ -111,7 +115,7 @@ internal class Metadata : IMultiAggregateSourceFile {
         return new SourceFile {
             FileName = "metadata.ts",
             Contents = $$"""
-                /** 
+                /**
                  * スキーマ定義で指定されたメンバー毎の属性（必須か否か、文字列の最大桁数、など）を
                  * 生成された後のカスタマイズ処理で参照したいときに使う。
                  */

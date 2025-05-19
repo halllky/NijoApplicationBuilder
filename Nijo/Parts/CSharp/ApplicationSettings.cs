@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Nijo.Parts.CSharp {
     /// <summary>
@@ -15,9 +16,13 @@ namespace Nijo.Parts.CSharp {
         public const string INTERFACE_NAME = "IApplicationSettings";
 
         private readonly List<string> _sourceCode = [];
+        private readonly Lock _lock = new();
+
         public ApplicationSettings AddProperty(string sourceCode) {
-            _sourceCode.Add(sourceCode);
-            return this;
+            lock (_lock) {
+                _sourceCode.Add(sourceCode);
+                return this;
+            }
         }
 
         void IMultiAggregateSourceFile.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {

@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nijo.Parts.Document;
@@ -17,9 +18,12 @@ namespace Nijo.Parts.Document;
 public class MarkdownDocument : IMultiAggregateSourceFile {
 
     public MarkdownDocument AddToIndexReadme(RootAggregate rootAggregate) {
-        _rootAggregates.Add(rootAggregate);
-        return this;
+        lock (_lock) {
+            _rootAggregates.Add(rootAggregate);
+            return this;
+        }
     }
+    private readonly Lock _lock = new();
     private readonly List<RootAggregate> _rootAggregates = new();
 
     void IMultiAggregateSourceFile.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {

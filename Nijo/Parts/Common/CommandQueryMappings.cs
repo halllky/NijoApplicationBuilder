@@ -7,73 +7,63 @@ using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace Nijo.Parts.Common {
+  /// <summary>
+  /// カスタマイズ用のマッピングモジュール。
+  /// JavaScript向けには、QueryModelやCommandModelの種類を表す文字列をキーにしてそれと対応するオブジェクトや関数を返すマッピング定義。
+  /// C#向けには、QueryModelやCommandModelの種類を表すenum。
+  /// </summary>
+  internal class CommandQueryMappings : IMultiAggregateSourceFile {
+
     /// <summary>
-    /// カスタマイズ用のマッピングモジュール。
-    /// JavaScript向けには、QueryModelやCommandModelの種類を表す文字列をキーにしてそれと対応するオブジェクトや関数を返すマッピング定義。
-    /// C#向けには、QueryModelやCommandModelの種類を表すenum。
+    /// JavaScript用: QueryModelの型名のリテラル型
     /// </summary>
-    internal class CommandQueryMappings : IMultiAggregateSourceFile {
+    internal const string QUERY_MODEL_TYPE = "QueryModelType";
+    /// <summary>
+    /// JavaScript用: ほかの集約から参照されているQueryModelの型名のリテラル型
+    /// </summary>
+    internal const string REFERED_QUERY_MODEL_TYPE = "ReferedQueryModelType";
+    /// <summary>
+    /// JavaScript用: 一括更新処理が存在するQueryModelの型名のリテラル型
+    /// </summary>
+    internal const string BATCH_UPDATABLE_QUERY_MODEL_TYPE = "BatchUpdatableQueryModelType";
+    /// <summary>
+    /// JavaScript用: CommandModelの型名のリテラル型
+    /// </summary>
+    internal const string COMMAND_MODEL_TYPE = "CommandModelType";
+    /// <summary>
+    /// C#用: QueryModel, CommandModelの種類を表すenum
+    /// </summary>
+    internal const string E_COMMAND_QUERY_TYPE = "E_CommandQueryType";
 
-        /// <summary>
-        /// JavaScript用: QueryModelの型名のリテラル型
-        /// </summary>
-        internal const string QUERY_MODEL_TYPE = "QueryModelType";
-        /// <summary>
-        /// JavaScript用: ほかの集約から参照されているQueryModelの型名のリテラル型
-        /// </summary>
-        internal const string REFERED_QUERY_MODEL_TYPE = "ReferedQueryModelType";
-        /// <summary>
-        /// JavaScript用: 一括更新処理が存在するQueryModelの型名のリテラル型
-        /// </summary>
-        internal const string BATCH_UPDATABLE_QUERY_MODEL_TYPE = "BatchUpdatableQueryModelType";
-        /// <summary>
-        /// JavaScript用: CommandModelの型名のリテラル型
-        /// </summary>
-        internal const string COMMAND_MODEL_TYPE = "CommandModelType";
-        /// <summary>
-        /// C#用: QueryModel, CommandModelの種類を表すenum
-        /// </summary>
-        internal const string E_COMMAND_QUERY_TYPE = "E_CommandQueryType";
+    private readonly Lock _lock = new();
+    private readonly List<RootAggregate> _queryModels = [];
+    private readonly List<RootAggregate> _commandModels = [];
+    private readonly List<RootAggregate> _dataModels = [];
 
-        internal CommandQueryMappings AddQueryModel(RootAggregate rootAggregate) {
-            _queryModels.Add(rootAggregate);
-            return this;
-        }
-        internal CommandQueryMappings AddCommandModel(RootAggregate rootAggregate) {
-            _commandModels.Add(rootAggregate);
-            return this;
-        }
-        internal CommandQueryMappings AddDataModel(RootAggregate rootAggregate) {
-            _dataModels.Add(rootAggregate);
-            return this;
-        }
-        private readonly List<RootAggregate> _queryModels = [];
-        private readonly List<RootAggregate> _commandModels = [];
-        private readonly List<RootAggregate> _dataModels = [];
+    void IMultiAggregateSourceFile.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {
+      // 特になし
+    }
 
-        void IMultiAggregateSourceFile.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {
-            // 特になし
-        }
+    void IMultiAggregateSourceFile.Render(CodeRenderingContext ctx) {
+      ctx.CoreLibrary(dir => {
+        dir.Directory("Util", utilDir => {
+          utilDir.Generate(RenderCSharp(ctx));
+        });
+      });
+      ctx.ReactProject(dir => {
+        dir.Generate(RenderTypeScript(ctx));
+      });
+    }
 
-        void IMultiAggregateSourceFile.Render(CodeRenderingContext ctx) {
-            ctx.CoreLibrary(dir => {
-                dir.Directory("Util", utilDir => {
-                    utilDir.Generate(RenderCSharp(ctx));
-                });
-            });
-            ctx.ReactProject(dir => {
-                dir.Generate(RenderTypeScript(ctx));
-            });
-        }
+    private SourceFile RenderCSharp(CodeRenderingContext ctx) {
+      var values = _queryModels.Concat(_commandModels);
 
-        private SourceFile RenderCSharp(CodeRenderingContext ctx) {
-            var values = _queryModels.Concat(_commandModels);
-
-            return new SourceFile {
-                FileName = "E_CommandQueryType.cs",
-                Contents = $$"""
+      return new SourceFile {
+        FileName = "E_CommandQueryType.cs",
+        Contents = $$"""
                     using System.ComponentModel.DataAnnotations;
 
                     namespace {{ctx.Config.RootNamespace}};
@@ -88,30 +78,30 @@ namespace Nijo.Parts.Common {
                     """)}}
                     }
                     """,
-            };
-        }
+      };
+    }
 
-        private SourceFile RenderTypeScript(CodeRenderingContext ctx) {
+    private SourceFile RenderTypeScript(CodeRenderingContext ctx) {
 
-            // 一括更新処理可能なQueryModel
-            var batchUpdatableQueryModels = _dataModels
-                .Where(root => root.GenerateBatchUpdateCommand)
-                .ToArray();
+      // 一括更新処理可能なQueryModel
+      var batchUpdatableQueryModels = _dataModels
+          .Where(root => root.GenerateBatchUpdateCommand)
+          .ToArray();
 
-            // Ref関連モジュールは他の集約から参照されているもののみ使用可能
-            var referedRefEntires = new Dictionary<RootAggregate, DisplayDataRef.Entry[]>();
-            foreach (var rootAggregate in _queryModels) {
-                var (refEntries, _) = DisplayDataRef.GetReferedMembersRecursively(rootAggregate);
-                referedRefEntires[rootAggregate] = refEntries;
-            }
+      // Ref関連モジュールは他の集約から参照されているもののみ使用可能
+      var referedRefEntires = new Dictionary<RootAggregate, DisplayDataRef.Entry[]>();
+      foreach (var rootAggregate in _queryModels) {
+        var (refEntries, _) = DisplayDataRef.GetReferedMembersRecursively(rootAggregate);
+        referedRefEntires[rootAggregate] = refEntries;
+      }
 
-            // import {} from "..." で他ファイルからインポートするモジュールを決める
-            var imports = new List<(string ImportFrom, string[] Modules)>();
-            foreach (var rootAggregate in _queryModels) {
-                var searchCondition = new SearchCondition.Entry(rootAggregate);
-                var displayData = new DisplayData(rootAggregate);
+      // import {} from "..." で他ファイルからインポートするモジュールを決める
+      var imports = new List<(string ImportFrom, string[] Modules)>();
+      foreach (var rootAggregate in _queryModels) {
+        var searchCondition = new SearchCondition.Entry(rootAggregate);
+        var displayData = new DisplayData(rootAggregate);
 
-                var modules = new List<string> {
+        var modules = new List<string> {
                     searchCondition.TsTypeName,
                     searchCondition.TsNewObjectFunction,
                     searchCondition.PkAssignFunctionName,
@@ -121,35 +111,35 @@ namespace Nijo.Parts.Common {
                     displayData.PkAssignFunctionName,
                 };
 
-                // Ref関連モジュールは他から参照されているもののみを追加
-                if (referedRefEntires.TryGetValue(rootAggregate, out var refEntries)) {
-                    foreach (var entry in refEntries) {
-                        modules.Add(entry.TsTypeName);
-                        modules.Add(entry.TsNewObjectFunction);
-                        modules.Add(entry.PkExtractFunctionName);
-                        modules.Add(entry.PkAssignFunctionName);
-                    }
-                }
+        // Ref関連モジュールは他から参照されているもののみを追加
+        if (referedRefEntires.TryGetValue(rootAggregate, out var refEntries)) {
+          foreach (var entry in refEntries) {
+            modules.Add(entry.TsTypeName);
+            modules.Add(entry.TsNewObjectFunction);
+            modules.Add(entry.PkExtractFunctionName);
+            modules.Add(entry.PkAssignFunctionName);
+          }
+        }
 
-                imports.Add(($"./{rootAggregate.PhysicalName}", modules.ToArray()));
-            }
-            foreach (var rootAggregate in _commandModels) {
-                var param = new ParameterOrReturnValue(rootAggregate, ParameterOrReturnValue.E_Type.Parameter);
-                var returnType = new ParameterOrReturnValue(rootAggregate, ParameterOrReturnValue.E_Type.ReturnValue);
+        imports.Add(($"./{rootAggregate.PhysicalName}", modules.ToArray()));
+      }
+      foreach (var rootAggregate in _commandModels) {
+        var param = new ParameterOrReturnValue(rootAggregate, ParameterOrReturnValue.E_Type.Parameter);
+        var returnType = new ParameterOrReturnValue(rootAggregate, ParameterOrReturnValue.E_Type.ReturnValue);
 
-                imports.Add((
-                    $"./{rootAggregate.PhysicalName}",
-                    new[] {
+        imports.Add((
+            $"./{rootAggregate.PhysicalName}",
+            new[] {
                         param.TsTypeName,
                         param.TsNewObjectFunction,
                         returnType.TsTypeName,
                         returnType.TsNewObjectFunction,
-                    }));
-            }
+            }));
+      }
 
-            return new SourceFile {
-                FileName = "index.ts",
-                Contents = $$"""
+      return new SourceFile {
+        FileName = "index.ts",
+        Contents = $$"""
                     import * as Util from "./util"
                     {{imports.OrderBy(x => x.ImportFrom).SelectTextTemplate(x => $$"""
                     import { {{x.Modules.Join(", ")}} } from "{{x.ImportFrom}}"
@@ -400,7 +390,26 @@ namespace Nijo.Parts.Common {
                     // TODO ver.1
                     //#endregion UI制約型一覧
                     """,
-            };
-        }
+      };
     }
+
+    internal CommandQueryMappings AddQueryModel(RootAggregate rootAggregate) {
+      lock (_lock) {
+        _queryModels.Add(rootAggregate);
+        return this;
+      }
+    }
+    internal CommandQueryMappings AddCommandModel(RootAggregate rootAggregate) {
+      lock (_lock) {
+        _commandModels.Add(rootAggregate);
+        return this;
+      }
+    }
+    internal CommandQueryMappings AddDataModel(RootAggregate rootAggregate) {
+      lock (_lock) {
+        _dataModels.Add(rootAggregate);
+        return this;
+      }
+    }
+  }
 }

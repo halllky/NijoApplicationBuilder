@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nijo.Parts.Common {
@@ -20,18 +21,25 @@ namespace Nijo.Parts.Common {
         private readonly List<StaticEnumDef> _staticEnumDefs = [];
         private readonly List<string> _csSourceCode = [];
         private readonly List<string> _tsSourceCode = [];
+        private readonly Lock _lock = new();
 
         internal EnumFile Register(StaticEnumDef staticEnumDef) {
-            _staticEnumDefs.Add(staticEnumDef);
-            return this;
+            lock (_lock) {
+                _staticEnumDefs.Add(staticEnumDef);
+                return this;
+            }
         }
         internal EnumFile AddCSharpSource(string sourceCode) {
-            _csSourceCode.Add(sourceCode);
-            return this;
+            lock (_lock) {
+                _csSourceCode.Add(sourceCode);
+                return this;
+            }
         }
         internal EnumFile AddTypeScriptSource(string sourceCode) {
-            _tsSourceCode.Add(sourceCode);
-            return this;
+            lock (_lock) {
+                _tsSourceCode.Add(sourceCode);
+                return this;
+            }
         }
 
         void IMultiAggregateSourceFile.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {

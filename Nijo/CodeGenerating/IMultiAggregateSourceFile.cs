@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace Nijo.CodeGenerating {
     /// <summary>
-    /// 1つのファイル内に複数の集約のソースが生成されるソースファイル
+    /// 1つのファイル内に複数の集約のソースが生成されるソースファイル。
+    /// このインターフェースを継承するクラスはスレッドセーフに実装される必要があります。
     /// </summary>
     public interface IMultiAggregateSourceFile {
 

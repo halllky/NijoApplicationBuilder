@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nijo.Parts.CSharp {
@@ -16,6 +17,8 @@ namespace Nijo.Parts.CSharp {
 
 
         #region Add
+        private readonly Lock _lock = new();
+
         private readonly List<Func<string, string>> _coreConfigureServices = [];
         private readonly List<string> _coreMethods = [];
         private readonly List<string> _webapi = [];
@@ -26,8 +29,10 @@ namespace Nijo.Parts.CSharp {
         /// 引数は <see cref="Microsoft.Extensions.DependencyInjection.IServiceCollection"/> のインスタンスの名前。
         /// </summary>
         public ApplicationConfigure AddCoreConfigureServices(Func<string, string> render) {
-            _coreConfigureServices.Add(render);
-            return this;
+            lock (_lock) {
+                _coreConfigureServices.Add(render);
+                return this;
+            }
         }
         /// <summary>
         /// Coreプロジェクトのアプリケーション起動時に実行される設定処理にメソッド等を追加します。
@@ -36,23 +41,29 @@ namespace Nijo.Parts.CSharp {
         /// </param>
         /// <param name="abstractMethodSource">クラス直下にレンダリングされるソースコード</param>
         public ApplicationConfigure AddCoreMethod(string sourceCode) {
-            _coreMethods.Add(sourceCode);
-            return this;
+            lock (_lock) {
+                _coreMethods.Add(sourceCode);
+                return this;
+            }
         }
         /// <summary>
         /// Webapiプロジェクトのアプリケーション起動時に実行される設定処理にメソッド等を追加します。
         /// </summary>
         /// <param name="abstractMethod">ソースコード</param>
         public ApplicationConfigure AddWebapiMethod(string abstractMethod) {
-            _webapi.Add(abstractMethod);
-            return this;
+            lock (_lock) {
+                _webapi.Add(abstractMethod);
+                return this;
+            }
         }
         /// <summary>
         /// AddControllersの中にレンダリングされるソース。引数はオプション変数の名前
         /// </summary>
         public ApplicationConfigure AddControllers(Func<string, string> render) {
-            _addControllers.Add(render);
-            return this;
+            lock (_lock) {
+                _addControllers.Add(render);
+                return this;
+            }
         }
         #endregion Add
 

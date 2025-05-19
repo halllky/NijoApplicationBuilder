@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Nijo.Parts.CSharp {
     public class DbContextClass : IMultiAggregateSourceFile {
@@ -17,14 +18,19 @@ namespace Nijo.Parts.CSharp {
 
         private readonly List<EFCoreEntity> _efCoreEntities = [];
         private readonly List<string> _configureConversions = [];
+        private readonly Lock _lock = new();
 
         internal DbContextClass AddEntities(IEnumerable<EFCoreEntity> eFCoreEntities) {
-            _efCoreEntities.AddRange(eFCoreEntities);
-            return this;
+            lock (_lock) {
+                _efCoreEntities.AddRange(eFCoreEntities);
+                return this;
+            }
         }
         public DbContextClass AddConfigureConventions(string sourceCode) {
-            _configureConversions.Add(sourceCode);
-            return this;
+            lock (_lock) {
+                _configureConversions.Add(sourceCode);
+                return this;
+            }
         }
 
         void IMultiAggregateSourceFile.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nijo.Parts.CSharp {
@@ -13,12 +14,16 @@ namespace Nijo.Parts.CSharp {
     /// </summary>
     public class JsonUtil : IMultiAggregateSourceFile {
 
+        private readonly Lock _lock = new();
+
         /// <summary>
         /// 値オブジェクトの変換処理の登録
         /// </summary>
         internal JsonUtil AddValueObject(RootAggregate rootAggregate) {
-            _valueObjectRootAggregates.Add(rootAggregate);
-            return this;
+            lock (_lock) {
+                _valueObjectRootAggregates.Add(rootAggregate);
+                return this;
+            }
         }
         private readonly List<RootAggregate> _valueObjectRootAggregates = [];
 
@@ -27,8 +32,10 @@ namespace Nijo.Parts.CSharp {
         /// </summary>
         /// <param name="newStatement">「new クラス名()」の文字列</param>
         public JsonUtil AddConverterClass(string newStatement) {
-            _converterClasses.Add(newStatement);
-            return this;
+            lock (_lock) {
+                _converterClasses.Add(newStatement);
+                return this;
+            }
         }
         private readonly List<string> _converterClasses = [];
 

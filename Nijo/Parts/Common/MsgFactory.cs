@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nijo.Parts.Common {
@@ -39,22 +40,24 @@ namespace Nijo.Parts.Common {
         /// <param name="id">プログラム中からアクセスするときの識別子。アプリケーション全体で一意である必要があります。またソースコード上で使用可能な文字しか使用できません。</param>
         /// <param name="comment">説明文</param>
         /// <param name="template">メッセージのテンプレート。<code>{0}</code>などの変数を含めることができます。</param>
+        private readonly Lock _lock = new();
         public MsgFactory AddMessage(string id, string comment, string template) {
-            // ID不正チェック
-            if (id.ToCSharpSafe() != id) {
-                throw new InvalidOperationException($"ソースコード上で使用できない文字列が含まれています: {id}");
+            lock (_lock) {
+                // ID不正チェック
+                if (id.ToCSharpSafe() != id) {
+                    throw new InvalidOperationException($"ソースコード上で使用できない文字列が含まれています: {id}");
+                }
+                // ID重複チェック
+                if (_messages.TryGetValue(id, out var msg)) {
+                    throw new InvalidOperationException($"識別子 '{id}' が '{msg.Template}' と '{template}' とで重複しています。");
+                }
+                _messages.Add(id, new MessageTemplate {
+                    Id = id,
+                    Comment = comment,
+                    Template = template,
+                });
+                return this;
             }
-            // ID重複チェック
-            if (_messages.TryGetValue(id, out var msg)) {
-                throw new InvalidOperationException($"識別子 '{id}' が '{msg.Template}' と '{template}' とで重複しています。");
-            }
-
-            _messages.Add(id, new MessageTemplate {
-                Id = id,
-                Comment = comment,
-                Template = template,
-            });
-            return this;
         }
         private readonly Dictionary<string, MessageTemplate> _messages = [];
         private partial class MessageTemplate {

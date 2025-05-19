@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nijo.Parts.Common;
@@ -17,9 +18,12 @@ namespace Nijo.Parts.Common;
 internal class MetadataForPage : IMultiAggregateSourceFile {
 
     private readonly List<ITypeScriptModule> _entries = new();
+    private readonly Lock _lock = new();
     internal MetadataForPage Add(AggregateBase aggregate) {
-        _entries.Add(new StructureMetadata(aggregate, isEntry: true));
-        return this;
+        lock (_lock) {
+            _entries.Add(new StructureMetadata(aggregate, isEntry: true));
+            return this;
+        }
     }
 
     void IMultiAggregateSourceFile.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {
