@@ -97,8 +97,21 @@ namespace Nijo {
                 ["-p", "--port"],
                 description: "GUI用のサービスが実行されるポートを明示的に指定します。");
 
+            // npm ciをスキップするオプションを追加
+            var skipNpmCi = new Option<bool>(
+                ["--skip-npm-ci"],
+                description: "npm ciコマンドの実行をスキップします。");
+
             // ---------------------------------------------------
             // ** コマンド **
+
+            // 新規プロジェクト作成
+            var newProject = new Command(
+                name: "new",
+                description: "新規プロジェクトを作成します。")
+                { path, skipNpmCi };
+            newProject.SetHandler(NewProject, path, skipNpmCi);
+            rootCommand.AddCommand(newProject);
 
             // 検証
             var validate = new Command(
@@ -148,6 +161,44 @@ namespace Nijo {
             rootCommand.AddCommand(runUiService);
 
             return rootCommand;
+        }
+
+
+        /// <summary>
+        /// 新規プロジェクトを作成します。
+        /// </summary>
+        /// <param name="path">対象フォルダまでの相対パス</param>
+        /// <param name="skipNpmCi">npm ciコマンドをスキップする場合はtrue</param>
+        private static async Task NewProject(string? path, bool skipNpmCi) {
+            var projectRoot = path == null
+                ? Directory.GetCurrentDirectory()
+                : Path.Combine(Directory.GetCurrentDirectory(), path);
+            var logger = ILoggerExtension.CreateConsoleLogger();
+
+            if (Directory.Exists(projectRoot)) {
+                logger.LogError("既にプロジェクトが存在します: {projectRoot}", projectRoot);
+                return;
+            }
+
+            if (skipNpmCi) {
+                logger.LogInformation("npm ciコマンドをスキップします。");
+            }
+
+            var (success, errorMessage) = await GeneratedProject.CreatePhysicalProjectAndInstallDependenciesAsync(projectRoot, logger, skipNpmCi);
+
+            if (success) {
+                logger.LogInformation("プロジェクトの作成が完了しました: {projectRoot}", projectRoot);
+            } else {
+                logger.LogError(errorMessage ?? "プロジェクトの作成に失敗しました。");
+                // 作成途中のディレクトリが残っている可能性があるので削除を試みる
+                if (Directory.Exists(projectRoot)) {
+                    try {
+                        Directory.Delete(projectRoot, recursive: true);
+                    } catch (Exception ex) {
+                        logger.LogWarning($"作成失敗したプロジェクトディレクトリの削除に失敗しました: {projectRoot}, {ex.Message}");
+                    }
+                }
+            }
         }
 
 

@@ -15,6 +15,8 @@ using System.Xml.Linq;
 using Nijo.Util.DotnetEx;
 using Nijo.Parts.Document;
 using System.Diagnostics.CodeAnalysis;
+using System.IO.Compression;
+using System.Reflection;
 
 namespace Nijo {
     /// <summary>
@@ -50,6 +52,63 @@ namespace Nijo {
             project = new GeneratedProject(Path.GetFullPath(projectRoot));
             error = null;
             return true;
+        }
+
+        /// <summary>
+        /// 物理的なプロジェクトファイルを作成し、依存関係をインストールします。
+        /// </summary>
+        /// <param name="projectRoot">プロジェクトのルートディレクトリの絶対パス。</param>
+        /// <param name="logger">ロガー。</param>
+        /// <param name="skipNpmCi">trueの場合、npm ciコマンドをスキップします。</param>
+        /// <returns>成功した場合は true、エラーメッセージ付きで失敗した場合は false。</returns>
+        public static async Task<(bool Success, string? ErrorMessage)> CreatePhysicalProjectAndInstallDependenciesAsync(string projectRoot, ILogger logger, bool skipNpmCi = false) {
+            try {
+                Directory.CreateDirectory(projectRoot);
+
+                // git archive したアプリケーションテンプレートを展開する。
+                // アプリケーションテンプレートは埋め込みリソースになっている。
+                // リポジトリのルートにある release.bat でビルドしたときのみ埋め込まれる。
+                var assembly = Assembly.GetExecutingAssembly();
+                const string RESOURCE_NAME = "Nijo.ApplicationTemplate.Ver1.zip";
+                using (var stream = assembly.GetManifestResourceStream(RESOURCE_NAME)) {
+                    if (stream == null) {
+                        return (false,
+                            "アプリケーションテンプレートのリソースが見つかりません。" +
+                            "利用可能なリソースは以下です。\n" +
+                            string.Join("\n", assembly.GetManifestResourceNames()));
+                    }
+
+                    using var archive = new ZipArchive(stream);
+                    archive.ExtractToDirectory(projectRoot);
+                }
+
+                // npm ciをスキップするかどうかチェック
+                if (!skipNpmCi) {
+                    // npm ci
+                    var npmCiResult = await ProcessExtension.ExecuteProcessAsync(startInfo => {
+                        startInfo.FileName = "npm.cmd";
+                        startInfo.Arguments = "ci";
+                        startInfo.WorkingDirectory = Path.Combine(projectRoot, "react");
+                    }, (std, line) => {
+                        if (std == ProcessExtension.E_STD.StdOut) {
+                            logger.LogInformation(line);
+                        } else {
+                            logger.LogError(line);
+                        }
+                    });
+
+                    if (npmCiResult != 0) {
+                        return (false, "npm ci に失敗しました。");
+                    }
+                } else {
+                    logger.LogInformation("npm ciをスキップしました。");
+                }
+
+                return (true, null);
+
+            } catch (Exception ex) {
+                return (false, $"プロジェクト作成中にエラーが発生しました: {ex.Message}");
+            }
         }
 
         /// <summary>

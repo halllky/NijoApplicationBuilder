@@ -118,6 +118,15 @@
         "options": {
           "cwd": "${workspaceFolder:NijoApplicationBuilder}/Nijo.Ui"
         },
+      },
+      {
+        "label": "Nijo: リリースモジュール作成",
+        "command": ".\\release.bat",
+        "type": "shell",
+        "problemMatcher": [],
+        "options": {
+          "cwd": "${workspaceFolder:NijoApplicationBuilder}"
+        },
       }
     ]
   }
