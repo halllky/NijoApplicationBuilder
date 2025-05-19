@@ -111,7 +111,7 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
   })
 
   return (
-    <div className="h-full flex flex-col bg-gray-200">
+    <div className="h-full flex flex-col bg-gray-200 border-b border-gray-300">
       {/* アプリケーション名 & ツールアイコン */}
       <div className="flex items-center gap-1 px-1 py-1 border-r border-gray-300">
         <ReactRouter.Link to={getNavigationUrl()} className="text-sm font-bold truncate">

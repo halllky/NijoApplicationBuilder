@@ -11,6 +11,7 @@ import { PageRootAggregate } from "./NijoUi.RootAggregate"
 import { AttrDefsProvider } from "./useAttrDefs"
 import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS } from "."
 import { Outlet, useOutletContext } from "react-router-dom"
+import NijoUiErrorMessagePane from "./NijoUiErrorMessagePane"
 
 export const SERVER_DOMAIN = import.meta.env.DEV
   ? 'https://localhost:8081'
@@ -110,23 +111,36 @@ const AfterLoaded = ({ defaultValues, onSave, className }: {
 
   return (
     <AttrDefsProvider control={form.control}>
-      <ReactResizablePanels.PanelGroup direction="horizontal" className={className}>
+      <ReactResizablePanels.PanelGroup direction="vertical" className={className}>
 
-        {/* サイドメニュー */}
-        <ReactResizablePanels.Panel defaultSize={20} minSize={8} collapsible>
-          <NijoUiSideMenu
-            onSave={onSave}
-            formMethods={form}
-            selectedRootAggregateId={selectedRootAggregateId}
-            onSelected={handleSelected}
-          />
+        <ReactResizablePanels.Panel>
+          <ReactResizablePanels.PanelGroup direction="horizontal">
+
+            {/* サイドメニュー */}
+            <ReactResizablePanels.Panel defaultSize={20} minSize={8} collapsible>
+              <NijoUiSideMenu
+                onSave={onSave}
+                formMethods={form}
+                selectedRootAggregateId={selectedRootAggregateId}
+                onSelected={handleSelected}
+              />
+            </ReactResizablePanels.Panel>
+
+            <ReactResizablePanels.PanelResizeHandle className="w-1" />
+
+            {/* メインコンテンツ */}
+            <ReactResizablePanels.Panel>
+              <Outlet context={{ form, selectedRootAggregateId, xmlElementTrees }} />
+            </ReactResizablePanels.Panel>
+
+          </ReactResizablePanels.PanelGroup>
         </ReactResizablePanels.Panel>
 
-        <ReactResizablePanels.PanelResizeHandle className="w-1" />
+        <ReactResizablePanels.PanelResizeHandle className="h-2" />
 
-        {/* メインコンテンツ */}
-        <ReactResizablePanels.Panel>
-          <Outlet context={{ form, selectedRootAggregateId, xmlElementTrees }} />
+        {/* エラーメッセージ表示欄 */}
+        <ReactResizablePanels.Panel defaultSize={10} minSize={6} collapsible>
+          <NijoUiErrorMessagePane formState={form.formState} />
         </ReactResizablePanels.Panel>
 
       </ReactResizablePanels.PanelGroup>

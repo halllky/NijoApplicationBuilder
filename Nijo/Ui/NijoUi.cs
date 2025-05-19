@@ -97,7 +97,7 @@ public class NijoUi {
                     ?? throw new Exception("applicationState is null");
                 var errors = new List<string>();
                 if (!applicationState.TryConvertToXDocument(originalXDocument, errors, out var xDocument)) {
-                    context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                    context.Response.StatusCode = (int)HttpStatusCode.Accepted;
                     context.Response.ContentType = "application/json";
                     await context.Response.WriteAsJsonAsync(errors);
                     return;
@@ -107,7 +107,7 @@ public class NijoUi {
                 var rule = SchemaParseRule.Default();
                 var schemaParseContext = new SchemaParseContext(xDocument, rule);
                 if (!schemaParseContext.TryBuildSchema(schemaParseContext.Document, out var applicationSchema, logger)) {
-                    context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                    context.Response.StatusCode = (int)HttpStatusCode.Accepted;
                     context.Response.ContentType = "application/json";
                     await context.Response.WriteAsJsonAsync(errors);
                     return;
@@ -116,6 +116,7 @@ public class NijoUi {
                 context.Response.StatusCode = (int)HttpStatusCode.OK;
 
             } catch (Exception ex) {
+                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                 context.Response.ContentType = "application/json";
                 await context.Response.WriteAsJsonAsync(new[] { ex.Message });
             }

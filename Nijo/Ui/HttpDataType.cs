@@ -179,10 +179,17 @@ public class XmlElementItem {
                 commentToRootAggregate = null;
                 return false;
             }
-            var xComment = string.IsNullOrWhiteSpace(item.Comment)
-                ? null
-                : new XComment(item.Comment);
-            var xElement = new XElement(item.LocalName);
+            XComment? xComment;
+            XElement xElement;
+            try {
+                xComment = string.IsNullOrWhiteSpace(item.Comment) ? null : new XComment(item.Comment);
+                xElement = new XElement(item.LocalName);
+            } catch (XmlException ex) {
+                logError($"XML要素として不正です: {ex.Message}");
+                rootAggregate = null;
+                commentToRootAggregate = null;
+                return false;
+            }
             if (!string.IsNullOrWhiteSpace(item.Value)) xElement.SetValue(item.Value);
             foreach (var attribute in item.Attributes) {
                 if (string.IsNullOrWhiteSpace(attribute.Value)) continue;
