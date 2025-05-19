@@ -18,6 +18,7 @@ namespace Nijo.Parts.JavaScript {
         internal static void Render(DirectorySetupper dir, CodeRenderingContext ctx) {
             var imports = ctx
                 .GetGeneratedFileNames(dir)
+                .OrderBy(path => path)
                 .Select(path => Path.GetFileNameWithoutExtension(path));
 
             dir.Generate(new SourceFile {

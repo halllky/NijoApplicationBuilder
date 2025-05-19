@@ -17,11 +17,11 @@ namespace Nijo.Parts.Common;
 /// </summary>
 internal class MetadataForPage : IMultiAggregateSourceFile {
 
-    private readonly List<ITypeScriptModule> _entries = new();
+    private readonly List<AggregateBase> _entries = new();
     private readonly Lock _lock = new();
     internal MetadataForPage Add(AggregateBase aggregate) {
         lock (_lock) {
-            _entries.Add(new StructureMetadata(aggregate, isEntry: true));
+            _entries.Add(aggregate);
             return this;
         }
     }
@@ -39,6 +39,10 @@ internal class MetadataForPage : IMultiAggregateSourceFile {
     }
 
     private SourceFile RenderTypeScript(CodeRenderingContext ctx) {
+        var entriesOrderByDataFlow = _entries
+            .OrderBy(agg => agg.GetRoot().GetIndexOfDataFlow())
+            .Select(aggregate => (ITypeScriptModule)new StructureMetadata(aggregate, isEntry: true));
+
         return new SourceFile {
             FileName = "metadata-for-page.ts",
             Contents = $$"""
@@ -56,7 +60,7 @@ internal class MetadataForPage : IMultiAggregateSourceFile {
 
                   /** 画面の自動生成のためのメタデータ取得関数 */
                   export const getAll = (): { [k in {{CommandQueryMappings.QUERY_MODEL_TYPE}}]: {{StructureMetadata.TYPE_NAME}} } => ({
-                {{_entries.SelectTextTemplate(entry => $$"""
+                {{entriesOrderByDataFlow.SelectTextTemplate(entry => $$"""
                     {{WithIndent(entry.Render(ctx), "    ")}}
                 """)}}
                   })

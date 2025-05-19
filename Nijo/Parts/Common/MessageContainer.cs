@@ -416,7 +416,7 @@ namespace Nijo.Parts.Common {
                             /// </summary>
                             public static T {{GET_DEFAULT_CLASS}}<T>(IEnumerable<string> path) where T : {{INTERFACE}} {
                                 var type = typeof(T);
-                        {{registered.SelectTextTemplate(kv => $$"""
+                        {{registered.OrderBy(kv => kv.Key).SelectTextTemplate(kv => $$"""
                                 if (type == typeof({{kv.Key}})) return (T)(object)new {{kv.Value}}(path);
                         """)}}
                                 throw new InvalidOperationException($"{type.Name} には既定のメッセージコンテナクラスが存在しません。");

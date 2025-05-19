@@ -129,8 +129,17 @@ namespace Nijo.CodeGenerating {
 
         #region ソースコード自動生成で登場しなかった既存ファイルの削除
         private readonly HashSet<string> _handled = new();
-        internal void Handle(string fullpath) => _handled.Add(Path.GetFullPath(fullpath));
-        internal bool IsHandled(string fullpath) => _handled.Contains(Path.GetFullPath(fullpath));
+        private readonly Lock _handleLock = new();
+        internal void Handle(string fullpath) {
+            lock (_handleLock) {
+                _handled.Add(Path.GetFullPath(fullpath));
+            }
+        }
+        internal bool IsHandled(string fullpath) {
+            lock (_handleLock) {
+                return _handled.Contains(Path.GetFullPath(fullpath));
+            }
+        }
         /// <summary>
         /// このコンテキストで生成されていないファイルやディレクトリを削除します。
         /// </summary>
@@ -176,68 +185,74 @@ namespace Nijo.CodeGenerating {
 
 
         #region ToOrderedByDataFlow
+        private readonly Lock _orderByDfLock = new();
         /// <summary>
-        /// ルート集約を、ref-toによる外部参照の関係性に従い、
-        /// 参照される方を先、参照する方を後、とする順番に並び替えた新しいインスタンスを返します。
+        /// このルート集約の、ref-toによる外部参照の関係性に従った、
+        /// 参照される方を先、参照する方を後、としたときの順番。
         /// </summary>
-        public IEnumerable<RootAggregate> ToOrderedByDataFlow(IEnumerable<RootAggregate> rootAggregates) {
-            if (_rootAggregateOrderCache == null) {
-                _rootAggregateOrderCache = new();
+        public int GetIndexOfDataFlow(RootAggregate rootAggregate) {
+            lock (_orderByDfLock) {
+                if (_rootAggregateOrderCache == null) {
+                    _rootAggregateOrderCache = new();
 
-                // 列挙するたびにこのリストから集約をクリアしていき、
-                // このリストから全ての集約が無くなったら列挙完了
-                var rest = rootAggregates.Select(root => new {
-                    root,
-                    refTargets = root
-                        .EnumerateThisAndDescendants()
-                        .SelectMany(agg => agg.GetMembers())
-                        .OfType<RefToMember>()
-                        .Select(refTo => refTo.RefTo.GetRoot())
-                        .ToHashSet(),
-                }).ToList();
+                    // 列挙するたびにこのリストから集約をクリアしていき、
+                    // このリストから全ての集約が無くなったら列挙完了
+                    var rest = _immutableSchema.GetRootAggregates().Select(root => new {
+                        root,
+                        refTargets = root
+                            .EnumerateThisAndDescendants()
+                            .SelectMany(agg => agg.GetMembers())
+                            .OfType<RefToMember>()
+                            .Select(refTo => refTo.RefTo.GetRoot())
+                            .ToHashSet(),
+                    }).ToList();
 
-                var index = 0;
-                while (true) {
-                    if (rest.Count == 0) break;
+                    var index = 0;
+                    while (true) {
+                        if (rest.Count == 0) break;
 
-                    var next = rest[index];
+                        var next = rest[index];
 
-                    // 参照先集約が未処理ならば後回し
-                    var notEnumerated = rest.Where(agg => next.refTargets.Contains(agg.root));
-                    if (notEnumerated.Any()) {
-                        // 集約間の循環参照が存在するなどの場合は無限ループが発生するので例外。
-                        // なお循環参照はスキーマ作成時にエラーとする想定
-                        if (index + 1 >= rest.Count) throw new InvalidOperationException("集約間のデータの流れを決定できません。");
+                        // 参照先集約が未処理ならば後回し
+                        var notEnumerated = rest.Where(agg => next.refTargets.Contains(agg.root));
+                        if (notEnumerated.Any()) {
+                            // 集約間の循環参照が存在するなどの場合は無限ループが発生するので例外。
+                            // なお循環参照はスキーマ作成時にエラーとする想定
+                            if (index + 1 >= rest.Count) throw new InvalidOperationException("集約間のデータの流れを決定できません。");
 
-                        index++;
-                        continue;
+                            index++;
+                            continue;
+                        }
+
+                        // 参照先集約が無い == nextは現在のrestの中で再上流の集約
+                        _rootAggregateOrderCache.Add(next.root, _rootAggregateOrderCache.Count);
+
+                        rest.Remove(next);
+                        index = 0;
                     }
-
-                    // 参照先集約が無い == nextは現在のrestの中で再上流の集約
-                    _rootAggregateOrderCache.Add(next.root, _rootAggregateOrderCache.Count);
-
-                    rest.Remove(next);
-                    index = 0;
                 }
+                return _rootAggregateOrderCache[rootAggregate];
             }
-            return rootAggregates.OrderBy(r => _rootAggregateOrderCache![r]);
         }
         private Dictionary<RootAggregate, int>? _rootAggregateOrderCache;
         #endregion ToOrderedByDataFlow
 
 
+        private readonly Lock _charTypeLock = new();
         /// <summary>
         /// 文字種を列挙
         /// </summary>
         internal IEnumerable<string> GetCharacterTypes() {
-            return _characterTypes ??= _immutableSchema
-                .GetRootAggregates()
-                .SelectMany(root => root.EnumerateThisAndDescendants())
-                .SelectMany(agg => agg.GetMembers())
-                .OfType<ValueMember>()
-                .Where(vm => vm.CharacterType != null)
-                .Select(vm => vm.CharacterType!)
-                .ToArray();
+            lock (_charTypeLock) {
+                return _characterTypes ??= _immutableSchema
+                    .GetRootAggregates()
+                    .SelectMany(root => root.EnumerateThisAndDescendants())
+                    .SelectMany(agg => agg.GetMembers())
+                    .OfType<ValueMember>()
+                    .Where(vm => vm.CharacterType != null)
+                    .Select(vm => vm.CharacterType!)
+                    .ToArray();
+            }
         }
         private string[]? _characterTypes;
 
@@ -254,5 +269,19 @@ namespace Nijo.CodeGenerating {
             }
         }
         #endregion シングルトン機構。あちこちのオブジェクトのかなり深いところからコンテキストを参照したいケースがあるので
+    }
+
+    public static class CodeRenderingContextExtensions {
+        /// <inheritdoc cref="CodeRenderingContext.GetIndexOfDataFlow"/>
+        public static int GetIndexOfDataFlow(this RootAggregate rootAggregate) {
+            return CodeRenderingContext.CurrentContext.GetIndexOfDataFlow(rootAggregate);
+        }
+        /// <summary>
+        /// ルート集約を、ref-toによる外部参照の関係性に従い、
+        /// 参照される方を先、参照する方を後、とする順番に並び替えた新しいインスタンスを返します。
+        /// </summary>
+        public static IEnumerable<RootAggregate> OrderByDataFlow(this IEnumerable<RootAggregate> rootAggregates) {
+            return rootAggregates.OrderBy(r => CodeRenderingContext.CurrentContext.GetIndexOfDataFlow(r));
+        }
     }
 }

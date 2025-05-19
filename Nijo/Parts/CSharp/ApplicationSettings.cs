@@ -59,7 +59,7 @@ namespace Nijo.Parts.CSharp {
                     /// 自動生成されるコードの中で必要になるもの
                     /// </summary>
                     public interface {{INTERFACE_NAME}} {
-                    {{_sourceCode.SelectTextTemplate(source => $$"""
+                    {{_sourceCode.OrderBy(source => source).SelectTextTemplate(source => $$"""
                         {{WithIndent(source, "    ")}}
                     """)}}
                     }

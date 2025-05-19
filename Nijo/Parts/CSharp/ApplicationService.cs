@@ -86,7 +86,7 @@ namespace Nijo.Parts.CSharp {
                         /// 現在のセッションの識別子。ログ出力に使用。
                         /// </summary>
                         public virtual string? LogSessionKey => null;
-                    {{_sourceCode.SelectTextTemplate(source => $$"""
+                    {{_sourceCode.OrderBy(source => source).SelectTextTemplate(source => $$"""
 
                         {{WithIndent(source, "    ")}}
                     """)}}

@@ -79,12 +79,12 @@ namespace Nijo.Parts.CSharp {
                             option.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 
                             // ValueObjectのJSONシリアライズ登録
-                    {{_valueObjectRootAggregates.SelectTextTemplate(agg => $$"""
+                    {{_valueObjectRootAggregates.OrderBy(agg => agg.PhysicalName).SelectTextTemplate(agg => $$"""
                             option.Converters.Add(new {{agg.PhysicalName}}.{{ValueObjectModel.JSON_CONVERTER_NAME}}());
                     """)}}
 
                             // 追加のJSONシリアライズクラスの登録
-                    {{_converterClasses.SelectTextTemplate(stmt => $$"""
+                    {{_converterClasses.OrderBy(stmt => stmt).SelectTextTemplate(stmt => $$"""
                             option.Converters.Add({{stmt}});
                     """)}}
 

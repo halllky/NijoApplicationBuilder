@@ -133,6 +133,7 @@ namespace Nijo.Parts.Common {
         }
 
         void IMultiAggregateSourceFile.Render(CodeRenderingContext ctx) {
+            var messagesOrderById = _messages.Values.OrderBy(m => m.Id).ToArray();
 
             // C#側定数
             ctx.CoreLibrary(dir => {
@@ -147,7 +148,7 @@ namespace Nijo.Parts.Common {
                             /// 具体的な文言はDI経由で入れ替えることができる。
                             /// </summary>
                             public interface {{CS_INTERFACE}} {
-                            {{_messages.Values.SelectTextTemplate(msg => $$"""
+                            {{messagesOrderById.SelectTextTemplate(msg => $$"""
                                 /// <summary>
                                 /// {{msg.Comment}}
                                 /// </summary>
@@ -159,7 +160,7 @@ namespace Nijo.Parts.Common {
                             /// <see cref="{{CS_INTERFACE}}"/> の既定の実装。
                             /// </summary>
                             public class {{CS_DEFAULT_CLASS_NAME}} : {{CS_INTERFACE}} {
-                            {{_messages.Values.SelectTextTemplate(msg => $$"""
+                            {{messagesOrderById.SelectTextTemplate(msg => $$"""
                                 public string {{msg.Id}}({{msg.GetParameterVarNames().Select(p => $"string {p}").Join(", ")}}) => $"{{msg.GetTemplateLiteral(E_CsTs.CSharp)}}";
                             """)}}
                             }
@@ -179,7 +180,7 @@ namespace Nijo.Parts.Common {
                              * 具体的な文言は React Context 経由で入れ替えることができる。
                              */
                             export type {{TS_TYPE_NAME}} = {
-                            {{_messages.Values.SelectTextTemplate(msg => $$"""
+                            {{messagesOrderById.SelectTextTemplate(msg => $$"""
                               /**
                                * {{msg.Comment}}
                                */
@@ -191,7 +192,7 @@ namespace Nijo.Parts.Common {
                              * {{TS_TYPE_NAME}} の既定の実装。
                              */
                             export const {{GET_TS_DEFAULT_IMPL}} = (): {{TS_TYPE_NAME}} => ({
-                            {{_messages.Values.SelectTextTemplate(msg => $$"""
+                            {{messagesOrderById.SelectTextTemplate(msg => $$"""
                               {{msg.Id}}: ({{msg.GetParameterVarNames().Select(p => $"{p}: string").Join(", ")}}) => `{{msg.GetTemplateLiteral(E_CsTs.TypeScript)}}`,
                             """)}}
                             })

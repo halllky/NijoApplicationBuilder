@@ -130,14 +130,14 @@ namespace Nijo.Parts.CSharp {
                         /// このメソッドをオーバーライドするときは必ずbaseを呼び出すこと。
                         /// </summary>
                         public virtual void ConfigureServices(IServiceCollection services) {
-                    {{coreConfigureServices.SelectTextTemplate(render => $$"""
+                    {{coreConfigureServices.Select(render => $$"""
 
                             {{WithIndent(render("services"), "        ")}}
-                    """)}}
+                    """).OrderBy(source => source).SelectTextTemplate(source => source)}}
                         }
                         #endregion DI設定
 
-                    {{coreMethods.SelectTextTemplate(source => $$"""
+                    {{coreMethods.OrderBy(source => source).SelectTextTemplate(source => $$"""
 
                         {{WithIndent(source, "    ")}}
                     """)}}
@@ -182,10 +182,10 @@ namespace Nijo.Parts.CSharp {
                             builder.Services.AddControllers(option => {
                                 // エラーハンドリング
                                 // TODO ver.1: option.Filters.Add<ここでExceptionFilterを登録>();
-                    {{_addControllers.SelectTextTemplate(render => $$"""
+                    {{_addControllers.Select(render => $$"""
 
                                 {{WithIndent(render("option"), "            ")}}
-                    """)}}
+                    """).OrderBy(source => source).SelectTextTemplate(source => source)}}
 
                             }).AddJsonOptions(option => {
                                 // JSON日本語設定
@@ -201,7 +201,7 @@ namespace Nijo.Parts.CSharp {
                             // AddCorsの設定をするならこちらも必要
                             app.UseCors();
                         }
-                    {{_webapi.SelectTextTemplate(sourceCode => $$"""
+                    {{_webapi.OrderBy(source => source).SelectTextTemplate(sourceCode => $$"""
 
                         {{WithIndent(sourceCode, "    ")}}
                     """)}}

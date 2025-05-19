@@ -56,7 +56,7 @@ namespace Nijo.Parts.Common {
 
                         namespace {{ctx.Config.RootNamespace}};
 
-                        {{_csSourceCode.SelectTextTemplate(source => $$"""
+                        {{_csSourceCode.OrderBy(source => source).SelectTextTemplate(source => $$"""
                         {{source}}
 
                         """)}}
@@ -65,24 +65,26 @@ namespace Nijo.Parts.Common {
             });
 
             ctx.ReactProject(dir => {
+                var defOrderByName = _staticEnumDefs.OrderBy(def => def.TsTypeName).ToArray();
+
                 dir.Generate(new SourceFile {
                     FileName = TS_FILENAME,
                     Contents = $$"""
                         /** 列挙体の型マッピング */
                         export interface {{TS_TYPE_MAP}} {
-                        {{_staticEnumDefs.SelectTextTemplate(def => $$"""
+                        {{defOrderByName.OrderBy(def => def.TsTypeName).SelectTextTemplate(def => $$"""
                           '{{def.TsTypeName}}': {{def.TsTypeName}}
                         """)}}
                         }
 
                         /** 列挙体の値マッピング */
                         export const {{TS_VALUE_MAP}}: { [K in keyof {{TS_TYPE_MAP}}]: () => {{TS_TYPE_MAP}}[K][] } = {
-                        {{_staticEnumDefs.SelectTextTemplate(def => $$"""
+                        {{defOrderByName.SelectTextTemplate(def => $$"""
                           '{{def.TsTypeName}}': () => [{{def.GetValues().Select(v => $"'{v.DisplayName.Replace("'", "\\'")}'").Join(", ")}}],
                         """)}}
                         }
 
-                        {{_tsSourceCode.SelectTextTemplate(source => $$"""
+                        {{_tsSourceCode.OrderBy(source => source).SelectTextTemplate(source => $$"""
                         {{source}}
 
                         """)}}

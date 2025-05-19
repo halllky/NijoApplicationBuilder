@@ -45,8 +45,9 @@ namespace Nijo.Models.DataModelModules {
         }
 
         private SourceFile RenderDummyDataGenerator(CodeRenderingContext ctx) {
-            var items = ctx
-                .ToOrderedByDataFlow(_rootAggregates) // データフロー順に並び替え
+            // データフロー順に並び替え
+            var rootAggregatesOrderByDataFlow = _rootAggregates
+                .OrderByDataFlow()
                 .ToArray();
 
             return new SourceFile {
@@ -75,27 +76,27 @@ namespace Nijo.Models.DataModelModules {
                             };
 
                             // データフローの順番でダミーデータのパターンを作成
-                    {{items.SelectTextTemplate(rootAggregate => $$"""
+                    {{rootAggregatesOrderByDataFlow.SelectTextTemplate(rootAggregate => $$"""
                             context.{{GeneratedList(rootAggregate)}} = {{CreatePatternMethodName(rootAggregate)}}(context).ToArray();
                             context.ResetSequence();
                     """)}}
 
                             // データフローの順番で登録実行
-                    {{items.SelectTextTemplate(rootAggregate => $$"""
+                    {{rootAggregatesOrderByDataFlow.SelectTextTemplate(rootAggregate => $$"""
                             {{WithIndent(RenderOutputting(rootAggregate), "        ")}}
                     """)}}
                         }
 
 
                         #region ルート集約毎のパターン作成処理
-                    {{_rootAggregates.SelectTextTemplate(agg => $$"""
+                    {{rootAggregatesOrderByDataFlow.SelectTextTemplate(agg => $$"""
                         {{WithIndent(RenderCreatePatternMethod(agg), "    ")}}
                     """)}}
                         #endregion ルート集約毎のパターン作成処理
 
 
                         #region ルート集約毎のインスタンス1件作成処理
-                    {{_rootAggregates.SelectTextTemplate(agg => $$"""
+                    {{rootAggregatesOrderByDataFlow.SelectTextTemplate(agg => $$"""
                         {{WithIndent(RenderCreateRootAggregateMethod(agg), "    ")}}
                     """)}}
                         #endregion ルート集約毎のインスタンス1件作成処理
@@ -361,6 +362,11 @@ namespace Nijo.Models.DataModelModules {
         private const string DUMMY_DATA_GENERATE_CONTEXT = "DummyDataGenerateContext";
 
         private SourceFile RenderDummyDataGenerateContext(CodeRenderingContext ctx) {
+            // データフロー順に並び替え
+            var rootAggregatesOrderByDataFlow = _rootAggregates
+                .OrderByDataFlow()
+                .ToArray();
+
             return new SourceFile {
                 FileName = "DummyDataGenerateContext.cs",
                 Contents = $$"""
@@ -390,7 +396,7 @@ namespace Nijo.Models.DataModelModules {
                         }
                         #endregion シーケンス
 
-                    {{_rootAggregates.SelectTextTemplate(agg => $$"""
+                    {{rootAggregatesOrderByDataFlow.SelectTextTemplate(agg => $$"""
                         {{WithIndent(RenderGetRefTo(agg), "    ")}}
                     """)}}
                     }

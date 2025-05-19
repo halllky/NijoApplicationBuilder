@@ -51,6 +51,8 @@ internal class Metadata : IMultiAggregateSourceFile {
 
     private SourceFile RenderCSharp(CodeRenderingContext ctx) {
         var root = _aggregates
+            .OrderBy(agg => agg.GetRoot().GetIndexOfDataFlow())
+            .ThenBy(agg => agg.GetOrderInTree())
             .Select(agg => new Container(agg))
             .ToArray();
 
@@ -104,6 +106,8 @@ internal class Metadata : IMultiAggregateSourceFile {
 
     private SourceFile RenderTypeScript(CodeRenderingContext ctx) {
         var root = _aggregates
+            .OrderBy(agg => agg.GetRoot().GetIndexOfDataFlow())
+            .ThenBy(agg => agg.GetOrderInTree())
             .Select(agg => new Container(agg))
             .ToArray();
 
