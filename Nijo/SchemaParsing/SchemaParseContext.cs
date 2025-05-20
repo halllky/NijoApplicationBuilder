@@ -333,11 +333,12 @@ public class SchemaParseContext {
     /// </summary>
     /// <param name="xDocument">XMLドキュメント</param>
     /// <param name="schema">作成完了後のスキーマ</param>
-    /// <param name="logger">エラーがある場合はここにその内容が表示される</param>
+    /// <param name="errors">エラー</param>
     /// <returns>スキーマの作成に成功したかどうか</returns>
-    public bool TryBuildSchema(XDocument xDocument, out ApplicationSchema schema, ILogger logger) {
+    public bool TryBuildSchema(XDocument xDocument, out ApplicationSchema schema, out ValidationError[] errors) {
         schema = new ApplicationSchema(xDocument, this);
-        var errorsList = new List<(XElement, string)>();
+        var errorsList = new List<(XElement, string ErrorMessage)>();
+        var attributeErrors = new List<(XElement, string AttributeName, string ErrorMessage)>();
 
         // ルート集約の物理名の衝突チェック
         var rootAggregates = xDocument.Root?.Elements() ?? [];
@@ -459,39 +460,25 @@ public class SchemaParseContext {
                     Value = el.Attribute(opt.AttributeName)!.Value,
                     XElement = el,
                     NodeType = nodeType,
-                    AddError = err => errorsList.Add((el, err)),
+                    AddError = err => attributeErrors.Add((el, opt.AttributeName, err)),
                     SchemaParseContext = this,
                 });
             }
         }
 
-        // エラー内容表示
-        if (errorsList.Count > 0) {
-            logger.LogError("スキーマ定義にエラーがあります。");
-
-            var errors = errorsList
-                .GroupBy(x => x.Item1)
-                .Select(x => new ValidationError {
-                    XElement = x.Key,
-                    Errors = x.Select(y => y.Item2).ToArray(),
-                });
-
-            foreach (var err in errors) {
-                var path = err.XElement
-                    .AncestorsAndSelf()
-                    .Reverse()
-                    .Skip(1)
-                    .Select(el => el.Name.LocalName)
-                    .Join("/");
-
-                var summary = err.Errors.Count >= 2
-                    ? $"{err.Errors.Count}件のエラー（{err.Errors.Join(", ")}）"
-                    : err.Errors.Single();
-                logger.LogError("  * {path}: {summary}", path, summary);
-            }
-        }
-
-        return errorsList.Count == 0;
+        // エラーをXML要素ごとにまとめる
+        errors = errorsList
+            .GroupBy(x => x.Item1)
+            .Select(x => new ValidationError {
+                XElement = x.Key,
+                OwnErrors = x.Select(y => y.ErrorMessage).ToArray(),
+                AttributeErrors = attributeErrors
+                    .Where(y => y.Item1 == x.Key)
+                    .GroupBy(y => y.AttributeName)
+                    .ToDictionary(y => y.Key, y => y.Select(z => z.ErrorMessage).ToArray()),
+            })
+            .ToArray();
+        return errors.Length == 0;
     }
 
     /// <summary>
@@ -614,10 +601,17 @@ public class SchemaParseContext {
 
     public class ValidationError {
         public required XElement XElement { get; init; }
-        public required IReadOnlyCollection<string> Errors { get; init; }
+        /// <summary>
+        /// XML要素自体に対するエラー
+        /// </summary>
+        public required string[] OwnErrors { get; init; }
+        /// <summary>
+        /// 属性に対するエラー
+        /// </summary>
+        public required IReadOnlyDictionary<string, string[]> AttributeErrors { get; init; }
 
         public override string ToString() {
-            return $"{XElement.AncestorsAndSelf().Reverse().Select(el => el.Name.LocalName).Join("/")}: {Errors.Join(", ")}";
+            return $"{XElement.AncestorsAndSelf().Reverse().Select(el => el.Name.LocalName).Join("/")}: {OwnErrors.Join(", ")}";
         }
     }
     #endregion 検証

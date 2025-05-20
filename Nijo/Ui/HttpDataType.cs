@@ -33,16 +33,26 @@ public class ApplicationState {
     /// ValueMemberやAttributeDefsは、暫定的に、画面上で編集できないものとし、
     /// <see cref="SchemaParseRule.Default"/> から取得する。
     /// </summary>
-    internal bool TryConvertToXDocument(XDocument original, ICollection<string> errors, [NotNullWhen(true)] out XDocument? xDocument) {
+    internal bool TryConvertToXDocument(
+        XDocument original,
+        ICollection<string> errors,
+        [NotNullWhen(true)] out XDocument? xDocument,
+        [NotNullWhen(true)] out IReadOnlyDictionary<XElement, string>? uuidToXmlElement) {
 
         xDocument = new XDocument(original);
         if (xDocument.Root == null) {
             errors.Add("XMLにルート要素がありません");
             xDocument = null;
+            uuidToXmlElement = null;
             return false;
         }
 
+        // クローンしたXDocumentのルート要素の子を削除する。
+        // この後の処理で、ルート要素の子を追加していく。
         xDocument.Root.RemoveNodes();
+
+        // ルート要素の子を追加していく過程で、XElementと、そのXElementの元となったJSONのIdを紐づける。
+        var mapping = new Dictionary<XElement, string>();
 
         for (int i = 0; i < XmlElementTrees.Count; i++) {
             var aggregateTree = XmlElementTrees[i];
@@ -52,6 +62,7 @@ public class ApplicationState {
             if (XmlElementItem.TryConvertToRootAggregateXElement(
                 aggregateTree.XmlElements,
                 error => errors.Add($"{logName}: {error}"),
+                (xElement, item) => mapping[xElement] = item.UniqueId,
                 out var rootAggregate,
                 out var commentToRootAggregate)) {
 
@@ -60,9 +71,11 @@ public class ApplicationState {
             }
         }
         if (errors.Count > 0) {
+            uuidToXmlElement = null;
             return false;
         }
 
+        uuidToXmlElement = mapping;
         return true;
     }
 }
@@ -151,6 +164,7 @@ public class XmlElementItem {
     public static bool TryConvertToRootAggregateXElement(
         IReadOnlyList<XmlElementItem> items,
         Action<string> logError,
+        Action<XElement, XmlElementItem> onXmlElementCreated,
         [NotNullWhen(true)] out XElement? rootAggregate,
         out XComment? commentToRootAggregate) {
 
@@ -184,6 +198,7 @@ public class XmlElementItem {
             try {
                 xComment = string.IsNullOrWhiteSpace(item.Comment) ? null : new XComment(item.Comment);
                 xElement = new XElement(item.LocalName);
+                onXmlElementCreated(xElement, item);
             } catch (XmlException ex) {
                 logError($"XML要素として不正です: {ex.Message}");
                 rootAggregate = null;

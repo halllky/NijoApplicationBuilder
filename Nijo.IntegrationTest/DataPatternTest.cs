@@ -129,7 +129,7 @@ public class DataPatternTest {
         var parseContext = new SchemaParseContext(schemaXml, SchemaParseRule.Default());
 
         // TryBuildSchemaメソッドを使用してApplicationSchemaのインスタンスを生成
-        if (!parseContext.TryBuildSchema(schemaXml, out var appSchema, _logger)) {
+        if (!parseContext.TryBuildSchema(schemaXml, out var appSchema, out var _)) {
             Assert.Fail("スキーマのビルドに失敗したため、ダンプを生成できませんでした。");
             return;
         }
@@ -168,7 +168,7 @@ public class DataPatternTest {
         var parseContext = new SchemaParseContext(schemaXml, SchemaParseRule.Default());
 
         // TryBuildSchemaメソッドを使用してApplicationSchemaのインスタンスを生成
-        if (!parseContext.TryBuildSchema(schemaXml, out var appSchema, _logger)) {
+        if (!parseContext.TryBuildSchema(schemaXml, out var appSchema, out var _)) {
             Assert.Fail("スキーマのビルドに失敗したため、ダンプを生成できませんでした。");
             return;
         }

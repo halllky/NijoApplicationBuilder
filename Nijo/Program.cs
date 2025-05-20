@@ -362,7 +362,7 @@ namespace Nijo {
             var parseContext = new SchemaParseContext(xDocument, rule);
 
             // TryBuildSchemaメソッドを使用してApplicationSchemaのインスタンスを生成
-            if (parseContext.TryBuildSchema(xDocument, out var appSchema, logger)) {
+            if (parseContext.TryBuildSchema(xDocument, out var appSchema, out var errors)) {
                 // ApplicationSchemaクラスのGenerateMarkdownDumpメソッドを使用
                 var markdownContent = appSchema.GenerateMarkdownDump();
 
@@ -370,6 +370,22 @@ namespace Nijo {
                 Console.WriteLine(markdownContent);
             } else {
                 logger.LogError("スキーマのビルドに失敗したため、ダンプを生成できませんでした。");
+                foreach (var err in errors) {
+                    var xmlPath = err.XElement
+                        .AncestorsAndSelf()
+                        .Reverse()
+                        .Skip(1)
+                        .Select(el => el.Name.LocalName)
+                        .Join("/");
+
+                    var errorMessages = err.OwnErrors
+                        .Concat(err.AttributeErrors.SelectMany(x => x.Value, (p, v) => $"[{p.Key}] {v}"))
+                        .ToArray();
+                    var summary = errorMessages.Length >= 2
+                        ? $"{errorMessages.Length}件のエラー（{errorMessages.Join(", ")}）"
+                        : errorMessages.Single();
+                    logger.LogError("  * {xmlPath}: {summary}", xmlPath, summary);
+                }
             }
         }
 

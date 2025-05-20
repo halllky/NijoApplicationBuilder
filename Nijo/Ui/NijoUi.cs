@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Text;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Xml;
@@ -91,12 +92,13 @@ public class NijoUi {
         // 編集中のバリデーション
         app.MapPost("/validate", async context => {
             try {
-                // XDocumentを構築する。XMLとして破綻していたらエラー
+                // XDocumentを構築する。XMLとして破綻していたらエラー。
+                // 成功した場合、XML要素とJSONのマッピングを作成する。
                 var originalXDocument = XDocument.Load(_project.SchemaXmlPath);
                 var applicationState = await context.Request.ReadFromJsonAsync<ApplicationState>()
                     ?? throw new Exception("applicationState is null");
                 var errors = new List<string>();
-                if (!applicationState.TryConvertToXDocument(originalXDocument, errors, out var xDocument)) {
+                if (!applicationState.TryConvertToXDocument(originalXDocument, errors, out var xDocument, out var uuidToXmlElement)) {
                     context.Response.StatusCode = (int)HttpStatusCode.Accepted;
                     context.Response.ContentType = "application/json";
                     await context.Response.WriteAsJsonAsync(errors);
@@ -106,10 +108,13 @@ public class NijoUi {
                 // スキーマ定義として不正があればエラー
                 var rule = SchemaParseRule.Default();
                 var schemaParseContext = new SchemaParseContext(xDocument, rule);
-                if (!schemaParseContext.TryBuildSchema(schemaParseContext.Document, out var applicationSchema, logger)) {
+                if (!schemaParseContext.TryBuildSchema(schemaParseContext.Document, out var applicationSchema, out var xmlErrors)) {
+                    // エラーをReactで使うエラー形式に変換する
+                    var reactErrorObject = ToReactErrorObject(xmlErrors, uuidToXmlElement);
+
                     context.Response.StatusCode = (int)HttpStatusCode.Accepted;
                     context.Response.ContentType = "application/json";
-                    await context.Response.WriteAsJsonAsync(errors);
+                    await context.Response.WriteAsJsonAsync(reactErrorObject);
                     return;
                 }
 
@@ -132,7 +137,7 @@ public class NijoUi {
                 var applicationState = await context.Request.ReadFromJsonAsync<ApplicationState>()
                     ?? throw new Exception("applicationState is null");
                 var errors = new List<string>();
-                if (!applicationState.TryConvertToXDocument(originalXDocument, errors, out var xDocument)) {
+                if (!applicationState.TryConvertToXDocument(originalXDocument, errors, out var xDocument, out var _)) {
                     context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                     context.Response.ContentType = "application/json";
                     await context.Response.WriteAsJsonAsync(errors);
@@ -167,5 +172,55 @@ public class NijoUi {
         });
 
         return app;
+    }
+
+    /// <summary>
+    /// スキーマ定義のエラーをReactで使うエラー形式に変換する。
+    /// エラーを表示したあとに画面側で要素の並び替え、名称変更、などの操作があっても
+    /// エラーの内容を変更しないために、UUIDをキーにしてエラーを管理する。
+    /// 具体的には以下のようなJSONオブジェクトを返す。
+    /// <code>
+    /// {
+    ///   "00000000-00000000-00000000-00000000 ※画面表示時または新規要素追加時に発番されるUUID": {
+    ///     "_own": ["xxxが不正です。", "yyyが不正です。"], // XML要素自体に対するエラー
+    ///     "DbName": ["テーブル名が不正です。"], // XMLAttributeに対するエラー
+    ///     "MaxLength": ["この項目に最大文字数は設定できません。"], // XMLAttributeに対するエラー
+    ///     ...
+    ///   },
+    ///   "11111111-11111111-11111111-11111111": {
+    ///     ...
+    ///   },
+    ///   ...
+    /// }
+    /// </code>
+    private static JsonObject ToReactErrorObject(IEnumerable<SchemaParseContext.ValidationError> errors, IReadOnlyDictionary<XElement, string> mapping) {
+        // この名前はReact側と合わせる必要がある
+        const string OWN_ERRORS = "_own";
+
+        var result = new JsonObject();
+        foreach (var error in errors) {
+            var uuid = mapping[error.XElement];
+
+            var thisXmlErrors = new JsonObject();
+            result[uuid] = thisXmlErrors;
+
+            // XML要素自体に対するエラー
+            var ownErrors = new JsonArray();
+            foreach (var ownError in error.OwnErrors) {
+                ownErrors.Add(ownError);
+            }
+
+            // XML要素の属性に対するエラー
+            thisXmlErrors[OWN_ERRORS] = ownErrors;
+            foreach (var attributeError in error.AttributeErrors) {
+                var attributeErrors = new JsonArray();
+                foreach (var errorMessage in attributeError.Value) {
+                    attributeErrors.Add(errorMessage);
+                }
+                thisXmlErrors[attributeError.Key] = attributeErrors;
+            }
+        }
+
+        return result;
     }
 }

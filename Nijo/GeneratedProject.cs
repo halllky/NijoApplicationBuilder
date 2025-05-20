@@ -165,7 +165,30 @@ namespace Nijo {
         /// スキーマ定義の検証を行ないます。
         /// </summary>
         public bool ValidateSchema(SchemaParseContext parseContext, ILogger logger) {
-            return parseContext.TryBuildSchema(parseContext.Document, out var _, logger);
+            var success = parseContext.TryBuildSchema(parseContext.Document, out var _, out var errors);
+
+            // エラー内容表示
+            if (!success) {
+                logger.LogError("スキーマ定義にエラーがあります。");
+            }
+            foreach (var err in errors) {
+                var path = err.XElement
+                    .AncestorsAndSelf()
+                    .Reverse()
+                    .Skip(1)
+                    .Select(el => el.Name.LocalName)
+                    .Join("/");
+
+                var errorMessages = err.OwnErrors
+                    .Concat(err.AttributeErrors.SelectMany(x => x.Value, (p, v) => $"[{p.Key}] {v}"))
+                    .ToArray();
+                var summary = errorMessages.Length >= 2
+                    ? $"{errorMessages.Length}件のエラー（{errorMessages.Join(", ")}）"
+                    : errorMessages.Single();
+                logger.LogError("  * {path}: {summary}", path, summary);
+            }
+
+            return success;
         }
 
         /// <summary>
@@ -173,8 +196,24 @@ namespace Nijo {
         /// </summary>
         internal bool GenerateCode(SchemaParseContext parseContext, CodeRenderingOptions renderingOptions, ILogger logger) {
             // スキーマ定義のコレクションを作成
-            if (!parseContext.TryBuildSchema(parseContext.Document, out var immutableSchema, logger)) {
-                logger.LogError("エラーがある状態でソースコードの自動生成を行なうことはできません。");
+            if (!parseContext.TryBuildSchema(parseContext.Document, out var immutableSchema, out var errors)) {
+                logger.LogError("スキーマ定義にエラーがあります。エラーがある状態でソースコードの自動生成を行なうことはできません。");
+                foreach (var err in errors) {
+                    var path = err.XElement
+                        .AncestorsAndSelf()
+                        .Reverse()
+                        .Skip(1)
+                        .Select(el => el.Name.LocalName)
+                        .Join("/");
+
+                    var errorMessages = err.OwnErrors
+                        .Concat(err.AttributeErrors.SelectMany(x => x.Value, (p, v) => $"[{p.Key}] {v}"))
+                        .ToArray();
+                    var summary = errorMessages.Length >= 2
+                        ? $"{errorMessages.Length}件のエラー（{errorMessages.Join(", ")}）"
+                        : errorMessages.Single();
+                    logger.LogError("  * {path}: {summary}", path, summary);
+                }
                 return false;
             }
 
