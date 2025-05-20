@@ -612,13 +612,6 @@ public class SchemaParseContext {
         return false;
     }
 
-    private static string WithIndent(string text, string indent) {
-        if (string.IsNullOrEmpty(text)) return text;
-
-        var lines = text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-        return string.Join(Environment.NewLine + indent, lines);
-    }
-
     public class ValidationError {
         public required XElement XElement { get; init; }
         public required IReadOnlyCollection<string> Errors { get; init; }
