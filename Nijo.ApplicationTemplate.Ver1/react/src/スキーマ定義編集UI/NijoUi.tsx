@@ -142,7 +142,7 @@ const AfterLoaded = ({ defaultValues, onSave, className }: {
 
           {/* エラーメッセージ表示欄 */}
           <ReactResizablePanels.Panel defaultSize={10} minSize={6} collapsible>
-            <NijoUiErrorMessagePane getValues={form.getValues} />
+            <NijoUiErrorMessagePane getValues={form.getValues} className="h-full" />
           </ReactResizablePanels.Panel>
 
         </ReactResizablePanels.PanelGroup>

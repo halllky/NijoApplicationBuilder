@@ -35,7 +35,7 @@ export default function ({ getValues, className }: {
   console.log(errorMessageList)
 
   return (
-    <ul className={`flex flex-col gap-1 ${className ?? ''}`}>
+    <ul className={`block overflow-y-auto ${className ?? ''}`}>
       {errorMessageList.map((message, i) => (
         <ErrorMessage key={i}>
           {message}

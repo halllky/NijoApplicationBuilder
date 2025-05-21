@@ -6,7 +6,10 @@ import { SERVER_DOMAIN } from "./NijoUi"
 
 const ValidationContext = React.createContext<ValidationContextType>({
   getValidationResult: () => ({ _own: [] }),
-  trigger: () => Promise.resolve(),
+  trigger: () => {
+    console.log('ValidationContext未定義')
+    return Promise.resolve()
+  },
   validationResult: {},
 })
 
