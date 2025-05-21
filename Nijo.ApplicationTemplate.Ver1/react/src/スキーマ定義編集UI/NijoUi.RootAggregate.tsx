@@ -9,7 +9,7 @@ import useEvent from "react-use-event-hook"
 import { UUID } from "uuidjs"
 import { useAttrDefs } from "./useAttrDefs"
 import { TYPE_COLUMN_DEF } from "./getAttrTypeColumnDef"
-import { useValidation } from "./useValidation"
+import { useValidationContext } from "./useValidationContext"
 
 /**
  * Data, Query, Command のルート集約1件を表示・編集するページ。
@@ -128,7 +128,7 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
   })
 
   // セル編集 or クリップボード貼り付け
-  const { trigger } = useValidation(formMethods)
+  const { trigger } = useValidationContext()
   const handleChangeRow: Layout.RowChangeEvent<GridRowType> = useEvent(e => {
     for (const x of e.changedRows) {
       update(x.rowIndex, x.newRow)

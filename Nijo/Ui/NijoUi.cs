@@ -177,17 +177,17 @@ public class NijoUi {
     /// <summary>
     /// スキーマ定義のエラーをReactで使うエラー形式に変換する。
     /// エラーを表示したあとに画面側で要素の並び替え、名称変更、などの操作があっても
-    /// エラーの内容を変更しないために、UUIDをキーにしてエラーを管理する。
+    /// エラーの内容を変更しないために、IDをキーにしてエラーを管理する。
     /// 具体的には以下のようなJSONオブジェクトを返す。
     /// <code>
     /// {
-    ///   "00000000-00000000-00000000-00000000 ※画面表示時または新規要素追加時に発番されるUUID": {
+    ///   "0000_0001 ※画面表示時または新規要素追加時に発番されるID": {
     ///     "_own": ["xxxが不正です。", "yyyが不正です。"], // XML要素自体に対するエラー
     ///     "DbName": ["テーブル名が不正です。"], // XMLAttributeに対するエラー
     ///     "MaxLength": ["この項目に最大文字数は設定できません。"], // XMLAttributeに対するエラー
     ///     ...
     ///   },
-    ///   "11111111-11111111-11111111-11111111": {
+    ///   "0000_0002": {
     ///     ...
     ///   },
     ///   ...
@@ -199,10 +199,10 @@ public class NijoUi {
 
         var result = new JsonObject();
         foreach (var error in errors) {
-            var uuid = mapping[error.XElement];
+            var id = mapping[error.XElement];
 
             var thisXmlErrors = new JsonObject();
-            result[uuid] = thisXmlErrors;
+            result[id] = thisXmlErrors;
 
             // XML要素自体に対するエラー
             var ownErrors = new JsonArray();

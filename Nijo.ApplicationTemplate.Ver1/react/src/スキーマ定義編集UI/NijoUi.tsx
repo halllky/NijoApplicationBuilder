@@ -12,6 +12,7 @@ import { AttrDefsProvider } from "./useAttrDefs"
 import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS } from "."
 import { Outlet, useOutletContext } from "react-router-dom"
 import NijoUiErrorMessagePane from "./NijoUiErrorMessagePane"
+import { ValidationContextProvider } from "./useValidationContext"
 
 export const SERVER_DOMAIN = import.meta.env.DEV
   ? 'https://localhost:8081'
@@ -111,39 +112,41 @@ const AfterLoaded = ({ defaultValues, onSave, className }: {
 
   return (
     <AttrDefsProvider control={form.control}>
-      <ReactResizablePanels.PanelGroup direction="vertical" className={className}>
+      <ValidationContextProvider getValues={form.getValues}>
+        <ReactResizablePanels.PanelGroup direction="vertical" className={className}>
 
-        <ReactResizablePanels.Panel>
-          <ReactResizablePanels.PanelGroup direction="horizontal">
+          <ReactResizablePanels.Panel>
+            <ReactResizablePanels.PanelGroup direction="horizontal">
 
-            {/* サイドメニュー */}
-            <ReactResizablePanels.Panel defaultSize={20} minSize={8} collapsible>
-              <NijoUiSideMenu
-                onSave={onSave}
-                formMethods={form}
-                selectedRootAggregateId={selectedRootAggregateId}
-                onSelected={handleSelected}
-              />
-            </ReactResizablePanels.Panel>
+              {/* サイドメニュー */}
+              <ReactResizablePanels.Panel defaultSize={20} minSize={8} collapsible>
+                <NijoUiSideMenu
+                  onSave={onSave}
+                  formMethods={form}
+                  selectedRootAggregateId={selectedRootAggregateId}
+                  onSelected={handleSelected}
+                />
+              </ReactResizablePanels.Panel>
 
-            <ReactResizablePanels.PanelResizeHandle className="w-1" />
+              <ReactResizablePanels.PanelResizeHandle className="w-1" />
 
-            {/* メインコンテンツ */}
-            <ReactResizablePanels.Panel>
-              <Outlet context={{ form, selectedRootAggregateId, xmlElementTrees }} />
-            </ReactResizablePanels.Panel>
+              {/* メインコンテンツ */}
+              <ReactResizablePanels.Panel>
+                <Outlet context={{ form, selectedRootAggregateId, xmlElementTrees }} />
+              </ReactResizablePanels.Panel>
 
-          </ReactResizablePanels.PanelGroup>
-        </ReactResizablePanels.Panel>
+            </ReactResizablePanels.PanelGroup>
+          </ReactResizablePanels.Panel>
 
-        <ReactResizablePanels.PanelResizeHandle className="h-2" />
+          <ReactResizablePanels.PanelResizeHandle className="h-2" />
 
-        {/* エラーメッセージ表示欄 */}
-        <ReactResizablePanels.Panel defaultSize={10} minSize={6} collapsible>
-          <NijoUiErrorMessagePane formState={form.formState} />
-        </ReactResizablePanels.Panel>
+          {/* エラーメッセージ表示欄 */}
+          <ReactResizablePanels.Panel defaultSize={10} minSize={6} collapsible>
+            <NijoUiErrorMessagePane getValues={form.getValues} />
+          </ReactResizablePanels.Panel>
 
-      </ReactResizablePanels.PanelGroup>
+        </ReactResizablePanels.PanelGroup>
+      </ValidationContextProvider>
     </AttrDefsProvider>
   )
 }
