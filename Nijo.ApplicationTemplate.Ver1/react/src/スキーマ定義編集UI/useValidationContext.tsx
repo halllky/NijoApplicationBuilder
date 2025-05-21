@@ -4,13 +4,15 @@ import * as ReactHookForm from "react-hook-form"
 import { ApplicationState } from "./types"
 import { SERVER_DOMAIN } from "./NijoUi"
 
-const ValidationContext = React.createContext<ValidationContextType | null>(null)
+const ValidationContext = React.createContext<ValidationContextType>({
+  getValidationResult: () => ({ _own: [] }),
+  trigger: () => Promise.resolve(),
+  validationResult: {},
+})
 
 /** 入力検証のコンテキストを取得する。 */
 export const useValidationContext = () => {
-  const context = React.useContext(ValidationContext)
-  if (!context) throw new Error('ValidationContext not found!!')
-  return context
+  return React.useContext(ValidationContext)
 }
 
 /** 入力検証のコンテキストを提供する。 */
