@@ -18,20 +18,42 @@ export default function ({ getValues, className }: {
 
   // エラーメッセージをプレーンな配列に変換する。
   const errorInfos = React.useMemo(() => {
+    const xmlElementTrees = getValues(`xmlElementTrees`) ?? []
+    if (!xmlElementTrees.length) return []
 
-    // IDから当該要素の名前を引き当てるための辞書
-    const xmlElements = getValues(`xmlElementTrees`)?.flatMap(x => x.xmlElements) ?? []
-    const idToName = new Map(xmlElements.map(x => [x.uniqueId, x.localName]))
+    // IDから当該要素の情報を引き当てるための辞書
+    const elementMap = new Map(xmlElementTrees.flatMap(tree => tree.xmlElements).map(el => [el.uniqueId, el]))
+    const treeUtilsMap = new Map(xmlElementTrees.map(tree => [tree, asTree(tree.xmlElements)]))
 
-    const infos: Array<{ id: string, message: string }> = []
+    const infos: Array<{
+      id: string
+      rootAggregateName: string
+      elementName: string
+      attributeName: string
+      message: string
+    }> = []
+
     for (const [id, obj] of Object.entries(validationResult)) {
-      const name = idToName.get(id)
+      const element = elementMap.get(id)
+      if (!element) continue
+
+      const tree = xmlElementTrees.find(t => t.xmlElements.some(el => el.uniqueId === id))
+      if (!tree) continue
+
+      const treeUtils = treeUtilsMap.get(tree)
+      if (!treeUtils) continue
+
+      const rootElement = treeUtils.getRoot(element)
+      const rootAggregateName = rootElement.localName
 
       for (const [objKey, attrMessages] of Object.entries(obj)) {
-        const attrName = objKey === '_own' ? '' : `${objKey}.`
+        const attributeName = objKey === '_own' ? '' : objKey
         infos.push(...attrMessages.map(x => ({
           id,
-          message: `${name ?? ''}${attrName}: ${x}`,
+          rootAggregateName: rootAggregateName ?? '',
+          elementName: element.localName ?? '',
+          attributeName,
+          message: x,
         })))
       }
     }
@@ -55,26 +77,32 @@ export default function ({ getValues, className }: {
   }
 
   return (
-    <ul className={`block overflow-y-auto ${className ?? ''}`}>
-      {errorInfos.map((info, i) => (
-        <ErrorMessage key={i} onClick={() => handleClick(info.id)}>
-          {info.message}
-        </ErrorMessage>
-      ))}
-    </ul>
-  )
-}
-
-const ErrorMessage = ({ children, onClick }: {
-  children: React.ReactNode
-  onClick: () => void
-}) => {
-  return (
-    <li
-      className="text-sm truncate text-amber-600 cursor-pointer hover:bg-amber-50"
-      onClick={onClick}
-    >
-      {children}
-    </li>
+    <div className={`block overflow-y-auto ${className ?? ''}`}>
+      {errorInfos.length > 0 && (
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left">
+              <th className="text-xs font-normal px-px pb-1 text-amber-600" colSpan={4}>
+                エラー（{errorInfos.length}件）
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {errorInfos.map((info, i) => (
+              <tr
+                key={i}
+                className="cursor-pointer hover:bg-amber-50"
+                onClick={() => handleClick(info.id)}
+              >
+                <td className="px-px  truncate text-amber-600">{info.rootAggregateName}</td>
+                <td className="px-px  truncate text-amber-600">{info.elementName}</td>
+                <td className="px-px  truncate text-amber-600">{info.attributeName}</td>
+                <td className="px-px truncate text-amber-600">{info.message}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
   )
 }
