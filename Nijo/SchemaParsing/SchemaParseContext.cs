@@ -391,9 +391,9 @@ public class SchemaParseContext {
                 // ノードの種類が不明な場合
                 case E_NodeType.Unknown:
                     if (string.IsNullOrEmpty(typeAttrValue)) {
-                        errorsList.Add((el, $"ノードの種類が不明です。{ATTR_NODE_TYPE}属性が指定されているか確認してください。"));
+                        attributeErrors.Add((el, ATTR_NODE_TYPE, $"ノードの種類が不明です。{ATTR_NODE_TYPE}属性が指定されているか確認してください。"));
                     } else {
-                        errorsList.Add((el, $"ノードの種類 '{typeAttrValue}' は有効ではありません。"));
+                        attributeErrors.Add((el, ATTR_NODE_TYPE, $"ノードの種類 '{typeAttrValue}' は有効ではありません。"));
                     }
                     break;
 
@@ -401,7 +401,7 @@ public class SchemaParseContext {
                 case E_NodeType.RootAggregate:
                     var model = Models.GetValueOrDefault(typeAttrValue);
                     if (model == null) {
-                        errorsList.Add((el, $"{ATTR_NODE_TYPE}属性でモデルが指定されていません。使用できる値は {Models.Keys.Join(", ")} です。"));
+                        attributeErrors.Add((el, ATTR_NODE_TYPE, $"{ATTR_NODE_TYPE}属性でモデルが指定されていません。使用できる値は {Models.Keys.Join(", ")} です。"));
                     } else {
                         // モデル単位の検証
                         model.Validate(el, this, (el, err) => errorsList.Add((el, err)));
@@ -433,7 +433,7 @@ public class SchemaParseContext {
                     if (TryResolveMemberType(el, out var vmType)) {
                         vmType.Validate(el, this, (el, err) => errorsList.Add((el, err)));
                     } else {
-                        errorsList.Add((el, $"種類'{el.Attribute(ATTR_NODE_TYPE)?.Value}'を特定できません。"));
+                        attributeErrors.Add((el, ATTR_NODE_TYPE, $"種類'{el.Attribute(ATTR_NODE_TYPE)?.Value}'を特定できません。"));
                     }
                     break;
 
@@ -477,6 +477,18 @@ public class SchemaParseContext {
                     .GroupBy(y => y.AttributeName)
                     .ToDictionary(y => y.Key, y => y.Select(z => z.ErrorMessage).ToArray()),
             })
+            .Concat(attributeErrors // attributeErrors にしかエラーがない要素も拾い上げる
+                .Select(x => x.Item1)
+                .Distinct()
+                .Where(x => !errorsList.Any(y => y.Item1 == x)) // errorsList に含まれない要素のみを対象とする
+                .Select(x => new ValidationError {
+                    XElement = x,
+                    OwnErrors = Array.Empty<string>(), // errorsList にはないので空配列
+                    AttributeErrors = attributeErrors
+                        .Where(y => y.Item1 == x)
+                        .GroupBy(y => y.AttributeName)
+                        .ToDictionary(y => y.Key, y => y.Select(z => z.ErrorMessage).ToArray()),
+                }))
             .ToArray();
         return errors.Length == 0;
     }

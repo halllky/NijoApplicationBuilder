@@ -488,18 +488,17 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                             }
                           }}
                           autoFocus
-                          className="w-full pl-1 outline outline-blue-500"
+                          className="w-full outline outline-blue-500"
                         />
                       )}
 
                       {/* セル編集中でない場合はdiv要素をレンダリング */}
                       {(!isEditing || !isActive) && (
                         <div
-                          className="flex pl-1 border-r border-gray-200 select-none truncate"
+                          className="flex border-r border-gray-200 select-none truncate"
                           style={{ width: cell.column.getSize() }}
                         >
                           {renderCell?.(cell.getContext()) ?? cell.getValue()?.toString()}
-                          &nbsp;
                         </div>
                       )}
                     </td>

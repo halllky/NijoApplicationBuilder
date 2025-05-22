@@ -359,7 +359,10 @@ internal static class BasicNodeOptions {
             文字列項目の最大長。整数で指定してください。
             """,
         Validate = ctx => {
-
+            // 整数値のみ許可
+            if (!int.TryParse(ctx.Value, out _)) {
+                ctx.AddError("整数値で指定してください。");
+            }
         },
         IsAvailableModelMembers = model => {
             if (model is DataModel) return true;
@@ -393,7 +396,10 @@ internal static class BasicNodeOptions {
             数値系属性の整数部桁数 + 小数部桁数
             """,
         Validate = ctx => {
-
+            // 整数値のみ許可
+            if (!int.TryParse(ctx.Value, out _)) {
+                ctx.AddError("整数値で指定してください。");
+            }
         },
         IsAvailableModelMembers = model => {
             if (model is DataModel) return true;
@@ -410,7 +416,10 @@ internal static class BasicNodeOptions {
             数値系属性の小数部桁数
             """,
         Validate = ctx => {
-
+            // 整数値のみ許可
+            if (!int.TryParse(ctx.Value, out _)) {
+                ctx.AddError("整数値で指定してください。");
+            }
         },
         IsAvailableModelMembers = model => {
             if (model is DataModel) return true;

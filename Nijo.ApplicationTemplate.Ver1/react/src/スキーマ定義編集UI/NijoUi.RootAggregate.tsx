@@ -23,20 +23,17 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
   const { control } = formMethods
   const { fields, insert, remove, update } = ReactHookForm.useFieldArray({ control, name: `xmlElementTrees.${rootAggregateIndex}.xmlElements` })
   const attributeDefs = useAttrDefs()
+  const { getValidationResult, trigger } = useValidationContext()
 
   // メンバーグリッドの列定義
   const getColumnDefs: Layout.GetColumnDefsFunction<GridRowType> = React.useCallback(cellType => {
     const columns: Layout.EditableGridColumnDef<GridRowType>[] = []
 
     // LocalName
-    columns.push(cellType.text('localName', '', {
-      defaultWidth: 220,
-      isFixed: true,
-      renderCell: renderLocalNameCell,
-    }))
+    columns.push(createLocalNameCell(cellType, getValidationResult))
 
     // Type
-    columns.push(createAttributeCell(TYPE_COLUMN_DEF, cellType))
+    columns.push(createAttributeCell(TYPE_COLUMN_DEF, cellType, getValidationResult))
 
     // Attributes（Type以外）
     // ルート集約のモデルタイプを取得（最初の行のType属性）
@@ -46,13 +43,13 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
     columns.push(...Array.from(attributeDefs.values())
       .filter(attrDef => attrDef.attributeName !== ATTR_TYPE)
       .filter(attrDef => rootModelType && attrDef.availableModels.includes(rootModelType))
-      .map(attrDef => createAttributeCell(attrDef, cellType)))
+      .map(attrDef => createAttributeCell(attrDef, cellType, getValidationResult)))
 
     // コメント
     columns.push(cellType.text('comment', 'コメント', { defaultWidth: 400 }))
 
     return columns
-  }, [attributeDefs, fields])
+  }, [attributeDefs, fields, getValidationResult])
 
   // 行挿入
   const handleInsertRow = useEvent(() => {
@@ -128,7 +125,6 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
   })
 
   // セル編集 or クリップボード貼り付け
-  const { trigger } = useValidationContext()
   const handleChangeRow: Layout.RowChangeEvent<GridRowType> = useEvent(e => {
     for (const x of e.changedRows) {
       update(x.rowIndex, x.newRow)
@@ -168,37 +164,52 @@ type GridRowType = ReactHookForm.FieldArrayWithId<ApplicationState, `xmlElementT
 // --------------------------------------------
 
 /** LocalName のセルのレイアウト */
-const renderLocalNameCell = (context: ReactTable.CellContext<GridRowType, unknown>) => {
-  const indent = context.row.original.indent
-  const bold = indent === 0 ? 'font-bold' : '' // ルート集約は太字
+const createLocalNameCell = (
+  cellType: Layout.ColumnDefFactories<GridRowType>,
+  getValidationResult: ReturnType<typeof useValidationContext>['getValidationResult']
+) => {
+  return cellType.text('localName', '', {
+    defaultWidth: 220,
+    isFixed: true,
+    renderCell: (context: ReactTable.CellContext<GridRowType, unknown>) => {
+      const indent = context.row.original.indent
+      const bold = indent === 0 ? 'font-bold' : '' // ルート集約は太字
 
-  return (
-    <div className="max-w-full inline-flex text-center">
+      // エラー情報を取得
+      const validation = getValidationResult(context.row.original.uniqueId)
+      const hasOwnError = validation?._own?.length > 0
+      const bgColor = hasOwnError ? 'bg-amber-300/50' : ''
 
-      {/* インデント */}
-      {Array.from({ length: indent }).map((_, i) => (
-        <React.Fragment key={i}>
-          {/* インデントのテキスト */}
-          <div className="w-[20px] relative leading-none">
-            {i >= 1 && (
-              // インデントを表す縦線
-              <div className="absolute top-[-1px] bottom-[-1px] left-0 border-l border-gray-400 border-dotted leading-none"></div>
-            )}
-          </div>
-        </React.Fragment>
-      ))}
+      return (
+        <div className={`flex-1 inline-flex text-left truncate ${bgColor}`}>
 
-      <span className={`flex-1 truncate ${bold}`}>
-        {context.cell.getValue() as string}
-      </span>
-    </div>
-  )
+          {/* インデント */}
+          {Array.from({ length: indent }).map((_, i) => (
+            <React.Fragment key={i}>
+              {/* インデントのテキスト */}
+              <div className="basis-[20px] min-w-[20px] relative leading-none">
+                {i >= 1 && (
+                  // インデントを表す縦線
+                  <div className="absolute top-[-1px] bottom-[-1px] left-0 border-l border-gray-400 border-dotted leading-none"></div>
+                )}
+              </div>
+            </React.Fragment>
+          ))}
+
+          <span className={`flex-1 truncate ${bold}`}>
+            {context.cell.getValue() as string}
+          </span>
+        </div>
+      )
+    }
+  })
 }
 
 /** 属性のセル */
 const createAttributeCell = (
   attrDef: XmlElementAttribute,
-  cellType: Layout.ColumnDefFactories<GridRowType>
+  cellType: Layout.ColumnDefFactories<GridRowType>,
+  getValidationResult: ReturnType<typeof useValidationContext>['getValidationResult']
 ) => {
   return cellType.other(attrDef.displayName, {
     defaultWidth: 120,
@@ -219,8 +230,12 @@ const createAttributeCell = (
     // セルのレンダリング
     renderCell: context => {
       const value = context.row.original.attributes[attrDef.attributeName]
+      // エラー情報を取得
+      const validationResult = getValidationResult(context.row.original.uniqueId)
+      const hasError = validationResult?.[attrDef.attributeName]?.length > 0
+
       return (
-        <PlainCell>
+        <PlainCell className={hasError ? 'bg-amber-300/50' : ''}>
           {value}
         </PlainCell>
       )
@@ -235,7 +250,7 @@ const PlainCell = ({ children, className }: {
   className?: string
 }) => {
   return (
-    <div className={`max-w-full inline-flex text-center ${className ?? ''}`}>
+    <div className={`flex-1 inline-flex text-left truncate ${className ?? ''}`}>
       <span className="flex-1 truncate">
         {children}
       </span>

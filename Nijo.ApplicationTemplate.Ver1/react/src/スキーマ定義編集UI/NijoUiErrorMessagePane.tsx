@@ -75,6 +75,7 @@ export default function ({ getValues, className }: {
       }
     }
   }
+  console.log(errorInfos)
 
   return (
     <div className={`block overflow-y-auto ${className ?? ''}`}>
