@@ -16,6 +16,12 @@ export type RouteObjectWithSideMenuSetting = ReactRouter.RouteObject & {
 
 /** ルーティング定義を取得する。 */
 export const getRouter = (): RouteObjectWithSideMenuSetting[] => {
+  // Viteのmodeが nijo-ui のときはスキーマ定義編集UIのルートのみを返す
+  if (import.meta.env.MODE === 'nijo-ui') {
+    return getNijoUiRoutesForDebug()
+  }
+
+  // それ以外のモードの場合のルーティング
   const pages: RouteObjectWithSideMenuSetting[] = []
 
   // トップページ
@@ -26,10 +32,10 @@ export const getRouter = (): RouteObjectWithSideMenuSetting[] => {
     pages.push(getExamplePagesRoutes())
   }
 
-  // XMLスキーマ定義編集UI
-  if (import.meta.env.DEV && !IS_EMBEDDED()) {
-    pages.push(...getNijoUiRoutesForDebug())
-  }
+  // XMLスキーマ定義編集UI は nijo-ui モードで専用に表示するため、ここでは追加しません。
+  // if (import.meta.env.DEV && !IS_EMBEDDED()) {
+  //   pages.push(...getNijoUiRoutesForDebug())
+  // }
 
   // // QueryModelの各種画面
   // pages.push(...getQueryModelRoutes())

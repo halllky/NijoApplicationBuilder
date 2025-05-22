@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:nijo-ui": "vite --mode nijo-ui",
     "dev:redirect": "node start-vite.mjs",
     "tsc": "tsc -b --noEmit",
     "build": "tsc -b && vite build",
