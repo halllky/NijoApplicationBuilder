@@ -7,7 +7,7 @@ import { SERVER_DOMAIN } from "./NijoUi"
 const ValidationContext = React.createContext<ValidationContextType>({
   getValidationResult: () => ({ _own: [] }),
   trigger: () => {
-    console.log('ValidationContext未定義')
+      console.log('ValidationContext未定義')
     return Promise.resolve()
   },
   validationResult: {},
@@ -87,7 +87,7 @@ export type ValidationContextType = {
  * この形は、C#側の ToReactErrorObject で生成されるJsonObjectの型と一致する。
  */
 export type ValidationResult = {
-  [id: string]: ValidationResultToElement
+  [uniqueId: string]: ValidationResultToElement
 }
 /**
  * サーバーから返ってくる検証結果のうち特定のXML要素に対するもの。

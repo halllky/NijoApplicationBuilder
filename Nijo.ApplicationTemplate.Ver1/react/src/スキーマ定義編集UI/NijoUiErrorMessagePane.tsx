@@ -1,7 +1,9 @@
 import React from "react"
 import * as ReactHookForm from "react-hook-form"
-import { ApplicationState } from "./types"
-import { useValidationContext, ValidationResult, ValidationResultToElement } from "./useValidationContext"
+import { ApplicationState, asTree } from "./types"
+import { useValidationContext } from "./useValidationContext"
+import { useNavigate } from "react-router-dom"
+import { getNavigationUrl } from "./index"
 
 /**
  * エラーメッセージ表示欄。
@@ -12,44 +14,66 @@ export default function ({ getValues, className }: {
   className?: string
 }) {
   const { validationResult } = useValidationContext()
+  const navigate = useNavigate()
 
   // エラーメッセージをプレーンな配列に変換する。
-  const errorMessageList = React.useMemo(() => {
+  const errorInfos = React.useMemo(() => {
 
     // IDから当該要素の名前を引き当てるための辞書
     const xmlElements = getValues(`xmlElementTrees`)?.flatMap(x => x.xmlElements) ?? []
     const idToName = new Map(xmlElements.map(x => [x.uniqueId, x.localName]))
 
-    const messages: string[] = []
+    const infos: Array<{ id: string, message: string }> = []
     for (const [id, obj] of Object.entries(validationResult)) {
       const name = idToName.get(id)
 
       for (const [objKey, attrMessages] of Object.entries(obj)) {
         const attrName = objKey === '_own' ? '' : `${objKey}.`
-        messages.push(...attrMessages.map(x => `${name ?? ''}${attrName}: ${x}`))
+        infos.push(...attrMessages.map(x => ({
+          id,
+          message: `${name ?? ''}${attrName}: ${x}`,
+        })))
       }
     }
-    return messages
+    return infos
   }, [getValues, validationResult])
 
-  console.log(errorMessageList)
+  const handleClick = (elementId: string) => {
+    const xmlElementTrees = getValues('xmlElementTrees')
+    if (!xmlElementTrees) return
+
+    for (const tree of xmlElementTrees) {
+      const targetElement = tree.xmlElements.find(el => el.uniqueId === elementId)
+      if (targetElement) {
+        const treeUtils = asTree(tree.xmlElements)
+        const rootElement = treeUtils.getRoot(targetElement)
+        const aggregateId = rootElement.uniqueId
+        navigate(getNavigationUrl({ aggregateId }))
+        return
+      }
+    }
+  }
 
   return (
     <ul className={`block overflow-y-auto ${className ?? ''}`}>
-      {errorMessageList.map((message, i) => (
-        <ErrorMessage key={i}>
-          {message}
+      {errorInfos.map((info, i) => (
+        <ErrorMessage key={i} onClick={() => handleClick(info.id)}>
+          {info.message}
         </ErrorMessage>
       ))}
     </ul>
   )
 }
 
-const ErrorMessage = ({ children }: {
+const ErrorMessage = ({ children, onClick }: {
   children: React.ReactNode
+  onClick: () => void
 }) => {
   return (
-    <li className="text-sm truncate text-amber-600">
+    <li
+      className="text-sm truncate text-amber-600 cursor-pointer hover:bg-amber-50"
+      onClick={onClick}
+    >
       {children}
     </li>
   )
