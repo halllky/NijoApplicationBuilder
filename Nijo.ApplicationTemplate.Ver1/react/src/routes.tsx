@@ -17,7 +17,7 @@ export type RouteObjectWithSideMenuSetting = ReactRouter.RouteObject & {
 /** ルーティング定義を取得する。 */
 export const getRouter = (): RouteObjectWithSideMenuSetting[] => {
   // Viteのmodeが nijo-ui のときはスキーマ定義編集UIのルートのみを返す
-  if (import.meta.env.MODE === 'nijo-ui') {
+  if (IS_EMBEDDED()) {
     return getNijoUiRoutesForDebug()
   }
 
