@@ -1,4 +1,8 @@
+import * as ReactHookForm from "react-hook-form"
 
+export type TypedOutlinerGlobalState = {
+  outlinerList: { typeId: string; typeName: string }[]
+}
 
 /**
  * 型つきドキュメント。

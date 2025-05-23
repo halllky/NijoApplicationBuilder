@@ -228,6 +228,9 @@ public class NijoUi {
         // デバッグ用ツール
         new DebugTools(_project).ConfigureWebApplication(app);
 
+        // 型つきアウトライナー用エンドポイント
+        new TypedOutliner(_project).ConfigureWebApplication(app);
+
         // 上位のいずれにも該当しないエンドポイントへのリクエストはReact画面にリダイレクト
         app.MapGet("/{*path}", context => {
             context.Response.Redirect("/nijo-ui");

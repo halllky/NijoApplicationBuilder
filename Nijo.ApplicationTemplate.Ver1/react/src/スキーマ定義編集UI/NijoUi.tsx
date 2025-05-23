@@ -33,7 +33,7 @@ export const NijoUi = ({ className }: {
     try {
       // Visual Studio で Nijo.csproj の run-ui-service コマンドを実行したときのポート
       const response = await fetch(`${SERVER_DOMAIN}/load`)
-      const schema = await response.json()
+      const schema: SchemaDefinitionGlobalState = await response.json()
       setSchema(schema)
     } catch (error) {
       console.error(error)
