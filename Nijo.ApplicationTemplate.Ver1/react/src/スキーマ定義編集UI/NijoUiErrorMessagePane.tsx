@@ -1,19 +1,19 @@
 import React from "react"
 import * as ReactHookForm from "react-hook-form"
 import { ApplicationState, asTree } from "./types"
-import { useValidationContext } from "./useValidationContext"
 import { useNavigate } from "react-router-dom"
 import { getNavigationUrl } from "./index"
+import { ValidationResult } from "./ValidationContext"
 
 /**
  * エラーメッセージ表示欄。
  * すべての要素のエラーメッセージを羅列する。
  */
-export default function ({ getValues, className }: {
+export default function ({ getValues, validationResult, className }: {
   getValues: ReactHookForm.UseFormGetValues<ApplicationState>
+  validationResult: ValidationResult | undefined
   className?: string
 }) {
-  const { validationResult } = useValidationContext()
   const navigate = useNavigate()
 
   // エラーメッセージをプレーンな配列に変換する。
@@ -33,7 +33,7 @@ export default function ({ getValues, className }: {
       message: string
     }> = []
 
-    for (const [id, obj] of Object.entries(validationResult)) {
+    for (const [id, obj] of Object.entries(validationResult ?? {})) {
       const element = elementMap.get(id)
       if (!element) continue
 

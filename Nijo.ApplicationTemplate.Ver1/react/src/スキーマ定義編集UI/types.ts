@@ -1,3 +1,6 @@
+import * as ReactHookForm from "react-hook-form"
+import { ValidationContextType } from "./ValidationContext"
+
 /** アプリケーション全体の状態 */
 export type ApplicationState = {
   /** アプリケーション名。XMLのルート要素のLocalName。読み取り専用。 */
@@ -82,6 +85,13 @@ export type XmlElementSelectAttributeGetOptionFunction = (state: ApplicationStat
 export type XmlElementSelectAttributeOption = { id: string, displayName: string }
 
 // ---------------------------------
+export type NijoUiOutletContextType = {
+  formMethods: ReactHookForm.UseFormReturn<ApplicationState>
+  validationContext: ValidationContextType
+  selectedRootAggregateId: string | undefined
+}
+
+// ---------------------------------
 
 export const ATTR_TYPE = 'Type' as XmlElementAttributeName
 export const ATTR_GENERATE_DEFAULT_QUERY_MODEL = 'GenerateDefaultQueryModel' as XmlElementAttributeName
@@ -103,9 +113,9 @@ export const asTree = (flat: XmlElementItem[]) => {
 
     /** 指定された要素のルートを取得する。 */
     getRoot: (el: XmlElementItem): XmlElementItem => {
-      // 引数のエレメントより前の位置にある、インデント0の要素のうち直近のものがルート
-      const previousElements = flat.slice(0, flat.indexOf(el))
-      const root = previousElements.reverse().find(x => x.indent === 0)
+      // 引数のエレメント以前の位置にある、インデント0の要素のうち直近のものがルート
+      const previousElementsAndThis = flat.slice(0, flat.indexOf(el) + 1)
+      const root = previousElementsAndThis.reverse().find(x => x.indent === 0)
       if (!root) throw new Error('root not found') // 必ずルート集約はあるはず
       return root
     },

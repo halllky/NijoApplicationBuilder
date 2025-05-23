@@ -4,25 +4,23 @@ import * as ReactHookForm from "react-hook-form"
 import { ApplicationState } from "./types"
 import { SERVER_DOMAIN } from "./NijoUi"
 
-const ValidationContext = React.createContext<ValidationContextType>({
+/** 入力検証のコンテキストのデフォルト値。 */
+export const DEFAULT_VALIDATION_CONTEXT_VALUE: ValidationContextType = {
   getValidationResult: () => ({ _own: [] }),
   trigger: () => {
-      console.log('ValidationContext未定義')
+    console.log('ValidationContext未定義')
     return Promise.resolve()
   },
   validationResult: {},
-})
-
-/** 入力検証のコンテキストを取得する。 */
-export const useValidationContext = () => {
-  return React.useContext(ValidationContext)
 }
 
+/** 入力検証のコンテキスト。 */
+export const ValidationContext = React.createContext<ValidationContextType>(DEFAULT_VALIDATION_CONTEXT_VALUE)
+
 /** 入力検証のコンテキストを提供する。 */
-export const ValidationContextProvider = ({ getValues, children }: {
+export const useValidationContextProvider = (
   getValues: ReactHookForm.UseFormGetValues<ApplicationState>
-  children: React.ReactNode
-}) => {
+) => {
   // 短時間で繰り返し実行するとサーバーに負担がかかるため、
   // 最後にリクエストした時間から一定時間以内はリクエストをしないようにする。
   const [lastRequestTime, setLastRequestTime] = React.useState<number>(0)
@@ -65,11 +63,7 @@ export const ValidationContextProvider = ({ getValues, children }: {
     trigger,
   }), [validationResult, getValidationResult, trigger])
 
-  return (
-    <ValidationContext.Provider value={contextValue}>
-      {children}
-    </ValidationContext.Provider>
-  )
+  return contextValue
 }
 
 /** 入力検証のコンテキスト。 */

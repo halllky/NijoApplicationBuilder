@@ -5,14 +5,13 @@ import * as ReactResizablePanels from "react-resizable-panels"
 import * as Layout from "../layout"
 import * as Input from "../input"
 import useEvent from "react-use-event-hook"
-import { ApplicationState } from "./types"
+import { ApplicationState, NijoUiOutletContextType } from "./types"
 import { NijoUiSideMenu } from "./NijoUiSideMenu"
 import { PageRootAggregate } from "./NijoUi.RootAggregate"
 import { AttrDefsProvider } from "./useAttrDefs"
 import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS } from "."
-import { Outlet, useOutletContext } from "react-router-dom"
 import NijoUiErrorMessagePane from "./NijoUiErrorMessagePane"
-import { ValidationContextProvider } from "./useValidationContext"
+import { useValidationContextProvider, ValidationContext } from "./ValidationContext"
 
 export const SERVER_DOMAIN = import.meta.env.DEV
   ? 'https://localhost:8081'
@@ -96,10 +95,8 @@ const AfterLoaded = ({ defaultValues, onSave, className }: {
   className?: string
 }) => {
 
-  const form = ReactHookForm.useForm<ApplicationState>({
-    defaultValues: defaultValues,
-  })
-  const xmlElementTrees = ReactHookForm.useWatch({ name: 'xmlElementTrees', control: form.control })
+  const form = ReactHookForm.useForm<ApplicationState>({ defaultValues: defaultValues })
+  const validationContext = useValidationContextProvider(form.getValues)
 
   // 選択中のルート集約
   const navigate = ReactRouter.useNavigate()
@@ -110,9 +107,16 @@ const AfterLoaded = ({ defaultValues, onSave, className }: {
     navigate(getNavigationUrl({ aggregateId }))
   })
 
+  // Outletコンテキストの値
+  const outletContextValue: NijoUiOutletContextType = React.useMemo(() => ({
+    formMethods: form,
+    validationContext,
+    selectedRootAggregateId,
+  }), [form, validationContext, selectedRootAggregateId])
+
   return (
     <AttrDefsProvider control={form.control}>
-      <ValidationContextProvider getValues={form.getValues}>
+      <ValidationContext.Provider value={validationContext}>
         <ReactResizablePanels.PanelGroup direction="vertical" className={className}>
 
           <ReactResizablePanels.Panel>
@@ -132,7 +136,7 @@ const AfterLoaded = ({ defaultValues, onSave, className }: {
 
               {/* メインコンテンツ */}
               <ReactResizablePanels.Panel>
-                <Outlet context={{ form, selectedRootAggregateId, xmlElementTrees }} />
+                <ReactRouter.Outlet context={outletContextValue} />
               </ReactResizablePanels.Panel>
 
             </ReactResizablePanels.PanelGroup>
@@ -142,27 +146,26 @@ const AfterLoaded = ({ defaultValues, onSave, className }: {
 
           {/* エラーメッセージ表示欄 */}
           <ReactResizablePanels.Panel defaultSize={10} minSize={6} collapsible>
-            <NijoUiErrorMessagePane getValues={form.getValues} className="h-full" />
+            <NijoUiErrorMessagePane
+              getValues={form.getValues}
+              validationResult={validationContext.validationResult}
+              className="h-full"
+            />
           </ReactResizablePanels.Panel>
 
         </ReactResizablePanels.PanelGroup>
-      </ValidationContextProvider>
+      </ValidationContext.Provider>
     </AttrDefsProvider>
   )
-}
-
-// Outlet の context の型定義
-export type NijoUiOutletContextType = {
-  form: ReactHookForm.UseFormReturn<ApplicationState>;
-  selectedRootAggregateId?: string;
-  xmlElementTrees: ApplicationState['xmlElementTrees'];
 }
 
 // ----------------------------
 
 /** Outlet経由で表示されるメインコンテンツエリアのコンポーネント */
 export const NijoUiMainContent = () => {
-  const { form, selectedRootAggregateId, xmlElementTrees } = useOutletContext<NijoUiOutletContextType>();
+
+  const { formMethods, selectedRootAggregateId } = ReactRouter.useOutletContext<NijoUiOutletContextType>()
+  const xmlElementTrees = ReactHookForm.useWatch({ name: 'xmlElementTrees', control: formMethods.control })
   const selectedRootAggregateIndex = React.useMemo((): number | undefined => {
     if (!selectedRootAggregateId) return undefined;
     if (!xmlElementTrees) return undefined; // 初期ロード時など xmlElementTrees が未定義の場合
@@ -190,7 +193,7 @@ export const NijoUiMainContent = () => {
       <PageRootAggregate
         key={selectedRootAggregateId} // URL更新のたびに再描画させる
         rootAggregateIndex={selectedRootAggregateIndex}
-        formMethods={form}
+        formMethods={formMethods}
         className="pl-1 pt-1"
       />
     );

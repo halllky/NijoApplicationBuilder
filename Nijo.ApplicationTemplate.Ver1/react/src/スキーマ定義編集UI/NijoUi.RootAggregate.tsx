@@ -1,15 +1,15 @@
 import React from "react"
 import * as ReactHookForm from "react-hook-form"
+import * as ReactRouter from "react-router-dom"
 import * as ReactTable from "@tanstack/react-table"
 import * as Icon from "@heroicons/react/24/solid"
 import * as Input from "../input"
 import * as Layout from "../layout"
-import { ApplicationState, ATTR_TYPE, XmlElementAttribute, XmlElementItem } from "./types"
+import { ApplicationState, ATTR_TYPE, NijoUiOutletContextType, XmlElementAttribute, XmlElementItem } from "./types"
 import useEvent from "react-use-event-hook"
 import { UUID } from "uuidjs"
 import { useAttrDefs } from "./useAttrDefs"
 import { TYPE_COLUMN_DEF } from "./getAttrTypeColumnDef"
-import { useValidationContext } from "./useValidationContext"
 
 /**
  * Data, Query, Command のルート集約1件を表示・編集するページ。
@@ -23,7 +23,7 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
   const { control } = formMethods
   const { fields, insert, remove, update } = ReactHookForm.useFieldArray({ control, name: `xmlElementTrees.${rootAggregateIndex}.xmlElements` })
   const attributeDefs = useAttrDefs()
-  const { getValidationResult, trigger } = useValidationContext()
+  const { validationContext: { getValidationResult, trigger } } = ReactRouter.useOutletContext<NijoUiOutletContextType>()
 
   // メンバーグリッドの列定義
   const getColumnDefs: Layout.GetColumnDefsFunction<GridRowType> = React.useCallback(cellType => {
@@ -166,7 +166,7 @@ type GridRowType = ReactHookForm.FieldArrayWithId<ApplicationState, `xmlElementT
 /** LocalName のセルのレイアウト */
 const createLocalNameCell = (
   cellType: Layout.ColumnDefFactories<GridRowType>,
-  getValidationResult: ReturnType<typeof useValidationContext>['getValidationResult']
+  getValidationResult: NijoUiOutletContextType['validationContext']['getValidationResult']
 ) => {
   return cellType.text('localName', '', {
     defaultWidth: 220,
@@ -209,7 +209,7 @@ const createLocalNameCell = (
 const createAttributeCell = (
   attrDef: XmlElementAttribute,
   cellType: Layout.ColumnDefFactories<GridRowType>,
-  getValidationResult: ReturnType<typeof useValidationContext>['getValidationResult']
+  getValidationResult: NijoUiOutletContextType['validationContext']['getValidationResult']
 ) => {
   return cellType.other(attrDef.displayName, {
     defaultWidth: 120,
