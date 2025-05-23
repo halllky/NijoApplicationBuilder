@@ -1,7 +1,7 @@
 import React from "react"
 import useEvent from "react-use-event-hook"
 import * as ReactHookForm from "react-hook-form"
-import { ApplicationState } from "./types"
+import { SchemaDefinitionGlobalState } from "./types"
 import { SERVER_DOMAIN } from "../NijoUi"
 
 /** 入力検証のコンテキストのデフォルト値。 */
@@ -19,7 +19,7 @@ export const ValidationContext = React.createContext<ValidationContextType>(DEFA
 
 /** 入力検証のコンテキストを提供する。 */
 export const useValidationContextProvider = (
-  getValues: ReactHookForm.UseFormGetValues<ApplicationState>
+  getValues: ReactHookForm.UseFormGetValues<SchemaDefinitionGlobalState>
 ) => {
   // 短時間で繰り返し実行するとサーバーに負担がかかるため、
   // 最後にリクエストした時間から一定時間以内はリクエストをしないようにする。

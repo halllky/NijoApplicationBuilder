@@ -3,12 +3,12 @@ import * as ReactRouter from "react-router-dom"
 import * as Icon from "@heroicons/react/24/outline"
 import * as Input from "../../input"
 import * as Layout from "../../layout"
-import { DebugProcessState, NijoUiOutletContextType } from "../スキーマ定義編集/types"
+import { DebugProcessState, SchemaDefinitionOutletContextType } from "../スキーマ定義編集/types"
 import { SERVER_DOMAIN } from "../NijoUi"
 import useEvent from "react-use-event-hook"
 
 export const NijoUiDebugMenu = () => {
-  const { formMethods, validationContext: { trigger } } = ReactRouter.useOutletContext<NijoUiOutletContextType>()
+  const { formMethods, validationContext: { trigger } } = ReactRouter.useOutletContext<SchemaDefinitionOutletContextType>()
   const [debugState, setDebugState] = useState<DebugProcessState>()
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>()

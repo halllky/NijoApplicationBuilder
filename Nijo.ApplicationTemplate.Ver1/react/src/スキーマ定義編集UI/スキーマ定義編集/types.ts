@@ -1,8 +1,8 @@
 import * as ReactHookForm from "react-hook-form"
 import { ValidationContextType } from "./ValidationContext"
 
-/** アプリケーション全体の状態 */
-export type ApplicationState = {
+/** スキーマ定義編集におけるアプリケーション全体の状態 */
+export type SchemaDefinitionGlobalState = {
   /** アプリケーション名。XMLのルート要素のLocalName。読み取り専用。 */
   applicationName: string
   /** XML要素をルート集約ごとの塊に分類したもの。 */
@@ -11,6 +11,12 @@ export type ApplicationState = {
   attributeDefs: XmlElementAttribute[]
   /** 値メンバーの種類定義。 */
   valueMemberTypes: ValueMemberType[]
+}
+
+/** スキーマ定義編集におけるReact router のOutletのコンテキスト */
+export type SchemaDefinitionOutletContextType = {
+  formMethods: ReactHookForm.UseFormReturn<SchemaDefinitionGlobalState>
+  validationContext: ValidationContextType
 }
 
 /** Model定義画面のデータ型定義 */
@@ -81,15 +87,8 @@ export type XmlElementSelectAttribute = {
   getOptions: XmlElementSelectAttributeGetOptionFunction
 }
 
-export type XmlElementSelectAttributeGetOptionFunction = (state: ApplicationState) => XmlElementSelectAttributeOption[]
+export type XmlElementSelectAttributeGetOptionFunction = (state: SchemaDefinitionGlobalState) => XmlElementSelectAttributeOption[]
 export type XmlElementSelectAttributeOption = { id: string, displayName: string }
-
-// ---------------------------------
-export type NijoUiOutletContextType = {
-  formMethods: ReactHookForm.UseFormReturn<ApplicationState>
-  validationContext: ValidationContextType
-  selectedRootAggregateId: string | undefined
-}
 
 // ---------------------------------
 

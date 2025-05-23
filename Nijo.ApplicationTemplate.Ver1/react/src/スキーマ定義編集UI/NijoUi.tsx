@@ -5,13 +5,14 @@ import * as ReactResizablePanels from "react-resizable-panels"
 import * as Layout from "../layout"
 import * as Input from "../input"
 import useEvent from "react-use-event-hook"
-import { ApplicationState, NijoUiOutletContextType } from "./スキーマ定義編集/types"
+import { ApplicationState, NijoUiOutletContextType } from "./types"
 import { NijoUiSideMenu } from "./NijoUiSideMenu"
 import { PageRootAggregate } from "./スキーマ定義編集/RootAggregatePage"
 import { AttrDefsProvider } from "./スキーマ定義編集/AttrDefContext"
 import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS } from "./routing"
 import NijoUiErrorMessagePane from "./NijoUiErrorMessagePane"
 import { useValidationContextProvider, ValidationContext } from "./スキーマ定義編集/ValidationContext"
+import { SchemaDefinitionGlobalState } from "./スキーマ定義編集/types"
 
 export const SERVER_DOMAIN = import.meta.env.DEV
   ? 'https://localhost:8081'
@@ -44,7 +45,7 @@ export const NijoUi = ({ className }: {
   }, [])
 
   // 保存処理
-  const handleSave = useEvent(async (applicationState: ApplicationState) => {
+  const handleSave = useEvent(async (applicationState: SchemaDefinitionGlobalState) => {
     try {
       const response = await fetch(`${SERVER_DOMAIN}/save`, {
         method: 'POST',
@@ -90,12 +91,12 @@ export const NijoUi = ({ className }: {
 
 /** 画面初期表示時の読み込み完了後 */
 const AfterLoaded = ({ defaultValues, onSave, className }: {
-  defaultValues: ApplicationState
-  onSave: (applicationState: ApplicationState) => void
+  defaultValues: SchemaDefinitionGlobalState
+  onSave: (applicationState: SchemaDefinitionGlobalState) => void
   className?: string
 }) => {
 
-  const form = ReactHookForm.useForm<ApplicationState>({ defaultValues: defaultValues })
+  const form = ReactHookForm.useForm<SchemaDefinitionGlobalState>({ defaultValues: defaultValues })
   const validationContext = useValidationContextProvider(form.getValues)
 
   // 選択中のルート集約

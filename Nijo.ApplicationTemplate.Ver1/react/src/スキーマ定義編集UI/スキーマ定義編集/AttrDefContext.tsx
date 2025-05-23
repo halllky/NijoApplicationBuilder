@@ -1,6 +1,6 @@
 import * as React from "react"
 import * as ReactHookForm from "react-hook-form"
-import { ApplicationState, XmlElementAttribute } from "./types"
+import { SchemaDefinitionGlobalState, XmlElementAttribute } from "./types"
 
 const AttrDefContext = React.createContext<Map<string, XmlElementAttribute>>(new Map())
 
@@ -11,7 +11,7 @@ export const useAttrDefs = () => {
 
 /** アプリケーション全体のどこからでも属性定義のMapを参照できるようにするためのコンテキスト */
 export const AttrDefsProvider = ({ control, children }: {
-  control: ReactHookForm.Control<ApplicationState>
+  control: ReactHookForm.Control<SchemaDefinitionGlobalState>
   children: React.ReactNode
 }) => {
 

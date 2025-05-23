@@ -5,7 +5,7 @@ import * as ReactTable from "@tanstack/react-table"
 import * as Icon from "@heroicons/react/24/solid"
 import * as Input from "../../input"
 import * as Layout from "../../layout"
-import { ApplicationState, ATTR_TYPE, NijoUiOutletContextType, XmlElementAttribute, XmlElementItem } from "./types"
+import { SchemaDefinitionGlobalState, SchemaDefinitionOutletContextType, ATTR_TYPE, XmlElementAttribute, XmlElementItem } from "./types"
 import useEvent from "react-use-event-hook"
 import { UUID } from "uuidjs"
 import { useAttrDefs } from "./AttrDefContext"
@@ -16,14 +16,14 @@ import { TYPE_COLUMN_DEF } from "./getAttrTypeColumnDef"
  */
 export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }: {
   rootAggregateIndex: number
-  formMethods: ReactHookForm.UseFormReturn<ApplicationState>
+  formMethods: ReactHookForm.UseFormReturn<SchemaDefinitionGlobalState>
   className?: string
 }) => {
   const gridRef = React.useRef<Layout.EditableGridRef<GridRowType>>(null)
   const { control } = formMethods
   const { fields, insert, remove, update } = ReactHookForm.useFieldArray({ control, name: `xmlElementTrees.${rootAggregateIndex}.xmlElements` })
   const attributeDefs = useAttrDefs()
-  const { validationContext: { getValidationResult, trigger } } = ReactRouter.useOutletContext<NijoUiOutletContextType>()
+  const { validationContext: { getValidationResult, trigger } } = ReactRouter.useOutletContext<SchemaDefinitionOutletContextType>()
 
   // メンバーグリッドの列定義
   const getColumnDefs: Layout.GetColumnDefsFunction<GridRowType> = React.useCallback(cellType => {
@@ -159,14 +159,14 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
 // --------------------------------------------
 
 /** メンバーグリッドの行の型 */
-type GridRowType = ReactHookForm.FieldArrayWithId<ApplicationState, `xmlElementTrees.${number}.xmlElements`>
+type GridRowType = ReactHookForm.FieldArrayWithId<SchemaDefinitionGlobalState, `xmlElementTrees.${number}.xmlElements`>
 
 // --------------------------------------------
 
 /** LocalName のセルのレイアウト */
 const createLocalNameCell = (
   cellType: Layout.ColumnDefFactories<GridRowType>,
-  getValidationResult: NijoUiOutletContextType['validationContext']['getValidationResult']
+  getValidationResult: SchemaDefinitionOutletContextType['validationContext']['getValidationResult']
 ) => {
   return cellType.text('localName', '', {
     defaultWidth: 220,
@@ -209,7 +209,7 @@ const createLocalNameCell = (
 const createAttributeCell = (
   attrDef: XmlElementAttribute,
   cellType: Layout.ColumnDefFactories<GridRowType>,
-  getValidationResult: NijoUiOutletContextType['validationContext']['getValidationResult']
+  getValidationResult: SchemaDefinitionOutletContextType['validationContext']['getValidationResult']
 ) => {
   return cellType.other(attrDef.displayName, {
     defaultWidth: 120,

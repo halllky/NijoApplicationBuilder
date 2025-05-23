@@ -1,6 +1,6 @@
 import React from "react"
 import * as ReactHookForm from "react-hook-form"
-import { ApplicationState, asTree } from "./スキーマ定義編集/types"
+import { SchemaDefinitionGlobalState, asTree } from "./スキーマ定義編集/types"
 import { useNavigate } from "react-router-dom"
 import { getNavigationUrl } from "./routing"
 import { ValidationResult } from "./スキーマ定義編集/ValidationContext"
@@ -10,7 +10,7 @@ import { ValidationResult } from "./スキーマ定義編集/ValidationContext"
  * すべての要素のエラーメッセージを羅列する。
  */
 export default function ({ getValues, validationResult, className }: {
-  getValues: ReactHookForm.UseFormGetValues<ApplicationState>
+  getValues: ReactHookForm.UseFormGetValues<SchemaDefinitionGlobalState>
   validationResult: ValidationResult | undefined
   className?: string
 }) {
