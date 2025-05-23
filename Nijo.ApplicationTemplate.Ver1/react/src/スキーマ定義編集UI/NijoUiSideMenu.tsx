@@ -10,13 +10,14 @@ import useEvent from "react-use-event-hook"
 import { ATTR_GENERATE_DEFAULT_QUERY_MODEL, ATTR_TYPE, SchemaDefinitionGlobalState, TYPE_COMMAND_MODEL, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, TYPE_STATIC_ENUM_MODEL, TYPE_VALUE_OBJECT_MODEL, XmlElementItem } from "./スキーマ定義編集/types"
 import { getNavigationUrl } from "./index"
 
-export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAggregateId }: {
+export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAggregateId, outlinerList }: {
   onSave: (applicationState: SchemaDefinitionGlobalState) => void
   formMethods: ReactHookForm.UseFormReturn<SchemaDefinitionGlobalState>
   onSelected: (rootAggregateIndex: number) => void
   selectedRootAggregateId: string | undefined
+  outlinerList: { typeId: string, typeName: string }[] | undefined
 }) => {
-  const { control } = formMethods
+  const { control, getValues } = formMethods
   const { fields, append, remove } = ReactHookForm.useFieldArray({ control, name: 'xmlElementTrees' })
   const navigate = ReactRouter.useNavigate()
 
@@ -25,6 +26,7 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
   // 集約ツリーを構成する。
   // 折り畳みされていないメニュー項目のみを返す。
   const menuItems = React.useMemo((): SideMenuItem[] => {
+    // const outlinerList = getValues('outlinerList') // propsから直接参照する
 
     // Enum, ValueOjbect は入れ子になった「属性種類定義」メニューの下に表示
     const memberTypes: SideMenuContainerItem = {
@@ -49,9 +51,9 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
             id: rootAggregate.uniqueId,
             displayName: rootAggregate.localName!,
             aggregateTree: tree.xmlElements,
-            indent: 1,
             rootAggregateIndex: i,
-          })
+            indent: 1,
+          } as SideMenuAggregateItem) // 型アサーションを追加
         }
       } else {
         // Data, Query, Command のルート集約
@@ -59,23 +61,50 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
           id: rootAggregate.uniqueId,
           displayName: rootAggregate.localName!,
           aggregateTree: tree.xmlElements,
-          indent: 0,
           rootAggregateIndex: i,
-        })
+          indent: 0,
+        } as SideMenuAggregateItem) // 型アサーションを追加
       }
     }
+
+    // 型つきアウトライナーのアイテム
+    const memoContainer: SideMenuContainerItem = {
+      id: 'memo-items',
+      indent: 0,
+      displayName: 'Memo',
+      isContainer: true,
+    }
+    const outlinerItems: SideMenuLeafItem[] = [];
+    if (outlinerList && !collapsedItems.has(memoContainer.id)) {
+      outlinerList.forEach(item => {
+        outlinerItems.push({
+          id: item.typeId, // クリック時の遷移や識別に使うID
+          displayName: item.typeName || item.typeId, // 表示名
+          isOutliner: true, // アウトライナーアイテムであることを示すフラグ
+          outlinerTypeId: item.typeId, // アウトライナーのtypeId
+          indent: 1,
+        } as SideMenuOutlinerItem); // 型アサーションを追加
+      });
+    }
+
     return [
       ...dataQueryCommandTypes,
       memberTypes,
       ...enumOrValueObjectTypes,
+      memoContainer, // memoフォルダのコンテナを追加
+      ...outlinerItems, // memo内のアイテムを追加
     ]
-  }, [fields, collapsedItems])
+  }, [fields, collapsedItems, outlinerList]) // 依存配列を修正
 
   // ---------------------------------
 
   // 保存処理
   const handleSave = useEvent(() => {
-    onSave(formMethods.getValues())
+    // getValues()で ApplicationState 全体を取得できるが、
+    // onSave に渡すのは SchemaDefinitionGlobalState のみでよいか確認が必要。
+    // ここでは、呼び出し元の onSave が SchemaDefinitionGlobalState を期待していると仮定。
+    const currentValues = getValues() as SchemaDefinitionGlobalState; // キャストで対応
+    onSave(currentValues)
   })
 
   // 新しいルート集約を追加する。名前の入力は必須。
@@ -95,7 +124,10 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
         else newSet.add(menuItem.id)
         return newSet
       })
-    } else {
+    } else if (menuItem.isOutliner && menuItem.outlinerTypeId) { // isOutlinerのチェックとoutlinerTypeIdの存在チェック
+      // アウトライナーアイテムが選択された場合
+      navigate(getNavigationUrl({ page: 'outliner', outlinerId: menuItem.outlinerTypeId }))
+    } else if (!menuItem.isOutliner && typeof menuItem.rootAggregateIndex === 'number' && menuItem.rootAggregateIndex !== -1) { // 通常の集約アイテム
       // 集約ツリーを選択した旨を親に通知
       onSelected(menuItem.rootAggregateIndex)
     }
@@ -104,9 +136,17 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
   // ルート集約を削除する
   const handleDeleteRootAggregate = useEvent((menuItem: SideMenuItem, e: React.MouseEvent<Element>) => {
     e.stopPropagation()
-    if (window.confirm(`${menuItem.displayName}を削除しますか？`)) {
-      const index = fields.findIndex(field => field.xmlElements[0].uniqueId === menuItem.id)
-      remove(index)
+    if (menuItem.isOutliner) {
+      // TODO: アウトライナーアイテムの削除処理 (必要であれば)
+      alert('アウトライナーアイテムの削除は未実装です。');
+      return;
+    }
+    // SideMenuAggregateItemの場合のみ削除処理を実行
+    if (!menuItem.isContainer && !menuItem.isOutliner && typeof menuItem.rootAggregateIndex === 'number') {
+      if (window.confirm(`${menuItem.displayName}を削除しますか？`)) {
+        const index = fields.findIndex(field => field.xmlElements[0].uniqueId === menuItem.id)
+        remove(index)
+      }
     }
   })
 
@@ -115,7 +155,7 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
       {/* アプリケーション名 & ツールアイコン */}
       <div className="flex items-center gap-1 px-1 py-1 border-r border-gray-300">
         <ReactRouter.Link to={getNavigationUrl()} className="text-sm font-bold truncate">
-          {formMethods.getValues('applicationName')}
+          {getValues('applicationName') /* applicationNameはformMethodsから取得 */}
         </ReactRouter.Link>
         <div className="flex-1"></div>
         <Input.IconButton icon={Icon.FolderArrowDownIcon} outline mini hideText onClick={handleSave}>
@@ -129,9 +169,9 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
       {/* メニュー */}
       <ul className="flex-1 flex flex-col overflow-y-auto">
         {menuItems.map((menuItem, index) => (
-          <SideMenuItem
+          <SideMenuItemComponent // コンポーネント名を変更 (SideMenuItemとの重複を避ける)
             key={menuItem.id}
-            isActive={selectedRootAggregateId === menuItem.id}
+            isActive={selectedRootAggregateId === menuItem.id || (menuItem.isOutliner === true && selectedRootAggregateId === menuItem.outlinerTypeId) /* アウトライナー選択状態も考慮 */}
             onClick={() => handleSelected(menuItem)}
           >
             <div style={{ flexBasis: `${menuItem.indent * 1.2}rem` }}></div>
@@ -139,12 +179,14 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
             <SideMenuItemLabel>
               {menuItem.displayName}
             </SideMenuItemLabel>
-            {selectedRootAggregateId === menuItem.id && (
+            {/* 削除ボタンの表示条件を修正 */}
+            {selectedRootAggregateId === menuItem.id && !menuItem.isContainer && !menuItem.isOutliner && (
               <Input.IconButton icon={Icon.TrashIcon} mini hideText onClick={e => handleDeleteRootAggregate(menuItem, e)}>
                 削除
               </Input.IconButton>
             )}
-          </SideMenuItem>
+            {/* TODO: アウトライナーアイテム用の削除ボタンをここに追加することも検討 */}
+          </SideMenuItemComponent>
         ))}
         <li className="flex-1 border-r border-gray-300"></li>
       </ul>
@@ -154,14 +196,14 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
         <li className="basis-2 border-r border-gray-300"></li>
         <ReactRouter.NavLink to={getNavigationUrl({ page: 'debug-menu' })}>
           {({ isActive }) => (
-            <SideMenuItem isActive={isActive} onClick={() => navigate(getNavigationUrl({ page: 'debug-menu' }))}>
+            <SideMenuItemComponent isActive={isActive} onClick={() => navigate(getNavigationUrl({ page: 'debug-menu' }))}>
               <>
                 <Icon.PlayIcon className={`${SIDEMENU_ICON_CLASSNAME} text-emerald-600`} />
                 <SideMenuItemLabel>
                   デバッグメニュー
                 </SideMenuItemLabel>
               </>
-            </SideMenuItem>
+            </SideMenuItemComponent>
           )}
         </ReactRouter.NavLink>
       </ul>
@@ -169,7 +211,7 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
   )
 }
 
-const SideMenuItem = ({ isActive, onClick, children }: {
+const SideMenuItemComponent = ({ isActive, onClick, children }: { // コンポーネント名を変更
   isActive: boolean
   onClick: () => void
   children: React.ReactNode
@@ -199,20 +241,27 @@ const SideMenuItemIcon = ({ menuItem, collapsedItems }: {
       return <Icon.ChevronRightIcon className={`${SIDEMENU_ICON_CLASSNAME} text-gray-500`} />
   }
 
-  // ルート集約なら集約ごとのアイコンを表示
-  const modelType = menuItem.aggregateTree[0].attributes[ATTR_TYPE]
-  if (modelType === TYPE_DATA_MODEL) {
-    if (menuItem.aggregateTree[0].attributes[ATTR_GENERATE_DEFAULT_QUERY_MODEL] === 'True') {
-      // DataModelの場合、QueryModelを生成するのであればQueryModelのアイコンも併記する
-      return <DataAndQueryModelIcon className={SIDEMENU_ICON_CLASSNAME} />
-    } else {
-      return <Icon.CircleStackIcon className={`${SIDEMENU_ICON_CLASSNAME} text-orange-600`} />
-    }
+  // アウトライナーアイテムなら専用アイコン
+  if (menuItem.isOutliner) {
+    return <Icon.DocumentTextIcon className={`${SIDEMENU_ICON_CLASSNAME} text-yellow-500`} />
   }
-  if (modelType === TYPE_QUERY_MODEL) return <Icon.TableCellsIcon className={`${SIDEMENU_ICON_CLASSNAME} text-emerald-600`} />
-  if (modelType === TYPE_COMMAND_MODEL) return <Icon.CommandLineIcon className={`${SIDEMENU_ICON_CLASSNAME} text-sky-600`} />
-  if (modelType === TYPE_STATIC_ENUM_MODEL) return <Icon.ListBulletIcon className={`${SIDEMENU_ICON_CLASSNAME} text-blue-500`} />
-  if (modelType === TYPE_VALUE_OBJECT_MODEL) return <Icon.CubeTransparentIcon className={`${SIDEMENU_ICON_CLASSNAME} text-purple-500`} />
+
+  // ルート集約なら集約ごとのアイコンを表示 (SideMenuAggregateItemであることを確認)
+  if (!menuItem.isOutliner && menuItem.aggregateTree) {
+    const modelType = menuItem.aggregateTree[0].attributes[ATTR_TYPE]
+    if (modelType === TYPE_DATA_MODEL) {
+      if (menuItem.aggregateTree[0].attributes[ATTR_GENERATE_DEFAULT_QUERY_MODEL] === 'True') {
+        // DataModelの場合、QueryModelを生成するのであればQueryModelのアイコンも併記する
+        return <DataAndQueryModelIcon className={SIDEMENU_ICON_CLASSNAME} />
+      } else {
+        return <Icon.CircleStackIcon className={`${SIDEMENU_ICON_CLASSNAME} text-orange-600`} />
+      }
+    }
+    if (modelType === TYPE_QUERY_MODEL) return <Icon.TableCellsIcon className={`${SIDEMENU_ICON_CLASSNAME} text-emerald-600`} />
+    if (modelType === TYPE_COMMAND_MODEL) return <Icon.CommandLineIcon className={`${SIDEMENU_ICON_CLASSNAME} text-sky-600`} />
+    if (modelType === TYPE_STATIC_ENUM_MODEL) return <Icon.ListBulletIcon className={`${SIDEMENU_ICON_CLASSNAME} text-blue-500`} />
+    if (modelType === TYPE_VALUE_OBJECT_MODEL) return <Icon.CubeTransparentIcon className={`${SIDEMENU_ICON_CLASSNAME} text-purple-500`} />
+  }
 
   // 不明な種類のルート集約
   return <Icon.QuestionMarkCircleIcon className={`${SIDEMENU_ICON_CLASSNAME} text-gray-500`} />
@@ -245,19 +294,41 @@ const SideMenuItemLabel = ({ onClick, children }: {
 }
 
 /** サイドメニューの要素 */
-type SideMenuItem = SideMenuContainerItem | SideMenuLeafItem
 
-type SideMenuContainerItem = {
-  id: string
-  indent: number
-  displayName: string
-  isContainer: true
-}
-type SideMenuLeafItem = {
-  id: string
-  indent: number
-  displayName: string
-  aggregateTree: XmlElementItem[]
-  rootAggregateIndex: number
-  isContainer?: never
-}
+// ベースとなる型
+type SideMenuItemBase = {
+  id: string;
+  indent: number;
+  displayName: string;
+};
+
+// コンテナアイテムの型
+type SideMenuContainerItem = SideMenuItemBase & {
+  isContainer: true;
+  isOutliner?: never;
+  outlinerTypeId?: never;
+  aggregateTree?: never;
+  rootAggregateIndex?: never;
+};
+
+// 通常の集約アイテムの型
+type SideMenuAggregateItem = SideMenuItemBase & {
+  aggregateTree: XmlElementItem[];
+  rootAggregateIndex: number;
+  isContainer?: never;
+  isOutliner?: never;
+  outlinerTypeId?: never;
+};
+
+// アウトライナーアイテムの型
+type SideMenuOutlinerItem = SideMenuItemBase & {
+  isOutliner: true;
+  outlinerTypeId: string;
+  isContainer?: never;
+  aggregateTree?: never; // アウトライナーアイテムには不要
+  rootAggregateIndex?: never; // アウトライナーアイテムには不要
+};
+
+type SideMenuLeafItem = SideMenuAggregateItem | SideMenuOutlinerItem;
+
+type SideMenuItem = SideMenuContainerItem | SideMenuLeafItem;

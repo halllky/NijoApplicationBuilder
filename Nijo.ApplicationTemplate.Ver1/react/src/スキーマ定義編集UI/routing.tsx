@@ -3,6 +3,7 @@ import { NijoUi } from "./NijoUi"
 import { NijoUiDebugMenu } from "./デバッグメニュー/DebugMenu"
 import { NijoUiMainContent } from "./NijoUi"
 import { ContextProviders } from "../App"
+import { OutlinerPage } from "./型つきアウトライナー/OutlinerPage"
 // ----------------------------
 // ナビゲーション
 
@@ -10,9 +11,12 @@ import { ContextProviders } from "../App"
 export const getNavigationUrl = (arg?
   : { aggregateId?: string, page?: never }
   | { aggregateId?: never, page: 'debug-menu' }
+  | { aggregateId?: never, page: 'outliner', outlinerId: string }
 ): string => {
   if (arg?.page === 'debug-menu') {
     return '/nijo-ui/debug-menu'
+  } else if (arg?.page === 'outliner') {
+    return `/nijo-ui/outliner/${arg.outlinerId}`
   } else {
     return `/nijo-ui/${arg?.aggregateId ?? ''}`
   }
@@ -35,6 +39,9 @@ export const getNijoUiRoutesForEmbedded = (): RouteObjectWithSideMenuSetting[] =
     }, {
       path: 'debug-menu',
       element: <NijoUiDebugMenu />,
+    }, {
+      path: 'outliner/:outlinerId',
+      element: <OutlinerPage />,
     }]
   }]
 }
@@ -43,4 +50,5 @@ export const getNijoUiRoutesForEmbedded = (): RouteObjectWithSideMenuSetting[] =
 export const NIJOUI_CLIENT_ROUTE_PARAMS = {
   /** ルート集約単位の画面の表示に使われるID */
   AGGREGATE_ID: 'aggregateId',
+  OUTLINER_ID: 'outlinerId',
 }

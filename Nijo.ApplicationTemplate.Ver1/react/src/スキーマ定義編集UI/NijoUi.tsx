@@ -5,14 +5,13 @@ import * as ReactResizablePanels from "react-resizable-panels"
 import * as Layout from "../layout"
 import * as Input from "../input"
 import useEvent from "react-use-event-hook"
-import { ApplicationState, NijoUiOutletContextType } from "./types"
+import { ApplicationState, NijoUiOutletContextType, SchemaDefinitionGlobalState, TypedOutlinerGlobalState } from "./types"
 import { NijoUiSideMenu } from "./NijoUiSideMenu"
 import { PageRootAggregate } from "./スキーマ定義編集/RootAggregatePage"
 import { AttrDefsProvider } from "./スキーマ定義編集/AttrDefContext"
 import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS } from "./routing"
 import NijoUiErrorMessagePane from "./NijoUiErrorMessagePane"
 import { useValidationContextProvider, ValidationContext } from "./スキーマ定義編集/ValidationContext"
-import { SchemaDefinitionGlobalState } from "./スキーマ定義編集/types"
 
 export const SERVER_DOMAIN = import.meta.env.DEV
   ? 'https://localhost:8081'
@@ -31,10 +30,27 @@ export const NijoUi = ({ className }: {
   const [loadError, setLoadError] = React.useState<string>()
   const load = useEvent(async () => {
     try {
-      // Visual Studio で Nijo.csproj の run-ui-service コマンドを実行したときのポート
-      const response = await fetch(`${SERVER_DOMAIN}/load`)
-      const schema: SchemaDefinitionGlobalState = await response.json()
-      setSchema(schema)
+      const [schemaResponse, outlinerListResponse] = await Promise.all([
+        fetch(`${SERVER_DOMAIN}/load`),
+        fetch(`${SERVER_DOMAIN}/typed-outliner/list`),
+      ])
+
+      if (!schemaResponse.ok) {
+        const body = await schemaResponse.text();
+        throw new Error(`Failed to load schema: ${schemaResponse.status} ${body}`);
+      }
+      if (!outlinerListResponse.ok) {
+        const body = await outlinerListResponse.text();
+        throw new Error(`Failed to load outliner list: ${outlinerListResponse.status} ${body}`);
+      }
+
+      const schemaData: SchemaDefinitionGlobalState = await schemaResponse.json()
+      const outlinerListData: TypedOutlinerGlobalState['outlinerList'] = await outlinerListResponse.json();
+
+      setSchema({
+        ...schemaData,
+        outlinerList: outlinerListData,
+      })
     } catch (error) {
       console.error(error)
       setLoadError(error instanceof Error ? error.message : `不明なエラー(${error})`)
@@ -42,7 +58,7 @@ export const NijoUi = ({ className }: {
   })
   React.useEffect(() => {
     load()
-  }, [])
+  }, [load])
 
   // 保存処理
   const handleSave = useEvent(async (applicationState: SchemaDefinitionGlobalState) => {
@@ -74,7 +90,13 @@ export const NijoUi = ({ className }: {
   if (schema !== undefined) {
     return (
       <AfterLoaded
-        defaultValues={schema}
+        defaultValues={{
+          applicationName: schema.applicationName,
+          xmlElementTrees: schema.xmlElementTrees,
+          attributeDefs: schema.attributeDefs,
+          valueMemberTypes: schema.valueMemberTypes,
+        }}
+        outlinerList={schema.outlinerList}
         onSave={handleSave}
         className={className}
       />
@@ -90,13 +112,14 @@ export const NijoUi = ({ className }: {
 }
 
 /** 画面初期表示時の読み込み完了後 */
-const AfterLoaded = ({ defaultValues, onSave, className }: {
+const AfterLoaded = ({ defaultValues, outlinerList, onSave, className }: {
   defaultValues: SchemaDefinitionGlobalState
+  outlinerList: TypedOutlinerGlobalState['outlinerList'] | undefined
   onSave: (applicationState: SchemaDefinitionGlobalState) => void
   className?: string
 }) => {
 
-  const form = ReactHookForm.useForm<SchemaDefinitionGlobalState>({ defaultValues: defaultValues })
+  const form = ReactHookForm.useForm<SchemaDefinitionGlobalState>({ defaultValues })
   const validationContext = useValidationContextProvider(form.getValues)
 
   // 選択中のルート集約
@@ -128,6 +151,7 @@ const AfterLoaded = ({ defaultValues, onSave, className }: {
                 <NijoUiSideMenu
                   onSave={onSave}
                   formMethods={form}
+                  outlinerList={outlinerList}
                   selectedRootAggregateId={selectedRootAggregateId}
                   onSelected={handleSelected}
                 />
