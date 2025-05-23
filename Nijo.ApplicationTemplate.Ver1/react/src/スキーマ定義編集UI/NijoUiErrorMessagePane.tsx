@@ -1,9 +1,9 @@
 import React from "react"
 import * as ReactHookForm from "react-hook-form"
-import { ApplicationState, asTree } from "./types"
+import { ApplicationState, asTree } from "./スキーマ定義編集/types"
 import { useNavigate } from "react-router-dom"
-import { getNavigationUrl } from "./index"
-import { ValidationResult } from "./ValidationContext"
+import { getNavigationUrl } from "./routing"
+import { ValidationResult } from "./スキーマ定義編集/ValidationContext"
 
 /**
  * エラーメッセージ表示欄。

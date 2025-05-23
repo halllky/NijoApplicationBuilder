@@ -5,13 +5,13 @@ import * as ReactResizablePanels from "react-resizable-panels"
 import * as Layout from "../layout"
 import * as Input from "../input"
 import useEvent from "react-use-event-hook"
-import { ApplicationState, NijoUiOutletContextType } from "./types"
+import { ApplicationState, NijoUiOutletContextType } from "./スキーマ定義編集/types"
 import { NijoUiSideMenu } from "./NijoUiSideMenu"
-import { PageRootAggregate } from "./NijoUi.RootAggregate"
-import { AttrDefsProvider } from "./useAttrDefs"
-import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS } from "."
+import { PageRootAggregate } from "./スキーマ定義編集/RootAggregatePage"
+import { AttrDefsProvider } from "./スキーマ定義編集/AttrDefContext"
+import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS } from "./routing"
 import NijoUiErrorMessagePane from "./NijoUiErrorMessagePane"
-import { useValidationContextProvider, ValidationContext } from "./ValidationContext"
+import { useValidationContextProvider, ValidationContext } from "./スキーマ定義編集/ValidationContext"
 
 export const SERVER_DOMAIN = import.meta.env.DEV
   ? 'https://localhost:8081'

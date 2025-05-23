@@ -2,8 +2,11 @@ import { PageFrame, PageFrameTitle } from "../layout";
 import { RouteObjectWithSideMenuSetting } from "../routes";
 import { Outlet } from "react-router-dom";
 import { NijoUi, NijoUiMainContent } from "./NijoUi";
-import { NijoUiDebugMenu } from "./NijoUiDebugMenu";
+import { NijoUiDebugMenu } from "./デバッグメニュー/DebugMenu";
 import { ContextProviders } from "../App";
+import { getNijoUiRoutesForEmbedded } from "./routing";
+
+export * from "./routing"
 
 const SchemaDefinitionEditUI = () => {
   return (
@@ -45,21 +48,6 @@ const SchemaDefinitionEditUI = () => {
   )
 }
 
-// ----------------------------
-// ナビゲーション
-
-/** ナビゲーション用URLを取得する。 */
-export const getNavigationUrl = (arg?
-  : { aggregateId?: string, page?: never }
-  | { aggregateId?: never, page: 'debug-menu' }
-): string => {
-  if (arg?.page === 'debug-menu') {
-    return '/nijo-ui/debug-menu'
-  } else {
-    return `/nijo-ui/${arg?.aggregateId ?? ''}`
-  }
-}
-
 /** ルーティングパス */
 export const getNijoUiRoutesForDebug = (): RouteObjectWithSideMenuSetting[] => {
   const children = getNijoUiRoutesForEmbedded()
@@ -71,31 +59,4 @@ export const getNijoUiRoutesForDebug = (): RouteObjectWithSideMenuSetting[] => {
     sideMenuLabel: "【開発用】XMLスキーマ定義編集UIの試作",
     children,
   }]
-}
-
-export const getNijoUiRoutesForEmbedded = (): RouteObjectWithSideMenuSetting[] => {
-  return [{
-    path: '/nijo-ui',
-    element: (
-      <ContextProviders>
-        <NijoUi className="w-full h-full border border-gray-500" />
-      </ContextProviders>
-    ),
-    children: [{
-      index: true,
-      element: <NijoUiMainContent />,
-    }, {
-      path: `:aggregateId`,
-      element: <NijoUiMainContent />,
-    }, {
-      path: 'debug-menu',
-      element: <NijoUiDebugMenu />,
-    }]
-  }]
-}
-
-/** ルーティングパラメーター */
-export const NIJOUI_CLIENT_ROUTE_PARAMS = {
-  /** ルート集約単位の画面の表示に使われるID */
-  AGGREGATE_ID: 'aggregateId',
 }
