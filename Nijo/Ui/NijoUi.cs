@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Nijo.CodeGenerating;
 using Nijo.SchemaParsing;
 
 namespace Nijo.Ui;
@@ -158,6 +159,68 @@ public class NijoUi {
             } catch (Exception ex) {
                 context.Response.ContentType = "application/json";
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                await context.Response.WriteAsJsonAsync(new[] { ex.Message });
+            }
+        });
+
+        // コード自動生成
+        app.MapPost("/generate", async context => {
+            try {
+                // クライアントからデータを受け取り、XDocumentに変換・保存 (save相当)
+                var originalXDocumentBeforeSave = XDocument.Load(_project.SchemaXmlPath);
+                var applicationState = await context.Request.ReadFromJsonAsync<ApplicationState>()
+                    ?? throw new Exception("applicationState is null");
+                var saveErrors = new List<string>();
+                if (!applicationState.TryConvertToXDocument(originalXDocumentBeforeSave, saveErrors, out var xDocumentToSave, out var uuidToXmlElementForSave)) {
+                    context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                    context.Response.ContentType = "application/json";
+                    await context.Response.WriteAsJsonAsync(saveErrors);
+                    return;
+                }
+                using (var writer = XmlWriter.Create(_project.SchemaXmlPath, new() {
+                    Indent = true,
+                    Encoding = new UTF8Encoding(false, false),
+                    NewLineChars = "\n",
+                })) {
+                    xDocumentToSave.Save(writer);
+                }
+
+                // nijo.xml のフルパスを取得
+                var nijoXmlFullPath = Path.GetFullPath(_project.SchemaXmlPath);
+                var logger = context.RequestServices.GetRequiredService<ILogger<NijoUi>>();
+                var rule = SchemaParseRule.Default();
+
+                // バリデーション (validate相当)
+                var validationParseContext = new SchemaParseContext(xDocumentToSave, rule);
+                if (!validationParseContext.TryBuildSchema(validationParseContext.Document, out var _, out var xmlErrors)) {
+                    // エラーをReactで使うエラー形式に変換する
+                    // uuidToXmlElementForSave を使う（保存時のマッピング情報）
+                    var reactErrorObject = ToReactErrorObject(xmlErrors, uuidToXmlElementForSave!);
+
+                    context.Response.StatusCode = (int)HttpStatusCode.Accepted;
+                    context.Response.ContentType = "application/json";
+                    await context.Response.WriteAsJsonAsync(reactErrorObject);
+                    return;
+                }
+
+                // コード生成処理 (エラーがなければ実行)
+                var generationParseContext = new SchemaParseContext(xDocumentToSave, rule); // 検証済みXDocumentで再度コンテキスト作成
+                var renderingOptions = new CodeRenderingOptions { AllowNotImplemented = false };
+
+                // コード生成処理を実行
+                if (_project.GenerateCode(generationParseContext, renderingOptions, logger)) {
+                    // 成功応答
+                    context.Response.StatusCode = (int)HttpStatusCode.OK;
+                    await context.Response.WriteAsync("Code generation successful.");
+                } else {
+                    // 失敗応答（GenerateCode内でエラーログは出力されている想定）
+                    context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                    await context.Response.WriteAsync("Code generation failed. Check server logs for details.");
+                }
+
+            } catch (Exception ex) {
+                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                context.Response.ContentType = "application/json";
                 await context.Response.WriteAsJsonAsync(new[] { ex.Message });
             }
         });

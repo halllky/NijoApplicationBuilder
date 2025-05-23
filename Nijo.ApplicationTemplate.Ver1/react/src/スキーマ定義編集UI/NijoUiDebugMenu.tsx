@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react"
+import * as ReactRouter from "react-router-dom"
 import * as Icon from "@heroicons/react/24/outline"
 import * as Input from "../input"
 import * as Layout from "../layout"
-import { DebugProcessState } from "./types"
+import { DebugProcessState, NijoUiOutletContextType } from "./types"
 import { SERVER_DOMAIN } from "./NijoUi"
 import useEvent from "react-use-event-hook"
 
 export const NijoUiDebugMenu = () => {
+  const { formMethods, validationContext: { trigger } } = ReactRouter.useOutletContext<NijoUiOutletContextType>()
   const [debugState, setDebugState] = useState<DebugProcessState>()
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>()
@@ -80,7 +82,56 @@ export const NijoUiDebugMenu = () => {
     setStopDebuggingProcessing(false)
   })
 
-  const anyCommandProcessing = loading || startDebuggingProcessing || stopDebuggingProcessing
+  const [regenerateProcessing, setRegenerateProcessing] = useState(false)
+  const regenerateCode = useEvent(async () => {
+    if (anyCommandProcessing) return
+    setRegenerateProcessing(true)
+    setError(undefined)
+    const applicationState = formMethods.getValues()
+
+    try {
+      const response = await fetch(`${SERVER_DOMAIN}/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(applicationState),
+      })
+      if (!response.ok) {
+        let errorText = `HTTP error! status: ${response.status}`
+        try {
+          const errorData = await response.json()
+          if (errorData && typeof errorData.message === 'string') {
+            errorText = errorData.message
+          } else if (Array.isArray(errorData) && errorData.length > 0 && typeof errorData[0] === 'string') {
+            errorText = errorData[0]
+          } else if (typeof errorData === 'string') {
+            errorText = errorData
+          }
+        } catch (e) {
+          // JSONパースに失敗した場合は元のエラーテキストを使用
+        }
+        throw new Error(errorText)
+      }
+      // 204なら入力検証エラー
+      if (response.status === 204) {
+        trigger()
+        return
+      }
+      // 204以外の成功は再読み込み
+      await fetchDebugState()
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message)
+      } else {
+        setError('An unknown error occurred during regeneration.')
+      }
+    } finally {
+      setRegenerateProcessing(false)
+    }
+  })
+
+  const anyCommandProcessing = loading || startDebuggingProcessing || stopDebuggingProcessing || regenerateProcessing
 
   const debugProcessIsRunning
     = debugState?.estimatedPidOfNodeJs !== undefined
@@ -114,6 +165,9 @@ export const NijoUiDebugMenu = () => {
         </Input.IconButton>
         <Input.IconButton icon={Icon.PlayIcon} onClick={startDebugging} loading={anyCommandProcessing} fill mini>
           開始
+        </Input.IconButton>
+        <Input.IconButton icon={Icon.ArrowPathIcon} onClick={regenerateCode} loading={anyCommandProcessing} fill mini>
+          再生成
         </Input.IconButton>
       </h2>
 
