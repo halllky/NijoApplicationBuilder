@@ -62,23 +62,14 @@ export const getNavigationUrl = (arg?
 
 /** ルーティングパス */
 export const getNijoUiRoutesForDebug = (): RouteObjectWithSideMenuSetting[] => {
+  const children = getNijoUiRoutesForEmbedded()
+  delete children[0]['path']
+
   return [{
     path: '/nijo-ui',
     element: <SchemaDefinitionEditUI />,
     sideMenuLabel: "【開発用】XMLスキーマ定義編集UIの試作",
-    children: [{
-      element: <NijoUi className="w-full h-full border border-gray-500" />,
-      children: [{
-        index: true,
-        element: <NijoUiMainContent />,
-      }, {
-        path: `:aggregateId`,
-        element: <NijoUiMainContent />,
-      }, {
-        path: 'debug-menu',
-        element: <NijoUiDebugMenu />,
-      }],
-    }]
+    children,
   }]
 }
 
