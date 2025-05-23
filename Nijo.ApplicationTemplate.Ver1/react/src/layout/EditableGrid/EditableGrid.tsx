@@ -433,9 +433,9 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                     (rowIndex === activeCell.rowIndex || colIndex === activeCell.colIndex) &&
                     !(rowIndex === activeCell.rowIndex && colIndex === activeCell.colIndex)
                   ) {
-                    dataColumnClassName += ' editable-grid-active-cell-cross-direction' // アクティブセルの十字方向
+                    dataColumnClassName += ' bg-gray-100' // アクティブセルの十字方向
                   } else {
-                    dataColumnClassName += ' bg-gray-100' // その他
+                    dataColumnClassName += ' bg-gray-50' // その他
                   }
 
                   if (cellMeta?.originalColDef?.isFixed) dataColumnClassName += ` sticky` // z-indexをつけるとボディ列が列ヘッダより手前にきてしまうので設定しない
@@ -496,7 +496,10 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                       {(!isEditing || !isActive) && (
                         <div
                           className="flex border-r border-gray-200 select-none truncate"
-                          style={{ width: cell.column.getSize() }}
+                          style={{
+                            width: cell.column.getSize(),
+                            height: ESTIMATED_ROW_HEIGHT,
+                          }}
                         >
                           {renderCell?.(cell.getContext()) ?? cell.getValue()?.toString()}
                         </div>

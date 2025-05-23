@@ -1,4 +1,0 @@
-/* アクティブセルの十字方向にあるセルの背景色。最も近いのが bg-blue-100 だが、それよりさらに bg-gray-100 近づけている */
-.editable-grid-active-cell-cross-direction {
-  background-color: #eff0f5;
-}
