@@ -172,7 +172,7 @@ const STYLESHEET: cytoscape.CytoscapeOptions['style'] = [{
   selector: 'node',
   css: {
     'shape': 'rectangle',
-    'width': (node: any) => node.data('label')?.length * 10,
+    'width': (node: any) => node.data('label')?.length * 20,
     'text-valign': 'center',
     'text-halign': 'center',
     'border-width': '1px',
