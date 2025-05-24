@@ -19,6 +19,8 @@ export interface GraphViewProps {
   onNodeDoubleClick?: (event: cytoscape.EventObject) => void;
   /** ノードのレイアウトが変更された瞬間に呼ばれる */
   onLayoutChange?: (event: cytoscape.EventObject) => void;
+  /** ナビゲーターを表示するかどうか */
+  showNavigator?: boolean;
 }
 
 const GraphView = forwardRef<GraphViewRef, GraphViewProps>((props, ref) => {
@@ -68,10 +70,12 @@ const GraphView = forwardRef<GraphViewRef, GraphViewProps>((props, ref) => {
         tabIndex={0}
         onKeyDown={props.handleKeyDown}
       ></div>
-      <Navigator.Component
-        hasNoElements={hasNoElements}
-        className="absolute w-[20vw] h-[20vh] right-2 bottom-2 z-[200]"
-      />
+      {props.showNavigator && (
+        <Navigator.Component
+          hasNoElements={hasNoElements}
+          className="absolute w-[20vw] h-[20vh] right-2 bottom-2 z-[200]"
+        />
+      )}
       {props.nowLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-500 bg-opacity-75 z-[300]">
           <p className="text-white text-2xl">読み込み中...</p>

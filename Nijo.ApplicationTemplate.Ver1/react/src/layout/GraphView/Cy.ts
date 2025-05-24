@@ -57,7 +57,9 @@ export const useCytoscape = (props: GraphViewProps): CytoscapeHookType => {
         layout: AutoLayout.DEFAULT,
         wheelSensitivity: USER_SETTING.wheelSensitivity.value,
       })
-      setNavInstance(Navigator.setupCyInstance(cyInstance))
+      if (propsRef.current.showNavigator) {
+        setNavInstance(Navigator.setupCyInstance(cyInstance))
+      }
 
       // Cytoscapeは標準でcanvas要素のmousedownでフォーカスを外す処理をしており
       // これによりcanvasを操作しているときにキーボードショートカットが使えないため
