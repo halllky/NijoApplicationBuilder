@@ -14,17 +14,14 @@ export const NijoUiAggregateDiagram = () => {
   const { formMethods } = ReactRouter.useOutletContext<SchemaDefinitionOutletContextType>()
   const { getValues } = formMethods
   const xmlElementTrees = getValues("xmlElementTrees")
-
   const graphViewRef = React.useRef<GraphViewRef>(null)
+  const [onlyRoot, setOnlyRoot] = React.useState(false)
 
   const dataSet: CytoscapeDataSet = React.useMemo(() => {
     if (!xmlElementTrees) return { nodes: {}, edges: [] }
 
     const nodes: Record<string, CyNode> = {}
-
-    // 重複するエッジをグルーピングするためのMap。
-    // 第1キーはsource, 第2キーはtarget, 値はlabels
-    const edges: Map<string, Map<string, string[]>> = new Map()
+    const edges: { source: string, target: string, label: string }[] = []
 
     for (const rootAggregateGroup of xmlElementTrees) {
       if (!rootAggregateGroup || !rootAggregateGroup.xmlElements || rootAggregateGroup.xmlElements.length === 0) continue;
@@ -39,9 +36,13 @@ export const NijoUiAggregateDiagram = () => {
       const treeHelper = asTree(rootAggregateGroup.xmlElements); // ツリーヘルパーを初期化
 
       const addMembersRecursively = (owner: XmlElementItem, parentId: string | undefined) => {
-        // ルート要素、 Child, Childrenのみ表示
+        // ルート要素（ルート集約以外も表示する場合は Child, Children含む）のみ表示
         const type = owner.attributes[ATTR_TYPE];
-        if (owner.indent !== 0 && type !== TYPE_CHILD && type !== TYPE_CHILDREN) return;
+        if (onlyRoot) {
+          if (owner.indent !== 0) return;
+        } else {
+          if (owner.indent !== 0 && type !== TYPE_CHILD && type !== TYPE_CHILDREN) return;
+        }
 
         // ダイアグラムノードを追加
         nodes[owner.uniqueId] = {
@@ -49,86 +50,80 @@ export const NijoUiAggregateDiagram = () => {
           parent: parentId,
         } satisfies CyNode;
 
-        // 子要素を再帰的に処理し、ref-toエッジを収集
-        for (const member of treeHelper.getChildren(owner)) {
+        // 子要素を再帰的に処理し、ref-toエッジを収集。
+        // ルート集約のみ表示の場合は、直近の子のみならず、孫要素のref-toも収集する
+        const members = onlyRoot
+          ? treeHelper.getDescendants(owner)
+          : treeHelper.getChildren(owner)
+
+        for (const member of members) {
           // 外部参照でない場合はここでundefinedになる
-          const target = findRefToTarget(member, xmlElementTrees);
-          if (target && owner.uniqueId !== target.uniqueId) {
-            // ダイアグラムエッジを追加。
-            // 重複するエッジは最後にまとめてグルーピングする
-            const first = edges.get(owner.uniqueId)
-            const second = first?.get(target.uniqueId)
-            if (!first) {
-              edges.set(owner.uniqueId, new Map([[target.uniqueId, [member.localName ?? '']]]));
-            } else if (!second) {
-              first.set(target.uniqueId, [member.localName ?? '']);
-            } else {
-              second.push(member.localName ?? '');
-            }
+          const target = findRefToTarget(member, xmlElementTrees)
+          const targetUniqueId = onlyRoot
+            ? target?.refToRoot?.uniqueId
+            : target?.refTo?.uniqueId
+
+          // ダイアグラムエッジを追加。
+          // 重複するエッジは最後にまとめてグルーピングする
+          if (targetUniqueId && owner.uniqueId !== targetUniqueId) {
+            edges.push({
+              source: owner.uniqueId,
+              target: targetUniqueId,
+              label: member.localName ?? '',
+            })
           }
 
           // 再帰的に子孫要素を処理 (XML構造上の子)
-          addMembersRecursively(member, owner.uniqueId);
+          if (!onlyRoot) addMembersRecursively(member, owner.uniqueId)
         }
       };
       addMembersRecursively(rootElement, undefined);
     }
 
     // 重複するエッジのグルーピング
-    const cyEdges: CyEdge[] = Array.from(edges.entries()).flatMap(([source, targetMap]) => {
-      return Array.from(targetMap.entries()).map(([target, labels]) => ({
-        source: source,
-        target: target,
-        label: labels.length === 1
-          ? labels[0]
-          : `${labels[0]}など${labels.length}件の参照`,
-      }));
-    });
+    // console.log(edges.map(e => `${nodes[e.source]?.label} -- ${e.label} --> ${nodes[e.target]?.label}`))
+    const groupedEdges = edges.reduce((acc, { source, target, label }) => {
+      const existingEdge = acc.find(e => e.source === source && e.target === target)
+      if (existingEdge) {
+        existingEdge.labels.push(label)
+      } else {
+        acc.push({ source, target, labels: [label] })
+      }
+      return acc
+    }, [] as { source: string, target: string, labels: string[] }[])
+    const cyEdges: CyEdge[] = groupedEdges.map(group => ({
+      source: group.source,
+      target: group.target,
+      label: group.labels.length === 1 ? group.labels[0] : `${group.labels[0]}など${group.labels.length}件の参照`,
+    } satisfies CyEdge))
 
     return {
       nodes: nodes,
       edges: cyEdges,
     }
-  }, [xmlElementTrees])
+  }, [xmlElementTrees, onlyRoot])
 
   const [layoutLogic, setLayoutLogic] = React.useState('klay')
   const handleAutoLayout = useEvent(() => {
     graphViewRef.current?.applyLayout(layoutLogic)
   })
 
-  const handleSelectAll = useEvent(() => {
-    graphViewRef.current?.selectAll()
-  })
-
-  const handleCollapseSelection = useEvent(() => {
-    graphViewRef.current?.collapseSelections()
-  })
-
-  const handleExpandSelection = useEvent(() => {
-    graphViewRef.current?.expandSelections()
-  })
-
   return (
     <div className="h-full flex flex-col">
-      <div className="flex flex-wrap p-1 gap-1">
-        <select className="border text-sm" value={layoutLogic} onChange={(e) => setLayoutLogic(e.target.value)}>
-          {Object.entries(AutoLayout.OPTION_LIST).map(([key, value]) => (
-            <option key={key} value={key}>{value.name}</option>
-          ))}
-        </select>
+      <div className="flex flex-wrap items-center p-1 gap-1">
         <Input.IconButton onClick={handleAutoLayout} outline>
           整列
         </Input.IconButton>
+        <select className="border text-sm" value={layoutLogic} onChange={(e) => setLayoutLogic(e.target.value)}>
+          {Object.entries(AutoLayout.OPTION_LIST).map(([key, value]) => (
+            <option key={key} value={key}>ロジック: {value.name}</option>
+          ))}
+        </select>
         <div className="basis-4"></div>
-        <Input.IconButton onClick={handleSelectAll} outline>
-          全選択
-        </Input.IconButton>
-        <Input.IconButton onClick={handleCollapseSelection} outline>
-          選択を折りたたむ
-        </Input.IconButton>
-        <Input.IconButton onClick={handleExpandSelection} outline>
-          選択を展開
-        </Input.IconButton>
+        <label>
+          <input type="checkbox" checked={onlyRoot} onChange={(e) => setOnlyRoot(e.target.checked)} />
+          ルート集約のみ表示
+        </label>
       </div>
       <div className="flex-1">
         <GraphView

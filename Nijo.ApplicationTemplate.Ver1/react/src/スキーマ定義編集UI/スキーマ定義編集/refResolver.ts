@@ -9,9 +9,9 @@ import { XmlElementItem, SchemaDefinitionGlobalState, asTree, ATTR_TYPE } from "
 export const findRefToTarget = (
   refFrom: XmlElementItem,
   allElements: SchemaDefinitionGlobalState['xmlElementTrees']
-): XmlElementItem | undefined => {
+): { refTo: XmlElementItem, refToRoot: XmlElementItem } | undefined => {
   const refToValue = refFrom.attributes[ATTR_TYPE];
-  if (!refToValue || !refToValue.startsWith('ref-to:')) return undefined;
+  if (!refToValue || !refToValue.startsWith('ref-to:')) return undefined
 
   const pathString = refToValue.substring('ref-to:'.length);
 
@@ -35,5 +35,6 @@ export const findRefToTarget = (
   }
 
   const rootAggregate = rootAggregateGroup.xmlElements[0]
-  return findRecursively(descendantNames, rootAggregate)
+  const refTo = findRecursively(descendantNames, rootAggregate)
+  return refTo ? { refTo, refToRoot: rootAggregate } : undefined
 };

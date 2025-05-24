@@ -199,6 +199,8 @@ const STYLESHEET: cytoscape.CytoscapeOptions['style'] = [{
   selector: 'edge',
   style: {
     'label': 'data(label)',
+    'color': '#707070',
+    'font-size': '10px',
     'target-arrow-shape': 'triangle',
     'curve-style': 'bezier',
     'width': '1px',

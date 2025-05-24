@@ -134,12 +134,14 @@ export const asTree = (flat: XmlElementItem[]) => {
       // 引数のエレメントより後ろの位置にあり、
       // インデントが引数のエレメントより大きいもののうち、
       // そのエレメントと引数のエレメントの間にインデントが挟まるものがないものが子。
-      // 例えば以下の場合、b, d, eはaの子。cはbの子。
+      // 例えば以下の場合、b, d, f, gはaの子。cはbの子。eはdの子。
       // - a
-      //   - b
-      //     - c
-      //   - d
-      //   - e
+      //       - b
+      //         - c
+      //     - d
+      //       - e
+      //     - f
+      //   - g
 
       const elIndex = flat.indexOf(el);
       // 要素が配列内に見つからないという状況は設計上起こりえないかもしれないが、念のためチェック
@@ -147,28 +149,41 @@ export const asTree = (flat: XmlElementItem[]) => {
         return [];
       }
 
-      const children: XmlElementItem[] = [];
-      const parentIndent = el.indent;
-      const directChildIndent = parentIndent + 1;
+      const children: XmlElementItem[] = []
+      const stack: XmlElementItem[] = []
 
       // el の次の要素から走査を開始
       for (let i = elIndex + 1; i < flat.length; i++) {
         const potentialChild = flat[i];
 
-        // 注目している要素のインデントが親のインデント以下になった場合、
+        // 注目している要素のインデントが走査開始時点のインデント以下になった場合、
         // それはもはや現在注目している親の子ではない（兄弟か、より上位の階層の要素）。
         // それ以降の要素も子ではないため、探索を終了する。
-        if (potentialChild.indent <= parentIndent) {
+        if (potentialChild.indent <= el.indent) {
           break;
         }
 
-        // インデントが親のインデント + 1 の場合、それは直下の子。
-        if (potentialChild.indent === directChildIndent) {
-          children.push(potentialChild);
+        if (stack.length === 0) {
+          children.push(potentialChild)
+          stack.push(potentialChild)
+          continue
         }
-        // potentialChild.indent > directChildIndent の場合（孫以降の要素）は、
-        // el の直下の子ではないため、何もしない（children には追加しない）。
-        // ループは継続し、次の要素が el の直下の子である可能性を探す。
+
+        const peek = stack[stack.length - 1]
+
+        // elとこの要素の間に挟まるインデントの要素がある場合、この要素はelの直下の子ではない
+        if (peek.indent < potentialChild.indent) {
+          continue
+        }
+
+        // elとこの要素の間に挟まるインデントの要素がなく、
+        // この要素のインデントがelと同じ場合、この要素はelの直下の子。
+        if (peek.indent >= potentialChild.indent) {
+          children.push(potentialChild)
+          stack.pop()
+          stack.push(potentialChild)
+          continue
+        }
       }
       return children
     },
