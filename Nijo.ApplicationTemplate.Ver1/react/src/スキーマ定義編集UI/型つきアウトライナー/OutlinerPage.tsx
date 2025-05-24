@@ -26,7 +26,7 @@ export const OutlinerPage = () => {
   const formMethods = ReactHookForm.useForm<TypedOutliner>({
     // defaultValues: outlinerData が読み込まれた後に設定
   });
-  const { control, handleSubmit, reset, setValue, getValues } = formMethods;
+  const { control, handleSubmit, reset, setValue, getValues, formState: { isDirty } } = formMethods;
   const { fields, insert, remove, update, append } = ReactHookForm.useFieldArray({
     control,
     name: 'items',
@@ -71,6 +71,21 @@ export const OutlinerPage = () => {
 
     loadData();
   }, [outlinerId, reset]);
+
+  // 画面離脱防止
+  const blocker = ReactRouter.useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      isDirty && currentLocation.pathname !== nextLocation.pathname
+  );
+  React.useEffect(() => {
+    if (blocker && blocker.state === "blocked") {
+      if (window.confirm("編集中の内容がありますが、ページを離れてもよろしいですか？")) {
+        blocker.proceed();
+      } else {
+        blocker.reset();
+      }
+    }
+  }, [blocker]);
 
   // グリッドの列定義
   const getColumnDefs: Layout.GetColumnDefsFunction<GridRowType> = React.useCallback(cellType => {
