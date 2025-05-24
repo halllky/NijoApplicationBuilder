@@ -316,12 +316,6 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
         className={`table-fixed border-collapse border-spacing-0`}
         style={{ minWidth: tableTotalWidth }}
       >
-        {/* 列幅を設定するためのcolgroup要素。table.getAllLeafColumns() を使うことで非表示の列を除外 */}
-        <colgroup>
-          {table.getAllLeafColumns().map(column => (
-            <col key={column.id} style={{ width: column.getSize() }} />
-          ))}
-        </colgroup>
 
         {/* 列ヘッダ */}
         <thead className="sticky top-0 z-10 grid-header-group">
