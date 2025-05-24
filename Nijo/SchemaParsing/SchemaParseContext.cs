@@ -36,7 +36,8 @@ public class SchemaParseContext {
     /// <summary>enum, value-object を除いた値型の一覧</summary>
     public IEnumerable<IValueMemberType> ValueMemberTypes => _rule.ValueMemberTypes;
 
-    private const string ATTR_IS = "is";
+    /// <summary>スキーマ解析では使用しないがスキーマ定義編集GUIで使う</summary>
+    internal const string ATTR_UNIQUE_ID = "UniqueId";
     internal const string ATTR_NODE_TYPE = "Type";
 
     internal const string NODE_TYPE_CHILD = "child";

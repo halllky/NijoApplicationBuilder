@@ -129,8 +129,6 @@ public class XmlElementItem {
     public static IEnumerable<XmlElementItem> FromXElement(XElement element) {
         // このルート要素がスキーマ定義全体の中で何番目の要素か
         var indexOfThisRoot = element.ElementsBeforeSelf().Count();
-        // 一意な識別子を生成するためのカウンタ
-        var currentCount = 0;
 
         return EnumerateRecursive(element);
 
@@ -142,7 +140,7 @@ public class XmlElementItem {
                 comment = null;
             }
             yield return new XmlElementItem {
-                UniqueId = $"{indexOfThisRoot:0000}_{currentCount++:0000}",
+                UniqueId = element.Attribute(SchemaParseContext.ATTR_UNIQUE_ID)?.Value ?? Guid.NewGuid().ToString(),
                 Indent = element.Ancestors().Count() - 1,
                 LocalName = element.Name.LocalName,
                 Value = element.Value,
@@ -210,6 +208,7 @@ public class XmlElementItem {
                 if (string.IsNullOrWhiteSpace(attribute.Value)) continue;
                 xElement.SetAttributeValue(attribute.Key, attribute.Value);
             }
+            xElement.SetAttributeValue(SchemaParseContext.ATTR_UNIQUE_ID, item.UniqueId);
 
             // 前の要素が空ならば element はルート集約
             if (previous == null) {
