@@ -45,7 +45,7 @@ export type ValueMemberType = {
 
 /** XML要素1個分と対応するデータ型 */
 export type XmlElementItem = {
-  /** XML要素とは関係ないUIの都合上のID。画面表示時に発番する。 */
+  /** XML要素を一意に識別するID */
   uniqueId: string
   /** インデントレベル。XML要素の親子関係は保存時にインデントをもとに再構築する。 */
   indent: number
