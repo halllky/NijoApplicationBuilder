@@ -8,6 +8,7 @@ export interface GraphViewRef extends Omit<CytoscapeHookType, 'cy' | 'containerR
   getCy: () => cytoscape.Core | undefined;
   getNodesLocked: () => boolean;
   LayoutSelector: LayoutSelectorComponentType;
+  applyLayout: (layoutName: string) => void;
 }
 
 interface GraphViewProps {
@@ -35,6 +36,7 @@ const GraphView = forwardRef<GraphViewRef, GraphViewProps>((
     hasNoElements,
     collectViewState,
     selectAll,
+    applyLayout,
   } = useCytoscape();
 
   useImperativeHandle(ref, () => ({
@@ -49,6 +51,7 @@ const GraphView = forwardRef<GraphViewRef, GraphViewProps>((
     selectAll,
     applyToCytoscape: (dataSet: CytoscapeDataSet, viewState) => applyToCytoscape(dataSet, viewState),
     getCy: () => cy,
+    applyLayout: (layoutName: string) => applyLayout(layoutName),
   }));
 
   React.useEffect(() => {

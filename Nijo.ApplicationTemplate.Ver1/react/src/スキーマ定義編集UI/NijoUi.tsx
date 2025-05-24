@@ -12,6 +12,7 @@ import { AttrDefsProvider } from "./スキーマ定義編集/AttrDefContext"
 import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS, SERVER_DOMAIN } from "./routing"
 import NijoUiErrorMessagePane from "./NijoUiErrorMessagePane"
 import { useValidationContextProvider, ValidationContext } from "./スキーマ定義編集/ValidationContext"
+import { NijoUiAggregateDiagram } from "./スキーマ定義編集/NijoUiAggregateDiagram"
 
 /**
  * nijo.xmlをUIで編集できる画面の試作。
@@ -217,9 +218,7 @@ export const NijoUiMainContent = () => {
 
   if (selectedRootAggregateId === undefined) {
     return (
-      <div className="p-1 text-sm text-gray-500">
-        左側のメニューから項目を選択してください。
-      </div>
+      <NijoUiAggregateDiagram />
     );
   }
 

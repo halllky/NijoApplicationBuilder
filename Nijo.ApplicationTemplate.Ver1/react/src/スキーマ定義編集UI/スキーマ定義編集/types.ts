@@ -140,20 +140,35 @@ export const asTree = (flat: XmlElementItem[]) => {
       //     - c
       //   - d
       //   - e
-      const belowElements = flat.slice(flat.indexOf(el) + 1)
-      const children: XmlElementItem[] = []
-      let currentIndent = el.indent + 1 // このインデントと同じまたはより浅いならば子
-      for (const y of belowElements) {
-        // currentIndentと同じまたはより浅いならば子
-        if (y.indent <= currentIndent) {
-          children.push(y)
-          currentIndent = y.indent
-          continue
+
+      const elIndex = flat.indexOf(el);
+      // 要素が配列内に見つからないという状況は設計上起こりえないかもしれないが、念のためチェック
+      if (elIndex === -1) {
+        return [];
+      }
+
+      const children: XmlElementItem[] = [];
+      const parentIndent = el.indent;
+      const directChildIndent = parentIndent + 1;
+
+      // el の次の要素から走査を開始
+      for (let i = elIndex + 1; i < flat.length; i++) {
+        const potentialChild = flat[i];
+
+        // 注目している要素のインデントが親のインデント以下になった場合、
+        // それはもはや現在注目している親の子ではない（兄弟か、より上位の階層の要素）。
+        // それ以降の要素も子ではないため、探索を終了する。
+        if (potentialChild.indent <= parentIndent) {
+          break;
         }
-        // 引数のエレメントより浅いインデントの要素が登場したら探索を打ち切る
-        if (y.indent < el.indent) {
-          break
+
+        // インデントが親のインデント + 1 の場合、それは直下の子。
+        if (potentialChild.indent === directChildIndent) {
+          children.push(potentialChild);
         }
+        // potentialChild.indent > directChildIndent の場合（孫以降の要素）は、
+        // el の直下の子ではないため、何もしない（children には追加しない）。
+        // ループは継続し、次の要素が el の直下の子である可能性を探す。
       }
       return children
     },

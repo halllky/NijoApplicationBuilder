@@ -35,6 +35,7 @@ export interface CytoscapeHookType {
   toggleNodesLocked: () => void;
   hasNoElements: boolean;
   collectViewState: () => ViewState;
+  applyLayout: (layoutName: string) => void;
 }
 
 export const useCytoscape = (): CytoscapeHookType => {
@@ -143,6 +144,14 @@ export const useCytoscape = (): CytoscapeHookType => {
     }
   }, [cy, collectViewState, applyViewState])
 
+  const applyLayout = useCallback((layoutName: string) => {
+    if (!cy) return;
+    const layoutOption = AutoLayout.OPTION_LIST[layoutName];
+    if (layoutOption) {
+      cy.layout(layoutOption).run();
+    }
+  }, [cy]);
+
   return {
     cy,
     containerRef,
@@ -155,6 +164,7 @@ export const useCytoscape = (): CytoscapeHookType => {
     toggleNodesLocked,
     hasNoElements: (cy?.elements().length ?? 0) === 0,
     collectViewState,
+    applyLayout,
   }
 }
 
@@ -188,6 +198,7 @@ const STYLESHEET: cytoscape.CytoscapeOptions['style'] = [{
 }, {
   selector: 'edge',
   style: {
+    'label': 'data(label)',
     'target-arrow-shape': 'triangle',
     'curve-style': 'bezier',
     'width': '1px',

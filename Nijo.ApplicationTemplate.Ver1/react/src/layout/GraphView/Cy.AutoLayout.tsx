@@ -13,7 +13,7 @@ const configure = (cy: typeof cytoscape) => {
   cy.use(fcose)
 }
 
-const OPTION_LIST: { [key: string]: cytoscape.LayoutOptions } = {
+export const OPTION_LIST: { [key: string]: cytoscape.LayoutOptions } = {
   'klay': { name: 'klay' },
   'dagre': { name: 'dagre' },
   'fcose': { name: 'fcose' },
