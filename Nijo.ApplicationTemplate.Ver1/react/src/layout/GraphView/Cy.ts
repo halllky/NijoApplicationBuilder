@@ -36,9 +36,12 @@ export interface CytoscapeHookType {
   hasNoElements: boolean;
   collectViewState: () => ViewState;
   applyLayout: (layoutName: string) => void;
+  onNodeDoubleClick?: (event: cytoscape.EventObject) => void;
 }
 
-export const useCytoscape = (): CytoscapeHookType => {
+export const useCytoscape = (
+  onNodeDoubleClick: ((event: cytoscape.EventObject) => void) | undefined
+): CytoscapeHookType => {
   const [cy, setCy] = useState<cytoscape.Core>()
   const [navInstance, setNavInstance] = useState<{ destroy: () => void }>()
 
@@ -61,13 +64,17 @@ export const useCytoscape = (): CytoscapeHookType => {
         divElement.focus()
       })
 
+      if (onNodeDoubleClick) {
+        cyInstance.on('dblclick', 'node', onNodeDoubleClick);
+      }
+
       setCy(cyInstance)
 
     } else if (cy && !divElement) {
       // 破棄
       navInstance?.destroy()
     }
-  }, [cy, navInstance])
+  }, [cy, navInstance, onNodeDoubleClick])
 
   const { autoLayout, LayoutSelector } = AutoLayout.useAutoLayout(cy)
   const { actions: expandCollapseActions } = useMemo(() => {
@@ -163,6 +170,7 @@ export const useCytoscape = (): CytoscapeHookType => {
     hasNoElements: (cy?.elements().length ?? 0) === 0,
     collectViewState,
     applyLayout,
+    onNodeDoubleClick,
   }
 }
 

@@ -16,10 +16,11 @@ interface GraphViewProps {
   nowLoading?: boolean;
   initialDataSet?: CytoscapeDataSet;
   initialViewState?: ViewState;
+  onNodeDoubleClick?: (event: cytoscape.EventObject) => void;
 }
 
 const GraphView = forwardRef<GraphViewRef, GraphViewProps>((
-  { handleKeyDown, nowLoading, initialDataSet, initialViewState },
+  { handleKeyDown, nowLoading, initialDataSet, initialViewState, onNodeDoubleClick },
   ref
 ) => {
   const {
@@ -37,7 +38,7 @@ const GraphView = forwardRef<GraphViewRef, GraphViewProps>((
     collectViewState,
     selectAll,
     applyLayout,
-  } = useCytoscape();
+  } = useCytoscape(onNodeDoubleClick);
 
   useImperativeHandle(ref, () => ({
     reset,

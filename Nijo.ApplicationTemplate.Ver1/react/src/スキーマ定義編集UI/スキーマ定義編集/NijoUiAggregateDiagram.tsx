@@ -9,6 +9,7 @@ import { Node as CyNode, Edge as CyEdge } from "../../layout/GraphView/DataSourc
 import * as AutoLayout from "../../layout/GraphView/Cy.AutoLayout"
 import { findRefToTarget } from "./refResolver"
 import { asTree } from "./types"
+import { getNavigationUrl } from "../routing"
 
 export const NijoUiAggregateDiagram = () => {
   const { formMethods } = ReactRouter.useOutletContext<SchemaDefinitionOutletContextType>()
@@ -16,6 +17,7 @@ export const NijoUiAggregateDiagram = () => {
   const xmlElementTrees = getValues("xmlElementTrees")
   const graphViewRef = React.useRef<GraphViewRef>(null)
   const [onlyRoot, setOnlyRoot] = React.useState(false)
+  const navigate = ReactRouter.useNavigate()
 
   const dataSet: CytoscapeDataSet = React.useMemo(() => {
     if (!xmlElementTrees) return { nodes: {}, edges: [] }
@@ -133,6 +135,28 @@ export const NijoUiAggregateDiagram = () => {
     graphViewRef.current?.applyLayout(layoutLogic)
   })
 
+  const handleNodeDoubleClick = useEvent((event: cytoscape.EventObject) => {
+    const clickedNodeId = event.target.id();
+
+    let aggregateId = clickedNodeId;
+    // クリックされたノードがルート集約でない場合、ルート集約のIDを探す
+    const clickedNodeIsRoot = xmlElementTrees?.some(tree => tree.xmlElements?.[0]?.uniqueId === clickedNodeId);
+
+    if (!clickedNodeIsRoot) {
+      for (const tree of xmlElementTrees ?? []) {
+        if (!tree.xmlElements) continue;
+        const found = tree.xmlElements.find(el => el.uniqueId === clickedNodeId);
+        if (found) {
+          aggregateId = tree.xmlElements[0]?.uniqueId ?? clickedNodeId; // ルート要素のID
+          break;
+        }
+      }
+    }
+
+    const url = getNavigationUrl({ aggregateId });
+    navigate(url);
+  });
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex flex-wrap items-center p-1 gap-1">
@@ -154,6 +178,7 @@ export const NijoUiAggregateDiagram = () => {
         <GraphView
           ref={graphViewRef}
           initialDataSet={dataSet}
+          onNodeDoubleClick={handleNodeDoubleClick}
         />
       </div>
     </div >
