@@ -7,6 +7,7 @@ import ExpandCollapseFunctions from './Cy.ExpandCollapse'
 import { ViewState, useViewState } from './Cy.SaveLoad'
 import * as DS from './DataSource'
 import { USER_SETTING } from './UserSetting'
+import { GraphViewProps } from '.'
 
 AutoLayout.configure(cytoscape)
 Navigator.configure(cytoscape)
@@ -24,7 +25,7 @@ export type LayoutSelectorComponentType = React.FC; // AutoLayout.useAutoLayout 
 export interface CytoscapeHookType {
   cy: cytoscape.Core | undefined;
   containerRef: (divElement: HTMLElement | null) => void;
-  applyToCytoscape: (dataSet: DS.DataSet, viewState?: ViewState) => Promise<void>;
+  applyToCytoscape: (dataSet: DS.DataSet, viewState?: Partial<ViewState>) => Promise<void>;
   selectAll: () => void;
   reset: () => void;
   expandSelections: () => void;
@@ -36,14 +37,15 @@ export interface CytoscapeHookType {
   hasNoElements: boolean;
   collectViewState: () => ViewState;
   applyLayout: (layoutName: string) => void;
-  onNodeDoubleClick?: (event: cytoscape.EventObject) => void;
 }
 
-export const useCytoscape = (
-  onNodeDoubleClick: ((event: cytoscape.EventObject) => void) | undefined
-): CytoscapeHookType => {
+export const useCytoscape = (props: GraphViewProps): CytoscapeHookType => {
   const [cy, setCy] = useState<cytoscape.Core>()
   const [navInstance, setNavInstance] = useState<{ destroy: () => void }>()
+
+  // GraphViewのpropsのうちイベントは常に最新のインスタンスを呼ぶ必要があるのでrefで管理
+  const propsRef = React.useRef(props)
+  propsRef.current = props
 
   const containerRef = useCallback((divElement: HTMLElement | null) => {
     if (!cy && divElement) {
@@ -64,9 +66,19 @@ export const useCytoscape = (
         divElement.focus()
       })
 
-      if (onNodeDoubleClick) {
-        cyInstance.on('dblclick', 'node', onNodeDoubleClick);
-      }
+      // GraphViewのpropsで指定されている各種イベント
+      cyInstance.on('dblclick', 'node', event => {
+        propsRef.current.onNodeDoubleClick?.(event)
+      });
+      cyInstance.on('dragfree', 'node', event => {
+        propsRef.current.onLayoutChange?.(event)
+      });
+      cyInstance.on('pan', event => {
+        propsRef.current.onLayoutChange?.(event)
+      });
+      cyInstance.on('zoom', event => {
+        propsRef.current.onLayoutChange?.(event)
+      });
 
       setCy(cyInstance)
 
@@ -74,7 +86,7 @@ export const useCytoscape = (
       // 破棄
       navInstance?.destroy()
     }
-  }, [cy, navInstance, onNodeDoubleClick])
+  }, [cy, navInstance, propsRef])
 
   const { autoLayout, LayoutSelector } = AutoLayout.useAutoLayout(cy)
   const { actions: expandCollapseActions } = useMemo(() => {
@@ -99,7 +111,7 @@ export const useCytoscape = (
 
   const { collectViewState, applyViewState } = useViewState(cy)
 
-  const applyToCytoscape = useCallback(async (dataSet: DS.DataSet, viewState?: ViewState) => {
+  const applyToCytoscape = useCallback(async (dataSet: DS.DataSet, viewState?: Partial<ViewState>) => {
     if (!cy) return
     try {
       cy.startBatch()
@@ -142,8 +154,10 @@ export const useCytoscape = (
       // ノード位置などViewStateの復元
       if (viewState) {
         applyViewState(viewState)
+      } else {
+        applyViewState(viewStateBeforeQuery)
       }
-      applyViewState(viewStateBeforeQuery)
+
     } finally {
       cy.endBatch()
     }
@@ -170,7 +184,6 @@ export const useCytoscape = (
     hasNoElements: (cy?.elements().length ?? 0) === 0,
     collectViewState,
     applyLayout,
-    onNodeDoubleClick,
   }
 }
 

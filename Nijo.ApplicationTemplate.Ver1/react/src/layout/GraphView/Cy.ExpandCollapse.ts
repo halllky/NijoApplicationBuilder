@@ -179,9 +179,9 @@ export default (cy: cytoscape.Core | undefined) => ({
       .sort()
   },
 
-  applyViewState: (viewState: ViewState): void => {
+  applyViewState: (collapsedNodes: ViewState['collapsedNodes']): void => {
     if (!cy) return
-    for (const nodeId of viewState.collapsedNodes) {
+    for (const nodeId of collapsedNodes) {
       collapse(cy, cy.$id(nodeId))
     }
   },

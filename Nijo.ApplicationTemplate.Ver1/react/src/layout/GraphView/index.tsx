@@ -11,18 +11,17 @@ export interface GraphViewRef extends Omit<CytoscapeHookType, 'cy' | 'containerR
   applyLayout: (layoutName: string) => void;
 }
 
-interface GraphViewProps {
+export interface GraphViewProps {
   handleKeyDown?: React.KeyboardEventHandler<HTMLDivElement>;
   nowLoading?: boolean;
   initialDataSet?: CytoscapeDataSet;
-  initialViewState?: ViewState;
+  initialViewState?: Partial<ViewState>;
   onNodeDoubleClick?: (event: cytoscape.EventObject) => void;
+  /** ノードのレイアウトが変更された瞬間に呼ばれる */
+  onLayoutChange?: (event: cytoscape.EventObject) => void;
 }
 
-const GraphView = forwardRef<GraphViewRef, GraphViewProps>((
-  { handleKeyDown, nowLoading, initialDataSet, initialViewState, onNodeDoubleClick },
-  ref
-) => {
+const GraphView = forwardRef<GraphViewRef, GraphViewProps>((props, ref) => {
   const {
     cy,
     containerRef,
@@ -38,7 +37,7 @@ const GraphView = forwardRef<GraphViewRef, GraphViewProps>((
     collectViewState,
     selectAll,
     applyLayout,
-  } = useCytoscape(onNodeDoubleClick);
+  } = useCytoscape(props);
 
   useImperativeHandle(ref, () => ({
     reset,
@@ -56,10 +55,10 @@ const GraphView = forwardRef<GraphViewRef, GraphViewProps>((
   }));
 
   React.useEffect(() => {
-    if (initialDataSet) {
-      applyToCytoscape(initialDataSet, initialViewState);
+    if (props.initialDataSet) {
+      applyToCytoscape(props.initialDataSet, props.initialViewState);
     }
-  }, [initialDataSet, initialViewState, applyToCytoscape]);
+  }, [applyToCytoscape]);
 
   return (
     <>
@@ -67,13 +66,13 @@ const GraphView = forwardRef<GraphViewRef, GraphViewProps>((
         ref={containerRef}
         className="overflow-hidden [&>div>canvas]:left-0 h-full w-full outline-none"
         tabIndex={0}
-        onKeyDown={handleKeyDown}
+        onKeyDown={props.handleKeyDown}
       ></div>
       <Navigator.Component
         hasNoElements={hasNoElements}
         className="absolute w-[20vw] h-[20vh] right-2 bottom-2 z-[200]"
       />
-      {nowLoading && (
+      {props.nowLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-500 bg-opacity-75 z-[300]">
           <p className="text-white text-2xl">読み込み中...</p>
         </div>

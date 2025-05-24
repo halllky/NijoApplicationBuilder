@@ -10,6 +10,8 @@ import * as AutoLayout from "../../layout/GraphView/Cy.AutoLayout"
 import { findRefToTarget } from "./refResolver"
 import { asTree } from "./types"
 import { getNavigationUrl } from "../routing"
+import cytoscape from 'cytoscape'; // cytoscapeの型情報をインポート
+import { useLayoutSaving } from './NijoUiAggregateDiagram.StateSaving';
 
 export const NijoUiAggregateDiagram = () => {
   const { formMethods } = ReactRouter.useOutletContext<SchemaDefinitionOutletContextType>()
@@ -130,9 +132,32 @@ export const NijoUiAggregateDiagram = () => {
     }
   }, [xmlElementTrees, onlyRoot])
 
+  // ノード状態の保存と復元
+  const {
+    savedOnlyRoot,
+    savedViewState,
+    triggerSaveLayout,
+    clearSavedLayout,
+  } = useLayoutSaving();
+
+  // 「ルート集約のみ表示」の復元
+  React.useEffect(() => {
+    if (savedOnlyRoot) setOnlyRoot(savedOnlyRoot)
+  }, [])
+
+  // 「ルート集約のみ表示」の状態が変更されたときにレイアウトを保存
+  React.useEffect(() => {
+    triggerSaveLayout(undefined /** positionsはlocalStorageの情報を正とする */, onlyRoot)
+  }, [onlyRoot, triggerSaveLayout]);
+
+  const handleLayoutChange = useEvent((event: cytoscape.EventObject) => {
+    triggerSaveLayout(event, onlyRoot)
+  })
+
   const [layoutLogic, setLayoutLogic] = React.useState('klay')
   const handleAutoLayout = useEvent(() => {
     graphViewRef.current?.applyLayout(layoutLogic)
+    clearSavedLayout()
   })
 
   const handleNodeDoubleClick = useEvent((event: cytoscape.EventObject) => {
@@ -176,8 +201,11 @@ export const NijoUiAggregateDiagram = () => {
       </div>
       <div className="flex-1">
         <GraphView
+          key={onlyRoot ? 'onlyRoot' : 'all'} // このフラグが切り替わったタイミングで全部洗い替え
           ref={graphViewRef}
           initialDataSet={dataSet}
+          initialViewState={savedViewState}
+          onLayoutChange={handleLayoutChange}
           onNodeDoubleClick={handleNodeDoubleClick}
         />
       </div>
