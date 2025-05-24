@@ -17,6 +17,7 @@ export interface UseGridKeyboardProps {
   getIsReadOnly: (rowIndex: number) => boolean;
   rowVirtualizer: Virtualizer<HTMLDivElement, Element>;
   tableContainerRef: React.RefObject<HTMLDivElement | null>;
+  setStringValuesToSelectedRange: (values: string[][]) => void;
 }
 
 export function useGridKeyboard({
@@ -32,6 +33,7 @@ export function useGridKeyboard({
   getIsReadOnly,
   rowVirtualizer,
   tableContainerRef,
+  setStringValuesToSelectedRange,
 }: UseGridKeyboardProps) {
   const anchorCellRef = useRef<CellPosition | null>(null);
   const { isComposing } = Util.useIME();
@@ -59,7 +61,7 @@ export function useGridKeyboard({
       'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
       'Tab', 'Enter', 'Escape', 'Home', 'End', 'PageUp', 'PageDown',
       'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
-      'Control', 'Alt', 'Shift', 'Meta'
+      'Control', 'Alt', 'Shift', 'Meta', 'Delete',
     ];
 
     // 修飾キーが押されている場合は編集開始しない
@@ -278,6 +280,11 @@ export function useGridKeyboard({
             });
           }
         }
+        break;
+      case 'Delete':
+        e.preventDefault();
+        // 選択範囲のセルの値をクリア。空文字をペーストしたのと同じ
+        setStringValuesToSelectedRange([]);
         break;
     }
   });

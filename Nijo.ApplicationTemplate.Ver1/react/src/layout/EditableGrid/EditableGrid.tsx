@@ -104,7 +104,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   } = useEditing<TRow>(props, columnDefs, isReadOnly)
 
   // コピー＆ペースト機能
-  const { handleCopy, handlePaste } = useCopyPaste({
+  const { handleCopy, handlePaste, setStringValuesToSelectedRange } = useCopyPaste({
     rows,
     columnDefs,
     activeCell,
@@ -142,6 +142,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     getIsReadOnly,
     rowVirtualizer,
     tableContainerRef,
+    setStringValuesToSelectedRange,
   });
 
   // テーブル定義
