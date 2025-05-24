@@ -9,13 +9,9 @@ import { ApplicationState, NijoUiOutletContextType, SchemaDefinitionGlobalState,
 import { NijoUiSideMenu } from "./NijoUiSideMenu"
 import { PageRootAggregate } from "./スキーマ定義編集/RootAggregatePage"
 import { AttrDefsProvider } from "./スキーマ定義編集/AttrDefContext"
-import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS } from "./routing"
+import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS, SERVER_DOMAIN } from "./routing"
 import NijoUiErrorMessagePane from "./NijoUiErrorMessagePane"
 import { useValidationContextProvider, ValidationContext } from "./スキーマ定義編集/ValidationContext"
-
-export const SERVER_DOMAIN = import.meta.env.DEV
-  ? 'https://localhost:8081'
-  : ''
 
 /**
  * nijo.xmlをUIで編集できる画面の試作。
@@ -61,17 +57,23 @@ export const NijoUi = ({ className }: {
   }, [load])
 
   // 保存処理
-  const handleSave = useEvent(async (applicationState: SchemaDefinitionGlobalState) => {
+  const handleSave = useEvent(async (valuesToSave: SchemaDefinitionGlobalState) => {
     try {
       const response = await fetch(`${SERVER_DOMAIN}/save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(applicationState),
+        body: JSON.stringify(valuesToSave),
       })
       if (!response.ok) {
-        const body = await response.json() as string[]
-        console.error(body)
-        window.alert(`保存に失敗しました:\n${body.join('\n')}`)
+        const bodyText = await response.text()
+        try {
+          const bodyJson = JSON.parse(bodyText) as string[]
+          console.error(bodyJson)
+          window.alert(`保存に失敗しました:\n${bodyJson.join('\n')}`)
+        } catch {
+          console.error(bodyText)
+          window.alert(`保存に失敗しました (サーバーからの応答が不正です):\n${bodyText}`)
+        }
         return
       }
       window.alert('保存に成功しました')
@@ -81,6 +83,17 @@ export const NijoUi = ({ className }: {
     }
   })
 
+  // ★新しいアウトライナーが追加されたときの処理
+  const handleOutlinerAdded = useEvent((newOutliner: { typeId: string; typeName: string }) => {
+    setSchema(prevSchema => {
+      if (!prevSchema) return prevSchema; // 通常は発生しないはず
+      return {
+        ...prevSchema,
+        outlinerList: [...(prevSchema.outlinerList || []), newOutliner],
+      };
+    });
+  });
+
   // 読み込み中
   if (schema === undefined && loadError === undefined) {
     return <Layout.NowLoading />
@@ -88,16 +101,19 @@ export const NijoUi = ({ className }: {
 
   // 読み込み完了
   if (schema !== undefined) {
+    // NijoUiSideMenu に渡す SchemaDefinitionGlobalState 部分を抽出
+    const schemaDefinitionPart: SchemaDefinitionGlobalState = {
+      applicationName: schema.applicationName,
+      xmlElementTrees: schema.xmlElementTrees,
+      attributeDefs: schema.attributeDefs,
+      valueMemberTypes: schema.valueMemberTypes,
+    };
     return (
       <AfterLoaded
-        defaultValues={{
-          applicationName: schema.applicationName,
-          xmlElementTrees: schema.xmlElementTrees,
-          attributeDefs: schema.attributeDefs,
-          valueMemberTypes: schema.valueMemberTypes,
-        }}
-        outlinerList={schema.outlinerList}
-        onSave={handleSave}
+        defaultValues={schemaDefinitionPart} // SchemaDefinitionGlobalStateを渡す
+        outlinerList={schema.outlinerList}    // outlinerListを別途渡す
+        onSave={handleSave}                   // handleSaveはSchemaDefinitionGlobalStateを期待
+        onOutlinerAdded={handleOutlinerAdded} // ★コールバックを渡す
         className={className}
       />
     )
@@ -112,10 +128,11 @@ export const NijoUi = ({ className }: {
 }
 
 /** 画面初期表示時の読み込み完了後 */
-const AfterLoaded = ({ defaultValues, outlinerList, onSave, className }: {
+const AfterLoaded = ({ defaultValues, outlinerList, onSave, onOutlinerAdded, className }: {
   defaultValues: SchemaDefinitionGlobalState
   outlinerList: TypedOutlinerGlobalState['outlinerList'] | undefined
   onSave: (applicationState: SchemaDefinitionGlobalState) => void
+  onOutlinerAdded: (newOutliner: { typeId: string; typeName: string }) => void
   className?: string
 }) => {
 
@@ -152,6 +169,7 @@ const AfterLoaded = ({ defaultValues, outlinerList, onSave, className }: {
                   onSave={onSave}
                   formMethods={form}
                   outlinerList={outlinerList}
+                  onOutlinerAdded={onOutlinerAdded}
                   selectedRootAggregateId={selectedRootAggregateId}
                   onSelected={handleSelected}
                 />

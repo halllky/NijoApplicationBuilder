@@ -2,7 +2,7 @@ import React from "react"
 import useEvent from "react-use-event-hook"
 import * as ReactHookForm from "react-hook-form"
 import { SchemaDefinitionGlobalState } from "./types"
-import { SERVER_DOMAIN } from "../NijoUi"
+import { SERVER_DOMAIN } from "../routing"
 
 /** 入力検証のコンテキストのデフォルト値。 */
 export const DEFAULT_VALIDATION_CONTEXT_VALUE: ValidationContextType = {

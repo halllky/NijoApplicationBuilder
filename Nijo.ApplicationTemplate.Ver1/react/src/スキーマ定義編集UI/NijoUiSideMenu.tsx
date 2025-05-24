@@ -8,14 +8,23 @@ import * as Layout from "../layout"
 import * as Input from "../input"
 import useEvent from "react-use-event-hook"
 import { ATTR_GENERATE_DEFAULT_QUERY_MODEL, ATTR_TYPE, SchemaDefinitionGlobalState, TYPE_COMMAND_MODEL, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, TYPE_STATIC_ENUM_MODEL, TYPE_VALUE_OBJECT_MODEL, XmlElementItem } from "./スキーマ定義編集/types"
-import { getNavigationUrl } from "./index"
+import { getNavigationUrl, SERVER_DOMAIN } from "./index"
+import { TypedOutliner } from "./型つきアウトライナー/types"
 
-export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAggregateId, outlinerList }: {
+export const NijoUiSideMenu = ({
+  onSave,
+  formMethods,
+  onSelected,
+  selectedRootAggregateId,
+  outlinerList,
+  onOutlinerAdded,
+}: {
   onSave: (applicationState: SchemaDefinitionGlobalState) => void
   formMethods: ReactHookForm.UseFormReturn<SchemaDefinitionGlobalState>
   onSelected: (rootAggregateIndex: number) => void
   selectedRootAggregateId: string | undefined
   outlinerList: { typeId: string, typeName: string }[] | undefined
+  onOutlinerAdded: (newOutliner: { typeId: string; typeName: string }) => void;
 }) => {
   const { control, getValues } = formMethods
   const { fields, append, remove } = ReactHookForm.useFieldArray({ control, name: 'xmlElementTrees' })
@@ -114,6 +123,38 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
     append({ xmlElements: [{ uniqueId: UUID.generate(), indent: 0, localName, attributes: {} }] })
   })
 
+  // 新しいアウトライナー種別を追加する処理
+  const handleNewOutlinerType = useEvent(async () => {
+    const typeName = prompt('新しいメモ種類名を入力してください。');
+    if (!typeName) return;
+
+    try {
+      const typeId = UUID.generate();
+      const response = await fetch(`${SERVER_DOMAIN}/typed-outliner/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          typeId,
+          typeName,
+          attributes: [],
+          items: [],
+        } satisfies TypedOutliner),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to save new outliner type: ${response.status} ${errorText}`);
+      }
+
+      // 保存成功を親に通知
+      onOutlinerAdded({ typeId, typeName });
+
+    } catch (error) {
+      console.error(error);
+      alert(`エラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  });
+
   // 集約ツリーを選択したときの処理
   const handleSelected = useEvent((menuItem: SideMenuItem) => {
     if (menuItem.isContainer) {
@@ -163,6 +204,9 @@ export const NijoUiSideMenu = ({ onSave, formMethods, onSelected, selectedRootAg
         </Input.IconButton>
         <Input.IconButton icon={Icon.PlusIcon} outline mini hideText onClick={handleNewRootAggregate}>
           新しいルート集約を追加する
+        </Input.IconButton>
+        <Input.IconButton icon={Icon.DocumentPlusIcon} outline mini hideText onClick={handleNewOutlinerType}>
+          新しいメモの種類を追加
         </Input.IconButton>
       </div>
 
@@ -236,9 +280,9 @@ const SideMenuItemIcon = ({ menuItem, collapsedItems }: {
   // コンテナなら折り畳み/展開のアイコンを表示
   if (menuItem.isContainer) {
     if (collapsedItems.has(menuItem.id))
-      return <Icon.ChevronDownIcon className={`${SIDEMENU_ICON_CLASSNAME} text-gray-500`} />
-    else
       return <Icon.ChevronRightIcon className={`${SIDEMENU_ICON_CLASSNAME} text-gray-500`} />
+    else
+      return <Icon.ChevronDownIcon className={`${SIDEMENU_ICON_CLASSNAME} text-gray-500`} />
   }
 
   // アウトライナーアイテムなら専用アイコン

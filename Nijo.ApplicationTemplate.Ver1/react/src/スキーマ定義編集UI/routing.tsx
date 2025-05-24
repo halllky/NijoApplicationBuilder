@@ -4,6 +4,11 @@ import { NijoUiDebugMenu } from "./デバッグメニュー/DebugMenu"
 import { NijoUiMainContent } from "./NijoUi"
 import { ContextProviders } from "../App"
 import { OutlinerPage } from "./型つきアウトライナー/OutlinerPage"
+
+export const SERVER_DOMAIN = import.meta.env.DEV
+  ? 'https://localhost:8081'
+  : '';
+
 // ----------------------------
 // ナビゲーション
 
