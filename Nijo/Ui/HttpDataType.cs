@@ -204,10 +204,18 @@ public class XmlElementItem {
                 return false;
             }
             if (!string.IsNullOrWhiteSpace(item.Value)) xElement.SetValue(item.Value);
-            foreach (var attribute in item.Attributes) {
+
+            // Typeは重要なので先頭、UniqueIdはプログラム上でしか使わないので最後、その他は保存の度に順番が変わることさえなければよい
+            var attrsOrderBySaveOrder = item.Attributes.OrderBy(a => a.Key switch {
+                SchemaParseContext.ATTR_NODE_TYPE => int.MinValue,
+                SchemaParseContext.ATTR_UNIQUE_ID => int.MaxValue,
+                _ => a.Key.GetHashCode(),
+            });
+            foreach (var attribute in attrsOrderBySaveOrder) {
                 if (string.IsNullOrWhiteSpace(attribute.Value)) continue;
                 xElement.SetAttributeValue(attribute.Key, attribute.Value);
             }
+
             xElement.SetAttributeValue(SchemaParseContext.ATTR_UNIQUE_ID, item.UniqueId);
 
             // 前の要素が空ならば element はルート集約
