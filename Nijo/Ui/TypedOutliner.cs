@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System;
+using System.Text.Encodings.Web;
 
 namespace Nijo.Ui;
 
@@ -51,6 +52,7 @@ public class TypedOutlinerListItemDto {
 internal class TypedOutliner {
     private readonly GeneratedProject _project;
     private static readonly JsonSerializerOptions _jsonSerializerOptions = new() {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase, // TypeScript側はキャメルケースのため
         WriteIndented = true,
         AllowTrailingCommas = true, // 読み込み時の柔軟性を高める
