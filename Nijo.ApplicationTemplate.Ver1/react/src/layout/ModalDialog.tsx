@@ -6,11 +6,12 @@ import { useOutsideClick } from '../util/useOutsideClick'
 import { InlineMessageContextProvider, InlineMessage } from '../util/useMsgContext'
 
 /** モーダルダイアログの枠 */
-const ModalDialog = ({ title, onClose, disableConfirm, children }: {
+const ModalDialog = ({ title, onClose, disableConfirm, children, className }: {
   title?: string
   onClose: () => void
   disableConfirm: boolean
   children?: React.ReactNode
+  className?: string
 }) => {
   // 閉じる
   const handleClose = useEvent(() => {
@@ -51,7 +52,7 @@ const ModalDialog = ({ title, onClose, disableConfirm, children }: {
     <InlineMessageContextProvider>
       {/* 画面全体 */}
       <div
-        className="fixed z-0 inset-0 w-screen h-screen"
+        className="fixed z-20 inset-0 w-screen h-screen"
       >
         {/* シェード */}
         <div
@@ -66,10 +67,10 @@ const ModalDialog = ({ title, onClose, disableConfirm, children }: {
           ref={dialogRef}
           onKeyDown={handleKeyDown}
           tabIndex={0} // Escapeキーが押されたときにダイアログ自身がフォーカスされているかどうかの判定に必要
-          className="absolute flex flex-col inset-16 bg-color-0 border border-color-5 outline-none"
+          className={`absolute flex flex-col inset-0 m-auto bg-gray-50 border border-gray-300 outline-none ${className ?? ''}`}
         >
           {/* ヘッダ */}
-          <div className="flex items-center p-1 border-b border-color-4">
+          <div className="flex items-center p-1 border-b border-gray-300">
             {title && (
               <span className="font-medium select-none">{title}</span>
             )}
@@ -144,7 +145,7 @@ const PopupFrame = ({ target, onClose, elementRef, children }: {
   return (
     // ポップアップクリック時、コンボボックスのblurでフォーカス離脱先がポップアップか否かで分岐する必要がある。
     // tabIndexを設定しないとFocusEventのrelatedTargetにならない
-    <div ref={divRefCallback} tabIndex={0} className="z-10 fixed max-h-64 overflow-y-auto bg-color-ridge border border-color-5 outline-none">
+    <div ref={divRefCallback} tabIndex={0} className="z-10 fixed max-h-64 overflow-y-auto bg-white border border-gray-300 outline-none">
       {children}
     </div>
   )
@@ -156,7 +157,7 @@ const PopupFrame = ({ target, onClose, elementRef, children }: {
 /** 開かれているダイアログ。一度に複数開くことができ、そして後から開かれたダイアログが前面に表示されるので、スタックの形をとっている。 */
 type DialogStack = {
   id: string
-  option: { title: string, disableConfirm?: boolean }
+  option: { title: string, disableConfirm?: boolean, className?: string }
   contents: DialogOrPopupContents
 }
 
@@ -176,7 +177,7 @@ export type DialogOrPopupContents = (props: {
 /** useDialogContext の返り値の型 */
 export type UseDialogContextReturn = {
   /** 新しいダイアログを開きます。一度に複数のダイアログが開かれる可能性を考慮し、新しいダイアログはスタックに積まれます。 */
-  pushDialog: (option: { title: string, disableConfirm?: boolean }, contents: DialogOrPopupContents) => void
+  pushDialog: (option: { title: string, disableConfirm?: boolean, className?: string }, contents: DialogOrPopupContents) => void
   /** ダイアログを閉じます（スタックからダイアログを除去します）。 */
   removeDialog: (id: string) => void
   /** ポップアップを開きます。既存のポップアップは閉じられます。 */
@@ -203,8 +204,8 @@ export const DialogContextProvider = ({ children }: {
   const [popup, setPopup] = React.useState<PopupState | undefined>(undefined)
   const popupElementRef = React.useRef<HTMLElement | null>(null)
 
-  const pushDialog = React.useCallback((option: { title: string, disableConfirm?: boolean }, contents: DialogOrPopupContents) => {
-    setDialogStack(prev => [...prev, { id: UUID.generate(), option, contents }])
+  const pushDialog = React.useCallback((option: { title: string, disableConfirm?: boolean, className?: string }, contents: DialogOrPopupContents) => {
+    setDialogStack(prev => [...prev, { id: UUID.generate(), option, contents, className: option.className }])
   }, [setDialogStack])
 
   const removeDialog = React.useCallback((id: string) => {
@@ -233,7 +234,13 @@ export const DialogContextProvider = ({ children }: {
 
       {/* ダイアログ。ダイアログが一度に複数開かれている場合は後にスタックに積まれた方が手前に表示される。 */}
       {dialogStack.map(({ id, option, contents }) => (
-        <ModalDialog key={id} title={option.title} onClose={() => removeDialog(id)} disableConfirm={option.disableConfirm ?? false}>
+        <ModalDialog
+          key={id}
+          title={option.title}
+          onClose={() => removeDialog(id)}
+          disableConfirm={option.disableConfirm ?? false}
+          className={option.className}
+        >
           {React.createElement(contents, {
             closeDialog: () => removeDialog(id),
           })}
