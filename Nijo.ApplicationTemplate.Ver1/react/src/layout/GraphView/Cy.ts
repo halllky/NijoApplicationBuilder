@@ -124,15 +124,13 @@ export const useCytoscape = (): CytoscapeHookType => {
       })
       for (const { id, node } of nodesWithDepth) {
         if (node.parent) ensureNodeExists(node.parent)
-        const label = node.label
-        const parent = node.parent
-        cy.add({ data: { id, label, parent } })
+        cy.add({ data: { id, ...node } })
       }
-      for (const { source, target, label } of dataSet.edges) {
-        ensureNodeExists(source)
-        ensureNodeExists(target)
+      for (const edge of dataSet.edges) {
+        ensureNodeExists(edge.source)
+        ensureNodeExists(edge.target)
         const id = UUID.generate()
-        cy.add({ data: { id, source, target, label } })
+        cy.add({ data: { id, ...edge } })
       }
       // ノード位置などViewStateの復元
       if (viewState) {
@@ -175,31 +173,34 @@ const STYLESHEET: cytoscape.CytoscapeOptions['style'] = [{
     'width': (node: any) => node.data('label')?.length * 20,
     'text-valign': 'center',
     'text-halign': 'center',
+    'color': (node: any) => node.data('color') ?? '#000000',
     'border-width': '1px',
-    'border-color': '#909090',
-    'background-color': '#666666',
-    'border-opacity': .5,
+    'border-color': node => node.data('border-color') ?? '#909090',
+    'background-color': node => node.data('background-color') ?? '#666666',
     'background-opacity': .1,
     'label': 'data(label)',
   },
 }, {
   selector: 'node:selected',
   style: {
-    'border-color': '#FF4F02',
-    'border-opacity': 1,
-    'border-width': '2px',
+    'border-style': 'dashed',
+    'border-width': '1px',
+    'border-color': node => node.data('border-color:selected') ?? '#FF4F02',
   },
 }, {
   selector: 'node:parent', // 子要素をもつノードに適用される
   css: {
     'text-valign': 'top',
-    'color': '#707070',
+    'color': (node: any) => node.data('color:container') ?? '#707070',
   },
 }, {
   selector: 'edge',
   style: {
     'label': 'data(label)',
     'color': '#707070',
+    'line-color': edge => edge.data('line-color') ?? '#707070',
+    'target-arrow-color': edge => edge.data('line-color') ?? '#707070',
+    'line-opacity': .5,
     'font-size': '10px',
     'target-arrow-shape': 'triangle',
     'curve-style': 'bezier',
@@ -211,6 +212,7 @@ const STYLESHEET: cytoscape.CytoscapeOptions['style'] = [{
     'label': 'data(label)',
     'color': '#FF4F02',
     'line-color': '#FF4F02',
+    'line-style': 'dashed',
     'source-arrow-color': '#FF4F02',
     'target-arrow-color': '#FF4F02',
     'width': '2px',

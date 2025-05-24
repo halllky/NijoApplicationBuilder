@@ -3,7 +3,7 @@ import useEvent from "react-use-event-hook"
 import * as Input from "../../input"
 import GraphView, { GraphViewRef } from "../../layout/GraphView"
 import * as ReactRouter from "react-router-dom"
-import { SchemaDefinitionOutletContextType, XmlElementItem, ATTR_TYPE, TYPE_DATA_MODEL, TYPE_COMMAND_MODEL, TYPE_QUERY_MODEL, TYPE_CHILD, TYPE_CHILDREN } from "./types"
+import { SchemaDefinitionOutletContextType, XmlElementItem, ATTR_TYPE, TYPE_DATA_MODEL, TYPE_COMMAND_MODEL, TYPE_QUERY_MODEL, TYPE_CHILD, TYPE_CHILDREN, ATTR_GENERATE_DEFAULT_QUERY_MODEL } from "./types"
 import { CytoscapeDataSet } from "../../layout/GraphView/Cy"
 import { Node as CyNode, Edge as CyEdge } from "../../layout/GraphView/DataSource"
 import * as AutoLayout from "../../layout/GraphView/Cy.AutoLayout"
@@ -21,7 +21,7 @@ export const NijoUiAggregateDiagram = () => {
     if (!xmlElementTrees) return { nodes: {}, edges: [] }
 
     const nodes: Record<string, CyNode> = {}
-    const edges: { source: string, target: string, label: string }[] = []
+    const edges: { source: string, target: string, label: string, sourceModel: string }[] = []
 
     for (const rootAggregateGroup of xmlElementTrees) {
       if (!rootAggregateGroup || !rootAggregateGroup.xmlElements || rootAggregateGroup.xmlElements.length === 0) continue;
@@ -29,9 +29,8 @@ export const NijoUiAggregateDiagram = () => {
       if (!rootElement) continue;
 
       // Data, Query, Commandのみ表示
-      if (rootElement.attributes[ATTR_TYPE] !== TYPE_DATA_MODEL
-        && rootElement.attributes[ATTR_TYPE] !== TYPE_COMMAND_MODEL
-        && rootElement.attributes[ATTR_TYPE] !== TYPE_QUERY_MODEL) continue;
+      const model = rootElement.attributes[ATTR_TYPE]
+      if (model !== TYPE_DATA_MODEL && model !== TYPE_COMMAND_MODEL && model !== TYPE_QUERY_MODEL) continue;
 
       const treeHelper = asTree(rootAggregateGroup.xmlElements); // ツリーヘルパーを初期化
 
@@ -45,9 +44,20 @@ export const NijoUiAggregateDiagram = () => {
         }
 
         // ダイアグラムノードを追加
+        let bgColor: string | undefined = undefined
+        let borderColor: string | undefined = undefined
+        if (model === TYPE_DATA_MODEL) {
+          bgColor = borderColor = '#ea580c' // orange-600
+        } else if (model === TYPE_COMMAND_MODEL) {
+          bgColor = borderColor = '#0284c7' // sky-600
+        } else if (model === TYPE_QUERY_MODEL) {
+          bgColor = borderColor = '#059669' // emerald-600
+        }
         nodes[owner.uniqueId] = {
           label: owner.localName ?? '',
           parent: parentId,
+          "background-color": bgColor,
+          "border-color": borderColor,
         } satisfies CyNode;
 
         // 子要素を再帰的に処理し、ref-toエッジを収集。
@@ -70,6 +80,7 @@ export const NijoUiAggregateDiagram = () => {
               source: owner.uniqueId,
               target: targetUniqueId,
               label: member.localName ?? '',
+              sourceModel: model,
             })
           }
 
@@ -82,20 +93,34 @@ export const NijoUiAggregateDiagram = () => {
 
     // 重複するエッジのグルーピング
     // console.log(edges.map(e => `${nodes[e.source]?.label} -- ${e.label} --> ${nodes[e.target]?.label}`))
-    const groupedEdges = edges.reduce((acc, { source, target, label }) => {
+    const groupedEdges = edges.reduce((acc, { source, target, label, sourceModel }) => {
       const existingEdge = acc.find(e => e.source === source && e.target === target)
       if (existingEdge) {
         existingEdge.labels.push(label)
       } else {
-        acc.push({ source, target, labels: [label] })
+        acc.push({ source, target, labels: [label], sourceModel })
       }
       return acc
-    }, [] as { source: string, target: string, labels: string[] }[])
-    const cyEdges: CyEdge[] = groupedEdges.map(group => ({
-      source: group.source,
-      target: group.target,
-      label: group.labels.length === 1 ? group.labels[0] : `${group.labels[0]}など${group.labels.length}件の参照`,
-    } satisfies CyEdge))
+    }, [] as { source: string, target: string, labels: string[], sourceModel: string }[])
+    const cyEdges: CyEdge[] = groupedEdges.map(group => {
+      const label = group.labels.length === 1 ? group.labels[0] : `${group.labels[0]}など${group.labels.length}件の参照`
+
+      let lineColor: string | undefined = undefined
+      if (group.sourceModel === TYPE_DATA_MODEL) {
+        lineColor = '#ea580c' // orange-600
+      } else if (group.sourceModel === TYPE_COMMAND_MODEL) {
+        lineColor = '#0284c7' // sky-600
+      } else if (group.sourceModel === TYPE_QUERY_MODEL) {
+        lineColor = '#059669' // emerald-600
+      }
+
+      return ({
+        source: group.source,
+        target: group.target,
+        label,
+        'line-color': lineColor,
+      } satisfies CyEdge)
+    })
 
     return {
       nodes: nodes,

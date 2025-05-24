@@ -7,11 +7,17 @@ export type DataSet = {
 export type Node = {
   label: string
   parent?: string
+  'color'?: string
+  'border-color'?: string
+  'background-color'?: string
+  'border-color:selected'?: string
+  'color:container'?: string
 }
 export type Edge = {
   source: string
   target: string
   label?: string
+  'line-color'?: string
 }
 
 export const createEmptyDataSet = (): DataSet => ({
