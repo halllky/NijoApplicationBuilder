@@ -10,6 +10,8 @@ import { NIJOUI_CLIENT_ROUTE_PARAMS } from '../routing';
 import { Perspective, PerspectiveNode, PerspectivePageData } from './types';
 import { NijoUiOutletContextType } from '../types';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import cytoscape from 'cytoscape'; // cytoscapeの型情報をインポート
+import { ViewState } from '../../layout/GraphView/Cy';
 
 export const PerspectivePageGraph = ({
   formMethods,
@@ -22,12 +24,13 @@ export const PerspectivePageGraph = ({
 }) => {
 
   const watchedNodes = ReactHookForm.useWatch({ name: 'perspective.nodes', control: formMethods.control })
+  const graphViewRef = React.useRef<Layout.GraphViewRef>(null)
 
   const graphNodes: Layout.Node[] | undefined = React.useMemo(() => {
     return watchedNodes.map((node: PerspectiveNode) => ({
       id: node.nodeId,
       label: node.label ?? '',
-    }));
+    } satisfies Layout.Node));
   }, [watchedNodes]);
 
   const parentMap: { [nodeId: string]: string } | undefined = React.useMemo(() => {
@@ -45,13 +48,39 @@ export const PerspectivePageGraph = ({
     onNodeDoubleClick(nodeId);
   });
 
+  const handleLayoutChange = useEvent((event: cytoscape.EventObject) => {
+    const cy = event.cy
+    const nodePositions: ViewState['nodePositions'] = {}
+    cy.nodes().forEach(node => {
+      const pos = node.position()
+      nodePositions[node.id()] = { x: pos.x, y: pos.y }
+    })
+    const viewState: ViewState = {
+      zoom: cy.zoom(),
+      scrollPosition: cy.pan(),
+      nodePositions,
+      collapsedNodes: [],
+    }
+    formMethods.setValue('perspective.viewState', viewState)
+  })
+
+  const handleReadyGraph = useEvent(() => {
+    const savedViewState = formMethods.getValues("perspective.viewState")
+    if (savedViewState) {
+      graphViewRef.current?.applyViewState(savedViewState);
+    }
+  })
+
   return (
     <div className={className}>
       <Layout.GraphView
+        ref={graphViewRef}
         nodes={graphNodes}
         parentMap={parentMap}
         edges={undefined} // エッジ編集の仕組みがないので保留
         onNodeDoubleClick={handleNodeClick}
+        onLayoutChange={handleLayoutChange}
+        onReady={handleReadyGraph}
       />
     </div>
   );

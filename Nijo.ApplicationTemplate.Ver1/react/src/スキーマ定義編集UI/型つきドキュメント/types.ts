@@ -1,3 +1,5 @@
+import { ViewState } from "../../layout/GraphView/Cy"
+
 /** アウトライナーのデータ1件 */
 export type Entity = {
   /** アイテムの型ID */
@@ -47,6 +49,8 @@ export type Perspective = {
   name: string
   nodes: PerspectiveNode[]
   edges: PerspectiveEdge[]
+  /** グラフの表示状態（pan, zoom, ノード位置など） */
+  viewState?: ViewState
 }
 
 /** グラフのノード */
