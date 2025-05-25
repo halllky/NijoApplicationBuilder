@@ -1,21 +1,25 @@
-import React, { useImperativeHandle, forwardRef } from 'react';
+import React, { useImperativeHandle, forwardRef, useEffect, useState } from 'react';
 import Navigator from './Cy.Navigator';
 import { useCytoscape, CytoscapeHookType, LayoutSelectorComponentType, ViewState, CytoscapeDataSet } from './Cy';
 import cytoscape from 'cytoscape';
 import { LayoutLogicName } from './Cy.AutoLayout';
+import { Node as CyNode, Edge as CyEdge } from './DataSource';
 
 export interface GraphViewRef extends Omit<CytoscapeHookType, 'cy' | 'containerRef' | 'applyToCytoscape' | 'hasNoElements' | 'expandAll' | 'collapseAll' | 'nodesLocked'> {
   getCy: () => cytoscape.Core | undefined;
   getNodesLocked: () => boolean;
   LayoutSelector: LayoutSelectorComponentType;
   resetLayout: () => void;
+  applyViewState: (viewState: Partial<ViewState>) => void;
 }
 
 export interface GraphViewProps {
   handleKeyDown?: React.KeyboardEventHandler<HTMLDivElement>;
   nowLoading?: boolean;
-  initialDataSet?: CytoscapeDataSet;
-  initialViewState?: Partial<ViewState>;
+  nodes?: CyNode[];
+  edges?: CyEdge[];
+  parentMap?: { [nodeId: string]: string };
+  onReady?: () => void;
   /** ノードの自動整列に用いられるロジックのうちどれを使用するか。既定はklay */
   layoutLogic?: LayoutLogicName;
   onNodeDoubleClick?: (event: cytoscape.EventObject) => void;
@@ -42,9 +46,11 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>((props, ref) =
     collectViewState,
     selectAll,
     resetLayout,
+    applyViewState,
   } = useCytoscape(props);
+  const [isReadyCalled, setIsReadyCalled] = useState(false);
 
-  useImperativeHandle(ref, () => ({
+  const graphViewRefObject = React.useMemo((): GraphViewRef => ({
     reset,
     expandSelections,
     collapseSelections,
@@ -56,13 +62,62 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>((props, ref) =
     selectAll,
     getCy: () => cy,
     resetLayout: () => resetLayout(props.layoutLogic ?? 'klay'),
-  }));
+    applyViewState,
+  }), [
+    reset, expandSelections, collapseSelections, toggleExpandCollapse, LayoutSelector,
+    nodesLocked, toggleNodesLocked, collectViewState, selectAll, cy, resetLayout, props.layoutLogic, applyViewState
+  ]);
 
-  React.useEffect(() => {
-    if (props.initialDataSet) {
-      applyToCytoscape(props.initialDataSet, props.initialViewState);
+  useImperativeHandle(ref, () => graphViewRefObject);
+
+  useEffect(() => {
+    if (!cy) return;
+
+    const newNodes = props.nodes ?? [];
+    const newEdges = props.edges ?? [];
+    const newParentMap = props.parentMap ?? {};
+
+    cy.startBatch();
+    try {
+      const existingCyNodesMap = new Map(cy.nodes().map(n => [n.id(), n]));
+      const newNodesMap = new Map(newNodes.map(n => [n.id, n]));
+
+      for (const [id, cyNode] of existingCyNodesMap) {
+        if (!newNodesMap.has(id)) {
+          cy.remove(cyNode);
+        }
+      }
+
+      for (const newNode of newNodes) {
+        const nodeDataForCy = {
+          ...newNode,
+          parent: newParentMap[newNode.id],
+        };
+        const existingNode = existingCyNodesMap.get(newNode.id);
+        if (existingNode) {
+          existingNode.data(nodeDataForCy);
+        } else {
+          cy.add({ data: nodeDataForCy, group: 'nodes' });
+        }
+      }
+
+      cy.edges().remove();
+      newEdges.forEach(edge => {
+        if (cy.getElementById(edge.source).length > 0 && cy.getElementById(edge.target).length > 0) {
+          cy.add({ data: edge, group: 'edges' });
+        }
+      });
+
+    } finally {
+      cy.endBatch();
     }
-  }, [applyToCytoscape]);
+
+    if (!isReadyCalled && cy.elements().length > 0) {
+      props.onReady?.();
+      setIsReadyCalled(true);
+    }
+
+  }, [cy, props.nodes, props.edges, props.parentMap, props.onReady, props.layoutLogic, resetLayout, isReadyCalled]);
 
   return (
     <>

@@ -58,6 +58,7 @@ export const NijoUiAggregateDiagram = () => {
           bgColor = borderColor = '#059669' // emerald-600
         }
         nodes[owner.uniqueId] = {
+          id: owner.uniqueId,
           label: owner.localName ?? '',
           parent: parentId,
           "background-color": bgColor,
@@ -182,6 +183,13 @@ export const NijoUiAggregateDiagram = () => {
     navigate(url);
   });
 
+  // グラフの準備ができたときに呼ばれる
+  const handleReadyGraph = useEvent(() => {
+    if (savedViewState) {
+      graphViewRef.current?.applyViewState(savedViewState);
+    }
+  })
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex flex-wrap items-center p-1 gap-1">
@@ -203,8 +211,10 @@ export const NijoUiAggregateDiagram = () => {
         <GraphView
           key={onlyRoot ? 'onlyRoot' : 'all'} // このフラグが切り替わったタイミングで全部洗い替え
           ref={graphViewRef}
-          initialDataSet={dataSet}
-          initialViewState={savedViewState}
+          nodes={Object.values(dataSet.nodes)} // dataSet.nodesの値を配列として渡す
+          edges={dataSet.edges} // dataSet.edgesをそのまま渡す
+          parentMap={Object.fromEntries(Object.entries(dataSet.nodes).filter(([, node]) => node.parent).map(([id, node]) => [id, node.parent!]))} // dataSet.nodesからparentMapを生成
+          onReady={handleReadyGraph}
           layoutLogic={layoutLogic}
           onLayoutChange={handleLayoutChange}
           onNodeDoubleClick={handleNodeDoubleClick}

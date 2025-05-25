@@ -5,6 +5,7 @@ export type DataSet = {
   edges: Edge[]
 }
 export type Node = {
+  id: string
   label: string
   parent?: string
   'color'?: string

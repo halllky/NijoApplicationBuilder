@@ -37,6 +37,7 @@ export interface CytoscapeHookType {
   hasNoElements: boolean;
   collectViewState: () => ViewState;
   resetLayout: (layoutName: LayoutLogicName) => void;
+  applyViewState: (viewState: Partial<ViewState>) => void;
 }
 
 export const useCytoscape = (props: GraphViewProps): CytoscapeHookType => {
@@ -145,7 +146,7 @@ export const useCytoscape = (props: GraphViewProps): CytoscapeHookType => {
       })
       for (const { id, node } of nodesWithDepth) {
         if (node.parent) ensureNodeExists(node.parent)
-        cy.add({ data: { id, ...node } })
+        cy.add({ data: node })
       }
       for (const edge of dataSet.edges) {
         ensureNodeExists(edge.source)
@@ -186,6 +187,7 @@ export const useCytoscape = (props: GraphViewProps): CytoscapeHookType => {
     hasNoElements: (cy?.elements().length ?? 0) === 0,
     collectViewState,
     resetLayout,
+    applyViewState,
   }
 }
 
