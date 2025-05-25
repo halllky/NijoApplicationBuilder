@@ -8,24 +8,25 @@ import * as Layout from "../layout"
 import * as Input from "../input"
 import useEvent from "react-use-event-hook"
 import { ATTR_GENERATE_DEFAULT_QUERY_MODEL, ATTR_TYPE, SchemaDefinitionGlobalState, TYPE_COMMAND_MODEL, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, TYPE_STATIC_ENUM_MODEL, TYPE_VALUE_OBJECT_MODEL, XmlElementItem } from "./スキーマ定義編集/types"
-import { getNavigationUrl, SERVER_DOMAIN } from "./index"
+import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS, SERVER_DOMAIN } from "./index"
 import { TypedOutliner } from "./型つきアウトライナー/types"
 
 export const NijoUiSideMenu = ({
   onSave,
   formMethods,
   onSelected,
-  selectedRootAggregateId,
   outlinerList,
   onOutlinerAdded,
 }: {
   onSave: (applicationState: SchemaDefinitionGlobalState) => void
   formMethods: ReactHookForm.UseFormReturn<SchemaDefinitionGlobalState>
   onSelected: (rootAggregateIndex: number) => void
-  selectedRootAggregateId: string | undefined
   outlinerList: { typeId: string, typeName: string }[] | undefined
   onOutlinerAdded: (newOutliner: { typeId: string; typeName: string }) => void;
 }) => {
+  const params = ReactRouter.useParams()
+  const selectedRootAggregateId = params[NIJOUI_CLIENT_ROUTE_PARAMS.AGGREGATE_ID]
+
   const { control, getValues } = formMethods
   const { fields, append, remove } = ReactHookForm.useFieldArray({ control, name: 'xmlElementTrees' })
   const navigate = ReactRouter.useNavigate()
@@ -255,7 +256,7 @@ export const NijoUiSideMenu = ({
   )
 }
 
-const SideMenuItemComponent = ({ isActive, onClick, children }: { // コンポーネント名を変更
+const SideMenuItemComponent = ({ isActive, onClick, children }: {
   isActive: boolean
   onClick: () => void
   children: React.ReactNode

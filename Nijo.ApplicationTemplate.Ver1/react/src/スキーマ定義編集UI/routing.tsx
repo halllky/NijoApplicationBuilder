@@ -23,7 +23,7 @@ export const getNavigationUrl = (arg?
   } else if (arg?.page === 'outliner') {
     return `/nijo-ui/outliner/${arg.outlinerId}`
   } else {
-    return `/nijo-ui/${arg?.aggregateId ?? ''}`
+    return `/nijo-ui/schema/${arg?.aggregateId ?? ''}`
   }
 }
 
@@ -36,10 +36,7 @@ export const getNijoUiRoutesForEmbedded = (): RouteObjectWithSideMenuSetting[] =
       </ContextProviders>
     ),
     children: [{
-      index: true,
-      element: <NijoUiMainContent />,
-    }, {
-      path: `:aggregateId`,
+      path: `schema/:aggregateId?`,
       element: <NijoUiMainContent />,
     }, {
       path: 'debug-menu',

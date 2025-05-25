@@ -12,6 +12,4 @@ export type ApplicationState = {
 
 /** アプリケーションの画面のコンテキスト */
 export type NijoUiOutletContextType = {
-  /** 選択中のルート集約のID */
-  selectedRootAggregateId: string | undefined
 } & SchemaDefinitionOutletContextType

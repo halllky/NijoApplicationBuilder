@@ -142,8 +142,6 @@ const AfterLoaded = ({ defaultValues, outlinerList, onSave, onOutlinerAdded, cla
 
   // 選択中のルート集約
   const navigate = ReactRouter.useNavigate()
-  const urlParams = ReactRouter.useParams()
-  const selectedRootAggregateId = urlParams[NIJOUI_CLIENT_ROUTE_PARAMS.AGGREGATE_ID]
   const handleSelected = useEvent((rootAggregateIndex: number) => {
     const aggregateId = form.getValues(`xmlElementTrees.${rootAggregateIndex}.xmlElements.0.uniqueId`)
     navigate(getNavigationUrl({ aggregateId }))
@@ -153,8 +151,7 @@ const AfterLoaded = ({ defaultValues, outlinerList, onSave, onOutlinerAdded, cla
   const outletContextValue: NijoUiOutletContextType = React.useMemo(() => ({
     formMethods: form,
     validationContext,
-    selectedRootAggregateId,
-  }), [form, validationContext, selectedRootAggregateId])
+  }), [form, validationContext])
 
   return (
     <AttrDefsProvider control={form.control}>
@@ -171,7 +168,6 @@ const AfterLoaded = ({ defaultValues, outlinerList, onSave, onOutlinerAdded, cla
                   formMethods={form}
                   outlinerList={outlinerList}
                   onOutlinerAdded={onOutlinerAdded}
-                  selectedRootAggregateId={selectedRootAggregateId}
                   onSelected={handleSelected}
                 />
               </ReactResizablePanels.Panel>
@@ -208,7 +204,10 @@ const AfterLoaded = ({ defaultValues, outlinerList, onSave, onOutlinerAdded, cla
 /** Outlet経由で表示されるメインコンテンツエリアのコンポーネント */
 export const NijoUiMainContent = () => {
 
-  const { formMethods, selectedRootAggregateId } = ReactRouter.useOutletContext<NijoUiOutletContextType>()
+  const params = ReactRouter.useParams()
+  const selectedRootAggregateId = params[NIJOUI_CLIENT_ROUTE_PARAMS.AGGREGATE_ID]
+
+  const { formMethods } = ReactRouter.useOutletContext<NijoUiOutletContextType>()
   const xmlElementTrees = ReactHookForm.useWatch({ name: 'xmlElementTrees', control: formMethods.control })
   const selectedRootAggregateIndex = React.useMemo((): number | undefined => {
     if (!selectedRootAggregateId) return undefined;
