@@ -9,13 +9,19 @@ import * as Layout from '../../layout';
 import { PerspectiveNode, PerspectivePageData } from './types';
 import { EditableGridRef } from '../../layout';
 
-export const PerspectivePageGrid = ({
+// PerspectivePageGridが公開するAPIの型
+export interface PerspectivePageGridRef {
+  selectRow: (startRowIndex: number, endRowIndex: number) => void;
+}
+
+export const PerspectivePageGrid = React.forwardRef(({
   formMethods,
   className,
 }: {
   formMethods: ReactHookForm.UseFormReturn<PerspectivePageData>;
-  className?: string;
-}) => {
+  className: string;
+}, ref: React.ForwardedRef<PerspectivePageGridRef>) => {
+
   const { control } = formMethods;
   const { fields, append, remove, update } = ReactHookForm.useFieldArray({ name: 'perspective.nodes', control });
 
@@ -53,6 +59,7 @@ export const PerspectivePageGrid = ({
       label: '',
       indent: 0,
       entityId: undefined,
+      parentId: undefined,
       comments: [],
     });
   });
@@ -69,6 +76,12 @@ export const PerspectivePageGrid = ({
       update(changedRow.rowIndex, changedRow.newRow);
     }
   });
+
+  React.useImperativeHandle(ref, () => ({
+    selectRow: (startRowIndex: number, endRowIndex: number) => {
+      gridRef.current?.selectRow(startRowIndex, endRowIndex);
+    },
+  }), [gridRef]);
 
   return (
     <div className={`flex flex-col h-full ${className || ''}`}>
@@ -89,4 +102,4 @@ export const PerspectivePageGrid = ({
       />
     </div>
   );
-};
+})

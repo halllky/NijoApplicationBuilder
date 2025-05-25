@@ -55,6 +55,8 @@ export type PerspectiveNode = {
   label: string | undefined
   /** もしこのノードが特定のエンティティと対応する場合はそのIDを指定する */
   entityId: string | undefined
+  /** このノードの親ノードのID */
+  parentId: string | undefined
   /** インデント */
   indent: number
   /** このノードに対するコメント */

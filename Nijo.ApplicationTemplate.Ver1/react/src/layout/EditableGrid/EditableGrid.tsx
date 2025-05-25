@@ -90,7 +90,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     handleToggleAllRows,
     handleToggleRow,
     selectRows
-  } = useSelection(rows.length)
+  } = useSelection(rows.length, columnDefs.length)
 
   // 編集機能
   const {

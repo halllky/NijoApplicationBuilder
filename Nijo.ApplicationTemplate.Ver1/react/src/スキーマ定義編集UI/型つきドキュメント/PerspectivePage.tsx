@@ -10,7 +10,7 @@ import { NIJOUI_CLIENT_ROUTE_PARAMS } from '../routing';
 import { Perspective, PerspectivePageData } from './types';
 import { NijoUiOutletContextType } from '../types';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { PerspectivePageGrid } from './PerspectivePage.Grid';
+import { PerspectivePageGrid, PerspectivePageGridRef } from './PerspectivePage.Grid';
 import { PerspectivePageGraph } from './PerspectivePage.Graph';
 
 export const PerspectivePage = () => {
@@ -28,7 +28,9 @@ export const PerspectivePage = () => {
   const [error, setError] = React.useState<string | null>(null);
 
   const formMethods = ReactHookForm.useForm<PerspectivePageData>();
-  const { handleSubmit, reset, formState: { isDirty } } = formMethods;
+  const { handleSubmit, reset, formState: { isDirty }, getValues } = formMethods;
+
+  const gridRef = React.useRef<PerspectivePageGridRef>(null);
 
   // データ読み込み
   const loadData = useEvent(async () => {
@@ -94,6 +96,14 @@ export const PerspectivePage = () => {
     }
   }, [blocker]);
 
+  const handleNodeDoubleClick = useEvent((nodeId: string) => {
+    const nodes = getValues('perspective.nodes');
+    const rowIndex = nodes.findIndex(n => n.nodeId === nodeId);
+    if (rowIndex !== -1 && gridRef.current) {
+      gridRef.current.selectRow(rowIndex, rowIndex);
+    }
+  });
+
   if (isLoading) {
     return <Layout.NowLoading />;
   }
@@ -109,6 +119,8 @@ export const PerspectivePage = () => {
       <form onSubmit={handleSubmit(onSubmit)} className="h-full flex flex-col gap-1 pl-1 pt-1">
         <div className="flex flex-wrap gap-1 items-center mb-2">
           <div className="flex-1 font-semibold">{currentPerspective.name}</div>
+          <Input.IconButton outline mini onClick={() => console.log(JSON.parse(localStorage.getItem('typedDocument') ?? '{}'))}>（デバッグ用）console.log</Input.IconButton>
+          <div className="basis-2"></div>
           <Input.IconButton submit={true} outline mini icon={Icon.ArrowDownOnSquareIcon} className="font-bold">保存</Input.IconButton>
         </div>
 
@@ -117,6 +129,8 @@ export const PerspectivePage = () => {
           {/* グラフ */}
           <Panel>
             <PerspectivePageGraph
+              formMethods={formMethods}
+              onNodeDoubleClick={handleNodeDoubleClick}
               className="h-full border border-gray-300"
             />
           </Panel>
@@ -126,6 +140,7 @@ export const PerspectivePage = () => {
           {/* グリッド */}
           <Panel defaultSize={40} collapsible minSize={8}>
             <PerspectivePageGrid
+              ref={gridRef}
               formMethods={formMethods}
               className="h-full"
             />

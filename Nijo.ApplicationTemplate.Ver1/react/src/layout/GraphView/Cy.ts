@@ -195,7 +195,7 @@ const STYLESHEET: cytoscape.CytoscapeOptions['style'] = [{
   selector: 'node',
   css: {
     'shape': 'rectangle',
-    'width': (node: any) => node.data('label')?.length * 20,
+    'width': (node: any) => Math.max(32, node.data('label')?.length * 20),
     'text-valign': 'center',
     'text-halign': 'center',
     'color': (node: any) => node.data('color') ?? '#000000',

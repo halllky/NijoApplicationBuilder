@@ -16,7 +16,7 @@ export interface UseSelectionReturn {
   selectRows: (startRowIndex: number, endRowIndex: number) => void;
 }
 
-export function useSelection(totalRows: number): UseSelectionReturn {
+export function useSelection(totalRows: number, totalColumns: number): UseSelectionReturn {
   // 選択状態の管理
   const [activeCell, setActiveCell] = useState<CellPosition | null>(null);
   const [selectedRange, setSelectedRange] = useState<CellSelectionRange | null>(null);
@@ -80,14 +80,16 @@ export function useSelection(totalRows: number): UseSelectionReturn {
   // 行範囲選択
   const selectRows = useCallback((startRowIndex: number, endRowIndex: number) => {
     const newSelectedRows = new Set<number>();
-    for (let i = Math.min(startRowIndex, endRowIndex); i <= Math.max(startRowIndex, endRowIndex); i++) {
-      if (i >= 0 && i < totalRows) {
-        newSelectedRows.add(i);
-      }
+    const min = Math.max(0, Math.min(startRowIndex, endRowIndex));
+    const max = Math.min(totalRows - 1, Math.max(startRowIndex, endRowIndex));
+    for (let i = min; i <= max; i++) {
+      newSelectedRows.add(i);
     }
+    setActiveCell({ rowIndex: min, colIndex: 0 });
     setSelectedRows(newSelectedRows);
+    setSelectedRange({ startCol: 0, endCol: totalColumns - 1, startRow: min, endRow: max });
     setAllRowsSelected(newSelectedRows.size === totalRows);
-  }, [totalRows]);
+  }, [totalRows, totalColumns]);
 
   return {
     activeCell,

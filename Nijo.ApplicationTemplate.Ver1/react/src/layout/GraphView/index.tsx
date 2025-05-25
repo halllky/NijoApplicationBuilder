@@ -5,6 +5,8 @@ import cytoscape from 'cytoscape';
 import { LayoutLogicName } from './Cy.AutoLayout';
 import { Node as CyNode, Edge as CyEdge } from './DataSource';
 
+export * from "./DataSource"
+
 export interface GraphViewRef extends Omit<CytoscapeHookType, 'cy' | 'containerRef' | 'applyToCytoscape' | 'hasNoElements' | 'expandAll' | 'collapseAll' | 'nodesLocked'> {
   getCy: () => cytoscape.Core | undefined;
   getNodesLocked: () => boolean;
