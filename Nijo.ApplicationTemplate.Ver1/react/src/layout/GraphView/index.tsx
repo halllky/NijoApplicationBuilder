@@ -2,13 +2,13 @@ import React, { useImperativeHandle, forwardRef } from 'react';
 import Navigator from './Cy.Navigator';
 import { useCytoscape, CytoscapeHookType, LayoutSelectorComponentType, ViewState, CytoscapeDataSet } from './Cy';
 import cytoscape from 'cytoscape';
+import { LayoutLogicName } from './Cy.AutoLayout';
 
 export interface GraphViewRef extends Omit<CytoscapeHookType, 'cy' | 'containerRef' | 'applyToCytoscape' | 'hasNoElements' | 'expandAll' | 'collapseAll' | 'nodesLocked'> {
-  applyToCytoscape: (dataSet: CytoscapeDataSet, viewState?: ViewState) => void;
   getCy: () => cytoscape.Core | undefined;
   getNodesLocked: () => boolean;
   LayoutSelector: LayoutSelectorComponentType;
-  applyLayout: (layoutName: string) => void;
+  resetLayout: () => void;
 }
 
 export interface GraphViewProps {
@@ -16,6 +16,8 @@ export interface GraphViewProps {
   nowLoading?: boolean;
   initialDataSet?: CytoscapeDataSet;
   initialViewState?: Partial<ViewState>;
+  /** ノードの自動整列に用いられるロジックのうちどれを使用するか。既定はklay */
+  layoutLogic?: LayoutLogicName;
   onNodeDoubleClick?: (event: cytoscape.EventObject) => void;
   /** ノードのレイアウトが変更された瞬間に呼ばれる */
   onLayoutChange?: (event: cytoscape.EventObject) => void;
@@ -39,7 +41,7 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>((props, ref) =
     hasNoElements,
     collectViewState,
     selectAll,
-    applyLayout,
+    resetLayout,
   } = useCytoscape(props);
 
   useImperativeHandle(ref, () => ({
@@ -52,9 +54,8 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>((props, ref) =
     toggleNodesLocked,
     collectViewState,
     selectAll,
-    applyToCytoscape: (dataSet: CytoscapeDataSet, viewState) => applyToCytoscape(dataSet, viewState),
     getCy: () => cy,
-    applyLayout: (layoutName: string) => applyLayout(layoutName),
+    resetLayout: () => resetLayout(props.layoutLogic ?? 'klay'),
   }));
 
   React.useEffect(() => {

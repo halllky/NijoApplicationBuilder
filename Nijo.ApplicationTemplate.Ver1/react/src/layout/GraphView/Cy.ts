@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react'
 import cytoscape from 'cytoscape'
 import { UUID } from 'uuidjs'
 import Navigator from './Cy.Navigator'
-import AutoLayout from './Cy.AutoLayout'
+import AutoLayout, { LayoutLogicName } from './Cy.AutoLayout'
 import ExpandCollapseFunctions from './Cy.ExpandCollapse'
 import { ViewState, useViewState } from './Cy.SaveLoad'
 import * as DS from './DataSource'
@@ -36,7 +36,7 @@ export interface CytoscapeHookType {
   toggleNodesLocked: () => void;
   hasNoElements: boolean;
   collectViewState: () => ViewState;
-  applyLayout: (layoutName: string) => void;
+  resetLayout: (layoutName: LayoutLogicName) => void;
 }
 
 export const useCytoscape = (props: GraphViewProps): CytoscapeHookType => {
@@ -165,7 +165,7 @@ export const useCytoscape = (props: GraphViewProps): CytoscapeHookType => {
     }
   }, [cy, collectViewState, applyViewState])
 
-  const applyLayout = useCallback((layoutName: string) => {
+  const resetLayout = useCallback((layoutName: LayoutLogicName) => {
     if (!cy) return;
     const layoutOption = AutoLayout.OPTION_LIST[layoutName];
     if (layoutOption) {
@@ -185,7 +185,7 @@ export const useCytoscape = (props: GraphViewProps): CytoscapeHookType => {
     toggleNodesLocked,
     hasNoElements: (cy?.elements().length ?? 0) === 0,
     collectViewState,
-    applyLayout,
+    resetLayout,
   }
 }
 

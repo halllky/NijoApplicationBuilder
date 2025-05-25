@@ -13,7 +13,21 @@ const configure = (cy: typeof cytoscape) => {
   cy.use(fcose)
 }
 
-export const OPTION_LIST: { [key: string]: cytoscape.LayoutOptions } = {
+/** ノードの自動整列に用いられるロジックの名前 */
+export type LayoutLogicName
+  = 'klay'
+  | 'dagre'
+  | 'fcose'
+  | 'null'
+  | 'random'
+  | 'preset'
+  | 'grid'
+  | 'circle'
+  | 'concentric'
+  | 'breadthfirst'
+  | 'cose'
+
+export const OPTION_LIST: { [key in LayoutLogicName]: cytoscape.LayoutOptions } = {
   'klay': { name: 'klay' },
   'dagre': { name: 'dagre' },
   'fcose': { name: 'fcose' },
@@ -29,13 +43,13 @@ export const OPTION_LIST: { [key: string]: cytoscape.LayoutOptions } = {
 const DEFAULT = OPTION_LIST['klay']
 
 const useAutoLayout = (cy: cytoscape.Core | undefined) => {
-  const [currentLayout, setCurrentLayout] = useState(DEFAULT.name)
+  const [currentLayout, setCurrentLayout] = useState(DEFAULT.name as LayoutLogicName)
   const LayoutSelector = useCallback(() => {
     return (
       <select
         className="border border-1 border-zinc-400"
         value={currentLayout}
-        onChange={e => setCurrentLayout(e.target.value)}>
+        onChange={e => setCurrentLayout(e.target.value as LayoutLogicName)}>
         {Object.entries(OPTION_LIST).map(([key]) => (
           <option key={key} value={key}>
             {key}

@@ -154,9 +154,9 @@ export const NijoUiAggregateDiagram = () => {
     triggerSaveLayout(event, onlyRoot)
   })
 
-  const [layoutLogic, setLayoutLogic] = React.useState('klay')
+  const [layoutLogic, setLayoutLogic] = React.useState<AutoLayout.LayoutLogicName>('klay')
   const handleAutoLayout = useEvent(() => {
-    graphViewRef.current?.applyLayout(layoutLogic)
+    graphViewRef.current?.resetLayout()
     clearSavedLayout()
   })
 
@@ -188,7 +188,7 @@ export const NijoUiAggregateDiagram = () => {
         <Input.IconButton onClick={handleAutoLayout} outline>
           整列
         </Input.IconButton>
-        <select className="border text-sm" value={layoutLogic} onChange={(e) => setLayoutLogic(e.target.value)}>
+        <select className="border text-sm" value={layoutLogic} onChange={(e) => setLayoutLogic(e.target.value as AutoLayout.LayoutLogicName)}>
           {Object.entries(AutoLayout.OPTION_LIST).map(([key, value]) => (
             <option key={key} value={key}>ロジック: {value.name}</option>
           ))}
@@ -205,6 +205,7 @@ export const NijoUiAggregateDiagram = () => {
           ref={graphViewRef}
           initialDataSet={dataSet}
           initialViewState={savedViewState}
+          layoutLogic={layoutLogic}
           onLayoutChange={handleLayoutChange}
           onNodeDoubleClick={handleNodeDoubleClick}
         />
