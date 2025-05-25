@@ -23,7 +23,8 @@ export interface GraphViewProps {
   showNavigator?: boolean;
 }
 
-const GraphView = forwardRef<GraphViewRef, GraphViewProps>((props, ref) => {
+/** 有向グラフを表示するコンポーネント。 */
+export const GraphView = forwardRef<GraphViewRef, GraphViewProps>((props, ref) => {
   const {
     cy,
     containerRef,
@@ -84,5 +85,3 @@ const GraphView = forwardRef<GraphViewRef, GraphViewProps>((props, ref) => {
     </>
   );
 });
-
-export default GraphView;

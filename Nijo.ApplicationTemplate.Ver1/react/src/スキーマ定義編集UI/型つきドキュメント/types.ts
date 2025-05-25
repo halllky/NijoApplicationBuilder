@@ -55,8 +55,8 @@ export type PerspectiveNode = {
   label: string | undefined
   /** もしこのノードが特定のエンティティと対応する場合はそのIDを指定する */
   entityId: string | undefined
-  /** 直下の子 */
-  children: PerspectiveNode[]
+  /** インデント */
+  indent: number
   /** このノードに対するコメント */
   comments: TypedDocumentComment[]
 }
@@ -92,6 +92,9 @@ export type TypedDocumentComment = {
 
 /** アプリケーション全体のコンテキスト情報。各画面が使用する機能。永続化層とのやり取りを行う。 */
 export type TypedDocumentContextType = {
+  /** コンテキストが準備できているかどうか */
+  isReady: boolean
+
   /** ナビゲーションメニューを取得する */
   loadNavigationMenus: () => Promise<NavigationMenuItem[]>
 

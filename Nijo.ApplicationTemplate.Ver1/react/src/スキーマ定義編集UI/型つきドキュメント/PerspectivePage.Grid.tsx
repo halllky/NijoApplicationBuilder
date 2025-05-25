@@ -1,0 +1,54 @@
+import * as React from 'react';
+import * as ReactRouter from 'react-router-dom';
+import * as ReactHookForm from 'react-hook-form';
+import * as Icon from '@heroicons/react/24/solid';
+import useEvent from 'react-use-event-hook';
+
+import * as Input from '../../input';
+import * as Layout from '../../layout';
+import { NIJOUI_CLIENT_ROUTE_PARAMS } from '../routing';
+import { Perspective, PerspectiveNode, PerspectivePageData } from './types';
+import { NijoUiOutletContextType } from '../types';
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+
+export const PerspectivePageGrid = ({ formMethods, className }: {
+  formMethods: ReactHookForm.UseFormReturn<PerspectivePageData>
+  className?: string
+}) => {
+  const { control } = formMethods
+  const { fields, append, remove } = ReactHookForm.useFieldArray({ name: 'perspective.nodes', control })
+
+  const getColumnDefs: Layout.GetColumnDefsFunction<PerspectiveNode> = React.useCallback(cellType => [
+    cellType.text('label', '', {
+      defaultWidth: 540,
+      isFixed: true,
+      renderCell: context => {
+        const indent = context.row.original.indent;
+        return (
+          <div className="flex-1 inline-flex text-left truncate">
+            {Array.from({ length: indent }).map((_, i) => (
+              <React.Fragment key={i}>
+                <div className="basis-[20px] min-w-[20px] relative leading-none">
+                  {i >= 1 && (
+                    <div className="absolute top-[-1px] bottom-[-1px] left-0 border-l border-gray-400 border-dotted leading-none"></div>
+                  )}
+                </div>
+              </React.Fragment>
+            ))}
+            <span className="flex-1 truncate">
+              {context.cell.getValue() as string}
+            </span>
+          </div>
+        );
+      },
+    }),
+  ], [])
+
+  return (
+    <Layout.EditableGrid
+      rows={fields}
+      getColumnDefs={getColumnDefs}
+      className={className}
+    />
+  );
+}

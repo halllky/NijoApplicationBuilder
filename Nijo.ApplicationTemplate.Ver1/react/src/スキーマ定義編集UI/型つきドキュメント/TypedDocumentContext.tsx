@@ -4,6 +4,7 @@ import { Entity, EntityType, NavigationMenuItem, Perspective, TypedDocumentConte
 
 /** 型つきドキュメントのコンテキスト。各画面から利用する関数群 */
 export const TypedDocumentContext = React.createContext<TypedDocumentContextType>({
+  isReady: false,
   loadNavigationMenus: () => { throw new Error("Not implemented") },
   createEntityType: () => { throw new Error("Not implemented") },
   createPerspective: () => { throw new Error("Not implemented") },
@@ -162,6 +163,7 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
   })
 
   return {
+    isReady: ready,
     loadNavigationMenus,
     createEntityType,
     createPerspective,

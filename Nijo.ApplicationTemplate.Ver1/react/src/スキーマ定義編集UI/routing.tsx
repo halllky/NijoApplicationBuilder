@@ -5,7 +5,7 @@ import { NijoUiMainContent } from "./NijoUi"
 import { ContextProviders } from "../App"
 import { OutlinerPage } from "./型つきアウトライナー/OutlinerPage"
 import { EntityTypePage } from "./型つきドキュメント/EntityTypePage"
-// import { PerspectivePage } from "./型つきドキュメント/PerspectivePage"
+import { PerspectivePage } from "./型つきドキュメント/PerspectivePage"
 
 export const SERVER_DOMAIN = import.meta.env.DEV
   ? 'https://localhost:8081'
@@ -55,12 +55,10 @@ export const getNijoUiRoutesForEmbedded = (): RouteObjectWithSideMenuSetting[] =
     }, {
       path: `typed-doc/entity-type/:${NIJOUI_CLIENT_ROUTE_PARAMS.ENTITY_TYPE_ID}`,
       element: <EntityTypePage />,
-    },
-      // {
-      //   path: 'typed-doc/perspective/:perspectiveId',
-      //   element: <PerspectivePage />,
-      // }
-    ]
+    }, {
+      path: `typed-doc/perspective/:${NIJOUI_CLIENT_ROUTE_PARAMS.PERSPECTIVE_ID}`,
+      element: <PerspectivePage />,
+    }]
   }]
 }
 

@@ -1,7 +1,7 @@
 import React from "react"
 import useEvent from "react-use-event-hook"
 import * as Input from "../../input"
-import GraphView, { GraphViewRef } from "../../layout/GraphView"
+import { GraphView, GraphViewRef } from "../../layout/GraphView"
 import * as ReactRouter from "react-router-dom"
 import { SchemaDefinitionOutletContextType, XmlElementItem, ATTR_TYPE, TYPE_DATA_MODEL, TYPE_COMMAND_MODEL, TYPE_QUERY_MODEL, TYPE_CHILD, TYPE_CHILDREN, ATTR_GENERATE_DEFAULT_QUERY_MODEL } from "./types"
 import { CytoscapeDataSet } from "../../layout/GraphView/Cy"
