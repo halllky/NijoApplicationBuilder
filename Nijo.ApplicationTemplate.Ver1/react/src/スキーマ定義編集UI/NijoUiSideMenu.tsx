@@ -10,7 +10,7 @@ import useEvent from "react-use-event-hook"
 import { ATTR_GENERATE_DEFAULT_QUERY_MODEL, ATTR_TYPE, SchemaDefinitionGlobalState, TYPE_COMMAND_MODEL, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, TYPE_STATIC_ENUM_MODEL, TYPE_VALUE_OBJECT_MODEL, XmlElementItem } from "./スキーマ定義編集/types"
 import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS, SERVER_DOMAIN } from "./index"
 import { TypedOutliner } from "./型つきアウトライナー/types"
-import { TypedDocumentContextType } from "./型つきドキュメント/types"
+import { TypedDocumentContextType, NavigationMenuItem as TypedDocumentNavigationMenuItem, EntityType, Perspective } from "./型つきドキュメント/types"
 
 export const NijoUiSideMenu = ({
   onSave,
@@ -35,6 +35,11 @@ export const NijoUiSideMenu = ({
   const navigate = ReactRouter.useNavigate()
 
   const [collapsedItems, setCollapsedItems] = React.useState<Set<string>>(new Set())
+  const [typedDocumentMenuItems, setTypedDocumentMenuItems] = React.useState<TypedDocumentNavigationMenuItem[]>([])
+
+  React.useEffect(() => {
+    typedDoc.loadNavigationMenus().then(setTypedDocumentMenuItems)
+  }, [typedDoc])
 
   // 集約ツリーを構成する。
   // 折り畳みされていないメニュー項目のみを返す。
@@ -100,14 +105,58 @@ export const NijoUiSideMenu = ({
       });
     }
 
+    // 型つきドキュメントのアイテム
+    const typedDocumentContainer: SideMenuContainerItem = {
+      id: 'typed-document-items',
+      indent: 0,
+      displayName: '型つきドキュメント',
+      isContainer: true,
+    }
+    const typedDocumentItems: SideMenuLeafItem[] = [];
+    if (!collapsedItems.has(typedDocumentContainer.id)) {
+      const createTypedDocumentMenuItemsRecursive = (items: TypedDocumentNavigationMenuItem[], currentIndent: number): SideMenuItem[] => {
+        let results: SideMenuItem[] = [];
+        for (const item of items) {
+          if (item.type === 'folder') {
+            const folderId = `typed-document-folder-${item.label}-${UUID.generate()}`; // Ensure unique ID
+            results.push({
+              id: folderId,
+              displayName: item.label,
+              isContainer: true,
+              indent: currentIndent,
+            } as SideMenuContainerItem);
+
+            // Add children if not collapsed
+            if (!collapsedItems.has(folderId)) {
+              results = results.concat(createTypedDocumentMenuItemsRecursive(item.children, currentIndent + 1));
+            }
+          } else {
+            results.push({
+              id: item.id, // Use item.id directly as it should be unique for entities/perspectives
+              displayName: item.label,
+              isTypedDocument: true,
+              typedDocumentItemType: item.type,
+              typedDocumentItemId: item.id,
+              indent: currentIndent,
+            } as SideMenuTypedDocumentItem);
+          }
+        }
+        return results;
+      };
+      // Initialize indent at 1 because they are under the "型つきドキュメント" container
+      typedDocumentItems.push(...createTypedDocumentMenuItemsRecursive(typedDocumentMenuItems, 1) as SideMenuLeafItem[]);
+    }
+
     return [
       ...dataQueryCommandTypes,
       memberTypes,
       ...enumOrValueObjectTypes,
       memoContainer, // memoフォルダのコンテナを追加
       ...outlinerItems, // memo内のアイテムを追加
+      typedDocumentContainer, // 型つきドキュメントのコンテナを追加
+      ...typedDocumentItems, // 型つきドキュメントのアイテムを追加
     ]
-  }, [fields, collapsedItems, outlinerList]) // 依存配列を修正
+  }, [fields, collapsedItems, outlinerList, typedDocumentMenuItems]) // 依存配列を修正
 
   // ---------------------------------
 
@@ -159,6 +208,47 @@ export const NijoUiSideMenu = ({
     }
   });
 
+  // 新しいエンティティ型を追加する処理
+  const handleNewEntityType = useEvent(async () => {
+    const entityTypeName = prompt('新しいエンティティ型名を入力してください。');
+    if (!entityTypeName) return;
+
+    try {
+      const newEntityType: EntityType = { // EntityTypeをインポートする必要がある
+        typeId: UUID.generate(),
+        typeName: entityTypeName,
+        attributes: [],
+      };
+      await typedDoc.createEntityType(newEntityType);
+      // メニューを再読み込みして新しい項目を反映
+      typedDoc.loadNavigationMenus().then(setTypedDocumentMenuItems);
+    } catch (error) {
+      console.error(error);
+      alert(`エラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  });
+
+  // 新しいPerspectiveを追加する処理
+  const handleNewPerspective = useEvent(async () => {
+    const perspectiveName = prompt('新しいPerspective名を入力してください。');
+    if (!perspectiveName) return;
+
+    try {
+      const newPerspective: Perspective = { // Perspectiveをインポートする必要がある
+        perspectiveId: UUID.generate(),
+        name: perspectiveName,
+        nodes: [],
+        edges: [],
+      };
+      await typedDoc.createPerspective(newPerspective);
+      // メニューを再読み込みして新しい項目を反映
+      typedDoc.loadNavigationMenus().then(setTypedDocumentMenuItems);
+    } catch (error) {
+      console.error(error);
+      alert(`エラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  });
+
   // 集約ツリーを選択したときの処理
   const handleSelected = useEvent((menuItem: SideMenuItem) => {
     if (menuItem.isContainer) {
@@ -169,10 +259,16 @@ export const NijoUiSideMenu = ({
         else newSet.add(menuItem.id)
         return newSet
       })
-    } else if (menuItem.isOutliner && menuItem.outlinerTypeId) { // isOutlinerのチェックとoutlinerTypeIdの存在チェック
+    } else if ('isOutliner' in menuItem && menuItem.isOutliner && menuItem.outlinerTypeId) { // isOutlinerのチェックとoutlinerTypeIdの存在チェック
       // アウトライナーアイテムが選択された場合
       navigate(getNavigationUrl({ page: 'outliner', outlinerId: menuItem.outlinerTypeId }))
-    } else if (!menuItem.isOutliner && typeof menuItem.rootAggregateIndex === 'number' && menuItem.rootAggregateIndex !== -1) { // 通常の集約アイテム
+    } else if ('isTypedDocument' in menuItem && menuItem.isTypedDocument && menuItem.typedDocumentItemId) {
+      if (menuItem.typedDocumentItemType === 'entityType') {
+        navigate(getNavigationUrl({ page: 'typed-document-entity', entityTypeId: menuItem.typedDocumentItemId } as any))
+      } else if (menuItem.typedDocumentItemType === 'perspective') {
+        navigate(getNavigationUrl({ page: 'typed-document-perspective', perspectiveId: menuItem.typedDocumentItemId } as any))
+      }
+    } else if ('rootAggregateIndex' in menuItem && typeof menuItem.rootAggregateIndex === 'number' && menuItem.rootAggregateIndex !== -1) { // 通常の集約アイテム
       // 集約ツリーを選択した旨を親に通知
       onSelected(menuItem.rootAggregateIndex)
     }
@@ -181,13 +277,13 @@ export const NijoUiSideMenu = ({
   // ルート集約を削除する
   const handleDeleteRootAggregate = useEvent((menuItem: SideMenuItem, e: React.MouseEvent<Element>) => {
     e.stopPropagation()
-    if (menuItem.isOutliner) {
+    if ('isOutliner' in menuItem && menuItem.isOutliner) {
       // TODO: アウトライナーアイテムの削除処理 (必要であれば)
       alert('アウトライナーアイテムの削除は未実装です。');
       return;
     }
     // SideMenuAggregateItemの場合のみ削除処理を実行
-    if (!menuItem.isContainer && !menuItem.isOutliner && typeof menuItem.rootAggregateIndex === 'number') {
+    if (!menuItem.isContainer && !('isOutliner' in menuItem && menuItem.isOutliner) && typeof menuItem.rootAggregateIndex === 'number') {
       if (window.confirm(`${menuItem.displayName}を削除しますか？`)) {
         const index = fields.findIndex(field => field.xmlElements[0].uniqueId === menuItem.id)
         remove(index)
@@ -212,6 +308,12 @@ export const NijoUiSideMenu = ({
         <Input.IconButton icon={Icon.DocumentPlusIcon} outline mini hideText onClick={handleNewOutlinerType}>
           新しいメモの種類を追加
         </Input.IconButton>
+        <Input.IconButton icon={Icon.TagIcon} outline mini hideText onClick={handleNewEntityType}>
+          新しいエンティティ型を追加
+        </Input.IconButton>
+        <Input.IconButton icon={Icon.ShareIcon} outline mini hideText onClick={handleNewPerspective}>
+          新しいPerspectiveを追加
+        </Input.IconButton>
       </div>
 
       {/* メニュー */}
@@ -228,7 +330,7 @@ export const NijoUiSideMenu = ({
               {menuItem.displayName}
             </SideMenuItemLabel>
             {/* 削除ボタンの表示条件を修正 */}
-            {selectedRootAggregateId === menuItem.id && !menuItem.isContainer && !menuItem.isOutliner && (
+            {selectedRootAggregateId === menuItem.id && !menuItem.isContainer && !('isOutliner' in menuItem && menuItem.isOutliner) && !('isTypedDocument' in menuItem && menuItem.isTypedDocument) && (
               <Input.IconButton icon={Icon.TrashIcon} mini hideText onClick={e => handleDeleteRootAggregate(menuItem, e)}>
                 削除
               </Input.IconButton>
@@ -290,12 +392,21 @@ const SideMenuItemIcon = ({ menuItem, collapsedItems }: {
   }
 
   // アウトライナーアイテムなら専用アイコン
-  if (menuItem.isOutliner) {
+  if ('isOutliner' in menuItem && menuItem.isOutliner) {
     return <Icon.DocumentTextIcon className={`${SIDEMENU_ICON_CLASSNAME} text-yellow-500`} />
   }
 
+  // 型つきドキュメントアイテムなら専用アイコン
+  if ('isTypedDocument' in menuItem && menuItem.isTypedDocument) {
+    if (menuItem.typedDocumentItemType === 'entityType') {
+      return <Icon.TagIcon className={`${SIDEMENU_ICON_CLASSNAME} text-blue-400`} />
+    } else if (menuItem.typedDocumentItemType === 'perspective') {
+      return <Icon.ShareIcon className={`${SIDEMENU_ICON_CLASSNAME} text-green-400`} />
+    }
+  }
+
   // ルート集約なら集約ごとのアイコンを表示 (SideMenuAggregateItemであることを確認)
-  if (!menuItem.isOutliner && menuItem.aggregateTree) {
+  if ('aggregateTree' in menuItem && menuItem.aggregateTree) {
     const modelType = menuItem.aggregateTree[0].attributes[ATTR_TYPE]
     if (modelType === TYPE_DATA_MODEL) {
       if (menuItem.aggregateTree[0].attributes[ATTR_GENERATE_DEFAULT_QUERY_MODEL] === 'True') {
@@ -357,6 +468,9 @@ type SideMenuContainerItem = SideMenuItemBase & {
   outlinerTypeId?: never;
   aggregateTree?: never;
   rootAggregateIndex?: never;
+  isTypedDocument?: never;
+  typedDocumentItemType?: never;
+  typedDocumentItemId?: never;
 };
 
 // 通常の集約アイテムの型
@@ -366,6 +480,9 @@ type SideMenuAggregateItem = SideMenuItemBase & {
   isContainer?: never;
   isOutliner?: never;
   outlinerTypeId?: never;
+  isTypedDocument?: never;
+  typedDocumentItemType?: never;
+  typedDocumentItemId?: never;
 };
 
 // アウトライナーアイテムの型
@@ -373,10 +490,31 @@ type SideMenuOutlinerItem = SideMenuItemBase & {
   isOutliner: true;
   outlinerTypeId: string;
   isContainer?: never;
-  aggregateTree?: never; // アウトライナーアイテムには不要
-  rootAggregateIndex?: never; // アウトライナーアイテムには不要
+  aggregateTree?: never;
+  rootAggregateIndex?: never;
+  isTypedDocument?: never;
+  typedDocumentItemType?: never;
+  typedDocumentItemId?: never;
 };
 
-type SideMenuLeafItem = SideMenuAggregateItem | SideMenuOutlinerItem;
+// 型つきドキュメントアイテムの型
+type SideMenuTypedDocumentItem = SideMenuItemBase & {
+  isTypedDocument: true;
+  typedDocumentItemType: 'entityType' | 'perspective';
+  typedDocumentItemId: string;
+  isContainer?: never;
+  isOutliner?: never;
+  outlinerTypeId?: never;
+  aggregateTree?: never;
+  rootAggregateIndex?: never;
+};
 
-type SideMenuItem = SideMenuContainerItem | SideMenuLeafItem;
+// SideMenuLeafItem と SideMenuItem の型定義を修正
+type SideMenuLeafItem =
+  | SideMenuAggregateItem
+  | SideMenuOutlinerItem
+  | SideMenuTypedDocumentItem;
+
+type SideMenuItem =
+  | SideMenuContainerItem
+  | SideMenuLeafItem;

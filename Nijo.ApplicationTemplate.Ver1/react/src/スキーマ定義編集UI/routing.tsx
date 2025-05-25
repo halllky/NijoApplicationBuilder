@@ -44,13 +44,15 @@ export const getNijoUiRoutesForEmbedded = (): RouteObjectWithSideMenuSetting[] =
     }, {
       path: 'outliner/:outlinerId',
       element: <OutlinerPage />,
-    }, {
-      path: 'typed-doc/entity-type/:entityTypeId',
-      element: <EntityTypePage />,
-    }, {
-      path: 'typed-doc/perspective/:perspectiveId',
-      element: <PerspectivePage />,
-    }]
+    },
+      // {
+      //   path: 'typed-doc/entity-type/:entityTypeId',
+      //   element: <EntityTypePage />,
+      // }, {
+      //   path: 'typed-doc/perspective/:perspectiveId',
+      //   element: <PerspectivePage />,
+      // }
+    ]
   }]
 }
 
