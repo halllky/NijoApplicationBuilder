@@ -89,7 +89,7 @@ export const NijoUiSideMenu = ({
     const memoContainer: SideMenuContainerItem = {
       id: 'memo-items',
       indent: 0,
-      displayName: 'Memo',
+      displayName: 'Memo(没)',
       isContainer: true,
     }
     const outlinerItems: SideMenuLeafItem[] = [];
@@ -109,10 +109,10 @@ export const NijoUiSideMenu = ({
     const typedDocumentContainer: SideMenuContainerItem = {
       id: 'typed-document-items',
       indent: 0,
-      displayName: '型つきドキュメント',
+      displayName: 'Memo',
       isContainer: true,
     }
-    const typedDocumentItems: SideMenuLeafItem[] = [];
+    const typedDocumentItems: SideMenuItem[] = [];
     if (!collapsedItems.has(typedDocumentContainer.id)) {
       const createTypedDocumentMenuItemsRecursive = (items: TypedDocumentNavigationMenuItem[], currentIndent: number): SideMenuItem[] => {
         let results: SideMenuItem[] = [];
@@ -124,7 +124,7 @@ export const NijoUiSideMenu = ({
               displayName: item.label,
               isContainer: true,
               indent: currentIndent,
-            } as SideMenuContainerItem);
+            } satisfies SideMenuContainerItem);
 
             // Add children if not collapsed
             if (!collapsedItems.has(folderId)) {
@@ -138,23 +138,23 @@ export const NijoUiSideMenu = ({
               typedDocumentItemType: item.type,
               typedDocumentItemId: item.id,
               indent: currentIndent,
-            } as SideMenuTypedDocumentItem);
+            } satisfies SideMenuTypedDocumentItem);
           }
         }
         return results;
       };
       // Initialize indent at 1 because they are under the "型つきドキュメント" container
-      typedDocumentItems.push(...createTypedDocumentMenuItemsRecursive(typedDocumentMenuItems, 1) as SideMenuLeafItem[]);
+      typedDocumentItems.push(...createTypedDocumentMenuItemsRecursive(typedDocumentMenuItems, 1) satisfies SideMenuItem[]);
     }
 
     return [
+      typedDocumentContainer, // 型つきドキュメントのコンテナを追加
+      ...typedDocumentItems, // 型つきドキュメントのアイテムを追加
       ...dataQueryCommandTypes,
       memberTypes,
       ...enumOrValueObjectTypes,
       memoContainer, // memoフォルダのコンテナを追加
       ...outlinerItems, // memo内のアイテムを追加
-      typedDocumentContainer, // 型つきドキュメントのコンテナを追加
-      ...typedDocumentItems, // 型つきドキュメントのアイテムを追加
     ]
   }, [fields, collapsedItems, outlinerList, typedDocumentMenuItems]) // 依存配列を修正
 
@@ -264,9 +264,9 @@ export const NijoUiSideMenu = ({
       navigate(getNavigationUrl({ page: 'outliner', outlinerId: menuItem.outlinerTypeId }))
     } else if ('isTypedDocument' in menuItem && menuItem.isTypedDocument && menuItem.typedDocumentItemId) {
       if (menuItem.typedDocumentItemType === 'entityType') {
-        navigate(getNavigationUrl({ page: 'typed-document-entity', entityTypeId: menuItem.typedDocumentItemId } as any))
+        navigate(getNavigationUrl({ page: 'typed-document-entity', entityTypeId: menuItem.typedDocumentItemId }))
       } else if (menuItem.typedDocumentItemType === 'perspective') {
-        navigate(getNavigationUrl({ page: 'typed-document-perspective', perspectiveId: menuItem.typedDocumentItemId } as any))
+        navigate(getNavigationUrl({ page: 'typed-document-perspective', perspectiveId: menuItem.typedDocumentItemId }))
       }
     } else if ('rootAggregateIndex' in menuItem && typeof menuItem.rootAggregateIndex === 'number' && menuItem.rootAggregateIndex !== -1) { // 通常の集約アイテム
       // 集約ツリーを選択した旨を親に通知

@@ -84,7 +84,7 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
 
   const loadEntityTypePageData: TypedDocumentContextType["loadEntityTypePageData"] = useEvent(entityTypeId => {
     const entityType = localStorageData.entityTypes.find(et => et.typeId === entityTypeId)
-    const entities = localStorageData.entities.filter(e => e.entityId === entityTypeId)
+    const entities = localStorageData.entities.filter(e => e.typeId === entityTypeId)
 
     if (entityType) {
       return Promise.resolve({ entityType, entities } satisfies EntityTypePageData)
@@ -96,14 +96,15 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
   const saveEntities: TypedDocumentContextType["saveEntities"] = useEvent(async (data) => {
     setLocalStorageData(prev => {
       const beforeSort = [
-        ...prev.entities.filter(e => e.entityId !== data.entityType.typeId),
+        ...prev.entities.filter(e => e.typeId !== data.entityType.typeId),
         ...data.entities,
       ]
 
       // エンティティを型ごとにグルーピングする
       const entitiesByType = beforeSort.reduce((acc, e) => {
-        if (!acc.has(e.entityId)) acc.set(e.entityId, [])
-        acc.get(e.entityId)!.push(e)
+        const groupKey = e.typeId ?? '__no_type__';
+        if (!acc.has(groupKey)) acc.set(groupKey, [])
+        acc.get(groupKey)!.push(e)
         return acc
       }, new Map<string, Entity[]>())
 

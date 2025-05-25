@@ -4,6 +4,8 @@ import { NijoUiDebugMenu } from "./デバッグメニュー/DebugMenu"
 import { NijoUiMainContent } from "./NijoUi"
 import { ContextProviders } from "../App"
 import { OutlinerPage } from "./型つきアウトライナー/OutlinerPage"
+import { EntityTypePage } from "./型つきドキュメント/EntityTypePage"
+// import { PerspectivePage } from "./型つきドキュメント/PerspectivePage"
 
 export const SERVER_DOMAIN = import.meta.env.DEV
   ? 'https://localhost:8081'
@@ -13,15 +15,21 @@ export const SERVER_DOMAIN = import.meta.env.DEV
 // ナビゲーション
 
 /** ナビゲーション用URLを取得する。 */
-export const getNavigationUrl = (arg?
-  : { aggregateId?: string, page?: never }
-  | { aggregateId?: never, page: 'debug-menu' }
-  | { aggregateId?: never, page: 'outliner', outlinerId: string }
+export const getNavigationUrl = (arg?:
+  { aggregateId?: string, page?: never } |
+  { aggregateId?: never, page: 'debug-menu' } |
+  { aggregateId?: never, page: 'outliner', outlinerId: string } |
+  { aggregateId?: never, page: 'typed-document-entity', entityTypeId: string } |
+  { aggregateId?: never, page: 'typed-document-perspective', perspectiveId: string }
 ): string => {
   if (arg?.page === 'debug-menu') {
     return '/nijo-ui/debug-menu'
   } else if (arg?.page === 'outliner') {
     return `/nijo-ui/outliner/${arg.outlinerId}`
+  } else if (arg?.page === 'typed-document-entity') {
+    return `/nijo-ui/typed-doc/entity-type/${arg.entityTypeId}`
+  } else if (arg?.page === 'typed-document-perspective') {
+    return `/nijo-ui/typed-doc/perspective/${arg.perspectiveId}`
   } else {
     return `/nijo-ui/schema/${arg?.aggregateId ?? ''}`
   }
@@ -36,19 +44,19 @@ export const getNijoUiRoutesForEmbedded = (): RouteObjectWithSideMenuSetting[] =
       </ContextProviders>
     ),
     children: [{
-      path: `schema/:aggregateId?`,
+      path: `schema/:${NIJOUI_CLIENT_ROUTE_PARAMS.AGGREGATE_ID}?`,
       element: <NijoUiMainContent />,
     }, {
       path: 'debug-menu',
       element: <NijoUiDebugMenu />,
     }, {
-      path: 'outliner/:outlinerId',
+      path: `outliner/:${NIJOUI_CLIENT_ROUTE_PARAMS.OUTLINER_ID}`,
       element: <OutlinerPage />,
+    }, {
+      path: `typed-doc/entity-type/:${NIJOUI_CLIENT_ROUTE_PARAMS.ENTITY_TYPE_ID}`,
+      element: <EntityTypePage />,
     },
       // {
-      //   path: 'typed-doc/entity-type/:entityTypeId',
-      //   element: <EntityTypePage />,
-      // }, {
       //   path: 'typed-doc/perspective/:perspectiveId',
       //   element: <PerspectivePage />,
       // }
@@ -61,4 +69,7 @@ export const NIJOUI_CLIENT_ROUTE_PARAMS = {
   /** ルート集約単位の画面の表示に使われるID */
   AGGREGATE_ID: 'aggregateId',
   OUTLINER_ID: 'outlinerId',
+  /** 型つきドキュメントの画面の表示に使われるID */
+  ENTITY_TYPE_ID: 'entityTypeId',
+  PERSPECTIVE_ID: 'perspectiveId',
 }
