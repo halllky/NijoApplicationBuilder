@@ -10,16 +10,19 @@ import useEvent from "react-use-event-hook"
 import { ATTR_GENERATE_DEFAULT_QUERY_MODEL, ATTR_TYPE, SchemaDefinitionGlobalState, TYPE_COMMAND_MODEL, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, TYPE_STATIC_ENUM_MODEL, TYPE_VALUE_OBJECT_MODEL, XmlElementItem } from "./スキーマ定義編集/types"
 import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS, SERVER_DOMAIN } from "./index"
 import { TypedOutliner } from "./型つきアウトライナー/types"
+import { TypedDocumentContextType } from "./型つきドキュメント/types"
 
 export const NijoUiSideMenu = ({
   onSave,
   formMethods,
+  typedDoc,
   onSelected,
   outlinerList,
   onOutlinerAdded,
 }: {
   onSave: (applicationState: SchemaDefinitionGlobalState) => void
   formMethods: ReactHookForm.UseFormReturn<SchemaDefinitionGlobalState>
+  typedDoc: TypedDocumentContextType
   onSelected: (rootAggregateIndex: number) => void
   outlinerList: { typeId: string, typeName: string }[] | undefined
   onOutlinerAdded: (newOutliner: { typeId: string; typeName: string }) => void;

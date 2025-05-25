@@ -13,6 +13,7 @@ import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS, SERVER_DOMAIN } from "./r
 import NijoUiErrorMessagePane from "./NijoUiErrorMessagePane"
 import { useValidationContextProvider, ValidationContext } from "./スキーマ定義編集/ValidationContext"
 import { NijoUiAggregateDiagram } from "./スキーマ定義編集/NijoUiAggregateDiagram"
+import { useTypedDocumentContextProvider } from "./型つきドキュメント/TypedDocumentContext"
 
 /**
  * nijo.xmlをUIで編集できる画面の試作。
@@ -147,11 +148,15 @@ const AfterLoaded = ({ defaultValues, outlinerList, onSave, onOutlinerAdded, cla
     navigate(getNavigationUrl({ aggregateId }))
   })
 
+  // 型つきドキュメントのコンテキスト
+  const typedDoc = useTypedDocumentContextProvider()
+
   // Outletコンテキストの値
   const outletContextValue: NijoUiOutletContextType = React.useMemo(() => ({
     formMethods: form,
     validationContext,
-  }), [form, validationContext])
+    typedDoc,
+  }), [form, validationContext, typedDoc])
 
   return (
     <AttrDefsProvider control={form.control}>
@@ -166,6 +171,7 @@ const AfterLoaded = ({ defaultValues, outlinerList, onSave, onOutlinerAdded, cla
                 <NijoUiSideMenu
                   onSave={onSave}
                   formMethods={form}
+                  typedDoc={typedDoc}
                   outlinerList={outlinerList}
                   onOutlinerAdded={onOutlinerAdded}
                   onSelected={handleSelected}
