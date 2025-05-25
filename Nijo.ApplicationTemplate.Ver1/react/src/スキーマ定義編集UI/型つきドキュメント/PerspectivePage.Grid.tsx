@@ -6,23 +6,26 @@ import useEvent from 'react-use-event-hook';
 
 import * as Input from '../../input';
 import * as Layout from '../../layout';
-import { NIJOUI_CLIENT_ROUTE_PARAMS } from '../routing';
-import { Perspective, PerspectiveNode, PerspectivePageData } from './types';
-import { NijoUiOutletContextType } from '../types';
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { PerspectiveNode, PerspectivePageData } from './types';
+import { EditableGridRef } from '../../layout';
 
-export const PerspectivePageGrid = ({ formMethods, className }: {
-  formMethods: ReactHookForm.UseFormReturn<PerspectivePageData>
-  className?: string
+export const PerspectivePageGrid = ({
+  formMethods,
+  className,
+}: {
+  formMethods: ReactHookForm.UseFormReturn<PerspectivePageData>;
+  className?: string;
 }) => {
-  const { control } = formMethods
-  const { fields, append, remove } = ReactHookForm.useFieldArray({ name: 'perspective.nodes', control })
+  const { control } = formMethods;
+  const { fields, append, remove, update } = ReactHookForm.useFieldArray({ name: 'perspective.nodes', control });
 
-  const getColumnDefs: Layout.GetColumnDefsFunction<PerspectiveNode> = React.useCallback(cellType => [
+  const gridRef = React.useRef<EditableGridRef<PerspectiveNode>>(null);
+
+  const getColumnDefs: Layout.GetColumnDefsFunction<PerspectiveNode> = React.useCallback((cellType) => [
     cellType.text('label', '', {
       defaultWidth: 540,
       isFixed: true,
-      renderCell: context => {
+      renderCell: (context) => {
         const indent = context.row.original.indent;
         return (
           <div className="flex-1 inline-flex text-left truncate">
@@ -42,13 +45,48 @@ export const PerspectivePageGrid = ({ formMethods, className }: {
         );
       },
     }),
-  ], [])
+  ], []);
+
+  const handleAddNode = useEvent(() => {
+    append({
+      nodeId: crypto.randomUUID(),
+      label: '',
+      indent: 0,
+      entityId: undefined,
+      comments: [],
+    });
+  });
+
+  const handleDeleteNode = useEvent(() => {
+    const selectedRange = gridRef.current?.getSelectedRange();
+    if (!selectedRange) return;
+    const removedIndexes = Array.from({ length: selectedRange.endRow - selectedRange.startRow + 1 }, (_, i) => selectedRange.startRow + i);
+    remove(removedIndexes);
+  });
+
+  const handleChangeRow: Layout.RowChangeEvent<PerspectiveNode> = useEvent(e => {
+    for (const changedRow of e.changedRows) {
+      update(changedRow.rowIndex, changedRow.newRow);
+    }
+  });
 
   return (
-    <Layout.EditableGrid
-      rows={fields}
-      getColumnDefs={getColumnDefs}
-      className={className}
-    />
+    <div className={`flex flex-col h-full ${className || ''}`}>
+      <div className="flex gap-1 mb-1">
+        <Input.IconButton outline mini hideText icon={Icon.PlusIcon} onClick={handleAddNode}>
+          新しいノードを追加
+        </Input.IconButton>
+        <Input.IconButton outline mini hideText icon={Icon.TrashIcon} onClick={handleDeleteNode} disabled={fields.length === 0}>
+          選択行のノードを削除
+        </Input.IconButton>
+      </div>
+      <Layout.EditableGrid
+        ref={gridRef}
+        rows={fields}
+        getColumnDefs={getColumnDefs}
+        onChangeRow={handleChangeRow}
+        className="flex-1"
+      />
+    </div>
   );
-}
+};
