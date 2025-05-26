@@ -35,9 +35,17 @@ export const PerspectivePageGraph = ({
 
   const parentMap: { [nodeId: string]: string } | undefined = React.useMemo(() => {
     const map: { [nodeId: string]: string } = {};
-    watchedNodes.forEach(node => {
-      if (node.parentId) {
-        map[node.nodeId] = node.parentId;
+    watchedNodes.forEach((node, index, allNodes) => {
+      // Find the closest preceding node with a smaller indent level
+      let parentNodeId: string | undefined = undefined;
+      for (let i = index - 1; i >= 0; i--) {
+        if (allNodes[i].indent < node.indent) {
+          parentNodeId = allNodes[i].nodeId;
+          break;
+        }
+      }
+      if (parentNodeId) {
+        map[node.nodeId] = parentNodeId;
       }
     });
     return map;
