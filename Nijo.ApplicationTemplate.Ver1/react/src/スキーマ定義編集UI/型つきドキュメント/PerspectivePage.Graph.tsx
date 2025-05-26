@@ -12,6 +12,7 @@ import { NijoUiOutletContextType } from '../types';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import cytoscape from 'cytoscape'; // cytoscapeの型情報をインポート
 import { ViewState } from '../../layout/GraphView/Cy';
+import ExpandCollapseFunctions from '../../layout/GraphView/Cy.ExpandCollapse';
 
 export const PerspectivePageGraph = ({
   formMethods,
@@ -57,27 +58,54 @@ export const PerspectivePageGraph = ({
   });
 
   const handleLayoutChange = useEvent((event: cytoscape.EventObject) => {
-    const cy = event.cy
-    const nodePositions: ViewState['nodePositions'] = {}
-    cy.nodes().forEach(node => {
-      const pos = node.position()
-      nodePositions[node.id()] = { x: pos.x, y: pos.y }
-    })
-    const viewState: ViewState = {
-      zoom: cy.zoom(),
-      scrollPosition: cy.pan(),
-      nodePositions,
-      collapsedNodes: [],
+    // GraphViewRefを使用してViewStateを収集する
+    const viewState = graphViewRef.current?.collectViewState();
+
+    // 収集されたViewStateがnullまたは空のnodePositionsを持つ場合のみ、
+    // 代替手段としてイベントのcyインスタンスから直接収集
+    if (!viewState || Object.keys(viewState.nodePositions).length === 0) {
+      const cy = event.cy;
+      const nodePositions: ViewState['nodePositions'] = {};
+
+      cy.nodes().forEach(node => {
+        const pos = node.position();
+        nodePositions[node.id()] = {
+          x: Math.trunc(pos.x * 10000) / 10000,
+          y: Math.trunc(pos.y * 10000) / 10000,
+        };
+      });
+
+      const fallbackViewState: ViewState = {
+        zoom: cy.zoom(),
+        scrollPosition: cy.pan(),
+        nodePositions,
+        collapsedNodes: [],
+      };
+
+      // 折りたたみ状態の収集を試みる
+      if (graphViewRef.current?.getCy()) {
+        const cy = graphViewRef.current.getCy();
+        if (cy) {
+          fallbackViewState.collapsedNodes = ExpandCollapseFunctions(cy).toViewState();
+        }
+      }
+
+      formMethods.setValue('perspective.viewState', fallbackViewState);
+    } else {
+      formMethods.setValue('perspective.viewState', viewState);
     }
-    formMethods.setValue('perspective.viewState', viewState)
-  })
+  });
 
   const handleReadyGraph = useEvent(() => {
-    const savedViewState = formMethods.getValues("perspective.viewState")
+    const savedViewState = formMethods.getValues("perspective.viewState");
+
     if (savedViewState) {
+      // レイアウト適用フラグを設定（あとでGraphView側でチェックする用）
+      graphViewRef.current?.getCy()?.data('viewStateApplied', true);
+
       graphViewRef.current?.applyViewState(savedViewState);
     }
-  })
+  });
 
   return (
     <div className={className}>

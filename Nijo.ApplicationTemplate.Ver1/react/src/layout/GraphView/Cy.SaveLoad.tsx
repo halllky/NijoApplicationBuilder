@@ -21,6 +21,11 @@ export const useViewState = (cy: cytoscape.Core | undefined) => {
   const collectViewState = useCallback((): ViewState => {
     const viewState = getEmptyViewState()
     if (!cy) return viewState
+
+    // ズームとパン情報を追加
+    viewState.zoom = cy.zoom()
+    viewState.scrollPosition = cy.pan()
+
     for (const node of cy.nodes()) {
       const pos = node.position()
       viewState.nodePositions[node.id()] = {
@@ -38,18 +43,23 @@ export const useViewState = (cy: cytoscape.Core | undefined) => {
   const applyViewState = useCallback((viewState: Partial<ViewState>) => {
     if (!cy) return
 
-    // ノード位置の復元
-    for (const node of cy.nodes()) {
-      // 子要素をもつノードの位置は子要素の位置が決まると自動的に決まるのであえて設定しない
-      if (node.isParent()) continue
-
-      const pos = viewState.nodePositions?.[node.id()]
-      if (pos) node.position(pos)
-    }
-
     // 折りたたみ状態の復元
     if (viewState.collapsedNodes) {
       ExpandCollapseFunctions(cy).applyViewState(viewState.collapsedNodes)
+    }
+
+    // ノード位置の復元をpresetレイアウトで行う
+    // presetレイアウトはノード位置を指定するとその位置に固定されるので、
+    // ノード位置を指定している場合はpresetレイアウトを使用する
+    if (viewState.nodePositions && Object.keys(viewState.nodePositions).length > 0) {
+      const layoutOptions = {
+        name: 'preset',
+        positions: viewState.nodePositions,
+        fit: false,
+        animate: false,
+      } satisfies cytoscape.PresetLayoutOptions
+
+      cy.layout(layoutOptions).run()
     }
 
     // 拡大率の復元

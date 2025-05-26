@@ -168,9 +168,15 @@ export const useCytoscape = (props: GraphViewProps): CytoscapeHookType => {
 
   const resetLayout = useCallback((layoutName: LayoutLogicName) => {
     if (!cy) return;
-    const layoutOption = AutoLayout.OPTION_LIST[layoutName];
-    if (layoutOption) {
-      cy.layout(layoutOption).run();
+    const baseLayoutOption = AutoLayout.OPTION_LIST[layoutName];
+    if (baseLayoutOption) {
+      const layoutOptionsWithDefaults = {
+        ...baseLayoutOption,
+        fit: false,
+        animate: false,
+        // 他のレイアウトアルゴリズムに固有で、かつ fit や animate と同様の挙動を制御するオプションがあればここに追加
+      };
+      cy.layout(layoutOptionsWithDefaults).run();
     }
   }, [cy]);
 

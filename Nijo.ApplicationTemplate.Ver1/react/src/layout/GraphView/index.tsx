@@ -84,12 +84,14 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>((props, ref) =
       const existingCyNodesMap = new Map(cy.nodes().map(n => [n.id(), n]));
       const newNodesMap = new Map(newNodes.map(n => [n.id, n]));
 
+      // 不要になったノードを削除
       for (const [id, cyNode] of existingCyNodesMap) {
         if (!newNodesMap.has(id)) {
           cy.remove(cyNode);
         }
       }
 
+      // ノードを追加または更新
       for (const newNode of newNodes) {
         const nodeDataForCy = {
           ...newNode,
@@ -97,21 +99,70 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>((props, ref) =
         };
         const existingNode = existingCyNodesMap.get(newNode.id);
         if (existingNode) {
+          // 既存ノードのデータを更新
+          const oldParent = existingNode.parent();
+          const oldParentId = oldParent.length > 0 ? oldParent[0].id() : undefined;
           existingNode.data(nodeDataForCy);
+
+          // 親が実際に変更された場合、move API を使って明示的に移動
+          if (oldParentId !== nodeDataForCy.parent) {
+            existingNode.move({ parent: nodeDataForCy.parent === undefined ? null : nodeDataForCy.parent });
+          }
         } else {
+          // 新しいノードを追加
           cy.add({ data: nodeDataForCy, group: 'nodes' });
         }
       }
 
-      cy.edges().remove();
-      newEdges.forEach(edge => {
-        if (cy.getElementById(edge.source).length > 0 && cy.getElementById(edge.target).length > 0) {
-          cy.add({ data: edge, group: 'edges' });
+      // エッジの差分更新
+      const existingEdgesMap = new Map();
+      cy.edges().forEach(edge => {
+        const key = `${edge.source().id()}-${edge.target().id()}-${edge.data('label') ?? ''}`;
+        existingEdgesMap.set(key, edge);
+      });
+
+      const newEdgesSet = new Set();
+      for (const newEdge of newEdges) {
+        const key = `${newEdge.source}-${newEdge.target}-${newEdge.label ?? ''}`;
+        newEdgesSet.add(key);
+
+        if (!existingEdgesMap.has(key)) {
+          // 新しいエッジを追加
+          // sourceとtargetノードが実際に存在する場合のみエッジを追加
+          if (cy.getElementById(newEdge.source).length > 0 && cy.getElementById(newEdge.target).length > 0) {
+            cy.add({ data: newEdge, group: 'edges' });
+          }
+        } else {
+          // 既存エッジのデータを更新 (もしエッジのデータにlabel以外の変更がありうるなら)
+          const existingEdge = existingEdgesMap.get(key);
+          if (existingEdge.data('label') !== (newEdge.label ?? '')) { // 簡単のためlabelのみ比較
+            existingEdge.data('label', newEdge.label ?? '');
+          }
+        }
+      }
+
+      // 不要になったエッジを削除
+      existingEdgesMap.forEach((edge, key) => {
+        if (!newEdgesSet.has(key)) {
+          cy.remove(edge);
         }
       });
 
     } finally {
       cy.endBatch();
+    }
+
+    // レイアウトの再実行
+    if (cy.elements().length > 0) {
+      // ViewStateが適用された場合は自動レイアウトを実行しない
+      const viewStateApplied = cy.data('viewStateApplied');
+
+      if (!viewStateApplied) {
+        resetLayout(props.layoutLogic ?? 'klay');
+      } else {
+        // フラグをリセット（次回の更新のため）
+        cy.removeData('viewStateApplied');
+      }
     }
 
     if (!isReadyCalled && cy.elements().length > 0) {
