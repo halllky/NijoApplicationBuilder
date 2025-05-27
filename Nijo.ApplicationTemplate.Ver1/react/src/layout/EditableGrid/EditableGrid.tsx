@@ -28,6 +28,7 @@ import { useCopyPaste } from "./EditableGrid.useCopyPaste";
 
 // CSS
 import "./EditableGrid.css";
+import { CellEditor, useGetPixel } from "./EditableGrid.CellEditor";
 
 /**
  * 編集可能なグリッドを表示するコンポーネント
@@ -234,8 +235,11 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     },
   });
 
-  // テーブル全体の合計幅を取得 (最初のヘッダーグループから)
+  // 横幅情報
   const tableTotalWidth = table.getTotalSize();
+  const getColWidthByIndex = useCallback((colIndex: number) => {
+    return table.getColumn(`col-${colIndex}`)?.getSize() ?? DEFAULT_COLUMN_WIDTH
+  }, [table])
 
   // 仮想化設定
   const { rows: tableRows } = table.getRowModel();
@@ -252,6 +256,21 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
       rowVirtualizer.getTotalSize() - notUndefined(virtualItems[virtualItems.length - 1]).end,
     ];
   }, [virtualItems, rowVirtualizer]);
+
+  // td要素の二次元配列のref
+  const tdRefs = useRef<{ [rowIndexInPropsData: number]: React.RefObject<HTMLTableCellElement>[] }>({})
+  const tdRefsPrevious = { ...tdRefs.current }
+  tdRefs.current = {}
+  for (const virtualItem of virtualItems) {
+    // 前回のレンダリングで作成されたrefがある場合は再利用し、
+    // 画面スクロールなどにより新しく出現した行の場合はcreateRefする
+    tdRefs.current[virtualItem.index]
+      = tdRefsPrevious[virtualItem.index]
+      ?? Array.from({ length: columnDefs?.length ?? 0 }).map(() => React.createRef())
+  }
+
+  // ピクセル数取得関数
+  const getPixel = useGetPixel(tdRefs, rowVirtualizer, ESTIMATED_ROW_HEIGHT, getColWidthByIndex)
 
   // ref用の公開メソッド
   useImperativeHandle(ref, () => ({
@@ -441,6 +460,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                   return (
                     <td
                       key={cell.id}
+                      ref={tdRefs.current[rowIndex]?.[colIndex]}
                       className={dataColumnClassName}
                       style={{
                         width: cell.column.getSize(),
@@ -526,14 +546,24 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
           )}
         </tbody>
       </table>
+
+      <CellEditor
+        api={table}
+        caretCell={activeCell ?? undefined}
+        getPixel={getPixel}
+        onChangeEditing={() => { }}
+        onChangeRow={props.onChangeRow}
+        onKeyDown={() => { }}
+      />
+
     </div>
   );
 }) as (<TRow extends ReactHookForm.FieldValues, >(props: EditableGridProps<TRow> & { ref?: React.ForwardedRef<EditableGridRef<TRow>> }) => React.ReactNode);
 
 // ------------------------------------
 
-/** このファイル内部でのみ使用 */
-type ColumnMetadataInternal<TRow extends ReactHookForm.FieldValues> = {
+/** このフォルダ内部でのみ使用。外部から使われる想定はない */
+export type ColumnMetadataInternal<TRow extends ReactHookForm.FieldValues> = {
   isRowHeader: boolean | undefined
   originalColDef: EditableGridColumnDef<TRow> | undefined
 }
@@ -543,4 +573,4 @@ const ESTIMATED_ROW_HEIGHT = 24
 /** 行ヘッダー列の幅 */
 const ROW_HEADER_WIDTH = 32
 /** デフォルトの列幅。8rem をピクセル換算。環境依存可能性あり */
-const DEFAULT_COLUMN_WIDTH = 128
+export const DEFAULT_COLUMN_WIDTH = 128
