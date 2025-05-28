@@ -161,7 +161,7 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>((props, ref) =
         resetLayout(props.layoutLogic ?? 'klay');
       } else {
         // フラグをリセット（次回の更新のため）
-        cy.removeData('viewStateApplied');
+        // cy.removeData('viewStateApplied'); // 再度コメントアウトして確認
       }
     }
 

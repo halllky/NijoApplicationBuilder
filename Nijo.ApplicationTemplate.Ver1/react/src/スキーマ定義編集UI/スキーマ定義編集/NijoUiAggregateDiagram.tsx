@@ -141,25 +141,46 @@ export const NijoUiAggregateDiagram = () => {
     clearSavedLayout,
   } = useLayoutSaving();
 
-  // 「ルート集約のみ表示」の復元
+  // 「ルート集約のみ表示」の復元 (初回ロード時やlocalStorageの値に基づく)
   React.useEffect(() => {
-    if (savedOnlyRoot) setOnlyRoot(savedOnlyRoot)
-  }, [])
+    // savedOnlyRoot が undefined の場合は localStorage にキーが存在しないか、値が不正で削除された場合。
+    // この場合はデフォルト値（false）のまま setOnlyRoot を呼ばない。
+    if (savedOnlyRoot !== undefined) {
+      setOnlyRoot(savedOnlyRoot);
+    }
+  }, [savedOnlyRoot]); // savedOnlyRoot のみが変更された時に実行 (主に初回ロード時)
 
-  // 「ルート集約のみ表示」の状態が変更されたときにレイアウトを保存
+  // 「ルート集約のみ表示」の状態がユーザー操作または上記の復元処理で変更されたときに実行
   React.useEffect(() => {
-    triggerSaveLayout(undefined /** positionsはlocalStorageの情報を正とする */, onlyRoot)
-  }, [onlyRoot, triggerSaveLayout]);
+    // triggerSaveLayout は現在の onlyRoot の値を localStorage に保存する。
+    // ノード位置は localStorage 内の既存のものが維持される（NijoUiAggregateDiagram.StateSaving.ts の実装による）。
+    triggerSaveLayout(undefined, onlyRoot);
+
+    // onlyRoot が変更されたら、現在のグラフ構成に対して再整列を行う。
+    // 初回レンダリング時や savedOnlyRoot による復元直後は、
+    // handleReadyGraph での applyViewState や resetLayout が適切に処理するため、
+    // ここでの resetLayout は主にユーザー操作による onlyRoot 変更後の再整列を意図する。
+    // ただし、依存配列に onlyRoot があるため、復元時にも呼ばれる可能性があるが、
+    // GraphView 側の準備ができていれば resetLayout が実行される。
+    if (graphViewRef.current) {
+      graphViewRef.current.resetLayout();
+    }
+  }, [onlyRoot, triggerSaveLayout]); // onlyRoot または triggerSaveLayout (の参照) が変更されたときに実行
 
   const handleLayoutChange = useEvent((event: cytoscape.EventObject) => {
-    triggerSaveLayout(event, onlyRoot)
-  })
+    // ドラッグ、パン、ズーム操作完了時に呼ばれる。
+    // この event には最新のノード位置、ズーム、パン情報が含まれる。
+    triggerSaveLayout(event, onlyRoot);
+  });
 
-  const [layoutLogic, setLayoutLogic] = React.useState<AutoLayout.LayoutLogicName>('klay')
+  const [layoutLogic, setLayoutLogic] = React.useState<AutoLayout.LayoutLogicName>('klay');
   const handleAutoLayout = useEvent(() => {
-    graphViewRef.current?.resetLayout()
-    clearSavedLayout()
-  })
+    // clearSavedLayout は localStorage からすべてのレイアウト情報を削除する。
+    clearSavedLayout();
+    // その後、現在の layoutLogic でグラフを整列する。
+    // resetLayout 内部で viewStateApplied フラグもクリアされる。
+    graphViewRef.current?.resetLayout();
+  });
 
   const handleNodeDoubleClick = useEvent((event: cytoscape.EventObject) => {
     const clickedNodeId = event.target.id();
@@ -185,10 +206,13 @@ export const NijoUiAggregateDiagram = () => {
 
   // グラフの準備ができたときに呼ばれる
   const handleReadyGraph = useEvent(() => {
-    if (savedViewState) {
+    if (savedViewState && savedViewState.nodePositions && Object.keys(savedViewState.nodePositions).length > 0) {
       graphViewRef.current?.applyViewState(savedViewState);
+    } else {
+      // 保存されたViewStateがない場合や、あってもノード位置情報がない場合は、初期レイアウトを実行
+      graphViewRef.current?.resetLayout();
     }
-  })
+  });
 
   return (
     <div className="h-full flex flex-col">
