@@ -15,13 +15,13 @@ export type CellEditorProps<T extends ReactHookForm.FieldValues> = {
   getPixel: GetPixelFunction
   onChangeEditing: (editing: boolean) => void
   onChangeRow: EditableGridProps<T>['onChangeRow']
-  onKeyDown: React.KeyboardEventHandler
 }
 
 /** CellEditorのref */
 export type CellEditorRef<T> = {
   focus: () => void
   startEditing: (cell: RT.Cell<T, unknown>) => void
+  textarea: HTMLTextAreaElement | null
 }
 
 /**
@@ -38,7 +38,6 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
   getPixel,
   onChangeEditing,
   onChangeRow,
-  onKeyDown,
 }: CellEditorProps<T>,
   ref: React.ForwardedRef<CellEditorRef<T>>
 ) => {
@@ -92,7 +91,9 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
   const startEditing = useEvent((cell: RT.Cell<T, unknown>) => {
     const columnDef = (cell.column.columnDef.meta as ColumnMetadataInternal<T>)?.originalColDef
     // 値が編集されてもコミットできないので編集開始しない
-    if (!onChangeRow) return
+    if (!onChangeRow) {
+      return;
+    }
 
     // 編集不可のセル
     if (!columnDef?.onStartEditing) return
@@ -115,22 +116,40 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
       },
     })
 
-    // エディタにスクロール
     containerRef.current?.scrollIntoView({
       behavior: 'instant',
       block: 'nearest',
       inline: 'nearest',
     })
+    editorRef.current?.focus({ preventScroll: true }); // 編集開始時にエディタにフォーカスを当てる
   })
 
   /** 編集確定 */
   const commitEditing = useEvent(() => {
-    if (editingCellInfo === undefined) return
-    if (caretCellEditingInfo === undefined) return
+    if (editingCellInfo === undefined) {
+      return;
+    }
 
-    // set value
+    let columnDef = caretCellEditingInfo;
+    if (columnDef === undefined && editingCellInfo) {
+      const cellIdParts = editingCellInfo.cellId.split('_');
+      if (cellIdParts.length >= 2) {
+        const colId = cellIdParts[1];
+        const column = api.getAllLeafColumns().find(col => col.id === colId);
+        if (column) {
+          columnDef = (column.columnDef.meta as ColumnMetadataInternal<T> | undefined)?.originalColDef;
+        }
+      }
+    }
+
+    if (columnDef === undefined) {
+      setEditingCellInfo(undefined);
+      onChangeEditing(false);
+      return;
+    }
+
     let newRow: T | undefined = undefined
-    caretCellEditingInfo.onEndEditing?.({
+    columnDef.onEndEditing?.({
       rowIndex: editingCellInfo.rowIndex,
       row: editingCellInfo.row,
       value: editorRef.current?.value ?? '',
@@ -165,16 +184,19 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
     if (editingCellInfo) {
       // 編集を終わらせる
       if (e.key === 'Enter' || e.key === 'Tab') {
-
         if (isImeOpen) return // IMEが開いているときのEnterやTabでは編集終了しないようにする
-        if (!e.ctrlKey && !e.metaKey) return // セル内改行のため普通のEnterでは編集終了しないようにする
-        commitEditing()
-        e.stopPropagation()
-        e.preventDefault()
+
+        // セル内改行のため普通のEnterでは編集終了しないようにする
+        if (e.ctrlKey || e.metaKey) {
+          commitEditing()
+          e.stopPropagation()
+          e.preventDefault()
+        }
 
       } else if (e.key === 'Escape') {
         cancelEditing()
         e.preventDefault()
+        e.stopPropagation()
       }
     } else {
       // 編集を始める
@@ -191,12 +213,6 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
         if (cell) startEditing(cell)
         return
       }
-
-      // セル移動や選択
-      if (e.type === 'keydown') {
-        onKeyDown(e)
-        if (e.defaultPrevented) return
-      }
     }
   })
 
@@ -207,7 +223,8 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
   React.useImperativeHandle(ref, () => ({
     focus: () => editorRef.current?.focus({ preventScroll: true }),
     startEditing,
-  }), [startEditing])
+    textarea: editorRef.current,
+  }), [startEditing, editorRef])
 
   return (
     <label ref={containerRef}
@@ -223,17 +240,13 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
       }}
       onKeyDown={handleKeyDown}
       tabIndex={0}
-
-    // なぜかIMEオンの状態でキー入力したときたまにkeydownイベントが発火しなくなることがあるので念のためkeyupでも同様の制御をおこなう、
-    // というのをやりたいが、セルの値をペーストしたときにCtrlキーを先に放しその後Vを放したときに編集開始が誤爆するのでオフにする
-    // onKeyUp={handleKeyDown}
     >
 
       <textarea
         ref={editorRef}
         value={uncomittedText}
         onChange={handleChangeUncomittedText}
-        className="flex-1"
+        className="flex-1 bg-white resize-none outline-none border border-gray-950"
       />
     </label>
   )

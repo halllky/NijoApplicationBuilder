@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useRef, useState, useCallback, useEffect, useImperativeHandle, useMemo } from "react";
-import { EditableGridProps, EditableGridRef, EditableGridColumnDef, EditableGridColumnDefRenderCell } from "./types";
+import { EditableGridProps, EditableGridRef, EditableGridColumnDef, EditableGridColumnDefRenderCell, CellPosition } from "./types";
 import {
   createColumnHelper,
   getCoreRowModel,
@@ -21,14 +21,13 @@ import { EmptyDataMessage } from "./EditableGrid.EmptyDataMessage";
 
 // カスタムフックのインポート
 import { useSelection } from "./EditableGrid.useSelection";
-import { useEditing } from "./EditableGrid.useEditing";
 import { useGridKeyboard } from "./EditableGrid.useGridKeyboard";
 import { useDragSelection } from "./EditableGrid.useDragSelection";
 import { useCopyPaste } from "./EditableGrid.useCopyPaste";
 
 // CSS
 import "./EditableGrid.css";
-import { CellEditor, useGetPixel } from "./EditableGrid.CellEditor";
+import { CellEditor, CellEditorRef, useGetPixel } from "./EditableGrid.CellEditor";
 
 /**
  * 編集可能なグリッドを表示するコンポーネント
@@ -48,6 +47,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   // テーブルの参照
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const tableBodyRef = useRef<HTMLTableSectionElement>(null);
+  const cellEditorRef = useRef<CellEditorRef<TRow>>(null);
 
   // 列定義の取得
   const cellType = useCellTypes<TRow>()
@@ -79,6 +79,30 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     return false;
   }, [isReadOnly, rows]);
 
+  // キーボードで文字入力したとき即座に編集を開始できるようにするため
+  // アクティブセルが変更されるたびにセルエディタにフォーカスを当てる
+  const onActiveCellChanged = useCallback((cell: CellPosition | null) => {
+    cellEditorRef.current?.textarea?.focus()
+    cellEditorRef.current?.textarea?.select()
+
+    // エディタの初期値はそのセルの値
+    if (cell && cellEditorRef.current) {
+      const row = rows[cell.rowIndex]
+      const colDef = columnDefs[cell.colIndex]
+      if (row && colDef && colDef.onStartEditing) {
+        colDef.onStartEditing({
+          rowIndex: cell.rowIndex,
+          row: row,
+          setEditorInitialValue: (value: string) => {
+            if (cellEditorRef.current?.textarea) {
+              cellEditorRef.current.textarea.value = value
+            }
+          },
+        })
+      }
+    }
+  }, [cellEditorRef, rows, columnDefs])
+
   // 選択状態
   const {
     activeCell,
@@ -91,18 +115,13 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     handleToggleAllRows,
     handleToggleRow,
     selectRows
-  } = useSelection(rows.length, columnDefs.length)
+  } = useSelection(rows.length, columnDefs.length, onActiveCellChanged)
 
-  // 編集機能
-  const {
-    isEditing,
-    editValue,
-    startEditing,
-    startEditingWithCharacter,
-    confirmEdit,
-    cancelEdit,
-    handleEditValueChange
-  } = useEditing<TRow>(props, columnDefs, isReadOnly)
+  // 編集状態管理
+  const [isEditing, setIsEditing] = useState(false);
+  const handleChangeEditing = useCallback((editing: boolean) => {
+    setIsEditing(editing);
+  }, []);
 
   // コピー＆ペースト機能
   const { handleCopy, handlePaste, setStringValuesToSelectedRange } = useCopyPaste({
@@ -122,7 +141,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     handleMouseMove
   } = useDragSelection(setActiveCell, setSelectedRange)
 
-  // キーボード操作
+  // 仮想化設定
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => tableContainerRef.current,
@@ -130,27 +149,11 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     overscan: 5,
   });
 
-  useGridKeyboard({
-    activeCell,
-    selectedRange,
-    isEditing,
-    rowCount: rows.length,
-    colCount: columnDefs.length,
-    setActiveCell,
-    setSelectedRange,
-    startEditing,
-    startEditingWithCharacter,
-    getIsReadOnly,
-    rowVirtualizer,
-    tableContainerRef,
-    setStringValuesToSelectedRange,
-  });
-
   // テーブル定義
   const columnHelper = createColumnHelper<TRow>();
-  const columns = useMemo(() => [
+  const columns = useMemo(() => {
     // 行ヘッダー（チェックボックス列）
-    columnHelper.display({
+    const rowHeaderColumn = columnHelper.display({
       id: 'rowHeader',
       enableResizing: false,
       header: () => {
@@ -184,9 +187,10 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
         isRowHeader: true,
         originalColDef: undefined,
       } satisfies ColumnMetadataInternal<TRow>,
-    }),
+    });
+
     // 列ヘッダーとデータ列
-    ...columnDefs
+    const dataColumns = columnDefs
       .map((colDef: EditableGridColumnDef<TRow>, colIndex: number) => {
         const accessor = (row: TRow) => colDef.fieldPath
           ? getValueByPath(row, colDef.fieldPath)
@@ -211,8 +215,11 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
           } satisfies ColumnMetadataInternal<TRow>,
         });
         return tableColumnDef;
-      })
-  ], [columnDefs, showCheckBox, allRowsChecked, handleToggleAllRows, columnHelper, rows.length, setActiveCell]); // 依存配列を適切に設定
+      });
+
+    const generatedColumns = [rowHeaderColumn, ...dataColumns];
+    return generatedColumns;
+  }, [columnDefs, showCheckBox, allRowsChecked, handleToggleAllRows, columnHelper, rows.length, setActiveCell, cellType]); // 依存配列に cellType を追加
 
   const table = useReactTable({
     data: rows,
@@ -303,6 +310,45 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
       });
     }
   }, [rows, columnDefs, activeCell, setActiveCell, setSelectedRange]);
+
+  // キーボード操作のセットアップ
+  useGridKeyboard({
+    activeCell,
+    selectedRange,
+    isEditing,
+    rowCount: rows.length,
+    colCount: columnDefs.length,
+    setActiveCell,
+    setSelectedRange,
+    startEditing: (rowIndex: number, colIndex: number) => {
+      if (activeCell?.rowIndex === rowIndex && activeCell?.colIndex === colIndex) {
+        const row = table.getCoreRowModel().flatRows[rowIndex];
+        if (row) {
+          // 表示されているすべてのリーフカラムを取得
+          const visibleLeafColumns = table.getVisibleLeafColumns();
+          // データ列のみをフィルタリング（colIndexはこの中でのインデックス）
+          const dataLeafColumns = visibleLeafColumns.filter(col => !(col.columnDef.meta as ColumnMetadataInternal<TRow>)?.isRowHeader);
+
+          if (colIndex >= 0 && colIndex < dataLeafColumns.length) {
+            const targetColumnId = dataLeafColumns[colIndex].id;
+            const cell = row.getVisibleCells().find(c => c.column.id === targetColumnId);
+
+            if (cell && cellEditorRef.current) {
+              // 行ヘッダーかどうかのチェックは CellEditor 側の startEditing に任せる
+              // (CellEditor側では originalColDef を見るため、データセルなら問題なく進むはず)
+              cellEditorRef.current.startEditing(cell);
+            }
+          }
+        }
+      } else {
+        setActiveCell({ rowIndex, colIndex });
+      }
+    },
+    getIsReadOnly,
+    rowVirtualizer,
+    tableContainerRef,
+    setStringValuesToSelectedRange,
+  });
 
   return (
     <div
@@ -466,10 +512,16 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                         width: cell.column.getSize(),
                         left: cellMeta?.originalColDef?.isFixed ? `${cell.column.getStart()}px` : undefined,
                       }}
-                      onClick={(e) => handleCellClick(e, rowIndex, colIndex)}
+                      onClick={(e) => {
+                        // console.log('[EditableGrid] Cell clicked. Calculated colIndex:', colIndex, 'Raw cell.column.id:', cell.column.id, 'Cell meta:', cellMeta);
+                        // console.log('[EditableGrid] visibleDataColumns IDs:', visibleDataColumns.map(c => c.id));
+                        // console.log('[EditableGrid] findIndex result for current cell.column.id in visibleDataColumns:', visibleDataColumns.findIndex(c => c.id === cell.column.id));
+                        // console.log('[EditableGrid] table.getAllLeafColumns():', table.getAllLeafColumns().map(c => ({ id: c.id, isRowHeader: (c.columnDef.meta as ColumnMetadataInternal<TRow>)?.isRowHeader, header: c.columnDef.header }) ));
+                        handleCellClick(e, rowIndex, colIndex);
+                      }}
                       onDoubleClick={() => {
-                        if (!getIsReadOnly(rowIndex)) {
-                          startEditing(rowIndex, colIndex);
+                        if (!getIsReadOnly(rowIndex) && cellEditorRef.current) {
+                          cellEditorRef.current.startEditing(cell);
                         }
                       }}
                       onMouseDown={() => {
@@ -477,48 +529,17 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                           handleMouseDown(rowIndex, colIndex);
                         }
                       }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'F2' && !isEditing && !getIsReadOnly(rowIndex)) {
-                          startEditing(rowIndex, colIndex);
-                        } else if (e.key === 'Enter' && isEditing) {
-                          confirmEdit();
-                        } else if (e.key === 'Escape' && isEditing) {
-                          cancelEdit();
-                        }
-                      }}
                       tabIndex={0}
                     >
-                      {/* セル編集中の場合はinput要素をレンダリング */}
-                      {isEditing && isActive && (
-                        <input
-                          type="text"
-                          value={editValue}
-                          onChange={(e) => handleEditValueChange(e.target.value)}
-                          onKeyDown={(e) => {
-                            e.stopPropagation();
-                            if (e.key === 'Enter') {
-                              confirmEdit();
-                            } else if (e.key === 'Escape') {
-                              cancelEdit();
-                            }
-                          }}
-                          autoFocus
-                          className="w-full outline outline-blue-500"
-                        />
-                      )}
-
-                      {/* セル編集中でない場合はdiv要素をレンダリング */}
-                      {(!isEditing || !isActive) && (
-                        <div
-                          className="flex border-r border-gray-200 select-none truncate"
-                          style={{
-                            width: cell.column.getSize(),
-                            height: ESTIMATED_ROW_HEIGHT,
-                          }}
-                        >
-                          {renderCell?.(cell.getContext()) ?? cell.getValue()?.toString()}
-                        </div>
-                      )}
+                      <div
+                        className="flex border-r border-gray-200 select-none truncate"
+                        style={{
+                          width: cell.column.getSize(),
+                          height: ESTIMATED_ROW_HEIGHT,
+                        }}
+                      >
+                        {renderCell?.(cell.getContext()) ?? cell.getValue()?.toString()}
+                      </div>
                     </td>
                   );
                 })}
@@ -548,12 +569,12 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
       </table>
 
       <CellEditor
+        ref={cellEditorRef}
         api={table}
         caretCell={activeCell ?? undefined}
         getPixel={getPixel}
-        onChangeEditing={() => { }}
+        onChangeEditing={handleChangeEditing}
         onChangeRow={props.onChangeRow}
-        onKeyDown={() => { }}
       />
 
     </div>

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { CellPosition, CellSelectionRange } from ".";
 
 export interface UseSelectionReturn {
@@ -16,14 +16,20 @@ export interface UseSelectionReturn {
   selectRows: (startRowIndex: number, endRowIndex: number) => void;
 }
 
-export function useSelection(totalRows: number, totalColumns: number): UseSelectionReturn {
+export function useSelection(
+  totalRows: number,
+  totalColumns: number,
+  onActiveCellChanged: (cell: CellPosition | null) => void,
+): UseSelectionReturn {
   // 選択状態の管理
-  const [activeCell, setActiveCell] = useState<CellPosition | null>(null);
+  const [activeCell, setActiveCell_useState] = useState<CellPosition | null>(null);
   const [selectedRange, setSelectedRange] = useState<CellSelectionRange | null>(null);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [allRowsSelected, setAllRowsSelected] = useState(false);
 
   const lastClickedCellRef = useRef<CellPosition | null>(null);
+  const activeCellRef = useRef<CellPosition | null>(null);
+  const anchorCell = useRef<CellPosition | null>(null);
 
   // 全行選択トグルのハンドラ
   const handleToggleAllRows = useCallback((checked: boolean) => {
@@ -90,6 +96,20 @@ export function useSelection(totalRows: number, totalColumns: number): UseSelect
     setSelectedRange({ startCol: 0, endCol: totalColumns - 1, startRow: min, endRow: max });
     setAllRowsSelected(newSelectedRows.size === totalRows);
   }, [totalRows, totalColumns]);
+
+  // 初期選択状態の設定（オプション）
+  useEffect(() => {
+    if (activeCellRef.current) {
+      setActiveCell_useState(activeCellRef.current);
+      anchorCell.current = activeCellRef.current;
+    }
+  }, []);
+
+  const setActiveCell = useCallback((cell: CellPosition | null) => {
+    activeCellRef.current = cell;
+    setActiveCell_useState(cell);
+    onActiveCellChanged(cell);
+  }, [setActiveCell_useState, onActiveCellChanged]);
 
   return {
     activeCell,

@@ -13,7 +13,6 @@ export interface UseGridKeyboardProps {
   setActiveCell: (cell: CellPosition | null) => void;
   setSelectedRange: (range: CellSelectionRange | null) => void;
   startEditing: (rowIndex: number, colIndex: number) => void;
-  startEditingWithCharacter: (rowIndex: number, colIndex: number, char: string) => void;
   getIsReadOnly: (rowIndex: number) => boolean;
   rowVirtualizer: Virtualizer<HTMLDivElement, Element>;
   tableContainerRef: React.RefObject<HTMLDivElement | null>;
@@ -29,7 +28,6 @@ export function useGridKeyboard({
   setActiveCell,
   setSelectedRange,
   startEditing,
-  startEditingWithCharacter,
   getIsReadOnly,
   rowVirtualizer,
   tableContainerRef,
@@ -52,34 +50,12 @@ export function useGridKeyboard({
     // このフックでは基本的なキーボードナビゲーションのみ扱います。
   });
 
-  // キー入力イベントハンドラ
-  const handleKeyInput = useEvent((e: KeyboardEvent) => {
-    if (isEditing || !activeCell || isComposing) return;
-
-    // ナビゲーションに使うキーは無視（別のハンドラで処理）
-    const navigationKeys = [
-      'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
-      'Tab', 'Enter', 'Escape', 'Home', 'End', 'PageUp', 'PageDown',
-      'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
-      'Control', 'Alt', 'Shift', 'Meta', 'Delete',
-    ];
-
-    // 修飾キーが押されている場合は編集開始しない
-    if (e.ctrlKey || e.altKey || e.metaKey) return;
-
-    if (e.key && e.key.length === 1 && !navigationKeys.includes(e.key)) {
-      const { rowIndex, colIndex } = activeCell;
-
-      if (!getIsReadOnly(rowIndex)) {
-        e.preventDefault();
-        startEditingWithCharacter(rowIndex, colIndex, e.key);
-      }
-    }
-  });
-
   // キーボードイベントハンドラ
   const handleKeyDown = useEvent((e: KeyboardEvent) => {
-    if (!activeCell || isEditing) return;
+    // 編集中はCellEditorに任せる
+    if (isEditing) return;
+
+    if (!activeCell) return;
 
     const { rowIndex, colIndex } = activeCell;
     let newRowIndex = rowIndex;
@@ -109,9 +85,6 @@ export function useGridKeyboard({
     if (!e.shiftKey || !anchorCellRef.current) {
       anchorCellRef.current = activeCell;
     }
-
-    // 編集モード中は矢印キーを処理しない
-    if (isEditing) return;
 
     // アンカーセルが存在しない場合は処理しない（Shiftキーが押された最初のイベントより前）
     const anchorCell = anchorCellRef.current;
@@ -286,18 +259,26 @@ export function useGridKeyboard({
         // 選択範囲のセルの値をクリア。空文字をペーストしたのと同じ
         setStringValuesToSelectedRange([]);
         break;
+      case 'Process':
+        // IMEが開いている場合は編集開始
+        startEditing(rowIndex, colIndex);
+        break;
+      default:
+        // 文字、数字だけをひっかけたいのでlengthで判定
+        if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+          startEditing(rowIndex, colIndex);
+        }
+        break;
     }
   });
 
   // イベントリスナーの設定
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('keypress', handleKeyInput);
     document.addEventListener('copy', handleCopy);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('keypress', handleKeyInput);
       document.removeEventListener('copy', handleCopy);
     };
-  }, [handleKeyDown, handleKeyInput, handleCopy]);
+  }, [handleKeyDown, handleCopy]);
 }
