@@ -162,9 +162,9 @@ export const NijoUiAggregateDiagram = () => {
     // ここでの resetLayout は主にユーザー操作による onlyRoot 変更後の再整列を意図する。
     // ただし、依存配列に onlyRoot があるため、復元時にも呼ばれる可能性があるが、
     // GraphView 側の準備ができていれば resetLayout が実行される。
-    if (graphViewRef.current) {
-      graphViewRef.current.resetLayout();
-    }
+    // if (graphViewRef.current) { // この行をコメントアウト
+    //   graphViewRef.current.resetLayout(); // この行をコメントアウト
+    // }
   }, [onlyRoot, triggerSaveLayout]); // onlyRoot または triggerSaveLayout (の参照) が変更されたときに実行
 
   const handleLayoutChange = useEvent((event: cytoscape.EventObject) => {
