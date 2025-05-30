@@ -152,19 +152,6 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>((props, ref) =
       cy.endBatch();
     }
 
-    // レイアウトの再実行
-    // if (cy.elements().length > 0) {
-    //   // ViewStateが適用された場合は自動レイアウトを実行しない
-    //   const viewStateApplied = cy.data('viewStateApplied');
-
-    //   if (!viewStateApplied) {
-    //     resetLayout(props.layoutLogic ?? 'klay');
-    //   } else {
-    //     // フラグをリセット（次回の更新のため）
-    //     cy.removeData('viewStateApplied');
-    //   }
-    // }
-
     if (!isReadyCalled && cy.elements().length > 0) {
       props.onReady?.();
       setIsReadyCalled(true);

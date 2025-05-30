@@ -8,7 +8,6 @@ import { SERVER_DOMAIN } from "../routing"
 export const DEFAULT_VALIDATION_CONTEXT_VALUE: ValidationContextType = {
   getValidationResult: () => ({ _own: [] }),
   trigger: () => {
-    console.log('ValidationContext未定義')
     return Promise.resolve()
   },
   validationResult: {},

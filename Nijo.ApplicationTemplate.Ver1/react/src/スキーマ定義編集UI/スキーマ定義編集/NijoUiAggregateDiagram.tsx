@@ -97,7 +97,6 @@ export const NijoUiAggregateDiagram = () => {
     }
 
     // 重複するエッジのグルーピング
-    // console.log(edges.map(e => `${nodes[e.source]?.label} -- ${e.label} --> ${nodes[e.target]?.label}`))
     const groupedEdges = edges.reduce((acc, { source, target, label, sourceModel }) => {
       const existingEdge = acc.find(e => e.source === source && e.target === target)
       if (existingEdge) {
@@ -155,16 +154,6 @@ export const NijoUiAggregateDiagram = () => {
     // triggerSaveLayout は現在の onlyRoot の値を localStorage に保存する。
     // ノード位置は localStorage 内の既存のものが維持される（NijoUiAggregateDiagram.StateSaving.ts の実装による）。
     triggerSaveLayout(undefined, onlyRoot);
-
-    // onlyRoot が変更されたら、現在のグラフ構成に対して再整列を行う。
-    // 初回レンダリング時や savedOnlyRoot による復元直後は、
-    // handleReadyGraph での applyViewState や resetLayout が適切に処理するため、
-    // ここでの resetLayout は主にユーザー操作による onlyRoot 変更後の再整列を意図する。
-    // ただし、依存配列に onlyRoot があるため、復元時にも呼ばれる可能性があるが、
-    // GraphView 側の準備ができていれば resetLayout が実行される。
-    // if (graphViewRef.current) { // この行をコメントアウト
-    //   graphViewRef.current.resetLayout(); // この行をコメントアウト
-    // }
   }, [onlyRoot, triggerSaveLayout]); // onlyRoot または triggerSaveLayout (の参照) が変更されたときに実行
 
   const handleLayoutChange = useEvent((event: cytoscape.EventObject) => {
