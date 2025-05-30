@@ -21,6 +21,9 @@ export default ({ mode }: { mode: string }) => {
     logLevel: 'info',
     clearScreen: false,
     plugins,
+    build: {
+      minify: false,
+    },
     server: {
       port: 5173,
       strictPort: true,
