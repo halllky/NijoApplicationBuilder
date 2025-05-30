@@ -4,7 +4,7 @@ import * as Input from "../../input"
 import { GraphView, GraphViewRef } from "../../layout/GraphView"
 import * as ReactRouter from "react-router-dom"
 import { SchemaDefinitionOutletContextType, XmlElementItem, ATTR_TYPE, TYPE_DATA_MODEL, TYPE_COMMAND_MODEL, TYPE_QUERY_MODEL, TYPE_CHILD, TYPE_CHILDREN, ATTR_GENERATE_DEFAULT_QUERY_MODEL } from "./types"
-import { CytoscapeDataSet } from "../../layout/GraphView/Cy"
+import { CytoscapeDataSet, ViewState } from "../../layout/GraphView/Cy"
 import { Node as CyNode, Edge as CyEdge } from "../../layout/GraphView/DataSource"
 import * as AutoLayout from "../../layout/GraphView/Cy.AutoLayout"
 import { findRefToTarget } from "./refResolver"
@@ -14,20 +14,38 @@ import cytoscape from 'cytoscape'; // cytoscapeの型情報をインポート
 import { useLayoutSaving } from './NijoUiAggregateDiagram.StateSaving';
 
 export const NijoUiAggregateDiagram = () => {
+  // ノード状態の保存と復元
+  const saveLoad = useLayoutSaving();
+
+  const defaultValues = React.useMemo(() => ({
+    onlyRoot: saveLoad.savedOnlyRoot ?? false,
+    savedViewState: saveLoad.savedViewState ?? {},
+  }), [saveLoad.savedOnlyRoot, saveLoad.savedViewState])
+
+  return (
+    <AfterLoaded
+      triggerSaveLayout={saveLoad.triggerSaveLayout}
+      clearSavedLayout={saveLoad.clearSavedLayout}
+      defaultValues={defaultValues}
+    />
+  )
+}
+
+const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, defaultValues }: {
+  triggerSaveLayout: ReturnType<typeof useLayoutSaving>["triggerSaveLayout"]
+  clearSavedLayout: ReturnType<typeof useLayoutSaving>["clearSavedLayout"]
+  defaultValues: {
+    onlyRoot: boolean
+    savedViewState: Partial<ViewState>
+  }
+}) => {
   const { formMethods } = ReactRouter.useOutletContext<SchemaDefinitionOutletContextType>()
   const { getValues } = formMethods
   const xmlElementTrees = getValues("xmlElementTrees")
   const graphViewRef = React.useRef<GraphViewRef>(null)
   const navigate = ReactRouter.useNavigate()
 
-  // ノード状態の保存と復元
-  const {
-    savedOnlyRoot,
-    savedViewState,
-    triggerSaveLayout,
-    clearSavedLayout,
-  } = useLayoutSaving();
-  const [onlyRoot, setOnlyRoot] = React.useState(savedOnlyRoot ?? false)
+  const [onlyRoot, setOnlyRoot] = React.useState(defaultValues.onlyRoot)
 
   const dataSet: CytoscapeDataSet = React.useMemo(() => {
     if (!xmlElementTrees) return { nodes: {}, edges: [] }
@@ -140,15 +158,6 @@ export const NijoUiAggregateDiagram = () => {
     }
   }, [xmlElementTrees, onlyRoot])
 
-  // 「ルート集約のみ表示」の復元 (初回ロード時やlocalStorageの値に基づく)
-  React.useEffect(() => {
-    // savedOnlyRoot が undefined の場合は localStorage にキーが存在しないか、値が不正で削除された場合。
-    // この場合はデフォルト値（false）のまま setOnlyRoot を呼ばない。
-    if (savedOnlyRoot !== undefined) {
-      setOnlyRoot(savedOnlyRoot);
-    }
-  }, [savedOnlyRoot]); // savedOnlyRoot のみが変更された時に実行 (主に初回ロード時)
-
   // 「ルート集約のみ表示」の状態がユーザー操作または上記の復元処理で変更されたときに実行
   React.useEffect(() => {
     // triggerSaveLayout は現在の onlyRoot の値を localStorage に保存する。
@@ -195,8 +204,8 @@ export const NijoUiAggregateDiagram = () => {
 
   // グラフの準備ができたときに呼ばれる
   const handleReadyGraph = useEvent(() => {
-    if (savedViewState && savedViewState.nodePositions && Object.keys(savedViewState.nodePositions).length > 0) {
-      graphViewRef.current?.applyViewState(savedViewState);
+    if (defaultValues.savedViewState && defaultValues.savedViewState.nodePositions && Object.keys(defaultValues.savedViewState.nodePositions).length > 0) {
+      graphViewRef.current?.applyViewState(defaultValues.savedViewState);
     } else {
       // 保存されたViewStateがない場合や、あってもノード位置情報がない場合は、初期レイアウトを実行
       graphViewRef.current?.resetLayout();
