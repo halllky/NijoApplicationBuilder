@@ -25,6 +25,8 @@ export interface GraphViewProps {
   /** ノードの自動整列に用いられるロジックのうちどれを使用するか。既定はklay */
   layoutLogic?: LayoutLogicName;
   onNodeDoubleClick?: (event: cytoscape.EventObject) => void;
+  /** ノードの選択が変更された瞬間に呼ばれる */
+  onSelectionChange?: (event: cytoscape.EventObject) => void;
   /** ノードのレイアウトが変更された瞬間に呼ばれる */
   onLayoutChange?: (event: cytoscape.EventObject) => void;
   /** ナビゲーターを表示するかどうか */

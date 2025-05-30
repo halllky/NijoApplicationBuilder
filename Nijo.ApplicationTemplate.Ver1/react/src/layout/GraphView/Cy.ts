@@ -82,6 +82,9 @@ export const useCytoscape = (props: GraphViewProps): CytoscapeHookType => {
       cyInstance.on('zoom', event => {
         propsRef.current.onLayoutChange?.(event)
       });
+      cyInstance.on('select', event => {
+        propsRef.current.onSelectionChange?.(event)
+      });
 
       setCy(cyInstance)
 
