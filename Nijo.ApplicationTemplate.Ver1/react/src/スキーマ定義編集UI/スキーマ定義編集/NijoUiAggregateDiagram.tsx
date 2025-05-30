@@ -1,6 +1,7 @@
 import React from "react"
 import useEvent from "react-use-event-hook"
 import * as Input from "../../input"
+import * as Icon from "@heroicons/react/24/solid"
 import { GraphView, GraphViewRef } from "../../layout/GraphView"
 import * as ReactRouter from "react-router-dom"
 import { SchemaDefinitionOutletContextType, XmlElementItem, ATTR_TYPE, TYPE_DATA_MODEL, TYPE_COMMAND_MODEL, TYPE_QUERY_MODEL, TYPE_CHILD, TYPE_CHILDREN, ATTR_GENERATE_DEFAULT_QUERY_MODEL } from "./types"
@@ -12,6 +13,8 @@ import { asTree } from "./types"
 import { getNavigationUrl } from "../routing"
 import cytoscape from 'cytoscape'; // cytoscapeの型情報をインポート
 import { useLayoutSaving } from './NijoUiAggregateDiagram.StateSaving';
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
+import { PageRootAggregate } from "./RootAggregatePage"
 
 export const NijoUiAggregateDiagram = () => {
   // ノード状態の保存と復元
@@ -212,6 +215,30 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, defaultValues }: {
     }
   });
 
+  // EditableGrid表示位置
+  const [editableGridPosition, setEditableGridPosition] = React.useState<"vertical" | "horizontal">("horizontal");
+
+  // 選択中のルート集約を画面右側に表示する
+  const [selectedRootAggregateIndex, setSelectedRootAggregateIndex] = React.useState<number | undefined>(undefined);
+  const handleSelectionChange = useEvent((event: cytoscape.EventObject) => {
+    const selectedNodes = event.cy.nodes().filter(node => node.selected());
+    if (selectedNodes.length === 0) {
+      setSelectedRootAggregateIndex(undefined);
+    } else {
+      const aggregateId = selectedNodes[0].id();
+      const tree = xmlElementTrees?.find(tree => tree.xmlElements?.some(el => el.uniqueId === aggregateId));
+      if (!tree) return;
+      const aggregateItem = tree.xmlElements?.find(el => el.uniqueId === aggregateId);
+      if (!aggregateItem) return;
+      const rootAggregateId = asTree(tree.xmlElements).getRoot(aggregateItem)?.uniqueId;
+      if (!rootAggregateId) return;
+      const rootAggregateIndex = xmlElementTrees?.findIndex(tree => tree.xmlElements?.[0]?.uniqueId === rootAggregateId);
+      if (rootAggregateIndex !== undefined) {
+        setSelectedRootAggregateIndex(rootAggregateIndex);
+      }
+    }
+  });
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex flex-wrap items-center p-1 gap-1">
@@ -228,20 +255,40 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, defaultValues }: {
           <input type="checkbox" checked={onlyRoot} onChange={(e) => setOnlyRoot(e.target.checked)} />
           ルート集約のみ表示
         </label>
+        <div className="basis-4"></div>
+        <div className="flex">
+          <Input.IconButton fill={editableGridPosition === "horizontal"} outline onClick={() => setEditableGridPosition("horizontal")}>横</Input.IconButton>
+          <Input.IconButton fill={editableGridPosition === "vertical"} outline onClick={() => setEditableGridPosition("vertical")}>縦</Input.IconButton>
+        </div>
       </div>
-      <div className="flex-1">
-        <GraphView
-          key={onlyRoot ? 'onlyRoot' : 'all'} // このフラグが切り替わったタイミングで全部洗い替え
-          ref={graphViewRef}
-          nodes={Object.values(dataSet.nodes)} // dataSet.nodesの値を配列として渡す
-          edges={dataSet.edges} // dataSet.edgesをそのまま渡す
-          parentMap={Object.fromEntries(Object.entries(dataSet.nodes).filter(([, node]) => node.parent).map(([id, node]) => [id, node.parent!]))} // dataSet.nodesからparentMapを生成
-          onReady={handleReadyGraph}
-          layoutLogic={layoutLogic}
-          onLayoutChange={handleLayoutChange}
-          onNodeDoubleClick={handleNodeDoubleClick}
-        />
-      </div>
+      <PanelGroup className="flex-1" direction={editableGridPosition}>
+        <Panel className="border border-gray-300">
+          <GraphView
+            key={onlyRoot ? 'onlyRoot' : 'all'} // このフラグが切り替わったタイミングで全部洗い替え
+            ref={graphViewRef}
+            nodes={Object.values(dataSet.nodes)} // dataSet.nodesの値を配列として渡す
+            edges={dataSet.edges} // dataSet.edgesをそのまま渡す
+            parentMap={Object.fromEntries(Object.entries(dataSet.nodes).filter(([, node]) => node.parent).map(([id, node]) => [id, node.parent!]))} // dataSet.nodesからparentMapを生成
+            onReady={handleReadyGraph}
+            layoutLogic={layoutLogic}
+            onLayoutChange={handleLayoutChange}
+            onNodeDoubleClick={handleNodeDoubleClick}
+            onSelectionChange={handleSelectionChange}
+          />
+        </Panel>
+
+        <PanelResizeHandle className={editableGridPosition === "horizontal" ? "w-1" : "h-1"} />
+
+        <Panel collapsible minSize={10}>
+          {selectedRootAggregateIndex !== undefined && (
+            <PageRootAggregate
+              key={selectedRootAggregateIndex} // 選択中のルート集約が変更されたタイミングで再描画
+              rootAggregateIndex={selectedRootAggregateIndex}
+              formMethods={formMethods}
+            />
+          )}
+        </Panel>
+      </PanelGroup>
     </div >
   )
 }
