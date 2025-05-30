@@ -18,8 +18,16 @@ export const NijoUiAggregateDiagram = () => {
   const { getValues } = formMethods
   const xmlElementTrees = getValues("xmlElementTrees")
   const graphViewRef = React.useRef<GraphViewRef>(null)
-  const [onlyRoot, setOnlyRoot] = React.useState(false)
   const navigate = ReactRouter.useNavigate()
+
+  // ノード状態の保存と復元
+  const {
+    savedOnlyRoot,
+    savedViewState,
+    triggerSaveLayout,
+    clearSavedLayout,
+  } = useLayoutSaving();
+  const [onlyRoot, setOnlyRoot] = React.useState(savedOnlyRoot ?? false)
 
   const dataSet: CytoscapeDataSet = React.useMemo(() => {
     if (!xmlElementTrees) return { nodes: {}, edges: [] }
@@ -131,14 +139,6 @@ export const NijoUiAggregateDiagram = () => {
       edges: cyEdges,
     }
   }, [xmlElementTrees, onlyRoot])
-
-  // ノード状態の保存と復元
-  const {
-    savedOnlyRoot,
-    savedViewState,
-    triggerSaveLayout,
-    clearSavedLayout,
-  } = useLayoutSaving();
 
   // 「ルート集約のみ表示」の復元 (初回ロード時やlocalStorageの値に基づく)
   React.useEffect(() => {
