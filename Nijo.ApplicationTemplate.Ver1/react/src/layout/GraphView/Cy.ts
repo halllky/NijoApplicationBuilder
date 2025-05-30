@@ -85,6 +85,9 @@ export const useCytoscape = (props: GraphViewProps): CytoscapeHookType => {
       cyInstance.on('select', event => {
         propsRef.current.onSelectionChange?.(event)
       });
+      cyInstance.on('unselect', event => {
+        propsRef.current.onSelectionChange?.(event)
+      });
 
       setCy(cyInstance)
 

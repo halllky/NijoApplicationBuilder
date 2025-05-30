@@ -493,9 +493,9 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                     (rowIndex === activeCell.rowIndex || colIndex === activeCell.colIndex) &&
                     !(rowIndex === activeCell.rowIndex && colIndex === activeCell.colIndex)
                   ) {
-                    dataColumnClassName += ' bg-gray-100' // アクティブセルの十字方向
+                    dataColumnClassName += ' bg-gray-50' // アクティブセルの十字方向
                   } else {
-                    dataColumnClassName += ' bg-gray-50' // その他
+                    dataColumnClassName += ' bg-white' // その他
                   }
 
                   if (cellMeta?.originalColDef?.isFixed) dataColumnClassName += ` sticky` // z-indexをつけるとボディ列が列ヘッダより手前にきてしまうので設定しない
