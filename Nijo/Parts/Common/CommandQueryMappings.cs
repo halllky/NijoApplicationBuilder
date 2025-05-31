@@ -183,7 +183,7 @@ namespace Nijo.Parts.Common {
 
                     /** CommandModelの種類の一覧 */
                     export type {{COMMAND_MODEL_TYPE}}
-                    {{If(queryModelsOrderByDataFlow.Length == 0, () => $$"""
+                    {{If(commandModelsOrderByDataFlow.Length == 0, () => $$"""
                       = never
                     """).Else(() => $$"""
                     {{commandModelsOrderByDataFlow.SelectTextTemplate((agg, i) => $$"""
