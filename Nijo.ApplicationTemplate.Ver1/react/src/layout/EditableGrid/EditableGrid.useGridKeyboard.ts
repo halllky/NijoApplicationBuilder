@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from "react";
+import React, { useEffect, useCallback, useRef } from "react";
 import { CellPosition, CellSelectionRange } from ".";
 import type { Virtualizer } from '@tanstack/react-virtual';
 import * as Util from "../../util";
@@ -34,24 +34,9 @@ export function useGridKeyboard({
   setStringValuesToSelectedRange,
 }: UseGridKeyboardProps) {
   const anchorCellRef = useRef<CellPosition | null>(null);
-  const { isComposing } = Util.useIME();
-
-  // クリップボードへのコピー処理
-  const handleCopy = useEvent((e: ClipboardEvent) => {
-    if (!selectedRange || !e.clipboardData) return;
-
-    const startRow = Math.min(selectedRange.startRow, selectedRange.endRow);
-    const endRow = Math.max(selectedRange.startRow, selectedRange.endRow);
-    const startCol = Math.min(selectedRange.startCol, selectedRange.endCol);
-    const endCol = Math.max(selectedRange.startCol, selectedRange.endCol);
-
-    // このイベントハンドラではクリップボードデータを直接操作できないため、
-    // 呼び出し元から行データとカラム定義を渡す必要があります。
-    // このフックでは基本的なキーボードナビゲーションのみ扱います。
-  });
 
   // キーボードイベントハンドラ
-  const handleKeyDown = useEvent((e: KeyboardEvent) => {
+  const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = useEvent(e => {
     // 編集中はCellEditorに任せる
     if (isEditing) return;
 
@@ -272,13 +257,5 @@ export function useGridKeyboard({
     }
   });
 
-  // イベントリスナーの設定
-  useEffect(() => {
-    document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('copy', handleCopy);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('copy', handleCopy);
-    };
-  }, [handleKeyDown, handleCopy]);
+  return handleKeyDown
 }

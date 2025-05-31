@@ -331,7 +331,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   }, [rows, columnDefs, activeCell, setActiveCell, setSelectedRange]);
 
   // キーボード操作のセットアップ
-  useGridKeyboard({
+  const handleKeyDown = useGridKeyboard({
     activeCell,
     selectedRange,
     isEditing,
@@ -359,6 +359,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     <div
       ref={tableContainerRef}
       className={`overflow-auto bg-gray-200 relative ${className ?? ''}`}
+      onKeyDown={handleKeyDown}
       onMouseMove={(e) => {
         if (isDragging && tableBodyRef.current) {
           // マウス位置からテーブル内の行と列のインデックスを計算
