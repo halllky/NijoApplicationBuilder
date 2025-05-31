@@ -12,6 +12,7 @@ namespace Nijo.Parts.CSharp {
 
         public const string CURRENT_TIME = "CurrentTime";
         public const string CURRENT_USER = "CurrentUser";
+        public const string CONFIGURATION = "Configuration";
 
         private readonly Lock _lock = new();
         private readonly List<string> _sourceCode = [];
@@ -81,6 +82,12 @@ namespace Nijo.Parts.CSharp {
                         /// 現在操作中のユーザーの名前。データ更新時の更新者の記録などに使用。
                         /// </summary>
                         public virtual string {{CURRENT_USER}} => "UNDEFINED";
+
+                        /// <summary>
+                        /// 初期設定処理など
+                        /// </summary>
+                        public virtual {{ApplicationConfigure.ABSTRACT_CLASS_CORE}} {{CONFIGURATION}} => _configuration ??= ServiceProvider.GetRequiredService<{{ApplicationConfigure.ABSTRACT_CLASS_CORE}}>();
+                        private {{ApplicationConfigure.ABSTRACT_CLASS_CORE}}? _configuration;
 
                         /// <summary>
                         /// 現在のセッションの識別子。ログ出力に使用。

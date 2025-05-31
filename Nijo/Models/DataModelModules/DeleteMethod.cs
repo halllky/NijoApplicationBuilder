@@ -71,7 +71,7 @@ namespace Nijo.Models.DataModelModules {
                     }
                 """)}}
                     if (keyIsEmpty) {
-                        Log.Debug("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}削除で主キー空エラーが発生したデータ: {0}", command.ToJson());
+                        Log.Debug("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}削除で主キー空エラーが発生したデータ: {0}", {{ApplicationService.CONFIGURATION}}.ToJson(command));
                         return;
                     }
 
@@ -91,7 +91,7 @@ namespace Nijo.Models.DataModelModules {
 
                     if (dbEntity == null) {
                         messages.AddError({{MsgFactory.MSG}}.{{UpdateMethod.ERR_DATA_NOT_FOUND}}());
-                        Log.Debug("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}削除で削除対象が見つからないエラーが発生したデータ: {0}", command.ToJson());
+                        Log.Debug("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}削除で削除対象が見つからないエラーが発生したデータ: {0}", {{ApplicationService.CONFIGURATION}}.ToJson(command));
                         return;
                     }
 
@@ -103,7 +103,7 @@ namespace Nijo.Models.DataModelModules {
                         // 単なる必須入力漏れなどでもエラーログが出過ぎてしまうのを防ぐため、
                         // IgnoreConfirmがtrueのとき（==更新を確定するつもりのとき）のみ内容をログ出力する
                         if (context.Options.IgnoreConfirm) {
-                            Log.Debug("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}削除で入力エラーが発生した登録内容(JSON): {0}", command.ToJson());
+                            Log.Debug("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}削除で入力エラーが発生した登録内容(JSON): {0}", {{ApplicationService.CONFIGURATION}}.ToJson(command));
                         }
                         return;
                     }
@@ -135,12 +135,12 @@ namespace Nijo.Models.DataModelModules {
 
                         if (ex is DbUpdateConcurrencyException) {
                             messages.AddError({{MsgFactory.MSG}}.{{UpdateMethod.ERR_CONCURRENCY}}());
-                            Log.Warn("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}削除で楽観排他エラー: {0}", command.ToJson());
+                            Log.Warn("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}削除で楽観排他エラー: {0}", {{ApplicationService.CONFIGURATION}}.ToJson(command));
 
                         } else {
                             messages.AddError({{MsgFactory.MSG}}.{{UpdateMethod.ERR_ID_UNKNOWN}}(ex.Message));
                             Log.Error(ex);
-                            Log.Debug("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}削除でSQL発行時エラーが発生した登録内容(JSON): {0}", command.ToJson());
+                            Log.Debug("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}削除でSQL発行時エラーが発生した登録内容(JSON): {0}", {{ApplicationService.CONFIGURATION}}.ToJson(command));
                         }
                         return;
                     }
@@ -161,13 +161,13 @@ namespace Nijo.Models.DataModelModules {
                     } catch (Exception ex) {
                         messages.AddError({{MsgFactory.MSG}}.{{UpdateMethod.ERR_ID_UNKNOWN}}(ex.Message));
                         Log.Error(ex);
-                        Log.Debug("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}削除後エラーが発生した登録内容(JSON): {0}", command.ToJson());
+                        Log.Debug("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}削除後エラーが発生した登録内容(JSON): {0}", {{ApplicationService.CONFIGURATION}}.ToJson(command));
                         await DbContext.Database.CurrentTransaction.RollbackToSavepointAsync(SAVE_POINT);
                         return;
                     }
 
                     Log.Info("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}}データを物理削除しました。（{{keys.Select(x => x.LogTemplate).Join(", ")}}）", {{keys.Select(x => x.DbEntityFullPath).Join(", ")}});
-                    Log.Debug("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}} 削除パラメータ: {0}", command.ToJson());
+                    Log.Debug("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}} 削除パラメータ: {0}", {{ApplicationService.CONFIGURATION}}.ToJson(command));
                 }
                 /// <summary>
                 /// {{_rootAggregate.DisplayName}} の物理削除の確定前に実行される処理。

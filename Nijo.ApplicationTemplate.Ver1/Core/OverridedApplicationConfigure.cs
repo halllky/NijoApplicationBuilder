@@ -9,6 +9,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace MyApp.Core;
@@ -102,4 +105,19 @@ public class OverridedApplicationConfigure : DefaultConfiguration {
         return LogManager.GetCurrentClassLogger();
     }
     #endregion ログ
+
+
+    #region JSONシリアライズ設定
+    public override JsonSerializerOptions GetDefaultJsonSerializerOptions() {
+        var option = base.GetDefaultJsonSerializerOptions();
+
+        // 日本語などがUnicodeエスケープされるのを防ぐ
+        option.Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+
+        // nullはJSONに含めない
+        option.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+
+        return option;
+    }
+    #endregion JSONシリアライズ設定
 }

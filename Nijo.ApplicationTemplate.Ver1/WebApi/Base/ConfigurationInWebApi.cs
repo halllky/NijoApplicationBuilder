@@ -62,7 +62,8 @@ internal class ConfigurationInWebApi : DefaultConfigurationInWebApi {
         // のリクエストボディのこの名前のセクションにJSONで入っているのでそこから取得する
         const string PARAM_DATA = "complex-post-request-body";
 
-        var jsonOption = JsonUtil.GetDefaultJsonSerializerOptions();
+        var configuration = new OverridedApplicationConfigure();
+        var jsonOption = configuration.GetDefaultJsonSerializerOptions();
         var dataSection = bindingContext.HttpContext.Request.Form[PARAM_DATA];
         var data = JsonSerializer.Deserialize<TParameter>(dataSection.ToString(), jsonOption)
             ?? throw new InvalidOperationException("リクエストの型が不正です。");
@@ -72,7 +73,8 @@ internal class ConfigurationInWebApi : DefaultConfigurationInWebApi {
 
     public override IActionResult ToActionResult<TMessageRoot>(object? returnValue, IPresentationContext<TMessageRoot> presentationContext) {
         var ctx = (PresentationContextInWebApi<TMessageRoot>)presentationContext;
-        var jsonOptions = JsonUtil.GetDefaultJsonSerializerOptions();
+        var configuration = new OverridedApplicationConfigure();
+        var jsonOptions = configuration.GetDefaultJsonSerializerOptions();
 
         // レスポンスボディ。
         // 各項目の名前は `useHttpRequest.tsx` で定義されているものと合わせる必要がある

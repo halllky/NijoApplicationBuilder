@@ -160,7 +160,7 @@ namespace Nijo.Models.QueryModelModules {
                         // データ取得も直列で実行
                         loaded = converted.ToArray();
                     } catch {
-                        Log.Debug("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}} エラー発生時検索条件: {0}", searchCondition.ToJson());
+                        Log.Debug("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}} エラー発生時検索条件: {0}", {{ApplicationService.CONFIGURATION}}.ToJson(searchCondition));
                         try {
                             Log.Debug("{{_rootAggregate.DisplayName.Replace("\"", "\\\"")}} エラー発生時SQL: {0}", query.ToQueryString());
                         } catch {

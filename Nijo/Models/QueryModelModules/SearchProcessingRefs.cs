@@ -174,7 +174,7 @@ namespace Nijo.Models.QueryModelModules {
                         totalCount = filtered.Count();
                         loaded = converted.ToArray();
                     } catch {
-                        Log.Debug("{{_entryAggregate.DisplayName.Replace("\"", "\\\"")}} エラー発生時検索条件: {0}", searchCondition.ToJson());
+                        Log.Debug("{{_entryAggregate.DisplayName.Replace("\"", "\\\"")}} エラー発生時検索条件: {0}", {{ApplicationService.CONFIGURATION}}.ToJson(searchCondition));
                         try {
                             Log.Debug("{{_entryAggregate.DisplayName.Replace("\"", "\\\"")}} エラー発生時SQL: {0}", query.ToQueryString());
                         } catch {
