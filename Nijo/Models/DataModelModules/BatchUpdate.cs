@@ -66,8 +66,8 @@ namespace Nijo.Models.DataModelModules {
                 public async Task<IActionResult> BatchUpdate(
                     [ModelBinder(BinderType = typeof({{AspNetController.COMPLEX_REQUEST_BODY_BINDER}}<List<{{displayData.CsClassName}}>>))] List<{{displayData.CsClassName}}> {{AspNetController.DATA}},
                     [ModelBinder(BinderType = typeof({{AspNetController.PRESENTATION_CONTEXT_BINDER}}<{{MessageContainer.CONCRETE_CLASS_LIST}}<{{displayDataMessages.CsClassName}}>>))] {{PresentationContext.INTERFACE}}<{{MessageContainer.CONCRETE_CLASS_LIST}}<{{displayDataMessages.CsClassName}}>> {{AspNetController.CONTEXT}}) {
-                    await _applicationService.{{APP_SRV_METHOD}}(data.ToArray(), context);
-                    return _webConfigure.{{AspNetController.TO_ACTION_RESULT}}(null, context);
+                    var commited = await _applicationService.{{APP_SRV_METHOD}}(data.ToArray(), context);
+                    return _webConfigure.{{AspNetController.TO_ACTION_RESULT}}(commited, context);
                 }
                 """;
         }
@@ -94,7 +94,7 @@ namespace Nijo.Models.DataModelModules {
                 /// 途中でエラーが発生した場合でも残りの要素のエラーチェックまでは実行されます。
                 /// </param>
                 /// <param name="context">エラーメッセージや更新オプションの情報を持ったコンテキスト引数</param>
-                public virtual async Task {{APP_SRV_METHOD}}({{AppSrvArgType}}[] displayDataItems, {{PresentationContext.INTERFACE}}<{{MessageContainer.CONCRETE_CLASS_LIST}}<{{displayDataMssage.CsClassName}}>> context) {
+                public virtual async Task<bool> {{APP_SRV_METHOD}}({{AppSrvArgType}}[] displayDataItems, {{PresentationContext.INTERFACE}}<{{MessageContainer.CONCRETE_CLASS_LIST}}<{{displayDataMssage.CsClassName}}>> context) {
                     // エラーチェックのみの1巡目処理の場合はトランザクションを開始しない。
                     // なお、DataModelの登録更新処理では、トランザクションが開始されないまま更新実行しようとすると、即時コミットではなくエラーになる。
                     using var tran = context.Options.IgnoreConfirm
@@ -127,14 +127,16 @@ namespace Nijo.Models.DataModelModules {
                     // エラーチェックのみの1巡目処理の場合はここで終了
                     if (!context.Options.IgnoreConfirm) {
                         context.AddConfirm({{MsgFactory.MSG}}.{{CONFIRM_SAVE_OR_NOT}}());
-                        return;
+                        return false;
                     }
 
                     // 1件でもエラーがあればロールバック
                     if (context.Messages.HasError()) {
                         await tran!.RollbackAsync();
+                        return false;
                     } else {
                         await tran!.CommitAsync();
+                        return true;
                     }
                 }
                 """;
