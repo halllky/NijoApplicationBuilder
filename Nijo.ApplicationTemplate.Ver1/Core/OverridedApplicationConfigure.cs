@@ -36,8 +36,8 @@ public class OverridedApplicationConfigure : DefaultConfiguration {
         services.AddTransient(provider => {
             var settings = new RuntimeSetting();
             new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json", true)
-                .AddJsonFile("appsettings.Development.json", false)
+                .AddJsonFile("appsettings.json", false)
+                .AddJsonFile("appsettings.Development.json", true)
                 .Build()
                 .GetSection("Nijo")
                 .Bind(settings);

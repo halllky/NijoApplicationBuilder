@@ -149,7 +149,10 @@ export const useHttpRequest = () => {
           if (window.confirm(json.confirms.join('\n'))) {
             // 承諾された場合はignoreConfirmをtrueにしてHTTPリクエスト2巡目に進む
             searchParams.set(IGNORE_CONFIRM, 'true')
-            break
+            continue
+          } else {
+            // 承諾されなかった場合はリクエストを中止
+            return undefined
           }
         }
 
@@ -215,7 +218,7 @@ const handleUnknownResponse = (response: Response): string => {
  * 「～しますがよろしいですか？」の確認メッセージが表示される前の、エラーチェックのみを行なうHTTPリクエストでは付されず、
  * 確認メッセージが承諾された後の本処理を行なうHTTPリクエストではtrueが指定される。
  */
-const IGNORE_CONFIRM = "ignoreConfirm"
+const IGNORE_CONFIRM = "ignore-confirm"
 
 export type ComplexPostOptions = {
   /** 確認メッセージを表示しない */

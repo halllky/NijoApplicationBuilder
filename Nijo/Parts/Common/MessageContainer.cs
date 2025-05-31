@@ -414,11 +414,27 @@ namespace Nijo.Parts.Common {
                             /// <summary>
                             /// 引数のメッセージのコンテナの形と対応する既定のインスタンスを作成して返します。
                             /// </summary>
-                            public static T {{GET_DEFAULT_CLASS}}<T>(IEnumerable<string> path) where T : {{INTERFACE}} {
-                                var type = typeof(T);
+                            public static T GetDefaultClass<T>(IEnumerable<string> path) where T : {{INTERFACE}} {
+                                return (T)GetDefaultClass(typeof(T), path);
+                            }
+                            /// <summary>
+                            /// 引数のメッセージのコンテナの形と対応する既定のインスタンスを作成して返します。
+                            /// </summary>
+                            public static {{INTERFACE}} GetDefaultClass(Type type, IEnumerable<string> path) {
                         {{registered.OrderBy(kv => kv.Key).SelectTextTemplate(kv => $$"""
-                                if (type == typeof({{kv.Key}})) return (T)(object)new {{kv.Value}}(path);
+                                if (type == typeof({{kv.Key}})) return new {{kv.Value}}(path);
                         """)}}
+
+                                // メッセージのリストの場合
+                                if (type.IsGenericType && (type.GetGenericTypeDefinition() == typeof({{INTERFACE_LIST}}<>)
+                                                        || type.GetGenericTypeDefinition() == typeof({{CONCRETE_CLASS_LIST}}<>))) {
+                                    var itemType = type.GetGenericArguments()[0];
+
+                        {{registered.OrderBy(kv => kv.Key).SelectTextTemplate(kv => $$"""
+                                    if (itemType == typeof({{kv.Key}})) return new {{CONCRETE_CLASS_LIST}}<{{kv.Key}}>(path, index => new {{kv.Value}}([.. path, index.ToString()]));
+                        """)}}
+                                }
+
                                 throw new InvalidOperationException($"{type.Name} には既定のメッセージコンテナクラスが存在しません。");
                             }
                         }

@@ -80,6 +80,9 @@ namespace Nijo.Parts.CSharp {
                     {{_converterClasses.OrderBy(stmt => stmt).SelectTextTemplate(stmt => $$"""
                             yield return {{stmt}};
                     """)}}
+                    {{If(_valueObjectRootAggregates.Count == 0 && _converterClasses.Count == 0, () => $$"""
+                            yield break;
+                    """)}}
                         }
 
                         /// <summary>
