@@ -64,7 +64,9 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
 
   React.useEffect(() => {
     if (caretCell) {
-      const columnDef = (api.getAllLeafColumns()[caretCell.colIndex]?.columnDef.meta as ColumnMetadataInternal<T> | undefined)?.originalColDef
+      // チェックボックス列を除いた表示列を取得
+      const visibleDataColumns = api.getVisibleLeafColumns().filter(c => (c.columnDef.meta as ColumnMetadataInternal<T> | undefined)?.isRowHeader !== true);
+      const columnDef = (visibleDataColumns[caretCell.colIndex]?.columnDef.meta as ColumnMetadataInternal<T> | undefined)?.originalColDef
       setCaretCellEditingInfo(columnDef)
 
       // エディタを編集対象セルの位置に移動させる
@@ -83,7 +85,7 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
     } else {
       setCaretCellEditingInfo(undefined)
     }
-  }, [caretCell, api, containerRef])
+  }, [caretCell, api, containerRef, getPixel])
   React.useEffect(() => {
     if (caretCellEditingInfo) editorRef.current?.focus()
   }, [caretCellEditingInfo, getPixel])
