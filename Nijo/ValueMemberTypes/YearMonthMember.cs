@@ -38,9 +38,7 @@ internal class YearMonthMember : IValueMemberType {
     };
 
     void IValueMemberType.RegisterDependencies(IMultiAggregateSourceFileManager ctx) {
-        // JSONシリアライズの登録
-        ctx.Use<Parts.CSharp.JsonUtil>().AddConverterClass($"new YearMonth.YearMonthJsonConverter()");
-
+        // 特になし
     }
 
     string IValueMemberType.RenderCreateDummyDataValueBody(CodeRenderingContext ctx) {
@@ -233,38 +231,6 @@ internal class YearMonthMember : IValueMemberType {
                     /// </summary>
                     public static explicit operator int(YearMonth yearMonth) {
                         return yearMonth._value;
-                    }
-
-                    /// <summary>
-                    /// JSON変換用のコンバーター
-                    /// </summary>
-                    [JsonConverter(typeof(YearMonthJsonConverter))]
-                    public class YearMonthJsonConverter : JsonConverter<YearMonth> {
-                        public override YearMonth Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
-                            if (reader.TokenType == JsonTokenType.Number) {
-                                return new YearMonth(reader.GetInt32());
-                            } else if (reader.TokenType == JsonTokenType.String) {
-                                string value = reader.GetString() ?? throw new JsonException();
-                                if (int.TryParse(value, out int result)) {
-                                    return new YearMonth(result);
-                                }
-
-                                // YYYY/MM形式の場合
-                                if (value.Length == 7 && value[4] == '/') {
-                                    int year = int.Parse(value.Substring(0, 4));
-                                    int month = int.Parse(value.Substring(5, 2));
-                                    return new YearMonth(year, month);
-                                }
-
-                                throw new JsonException($"不正な年月形式です: {value}");
-                            }
-
-                            throw new JsonException();
-                        }
-
-                        public override void Write(Utf8JsonWriter writer, YearMonth value, JsonSerializerOptions options) {
-                            writer.WriteStringValue($"{value.Year:0000}/{value.Month:00}");
-                        }
                     }
                 }
                 """,

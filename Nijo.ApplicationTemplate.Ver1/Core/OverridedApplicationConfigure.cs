@@ -7,7 +7,9 @@ using NLog.Config;
 using NLog.Targets;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -108,8 +110,14 @@ public class OverridedApplicationConfigure : DefaultConfiguration {
 
 
     #region JSONシリアライズ設定
-    public override JsonSerializerOptions GetDefaultJsonSerializerOptions() {
-        var option = base.GetDefaultJsonSerializerOptions();
+    public override JsonSerializerOptions EditDefaultJsonSerializerOptions(JsonSerializerOptions option) {
+        base.EditDefaultJsonSerializerOptions(option);
+
+        // 型ごとのシリアライズ設定
+        option.Converters.Add(new DateTimeConverter());
+        option.Converters.Add(new DateOnlyConverter());
+        option.Converters.Add(new YearMonthJsonConverter());
+        option.Converters.Add(new EnumDisplayNameConverterFactory());
 
         // 日本語などがUnicodeエスケープされるのを防ぐ
         option.Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
@@ -118,6 +126,135 @@ public class OverridedApplicationConfigure : DefaultConfiguration {
         option.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 
         return option;
+    }
+    /// <summary>
+    /// 日付時刻。ISO8601形式でシリアライズする。空文字はnullとみなす
+    /// </summary>
+    private class DateTimeConverter : JsonConverter<DateTime?> {
+        public override DateTime? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
+            var strValue = reader.GetString();
+            if (string.IsNullOrWhiteSpace(strValue)) {
+                return null;
+            }
+            return DateTime.Parse(strValue);
+        }
+        public override void Write(Utf8JsonWriter writer, DateTime? value, JsonSerializerOptions options) {
+            if (value == null) {
+                writer.WriteNullValue();
+            } else {
+                writer.WriteStringValue(value.Value.ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ"));
+            }
+        }
+    }
+    /// <summary>
+    /// 日付。yyyy-MM-dd形式でシリアライズする。空文字はnullとみなす
+    /// </summary>
+    private class DateOnlyConverter : JsonConverter<DateOnly?> {
+        public override DateOnly? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
+            var strValue = reader.GetString();
+            if (string.IsNullOrWhiteSpace(strValue)) {
+                return null;
+            }
+            return DateOnly.Parse(strValue);
+        }
+        public override void Write(Utf8JsonWriter writer, DateOnly? value, JsonSerializerOptions options) {
+            if (value == null) {
+                writer.WriteNullValue();
+            } else {
+                writer.WriteStringValue(value.ToString());
+            }
+        }
+    }
+    /// <summary>
+    /// 年月。yyyy/MM形式でシリアライズする。空文字はnullとみなす
+    /// </summary>
+    public class YearMonthJsonConverter : JsonConverter<YearMonth?> {
+        public override YearMonth? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
+            if (reader.TokenType == JsonTokenType.Number) {
+                return new YearMonth(reader.GetInt32());
+            } else if (reader.TokenType == JsonTokenType.String) {
+                string value = reader.GetString() ?? throw new JsonException();
+                if (int.TryParse(value, out int result)) {
+                    return new YearMonth(result);
+                }
+
+                // YYYY/MM形式の場合
+                if (value.Length == 7 && value[4] == '/') {
+                    int year = int.Parse(value.Substring(0, 4));
+                    int month = int.Parse(value.Substring(5, 2));
+                    return new YearMonth(year, month);
+                }
+
+                throw new JsonException($"不正な年月形式です: {value}");
+            }
+
+            throw new JsonException();
+        }
+
+        public override void Write(Utf8JsonWriter writer, YearMonth? value, JsonSerializerOptions options) {
+            if (value == null) {
+                writer.WriteNullValue();
+            } else {
+                writer.WriteStringValue($"{value.Value.Year:0000}/{value.Value.Month:00}");
+            }
+        }
+    }
+    /// <summary>
+    /// enumのJSONシリアライズ設定。Display属性が指定されている場合はそれが優先。指定なしの場合は物理名でシリアライズ
+    /// </summary>
+    private class EnumDisplayNameConverterFactory : JsonConverterFactory {
+        public override bool CanConvert(Type typeToConvert) {
+            return typeToConvert.IsEnum;
+        }
+
+        public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options) {
+            var converterType = typeof(EnumDisplayNameConverter<>).MakeGenericType(typeToConvert);
+            return (JsonConverter)Activator.CreateInstance(converterType, typeToConvert)!;
+        }
+    }
+    /// <summary>
+    /// enumのJSONシリアライズ設定。[Display(Name = "...")]属性が指定されている場合はNameの値でシリアライズされる。指定なしの場合は物理名でシリアライズ
+    /// </summary>
+    private class EnumDisplayNameConverter<T> : JsonConverter<T?> where T : struct, Enum {
+
+        // Display属性の値とenumの値のマッピングのキャッシュ
+        private Dictionary<string, T>? _enumDisplayNameMap;
+        private Dictionary<string, T> GetEnumDisplayNameMap() {
+            _enumDisplayNameMap ??= Enum
+                .GetValues<T>()
+                .ToDictionary(e => e.GetType().GetField(e.ToString())?.GetCustomAttribute<DisplayAttribute>()?.Name ?? e.ToString(), e => e);
+            return _enumDisplayNameMap;
+        }
+
+        public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
+            // [Display(Name = "...")]属性が指定されている場合はNameの値でシリアライズされるため strValueは Name の値。
+            // GetCustomAttribute で取得した Name 属性の値と突き合わせ、一致するものを探す。
+            var strValue = reader.GetString();
+
+            // 空文字はnull
+            if (string.IsNullOrWhiteSpace(strValue)) {
+                return default;
+            }
+
+            // GetCustomAttribute で取得した Name 属性の値と突き合わせ、一致するものを探す。
+            var dict = GetEnumDisplayNameMap();
+            if (dict.TryGetValue(strValue, out var enumValue)) {
+                return enumValue;
+            }
+
+            // 一致するものがない場合は例外
+            throw new JsonException($"不正なenum値です: {strValue}");
+        }
+
+        public override void Write(Utf8JsonWriter writer, T? value, JsonSerializerOptions options) {
+            if (value == null) {
+                writer.WriteNullValue();
+            } else {
+                // [Display(Name = "...")]属性が指定されている場合はNameの値でシリアライズ
+                var displayName = GetEnumDisplayNameMap().Single(e => e.Value.Equals(value.Value)).Key;
+                writer.WriteStringValue(displayName);
+            }
+        }
     }
     #endregion JSONシリアライズ設定
 }

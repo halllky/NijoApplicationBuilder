@@ -35,6 +35,11 @@ var appConfig = new OverridedApplicationConfigure();
 appConfig.ConfigureServices(builder.Services);
 builder.Services.AddScoped<DefaultConfigurationInWebApi, ConfigurationInWebApi>();
 
+// JSONシリアライズ設定
+builder.Services.ConfigureHttpJsonOptions(options => {
+    appConfig.EditDefaultJsonSerializerOptions(options.SerializerOptions);
+});
+
 // --------------------------------
 
 var app = builder.Build();
