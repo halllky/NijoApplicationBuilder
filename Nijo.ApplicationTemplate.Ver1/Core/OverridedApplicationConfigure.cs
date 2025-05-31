@@ -204,12 +204,21 @@ public class OverridedApplicationConfigure : DefaultConfiguration {
     /// </summary>
     private class EnumDisplayNameConverterFactory : JsonConverterFactory {
         public override bool CanConvert(Type typeToConvert) {
-            return typeToConvert.IsEnum;
+            // 通常のenum型、またはNullable<enum>型をサポート
+            return typeToConvert.IsEnum || (Nullable.GetUnderlyingType(typeToConvert)?.IsEnum ?? false);
         }
 
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options) {
-            var converterType = typeof(EnumDisplayNameConverter<>).MakeGenericType(typeToConvert);
-            return (JsonConverter)Activator.CreateInstance(converterType, typeToConvert)!;
+            // typeToConvert が Nullable<TEnum> の場合は TEnum を、
+            // そうでなければそのままの型 (TEnum) を取得する。
+            var underlyingType = Nullable.GetUnderlyingType(typeToConvert);
+            var enumTypeToConvert = underlyingType ?? typeToConvert;
+
+            // EnumDisplayNameConverter<TEnum> を作成 (TEnum は非nullableなenum型)
+            var converterType = typeof(EnumDisplayNameConverter<>).MakeGenericType(enumTypeToConvert);
+
+            // EnumDisplayNameConverter のコンストラクタに引数がないことをユーザーが修正済みのため、引数なしでインスタンス化
+            return (JsonConverter)Activator.CreateInstance(converterType)!;
         }
     }
     /// <summary>
