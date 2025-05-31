@@ -55,6 +55,9 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     return getColumnDefs(cellType)
   }, [getColumnDefs, cellType])
 
+  // table インスタンスへの参照を保持 (コールバック内で最新の table を参照するため)
+  const tableRef = useRef<ReturnType<typeof useReactTable<TRow>> | null>(null);
+
   // 列状態 (サイズ変更用)
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>(() => ({
     'rowHeader': ROW_HEADER_WIDTH
@@ -82,26 +85,32 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   // キーボードで文字入力したとき即座に編集を開始できるようにするため
   // アクティブセルが変更されるたびにセルエディタにフォーカスを当てる
   const onActiveCellChanged = useCallback((cell: CellPosition | null) => {
-    cellEditorRef.current?.textarea?.focus()
-    cellEditorRef.current?.textarea?.select()
 
-    // エディタの初期値はそのセルの値
-    if (cell && cellEditorRef.current) {
+    if (cell && cellEditorRef.current && tableRef.current) {
       const row = rows[cell.rowIndex]
-      const colDef = columnDefs[cell.colIndex]
-      if (row && colDef && colDef.onStartEditing) {
-        colDef.onStartEditing({
-          rowIndex: cell.rowIndex,
-          row: row,
-          setEditorInitialValue: (value: string) => {
-            if (cellEditorRef.current?.textarea) {
-              cellEditorRef.current.textarea.value = value
-            }
-          },
-        })
+      const visibleDataColumns = tableRef.current.getVisibleLeafColumns().filter(c => c.id !== 'rowHeader');
+      const targetColumn = visibleDataColumns[cell.colIndex];
+      if (targetColumn) {
+        const meta = targetColumn.columnDef.meta as ColumnMetadataInternal<TRow> | undefined;
+        const colDef = meta?.originalColDef;
+        if (row && colDef && colDef.onStartEditing) {
+          colDef.onStartEditing({
+            rowIndex: cell.rowIndex,
+            row: row,
+            setEditorInitialValue: (value: string) => {
+              if (cellEditorRef.current?.textarea) {
+                cellEditorRef.current.setEditorInitialValue(value)
+                window.setTimeout(() => {
+                  cellEditorRef.current?.textarea?.focus()
+                  cellEditorRef.current?.textarea?.select()
+                }, 10)
+              }
+            },
+          })
+        }
       }
     }
-  }, [cellEditorRef, rows, columnDefs])
+  }, [cellEditorRef, rows, columnDefs, tableRef])
 
   // 選択状態
   const {
@@ -115,7 +124,11 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     handleToggleAllRows,
     handleToggleRow,
     selectRows
-  } = useSelection(rows.length, columnDefs.length, onActiveCellChanged)
+  } = useSelection(
+    rows.length,
+    columnDefs.filter(cd => !cd.invisible).length,
+    onActiveCellChanged
+  )
 
   // 編集状態管理
   const [isEditing, setIsEditing] = useState(false);
@@ -161,7 +174,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
           e.stopPropagation(); // イベント伝播を停止
 
           // アクティブセルを左上ボディセルに設定
-          if (rows.length > 0 && columnDefs.length > 0) {
+          if (rows.length > 0 && columnDefs.filter(cd => !cd.invisible).length > 0) {
             setActiveCell({ rowIndex: 0, colIndex: 0 });
           }
         };
@@ -196,7 +209,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
           ? getValueByPath(row, colDef.fieldPath)
           : undefined
         const tableColumnDef = columnHelper.accessor(accessor, {
-          id: `col-${colIndex}`, // 元のインデックスをIDに使用
+          id: `col-${colIndex}`,
           size: colDef.defaultWidth ?? DEFAULT_COLUMN_WIDTH,
           enableResizing: colDef.enableResizing ?? true,
           header: ({ header }) => (
@@ -217,9 +230,9 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
         return tableColumnDef;
       });
 
-    const generatedColumns = [rowHeaderColumn, ...dataColumns];
+    const generatedColumns = showCheckBox ? [rowHeaderColumn, ...dataColumns] : dataColumns;
     return generatedColumns;
-  }, [columnDefs, showCheckBox, allRowsChecked, handleToggleAllRows, columnHelper, rows.length, setActiveCell, cellType]); // 依存配列に cellType を追加
+  }, [columnDefs, showCheckBox, allRowsChecked, handleToggleAllRows, columnHelper, rows.length, setActiveCell, cellType]);
 
   const table = useReactTable({
     data: rows,
@@ -229,7 +242,12 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
       columnSizing,
       columnVisibility: {
         'rowHeader': showCheckBox !== undefined && showCheckBox !== false,
-        ...Object.fromEntries(columnDefs.map((colDef, i) => [`col-${i}`, !colDef.invisible])),
+        ...Object.fromEntries(
+          columnDefs.map((colDef, i) => [
+            `col-${colDef.fieldPath || colDef.header || i}`,
+            !colDef.invisible
+          ])
+        ),
       },
     },
     onColumnSizingChange: setColumnSizing,
@@ -241,6 +259,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
       maxSize: 500,
     },
   });
+  tableRef.current = table
 
   // 横幅情報
   const tableTotalWidth = table.getTotalSize();
@@ -317,31 +336,17 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     selectedRange,
     isEditing,
     rowCount: rows.length,
-    colCount: columnDefs.length,
+    colCount: table.getVisibleLeafColumns().filter(c => c.id !== 'rowHeader').length,
     setActiveCell,
     setSelectedRange,
-    startEditing: (rowIndex: number, colIndex: number) => {
-      if (activeCell?.rowIndex === rowIndex && activeCell?.colIndex === colIndex) {
-        const row = table.getCoreRowModel().flatRows[rowIndex];
-        if (row) {
-          // 表示されているすべてのリーフカラムを取得
-          const visibleLeafColumns = table.getVisibleLeafColumns();
-          // データ列のみをフィルタリング（colIndexはこの中でのインデックス）
-          const dataLeafColumns = visibleLeafColumns.filter(col => !(col.columnDef.meta as ColumnMetadataInternal<TRow>)?.isRowHeader);
-
-          if (colIndex >= 0 && colIndex < dataLeafColumns.length) {
-            const targetColumnId = dataLeafColumns[colIndex].id;
-            const cell = row.getVisibleCells().find(c => c.column.id === targetColumnId);
-
-            if (cell && cellEditorRef.current) {
-              // 行ヘッダーかどうかのチェックは CellEditor 側の startEditing に任せる
-              // (CellEditor側では originalColDef を見るため、データセルなら問題なく進むはず)
-              cellEditorRef.current.startEditing(cell);
-            }
-          }
+    startEditing: (rowIndex, colIndex) => {
+      const visibleDataColumns = table.getVisibleLeafColumns().filter(c => c.id !== 'rowHeader');
+      const targetColumn = visibleDataColumns[colIndex];
+      if (targetColumn) {
+        const targetCell = table.getRow(rowIndex.toString()).getAllCells().find(c => c.column.id === targetColumn.id);
+        if (targetCell) {
+          cellEditorRef.current?.startEditing(targetCell);
         }
-      } else {
-        setActiveCell({ rowIndex, colIndex });
       }
     },
     getIsReadOnly,
@@ -513,19 +518,21 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                         left: cellMeta?.originalColDef?.isFixed ? `${cell.column.getStart()}px` : undefined,
                       }}
                       onClick={(e) => {
-                        // console.log('[EditableGrid] Cell clicked. Calculated colIndex:', colIndex, 'Raw cell.column.id:', cell.column.id, 'Cell meta:', cellMeta);
-                        // console.log('[EditableGrid] visibleDataColumns IDs:', visibleDataColumns.map(c => c.id));
-                        // console.log('[EditableGrid] findIndex result for current cell.column.id in visibleDataColumns:', visibleDataColumns.findIndex(c => c.id === cell.column.id));
-                        // console.log('[EditableGrid] table.getAllLeafColumns():', table.getAllLeafColumns().map(c => ({ id: c.id, isRowHeader: (c.columnDef.meta as ColumnMetadataInternal<TRow>)?.isRowHeader, header: c.columnDef.header }) ));
-                        handleCellClick(e, rowIndex, colIndex);
+                        const visibleDataColumns = table.getVisibleLeafColumns().filter(c => c.id !== 'rowHeader');
+                        const colIndex = visibleDataColumns.findIndex(c => c.id === cell.column.id);
+                        if (cell.column.id !== 'rowHeader' && colIndex !== -1) {
+                          handleCellClick(e, rowIndex, colIndex);
+                        }
                       }}
                       onDoubleClick={() => {
                         if (!getIsReadOnly(rowIndex) && cellEditorRef.current) {
                           cellEditorRef.current.startEditing(cell);
                         }
                       }}
-                      onMouseDown={() => {
-                        if (!isEditing) {
+                      onMouseDown={(e) => {
+                        const visibleDataColumns = table.getVisibleLeafColumns().filter(c => c.id !== 'rowHeader');
+                        const colIndex = visibleDataColumns.findIndex(c => c.id === cell.column.id);
+                        if (cell.column.id !== 'rowHeader' && colIndex !== -1) {
                           handleMouseDown(rowIndex, colIndex);
                         }
                       }}

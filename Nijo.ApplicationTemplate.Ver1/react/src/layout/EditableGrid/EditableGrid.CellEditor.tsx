@@ -20,6 +20,7 @@ export type CellEditorProps<T extends ReactHookForm.FieldValues> = {
 /** CellEditorのref */
 export type CellEditorRef<T> = {
   focus: () => void
+  setEditorInitialValue: (value: string | undefined) => void
   startEditing: (cell: RT.Cell<T, unknown>) => void
   textarea: HTMLTextAreaElement | null
 }
@@ -78,7 +79,7 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
         containerRef.current.style.minHeight = `${bottom - top + 1}px`
       }
       // 前のセルで入力した値をクリアする
-      setUnComittedText('')
+      // setUnComittedText('')
     } else {
       setCaretCellEditingInfo(undefined)
     }
@@ -222,9 +223,10 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
 
   React.useImperativeHandle(ref, () => ({
     focus: () => editorRef.current?.focus({ preventScroll: true }),
+    setEditorInitialValue: setUnComittedText,
     startEditing,
     textarea: editorRef.current,
-  }), [startEditing, editorRef])
+  }), [startEditing, editorRef, setUnComittedText])
 
   return (
     <label ref={containerRef}
