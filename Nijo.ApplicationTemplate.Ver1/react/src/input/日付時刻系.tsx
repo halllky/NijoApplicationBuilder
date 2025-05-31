@@ -22,6 +22,7 @@ export const DateInput = <
           <input
             type="date"
             {...field}
+            value={field.value ?? ''}
             className="bg-white border border-gray-300 p-1"
             onBlur={(e) => {
               // フォーカスアウト時にノーマライズとバリデーションを発火

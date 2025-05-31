@@ -56,3 +56,33 @@ export const getSchema = () => {
     getSingleViewUrlKeyNames: getSingleViewUrlKeys,
   }
 }
+
+/**
+ * 検索条件として使用されるメンバーのエントリ（パスとメタデータ）のリストを取得します。
+ * ネストされたメンバーもフラットなリストとして返します。
+ */
+export const getSearchConditionEntries = (
+  metadata: MetadataForPage.StructureMetadata,
+  _schema: MetadataSchema, // schema パラメータは現時点では直接使用しないが、将来的な拡張性のために残す
+  currentPath: string[] = [],
+): Array<{ path: string[], member: MetadataForPage.StructureMetadataMember }> => {
+  const entries: Array<{ path: string[], member: MetadataForPage.StructureMetadataMember }> = [];
+
+  for (const memberName in metadata.members) {
+    const member = metadata.members[memberName];
+    const newPath = [...currentPath, memberName];
+
+    // getEntry の代替: 直接 member を使用する
+
+    if (member.type === 'ChildAggregate') {
+      // ChildAggregate のメンバーを再帰的に探索
+      entries.push(...getSearchConditionEntries(member as MetadataForPage.StructureMetadata, _schema, newPath));
+    } else if (member.type !== 'RootAggregate' && member.type !== 'ChildrenAggregate') {
+      // ValueMetadata, RefMetadata, Enum, ValueObject の場合
+      // RootAggregate と ChildrenAggregate は検索条件の末端にはならないため除外
+      entries.push({ path: newPath, member });
+    }
+    // RootAggregate と ChildrenAggregate 自体は entries に追加しない (そのメンバーは再帰で処理される)
+  }
+  return entries;
+};

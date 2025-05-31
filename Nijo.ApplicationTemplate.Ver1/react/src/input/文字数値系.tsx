@@ -21,6 +21,7 @@ export const Word = <
           <input
             type="text"
             {...field}
+            value={field.value ?? ''}
             readOnly={props.readOnly}
             className="bg-white border border-gray-300 p-1"
           />
@@ -47,6 +48,7 @@ export const Description = <
         <div className={`flex flex-col ${props.className ?? ''}`}>
           <textarea
             {...field}
+            value={field.value ?? ''}
             className="bg-white border border-gray-300 p-1"
           />
           <FieldErrorView name={props.name} />
@@ -75,6 +77,7 @@ export const NumberInput = <
           <input
             type="number"
             {...field}
+            value={field.value ?? ''}
             className="bg-white border border-gray-300 p-1"
             onBlur={(e) => {
               // フォーカスアウト時にノーマライズとバリデーションを発火
