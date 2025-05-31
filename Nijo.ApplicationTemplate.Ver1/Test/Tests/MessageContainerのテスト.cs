@@ -1,8 +1,10 @@
-﻿using MyApp.Core;
+using MyApp.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 
@@ -29,7 +31,7 @@ internal class MessageContainerのテスト {
 
         // ---------------------
         // Assert
-        Console.WriteLine($"JSON: {json}");
+        Logout(json);
 
         // ルートレベルのエラーを確認
         Assert.That(json.ContainsKey("error"), Is.True, "ルートのエラーメッセージが存在しません");
@@ -101,7 +103,7 @@ internal class MessageContainerのテスト {
         // ---------------------
         // Act
         var json = container.ToJsonObject();
-        Console.WriteLine($"JSON: {json}");
+        Logout(json);
 
         // ---------------------
         // Assert
@@ -146,7 +148,7 @@ internal class MessageContainerのテスト {
         // ---------------------
         // Act
         var json = container.ToJsonObject();
-        Console.WriteLine($"3種類のメッセージJSON: {json}");
+        Logout(json);
 
         // ---------------------
         // Assert
@@ -180,7 +182,7 @@ internal class MessageContainerのテスト {
         // ---------------------
         // Act
         var json = container.ToJsonObject();
-        Console.WriteLine($"複数エラーJSON: {json}");
+        Logout(json);
 
         // ---------------------
         // Assert
@@ -219,7 +221,7 @@ internal class MessageContainerのテスト {
         // ---------------------
         // Act
         var json = container.ToJsonObject();
-        Console.WriteLine($"階層メッセージJSON: {json}");
+        Logout(json);
 
         // ---------------------
         // Assert
@@ -244,5 +246,13 @@ internal class MessageContainerのテスト {
         // インデックス7の要素確認
         Assert.That(付属品Json.ContainsKey("7"), Is.True, "付属品[7]が存在しません");
         Assert.That((string)付属品Json["7"]!["数量"]!["warn"]![0]!, Is.EqualTo("数量が標準的ではありません。"));
+    }
+
+    private static void Logout(JsonObject jsonObject) {
+        var options = new JsonSerializerOptions {
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            WriteIndented = true,
+        };
+        TestContext.Out.WriteLine($"実際の値: {JsonSerializer.Serialize(jsonObject, options)}");
     }
 }

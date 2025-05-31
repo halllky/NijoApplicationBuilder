@@ -82,6 +82,16 @@ namespace Nijo.Parts.Common {
                 """)}}
                 """)}}
                     {{WithIndent(RenderCSharpAdditionalSource(), "    ")}}
+
+                    public override IEnumerable<IMessageContainer> EnumerateChildren() {
+                {{If(members.Length == 0, () => $$"""
+                        yield break;
+                """).Else(() => $$"""
+                {{members.SelectTextTemplate(m => $$"""
+                        yield return {{m.PhysicalName}};
+                """)}}
+                """)}}
+                    }
                 }
                 """;
         }
