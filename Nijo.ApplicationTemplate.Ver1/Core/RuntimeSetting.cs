@@ -28,6 +28,11 @@ public class RuntimeSetting {
     /// </summary>
     public List<DbProfile> DbProfiles { get; set; } = [];
 
+    /// <summary>
+    /// マイグレーションスクリプトが格納されているフォルダパス
+    /// </summary>
+    public string MigrationsScriptFolder { get; set; } = string.Empty;
+
     public class DbProfile {
         /// <summary>
         /// プロファイル名

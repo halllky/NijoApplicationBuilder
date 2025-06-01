@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using MyApp.Core;
+using MyApp.Core.Util;
 using MyApp.Test;
 
 namespace MyApp;
@@ -55,6 +56,14 @@ public class TestUtilImpl : ITestUtil {
             var settings = new RuntimeSetting();
             settings.LogDirectory = WorkDirectory;
             settings.CurrentDbProfileName = "SQLITE001";
+            settings.MigrationsScriptFolder = Path.Combine(
+                TestContext.CurrentContext.WorkDirectory,
+                "..", // net9.0
+                "..", // Debug
+                "..", // bin
+                "..", // Test
+                "..", // プロジェクトルート
+                "MigrationsScript");
 
             var dbFileName = $"./{Path.GetRelativePath(TestContext.CurrentContext.WorkDirectory, WorkDirectory).Replace("\\", "/")}/UNITTEST.sqlite3";
             settings.DbProfiles.Add(new() {
@@ -72,10 +81,7 @@ public class TestUtilImpl : ITestUtil {
         // DB作成
         var provider = services.BuildServiceProvider();
         var dbContext = provider.GetRequiredService<MyDbContext>();
-        dbContext.Database.EnsureCreated();
-
-        // ビュー作成
-        dbContext.Database.ExecuteSqlRaw(OverridedApplicationConfigure.V_売上分析);
+        dbContext.EnsureCreatedAsyncEx(provider.GetRequiredService<RuntimeSetting>()).GetAwaiter().GetResult();
 
         return new TestScopeImpl<TMessageRoot>(provider, presentationContext, WorkDirectory);
     }

@@ -14,6 +14,7 @@ using System.Data.Common;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using NLog;
+using MyApp.Core.Util;
 
 namespace MyApp.WebApi.Base;
 
@@ -210,9 +211,10 @@ public class DebuggingController : ControllerBase {
 
             using (var scope = serviceProvider.CreateScope()) {
                 var dbContext = scope.ServiceProvider.GetRequiredService<MyDbContext>();
+                var settings = scope.ServiceProvider.GetRequiredService<RuntimeSetting>();
 
                 // データベース定義を再作成
-                await dbContext.Database.EnsureCreatedAsync();
+                await dbContext.EnsureCreatedAsyncEx(settings);
 
                 // ダミーデータを投入
                 var generator = new OverridedDummyDataGenerator();
