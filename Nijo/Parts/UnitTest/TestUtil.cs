@@ -16,11 +16,6 @@ namespace Nijo.Parts.UnitTest;
 /// </summary>
 internal class TestUtil {
 
-    /// <summary>
-    /// この名前のクラスやメソッドは自動生成されないので生成後プロジェクト側で作りこむ必要あり
-    /// </summary>
-    internal const string GET_UTIL = "TestUtilBuilder.Build()";
-
     internal const string INTERFACE_UTIL = "ITestUtil";
     internal const string INTERFACE_SCOPE = "ITestScope";
 
