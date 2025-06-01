@@ -21,7 +21,7 @@ internal class TestUtil {
 
     internal static SourceFile Render(CodeRenderingContext ctx) {
         return new SourceFile {
-            FileName = "TestUtil.cs",
+            FileName = "ITestUtil.cs",
             Contents = $$"""
                 namespace {{ctx.Config.RootNamespace}};
 
