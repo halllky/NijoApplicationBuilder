@@ -50,7 +50,6 @@ public class OverridedApplicationConfigure : DefaultConfiguration {
         return new OverridedApplicationService(services);
     }
 
-
     #region DB
     /// <summary>
     /// DBコンテキスト接続設定
@@ -74,6 +73,110 @@ public class OverridedApplicationConfigure : DefaultConfiguration {
             sql => logger.Debug(sql),
             Microsoft.Extensions.Logging.LogLevel.Information,
             Microsoft.EntityFrameworkCore.Diagnostics.DbContextLoggerOptions.SingleLine);
+    }
+
+    /// <summary>
+    /// モデルのカスタマイズ
+    /// </summary>
+    public override void OnModelCreating(ModelBuilder modelBuilder) {
+        modelBuilder.Entity<売上分析SearchResult>()
+            .HasNoKey()
+            .ToSqlQuery(@"""
+                SELECT
+                    STRFTIME('%Y/%m', T1.ORDER_DATE) AS 年月,
+                    T1.STORE_ID AS 店舗_店舗ID,
+                    SUM(T_ORDER_DETAIL.SUBTOTAL) AS 売上合計,
+                    COUNT(DISTINCT T1.CUSTOMER_ID) AS 客数,
+                    CASE WHEN COUNT(DISTINCT T1.CUSTOMER_ID) = 0 THEN 0 ELSE SUM(T_ORDER_DETAIL.SUBTOTAL) * 1.0 / COUNT(DISTINCT T1.CUSTOMER_ID) END AS 客単価
+                FROM
+                    ORDER_HISTORY T1
+                    INNER JOIN ORDER_DETAILS T_ORDER_DETAIL ON T1.ORDER_ID = T_ORDER_DETAIL.ORDER_ID
+                GROUP BY
+                    STRFTIME('%Y/%m', T1.ORDER_DATE),
+                    T1.STORE_ID
+                """)
+            .HasMany(e => e.カテゴリ別売上)
+            .WithOne(e => e.売上分析)
+            .HasForeignKey(e => new {
+                e.売上分析_年月,
+                e.売上分析_店舗_店舗ID,
+            })
+            .HasPrincipalKey(e => new {
+                e.年月,
+                e.店舗_店舗ID,
+            });
+
+        modelBuilder.Entity<カテゴリ別売上SearchResult>()
+            .HasNoKey()
+            .ToSqlQuery(@"""
+                SELECT
+                    STRFTIME('%Y/%m', T_ORDER.ORDER_DATE) AS 売上分析_年月,
+                    T_ORDER.STORE_ID AS 売上分析_店舗_店舗ID,
+                    T_PRODUCT.CATEGORY_ID AS カテゴリ_カテゴリID,
+                    SUM(T_DETAIL.SUBTOTAL) AS 売上金額,
+                    CAST(SUM(T_DETAIL.SUBTOTAL) AS REAL) / NULLIF((SELECT SUM(SUBTOTAL) FROM ORDER_DETAILS OD_INNER INNER JOIN ORDER_HISTORY OH_INNER ON OD_INNER.ORDER_ID = OH_INNER.ORDER_ID WHERE STRFTIME('%Y/%m', OH_INNER.ORDER_DATE) = STRFTIME('%Y/%m', T_ORDER.ORDER_DATE) AND OH_INNER.STORE_ID = T_ORDER.STORE_ID), 0) AS 売上構成比
+                FROM
+                    ORDER_DETAILS T_DETAIL
+                    INNER JOIN ORDER_HISTORY T_ORDER ON T_DETAIL.ORDER_ID = T_ORDER.ORDER_ID
+                    INNER JOIN ""商品マスタ"" T_PRODUCT ON T_DETAIL.PRODUCT_ID = T_PRODUCT.PRODUCT_ID
+                GROUP BY
+                    STRFTIME('%Y/%m', T_ORDER.ORDER_DATE),
+                    T_ORDER.STORE_ID,
+                    T_PRODUCT.CATEGORY_ID
+                """)
+            .HasMany(e => e.商品別売上)
+            .WithOne(e => e.カテゴリ別売上)
+            .HasForeignKey(e => new {
+                e.カテゴリ別売上_売上分析_年月,
+                e.カテゴリ別売上_売上分析_店舗_店舗ID,
+                e.カテゴリ別売上_カテゴリ_カテゴリID,
+            })
+            .HasPrincipalKey(e => new {
+                e.売上分析_年月,
+                e.売上分析_店舗_店舗ID,
+                e.カテゴリ_カテゴリID,
+            });
+
+        modelBuilder.Entity<商品別売上SearchResult>()
+            .HasNoKey()
+            .ToSqlQuery(@"""
+                SELECT
+                    STRFTIME('%Y/%m', T_ORDER.ORDER_DATE) AS カテゴリ別売上_売上分析_年月,
+                    T_ORDER.STORE_ID AS カテゴリ別売上_売上分析_店舗_店舗ID,
+                    T_PRODUCT.CATEGORY_ID AS カテゴリ別売上_カテゴリ_カテゴリID,
+                    T_DETAIL.PRODUCT_ID AS 商品_ID,
+                    SUM(T_DETAIL.SUBTOTAL) AS 売上金額,
+                    SUM(T_DETAIL.QUANTITY) AS 売上数量,
+                    CASE WHEN SUM(T_DETAIL.QUANTITY) = 0 THEN 0 ELSE SUM(T_DETAIL.SUBTOTAL) * 1.0 / SUM(T_DETAIL.QUANTITY) END AS 平均単価
+                FROM
+                    ORDER_DETAILS T_DETAIL
+                    INNER JOIN ORDER_HISTORY T_ORDER ON T_DETAIL.ORDER_ID = T_ORDER.ORDER_ID
+                    INNER JOIN ""商品マスタ"" T_PRODUCT ON T_DETAIL.PRODUCT_ID = T_PRODUCT.PRODUCT_ID
+                GROUP BY
+                    STRFTIME('%Y/%m', T_ORDER.ORDER_DATE),
+                    T_ORDER.STORE_ID,
+                    T_PRODUCT.CATEGORY_ID,
+                    T_DETAIL.PRODUCT_ID
+                """);
+
+        modelBuilder.Entity<時間帯別売上SearchResult>()
+            .HasNoKey()
+            .ToSqlQuery(@"""
+                SELECT
+                    STRFTIME('%Y/%m', T1.ORDER_DATE) AS 売上分析_年月,
+                    T1.STORE_ID AS 売上分析_店舗_店舗ID,
+                    SUBSTR('00' || STRFTIME('%H', T1.ORDER_DATE), -2) || ':00-' || SUBSTR('00' || STRFTIME('%H', T1.ORDER_DATE), -2) || ':59' AS 時間帯,
+                    SUM(T_ORDER_DETAIL.SUBTOTAL) AS 売上金額,
+                    COUNT(T1.ORDER_ID) AS 売上件数,
+                    CASE WHEN COUNT(T1.ORDER_ID) = 0 THEN 0 ELSE SUM(T_ORDER_DETAIL.SUBTOTAL) * 1.0 / COUNT(T1.ORDER_ID) END AS 平均客単価
+                FROM
+                    ORDER_HISTORY T1
+                    INNER JOIN ORDER_DETAILS T_ORDER_DETAIL ON T1.ORDER_ID = T_ORDER_DETAIL.ORDER_ID
+                GROUP BY
+                    STRFTIME('%Y/%m', T1.ORDER_DATE),
+                    T1.STORE_ID,
+                    STRFTIME('%H', T1.ORDER_DATE)
+                """);
     }
     #endregion DB
 

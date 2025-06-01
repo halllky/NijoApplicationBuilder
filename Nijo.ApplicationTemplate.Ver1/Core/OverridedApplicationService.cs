@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace MyApp.Core;
 
@@ -109,7 +110,10 @@ partial class OverridedApplicationService {
     }
 
     protected override IQueryable<売上分析SearchResult> CreateQuerySource(売上分析SearchCondition searchCondition, IPresentationContext<売上分析SearchConditionMessages> context) {
-        return Enumerable.Empty<売上分析SearchResult>().AsQueryable();
+        return DbContext.Set<売上分析SearchResult>()
+            .Include(e => e.カテゴリ別売上)
+            .ThenInclude(e => e.商品別売上)
+            .Include(e => e.時間帯別売上);
     }
 
     protected override IQueryable<従業員マスタSearchResult> CreateQuerySource(従業員マスタSearchCondition searchCondition, IPresentationContext<従業員マスタSearchConditionMessages> context) {

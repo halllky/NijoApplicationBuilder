@@ -157,16 +157,15 @@
   <!-- 複雑なデータ構造をもったクエリモデル -->
   <売上分析 Type="query-model" LatinName="Sales Analysis" UniqueId="9442b4d0-b48e-45b1-ab23-597ad74b1058">
     <年月 Type="word" IsKey="True" UniqueId="5b240e6c-fdfa-4450-a313-3ed437d4584e" />
+    <!-- 例: "2023/10" -->
     <店舗 Type="ref-to:店舗マスタ" IsKey="True" UniqueId="81b85306-d103-4404-957e-1394ddb12fb7" />
     <売上合計 Type="int" UniqueId="7ad3568d-04f9-4751-bbd6-b890f6cdd586" />
     <客数 Type="int" UniqueId="e276f4f7-e4e9-4734-8d7c-23dac44f2914" />
     <客単価 Type="int" UniqueId="d8007572-69a6-4902-b155-7127a9c4d8e5" />
-    <目標達成率 Type="decimal" UniqueId="0ee282eb-ee03-4018-a8a9-317bf7609be0" />
     <カテゴリ別売上 Type="children" UniqueId="16cd3252-2b14-46e4-9581-15f3a53b298c">
       <カテゴリ Type="ref-to:カテゴリマスタ" UniqueId="f0c62ba4-9bf2-4075-948f-e145cb2c1310" />
       <売上金額 Type="int" UniqueId="2e7efa49-0163-4353-865b-29e2b8aa516b" />
       <売上構成比 Type="decimal" UniqueId="0447b5a9-c237-40ef-bdfa-8213d37857e2" />
-      <前年同月比 Type="decimal" UniqueId="ec89f4ba-09eb-4269-b56f-b35ae67a0a3c" />
       <商品別売上 Type="children" UniqueId="0fd8848b-3023-43cc-9fba-14759b71403a">
         <商品 Type="ref-to:商品マスタ" UniqueId="7775c94a-1617-46f2-adca-241febab0c2e" />
         <売上金額 Type="int" UniqueId="54a4d818-633b-439b-afbe-b91ac237b9d2" />
@@ -176,9 +175,12 @@
     </カテゴリ別売上>
     <時間帯別売上 Type="children" UniqueId="3440d2f6-d139-46f6-8e75-4c9b6020d05d">
       <時間帯 Type="word" UniqueId="c65d18e5-3f0e-46a2-9faa-4d737b23dee0" />
+      <!-- 例: "10:00-10:59" -->
       <売上金額 Type="int" UniqueId="ee940abd-2f3c-48fb-9cd8-ac8a5e226e9f" />
       <売上件数 Type="int" UniqueId="6b384442-8b6f-4b93-884b-4560ce033d06" />
+      <!-- 注文件数 -->
       <平均客単価 Type="int" UniqueId="5dad6b1c-3ece-461d-8e8f-15f455a7452c" />
+      <!-- (時間帯別売上.売上金額 / 時間帯別売上.売上件数) -->
     </時間帯別売上>
   </売上分析>
   <!-- シンプルなCommandModelの構造 -->
