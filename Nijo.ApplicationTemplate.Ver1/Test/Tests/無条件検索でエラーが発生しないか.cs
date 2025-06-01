@@ -1,4 +1,5 @@
-﻿using MyApp.Core;
+﻿using Microsoft.EntityFrameworkCore;
+using MyApp.Core;
 using MyApp.Core.Debugging;
 using System;
 using System.Collections.Generic;
@@ -72,5 +73,28 @@ partial class DB接続あり_更新なし {
                 throw;
             }
         }
+    }
+
+    [Test]
+    public void 生SQLにマップされるQueryModelのテスト() {
+        using var util = TestUtilBuilder.Build();
+        using var scope = util.CreateScope();
+
+        //var result = scope.App.DbContext
+        //    .Set<売上分析SearchResult>()
+        //    .Include(e => e.カテゴリ別売上)
+        //    .ThenInclude(e => e.商品別売上)
+        //    .Include(e => e.時間帯別売上)
+        //    .ToArray();
+
+        var result = scope.App.DbContext
+            .Set<売上分析SearchResult>()
+            .Where(e => e.売上合計 >= 12345.1m)
+            .Select(e => new {
+                e.年月,
+            })
+            .ToArray();
+
+        scope.App.Log.Debug("取得したデータ: {0}", scope.App.Configuration.ToJson(result));
     }
 }

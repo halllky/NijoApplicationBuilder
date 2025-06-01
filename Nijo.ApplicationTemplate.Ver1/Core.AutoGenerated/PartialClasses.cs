@@ -1,4 +1,13 @@
+﻿using Microsoft.EntityFrameworkCore;
+
 namespace MyApp.Core;
+
+partial class MyDbContext {
+    //public virtual DbSet<売上分析SearchResult> 売上分析 { get; set; }
+    //public virtual DbSet<カテゴリ別売上SearchResult> カテゴリ別売上 { get; set; }
+    //public virtual DbSet<商品別売上SearchResult> 商品別売上 { get; set; }
+    //public virtual DbSet<時間帯別売上SearchResult> 時間帯別売上 { get; set; }
+}
 
 // 売上分析SearchResult の partial class 定義
 // Class_SearchResult.csで主要なプロパティが自動生成されるため、

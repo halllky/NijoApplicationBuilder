@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using MyApp.Core;
 using MyApp.Test;
 
@@ -72,6 +73,9 @@ public class TestUtilImpl : ITestUtil {
         var provider = services.BuildServiceProvider();
         var dbContext = provider.GetRequiredService<MyDbContext>();
         dbContext.Database.EnsureCreated();
+
+        // ビュー作成
+        dbContext.Database.ExecuteSqlRaw(OverridedApplicationConfigure.V_売上分析);
 
         return new TestScopeImpl<TMessageRoot>(provider, presentationContext, WorkDirectory);
     }
