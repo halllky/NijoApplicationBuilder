@@ -106,15 +106,13 @@ internal class QueryModelUnitTest : IMultiAggregateSourceFile {
         return $$"""
             yield return new TestCaseData(
                 $"{{rootAggregate.DisplayName.Replace("\"", "\\\"")}}",
-                new Func<{{TestUtil.INTERFACE_UTIL}}, IEnumerable<object>>(util => {
+                new Func<{{TestUtil.INTERFACE_UTIL}}, Task<IEnumerable<object>>>(async util => {
                     using var scope = util.CreateScope<{{searchConditionMessage.CsClassName}}>();
                     var searchCondition = new {{searchCondition.CsClassName}} {
                         {{SearchCondition.Entry.TAKE_CS}} = 10,
                     };
-                    return scope.App
-                        .{{SearchProcessing.LOAD_METHOD}}(searchCondition, scope.PresentationContext)
-                        .{{SearchProcessingReturn.CURRENT_PAGE_ITEMS_CS}}
-                        .Cast<object>();
+                    var result = await scope.App.{{SearchProcessing.LOAD_METHOD}}(searchCondition, scope.PresentationContext);
+                    return result.{{SearchProcessingReturn.CURRENT_PAGE_ITEMS_CS}}.Cast<object>();
                 }))
                 .SetName($"無条件検索_{{rootAggregate.DisplayName.Replace("\"", "\\\"")}}");
             """;
@@ -128,15 +126,13 @@ internal class QueryModelUnitTest : IMultiAggregateSourceFile {
         return $$"""
             yield return new TestCaseData(
                 $"{{refEntry.DisplayName.Replace("\"", "\\\"")}}",
-                new Func<{{TestUtil.INTERFACE_UTIL}}, IEnumerable<object>>(util => {
+                new Func<{{TestUtil.INTERFACE_UTIL}}, Task<IEnumerable<object>>>(async util => {
                     using var scope = util.CreateScope<{{searchConditionMessage.CsClassName}}>();
                     var searchCondition = new {{searchCondition.CsClassName}} {
                         {{SearchCondition.Entry.TAKE_CS}} = 10,
                     };
-                    return scope.App
-                        .{{searchProcessingRefs.LoadMethod}}(searchCondition, scope.PresentationContext)
-                        .{{SearchProcessingReturn.CURRENT_PAGE_ITEMS_CS}}
-                        .Cast<object>();
+                    var result = await scope.App.{{searchProcessingRefs.LoadMethod}}(searchCondition, scope.PresentationContext);
+                    return result.{{SearchProcessingReturn.CURRENT_PAGE_ITEMS_CS}}.Cast<object>();
                 }))
                 .SetName($"無条件外部参照検索_{{refEntry.DisplayName.Replace("\"", "\\\"")}}");
             """;

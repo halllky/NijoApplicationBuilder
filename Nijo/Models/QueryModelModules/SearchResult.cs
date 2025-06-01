@@ -69,9 +69,9 @@ namespace Nijo.Models.QueryModelModules {
         internal IEnumerable<ISearchResultMember> GetMembers() {
             return GetMembersRecursively(Aggregate, false);
 
-            static IEnumerable<ISearchResultMember> GetMembersRecursively(AggregateBase aggregate, bool enumeratesParent) {
+            static IEnumerable<ISearchResultMember> GetMembersRecursively(AggregateBase aggregate, bool isOutOfEntryTree) {
                 // aggregateが参照先の場合は親のメンバーも列挙
-                if (enumeratesParent) {
+                if (isOutOfEntryTree) {
                     var parent = aggregate.GetParent();
                     if (parent != null && aggregate.PreviousNode != (ISchemaPathNode)parent) {
                         foreach (var srm in GetMembersRecursively(parent, true)) {
@@ -82,19 +82,19 @@ namespace Nijo.Models.QueryModelModules {
 
                 foreach (var member in aggregate.GetMembers()) {
                     if (member is ValueMember vm) {
-                        yield return new SearchResultValueMember(vm);
+                        yield return new SearchResultValueMember(vm, isOutOfEntryTree);
 
                     } else if (member is ChildrenAggregate children) {
                         // aggregateが参照先の場合、かつ子から親へ辿られたとき、循環参照を防ぐ
                         if (aggregate.PreviousNode == (ISchemaPathNode)children) continue;
 
-                        yield return new SearchResultChildrenMember(children);
+                        yield return new SearchResultChildrenMember(children, isOutOfEntryTree);
 
                     } else if (member is ChildAggregate child) {
                         // aggregateが参照先の場合、かつ子から親へ辿られたとき、循環参照を防ぐ
                         if (aggregate.PreviousNode == (ISchemaPathNode)child) continue;
 
-                        foreach (var srm in GetMembersRecursively(child, enumeratesParent)) {
+                        foreach (var srm in GetMembersRecursively(child, isOutOfEntryTree)) {
                             yield return srm;
                         }
 
@@ -123,7 +123,7 @@ namespace Nijo.Models.QueryModelModules {
                 .Where(agg => agg is RootAggregate || agg is ChildrenAggregate)
                 .Select(agg => agg switch {
                     RootAggregate root => new SearchResult(root),
-                    ChildrenAggregate children => new SearchResultChildrenMember(children),
+                    ChildrenAggregate children => new SearchResultChildrenMember(children, false),
                     _ => throw new InvalidOperationException(),
                 });
 
@@ -154,6 +154,7 @@ namespace Nijo.Models.QueryModelModules {
 
         #region メンバー
         internal interface ISearchResultMember : IInstancePropertyMetadata {
+            bool IsOutOfEntryTree { get; }
             IAggregateMember Member { get; }
             string RenderDeclaration();
             ISchemaPathNode IInstancePropertyMetadata.SchemaPathNode => Member;
@@ -200,11 +201,14 @@ namespace Nijo.Models.QueryModelModules {
         }
 
         internal class SearchResultValueMember : ISearchResultMember, IInstanceValuePropertyMetadata {
-            internal SearchResultValueMember(ValueMember valueMember) {
+            internal SearchResultValueMember(ValueMember valueMember, bool isOutOfEntryTree) {
                 _valueMember = valueMember;
+                IsOutOfEntryTree = isOutOfEntryTree;
             }
             private readonly ValueMember _valueMember;
             private string? _physicalName;
+
+            public bool IsOutOfEntryTree { get; }
 
             public string GetPropertyName(E_CsTs csts) => _physicalName ??= ((ISearchResultMember)this).GetPhysicalName();
             IValueMemberType IInstanceValuePropertyMetadata.Type => _valueMember.Type;
@@ -221,11 +225,14 @@ namespace Nijo.Models.QueryModelModules {
         }
 
         internal class SearchResultChildrenMember : SearchResult, ISearchResultMember, IInstanceStructurePropertyMetadata {
-            internal SearchResultChildrenMember(ChildrenAggregate children) : base(children) {
+            internal SearchResultChildrenMember(ChildrenAggregate children, bool isOutOfEntryTree) : base(children) {
                 Aggregate = children;
+                IsOutOfEntryTree = isOutOfEntryTree;
             }
             internal new ChildrenAggregate Aggregate { get; }
             private string? _physicalName;
+
+            public bool IsOutOfEntryTree { get; }
 
             public string GetPropertyName(E_CsTs csts) => _physicalName ??= ((ISearchResultMember)this).GetPhysicalName();
             bool IInstanceStructurePropertyMetadata.IsArray => true;
@@ -241,42 +248,5 @@ namespace Nijo.Models.QueryModelModules {
             }
         }
         #endregion メンバー
-    }
-}
-
-namespace Nijo.CodeGenerating {
-    partial class SchemaPathNodeExtensions {
-
-        /// <summary>
-        /// <see cref="GetPathFromEntry(ISchemaPathNode)"/> の結果を <see cref="SearchResult"/> のルールに沿ったパスとして返す
-        /// </summary>
-        public static IEnumerable<string> AsSearchResult(this IEnumerable<ISchemaPathNode> path) {
-            var entry = path.FirstOrDefault()?.GetEntry();
-
-            foreach (var node in path) {
-                if (node == entry) continue; // パスの一番最初（エントリー）はスキップ
-
-                // 検索結果オブジェクトはフラットな構造なので親と1対1の子は表れない
-                if (node is ChildAggregate) continue;
-                if (node is RefToMember) continue;
-                if (node is RootAggregate) continue; // ref-toでルートを参照しているときパスの途中にRootAggregateが表れる
-
-                // Children
-                if (node is ChildrenAggregate children) {
-                    var member = new SearchResult.SearchResultChildrenMember(children);
-                    yield return member.GetPropertyName(E_CsTs.CSharp);
-                    continue;
-                }
-
-                // 末端のメンバー
-                if (node is ValueMember vm) {
-                    var member = new SearchResult.SearchResultValueMember(vm);
-                    yield return member.GetPropertyName(E_CsTs.CSharp);
-                    continue;
-                }
-
-                throw new InvalidOperationException("予期しない型");
-            }
-        }
     }
 }
