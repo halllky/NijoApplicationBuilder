@@ -114,7 +114,7 @@ internal class QueryModelUnitTest : IMultiAggregateSourceFile {
                     var result = await scope.App.{{SearchProcessing.LOAD_METHOD}}(searchCondition, scope.PresentationContext);
                     return result.{{SearchProcessingReturn.CURRENT_PAGE_ITEMS_CS}}.Cast<object>();
                 }))
-                .SetName($"無条件検索_{{rootAggregate.DisplayName.Replace("\"", "\\\"")}}");
+                .SetName($"無条件検索_{{rootAggregate.PhysicalName}}");
             """;
     }
 
@@ -134,7 +134,7 @@ internal class QueryModelUnitTest : IMultiAggregateSourceFile {
                     var result = await scope.App.{{searchProcessingRefs.LoadMethod}}(searchCondition, scope.PresentationContext);
                     return result.{{SearchProcessingReturn.CURRENT_PAGE_ITEMS_CS}}.Cast<object>();
                 }))
-                .SetName($"無条件Ref検索_{{refEntry.DisplayName.Replace("\"", "\\\"")}}");
+                .SetName($"無条件Ref検索_{{refEntry.PhysicalName}}");
             """;
     }
 }

@@ -16,7 +16,6 @@ export const 売上分析一覧検索画面 = () => {
     cellType.number("values.売上合計", "売上合計"),
     cellType.number("values.客数", "客数"),
     cellType.number("values.客単価", "客単価"),
-    cellType.number("values.目標達成率", "目標達成率"),
   ], [])
 
   return (
@@ -58,11 +57,6 @@ export const 売上分析一覧検索画面 = () => {
               <Input.NumberInput name="filter.客単価.from" control={control} />
               ～
               <Input.NumberInput name="filter.客単価.to" control={control} />
-            </VForm3.Item>
-            <VForm3.Item label="目標達成率">
-              <Input.NumberInput name="filter.目標達成率.from" control={control} />
-              ～
-              <Input.NumberInput name="filter.目標達成率.to" control={control} />
             </VForm3.Item>
           </VForm3.BreakPoint>
           {/* TODO: ネストした要素（カテゴリ別売上、時間帯別売上など）の検索条件 */}

@@ -13,8 +13,7 @@ partial class DB接続あり_更新あり {
     [Test]
     [Category("DB接続あり（更新あり）")]
     public void 標準のダミーデータ作成処理が成功するか() {
-        using var util = TestUtilBuilder.Build();
-        using var scope = util.CreateScope();
+        using var scope = TestUtilImpl.Instance.CreateScope("標準のダミーデータ作成処理が成功するか");
 
         var generator = new OverridedDummyDataGenerator();
         var dbDescriptor = new DummyDataDbOutput(scope.App.DbContext);

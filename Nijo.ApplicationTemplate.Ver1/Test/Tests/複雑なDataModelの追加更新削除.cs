@@ -17,8 +17,9 @@ partial class DB接続あり_更新あり {
     /// </summary>
     [Test]
     public async Task Childの追加更新削除が正常に動作するか確認() {
-        using var util = TestUtilBuilder.Build();
-        using var scope = util.CreateScope<商品マスタSaveCommandMessages>(new PresentationContextOptions { IgnoreConfirm = true });
+        using var scope = TestUtilImpl.Instance.CreateScope<商品マスタSaveCommandMessages>(
+            nameof(Childの追加更新削除が正常に動作するか確認),
+            options: new PresentationContextOptions { IgnoreConfirm = true });
 
         // 外部キー用に全テーブルデータ作成
         var generator = new OverridedDummyDataGenerator();

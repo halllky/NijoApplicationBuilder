@@ -18,10 +18,9 @@ partial class DB接続あり_更新なし {
 
     [Category("無条件検索でエラーが発生しないか（一覧検索）")]
     [TestCaseSource(typeof(QueryModelTestCases), nameof(QueryModelTestCases.無条件検索テストケース))]
-    public async Task 無条件検索でエラーが発生しないか(string displayName, Func<ITestUtil, Task<IEnumerable<object>>> test) {
+    public async Task 無条件検索でエラーが発生しないか(string testCasePhysicalName, Func<ITestUtil, Task<IEnumerable<object>>> test) {
         // ダミーデータ投入
-        using var util = TestUtilBuilder.Build();
-        using var scope = util.CreateScope();
+        using var scope = TestUtilImpl.Instance.CreateScope($"{nameof(無条件検索でエラーが発生しないか)}_{testCasePhysicalName}");
 
         var generator = new OverridedDummyDataGenerator();
         var dbDescriptor = new DummyDataDbOutput(scope.App.DbContext);
@@ -29,13 +28,13 @@ partial class DB接続あり_更新なし {
 
         // 無条件検索を実行
         try {
-            var result = await test(util);
+            var result = await test(TestUtilImpl.Instance);
             scope.App.Log.Debug("取得したデータ: {0}", scope.App.Configuration.ToJson(result));
             Assert.Pass("例外発生せず");
 
         } catch (InvalidOperationException ex) when (ex.Message.Contains(CANNOT_TRANSRATE_TO_SQL)) {
-            if (displayName == "アクション結果"
-             || displayName == "在庫調査報告") {
+            if (testCasePhysicalName == "アクション結果"
+             || testCasePhysicalName == "在庫調査報告") {
                 Assert.Inconclusive(
                     "この集約は式が複雑すぎてSQLに変換できないが（EFCoreの制約）、" +
                     "自動生成されたコードでコンパイルエラーが出ないことを確認したいので、あえて残している。" +
@@ -48,10 +47,9 @@ partial class DB接続あり_更新なし {
 
     [Category("無条件検索でエラーが発生しないか（外部参照検索）")]
     [TestCaseSource(typeof(QueryModelTestCases), nameof(QueryModelTestCases.無条件外部参照検索テストケース))]
-    public async Task 無条件外部参照検索でエラーが発生しないか(string displayName, Func<ITestUtil, Task<IEnumerable<object>>> test) {
+    public async Task 無条件外部参照検索でエラーが発生しないか(string testCasePhysicalName, Func<ITestUtil, Task<IEnumerable<object>>> test) {
         // ダミーデータ投入
-        using var util = TestUtilBuilder.Build();
-        using var scope = util.CreateScope();
+        using var scope = TestUtilImpl.Instance.CreateScope($"{nameof(無条件外部参照検索でエラーが発生しないか)}_{testCasePhysicalName}");
 
         var generator = new OverridedDummyDataGenerator();
         var dbDescriptor = new DummyDataDbOutput(scope.App.DbContext);
@@ -59,12 +57,12 @@ partial class DB接続あり_更新なし {
 
         // 無条件外部参照検索を実行
         try {
-            var result = await test(util);
+            var result = await test(TestUtilImpl.Instance);
             scope.App.Log.Debug("取得したデータ: {0}", scope.App.Configuration.ToJson(result));
             Assert.Pass("例外発生せず");
 
         } catch (InvalidOperationException ex) when (ex.Message.Contains(CANNOT_TRANSRATE_TO_SQL)) {
-            if (displayName == "アクション") {
+            if (testCasePhysicalName == "アクション") {
                 Assert.Inconclusive(
                     "この集約は式が複雑すぎてSQLに変換できないが（EFCoreの制約）、" +
                     "自動生成されたコードでコンパイルエラーが出ないことを確認したいので、あえて残している。" +
@@ -76,9 +74,9 @@ partial class DB接続あり_更新なし {
     }
 
     [Test]
+    [Category("無条件検索でエラーが発生しないか（生SQLにマップされるQueryModelのテスト）")]
     public void 生SQLにマップされるQueryModelのテスト() {
-        using var util = TestUtilBuilder.Build();
-        using var scope = util.CreateScope();
+        using var scope = TestUtilImpl.Instance.CreateScope(nameof(生SQLにマップされるQueryModelのテスト));
 
         //var result = scope.App.DbContext
         //    .Set<売上分析SearchResult>()
