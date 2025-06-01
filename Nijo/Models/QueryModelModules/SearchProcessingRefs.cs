@@ -22,7 +22,7 @@ namespace Nijo.Models.QueryModelModules {
         private string ControllerActionLoad => $"load-refs-{_entryAggregate.LatinName.ToKebabCase()}";
 
         private string ValidateMethod => $"ValidateRefSearchCondition{_entryAggregate.PhysicalName}";
-        private string LoadMethod => $"LoadRefs{_entryAggregate.PhysicalName}";
+        internal string LoadMethod => $"LoadRefs{_entryAggregate.PhysicalName}";
         private string OnAfterLoadMethod => $"OnAfterLoadedRef{_entryAggregate.PhysicalName}";
         private string ToRefTarget => $"To{_entryAggregate.PhysicalName}RefTarget";
 
@@ -288,7 +288,7 @@ namespace Nijo.Models.QueryModelModules {
                     if (agg is ChildAggregate) continue;
 
                     if (agg is ChildrenAggregate children) {
-                        var propMetadata = new SearchResult.SearchResultChildrenMember(children);
+                        var propMetadata = new SearchResult.SearchResultChildrenMember(children, true);
                         arrayProperty = arrayProperty.CreateProperty(propMetadata);
                     }
                 }

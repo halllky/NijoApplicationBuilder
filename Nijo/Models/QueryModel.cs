@@ -253,7 +253,11 @@ namespace Nijo.Models {
             ctx.Use<MetadataForPage>().Add(rootAggregate);
 
             // ユニットテスト
-            ctx.Use<QueryModelUnitTest>().Add(rootAggregate);
+            var unitTest = ctx.Use<QueryModelUnitTest>();
+            unitTest.Add(rootAggregate);
+            foreach (var refEntry in DisplayDataRef.GetReferedMembersRecursively(rootAggregate).Entries) {
+                unitTest.AddRefEntry(refEntry.Aggregate);
+            }
         }
 
         public void GenerateCode(CodeRenderingContext ctx) {
