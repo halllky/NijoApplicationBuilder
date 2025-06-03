@@ -17,7 +17,7 @@ partial class DB接続あり_更新あり {
     /// </summary>
     [Test]
     public async Task Childの追加更新削除が正常に動作するか確認() {
-        using var scope = TestUtilImpl.Instance.CreateScope<商品マスタSaveCommandMessages>(
+        var scope = TestUtilImpl.Instance.CreateScope<商品マスタSaveCommandMessages>(
             nameof(Childの追加更新削除が正常に動作するか確認),
             options: new PresentationContextOptions { IgnoreConfirm = true });
 

@@ -32,14 +32,25 @@ namespace Nijo.Parts.CSharp {
                         {{OPTIONS}} Options { get; }
 
                         /// <summary>
+                        /// パラメータの各値に対するメッセージ。エラーや警告など。
+                        /// </summary>
+                        {{MessageContainer.INTERFACE}} Messages { get; }
+
+                        /// <summary>
                         /// 「～しますがよろしいですか？」などの確認メッセージを追加します。
                         /// </summary>
-                        public void AddConfirm(string text);
+                        void AddConfirm(string text);
 
                         /// <summary>
                         /// 「～しますがよろしいですか？」などの確認メッセージが発生しているかどうかを返します。
                         /// </summary>
-                        public bool HasConfirm();
+                        bool HasConfirm();
+
+                        /// <summary>
+                        /// キャストします。
+                        /// メッセージコンテナの型が実際の型と異なる場合は例外を投げます。
+                        /// </summary>
+                        {{INTERFACE}}<TMessageRoot> Cast<TMessageRoot>() where TMessageRoot : {{MessageContainer.INTERFACE}};
                     }
 
                     /// <inheritdoc cref="{{INTERFACE}}"/>
@@ -48,7 +59,7 @@ namespace Nijo.Parts.CSharp {
                         /// <summary>
                         /// パラメータの各値に対するメッセージ。エラーや警告など。
                         /// </summary>
-                        TMessageRoot Messages { get; }
+                        new TMessageRoot Messages { get; }
                     }
 
                     /// <summary>

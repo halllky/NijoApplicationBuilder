@@ -22,7 +22,7 @@ public static class DbContextExtensions {
         bool created = await context.Database.EnsureCreatedAsync();
 
         // SQLスクリプトのフォルダパスを取得
-        string scriptFolder = runtimeSetting.MigrationsScriptFolder;
+        string scriptFolder = Path.GetFullPath(runtimeSetting.MigrationsScriptFolder);
         if (string.IsNullOrEmpty(scriptFolder) || !Directory.Exists(scriptFolder)) {
             // フォルダが存在しない場合は処理を中断
             return created;
