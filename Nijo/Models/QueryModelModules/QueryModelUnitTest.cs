@@ -1,7 +1,6 @@
 using Nijo.CodeGenerating;
 using Nijo.ImmutableSchema;
 using Nijo.Parts.CSharp;
-using Nijo.Parts.UnitTest;
 using System;
 using System.Collections.Generic;
 using System.Linq;
