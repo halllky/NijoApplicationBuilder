@@ -50,6 +50,7 @@ namespace Nijo.Mcp {
         private const string DATA_PATTERN_REVEALED_DIR = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\自動テストで作成されたプロジェクト";
         private const string DATA_PATTERN_IMPLEMENTORS_DIR = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.IntegrationTest.DataPatternsImplementors";
 
+        private const string SQLITE_EXE_PATH = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20250604_sqlite3\sqlite-tools-win-x64-3500000\sqlite3.exe";
 
         #region アプリケーションテンプレート
         private const string TOOL_CHECK_COMPILE_ERROR = "generate_code";
@@ -249,136 +250,191 @@ namespace Nijo.Mcp {
         #endregion アプリケーションテンプレート
 
 
-        //#region NUnit
-        //private const string TOOL_HOW_TO_RUN_TEST = "how_to_run_test";
-        //[McpServerTool(Name = TOOL_HOW_TO_RUN_TEST), Description(
-        //    $"nijo.slnに含まれるすべてのユニットテストを列挙し、 {TOOL_RUN_TEST} ツールのフィルターの使用例を示します。")]
-        //public static async Task<string> HowToRunTest() {
-        //    try {
-        //        using var workDirectory = WorkDirectory.Prepare();
-        //        workDirectory.WriteToMainLog($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [NijoMcpTools.HowToRunTest] HowToRunTest method called.");
+        #region スキーマ情報取得
+        private const string TOOL_GET_SQLITE_TABLE_SCHEMA = "get_sqlite_table_schema";
+        [McpServerTool(Name = TOOL_GET_SQLITE_TABLE_SCHEMA), Description(
+            "指定されたSQLiteデータベースファイル内のテーブルスキーマ情報を取得します。")]
+        public static string GetSQLiteTableSchema(
+            [Description("スキーマ情報を取得するSQLiteデータベースファイルの絶対パス。")] string sqliteDbFilePath,
+            [Description("スキーマ情報を取得するテーブルの名前。")] string tableName) {
+            try {
+                if (string.IsNullOrEmpty(sqliteDbFilePath)) {
+                    return "SQLiteデータベースファイルのパスを指定してください。";
+                }
+                if (string.IsNullOrEmpty(tableName)) {
+                    return "テーブル名を指定してください。";
+                }
+                if (!File.Exists(sqliteDbFilePath)) {
+                    return $"指定されたSQLiteデータベースファイルが見つかりません: {sqliteDbFilePath}";
+                }
 
-        //        // cmdファイルを作成してテスト一覧を取得
-        //        var cmdFilePath = Path.Combine(workDirectory.DirectoryPath, "list_tests.cmd");
-        //        var testListOutputFile = Path.Combine(workDirectory.DirectoryPath, "test_list_output.txt");
-        //        RenderCmdFile(cmdFilePath, $$"""
-        //            chcp 65001
-        //            @echo off
-        //            dotnet test "{{NIJO_SLN}}" --list-tests > "{{testListOutputFile}}" 2>&1
-        //            exit /b %errorlevel%
-        //            """);
+                var sqlSafeTableName = tableName.Replace("'", "''"); // SQLインジェクション対策のためシングルクートをエスケープ
 
-        //        var exitCode = await ExecuteProcess("cmd-list-tests", startInfo => {
-        //            startInfo.FileName = "cmd.exe";
-        //            startInfo.ArgumentList.Add("/c");
-        //            startInfo.ArgumentList.Add(cmdFilePath);
-        //        }, workDirectory, TimeSpan.FromMinutes(5));
+                var startInfo = new ProcessStartInfo {
+                    FileName = SQLITE_EXE_PATH,
+                    Arguments = $"-header -csv \"{sqliteDbFilePath}\" \"PRAGMA table_info('{sqlSafeTableName}');\"",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    StandardOutputEncoding = Encoding.UTF8,
+                    StandardErrorEncoding = Encoding.UTF8,
+                };
 
-        //        // テスト一覧ファイルが存在するか確認
-        //        if (!File.Exists(testListOutputFile)) {
-        //            return workDirectory.WithMainLogContents("テスト一覧結果ファイルが見つかりません。");
-        //        }
-        //        // テスト一覧ファイルの内容を読み取る
-        //        var testListOutput = File.ReadAllText(testListOutputFile);
+                using var process = new Process { StartInfo = startInfo };
+                var output = new StringBuilder();
+                var error = new StringBuilder();
+
+                process.OutputDataReceived += (sender, args) => {
+                    if (args.Data != null) {
+                        output.AppendLine(args.Data);
+                    }
+                };
+                process.ErrorDataReceived += (sender, args) => {
+                    if (args.Data != null) {
+                        error.AppendLine(args.Data);
+                    }
+                };
+
+                process.Start();
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+
+                if (!process.WaitForExit(1000 * 10)) { // 10秒のタイムアウト
+                    try {
+                        process.Kill(true);
+                    } catch { /* 無視 */ }
+                    return "sqlite3.exe の実行がタイムアウトしました。";
+                }
+
+                if (process.ExitCode != 0) {
+                    return $"sqlite3.exe の実行に失敗しました。ExitCode: {process.ExitCode}{Environment.NewLine}Error: {error.ToString().Trim()}{Environment.NewLine}Output: {output.ToString().Trim()}";
+                }
+
+                var csvOutput = output.ToString().Trim();
+                if (string.IsNullOrWhiteSpace(csvOutput)) {
+                    return $"テーブル '{sqlSafeTableName}' が存在しないか、スキーマ情報を取得できませんでした。sqlite3からの出力はありません。";
+                }
+
+                var lines = csvOutput.Split(new[] { Environment.NewLine, "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                if (lines.Length < 2) {
+                    return $"スキーマ情報のパースに失敗しました。予期しないCSV形式です: {csvOutput}";
+                }
+
+                var headers = lines[0].Split(',');
+                var resultList = new List<Dictionary<string, object?>>();
+
+                for (int i = 1; i < lines.Length; i++) {
+                    var values = lines[i].Split(',');
+                    if (values.Length != headers.Length) continue;
+
+                    var entry = new Dictionary<string, object?>();
+                    for (int j = 0; j < headers.Length; j++) {
+                        var key = headers[j].Trim();
+                        var value = values[j].Trim();
+
+                        if (key == "cid" || key == "notnull" || key == "pk") {
+                            if (int.TryParse(value, out int intValue)) {
+                                entry[key] = intValue;
+                            } else {
+                                entry[key] = value;
+                            }
+                        } else if (string.Equals(value, "NULL", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(value)) {
+                            entry[key] = null;
+                        } else {
+                            entry[key] = value;
+                        }
+                    }
+                    resultList.Add(entry);
+                }
+
+                return JsonSerializer.Serialize(resultList, new JsonSerializerOptions { WriteIndented = true });
+
+            } catch (Exception ex) {
+                return ex.ToString();
+            }
+        }
+        #endregion スキーマ情報取得
 
 
-        //        if (exitCode != 0) {
-        //            return $"ユニットテストの列挙に失敗しました。\n\n{testListOutput}";
-        //        }
+        #region 全テーブル名取得
+        private const string TOOL_GET_SQLITE_ALL_TABLE_NAMES = "get_sqlite_all_table_names";
+        [McpServerTool(Name = TOOL_GET_SQLITE_ALL_TABLE_NAMES), Description(
+            "指定されたSQLiteデータベースファイル内のすべてのテーブル名の一覧を取得します。")]
+        public static string GetSQLiteAllTableNames(
+            [Description("テーブル名一覧を取得するSQLiteデータベースファイルの絶対パス。")] string sqliteDbFilePath) {
+            try {
+                if (string.IsNullOrEmpty(sqliteDbFilePath)) {
+                    return "SQLiteデータベースファイルのパスを指定してください。";
+                }
+                if (!File.Exists(sqliteDbFilePath)) {
+                    return $"指定されたSQLiteデータベースファイルが見つかりません: {sqliteDbFilePath}";
+                }
 
-        //        // ログの内容から "--list-tests" の実際の出力部分を抽出（より堅牢な方法が必要な場合あり）。
-        //        // この文字が見つからない場合はログの内容をそのまま表示する。
-        //        const string LIST_TESTS_MARKER = "The following Tests are available:";
-        //        var listTestsIndex = testListOutput.IndexOf(LIST_TESTS_MARKER);
-        //        var actualTestList = listTestsIndex >= 0
-        //            ? testListOutput.Substring(listTestsIndex)
-        //            : testListOutput;
+                var startInfo = new ProcessStartInfo {
+                    FileName = SQLITE_EXE_PATH,
+                    Arguments = $"\"{sqliteDbFilePath}\" \".tables\" -list", // .tables コマンドの方がシンプルで確実性が高い
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    StandardOutputEncoding = Encoding.UTF8,
+                    StandardErrorEncoding = Encoding.UTF8,
+                };
 
-        //        return $$"""
-        //            ユニットテストの列挙とフィルターの使用例:
+                using var process = new Process { StartInfo = startInfo };
+                var output = new StringBuilder();
+                var error = new StringBuilder();
 
-        //            {{actualTestList}}
+                process.OutputDataReceived += (sender, args) => {
+                    if (args.Data != null) {
+                        output.AppendLine(args.Data);
+                    }
+                };
+                process.ErrorDataReceived += (sender, args) => {
+                    if (args.Data != null) {
+                        error.AppendLine(args.Data);
+                    }
+                };
 
-        //            --- run_test フィルターの使用例 (NUnit) ---
+                process.Start();
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
 
-        //            フィルター式は `<Property><Operator><Value>[|&<Expression>]` の形式です。
-        //            演算子:
-        //              `=`   : 完全一致
-        //              `!=`  : 完全一致ではない
-        //              `~`   : 含む
-        //              `!~`  : 含まない
+                if (!process.WaitForExit(1000 * 10)) { // 10秒のタイムアウト
+                    try {
+                        process.Kill(true);
+                    } catch { /* 無視 */ }
+                    return "sqlite3.exe の実行がタイムアウトしました。";
+                }
 
-        //            プロパティ (NUnitの場合):
-        //              - FullyQualifiedName: 名前空間を含む完全なテスト名 (例: NUnitNamespace.UnitTest1.TestMethod1)
-        //              - Name: テストメソッド名 (例: TestMethod1)
-        //              - TestCategory: [Category("...")] 属性 (例: CategoryA)
-        //              - Priority: [Priority(X)] 属性 (例: 2)
+                if (process.ExitCode != 0) {
+                    return $"sqlite3.exe の実行に失敗しました。ExitCode: {process.ExitCode}{Environment.NewLine}Error: {error.ToString().Trim()}{Environment.NewLine}Output: {output.ToString().Trim()}";
+                }
 
-        //            使用例:
-        //              - 特定のテストメソッドを実行: `run_test --testFilter "FullyQualifiedName=NUnitNamespace.UnitTest1.TestMethod1"`
-        //              - 名前に "TestMethod" を含むテストを実行: `run_test --testFilter "Name~TestMethod"`
-        //              - 特定のクラス内のすべてのテストを実行: `run_test --testFilter "FullyQualifiedName~NUnitNamespace.UnitTest1"`
-        //              - 特定のテストを除外: `run_test --testFilter "FullyQualifiedName!=NUnitNamespace.UnitTest1.TestMethod1"`
-        //              - 特定のカテゴリのテストを実行: `run_test --testFilter "TestCategory=CategoryA"`
-        //              - 複数の条件 (OR): `run_test --testFilter "TestCategory=CategoryA|Priority=1"`
-        //              - 複数の条件 (AND): `run_test --testFilter "FullyQualifiedName~UnitTest1&TestCategory=CategoryA"`
-        //              - 複雑な条件: `run_test --testFilter "(FullyQualifiedName~UnitTest1&TestCategory=CategoryA)|Priority=1"`
+                var rawOutput = output.ToString().Trim();
+                if (string.IsNullOrWhiteSpace(rawOutput) && !string.IsNullOrWhiteSpace(error.ToString().Trim())) {
+                    return $"sqlite3.exe の実行中にエラーが発生しました: {error.ToString().Trim()}";
+                }
 
-        //            詳細: https://learn.microsoft.com/ja-jp/dotnet/core/testing/selective-unit-tests?pivots=nunit
-        //            """;
+                // .tables の出力はスペース区切りでテーブル名が並ぶことが多いので、適切にSplitする
+                // -list をつけてもsqlite3のバージョンや環境によって挙動が変わる可能性があるため、柔軟に対応
+                var tableNames = rawOutput.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                                          .Select(name => name.Trim())
+                                          .Where(name => !string.IsNullOrEmpty(name) && !name.StartsWith("sqlite_")) // sqlite_ 内部テーブルを除外
+                                          .ToList();
 
-        //    } catch (Exception ex) {
-        //        return ex.ToString();
-        //    }
-        //}
+                if (!tableNames.Any() && string.IsNullOrWhiteSpace(rawOutput) && process.ExitCode == 0 && string.IsNullOrWhiteSpace(error.ToString().Trim())) {
+                    // 正常終了、出力なし、エラーなしなら空のリスト
+                }
 
-        //private const string TOOL_RUN_TEST = "run_test";
-        //[McpServerTool(Name = TOOL_RUN_TEST), Description(
-        //    $"指定されたユニットテストを実行し、結果を返します。フィルターの指定方法は {TOOL_HOW_TO_RUN_TEST} を実行して確認してください。")]
-        //public static async Task<string> RunTest([Description("実行するテストの名前またはフィルター式")] string testFilter) {
-        //    try {
-        //        if (string.IsNullOrEmpty(testFilter)) {
-        //            return "実行するテストの名前またはフィルター式を指定してください。";
-        //        }
+                return JsonSerializer.Serialize(tableNames, new JsonSerializerOptions { WriteIndented = true });
 
-        //        using var workDirectory = WorkDirectory.Prepare();
-        //        workDirectory.WriteToMainLog($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [NijoMcpTools.RunTest] RunTest method called with filter: {testFilter}");
-
-        //        // cmdファイルを作成
-        //        var cmdFilePath = Path.Combine(workDirectory.DirectoryPath, "run_test.cmd");
-        //        var testOutputFile = Path.Combine(workDirectory.DirectoryPath, "test_output.txt");
-        //        RenderCmdFile(cmdFilePath, $$"""
-        //            chcp 65001
-        //            @echo off
-        //            dotnet test "{{NIJO_SLN}}" --filter "{{testFilter}}" -v normal > "{{testOutputFile}}" 2>&1
-        //            exit /b %errorlevel%
-        //            """);
-
-        //        // cmdファイルを実行
-        //        var exitCode = await ExecuteProcess("cmd-run-test", startInfo => {
-        //            startInfo.FileName = "cmd.exe";
-        //            startInfo.ArgumentList.Add("/c");
-        //            startInfo.ArgumentList.Add(cmdFilePath);
-        //        }, workDirectory, TimeSpan.FromMinutes(10));
-
-        //        // テスト結果ファイルが存在するか確認
-        //        if (!File.Exists(testOutputFile)) {
-        //            return workDirectory.WithMainLogContents("テスト結果ファイルが見つかりません。");
-        //        }
-
-        //        // テスト結果ファイルの内容を読み取る
-        //        var testOutput = File.ReadAllText(testOutputFile);
-
-        //        if (exitCode != 0) {
-        //            return $"ユニットテストの実行に失敗しました。\n\n{testOutput}";
-        //        }
-
-        //        return $"ユニットテストの実行が完了しました。\n\n{testOutput}";
-        //    } catch (Exception ex) {
-        //        return ex.ToString();
-        //    }
-        //}
-        //#endregion NUnit
+            } catch (Exception ex) {
+                return ex.ToString();
+            }
+        }
+        #endregion 全テーブル名取得
 
 
         #region タスク
