@@ -12,6 +12,7 @@ import { NijoUiOutletContextType } from '../types';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { PerspectivePageGrid, PerspectivePageGridRef } from './PerspectivePage.Grid';
 import { PerspectivePageGraph } from './PerspectivePage.Graph';
+import { EntityTypePage } from './EntityTypePage';
 
 export const PerspectivePage = () => {
   const { [NIJOUI_CLIENT_ROUTE_PARAMS.PERSPECTIVE_ID]: perspectiveId } = ReactRouter.useParams();
@@ -33,33 +34,31 @@ export const PerspectivePage = () => {
   const gridRef = React.useRef<PerspectivePageGridRef>(null);
 
   // データ読み込み
-  const loadData = useEvent(async () => {
-    if (!isReady) return;
-    if (!perspectiveId) {
-      setError('perspectiveIdが指定されていません。');
-      setIsLoading(false);
-      setCurrentPerspective(null);
-      reset({} as PerspectivePageData); // 空のデータでリセット
-      return;
-    }
-    setIsLoading(true);
-    setError(null);
-    const pageData = await loadPerspectivePageData(perspectiveId);
-    if (!pageData) {
-      setCurrentPerspective(null);
-      reset({} as PerspectivePageData);
-      setError(`指定されたPerspectiveが見つかりません: ${perspectiveId}`);
-      setIsLoading(false);
-      return;
-    }
-    setCurrentPerspective(pageData.perspective);
-    reset(pageData); // 読み込んだデータでフォームをリセット
-    setIsLoading(false);
-  });
-
   React.useEffect(() => {
-    loadData();
-  }, [isReady]);
+    (async () => {
+      if (!isReady) return;
+      if (!perspectiveId) {
+        setError('perspectiveIdが指定されていません。');
+        setIsLoading(false);
+        setCurrentPerspective(null);
+        reset({} as PerspectivePageData); // 空のデータでリセット
+        return;
+      }
+      setIsLoading(true);
+      setError(null);
+      const pageData = await loadPerspectivePageData(perspectiveId);
+      if (!pageData) {
+        setCurrentPerspective(null);
+        reset({} as PerspectivePageData);
+        setError(`指定されたPerspectiveが見つかりません: ${perspectiveId}`);
+        setIsLoading(false);
+        return;
+      }
+      setCurrentPerspective(pageData.perspective);
+      reset(pageData); // 読み込んだデータでフォームをリセット
+      setIsLoading(false);
+    })()
+  }, [isReady, perspectiveId]);
 
   // 保存処理
   const onSubmit = useEvent(async (data: PerspectivePageData) => {
@@ -139,7 +138,7 @@ export const PerspectivePage = () => {
 
           {/* グリッド */}
           <Panel defaultSize={40} collapsible minSize={8}>
-            <PerspectivePageGrid
+            <EntityTypePage
               ref={gridRef}
               formMethods={formMethods}
               className="h-full"

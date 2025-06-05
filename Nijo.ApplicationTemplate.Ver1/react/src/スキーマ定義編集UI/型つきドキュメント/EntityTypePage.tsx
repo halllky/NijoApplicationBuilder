@@ -1,5 +1,4 @@
 import * as React from 'react';
-import * as ReactRouter from 'react-router-dom';
 import * as ReactHookForm from 'react-hook-form';
 import * as Icon from '@heroicons/react/24/solid';
 import useEvent from 'react-use-event-hook';
@@ -7,124 +6,43 @@ import { UUID } from 'uuidjs';
 
 import * as Input from '../../input';
 import * as Layout from '../../layout';
-import { NIJOUI_CLIENT_ROUTE_PARAMS } from '../routing';
 import { Perspective, PerspectivePageData, Entity } from './types';
-import { NijoUiOutletContextType } from '../types';
 import { EntityTypeEditDialog } from './EntityTypeEditDialog';
+
+export interface EntityTypePageProps {
+  formMethods: ReactHookForm.UseFormReturn<PerspectivePageData>;
+  className?: string;
+}
+
+export interface EntityTypePageGridRef {
+  selectRow: (startRowIndex: number, endRowIndex: number) => void;
+}
 
 // グリッドの行の型
 type GridRowType = Entity & { uniqueId: string };
 
-export const EntityTypePage = () => {
-  const { [NIJOUI_CLIENT_ROUTE_PARAMS.ENTITY_TYPE_ID]: entityTypeId } = ReactRouter.useParams();
-  const { typedDoc } = ReactRouter.useOutletContext<NijoUiOutletContextType>();
+export const EntityTypePage = React.forwardRef<EntityTypePageGridRef, EntityTypePageProps>(({
+  formMethods,
+  className,
+}, ref) => {
+  const perspective = ReactHookForm.useWatch({ name: 'perspective', control: formMethods.control });
+  const perspectiveId = ReactHookForm.useWatch({ name: 'perspective.perspectiveId', control: formMethods.control });
 
-  const [currentEntityType, setCurrentEntityType] = React.useState<Perspective | null>(null);
-  const [entitiesForGrid, setEntitiesForGrid] = React.useState<GridRowType[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
+  const gridRef = React.useRef<Layout.EditableGridRef<GridRowType>>(null);
 
   const { pushDialog } = Layout.useDialogContext();
-
-  const formMethods = ReactHookForm.useForm<{ entities: GridRowType[] }>();
-  const { control, handleSubmit, reset, formState: { isDirty } } = formMethods;
-  const { fields, insert, remove, update, append } = ReactHookForm.useFieldArray({
+  const { control } = formMethods;
+  const { fields, insert, remove, update } = ReactHookForm.useFieldArray({
     control,
-    name: 'entities',
+    name: 'perspective.nodes',
     keyName: 'uniqueId',
   });
 
-  // データ読み込み
-  React.useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      setError(null);
-      if (!entityTypeId) {
-        setError('entityTypeIdが指定されていません。');
-        setIsLoading(false);
-        setEntitiesForGrid([]);
-        reset({ entities: [] });
-        return;
-      }
-      try {
-        const pageData = await typedDoc.loadEntityTypePageData(entityTypeId);
-        if (pageData) {
-          setCurrentEntityType(pageData.perspective);
-          setEntitiesForGrid(pageData.perspective.nodes.map(e => ({ ...e, uniqueId: UUID.generate() })));
-          reset({ entities: pageData.perspective.nodes.map(d => ({ ...d, uniqueId: UUID.generate() })) });
-        } else {
-          setCurrentEntityType(null);
-          setEntitiesForGrid([]);
-          reset({ entities: [] });
-        }
-      } catch (err) {
-        if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError('不明なエラーが発生しました。');
-        }
-        setEntitiesForGrid([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, [typedDoc, reset, entityTypeId]);
-
-  // 保存処理
-  const onSubmit = useEvent(async (data: { entities: GridRowType[] }) => {
-    setIsLoading(true);
-    setError(null);
-    if (!entityTypeId || !currentEntityType) {
-      setError('entityTypeIdまたはエンティティ型情報が読み込まれていません。保存できません。');
-      setIsLoading(false);
-      return;
-    }
-    try {
-      const entitiesToSave: Entity[] = data.entities.map(({ uniqueId, ...rest }) => rest);
-      const pageDataToSave: PerspectivePageData = {
-        perspective: {
-          ...currentEntityType,
-          nodes: entitiesToSave,
-        },
-      };
-      await typedDoc.savePerspective(pageDataToSave);
-      const reloadedPageData = await typedDoc.loadEntityTypePageData(entityTypeId);
-      if (reloadedPageData) {
-        setCurrentEntityType(reloadedPageData.perspective);
-        setEntitiesForGrid(reloadedPageData.perspective.nodes.map(e => ({ ...e, uniqueId: UUID.generate() })));
-        reset({ entities: reloadedPageData.perspective.nodes.map(d => ({ ...d, uniqueId: UUID.generate() })) });
-      } else {
-        setCurrentEntityType(null);
-        setEntitiesForGrid([]);
-        reset({ entities: [] });
-      }
-      alert('保存しました。');
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('不明なエラーが発生しました。');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  });
-
-  // 画面離脱防止
-  const blocker = ReactRouter.useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      isDirty && currentLocation.pathname !== nextLocation.pathname
-  );
-  React.useEffect(() => {
-    if (blocker && blocker.state === "blocked") {
-      if (window.confirm("編集中の内容がありますが、ページを離れてもよろしいですか？")) {
-        blocker.proceed();
-      } else {
-        blocker.reset();
-      }
-    }
-  }, [blocker]);
+  React.useImperativeHandle(ref, () => ({
+    selectRow: (startRowIndex: number, endRowIndex: number) => {
+      gridRef.current?.selectRow(startRowIndex, endRowIndex);
+    },
+  }), [gridRef]);
 
   // グリッドの列定義
   const getColumnDefs: Layout.GetColumnDefsFunction<GridRowType> = React.useCallback(cellType => {
@@ -154,8 +72,8 @@ export const EntityTypePage = () => {
         },
       })
     );
-    if (currentEntityType && currentEntityType.attributes) {
-      currentEntityType.attributes.forEach((attrDef) => {
+    if (perspective && perspective.attributes) {
+      perspective.attributes.forEach((attrDef) => {
         columns.push(
           cellType.other(attrDef.attributeName, {
             defaultWidth: 120,
@@ -180,14 +98,12 @@ export const EntityTypePage = () => {
       });
     }
     return columns;
-  }, [currentEntityType]);
-
-  const gridRef = React.useRef<Layout.EditableGridRef<GridRowType>>(null);
+  }, [perspective]);
 
   const handleInsertRow = useEvent(() => {
     const newRow: GridRowType = {
       entityId: UUID.generate(),
-      typeId: entityTypeId,
+      typeId: perspectiveId,
       entityName: '',
       indent: 0,
       attributeValues: {},
@@ -233,21 +149,21 @@ export const EntityTypePage = () => {
 
   const handleChangeRow: Layout.RowChangeEvent<GridRowType> = useEvent(e => {
     for (const x of e.changedRows) {
-      update(x.rowIndex, x.newRow as GridRowType);
+      update(x.rowIndex, x.newRow);
     }
   });
 
   const handleOpenEntityTypeEditDialog = useEvent(() => {
-    if (!currentEntityType) {
+    if (!perspective) {
       alert("エンティティ型が選択されていません。");
       return;
     }
 
     pushDialog({ title: 'エンティティ型の編集', className: "max-w-lg max-h-[80vh]" }, ({ closeDialog }) => (
       <EntityTypeEditDialog
-        initialEntityType={currentEntityType}
+        initialEntityType={perspective}
         onApply={(updatedEntityType) => {
-          setCurrentEntityType(updatedEntityType);
+          formMethods.setValue('perspective', updatedEntityType);
           closeDialog();
         }}
         onCancel={closeDialog}
@@ -268,38 +184,29 @@ export const EntityTypePage = () => {
     )
   }
 
-  if (isLoading) {
-    return <Layout.NowLoading />;
-  }
-  if (error) {
-    return <div className="p-4 text-red-600">エラー: {error}</div>;
-  }
-
   return (
-    <ReactHookForm.FormProvider {...formMethods}>
-      <form onSubmit={handleSubmit(onSubmit)} className="h-full flex flex-col gap-1 pl-1 pt-1">
-        <div className="flex flex-wrap gap-1 items-center">
-          <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRow}>行挿入</Input.IconButton>
-          <Input.IconButton outline mini icon={Icon.TrashIcon} onClick={handleDeleteRow}>行削除</Input.IconButton>
-          <div className="basis-2"></div>
-          <Input.IconButton outline mini icon={Icon.ChevronDoubleLeftIcon} onClick={handleIndentDown}>インデント下げ</Input.IconButton>
-          <Input.IconButton outline mini icon={Icon.ChevronDoubleRightIcon} onClick={handleIndentUp}>インデント上げ</Input.IconButton>
-          <div className="basis-2"></div>
-          <Input.IconButton outline mini icon={Icon.PencilSquareIcon} onClick={handleOpenEntityTypeEditDialog}>型定義編集</Input.IconButton>
-          <div className="flex-1"></div>
-          <Input.IconButton outline mini onClick={() => console.log(JSON.parse(localStorage.getItem('typedDocument') ?? '{}'))}>（デバッグ用）console.log</Input.IconButton>
-          <Input.IconButton submit={true} outline mini icon={Icon.ArrowDownOnSquareIcon} className="font-bold">保存</Input.IconButton>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          <Layout.EditableGrid
-            ref={gridRef}
-            rows={fields}
-            getColumnDefs={getColumnDefs}
-            onChangeRow={handleChangeRow}
-            className="h-full border-y border-l border-gray-300"
-          />
-        </div>
-      </form>
-    </ReactHookForm.FormProvider>
+    <div className={`h-full flex flex-col gap-1 pl-1 pt-1 ${className ?? ''}`}>
+      <div className="flex flex-wrap gap-1 items-center">
+        <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRow}>行挿入</Input.IconButton>
+        <Input.IconButton outline mini icon={Icon.TrashIcon} onClick={handleDeleteRow}>行削除</Input.IconButton>
+        <div className="basis-2"></div>
+        <Input.IconButton outline mini icon={Icon.ChevronDoubleLeftIcon} onClick={handleIndentDown}>インデント下げ</Input.IconButton>
+        <Input.IconButton outline mini icon={Icon.ChevronDoubleRightIcon} onClick={handleIndentUp}>インデント上げ</Input.IconButton>
+        <div className="basis-2"></div>
+        <Input.IconButton outline mini icon={Icon.PencilSquareIcon} onClick={handleOpenEntityTypeEditDialog}>型定義編集</Input.IconButton>
+        <div className="flex-1"></div>
+        <Input.IconButton outline mini onClick={() => console.log(JSON.parse(localStorage.getItem('typedDocument') ?? '{}'))}>（デバッグ用）console.log</Input.IconButton>
+        <Input.IconButton submit={true} outline mini icon={Icon.ArrowDownOnSquareIcon} className="font-bold">保存</Input.IconButton>
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        <Layout.EditableGrid
+          ref={gridRef}
+          rows={fields}
+          getColumnDefs={getColumnDefs}
+          onChangeRow={handleChangeRow}
+          className="h-full border-y border-l border-gray-300"
+        />
+      </div>
+    </div>
   );
-};
+});

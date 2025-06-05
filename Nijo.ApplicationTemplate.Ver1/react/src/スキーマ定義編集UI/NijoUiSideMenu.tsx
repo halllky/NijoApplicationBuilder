@@ -135,7 +135,6 @@ export const NijoUiSideMenu = ({
               id: item.id, // Use item.id directly as it should be unique for entities/perspectives
               displayName: item.label,
               isTypedDocument: true,
-              typedDocumentItemType: item.type,
               typedDocumentItemId: item.id,
               indent: currentIndent,
             } satisfies SideMenuTypedDocumentItem);
@@ -244,11 +243,7 @@ export const NijoUiSideMenu = ({
       // アウトライナーアイテムが選択された場合
       navigate(getNavigationUrl({ page: 'outliner', outlinerId: menuItem.outlinerTypeId }))
     } else if ('isTypedDocument' in menuItem && menuItem.isTypedDocument && menuItem.typedDocumentItemId) {
-      if (menuItem.typedDocumentItemType === 'entityType') {
-        navigate(getNavigationUrl({ page: 'typed-document-entity', entityTypeId: menuItem.typedDocumentItemId }))
-      } else if (menuItem.typedDocumentItemType === 'perspective') {
-        navigate(getNavigationUrl({ page: 'typed-document-perspective', perspectiveId: menuItem.typedDocumentItemId }))
-      }
+      navigate(getNavigationUrl({ page: 'typed-document-perspective', perspectiveId: menuItem.typedDocumentItemId }))
     } else if ('rootAggregateIndex' in menuItem && typeof menuItem.rootAggregateIndex === 'number' && menuItem.rootAggregateIndex !== -1) { // 通常の集約アイテム
       // 集約ツリーを選択した旨を親に通知
       onSelected(menuItem.rootAggregateIndex)
@@ -376,11 +371,7 @@ const SideMenuItemIcon = ({ menuItem, collapsedItems }: {
 
   // 型つきドキュメントアイテムなら専用アイコン
   if ('isTypedDocument' in menuItem && menuItem.isTypedDocument) {
-    if (menuItem.typedDocumentItemType === 'entityType') {
-      return <Icon.TagIcon className={`${SIDEMENU_ICON_CLASSNAME} text-blue-400`} />
-    } else if (menuItem.typedDocumentItemType === 'perspective') {
-      return <Icon.ShareIcon className={`${SIDEMENU_ICON_CLASSNAME} text-green-400`} />
-    }
+    return <Icon.ShareIcon className={`${SIDEMENU_ICON_CLASSNAME} text-green-400`} />
   }
 
   // ルート集約なら集約ごとのアイコンを表示 (SideMenuAggregateItemであることを確認)
@@ -478,7 +469,6 @@ type SideMenuOutlinerItem = SideMenuItemBase & {
 // 型つきドキュメントアイテムの型
 type SideMenuTypedDocumentItem = SideMenuItemBase & {
   isTypedDocument: true;
-  typedDocumentItemType: 'entityType' | 'perspective';
   typedDocumentItemId: string;
   isContainer?: never;
   isOutliner?: never;
