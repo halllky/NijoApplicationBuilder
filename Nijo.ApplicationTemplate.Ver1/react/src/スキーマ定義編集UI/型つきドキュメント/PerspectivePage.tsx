@@ -132,7 +132,7 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
         <PanelGroup direction="horizontal">
 
           {/* グラフ */}
-          <Panel>
+          <Panel collapsible minSize={12}>
             <PerspectivePageGraph
               formMethods={formMethods}
               onNodeDoubleClick={handleNodeDoubleClick}
@@ -143,7 +143,7 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
           <PanelResizeHandle className="w-1" />
 
           {/* グリッド */}
-          <Panel defaultSize={40} collapsible minSize={8}>
+          <Panel collapsible minSize={12}>
             <EntityTypePage
               ref={gridRef}
               formMethods={formMethods}
