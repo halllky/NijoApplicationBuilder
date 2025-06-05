@@ -9,7 +9,6 @@ import * as Input from "../input"
 import useEvent from "react-use-event-hook"
 import { ATTR_GENERATE_DEFAULT_QUERY_MODEL, ATTR_TYPE, SchemaDefinitionGlobalState, TYPE_COMMAND_MODEL, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, TYPE_STATIC_ENUM_MODEL, TYPE_VALUE_OBJECT_MODEL, XmlElementItem } from "./スキーマ定義編集/types"
 import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS, SERVER_DOMAIN } from "./index"
-import { TypedOutliner } from "./型つきアウトライナー/types"
 import { TypedDocumentContextType, NavigationMenuItem as TypedDocumentNavigationMenuItem, Perspective } from "./型つきドキュメント/types"
 
 export const NijoUiSideMenu = ({
@@ -17,15 +16,11 @@ export const NijoUiSideMenu = ({
   formMethods,
   typedDoc,
   onSelected,
-  outlinerList,
-  onOutlinerAdded,
 }: {
   onSave: (applicationState: SchemaDefinitionGlobalState) => void
   formMethods: ReactHookForm.UseFormReturn<SchemaDefinitionGlobalState>
   typedDoc: TypedDocumentContextType
   onSelected: (rootAggregateIndex: number) => void
-  outlinerList: { typeId: string, typeName: string }[] | undefined
-  onOutlinerAdded: (newOutliner: { typeId: string; typeName: string }) => void;
 }) => {
   const params = ReactRouter.useParams()
   const selectedRootAggregateId = params[NIJOUI_CLIENT_ROUTE_PARAMS.AGGREGATE_ID]
@@ -85,26 +80,6 @@ export const NijoUiSideMenu = ({
       }
     }
 
-    // 型つきアウトライナーのアイテム
-    const memoContainer: SideMenuContainerItem = {
-      id: 'memo-items',
-      indent: 0,
-      displayName: 'Memo(没)',
-      isContainer: true,
-    }
-    const outlinerItems: SideMenuLeafItem[] = [];
-    if (outlinerList && !collapsedItems.has(memoContainer.id)) {
-      outlinerList.forEach(item => {
-        outlinerItems.push({
-          id: item.typeId, // クリック時の遷移や識別に使うID
-          displayName: item.typeName || item.typeId, // 表示名
-          isOutliner: true, // アウトライナーアイテムであることを示すフラグ
-          outlinerTypeId: item.typeId, // アウトライナーのtypeId
-          indent: 1,
-        } as SideMenuOutlinerItem); // 型アサーションを追加
-      });
-    }
-
     // 型つきドキュメントのアイテム
     const typedDocumentContainer: SideMenuContainerItem = {
       id: 'typed-document-items',
@@ -152,10 +127,8 @@ export const NijoUiSideMenu = ({
       ...dataQueryCommandTypes,
       memberTypes,
       ...enumOrValueObjectTypes,
-      memoContainer, // memoフォルダのコンテナを追加
-      ...outlinerItems, // memo内のアイテムを追加
     ]
-  }, [fields, collapsedItems, outlinerList, typedDocumentMenuItems]) // 依存配列を修正
+  }, [fields, collapsedItems, typedDocumentMenuItems]) // 依存配列を修正
 
   // ---------------------------------
 
@@ -174,38 +147,6 @@ export const NijoUiSideMenu = ({
     if (!localName) return
     append({ xmlElements: [{ uniqueId: UUID.generate(), indent: 0, localName, attributes: {} }] })
   })
-
-  // 新しいアウトライナー種別を追加する処理
-  const handleNewOutlinerType = useEvent(async () => {
-    const typeName = prompt('新しいメモ種類名を入力してください。');
-    if (!typeName) return;
-
-    try {
-      const typeId = UUID.generate();
-      const response = await fetch(`${SERVER_DOMAIN}/typed-outliner/save`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          typeId,
-          typeName,
-          attributes: [],
-          items: [],
-        } satisfies TypedOutliner),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to save new outliner type: ${response.status} ${errorText}`);
-      }
-
-      // 保存成功を親に通知
-      onOutlinerAdded({ typeId, typeName });
-
-    } catch (error) {
-      console.error(error);
-      alert(`エラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  });
 
   // 新しいPerspectiveを追加する処理
   const handleNewPerspective = useEvent(async () => {
@@ -280,9 +221,6 @@ export const NijoUiSideMenu = ({
         </Input.IconButton>
         <Input.IconButton icon={Icon.PlusIcon} outline mini hideText onClick={handleNewRootAggregate}>
           新しいルート集約を追加する
-        </Input.IconButton>
-        <Input.IconButton icon={Icon.DocumentPlusIcon} outline mini hideText onClick={handleNewOutlinerType}>
-          新しいメモの種類を追加
         </Input.IconButton>
         <Input.IconButton icon={Icon.ShareIcon} outline mini hideText onClick={handleNewPerspective}>
           新しいPerspectiveを追加

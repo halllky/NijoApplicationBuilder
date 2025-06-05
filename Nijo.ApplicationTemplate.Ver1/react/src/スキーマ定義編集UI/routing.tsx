@@ -3,7 +3,6 @@ import { NijoUi } from "./NijoUi"
 import { NijoUiDebugMenu } from "./デバッグメニュー/DebugMenu"
 import { NijoUiMainContent } from "./NijoUi"
 import { ContextProviders } from "../App"
-import { OutlinerPage } from "./型つきアウトライナー/OutlinerPage"
 import { PerspectivePage } from "./型つきドキュメント/PerspectivePage"
 
 export const SERVER_DOMAIN = import.meta.env.DEV
@@ -48,9 +47,6 @@ export const getNijoUiRoutesForEmbedded = (): RouteObjectWithSideMenuSetting[] =
     }, {
       path: 'debug-menu',
       element: <NijoUiDebugMenu />,
-    }, {
-      path: `outliner/:${NIJOUI_CLIENT_ROUTE_PARAMS.OUTLINER_ID}`,
-      element: <OutlinerPage />,
     }, {
       path: `typed-doc/perspective/:${NIJOUI_CLIENT_ROUTE_PARAMS.PERSPECTIVE_ID}`,
       element: <PerspectivePage />,

@@ -5,7 +5,7 @@ import * as ReactResizablePanels from "react-resizable-panels"
 import * as Layout from "../layout"
 import * as Input from "../input"
 import useEvent from "react-use-event-hook"
-import { ApplicationState, NijoUiOutletContextType, SchemaDefinitionGlobalState, TypedOutlinerGlobalState } from "./types"
+import { ApplicationState, NijoUiOutletContextType, SchemaDefinitionGlobalState } from "./types"
 import { NijoUiSideMenu } from "./NijoUiSideMenu"
 import { PageRootAggregate } from "./スキーマ定義編集/RootAggregatePage"
 import { AttrDefsProvider } from "./スキーマ定義編集/AttrDefContext"
@@ -43,12 +43,7 @@ export const NijoUi = ({ className }: {
       }
 
       const schemaData: SchemaDefinitionGlobalState = await schemaResponse.json()
-      const outlinerListData: TypedOutlinerGlobalState['outlinerList'] = await outlinerListResponse.json();
-
-      setSchema({
-        ...schemaData,
-        outlinerList: outlinerListData,
-      })
+      setSchema(schemaData)
     } catch (error) {
       console.error(error)
       setLoadError(error instanceof Error ? error.message : `不明なエラー(${error})`)
@@ -85,17 +80,6 @@ export const NijoUi = ({ className }: {
     }
   })
 
-  // ★新しいアウトライナーが追加されたときの処理
-  const handleOutlinerAdded = useEvent((newOutliner: { typeId: string; typeName: string }) => {
-    setSchema(prevSchema => {
-      if (!prevSchema) return prevSchema; // 通常は発生しないはず
-      return {
-        ...prevSchema,
-        outlinerList: [...(prevSchema.outlinerList || []), newOutliner],
-      };
-    });
-  });
-
   // 読み込み中
   if (schema === undefined && loadError === undefined) {
     return <Layout.NowLoading />
@@ -113,9 +97,7 @@ export const NijoUi = ({ className }: {
     return (
       <AfterLoaded
         defaultValues={schemaDefinitionPart} // SchemaDefinitionGlobalStateを渡す
-        outlinerList={schema.outlinerList}    // outlinerListを別途渡す
         onSave={handleSave}                   // handleSaveはSchemaDefinitionGlobalStateを期待
-        onOutlinerAdded={handleOutlinerAdded} // ★コールバックを渡す
         className={className}
       />
     )
@@ -130,11 +112,9 @@ export const NijoUi = ({ className }: {
 }
 
 /** 画面初期表示時の読み込み完了後 */
-const AfterLoaded = ({ defaultValues, outlinerList, onSave, onOutlinerAdded, className }: {
+const AfterLoaded = ({ defaultValues, onSave, className }: {
   defaultValues: SchemaDefinitionGlobalState
-  outlinerList: TypedOutlinerGlobalState['outlinerList'] | undefined
   onSave: (applicationState: SchemaDefinitionGlobalState) => void
-  onOutlinerAdded: (newOutliner: { typeId: string; typeName: string }) => void
   className?: string
 }) => {
 
@@ -172,8 +152,6 @@ const AfterLoaded = ({ defaultValues, outlinerList, onSave, onOutlinerAdded, cla
                   onSave={onSave}
                   formMethods={form}
                   typedDoc={typedDoc}
-                  outlinerList={outlinerList}
-                  onOutlinerAdded={onOutlinerAdded}
                   onSelected={handleSelected}
                 />
               </ReactResizablePanels.Panel>
