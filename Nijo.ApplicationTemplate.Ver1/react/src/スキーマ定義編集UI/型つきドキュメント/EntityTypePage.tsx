@@ -19,7 +19,7 @@ export interface EntityTypePageGridRef {
 }
 
 // グリッドの行の型
-type GridRowType = Entity & { uniqueId: string };
+type GridRowType = Entity;
 
 export const EntityTypePage = React.forwardRef<EntityTypePageGridRef, EntityTypePageProps>(({
   formMethods,
@@ -108,13 +108,29 @@ export const EntityTypePage = React.forwardRef<EntityTypePageGridRef, EntityType
       indent: 0,
       attributeValues: {},
       comments: [],
-      uniqueId: UUID.generate(),
     };
     const selectedRange = gridRef.current?.getSelectedRange();
     if (!selectedRange) {
       insert(0, newRow);
     } else {
       insert(selectedRange.startRow, newRow);
+    }
+  });
+
+  const handleInsertRowBelow = useEvent(() => {
+    const newRow: GridRowType = {
+      entityId: UUID.generate(),
+      typeId: perspectiveId,
+      entityName: '',
+      indent: 0,
+      attributeValues: {},
+      comments: [],
+    };
+    const selectedRange = gridRef.current?.getSelectedRange();
+    if (!selectedRange) {
+      insert(fields.length, newRow);
+    } else {
+      insert(selectedRange.endRow + 1, newRow);
     }
   });
 
@@ -188,6 +204,7 @@ export const EntityTypePage = React.forwardRef<EntityTypePageGridRef, EntityType
     <div className={`h-full flex flex-col gap-1 pl-1 pt-1 ${className ?? ''}`}>
       <div className="flex flex-wrap gap-1 items-center">
         <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRow}>行挿入</Input.IconButton>
+        <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRowBelow}>下挿入</Input.IconButton>
         <Input.IconButton outline mini icon={Icon.TrashIcon} onClick={handleDeleteRow}>行削除</Input.IconButton>
         <div className="basis-2"></div>
         <Input.IconButton outline mini icon={Icon.ChevronDoubleLeftIcon} onClick={handleIndentDown}>インデント下げ</Input.IconButton>
