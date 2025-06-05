@@ -32,7 +32,7 @@ export const PerspectivePageGrid = React.forwardRef(({
   const [selectedRowIndices, setSelectedRowIndices] = React.useState<number[]>([]);
 
   const getColumnDefs: Layout.GetColumnDefsFunction<PerspectiveNode> = React.useCallback((cellType) => [
-    cellType.text('label', '', {
+    cellType.text('entityName', '', {
       defaultWidth: 540,
       isFixed: true,
       renderCell: (context) => {
@@ -59,11 +59,10 @@ export const PerspectivePageGrid = React.forwardRef(({
 
   const handleAddNode = useEvent(() => {
     append({
-      nodeId: crypto.randomUUID(),
-      label: '',
+      entityId: crypto.randomUUID(),
+      entityName: '',
       indent: 0,
-      entityId: undefined,
-      parentId: undefined,
+      attributeValues: {},
       comments: [],
     });
   });
@@ -82,16 +81,7 @@ export const PerspectivePageGrid = React.forwardRef(({
     for (let i = selectedRange.startRow; i <= selectedRange.endRow; i++) {
       const currentIndent = fields[i].indent;
       const newIndent = currentIndent + 1;
-
-      let parentId: string | undefined = undefined;
-      // 自分より前にあるノードを逆順に見て、新しいインデントより小さいインデントを持つ最初のノードを親とする
-      for (let j = i - 1; j >= 0; j--) {
-        if (fields[j].indent < newIndent) {
-          parentId = fields[j].nodeId;
-          break;
-        }
-      }
-      update(i, { ...fields[i], indent: newIndent, parentId });
+      update(i, { ...fields[i], indent: newIndent });
     }
   });
 
@@ -102,15 +92,7 @@ export const PerspectivePageGrid = React.forwardRef(({
       const currentIndent = fields[i].indent;
       if (currentIndent > 0) {
         const newIndent = currentIndent - 1;
-        let parentId: string | undefined = undefined;
-        // 自分より前にあるノードを逆順に見て、新しいインデントより小さいインデントを持つ最初のノードを親とする
-        for (let j = i - 1; j >= 0; j--) {
-          if (fields[j].indent < newIndent) {
-            parentId = fields[j].nodeId;
-            break;
-          }
-        }
-        update(i, { ...fields[i], indent: newIndent, parentId });
+        update(i, { ...fields[i], indent: newIndent });
       }
     }
   });

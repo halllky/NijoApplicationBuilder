@@ -54,18 +54,7 @@ export type Perspective = {
 }
 
 /** グラフのノード */
-export type PerspectiveNode = {
-  nodeId: string
-  label: string | undefined
-  /** もしこのノードが特定のエンティティと対応する場合はそのIDを指定する */
-  entityId: string | undefined
-  /** このノードの親ノードのID */
-  parentId: string | undefined
-  /** インデント */
-  indent: number
-  /** このノードに対するコメント */
-  comments: TypedDocumentComment[]
-}
+export type PerspectiveNode = Entity
 
 /** グラフのエッジ */
 export type PerspectiveEdge = {

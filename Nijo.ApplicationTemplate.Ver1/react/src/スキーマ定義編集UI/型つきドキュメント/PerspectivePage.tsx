@@ -98,7 +98,7 @@ export const PerspectivePage = () => {
 
   const handleNodeDoubleClick = useEvent((nodeId: string) => {
     const nodes = getValues('perspective.nodes');
-    const rowIndex = nodes.findIndex(n => n.nodeId === nodeId);
+    const rowIndex = nodes.findIndex(n => n.entityId === nodeId);
     if (rowIndex !== -1 && gridRef.current) {
       gridRef.current.selectRow(rowIndex, rowIndex);
     }

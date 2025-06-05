@@ -29,8 +29,8 @@ export const PerspectivePageGraph = ({
 
   const graphNodes: Layout.Node[] | undefined = React.useMemo(() => {
     return watchedNodes.map((node: PerspectiveNode) => ({
-      id: node.nodeId,
-      label: node.label ?? '',
+      id: node.entityId,
+      label: node.entityName,
     } satisfies Layout.Node));
   }, [watchedNodes]);
 
@@ -41,12 +41,12 @@ export const PerspectivePageGraph = ({
       let parentNodeId: string | undefined = undefined;
       for (let i = index - 1; i >= 0; i--) {
         if (allNodes[i].indent < node.indent) {
-          parentNodeId = allNodes[i].nodeId;
+          parentNodeId = allNodes[i].entityId;
           break;
         }
       }
       if (parentNodeId) {
-        map[node.nodeId] = parentNodeId;
+        map[node.entityId] = parentNodeId;
       }
     });
     return map;
