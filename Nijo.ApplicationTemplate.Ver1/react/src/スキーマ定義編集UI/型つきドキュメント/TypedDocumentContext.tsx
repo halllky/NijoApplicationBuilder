@@ -1,6 +1,6 @@
 import * as React from "react"
 import useEvent from "react-use-event-hook"
-import { Entity, NavigationMenuItem, Perspective, TypedDocumentContextType, EntityTypePageData, PerspectivePageData } from "./types"
+import { Entity, NavigationMenuItem, Perspective, TypedDocumentContextType, PerspectivePageData } from "./types"
 
 /** 型つきドキュメントのコンテキスト。各画面から利用する関数群 */
 export const TypedDocumentContext = React.createContext<TypedDocumentContextType>({
@@ -8,7 +8,6 @@ export const TypedDocumentContext = React.createContext<TypedDocumentContextType
   loadNavigationMenus: () => { throw new Error("Not implemented") },
   createPerspective: () => { throw new Error("Not implemented") },
   loadEntityTypePageData: () => { throw new Error("Not implemented") },
-  saveEntities: () => { throw new Error("Not implemented") },
   tryDeleteEntityType: () => { throw new Error("Not implemented") },
   loadPerspectivePageData: () => { throw new Error("Not implemented") },
   savePerspective: () => { throw new Error("Not implemented") },
@@ -72,60 +71,15 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
     const entities = localStorageData.entities.filter(e => e.typeId === entityTypeId)
 
     if (entityType) {
-      return Promise.resolve({ entityType, entities } satisfies EntityTypePageData)
+      return Promise.resolve({
+        perspective: {
+          ...entityType,
+          nodes: entities,
+        }
+      } satisfies PerspectivePageData)
     } else {
       return Promise.resolve(undefined)
     }
-  })
-
-  const saveEntities: TypedDocumentContextType["saveEntities"] = useEvent(async (data) => {
-    setLocalStorageData(prev => {
-      const beforeSort = [
-        ...prev.entities.filter(e => e.typeId !== data.entityType.perspectiveId),
-        ...data.entities,
-      ]
-
-      // エンティティを型ごとにグルーピングする
-      const entitiesByType = beforeSort.reduce((acc, e) => {
-        const groupKey = e.typeId ?? '__no_type__';
-        if (!acc.has(groupKey)) acc.set(groupKey, [])
-        acc.get(groupKey)!.push(e)
-        return acc
-      }, new Map<string, Entity[]>())
-
-      // 第1ソートキーは型IDの昇順、第2ソートキーは引数で渡ってきた順番で保存
-      const entities = Array.from(entitiesByType.entries()).sort((a, b) => {
-        const [typeIdA] = a
-        const [typeIdB] = b
-        return typeIdA.localeCompare(typeIdB)
-      }).flatMap(([, entities]) => entities);
-
-      // エンティティ型定義を更新
-      const entityTypes = prev.perspectives.map(et =>
-        et.perspectiveId === data.entityType.perspectiveId
-          ? data.entityType // 該当するエンティティ型を新しい定義で置き換え
-          : et
-      );
-      // もし万が一、既存のリストに該当typeIdがなかった場合は追加する（通常は発生しない想定）
-      if (!entityTypes.some(et => et.perspectiveId === data.entityType.perspectiveId)) {
-        entityTypes.push(data.entityType);
-      }
-
-      // ナビゲーションメニューの項目も、エンティティ型名が変更された場合に備えて更新
-      const menuItems = prev.menuItems.map(item =>
-        item.type === "perspective" && item.id === data.entityType.perspectiveId
-          ? { ...item, label: data.entityType.name } // ラベルを新しい型名に更新
-          : item
-      );
-
-      return {
-        ...prev,
-        entities,
-        entityTypes, // 更新されたエンティティ型定義を保存
-        menuItems,   // 更新されたメニュー項目を保存
-      };
-    })
-    return Promise.resolve()
   })
 
   const tryDeleteEntityType: TypedDocumentContextType["tryDeleteEntityType"] = useEvent(entityTypeId => {
@@ -174,7 +128,6 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
     loadNavigationMenus,
     createPerspective,
     loadEntityTypePageData,
-    saveEntities,
     tryDeleteEntityType,
     loadPerspectivePageData,
     savePerspective,

@@ -93,15 +93,7 @@ export type TypedDocumentContextType = {
   //#region エンティティ型画面
 
   /** エンティティ型ページ初期表示処理 */
-  loadEntityTypePageData: (entityTypeId: string) => Promise<EntityTypePageData | undefined>
-
-  /**
-   * 画面上で編集したエンティティの値で永続化されているデータを上書きする。
-   * 永続化されたデータのうち、引数のエンティティ型だが、引数の配列に含まれないものは削除される。
-   * エンティティの順番は引数の配列のそれに従う。
-   * 引数の配列のエンティティのうち、種類が変わったもの（型IDが一致しないものもの）は、当該変更先の型の一覧の末尾に移動する。
-   */
-  saveEntities: (data: EntityTypePageData) => Promise<void>
+  loadEntityTypePageData: (entityTypeId: string) => Promise<PerspectivePageData | undefined>
 
   /** 型を削除する。この型を参照しているエンティティがある場合は削除できない */
   tryDeleteEntityType: (entityTypeId: string) => Promise<boolean>
@@ -130,12 +122,6 @@ export type NavigationMenuItem = {
   label: string
   /** エンティティ型IDまたはグラフID */
   id: string
-}
-
-/** エンティティ型画面で取り扱うデータ */
-export type EntityTypePageData = {
-  entityType: Perspective
-  entities: Entity[]
 }
 
 /** グラフ画面で取り扱うデータ */

@@ -8,7 +8,7 @@ import { UUID } from 'uuidjs';
 import * as Input from '../../input';
 import * as Layout from '../../layout';
 import { NIJOUI_CLIENT_ROUTE_PARAMS } from '../routing';
-import { Perspective, EntityTypePageData, Entity, EntityAttribute } from './types';
+import { Perspective, PerspectivePageData, Entity } from './types';
 import { NijoUiOutletContextType } from '../types';
 import { EntityTypeEditDialog } from './EntityTypeEditDialog';
 
@@ -49,9 +49,9 @@ export const EntityTypePage = () => {
       try {
         const pageData = await typedDoc.loadEntityTypePageData(entityTypeId);
         if (pageData) {
-          setCurrentEntityType(pageData.entityType);
-          setEntitiesForGrid(pageData.entities.map(e => ({ ...e, uniqueId: UUID.generate() })));
-          reset({ entities: pageData.entities.map(d => ({ ...d, uniqueId: UUID.generate() })) });
+          setCurrentEntityType(pageData.perspective);
+          setEntitiesForGrid(pageData.perspective.nodes.map(e => ({ ...e, uniqueId: UUID.generate() })));
+          reset({ entities: pageData.perspective.nodes.map(d => ({ ...d, uniqueId: UUID.generate() })) });
         } else {
           setCurrentEntityType(null);
           setEntitiesForGrid([]);
@@ -82,16 +82,18 @@ export const EntityTypePage = () => {
     }
     try {
       const entitiesToSave: Entity[] = data.entities.map(({ uniqueId, ...rest }) => rest);
-      const pageDataToSave: EntityTypePageData = {
-        entityType: currentEntityType,
-        entities: entitiesToSave,
+      const pageDataToSave: PerspectivePageData = {
+        perspective: {
+          ...currentEntityType,
+          nodes: entitiesToSave,
+        },
       };
-      await typedDoc.saveEntities(pageDataToSave);
+      await typedDoc.savePerspective(pageDataToSave);
       const reloadedPageData = await typedDoc.loadEntityTypePageData(entityTypeId);
       if (reloadedPageData) {
-        setCurrentEntityType(reloadedPageData.entityType);
-        setEntitiesForGrid(reloadedPageData.entities.map(e => ({ ...e, uniqueId: UUID.generate() })));
-        reset({ entities: reloadedPageData.entities.map(d => ({ ...d, uniqueId: UUID.generate() })) });
+        setCurrentEntityType(reloadedPageData.perspective);
+        setEntitiesForGrid(reloadedPageData.perspective.nodes.map(e => ({ ...e, uniqueId: UUID.generate() })));
+        reset({ entities: reloadedPageData.perspective.nodes.map(d => ({ ...d, uniqueId: UUID.generate() })) });
       } else {
         setCurrentEntityType(null);
         setEntitiesForGrid([]);
