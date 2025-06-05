@@ -196,7 +196,6 @@ export const EntityTypePage = React.forwardRef<EntityTypePageGridRef, EntityType
         <Input.IconButton outline mini icon={Icon.PencilSquareIcon} onClick={handleOpenEntityTypeEditDialog}>型定義編集</Input.IconButton>
         <div className="flex-1"></div>
         <Input.IconButton outline mini onClick={() => console.log(JSON.parse(localStorage.getItem('typedDocument') ?? '{}'))}>（デバッグ用）console.log</Input.IconButton>
-        <Input.IconButton submit={true} outline mini icon={Icon.ArrowDownOnSquareIcon} className="font-bold">保存</Input.IconButton>
       </div>
       <div className="flex-1 overflow-y-auto">
         <Layout.EditableGrid

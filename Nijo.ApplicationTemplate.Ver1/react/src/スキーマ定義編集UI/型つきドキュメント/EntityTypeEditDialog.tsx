@@ -96,10 +96,6 @@ export const EntityTypeEditDialog = ({
     }
   });
 
-  // typeNameの変更を監視してフォームの値に反映（もし直接編集する場合）
-  // ReactHookForm.Controllerを使ってInput.Textと連携させるのがより良い
-  const typeNameValue = watch('name');
-
   return (
     <ReactHookForm.FormProvider {...formMethods}>
       <form onSubmit={handleSubmit(handleApply)} className="h-full flex flex-col gap-2 p-2">
