@@ -190,7 +190,7 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
         if (isImeOpen) return // IMEが開いているときのEnterやTabでは編集終了しないようにする
 
         // セル内改行のため普通のEnterでは編集終了しないようにする
-        if (e.ctrlKey || e.metaKey) {
+        if (!e.shiftKey) {
           commitEditing()
           e.stopPropagation()
           e.preventDefault()
