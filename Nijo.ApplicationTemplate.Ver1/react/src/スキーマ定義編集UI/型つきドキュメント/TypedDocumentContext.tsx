@@ -114,9 +114,32 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
         const [typeIdA] = a
         const [typeIdB] = b
         return typeIdA.localeCompare(typeIdB)
-      }).flatMap(([, entities]) => entities)
+      }).flatMap(([, entities]) => entities);
 
-      return { ...prev, entities }
+      // エンティティ型定義を更新
+      const entityTypes = prev.entityTypes.map(et =>
+        et.typeId === data.entityType.typeId
+          ? data.entityType // 該当するエンティティ型を新しい定義で置き換え
+          : et
+      );
+      // もし万が一、既存のリストに該当typeIdがなかった場合は追加する（通常は発生しない想定）
+      if (!entityTypes.some(et => et.typeId === data.entityType.typeId)) {
+        entityTypes.push(data.entityType);
+      }
+
+      // ナビゲーションメニューの項目も、エンティティ型名が変更された場合に備えて更新
+      const menuItems = prev.menuItems.map(item =>
+        item.type === "entityType" && item.id === data.entityType.typeId
+          ? { ...item, label: data.entityType.typeName } // ラベルを新しい型名に更新
+          : item
+      );
+
+      return {
+        ...prev,
+        entities,
+        entityTypes, // 更新されたエンティティ型定義を保存
+        menuItems,   // 更新されたメニュー項目を保存
+      };
     })
     return Promise.resolve()
   })

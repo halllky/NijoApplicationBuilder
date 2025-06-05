@@ -74,7 +74,9 @@ export const EntityTypeEditDialog = ({
   const handleApply = useEvent((formData: EntityType & { attributesGrid: AttributeRowForEdit[] }) => {
     const { attributesGrid, ...restOfEntityType } = formData;
     const finalAttributes = attributesGrid.map(({ uniqueId, ...attr }) => attr);
-    onApply({ ...restOfEntityType, attributes: finalAttributes });
+    const updatedEntityType = { ...restOfEntityType, attributes: finalAttributes };
+
+    onApply(updatedEntityType);
   });
 
   const handleAddAttributeRow = useEvent(() => {

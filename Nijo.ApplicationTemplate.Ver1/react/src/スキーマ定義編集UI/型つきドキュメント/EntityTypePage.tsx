@@ -69,7 +69,7 @@ export const EntityTypePage = () => {
       }
     };
     loadData();
-  }, [typedDoc, reset]);
+  }, [typedDoc, reset, entityTypeId]);
 
   // 保存処理
   const onSubmit = useEvent(async (data: { entities: GridRowType[] }) => {
