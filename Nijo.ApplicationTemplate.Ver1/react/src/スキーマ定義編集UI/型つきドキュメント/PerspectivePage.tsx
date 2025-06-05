@@ -12,6 +12,7 @@ import { NijoUiOutletContextType } from '../types';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { PerspectivePageGraph } from './PerspectivePage.Graph';
 import { EntityTypePage, EntityTypePageGridRef } from './EntityTypePage';
+import { EntityDetailPane } from './EntityDetailPane';
 
 export const PerspectivePage = () => {
   const { [NIJOUI_CLIENT_ROUTE_PARAMS.PERSPECTIVE_ID]: perspectiveId } = ReactRouter.useParams();
@@ -131,25 +132,38 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
 
         <PanelGroup direction="horizontal">
 
-          {/* グラフ */}
           <Panel collapsible minSize={12}>
-            <PerspectivePageGraph
-              formMethods={formMethods}
-              onNodeDoubleClick={handleNodeDoubleClick}
-              className="h-full border border-gray-300"
-            />
+            <PanelGroup direction="vertical">
+
+              {/* グラフ */}
+              <Panel collapsible minSize={12}>
+                <PerspectivePageGraph
+                  formMethods={formMethods}
+                  onNodeDoubleClick={handleNodeDoubleClick}
+                  className="h-full border border-gray-300"
+                />
+              </Panel>
+
+              <PanelResizeHandle className="h-1" />
+
+              {/* グリッド */}
+              <Panel collapsible minSize={12}>
+                <EntityTypePage
+                  ref={gridRef}
+                  formMethods={formMethods}
+                  className="h-full"
+                />
+              </Panel>
+            </PanelGroup>
           </Panel>
 
           <PanelResizeHandle className="w-1" />
 
-          {/* グリッド */}
+          {/* 詳細画面 */}
           <Panel collapsible minSize={12}>
-            <EntityTypePage
-              ref={gridRef}
-              formMethods={formMethods}
-              className="h-full"
-            />
+            <EntityDetailPane />
           </Panel>
+
         </PanelGroup>
 
       </form>
