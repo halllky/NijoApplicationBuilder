@@ -6,7 +6,6 @@ import { Entity, NavigationMenuItem, Perspective, TypedDocumentContextType, Enti
 export const TypedDocumentContext = React.createContext<TypedDocumentContextType>({
   isReady: false,
   loadNavigationMenus: () => { throw new Error("Not implemented") },
-  createEntityType: () => { throw new Error("Not implemented") },
   createPerspective: () => { throw new Error("Not implemented") },
   loadEntityTypePageData: () => { throw new Error("Not implemented") },
   saveEntities: () => { throw new Error("Not implemented") },
@@ -53,19 +52,6 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
 
   const loadNavigationMenus: TypedDocumentContextType["loadNavigationMenus"] = useEvent(() => {
     return Promise.resolve(localStorageData.menuItems)
-  })
-
-  const createEntityType: TypedDocumentContextType["createEntityType"] = useEvent(newEntityType => {
-    setLocalStorageData(prev => ({
-      ...prev,
-      perspectives: [...prev.perspectives, newEntityType],
-      menuItems: [...prev.menuItems, {
-        id: newEntityType.perspectiveId,
-        label: newEntityType.name,
-        type: "perspective",
-      }],
-    }))
-    return Promise.resolve(newEntityType)
   })
 
   const createPerspective: TypedDocumentContextType["createPerspective"] = useEvent(newPerspective => {
@@ -186,7 +172,6 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
   return {
     isReady: ready,
     loadNavigationMenus,
-    createEntityType,
     createPerspective,
     loadEntityTypePageData,
     saveEntities,

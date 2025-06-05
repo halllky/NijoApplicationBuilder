@@ -87,9 +87,6 @@ export type TypedDocumentContextType = {
   /** ナビゲーションメニューを取得する */
   loadNavigationMenus: () => Promise<NavigationMenuItem[]>
 
-  /** エンティティタイプを作成する。永続化まで伴う */
-  createEntityType: (entityType: Perspective) => Promise<Perspective>
-
   /** グラフを作成する。永続化まで伴う */
   createPerspective: (perspective: Perspective) => Promise<Perspective>
 
