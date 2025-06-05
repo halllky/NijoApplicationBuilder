@@ -23,20 +23,6 @@ export type EntityAttributeValues = {
   [attributeId: string]: string
 }
 
-/**
- * エンティティの型
- *
- * @deprecated Perspective に統合されました。
- */
-export type EntityType = {
-  /** 型ID */
-  typeId: string
-  /** 型名 */
-  typeName: string
-  /** この種類のデータそれぞれに指定できる属性の定義 */
-  attributes: EntityAttribute[]
-}
-
 /** アウトライナーのデータ1件につけることができる属性の定義 */
 export type EntityAttribute = {
   /** 属性の型ID */
@@ -102,7 +88,7 @@ export type TypedDocumentContextType = {
   loadNavigationMenus: () => Promise<NavigationMenuItem[]>
 
   /** エンティティタイプを作成する。永続化まで伴う */
-  createEntityType: (entityType: EntityType) => Promise<EntityType>
+  createEntityType: (entityType: Perspective) => Promise<Perspective>
 
   /** グラフを作成する。永続化まで伴う */
   createPerspective: (perspective: Perspective) => Promise<Perspective>
@@ -143,7 +129,7 @@ export type NavigationMenuItem = {
   /** 子メニュー */
   children: NavigationMenuItem[]
 } | {
-  type: 'entityType' | 'perspective'
+  type: 'perspective'
   label: string
   /** エンティティ型IDまたはグラフID */
   id: string
@@ -151,7 +137,7 @@ export type NavigationMenuItem = {
 
 /** エンティティ型画面で取り扱うデータ */
 export type EntityTypePageData = {
-  entityType: EntityType
+  entityType: Perspective
   entities: Entity[]
 }
 

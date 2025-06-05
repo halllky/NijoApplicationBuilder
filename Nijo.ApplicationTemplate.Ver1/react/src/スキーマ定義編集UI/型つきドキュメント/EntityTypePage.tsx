@@ -8,7 +8,7 @@ import { UUID } from 'uuidjs';
 import * as Input from '../../input';
 import * as Layout from '../../layout';
 import { NIJOUI_CLIENT_ROUTE_PARAMS } from '../routing';
-import { EntityType, EntityTypePageData, Entity, EntityAttribute } from './types';
+import { Perspective, EntityTypePageData, Entity, EntityAttribute } from './types';
 import { NijoUiOutletContextType } from '../types';
 import { EntityTypeEditDialog } from './EntityTypeEditDialog';
 
@@ -19,7 +19,7 @@ export const EntityTypePage = () => {
   const { [NIJOUI_CLIENT_ROUTE_PARAMS.ENTITY_TYPE_ID]: entityTypeId } = ReactRouter.useParams();
   const { typedDoc } = ReactRouter.useOutletContext<NijoUiOutletContextType>();
 
-  const [currentEntityType, setCurrentEntityType] = React.useState<EntityType | null>(null);
+  const [currentEntityType, setCurrentEntityType] = React.useState<Perspective | null>(null);
   const [entitiesForGrid, setEntitiesForGrid] = React.useState<GridRowType[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);

@@ -10,7 +10,7 @@ import useEvent from "react-use-event-hook"
 import { ATTR_GENERATE_DEFAULT_QUERY_MODEL, ATTR_TYPE, SchemaDefinitionGlobalState, TYPE_COMMAND_MODEL, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, TYPE_STATIC_ENUM_MODEL, TYPE_VALUE_OBJECT_MODEL, XmlElementItem } from "./スキーマ定義編集/types"
 import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS, SERVER_DOMAIN } from "./index"
 import { TypedOutliner } from "./型つきアウトライナー/types"
-import { TypedDocumentContextType, NavigationMenuItem as TypedDocumentNavigationMenuItem, EntityType, Perspective } from "./型つきドキュメント/types"
+import { TypedDocumentContextType, NavigationMenuItem as TypedDocumentNavigationMenuItem, Perspective } from "./型つきドキュメント/types"
 
 export const NijoUiSideMenu = ({
   onSave,
@@ -208,26 +208,6 @@ export const NijoUiSideMenu = ({
     }
   });
 
-  // 新しいエンティティ型を追加する処理
-  const handleNewEntityType = useEvent(async () => {
-    const entityTypeName = prompt('新しいエンティティ型名を入力してください。');
-    if (!entityTypeName) return;
-
-    try {
-      const newEntityType: EntityType = { // EntityTypeをインポートする必要がある
-        typeId: UUID.generate(),
-        typeName: entityTypeName,
-        attributes: [],
-      };
-      await typedDoc.createEntityType(newEntityType);
-      // メニューを再読み込みして新しい項目を反映
-      typedDoc.loadNavigationMenus().then(setTypedDocumentMenuItems);
-    } catch (error) {
-      console.error(error);
-      alert(`エラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  });
-
   // 新しいPerspectiveを追加する処理
   const handleNewPerspective = useEvent(async () => {
     const perspectiveName = prompt('新しいPerspective名を入力してください。');
@@ -308,9 +288,6 @@ export const NijoUiSideMenu = ({
         </Input.IconButton>
         <Input.IconButton icon={Icon.DocumentPlusIcon} outline mini hideText onClick={handleNewOutlinerType}>
           新しいメモの種類を追加
-        </Input.IconButton>
-        <Input.IconButton icon={Icon.TagIcon} outline mini hideText onClick={handleNewEntityType}>
-          新しいエンティティ型を追加
         </Input.IconButton>
         <Input.IconButton icon={Icon.ShareIcon} outline mini hideText onClick={handleNewPerspective}>
           新しいPerspectiveを追加

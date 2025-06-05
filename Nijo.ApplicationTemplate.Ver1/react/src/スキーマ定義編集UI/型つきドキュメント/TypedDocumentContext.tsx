@@ -1,6 +1,6 @@
 import * as React from "react"
 import useEvent from "react-use-event-hook"
-import { Entity, EntityType, NavigationMenuItem, Perspective, TypedDocumentContextType, EntityTypePageData, PerspectivePageData } from "./types"
+import { Entity, NavigationMenuItem, Perspective, TypedDocumentContextType, EntityTypePageData, PerspectivePageData } from "./types"
 
 /** 型つきドキュメントのコンテキスト。各画面から利用する関数群 */
 export const TypedDocumentContext = React.createContext<TypedDocumentContextType>({
@@ -25,7 +25,6 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
   type LocalStorageDataInternal = {
     entities: Entity[]
     menuItems: NavigationMenuItem[]
-    entityTypes: EntityType[]
     perspectives: Perspective[]
   }
 
@@ -34,7 +33,6 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
   const [localStorageData, setLocalStorageData] = React.useState<LocalStorageDataInternal>({
     entities: [],
     menuItems: [],
-    entityTypes: [],
     perspectives: [],
   })
 
@@ -60,11 +58,11 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
   const createEntityType: TypedDocumentContextType["createEntityType"] = useEvent(newEntityType => {
     setLocalStorageData(prev => ({
       ...prev,
-      entityTypes: [...prev.entityTypes, newEntityType],
+      perspectives: [...prev.perspectives, newEntityType],
       menuItems: [...prev.menuItems, {
-        id: newEntityType.typeId,
-        label: newEntityType.typeName,
-        type: "entityType",
+        id: newEntityType.perspectiveId,
+        label: newEntityType.name,
+        type: "perspective",
       }],
     }))
     return Promise.resolve(newEntityType)
@@ -84,7 +82,7 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
   })
 
   const loadEntityTypePageData: TypedDocumentContextType["loadEntityTypePageData"] = useEvent(entityTypeId => {
-    const entityType = localStorageData.entityTypes.find(et => et.typeId === entityTypeId)
+    const entityType = localStorageData.perspectives.find(et => et.perspectiveId === entityTypeId)
     const entities = localStorageData.entities.filter(e => e.typeId === entityTypeId)
 
     if (entityType) {
@@ -97,7 +95,7 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
   const saveEntities: TypedDocumentContextType["saveEntities"] = useEvent(async (data) => {
     setLocalStorageData(prev => {
       const beforeSort = [
-        ...prev.entities.filter(e => e.typeId !== data.entityType.typeId),
+        ...prev.entities.filter(e => e.typeId !== data.entityType.perspectiveId),
         ...data.entities,
       ]
 
@@ -117,20 +115,20 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
       }).flatMap(([, entities]) => entities);
 
       // エンティティ型定義を更新
-      const entityTypes = prev.entityTypes.map(et =>
-        et.typeId === data.entityType.typeId
+      const entityTypes = prev.perspectives.map(et =>
+        et.perspectiveId === data.entityType.perspectiveId
           ? data.entityType // 該当するエンティティ型を新しい定義で置き換え
           : et
       );
       // もし万が一、既存のリストに該当typeIdがなかった場合は追加する（通常は発生しない想定）
-      if (!entityTypes.some(et => et.typeId === data.entityType.typeId)) {
+      if (!entityTypes.some(et => et.perspectiveId === data.entityType.perspectiveId)) {
         entityTypes.push(data.entityType);
       }
 
       // ナビゲーションメニューの項目も、エンティティ型名が変更された場合に備えて更新
       const menuItems = prev.menuItems.map(item =>
-        item.type === "entityType" && item.id === data.entityType.typeId
-          ? { ...item, label: data.entityType.typeName } // ラベルを新しい型名に更新
+        item.type === "perspective" && item.id === data.entityType.perspectiveId
+          ? { ...item, label: data.entityType.name } // ラベルを新しい型名に更新
           : item
       );
 
@@ -150,8 +148,8 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
 
     setLocalStorageData(prev => ({
       ...prev,
-      entityTypes: prev.entityTypes.filter(et => et.typeId !== entityTypeId),
-      menuItems: prev.menuItems.filter(item => item.type !== "entityType" || item.id !== entityTypeId),
+      perspectives: prev.perspectives.filter(et => et.perspectiveId !== entityTypeId),
+      menuItems: prev.menuItems.filter(item => item.type !== "perspective" || item.id !== entityTypeId),
     }))
     return Promise.resolve(true)
   })

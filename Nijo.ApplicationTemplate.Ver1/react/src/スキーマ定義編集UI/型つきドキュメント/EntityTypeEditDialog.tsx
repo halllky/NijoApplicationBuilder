@@ -6,7 +6,7 @@ import { UUID } from 'uuidjs';
 
 import * as Input from '../../input';
 import * as Layout from '../../layout';
-import { EntityType, EntityAttribute } from './types';
+import { Perspective, EntityAttribute } from './types';
 
 // ダイアログ内の属性グリッドの行の型
 export type AttributeRowForEdit = EntityAttribute & { uniqueId: string };
@@ -16,11 +16,11 @@ export const EntityTypeEditDialog = ({
   onApply,
   onCancel,
 }: {
-  initialEntityType: EntityType;
-  onApply: (updatedEntityType: EntityType) => void;
+  initialEntityType: Perspective;
+  onApply: (updatedEntityType: Perspective) => void;
   onCancel: () => void;
 }) => {
-  const formMethods = ReactHookForm.useForm<EntityType & { attributesGrid: AttributeRowForEdit[] }>({
+  const formMethods = ReactHookForm.useForm<Perspective & { attributesGrid: AttributeRowForEdit[] }>({
     defaultValues: {
       ...initialEntityType,
       attributesGrid: initialEntityType.attributes.map(attr => ({ ...attr, uniqueId: UUID.generate() })),
@@ -71,7 +71,7 @@ export const EntityTypeEditDialog = ({
     }),
   ], [remove, move, attributeFields.length]);
 
-  const handleApply = useEvent((formData: EntityType & { attributesGrid: AttributeRowForEdit[] }) => {
+  const handleApply = useEvent((formData: Perspective & { attributesGrid: AttributeRowForEdit[] }) => {
     const { attributesGrid, ...restOfEntityType } = formData;
     const finalAttributes = attributesGrid.map(({ uniqueId, ...attr }) => attr);
     const updatedEntityType = { ...restOfEntityType, attributes: finalAttributes };
@@ -98,16 +98,16 @@ export const EntityTypeEditDialog = ({
 
   // typeNameの変更を監視してフォームの値に反映（もし直接編集する場合）
   // ReactHookForm.Controllerを使ってInput.Textと連携させるのがより良い
-  const typeNameValue = watch('typeName');
+  const typeNameValue = watch('name');
 
   return (
     <ReactHookForm.FormProvider {...formMethods}>
       <form onSubmit={handleSubmit(handleApply)} className="h-full flex flex-col gap-2 p-2">
         <div>
           <label className="block text-sm font-medium text-gray-700">エンティティ型名:</label>
-          <Input.Word<EntityType & { attributesGrid: AttributeRowForEdit[] }, "typeName">
+          <Input.Word<Perspective & { attributesGrid: AttributeRowForEdit[] }, "name">
             control={control}
-            name={"typeName"}
+            name={"name"}
             className="w-full"
           />
         </div>
