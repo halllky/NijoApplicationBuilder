@@ -6,10 +6,7 @@ import useEvent from 'react-use-event-hook';
 
 import * as Input from '../../input';
 import * as Layout from '../../layout';
-import { NIJOUI_CLIENT_ROUTE_PARAMS } from '../routing';
-import { Perspective, PerspectiveNode, PerspectivePageData } from './types';
-import { NijoUiOutletContextType } from '../types';
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { PerspectiveNode, PerspectivePageData } from './types';
 import cytoscape from 'cytoscape'; // cytoscapeの型情報をインポート
 import { ViewState } from '../../layout/GraphView/Cy';
 import ExpandCollapseFunctions from '../../layout/GraphView/Cy.ExpandCollapse';

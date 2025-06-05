@@ -239,6 +239,7 @@ export const NijoUiSideMenu = ({
         name: perspectiveName,
         nodes: [],
         edges: [],
+        attributes: [],
       };
       await typedDoc.createPerspective(newPerspective);
       // メニューを再読み込みして新しい項目を反映

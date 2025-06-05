@@ -23,7 +23,11 @@ export type EntityAttributeValues = {
   [attributeId: string]: string
 }
 
-/** エンティティの型 */
+/**
+ * エンティティの型
+ *
+ * @deprecated Perspective に統合されました。
+ */
 export type EntityType = {
   /** 型ID */
   typeId: string
@@ -45,10 +49,14 @@ export type EntityAttribute = {
 
 /** グラフ */
 export type Perspective = {
+  /** 型ID */
   perspectiveId: string
+  /** 型名 */
   name: string
   nodes: PerspectiveNode[]
   edges: PerspectiveEdge[]
+  /** この種類のデータそれぞれに指定できる属性の定義 */
+  attributes: EntityAttribute[]
   /** グラフの表示状態（pan, zoom, ノード位置など） */
   viewState?: ViewState
 }
