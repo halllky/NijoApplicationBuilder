@@ -90,32 +90,33 @@ export const PerspectivePage = () => {
   )
 }
 
+/**
+ * データ読み込み後のフォーム
+ */
 export const AfterLoaded = ({ defaultValues, onSubmit }: {
   defaultValues: PerspectivePageData
   onSubmit: (data: PerspectivePageData) => Promise<void>
 }) => {
   const formMethods = ReactHookForm.useForm<PerspectivePageData>({ defaultValues });
   const { handleSubmit, formState: { isDirty }, getValues, control, setValue, watch } = formMethods;
+  const { pushDialog } = Layout.useDialogContext()
+  const [selectedEntityIndex, setSelectedEntityIndex] = React.useState<number>()
+  const gridRef = React.useRef<Layout.EditableGridRef<GridRowType>>(null)
 
   // グリッドの行の型 (EntityTypePageから移動してきたGridRowType相当)
   type GridRowType = Entity;
 
-  const gridRef = React.useRef<Layout.EditableGridRef<GridRowType>>(null); // 型を修正
-
-  const { pushDialog } = Layout.useDialogContext(); // 追加
-
-  const { fields, insert, remove, update } = ReactHookForm.useFieldArray({ // 追加
+  const { fields, insert, remove, update } = ReactHookForm.useFieldArray({
     control,
     name: 'perspective.nodes',
     keyName: 'uniqueId',
   });
 
-  const perspective = watch('perspective'); // watchで取得
-  const perspectiveId = watch('perspective.perspectiveId'); // watchで取得
+  const perspective = watch('perspective')
 
   // EntityTypePageから移動してきたハンドラ群
   const handleInsertRow = useEvent(() => {
-    if (!perspective?.perspectiveId) return; // perspectiveId がないとtypeIdが設定できないため
+    if (!perspective?.perspectiveId) return;
     const newRow: GridRowType = {
       entityId: UUID.generate(),
       typeId: perspective.perspectiveId,
@@ -220,8 +221,11 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
   const handleNodeDoubleClick = useEvent((nodeId: string) => {
     const nodes = getValues('perspective.nodes');
     const rowIndex = nodes.findIndex(n => n.entityId === nodeId);
-    if (rowIndex !== -1 && gridRef.current) {
+    if (rowIndex === -1 || !gridRef.current) {
+      setSelectedEntityIndex(undefined);
+    } else {
       gridRef.current.selectRow(rowIndex, rowIndex);
+      setSelectedEntityIndex(rowIndex);
     }
   });
 
@@ -267,6 +271,7 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
                   perspectiveId={perspective?.perspectiveId}
                   rows={fields}
                   onChangeRow={handleChangeRow}
+                  onSelectedRowChanged={setSelectedEntityIndex}
                   className="h-full"
                 />
               </Panel>
@@ -277,7 +282,13 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
 
           {/* 詳細画面 */}
           <Panel collapsible minSize={12}>
-            <EntityDetailPane />
+            {selectedEntityIndex !== undefined && (
+              <EntityDetailPane
+                key={selectedEntityIndex}
+                rhfMethods={formMethods}
+                entityIndex={selectedEntityIndex}
+              />
+            )}
           </Panel>
 
         </PanelGroup>

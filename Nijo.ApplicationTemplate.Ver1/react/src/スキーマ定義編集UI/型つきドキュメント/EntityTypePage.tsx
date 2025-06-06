@@ -1,4 +1,5 @@
 import * as React from 'react';
+import useEvent from 'react-use-event-hook';
 import * as Layout from '../../layout';
 import { Entity, Perspective } from './types';
 
@@ -7,6 +8,7 @@ export interface EntityTypePageProps {
   perspectiveId: string | undefined;
   rows: GridRowType[];
   onChangeRow: Layout.RowChangeEvent<GridRowType>;
+  onSelectedRowChanged: (rowIndex: number) => void;
   className?: string;
 }
 
@@ -20,6 +22,7 @@ export const EntityTypePage = React.forwardRef<
   perspectiveAttributes,
   perspectiveId,
   rows,
+  onSelectedRowChanged,
   onChangeRow,
   className,
 }, ref) => {
@@ -92,6 +95,15 @@ export const EntityTypePage = React.forwardRef<
     )
   }
 
+  // 選択されている行のインデックス
+  const [selectedRowIndex, setSelectedRowIndex] = React.useState<number | undefined>(undefined);
+  const handleActiveCellChanged = useEvent((cell: Layout.CellPosition | null) => {
+    if (cell?.rowIndex !== selectedRowIndex && cell?.rowIndex !== undefined) {
+      onSelectedRowChanged(cell.rowIndex);
+    }
+    setSelectedRowIndex(cell?.rowIndex);
+  })
+
   return (
     <div className={`h-full flex flex-col gap-1 pl-1 pt-1 ${className ?? ''}`}>
       <div className="flex-1 overflow-y-auto">
@@ -100,6 +112,7 @@ export const EntityTypePage = React.forwardRef<
           rows={rows}
           getColumnDefs={getColumnDefs}
           onChangeRow={onChangeRow}
+          onActiveCellChanged={handleActiveCellChanged}
           className="h-full border-y border-l border-gray-300"
         />
       </div>

@@ -22,6 +22,9 @@ export type EditableGridProps<TRow extends ReactHookForm.FieldValues> = {
    */
   onChangeRow?: RowChangeEvent<TRow>
 
+  /** セルが選択されたあとに発火される。 */
+  onActiveCellChanged?: (cell: CellPosition | null) => void
+
   /** 行ヘッダのチェックボックスを表示するかどうか。 */
   showCheckBox?: boolean | ((row: TRow, rowIndex: number) => boolean)
   /** グリッドを読み取り専用にするかどうか。 */

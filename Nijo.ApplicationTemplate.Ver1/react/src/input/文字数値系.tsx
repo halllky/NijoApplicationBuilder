@@ -38,7 +38,7 @@ export const Word = <
 export const Description = <
   TField extends ReactHookForm.FieldValues,
   TPath extends ReactHookForm.FieldPathByValue<TField, string | undefined>
->(props: CustomInputComponentProps<string | undefined, TField, TPath>) => {
+>(props: CustomInputComponentProps<string | undefined, TField, TPath> & { placeholder?: string }) => {
   return (
     <ReactHookForm.Controller
       control={props.control}
@@ -50,6 +50,7 @@ export const Description = <
             {...field}
             value={field.value ?? ''}
             className="bg-white border border-gray-300 p-1"
+            placeholder={props.placeholder}
           />
           <FieldErrorView name={props.name} />
         </div>

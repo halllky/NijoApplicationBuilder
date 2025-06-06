@@ -41,6 +41,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     getColumnDefs,
     showCheckBox,
     isReadOnly,
+    onActiveCellChanged: propsOnActiveCellChanged,
     className
   } = props;
 
@@ -110,7 +111,10 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
         }
       }
     }
-  }, [cellEditorRef, rows, columnDefs, tableRef])
+
+    // セルが選択されたあとに発火されるコールバック
+    propsOnActiveCellChanged?.(cell)
+  }, [cellEditorRef, rows, columnDefs, tableRef, propsOnActiveCellChanged])
 
   // 選択状態
   const {
