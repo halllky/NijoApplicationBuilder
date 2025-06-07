@@ -240,14 +240,14 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
         <div className="flex flex-wrap gap-1 items-center mb-2">
           <div className="flex-1 font-semibold">{getValues('perspective.name')}</div>
           <Input.IconButton outline mini onClick={() => console.log(JSON.parse(localStorage.getItem('typedDocument') ?? '{}'))}>（デバッグ用）console.log</Input.IconButton>
-          <Input.IconButton outline mini hideText icon={Icon.PlusIcon} onClick={handleInsertRow}>行挿入</Input.IconButton>
-          <Input.IconButton outline mini hideText icon={Icon.PlusIcon} onClick={handleInsertRowBelow}>下挿入</Input.IconButton>
-          <Input.IconButton outline mini hideText icon={Icon.TrashIcon} onClick={handleDeleteRow}>行削除</Input.IconButton>
+          <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRow}>行挿入</Input.IconButton>
+          <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRowBelow}>下挿入</Input.IconButton>
+          <Input.IconButton outline mini icon={Icon.TrashIcon} onClick={handleDeleteRow}>行削除</Input.IconButton>
           <div className="basis-2"></div>
-          <Input.IconButton outline mini hideText icon={Icon.ChevronDoubleLeftIcon} onClick={handleIndentDown}>インデント下げ</Input.IconButton>
-          <Input.IconButton outline mini hideText icon={Icon.ChevronDoubleRightIcon} onClick={handleIndentUp}>インデント上げ</Input.IconButton>
+          <Input.IconButton outline mini icon={Icon.ChevronDoubleLeftIcon} onClick={handleIndentDown}>インデント下げ</Input.IconButton>
+          <Input.IconButton outline mini icon={Icon.ChevronDoubleRightIcon} onClick={handleIndentUp}>インデント上げ</Input.IconButton>
           <div className="basis-2"></div>
-          <Input.IconButton outline mini hideText icon={Icon.PencilSquareIcon} onClick={handleOpenEntityTypeEditDialog}>型定義編集</Input.IconButton>
+          <Input.IconButton outline mini icon={Icon.PencilSquareIcon} onClick={handleOpenEntityTypeEditDialog}>型定義編集</Input.IconButton>
           <div className="basis-2"></div>
           <Input.IconButton submit={true} outline mini icon={Icon.ArrowDownOnSquareIcon} className="font-bold">保存</Input.IconButton>
         </div>
@@ -256,17 +256,6 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
 
           <Panel collapsible minSize={12}>
             <PanelGroup direction="vertical">
-
-              {/* グラフ */}
-              <Panel collapsible minSize={12}>
-                <PerspectivePageGraph
-                  formMethods={formMethods}
-                  onNodeDoubleClick={handleNodeDoubleClick}
-                  className="h-full border border-gray-300"
-                />
-              </Panel>
-
-              <PanelResizeHandle className="h-1" />
 
               {/* グリッド */}
               <Panel collapsible minSize={12}>
@@ -278,6 +267,17 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
                   onChangeRow={handleChangeRow}
                   onSelectedRowChanged={setSelectedEntityIndex}
                   className="h-full"
+                />
+              </Panel>
+
+              <PanelResizeHandle className="h-1" />
+
+              {/* グラフ */}
+              <Panel collapsible minSize={12}>
+                <PerspectivePageGraph
+                  formMethods={formMethods}
+                  onNodeDoubleClick={handleNodeDoubleClick}
+                  className="h-full border border-gray-300"
                 />
               </Panel>
             </PanelGroup>

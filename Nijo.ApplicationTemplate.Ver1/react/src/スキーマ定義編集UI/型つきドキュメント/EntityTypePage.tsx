@@ -1,4 +1,5 @@
 import * as React from 'react';
+import * as ReactHookForm from 'react-hook-form';
 import useEvent from 'react-use-event-hook';
 import * as Layout from '../../layout';
 import { Entity, Perspective } from './types';
@@ -30,7 +31,7 @@ export const EntityTypePage = React.forwardRef<
   const getColumnDefs: Layout.GetColumnDefsFunction<GridRowType> = React.useCallback(cellType => {
     const columns: Layout.EditableGridColumnDef<GridRowType>[] = [];
     columns.push(
-      cellType.text('entityName', '名称', {
+      cellType.text('entityName', '', {
         defaultWidth: 540,
         isFixed: true,
         renderCell: context => {
