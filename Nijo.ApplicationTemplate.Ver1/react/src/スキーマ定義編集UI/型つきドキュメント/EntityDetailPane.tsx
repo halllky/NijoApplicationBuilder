@@ -86,7 +86,7 @@ export const EntityDetailPane: React.FC<EntityDetailPaneProps> = ({
         className="w-full text-md font-bold outline-none resize-none field-sizing-content"
       />
 
-      <div className="flex-1 flex flex-col justify-start gap-2 overflow-y-auto">
+      <div className="flex-1 flex flex-col justify-start gap-2 py-1 overflow-y-auto">
 
         {/* 属性 */}
         <div className="flex flex-col gap-1">
