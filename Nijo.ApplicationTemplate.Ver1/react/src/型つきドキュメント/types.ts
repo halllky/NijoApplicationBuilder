@@ -1,4 +1,4 @@
-import { ViewState } from "../../layout/GraphView/Cy"
+import { ViewState } from "../layout/GraphView/Cy"
 
 /** アウトライナーのデータ1件 */
 export type Entity = {

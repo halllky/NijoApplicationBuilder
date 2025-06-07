@@ -3,7 +3,7 @@ import { NijoUi } from "./NijoUi"
 import { NijoUiDebugMenu } from "./デバッグメニュー/DebugMenu"
 import { NijoUiMainContent } from "./NijoUi"
 import { ContextProviders } from "../App"
-import { PerspectivePage } from "./型つきドキュメント/PerspectivePage"
+import { PerspectivePage } from "../型つきドキュメント/PerspectivePage"
 
 export const SERVER_DOMAIN = import.meta.env.DEV
   ? 'https://localhost:8081'

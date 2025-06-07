@@ -5,10 +5,10 @@ import * as Icon from '@heroicons/react/24/solid';
 import useEvent from 'react-use-event-hook';
 import { UUID } from 'uuidjs';
 
-import * as Input from '../../input';
-import * as Layout from '../../layout';
-import { NIJOUI_CLIENT_ROUTE_PARAMS } from '../routing';
-import { NijoUiOutletContextType } from '../types';
+import * as Input from '../input';
+import * as Layout from '../layout';
+import { NIJOUI_CLIENT_ROUTE_PARAMS } from '../スキーマ定義編集UI/routing';
+import { NijoUiOutletContextType } from '../スキーマ定義編集UI/types';
 import { Panel, PanelGroup, PanelGroupStorage, PanelResizeHandle } from 'react-resizable-panels';
 import { PerspectivePageGraph } from './PerspectivePage.Graph';
 import { EntityTypePage, EntityTypePageRef } from './PerspectivePage.Grid';

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as ReactHookForm from 'react-hook-form';
 import useEvent from 'react-use-event-hook';
-import * as Layout from '../../layout';
+import * as Layout from '../layout';
 import { Entity, Perspective, PerspectivePageData } from './types';
 import { MentionUtil } from './MentionTextarea';
 import { UUID } from 'uuidjs';

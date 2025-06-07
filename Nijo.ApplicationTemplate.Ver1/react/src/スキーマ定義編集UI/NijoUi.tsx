@@ -13,7 +13,7 @@ import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS, SERVER_DOMAIN } from "./r
 import NijoUiErrorMessagePane from "./NijoUiErrorMessagePane"
 import { useValidationContextProvider, ValidationContext } from "./スキーマ定義編集/ValidationContext"
 import { NijoUiAggregateDiagram } from "./スキーマ定義編集/NijoUiAggregateDiagram"
-import { useTypedDocumentContextProvider } from "./型つきドキュメント/TypedDocumentContext"
+import { useTypedDocumentContextProvider } from "../型つきドキュメント/TypedDocumentContext"
 
 /**
  * nijo.xmlをUIで編集できる画面の試作。

@@ -1,10 +1,10 @@
 import * as React from 'react';
 import * as ReactRouter from 'react-router';
 import * as ReactMention from 'react-mentions';
-import { NijoUiOutletContextType } from '../types';
+import { NijoUiOutletContextType } from '../スキーマ定義編集UI/types';
 import { Entity } from './types';
 import useEvent from 'react-use-event-hook';
-import { getNavigationUrl } from '../routing';
+import { getNavigationUrl } from '../スキーマ定義編集UI/routing';
 
 export type MentionTextareaProps = {
   value?: string
