@@ -106,7 +106,7 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
   // グリッドの行の型 (EntityTypePageから移動してきたGridRowType相当)
   type GridRowType = Entity;
 
-  const { fields, insert, remove, update } = ReactHookForm.useFieldArray({
+  const { fields, insert, remove, update, move } = ReactHookForm.useFieldArray({
     control,
     name: 'perspective.nodes',
     keyName: 'uniqueId',
@@ -114,7 +114,7 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
 
   const perspective = watch('perspective')
 
-  // EntityTypePageから移動してきたハンドラ群
+  // 選択行の位置に行挿入
   const handleInsertRow = useEvent(() => {
     if (!perspective?.perspectiveId) return;
     const newRow: GridRowType = {
@@ -133,6 +133,7 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
     }
   });
 
+  // 下に行挿入
   const handleInsertRowBelow = useEvent(() => {
     if (!perspective?.perspectiveId) return;
     const newRow: GridRowType = {
@@ -151,6 +152,7 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
     }
   });
 
+  // 行削除
   const handleDeleteRow = useEvent(() => {
     const selectedRange = gridRef.current?.getSelectedRange();
     if (!selectedRange) return;
@@ -158,6 +160,37 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
     remove(removedIndexes);
   });
 
+  // 選択行を上に移動
+  const handleMoveUp = useEvent(() => {
+    const selectedRows = gridRef.current?.getSelectedRows();
+    if (!selectedRows) return;
+
+    const startRow = selectedRows[0].rowIndex;
+    const endRow = startRow + selectedRows.length - 1;
+    if (startRow === 0) return;
+
+    // 選択範囲の外側（1つ上）の行を選択範囲の下に移動させる
+    move(startRow - 1, endRow);
+    // 行選択
+    gridRef.current?.selectRow(startRow - 1, endRow - 1);
+  });
+
+  // 選択行を下に移動
+  const handleMoveDown = useEvent(() => {
+    const selectedRows = gridRef.current?.getSelectedRows();
+    if (!selectedRows) return;
+
+    const startRow = selectedRows[0].rowIndex;
+    const endRow = startRow + selectedRows.length - 1;
+    if (endRow >= fields.length - 1) return;
+
+    // 選択範囲の外側（1つ下）の行を選択範囲の上に移動させる
+    move(endRow + 1, startRow);
+    // 行選択
+    gridRef.current?.selectRow(startRow + 1, endRow + 1);
+  });
+
+  // 選択行のインデントを下げる
   const handleIndentDown = useEvent(() => {
     const selectedRows = gridRef.current?.getSelectedRows();
     if (!selectedRows) return;
@@ -169,6 +202,7 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
     }
   });
 
+  // 選択行のインデントを上げる
   const handleIndentUp = useEvent(() => {
     const selectedRows = gridRef.current?.getSelectedRows();
     if (!selectedRows) return;
@@ -180,6 +214,7 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
     }
   });
 
+  // 型定義編集ダイアログを開く
   const handleOpenEntityTypeEditDialog = useEvent(() => {
     if (!perspective) {
       alert("エンティティ型が選択されていません。");
@@ -197,12 +232,14 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
     ));
   });
 
-  const handleChangeRow: Layout.RowChangeEvent<GridRowType> = useEvent(e => { // 追加
+  // グリッドの行変更時イベント
+  const handleChangeRow: Layout.RowChangeEvent<GridRowType> = useEvent(e => {
     for (const x of e.changedRows) {
       update(x.rowIndex, x.newRow);
     }
   });
 
+  // 詳細画面でのエンティティ変更時イベント
   const handleEntityChangedInDetailPage = useEvent((entity: Entity) => {
     if (selectedEntityIndex === undefined) return;
     update(selectedEntityIndex, entity);
@@ -223,6 +260,7 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
     }
   }, [blocker]);
 
+  // グラフのノードがダブルクリックされたらそのノードに紐づくエンティティを選択
   const handleNodeDoubleClick = useEvent((nodeId: string) => {
     const nodes = getValues('perspective.nodes');
     const rowIndex = nodes.findIndex(n => n.entityId === nodeId);
@@ -249,6 +287,9 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
           <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRow}>行挿入</Input.IconButton>
           <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRowBelow}>下挿入</Input.IconButton>
           <Input.IconButton outline mini icon={Icon.TrashIcon} onClick={handleDeleteRow}>行削除</Input.IconButton>
+          <div className="basis-2"></div>
+          <Input.IconButton outline mini icon={Icon.ChevronUpIcon} onClick={handleMoveUp}>選択行を上に移動</Input.IconButton>
+          <Input.IconButton outline mini icon={Icon.ChevronDownIcon} onClick={handleMoveDown}>選択行を下に移動</Input.IconButton>
           <div className="basis-2"></div>
           <Input.IconButton outline mini icon={Icon.ChevronDoubleLeftIcon} onClick={handleIndentDown}>インデント下げ</Input.IconButton>
           <Input.IconButton outline mini icon={Icon.ChevronDoubleRightIcon} onClick={handleIndentUp}>インデント上げ</Input.IconButton>
