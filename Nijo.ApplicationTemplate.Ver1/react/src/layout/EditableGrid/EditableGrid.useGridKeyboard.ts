@@ -1,10 +1,12 @@
 import React, { useEffect, useCallback, useRef } from "react";
-import { CellPosition, CellSelectionRange } from ".";
+import { CellPosition, CellSelectionRange, EditableGridKeyboardEventHandler } from ".";
 import type { Virtualizer } from '@tanstack/react-virtual';
 import * as Util from "../../util";
 import useEvent from "react-use-event-hook";
 
 export interface UseGridKeyboardProps {
+  /** EditableGridの外側で定義されるキーボードイベントハンドラ */
+  propsKeyDown: EditableGridKeyboardEventHandler | undefined
   activeCell: CellPosition | null;
   selectedRange: CellSelectionRange | null;
   isEditing: boolean;
@@ -20,6 +22,7 @@ export interface UseGridKeyboardProps {
 }
 
 export function useGridKeyboard({
+  propsKeyDown,
   activeCell,
   selectedRange,
   isEditing,
@@ -37,6 +40,16 @@ export function useGridKeyboard({
 
   // キーボードイベントハンドラ
   const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = useEvent(e => {
+    // 画面側で何らかの制御が指定されている場合はそちらが優先
+    if (propsKeyDown) {
+      const { handled } = propsKeyDown(e, isEditing);
+      if (handled) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+    }
+
     // 編集中はCellEditorに任せる
     if (isEditing) return;
 

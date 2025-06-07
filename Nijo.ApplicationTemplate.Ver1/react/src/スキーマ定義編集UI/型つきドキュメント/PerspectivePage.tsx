@@ -11,7 +11,7 @@ import { NIJOUI_CLIENT_ROUTE_PARAMS } from '../routing';
 import { NijoUiOutletContextType } from '../types';
 import { Panel, PanelGroup, PanelGroupStorage, PanelResizeHandle } from 'react-resizable-panels';
 import { PerspectivePageGraph } from './PerspectivePage.Graph';
-import { EntityTypePage } from './PerspectivePage.Grid';
+import { EntityTypePage, EntityTypePageRef } from './PerspectivePage.Grid';
 import { EntityDetailPane } from './PerspectivePage.Details';
 import { EntityTypeEditDialog } from './PerspectivePage.Settings';
 import { Entity, Perspective, PerspectivePageData } from './types';
@@ -125,118 +125,19 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
   const { handleSubmit, formState: { isDirty }, getValues, control, setValue, watch } = formMethods;
   const { pushDialog } = Layout.useDialogContext()
   const [selectedEntityIndex, setSelectedEntityIndex] = React.useState<number>()
-  const gridRef = React.useRef<Layout.EditableGridRef<GridRowType>>(null)
+  const gridRef = React.useRef<EntityTypePageRef>(null)
 
   // グリッドの行の型 (EntityTypePageから移動してきたGridRowType相当)
   type GridRowType = Entity;
 
-  const { fields, insert, remove, update, move } = ReactHookForm.useFieldArray({
+  const useFieldArrayReturn = ReactHookForm.useFieldArray({
     control,
     name: 'perspective.nodes',
     keyName: 'uniqueId',
   });
+  const { fields, insert, remove, update, move } = useFieldArrayReturn;
 
   const perspective = watch('perspective')
-
-  // 選択行の位置に行挿入
-  const handleInsertRow = useEvent(() => {
-    if (!perspective?.perspectiveId) return;
-    const newRow: GridRowType = {
-      entityId: UUID.generate(),
-      typeId: perspective.perspectiveId,
-      entityName: '',
-      indent: 0,
-      attributeValues: {},
-      comments: [],
-    };
-    const selectedRange = gridRef.current?.getSelectedRange();
-    if (!selectedRange) {
-      insert(0, newRow);
-    } else {
-      insert(selectedRange.startRow, newRow);
-    }
-  });
-
-  // 下に行挿入
-  const handleInsertRowBelow = useEvent(() => {
-    if (!perspective?.perspectiveId) return;
-    const newRow: GridRowType = {
-      entityId: UUID.generate(),
-      typeId: perspective.perspectiveId,
-      entityName: '',
-      indent: 0,
-      attributeValues: {},
-      comments: [],
-    };
-    const selectedRange = gridRef.current?.getSelectedRange();
-    if (!selectedRange) {
-      insert(fields.length, newRow);
-    } else {
-      insert(selectedRange.endRow + 1, newRow);
-    }
-  });
-
-  // 行削除
-  const handleDeleteRow = useEvent(() => {
-    const selectedRange = gridRef.current?.getSelectedRange();
-    if (!selectedRange) return;
-    const removedIndexes = Array.from({ length: selectedRange.endRow - selectedRange.startRow + 1 }, (_, i) => selectedRange.startRow + i);
-    remove(removedIndexes);
-  });
-
-  // 選択行を上に移動
-  const handleMoveUp = useEvent(() => {
-    const selectedRows = gridRef.current?.getSelectedRows();
-    if (!selectedRows) return;
-
-    const startRow = selectedRows[0].rowIndex;
-    const endRow = startRow + selectedRows.length - 1;
-    if (startRow === 0) return;
-
-    // 選択範囲の外側（1つ上）の行を選択範囲の下に移動させる
-    move(startRow - 1, endRow);
-    // 行選択
-    gridRef.current?.selectRow(startRow - 1, endRow - 1);
-  });
-
-  // 選択行を下に移動
-  const handleMoveDown = useEvent(() => {
-    const selectedRows = gridRef.current?.getSelectedRows();
-    if (!selectedRows) return;
-
-    const startRow = selectedRows[0].rowIndex;
-    const endRow = startRow + selectedRows.length - 1;
-    if (endRow >= fields.length - 1) return;
-
-    // 選択範囲の外側（1つ下）の行を選択範囲の上に移動させる
-    move(endRow + 1, startRow);
-    // 行選択
-    gridRef.current?.selectRow(startRow + 1, endRow + 1);
-  });
-
-  // 選択行のインデントを下げる
-  const handleIndentDown = useEvent(() => {
-    const selectedRows = gridRef.current?.getSelectedRows();
-    if (!selectedRows) return;
-    for (const x of selectedRows) {
-      const currentItem = fields[x.rowIndex];
-      if (currentItem) {
-        update(x.rowIndex, { ...currentItem, indent: Math.max(0, currentItem.indent - 1) });
-      }
-    }
-  });
-
-  // 選択行のインデントを上げる
-  const handleIndentUp = useEvent(() => {
-    const selectedRows = gridRef.current?.getSelectedRows();
-    if (!selectedRows) return;
-    for (const x of selectedRows) {
-      const currentItem = fields[x.rowIndex];
-      if (currentItem) {
-        update(x.rowIndex, { ...currentItem, indent: currentItem.indent + 1 });
-      }
-    }
-  });
 
   // 型定義編集ダイアログを開く
   const handleOpenEntityTypeEditDialog = useEvent(() => {
@@ -323,21 +224,20 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
     <ReactHookForm.FormProvider {...formMethods}>
       <form onSubmit={handleSubmit(onSubmit)} className="h-full flex flex-col gap-1 pl-1 pt-1">
         <div className="flex flex-wrap gap-1 items-center mb-2">
-          <div className="flex-1 font-semibold">{getValues('perspective.name')}</div>
-          <Input.IconButton outline mini onClick={() => console.log(JSON.parse(localStorage.getItem('typedDocument') ?? '{}'))}>（デバッグ用）console.log</Input.IconButton>
-          <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRow}>行挿入</Input.IconButton>
-          <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRowBelow}>下挿入</Input.IconButton>
-          <Input.IconButton outline mini icon={Icon.TrashIcon} onClick={handleDeleteRow}>行削除</Input.IconButton>
+          <div className="font-semibold">{getValues('perspective.name')}</div>
+          <Input.IconButton hideText onClick={handleOpenEntityTypeEditDialog} icon={Icon.PencilSquareIcon}>型定義編集</Input.IconButton>
+          <div className="flex-1"></div>
+          <Input.IconButton outline mini onClick={gridRef.current?.insertRow}>行挿入(Enter)</Input.IconButton>
+          <Input.IconButton outline mini onClick={gridRef.current?.insertRowBelow}>下挿入(Ctrl + Enter)</Input.IconButton>
+          <Input.IconButton outline mini onClick={gridRef.current?.deleteRow}>行削除(Shift + Delete)</Input.IconButton>
           <div className="basis-2"></div>
-          <Input.IconButton outline mini icon={Icon.ChevronUpIcon} onClick={handleMoveUp}>選択行を上に移動</Input.IconButton>
-          <Input.IconButton outline mini icon={Icon.ChevronDownIcon} onClick={handleMoveDown}>選択行を下に移動</Input.IconButton>
+          <Input.IconButton outline mini onClick={gridRef.current?.moveUp}>上に移動(Alt + ↑)</Input.IconButton>
+          <Input.IconButton outline mini onClick={gridRef.current?.moveDown}>下に移動(Alt + ↓)</Input.IconButton>
           <div className="basis-2"></div>
-          <Input.IconButton outline mini icon={Icon.ChevronDoubleLeftIcon} onClick={handleIndentDown}>インデント下げ</Input.IconButton>
-          <Input.IconButton outline mini icon={Icon.ChevronDoubleRightIcon} onClick={handleIndentUp}>インデント上げ</Input.IconButton>
+          <Input.IconButton outline mini onClick={gridRef.current?.indentDown}>インデント下げ(Shift + Tab)</Input.IconButton>
+          <Input.IconButton outline mini onClick={gridRef.current?.indentUp}>インデント上げ(Tab)</Input.IconButton>
           <div className="basis-2"></div>
-          <Input.IconButton outline mini icon={Icon.PencilSquareIcon} onClick={handleOpenEntityTypeEditDialog}>型定義編集</Input.IconButton>
-          <div className="basis-2"></div>
-          <Input.IconButton submit={true} outline mini icon={Icon.ArrowDownOnSquareIcon} className="font-bold">保存</Input.IconButton>
+          <Input.IconButton submit outline mini>保存(Ctrl + S)</Input.IconButton>
         </div>
 
         <PanelGroup direction="horizontal" autoSaveId="page-root-horizontal" storage={panelStorage}>
@@ -349,8 +249,8 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
               <Panel collapsible minSize={12}>
                 <EntityTypePage
                   ref={gridRef}
+                  useFieldArrayReturn={useFieldArrayReturn}
                   perspective={perspective}
-                  rows={fields}
                   onChangeRow={handleChangeRow}
                   onSelectedRowChanged={setSelectedEntityIndex}
                   setValue={setValue}

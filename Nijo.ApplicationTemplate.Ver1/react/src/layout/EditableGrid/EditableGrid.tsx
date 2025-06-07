@@ -357,6 +357,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
 
   // キーボード操作のセットアップ
   const handleKeyDown = useGridKeyboard({
+    propsKeyDown: props.onKeyDown,
     activeCell,
     selectedRange,
     isEditing,

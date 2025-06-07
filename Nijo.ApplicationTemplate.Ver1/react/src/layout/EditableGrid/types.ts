@@ -37,6 +37,9 @@ export type EditableGridProps<TRow extends ReactHookForm.FieldValues> = {
   /** 行選択状態が変更されたときに呼び出されるコールバック */
   onRowSelectionChange?: (updater: React.SetStateAction<Record<string, boolean>>) => void
 
+  /** グリッドのキーボード操作を受け取るコールバック */
+  onKeyDown?: EditableGridKeyboardEventHandler
+
   /** グリッドの列幅などの自動保存に使用するストレージのロジック定義。 */
   storage?: EditableGridAutoSaveStorage
 }
@@ -164,3 +167,11 @@ export type EditableGridAutoSaveStorage = {
 export type EditableGridAutoSaveStoragedValueInternal = {
   'column-sizing': { [columnId: string]: number }
 }
+
+/** グリッドのキーボード操作を受け取るコールバック */
+export type EditableGridKeyboardEventHandler = (
+  /** キーボードイベントの生イベント */
+  nativeEvent: React.KeyboardEvent,
+  /** セル編集中か否か */
+  isEditing: boolean
+) => { handled: boolean }
