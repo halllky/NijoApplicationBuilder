@@ -104,7 +104,7 @@ export type TypedDocumentContextType = {
   loadPerspectivePageData: (perspectiveId: string) => Promise<PerspectivePageData | undefined>
 
   /** グラフ画面で編集したデータを永続化する */
-  savePerspective: (data: PerspectivePageData) => Promise<void>
+  savePerspective: (data: PerspectivePageData) => Promise<boolean>
 
   //#endregion グラフ画面
 }

@@ -70,24 +70,22 @@ export const PerspectivePage = () => {
 
   // 保存処理
   const onSubmit = useEvent(async (data: PerspectivePageData) => {
+    if (isSaving) return;
     setIsSaving(true);
     setError(null);
 
     // 保存
-    await savePerspective(data);
+    try {
+      const isSaved = await savePerspective(data);
+      if (!isSaved) return;
+      afterLoadedRef?.saveSucceeded();
 
-    // 保存後再読み込み
-    if (perspectiveId) {
-      const reloadedPageData = await loadPerspectivePageData(perspectiveId);
-      if (reloadedPageData) {
-        setDefaultValues(reloadedPageData);
-      }
+    } finally {
+      setIsSaving(false);
     }
-    alert('保存しました。');
-    setIsSaving(false);
   });
 
-  if (!isReady || !isLoaded || isSaving) {
+  if (!isReady || !isLoaded) {
     return <Layout.NowLoading />;
   }
   if (error) {
@@ -115,6 +113,7 @@ type AfterLoadedProps = {
 
 type AfterLoadedRef = {
   selectEntity: (entityId: string) => void
+  saveSucceeded: () => void
 }
 
 /**
@@ -209,6 +208,8 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
     }
   });
 
+  const [showSaveSuccessText, setShowSaveSuccessText] = React.useState(false);
+
   React.useImperativeHandle(ref, () => ({
     selectEntity: (entityId: string) => {
       const rowIndex = getValues('perspective.nodes').findIndex(n => n.entityId === entityId);
@@ -218,6 +219,12 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
         gridRef.current.selectRow(rowIndex, rowIndex);
         setSelectedEntityIndex(rowIndex);
       }
+    },
+    saveSucceeded: () => {
+      setShowSaveSuccessText(true);
+      setTimeout(() => {
+        setShowSaveSuccessText(false);
+      }, 1000);
     }
   }), [gridRef, getValues]);
 
@@ -234,7 +241,8 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
       <form
         onSubmit={handleSubmit(onSubmit)}
         onKeyDown={handleKeyDown}
-        className="h-full flex flex-col gap-1 pl-1 pt-1"
+        tabIndex={0} // keydownイベントを拾うため
+        className="h-full flex flex-col gap-1 pl-1 pt-1 outline-none"
       >
         <div className="flex flex-wrap gap-1 items-center mb-2">
           <div className="font-semibold">{getValues('perspective.name')}</div>
@@ -249,8 +257,11 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
           <div className="basis-2"></div>
           <Input.IconButton outline mini onClick={gridRef.current?.indentDown}>インデント下げ(Shift + Tab)</Input.IconButton>
           <Input.IconButton outline mini onClick={gridRef.current?.indentUp}>インデント上げ(Tab)</Input.IconButton>
-          <div className="basis-2"></div>
-          <Input.IconButton submit outline mini>保存(Ctrl + S)</Input.IconButton>
+          <div className="basis-28 flex justify-end pr-1">
+            <Input.IconButton submit fill mini>
+              {showSaveSuccessText ? '保存しました。' : '保存(Ctrl + S)'}
+            </Input.IconButton>
+          </div>
         </div>
 
         <PanelGroup direction="horizontal" autoSaveId="page-root-horizontal" storage={panelStorage}>

@@ -11,6 +11,7 @@ import { NijoUiMainContent } from "./スキーマ定義編集UI/NijoUi"
 import { ContextProviders } from "./App"
 import { PerspectivePage } from "./型つきドキュメント/PerspectivePage"
 import { IS_EMBEDDED } from "./App"
+import * as Util from "./util"
 
 /** RouteObject に sideMenuLabel を追加した型 */
 export type RouteObjectWithSideMenuSetting = ReactRouter.RouteObject & {

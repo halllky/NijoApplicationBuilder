@@ -8,46 +8,9 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System;
 using System.Text.Encodings.Web;
+using System.Text.Json.Nodes;
 
 namespace Nijo.Ui;
-
-// TypeScriptの型定義に合わせたC#クラス
-public class TypedOutlinerDto {
-    [JsonPropertyName("typeId")]
-    public string TypeId { get; set; } = string.Empty;
-    [JsonPropertyName("typeName")]
-    public string TypeName { get; set; } = string.Empty;
-    [JsonPropertyName("attributes")]
-    public List<OutlinerAttributeDto> Attributes { get; set; } = new();
-    [JsonPropertyName("items")]
-    public List<OutlinerItemDto> Items { get; set; } = new();
-}
-
-public class OutlinerAttributeDto {
-    [JsonPropertyName("attributeId")]
-    public string AttributeId { get; set; } = string.Empty;
-    [JsonPropertyName("attributeName")]
-    public string AttributeName { get; set; } = string.Empty;
-}
-
-public class OutlinerItemDto {
-    [JsonPropertyName("itemId")]
-    public string ItemId { get; set; } = string.Empty;
-    [JsonPropertyName("itemName")]
-    public string ItemName { get; set; } = string.Empty;
-    [JsonPropertyName("indent")]
-    public int Indent { get; set; }
-    [JsonPropertyName("attributes")]
-    public Dictionary<string, string> Attributes { get; set; } = new();
-}
-
-// 一覧表示用のDTO
-public class TypedOutlinerListItemDto {
-    [JsonPropertyName("typeId")]
-    public string TypeId { get; set; } = string.Empty;
-    [JsonPropertyName("typeName")]
-    public string TypeName { get; set; } = string.Empty;
-}
 
 internal class TypedOutliner {
     private readonly GeneratedProject _project;
@@ -63,41 +26,45 @@ internal class TypedOutliner {
         _project = project;
     }
 
+    private const string MEMO_DIRECTORY_NAME = "memo";
+    private const string ATTRIBUTE_NAME_ID = "perspectiveId";
+    private const string ATTRIBUTE_NAME_NAME = "name";
+
     private string GetMemoDirectoryPath() {
-        var memoDir = Path.Combine(_project.ProjectRoot, "memo");
+        var memoDir = Path.Combine(_project.ProjectRoot, MEMO_DIRECTORY_NAME);
         if (!Directory.Exists(memoDir)) {
             Directory.CreateDirectory(memoDir);
         }
         return memoDir;
     }
 
-    private string GetMemoFilePath(string typeId) {
-        if (string.IsNullOrEmpty(typeId)) {
-            throw new ArgumentException("typeId cannot be null or empty.", nameof(typeId));
+    private string GetMemoFilePath(string entityId) {
+        if (string.IsNullOrEmpty(entityId)) {
+            throw new ArgumentException("entityId cannot be null or empty.", nameof(entityId));
         }
 
         // ファイル名として不正な文字が含まれていないかチェック
-        if (typeId.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) {
-            throw new ArgumentException($"typeId contains invalid characters for a file name: {typeId}", nameof(typeId));
+        if (entityId.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) {
+            throw new ArgumentException($"entityId contains invalid characters for a file name: {entityId}", nameof(entityId));
         }
 
         // ディレクトリ区切り文字が含まれていないかチェック (ディレクトリトラバーサル対策)
-        if (typeId.Contains(Path.DirectorySeparatorChar) || typeId.Contains(Path.AltDirectorySeparatorChar)) {
-            throw new ArgumentException($"typeId cannot contain directory separator characters: {typeId}", nameof(typeId));
+        if (entityId.Contains(Path.DirectorySeparatorChar) || entityId.Contains(Path.AltDirectorySeparatorChar)) {
+            throw new ArgumentException($"entityId cannot contain directory separator characters: {entityId}", nameof(entityId));
         }
 
-        return Path.Combine(GetMemoDirectoryPath(), $"{typeId}.json");
+        return Path.Combine(GetMemoDirectoryPath(), $"{entityId}.json");
     }
 
     internal void ConfigureWebApplication(WebApplication app) {
-        app.MapGet("/typed-outliner/list", ListMemos);
-        app.MapGet("/typed-outliner/load", LoadData);
-        app.MapPost("/typed-outliner/save", SaveData);
+        app.MapGet("/typed-document/list", ListMemos);
+        app.MapGet("/typed-document/load", LoadData);
+        app.MapPost("/typed-document/save", SaveData);
     }
 
     private async Task ListMemos(HttpContext context) {
         var memoDir = GetMemoDirectoryPath();
-        var results = new List<TypedOutlinerListItemDto>();
+        var results = new JsonArray();
 
         if (!Directory.Exists(memoDir)) {
             context.Response.ContentType = "application/json";
@@ -109,15 +76,22 @@ internal class TypedOutliner {
 
         foreach (var filePath in jsonFiles) {
             try {
+                // ファイル名は "(ドキュメントのUUID).json" となっている。
+                // クライアント側URLはUUID。
+                // 画面表示用名称は、JSONファイル中から名前を取得できたらそれを表示、取得できない場合はUUIDを表示する。
                 var json = await File.ReadAllTextAsync(filePath, context.RequestAborted);
-                var data = JsonSerializer.Deserialize<TypedOutlinerDto>(json, _jsonSerializerOptions);
+                var data = JsonSerializer.Deserialize<JsonObject>(json, _jsonSerializerOptions);
 
-                if (data != null && !string.IsNullOrEmpty(data.TypeId)) {
-                    results.Add(new TypedOutlinerListItemDto {
-                        TypeId = data.TypeId,
-                        TypeName = data.TypeName ?? string.Empty // TypeNameがnullの場合も考慮
-                    });
-                }
+                if (data == null) continue;
+
+                var entityId = Path.GetFileNameWithoutExtension(filePath);
+                var entityName = data[ATTRIBUTE_NAME_NAME]?.ToString() ?? entityId;
+
+                results.Add(new JsonArray {
+                    entityId,
+                    entityName,
+                });
+
             } catch (JsonException ex) {
                 // JSONのパースに失敗したファイルはログに出力してスキップ (本番ではより詳細なロギングを検討)
                 Console.WriteLine($"Error deserializing {filePath}: {ex.Message}");
@@ -150,28 +124,35 @@ internal class TypedOutliner {
         }
 
         var json = await File.ReadAllTextAsync(filePath, context.RequestAborted);
-        var data = JsonSerializer.Deserialize<TypedOutlinerDto>(json, _jsonSerializerOptions);
+        var data = JsonSerializer.Deserialize<JsonObject>(json, _jsonSerializerOptions);
         context.Response.ContentType = "application/json";
         await context.Response.WriteAsJsonAsync(data, _jsonSerializerOptions, context.RequestAborted);
     }
 
     private async Task SaveData(HttpContext context) {
-        TypedOutlinerDto? data;
+        JsonObject? data;
         try {
-            data = await context.Request.ReadFromJsonAsync<TypedOutlinerDto>(_jsonSerializerOptions, context.RequestAborted);
-        } catch (JsonException ex) {
+            data = await context.Request.ReadFromJsonAsync<JsonObject>(_jsonSerializerOptions, context.RequestAborted);
+        } catch (Exception ex) {
             context.Response.StatusCode = StatusCodes.Status400BadRequest;
             await context.Response.WriteAsync($"Invalid JSON format: {ex.Message}", context.RequestAborted);
             return;
         }
 
-        if (data == null || string.IsNullOrEmpty(data.TypeId)) {
+        if (data == null) {
             context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            await context.Response.WriteAsync("Request body is empty or 'typeId' is missing.", context.RequestAborted);
+            await context.Response.WriteAsync("Request body is empty.", context.RequestAborted);
             return;
         }
 
-        var filePath = GetMemoFilePath(data.TypeId);
+        var entityId = data[ATTRIBUTE_NAME_ID]?.ToString();
+        if (string.IsNullOrEmpty(entityId)) {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            await context.Response.WriteAsync("Request body is empty or 'entityId' is missing.", context.RequestAborted);
+            return;
+        }
+
+        var filePath = GetMemoFilePath(entityId);
         var json = JsonSerializer.Serialize(data, _jsonSerializerOptions);
 
         try {
