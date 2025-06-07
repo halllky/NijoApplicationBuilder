@@ -250,7 +250,7 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
         ref={editorRef}
         value={uncomittedText}
         onChange={handleChangeUncomittedText}
-        className="flex-1 bg-white resize-none outline-none border border-gray-950"
+        className="flex-1 bg-white resize-none field-sizing-content outline-none border border-gray-950"
       />
     </label>
   )

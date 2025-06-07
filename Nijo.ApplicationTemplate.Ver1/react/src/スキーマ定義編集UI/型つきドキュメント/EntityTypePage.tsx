@@ -105,7 +105,7 @@ export const EntityTypePage = React.forwardRef<
   })
 
   return (
-    <div className={`h-full flex flex-col gap-1 pl-1 pt-1 ${className ?? ''}`}>
+    <div className={`h-full flex flex-col gap-1 ${className ?? ''}`}>
       <div className="flex-1 overflow-y-auto">
         <Layout.EditableGrid
           ref={ref}
@@ -113,7 +113,7 @@ export const EntityTypePage = React.forwardRef<
           getColumnDefs={getColumnDefs}
           onChangeRow={onChangeRow}
           onActiveCellChanged={handleActiveCellChanged}
-          className="h-full border-y border-l border-gray-300"
+          className="h-full border border-gray-300"
         />
       </div>
     </div>
