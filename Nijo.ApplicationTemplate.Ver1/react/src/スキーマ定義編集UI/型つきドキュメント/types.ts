@@ -29,6 +29,8 @@ export type EntityAttribute = {
   attributeId: string
   /** 属性の型名 */
   attributeName: string
+  /** 属性の型 */
+  attributeType: 'word' | 'description'
 }
 
 // -----------------------------------
@@ -43,6 +45,8 @@ export type Perspective = {
   edges: PerspectiveEdge[]
   /** この種類のデータそれぞれに指定できる属性の定義 */
   attributes: EntityAttribute[]
+  /** 詳細欄における単語型の属性のラベルの横幅。CSSの値で指定（"10rem"など） */
+  detailPageLabelWidth?: string
   /** グラフの表示状態（pan, zoom, ノード位置など） */
   viewState?: ViewState
 }

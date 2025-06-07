@@ -26,7 +26,7 @@ export const EntityTypeEditDialog = ({
       attributesGrid: initialEntityType.attributes.map(attr => ({ ...attr, uniqueId: UUID.generate() })),
     },
   });
-  const { control, handleSubmit, watch } = formMethods;
+  const { register, control, handleSubmit } = formMethods;
 
   // 属性編集グリッド用の useFieldArray
   const { fields: attributeFields, remove, update, move, append } = ReactHookForm.useFieldArray({
@@ -39,6 +39,7 @@ export const EntityTypeEditDialog = ({
 
   const getAttributeColumnDefs: Layout.GetColumnDefsFunction<AttributeRowForEdit> = React.useCallback(cellType => [
     cellType.text('attributeName', '属性名', { defaultWidth: 200 }),
+    cellType.text('attributeType', '属性型(word/description)', { defaultWidth: 100 }),
     cellType.other('操作', {
       defaultWidth: 120,
       renderCell: (context) => (
@@ -73,8 +74,11 @@ export const EntityTypeEditDialog = ({
 
   const handleApply = useEvent((formData: Perspective & { attributesGrid: AttributeRowForEdit[] }) => {
     const { attributesGrid, ...restOfEntityType } = formData;
-    const finalAttributes = attributesGrid.map(({ uniqueId, ...attr }) => attr);
-    const updatedEntityType = { ...restOfEntityType, attributes: finalAttributes };
+    const finalAttributes: EntityAttribute[] = attributesGrid.map(({ uniqueId, ...attr }) => attr);
+    const updatedEntityType: Perspective = {
+      ...restOfEntityType,
+      attributes: finalAttributes,
+    };
 
     onApply(updatedEntityType);
   });
@@ -86,6 +90,7 @@ export const EntityTypeEditDialog = ({
         uniqueId: UUID.generate(),
         attributeId: UUID.generate(),
         attributeName: newAttributeName.trim(),
+        attributeType: 'word',
       });
     }
   });
@@ -101,11 +106,12 @@ export const EntityTypeEditDialog = ({
       <form onSubmit={handleSubmit(handleApply)} className="h-full flex flex-col gap-2 p-2">
         <div>
           <label className="block text-sm font-medium text-gray-700">エンティティ型名:</label>
-          <Input.Word<Perspective & { attributesGrid: AttributeRowForEdit[] }, "name">
-            control={control}
-            name={"name"}
-            className="w-full"
-          />
+          <input type="text" {...register('name')} className="w-full px-px border border-gray-500" />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">詳細画面での属性名の横幅:</label>
+          <input type="text" {...register('detailPageLabelWidth')} className="w-full px-px border border-gray-500" />
         </div>
 
         <div className="font-semibold mt-2">属性定義:</div>
@@ -126,6 +132,6 @@ export const EntityTypeEditDialog = ({
           </div>
         </div>
       </form>
-    </ReactHookForm.FormProvider>
+    </ReactHookForm.FormProvider >
   );
 };

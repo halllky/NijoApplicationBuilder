@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as ReactHookForm from 'react-hook-form';
-import { Entity, Perspective, PerspectivePageData, TypedDocumentComment } from './types'; // 型をインポート
+import { Entity, EntityAttribute, EntityAttributeValues, Perspective, PerspectivePageData, TypedDocumentComment } from './types'; // 型をインポート
 import * as Input from '../../input'; // Inputコンポーネントをインポート
 import * as Icon from '@heroicons/react/24/solid'; // アイコンをインポート
 import { UUID } from 'uuidjs'; // UUID生成のため
@@ -24,6 +24,18 @@ export const EntityDetailPane: React.FC<EntityDetailPaneProps> = ({
   perspective,
   entityIndex,
 }) => {
+
+  const handleAttributeChanged = useEvent((attribute: EntityAttribute, value: string) => {
+    const attributeValues: EntityAttributeValues = { ...entity.attributeValues };
+    if (value) {
+      attributeValues[attribute.attributeId] = value;
+    } else {
+      delete attributeValues[attribute.attributeId];
+    }
+    onEntityChanged({ ...entity, attributeValues });
+  })
+
+  // ---------------------------------------
 
   // 新規コメント追加
   const [newCommentText, setNewCommentText] = React.useState('');
@@ -65,7 +77,7 @@ export const EntityDetailPane: React.FC<EntityDetailPaneProps> = ({
   })
 
   return (
-    <div className="px-1 h-full flex flex-col">
+    <div className="px-1 h-full flex flex-col gap-2">
 
       {/* エンティティ名 */}
       <textarea
@@ -74,12 +86,29 @@ export const EntityDetailPane: React.FC<EntityDetailPaneProps> = ({
         className="w-full text-md font-bold outline-none resize-none field-sizing-content"
       />
 
-      <hr className="my-1 border-t border-gray-200" />
+      <div className="flex-1 flex flex-col justify-start gap-2 overflow-y-auto">
 
-      <div className="overflow-y-auto">
+        {/* 属性 */}
+        <div className="flex flex-col gap-1">
+          {perspective.attributes.map((attribute) => (
+            <AttributeValueView
+              key={attribute.attributeId}
+              perspective={perspective}
+              attribute={attribute}
+              value={entity.attributeValues[attribute.attributeId]}
+              onChange={handleAttributeChanged}
+            />
+          ))}
+        </div>
+
+        <div className="flex-1"></div>
 
         {/* コメント */}
-        <div className="mb-4 flex-grow flex flex-col gap-1 py-1 mt-2">
+        <div className="flex flex-col gap-1">
+          <span className="text-xs select-none text-gray-500">
+            コメント
+          </span>
+
           {entity.comments.map((comment, index) => (
             <CommentView
               key={comment.commentId}
@@ -89,25 +118,80 @@ export const EntityDetailPane: React.FC<EntityDetailPaneProps> = ({
               index={index}
             />
           ))}
-
-          {/* コメントを追加 */}
-          <div className="flex flex-col items-start px-1 py-px gap-px border border-gray-500">
-            <textarea
-              value={newCommentText}
-              onChange={handleChangeNewCommentText}
-              onKeyDown={handleKeyDownNewCommentText}
-              placeholder="新規コメント"
-              className="text-md outline-none self-stretch resize-none field-sizing-content"
-            />
-            <Input.IconButton onClick={handleAddComment} className="mt-2 flex-none self-start">
-              コメントを追加（Ctrl + Enter）
-            </Input.IconButton>
-          </div>
         </div>
+      </div>
+
+      {/* コメントを追加 */}
+      <div className="flex flex-col items-start px-1 py-px gap-px border border-gray-500 overflow-x-hidden">
+        <textarea
+          value={newCommentText}
+          onChange={handleChangeNewCommentText}
+          onKeyDown={handleKeyDownNewCommentText}
+          placeholder="新規コメント"
+          className="text-md outline-none self-stretch resize-none field-sizing-content"
+        />
+        <Input.IconButton onClick={handleAddComment} className="mt-2 flex-none self-start">
+          コメントを追加（Ctrl + Enter）
+        </Input.IconButton>
       </div>
     </div>
   );
 };
+
+/**
+ * 属性名と値のペア1件分の表示
+ */
+const AttributeValueView = ({ perspective, attribute, value, onChange }: {
+  perspective: Perspective
+  attribute: EntityAttribute
+  value: string
+  onChange: (attribute: EntityAttribute, value: string) => void
+}) => {
+
+  const handleChangeTextarea = useEvent((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    onChange(attribute, e.target.value);
+  })
+
+  if (attribute.attributeType === 'word') {
+    // 単語型の属性
+    return (
+      <label className="self-stretch flex items-start gap-1 px-px border border-gray-300">
+        <div className="flex-none flex items-center" style={{ width: perspective.detailPageLabelWidth ?? DEFAULT_LABEL_WIDTH }}>
+          <span className="text-xs select-none text-gray-500">
+            {attribute.attributeName}
+          </span>
+          &nbsp;
+        </div>
+
+        <textarea
+          value={value}
+          onChange={handleChangeTextarea}
+          spellCheck={false}
+          className="w-full px-px outline-none resize-none field-sizing-content"
+        />
+      </label>
+    )
+  } else {
+    // 複数行テキストの属性
+    return (
+      <label className="self-stretch flex flex-col items-start gap-1 px-px border border-gray-300">
+        <span className="text-xs select-none text-gray-500">
+          {attribute.attributeName}
+        </span>
+        <textarea
+          value={value}
+          onChange={handleChangeTextarea}
+          spellCheck={false}
+          className="self-stretch outline-none resize-none field-sizing-content"
+        />
+      </label>
+    )
+  }
+}
+
+const DEFAULT_LABEL_WIDTH = '10rem';
+
+// ---------------------------------------
 
 /**
  * コメント1件の表示
