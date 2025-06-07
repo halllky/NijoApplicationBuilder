@@ -275,17 +275,18 @@ export const useGetPixel = (
   tdRefs: React.RefObject<{ [rowIndexInPropsData: number]: React.RefObject<HTMLTableCellElement>[] }>,
   rowVirtualizer: Virtualizer<HTMLDivElement, Element>,
   estimatedRowHeight: number,
-  getColWidthByIndex: (colIndex: number) => number,
+  /** 表示されている列のindexから列幅を取得する関数。 */
+  getColWidthByVisibleColumnIndex: (colIndex: number) => number,
 ): GetPixelFunction => {
   return useEvent(args => {
     // 左右のpxを導出するのに必要な情報は列幅変更フックが持っている
     if (args.position === 'left') {
       let sum = 0
-      for (let i = 0; i < args.colIndex; i++) sum += getColWidthByIndex(i)
+      for (let i = 0; i < args.colIndex; i++) sum += getColWidthByVisibleColumnIndex(i)
       return sum
     } else if (args.position === 'right') {
       let sum = 0
-      for (let i = 0; i <= args.colIndex; i++) sum += getColWidthByIndex(i)
+      for (let i = 0; i <= args.colIndex; i++) sum += getColWidthByVisibleColumnIndex(i)
       return sum
     }
 

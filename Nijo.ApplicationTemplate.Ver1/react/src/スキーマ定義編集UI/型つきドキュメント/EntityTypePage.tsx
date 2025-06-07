@@ -2,14 +2,14 @@ import * as React from 'react';
 import * as ReactHookForm from 'react-hook-form';
 import useEvent from 'react-use-event-hook';
 import * as Layout from '../../layout';
-import { Entity, Perspective } from './types';
+import { Entity, Perspective, PerspectivePageData } from './types';
 
 export interface EntityTypePageProps {
-  perspectiveAttributes: Perspective['attributes'] | undefined;
-  perspectiveId: string | undefined;
+  perspective: Perspective | undefined;
   rows: GridRowType[];
   onChangeRow: Layout.RowChangeEvent<GridRowType>;
   onSelectedRowChanged: (rowIndex: number) => void;
+  setValue: ReactHookForm.UseFormSetValue<PerspectivePageData>;
   className?: string;
 }
 
@@ -20,10 +20,10 @@ export const EntityTypePage = React.forwardRef<
   Layout.EditableGridRef<GridRowType>,
   EntityTypePageProps
 >(({
-  perspectiveAttributes,
-  perspectiveId,
+  perspective,
   rows,
   onSelectedRowChanged,
+  setValue,
   onChangeRow,
   className,
 }, ref) => {
@@ -32,6 +32,7 @@ export const EntityTypePage = React.forwardRef<
     const columns: Layout.EditableGridColumnDef<GridRowType>[] = [];
     columns.push(
       cellType.text('entityName', '', {
+        columnId: 'col:entity-name',
         defaultWidth: 540,
         isFixed: true,
         renderCell: context => {
@@ -55,10 +56,11 @@ export const EntityTypePage = React.forwardRef<
         },
       })
     );
-    if (perspectiveAttributes) {
-      perspectiveAttributes.forEach((attrDef) => {
+    if (perspective) {
+      perspective.attributes.forEach((attrDef) => {
         columns.push(
           cellType.other(attrDef.attributeName, {
+            columnId: `col:${attrDef.attributeId}`,
             defaultWidth: 120,
             onStartEditing: e => {
               e.setEditorInitialValue(e.row.attributeValues[attrDef.attributeId] ?? '');
@@ -81,7 +83,7 @@ export const EntityTypePage = React.forwardRef<
       });
     }
     return columns;
-  }, [perspectiveAttributes]);
+  }, [perspective?.attributes]);
 
   const PlainCell = ({ children, className }: {
     children?: React.ReactNode
@@ -105,6 +107,14 @@ export const EntityTypePage = React.forwardRef<
     setSelectedRowIndex(cell?.rowIndex);
   })
 
+  // グリッドの列幅の自動保存
+  const gridColumnStorage: Layout.EditableGridAutoSaveStorage = React.useMemo(() => ({
+    loadState: () => {
+      return perspective?.gridStates?.['root-grid'] ?? null
+    },
+    saveState: (value) => setValue('perspective.gridStates.root-grid', value),
+  }), [setValue, perspective?.gridStates])
+
   return (
     <div className={`h-full flex flex-col gap-1 ${className ?? ''}`}>
       <div className="flex-1 overflow-y-auto">
@@ -115,6 +125,7 @@ export const EntityTypePage = React.forwardRef<
           onChangeRow={onChangeRow}
           onActiveCellChanged={handleActiveCellChanged}
           className="h-full border border-gray-300"
+          storage={gridColumnStorage}
         />
       </div>
     </div>

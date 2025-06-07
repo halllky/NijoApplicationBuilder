@@ -267,11 +267,11 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
               <Panel collapsible minSize={12}>
                 <EntityTypePage
                   ref={gridRef}
-                  perspectiveAttributes={perspective?.attributes}
-                  perspectiveId={perspective?.perspectiveId}
+                  perspective={perspective}
                   rows={fields}
                   onChangeRow={handleChangeRow}
                   onSelectedRowChanged={setSelectedEntityIndex}
+                  setValue={setValue}
                   className="h-full"
                 />
               </Panel>

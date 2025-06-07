@@ -36,6 +36,9 @@ export type EditableGridProps<TRow extends ReactHookForm.FieldValues> = {
   rowSelection?: Record<string, boolean>
   /** 行選択状態が変更されたときに呼び出されるコールバック */
   onRowSelectionChange?: (updater: React.SetStateAction<Record<string, boolean>>) => void
+
+  /** グリッドの列幅などの自動保存に使用するストレージのロジック定義。 */
+  storage?: EditableGridAutoSaveStorage
 }
 
 /**
@@ -97,6 +100,8 @@ export type EditableGridColumnDef<TRow extends ReactHookForm.FieldValues> = Edit
 
 /** EditableGridの列定義のうち、セル型によらず共通のプロパティ。 */
 export type EditableGridColumnDefOptions<TRow extends ReactHookForm.FieldValues> = {
+  /** 列のID。列幅等の保存や復元をする場合は明示的な指定を推奨。未指定の場合は `col-${index}` という形式のIDが自動生成される。 */
+  columnId?: string
   /** 列ヘッダに必須を表すマークが表示されるかどうか。これをtrueにしても内容のチェックが行われるわけではない。 */
   required?: boolean
   /** 画面初期表示時の列の幅（pxで指定） */
@@ -148,3 +153,14 @@ export type EditableGridColumnDefOnEndEditing<TRow extends ReactHookForm.FieldVa
    */
   setEditedRow: (row: TRow) => void
 }) => void
+
+/** グリッドの列幅などの自動保存に使用するストレージのロジック定義。 */
+export type EditableGridAutoSaveStorage = {
+  loadState: () => string | null
+  saveState: (value: string) => void
+}
+
+/** グリッドの列幅など自動保存されたオブジェクトの型 */
+export type EditableGridAutoSaveStoragedValueInternal = {
+  'column-sizing': { [columnId: string]: number }
+}

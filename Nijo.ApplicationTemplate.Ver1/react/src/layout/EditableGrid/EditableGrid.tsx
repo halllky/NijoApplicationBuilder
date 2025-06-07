@@ -1,12 +1,13 @@
 import * as React from "react";
 import { useRef, useState, useCallback, useEffect, useImperativeHandle, useMemo } from "react";
-import { EditableGridProps, EditableGridRef, EditableGridColumnDef, EditableGridColumnDefRenderCell, CellPosition } from "./types";
+import { EditableGridProps, EditableGridRef, EditableGridColumnDef, EditableGridColumnDefRenderCell, CellPosition, EditableGridAutoSaveStoragedValueInternal } from "./types";
 import {
   createColumnHelper,
   getCoreRowModel,
   useReactTable,
   flexRender,
-  ColumnSizingState
+  ColumnSizingState,
+  OnChangeFn
 } from '@tanstack/react-table';
 import {
   useVirtualizer,
@@ -45,6 +46,23 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     className
   } = props;
 
+  // 保存された状態の読み込み。コンポーネント初期化時のみ読み込む。
+  React.useEffect(() => {
+    if (props.storage) {
+      try {
+        const json = props.storage.loadState()
+        if (json) {
+          const obj: EditableGridAutoSaveStoragedValueInternal = JSON.parse(json)
+          if (typeof obj === 'object' && (obj["column-sizing"] === undefined || typeof obj["column-sizing"] === 'object')) {
+            setColumnSizing(obj["column-sizing"] ?? { 'rowHeader': ROW_HEADER_WIDTH })
+          }
+        }
+      } catch {
+        // 無視
+      }
+    }
+  }, [])
+
   // テーブルの参照
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const tableBodyRef = useRef<HTMLTableSectionElement>(null);
@@ -63,6 +81,9 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>(() => ({
     'rowHeader': ROW_HEADER_WIDTH
   }));
+  React.useEffect(() => {
+    props.storage?.saveState(JSON.stringify({ 'column-sizing': columnSizing }))
+  }, [columnSizing])
 
   // チェックボックス表示判定
   const getShouldShowCheckBox = useCallback((rowIndex: number): boolean => {
@@ -213,7 +234,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
           ? getValueByPath(row, colDef.fieldPath)
           : undefined
         const tableColumnDef = columnHelper.accessor(accessor, {
-          id: `col-${colIndex}`,
+          id: colDef.columnId ?? `col-${colIndex}`,
           size: colDef.defaultWidth ?? DEFAULT_COLUMN_WIDTH,
           enableResizing: colDef.enableResizing ?? true,
           header: ({ header }) => (
@@ -248,7 +269,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
         'rowHeader': showCheckBox !== undefined && showCheckBox !== false,
         ...Object.fromEntries(
           columnDefs.map((colDef, i) => [
-            `col-${colDef.fieldPath || colDef.header || i}`,
+            colDef.columnId ?? `col-${colDef.fieldPath || colDef.header || i}`,
             !colDef.invisible
           ])
         ),
@@ -267,8 +288,8 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
 
   // 横幅情報
   const tableTotalWidth = table.getTotalSize();
-  const getColWidthByIndex = useCallback((colIndex: number) => {
-    return table.getColumn(`col-${colIndex}`)?.getSize() ?? DEFAULT_COLUMN_WIDTH
+  const getColWidthByVisibleColumnIndex = useCallback((colIndex: number) => {
+    return table.getVisibleLeafColumns()[colIndex]?.getSize() ?? DEFAULT_COLUMN_WIDTH
   }, [table])
 
   // 仮想化設定
@@ -300,7 +321,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   }
 
   // ピクセル数取得関数
-  const getPixel = useGetPixel(tdRefs, rowVirtualizer, ESTIMATED_ROW_HEIGHT, getColWidthByIndex)
+  const getPixel = useGetPixel(tdRefs, rowVirtualizer, ESTIMATED_ROW_HEIGHT, getColWidthByVisibleColumnIndex)
 
   // ref用の公開メソッド
   useImperativeHandle(ref, () => ({

@@ -50,9 +50,9 @@ export type Perspective = {
   /** グラフの表示状態（pan, zoom, ノード位置など） */
   viewState?: ViewState
   /** パネルのサイズの保存。具体的な値の形は react-resizable-panels の PanelGroupStorage の仕様に従う。 */
-  resizablePaneState?: {
-    [key: string]: string
-  }
+  resizablePaneState?: { [key: string]: string }
+  /** グリッドの列幅の保存。具体的な値の形は EditableGrid の仕様に従う。 */
+  gridStates?: { [key in 'root-grid']: string }
 }
 
 /** グラフのノード */
