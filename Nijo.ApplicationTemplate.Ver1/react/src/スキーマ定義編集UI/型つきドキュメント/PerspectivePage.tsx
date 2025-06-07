@@ -203,6 +203,11 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
     }
   });
 
+  const handleEntityChangedInDetailPage = useEvent((entity: Entity) => {
+    if (selectedEntityIndex === undefined) return;
+    update(selectedEntityIndex, entity);
+  });
+
   // 画面離脱防止
   const blocker = ReactRouter.useBlocker(
     ({ currentLocation, nextLocation }) =>
@@ -284,8 +289,10 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
           <Panel collapsible minSize={12}>
             {selectedEntityIndex !== undefined && (
               <EntityDetailPane
-                key={selectedEntityIndex}
-                rhfMethods={formMethods}
+                key={fields[selectedEntityIndex].entityId}
+                entity={fields[selectedEntityIndex]}
+                onEntityChanged={handleEntityChangedInDetailPage}
+                perspective={perspective}
                 entityIndex={selectedEntityIndex}
               />
             )}
