@@ -9,7 +9,7 @@ import * as Input from '../../input';
 import * as Layout from '../../layout';
 import { NIJOUI_CLIENT_ROUTE_PARAMS } from '../routing';
 import { NijoUiOutletContextType } from '../types';
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { Panel, PanelGroup, PanelGroupStorage, PanelResizeHandle } from 'react-resizable-panels';
 import { PerspectivePageGraph } from './PerspectivePage.Graph';
 import { EntityTypePage } from './EntityTypePage';
 import { EntityDetailPane } from './EntityDetailPane';
@@ -234,6 +234,12 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
     }
   });
 
+  // パネルのサイズを保存する
+  const panelStorage = React.useMemo<PanelGroupStorage>(() => ({
+    getItem: (key: string) => getValues(`perspective.resizablePaneState.${key}`),
+    setItem: (key: string, value: string) => setValue(`perspective.resizablePaneState.${key}`, value),
+  }), [getValues, setValue]);
+
   return (
     <ReactHookForm.FormProvider {...formMethods}>
       <form onSubmit={handleSubmit(onSubmit)} className="h-full flex flex-col gap-1 pl-1 pt-1">
@@ -252,10 +258,10 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
           <Input.IconButton submit={true} outline mini icon={Icon.ArrowDownOnSquareIcon} className="font-bold">保存</Input.IconButton>
         </div>
 
-        <PanelGroup direction="horizontal">
+        <PanelGroup direction="horizontal" autoSaveId="page-root-horizontal" storage={panelStorage}>
 
           <Panel collapsible minSize={12}>
-            <PanelGroup direction="vertical">
+            <PanelGroup direction="vertical" autoSaveId="page-root-vertical" storage={panelStorage}>
 
               {/* グリッド */}
               <Panel collapsible minSize={12}>
