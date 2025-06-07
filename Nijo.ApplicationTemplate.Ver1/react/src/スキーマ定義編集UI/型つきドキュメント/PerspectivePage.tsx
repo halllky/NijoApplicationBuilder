@@ -11,9 +11,9 @@ import { NIJOUI_CLIENT_ROUTE_PARAMS } from '../routing';
 import { NijoUiOutletContextType } from '../types';
 import { Panel, PanelGroup, PanelGroupStorage, PanelResizeHandle } from 'react-resizable-panels';
 import { PerspectivePageGraph } from './PerspectivePage.Graph';
-import { EntityTypePage } from './EntityTypePage';
-import { EntityDetailPane } from './EntityDetailPane';
-import { EntityTypeEditDialog } from './EntityTypeEditDialog';
+import { EntityTypePage } from './PerspectivePage.Grid';
+import { EntityDetailPane } from './PerspectivePage.Details';
+import { EntityTypeEditDialog } from './PerspectivePage.Settings';
 import { Entity, Perspective, PerspectivePageData } from './types';
 
 export const PerspectivePage = () => {
