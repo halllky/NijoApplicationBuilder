@@ -4,7 +4,7 @@ import * as Icon from "@heroicons/react/24/outline"
 import * as Input from "../../input"
 import * as Layout from "../../layout"
 import { DebugProcessState, SchemaDefinitionOutletContextType } from "../スキーマ定義編集/types"
-import { SERVER_DOMAIN } from "../routing"
+import { SERVER_DOMAIN } from "../../routes"
 import useEvent from "react-use-event-hook"
 
 export const NijoUiDebugMenu = () => {

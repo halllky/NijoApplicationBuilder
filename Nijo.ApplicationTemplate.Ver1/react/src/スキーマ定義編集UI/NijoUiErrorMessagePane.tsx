@@ -2,7 +2,7 @@ import React from "react"
 import * as ReactHookForm from "react-hook-form"
 import { SchemaDefinitionGlobalState, asTree } from "./スキーマ定義編集/types"
 import { useNavigate } from "react-router-dom"
-import { getNavigationUrl } from "./routing"
+import { getNavigationUrl } from "../routes"
 import { ValidationResult } from "./スキーマ定義編集/ValidationContext"
 
 /**

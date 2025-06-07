@@ -1,10 +1,9 @@
 import React from 'react'
 import * as ReactRouter from 'react-router-dom'
 import MainLayout from "./layout/MainLayout"
-import { getRouter } from './routes'
+import { getNijoUiRoutesForEmbedded, getRouter } from './routes'
 import * as Util from './util'
 import * as Layout from './layout'
-import { getNijoUiRoutesForEmbedded } from './スキーマ定義編集UI'
 
 // Windows Form 埋め込み用のビルドの場合はスキーマ定義編集画面を表示
 export const IS_EMBEDDED = () => import.meta.env.MODE === 'nijo-ui'

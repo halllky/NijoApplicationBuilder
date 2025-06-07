@@ -7,7 +7,7 @@ import { UUID } from 'uuidjs';
 
 import * as Input from '../input';
 import * as Layout from '../layout';
-import { NIJOUI_CLIENT_ROUTE_PARAMS } from '../スキーマ定義編集UI/routing';
+import { NIJOUI_CLIENT_ROUTE_PARAMS } from '../routes';
 import { NijoUiOutletContextType } from '../スキーマ定義編集UI/types';
 import { Panel, PanelGroup, PanelGroupStorage, PanelResizeHandle } from 'react-resizable-panels';
 import { PerspectivePageGraph } from './PerspectivePage.Graph';

@@ -8,7 +8,7 @@ import * as Layout from "../layout"
 import * as Input from "../input"
 import useEvent from "react-use-event-hook"
 import { ATTR_GENERATE_DEFAULT_QUERY_MODEL, ATTR_TYPE, SchemaDefinitionGlobalState, TYPE_COMMAND_MODEL, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, TYPE_STATIC_ENUM_MODEL, TYPE_VALUE_OBJECT_MODEL, XmlElementItem } from "./スキーマ定義編集/types"
-import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS, SERVER_DOMAIN } from "./index"
+import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS } from "../routes"
 import { TypedDocumentContextType, NavigationMenuItem as TypedDocumentNavigationMenuItem, Perspective } from "../型つきドキュメント/types"
 
 export const NijoUiSideMenu = ({

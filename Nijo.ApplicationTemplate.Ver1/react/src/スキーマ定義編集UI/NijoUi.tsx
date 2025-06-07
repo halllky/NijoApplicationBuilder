@@ -9,7 +9,7 @@ import { ApplicationState, NijoUiOutletContextType, SchemaDefinitionGlobalState 
 import { NijoUiSideMenu } from "./NijoUiSideMenu"
 import { PageRootAggregate } from "./スキーマ定義編集/RootAggregatePage"
 import { AttrDefsProvider } from "./スキーマ定義編集/AttrDefContext"
-import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS, SERVER_DOMAIN } from "./routing"
+import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS, SERVER_DOMAIN } from "../routes"
 import NijoUiErrorMessagePane from "./NijoUiErrorMessagePane"
 import { useValidationContextProvider, ValidationContext } from "./スキーマ定義編集/ValidationContext"
 import { NijoUiAggregateDiagram } from "./スキーマ定義編集/NijoUiAggregateDiagram"

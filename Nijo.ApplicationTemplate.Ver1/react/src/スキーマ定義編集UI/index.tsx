@@ -4,9 +4,7 @@ import { Outlet } from "react-router-dom";
 import { NijoUi, NijoUiMainContent } from "./NijoUi";
 import { NijoUiDebugMenu } from "./デバッグメニュー/DebugMenu";
 import { ContextProviders } from "../App";
-import { getNijoUiRoutesForEmbedded } from "./routing";
-
-export * from "./routing"
+import { getNijoUiRoutesForEmbedded } from "../routes";
 
 const SchemaDefinitionEditUI = () => {
   return (

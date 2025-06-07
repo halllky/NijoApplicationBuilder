@@ -10,7 +10,7 @@ import { Node as CyNode, Edge as CyEdge } from "../../layout/GraphView/DataSourc
 import * as AutoLayout from "../../layout/GraphView/Cy.AutoLayout"
 import { findRefToTarget } from "./refResolver"
 import { asTree } from "./types"
-import { getNavigationUrl } from "../routing"
+import { getNavigationUrl } from "../../routes"
 import cytoscape from 'cytoscape'; // cytoscapeの型情報をインポート
 import { useLayoutSaving } from './NijoUiAggregateDiagram.StateSaving';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"

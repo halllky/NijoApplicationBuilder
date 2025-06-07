@@ -4,7 +4,7 @@ import * as ReactMention from 'react-mentions';
 import { NijoUiOutletContextType } from '../スキーマ定義編集UI/types';
 import { Entity } from './types';
 import useEvent from 'react-use-event-hook';
-import { getNavigationUrl } from '../スキーマ定義編集UI/routing';
+import { getNavigationUrl } from '../routes';
 
 export type MentionTextareaProps = {
   value?: string
