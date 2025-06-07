@@ -28,18 +28,11 @@ export const NijoUi = ({ className }: {
   const [loadError, setLoadError] = React.useState<string>()
   const load = useEvent(async () => {
     try {
-      const [schemaResponse, outlinerListResponse] = await Promise.all([
-        fetch(`${SERVER_DOMAIN}/load`),
-        fetch(`${SERVER_DOMAIN}/typed-outliner/list`),
-      ])
+      const schemaResponse = await fetch(`${SERVER_DOMAIN}/load`)
 
       if (!schemaResponse.ok) {
         const body = await schemaResponse.text();
         throw new Error(`Failed to load schema: ${schemaResponse.status} ${body}`);
-      }
-      if (!outlinerListResponse.ok) {
-        const body = await outlinerListResponse.text();
-        throw new Error(`Failed to load outliner list: ${outlinerListResponse.status} ${body}`);
       }
 
       const schemaData: SchemaDefinitionGlobalState = await schemaResponse.json()
