@@ -141,10 +141,10 @@ const AfterLoaded = ({ defaultValues, onSave, className }: {
   return (
     <AttrDefsProvider control={form.control}>
       <ValidationContext.Provider value={validationContext}>
-        <ReactResizablePanels.PanelGroup direction="vertical" className={className}>
+        <ReactResizablePanels.PanelGroup direction="vertical" className={className} autoSaveId="nijo-ui:root-vertical-splitter">
 
           <ReactResizablePanels.Panel>
-            <ReactResizablePanels.PanelGroup direction="horizontal">
+            <ReactResizablePanels.PanelGroup direction="horizontal" autoSaveId="nijo-ui:side-menu-horizontal-splitter">
 
               {/* サイドメニュー */}
               <ReactResizablePanels.Panel defaultSize={20} minSize={8} collapsible>
