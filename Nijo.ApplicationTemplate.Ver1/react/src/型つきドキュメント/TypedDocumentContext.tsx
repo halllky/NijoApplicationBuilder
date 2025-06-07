@@ -7,8 +7,6 @@ export const TypedDocumentContext = React.createContext<TypedDocumentContextType
   isReady: false,
   loadNavigationMenus: () => { throw new Error("Not implemented") },
   createPerspective: () => { throw new Error("Not implemented") },
-  loadEntityTypePageData: () => { throw new Error("Not implemented") },
-  tryDeleteEntityType: () => { throw new Error("Not implemented") },
   loadPerspectivePageData: () => { throw new Error("Not implemented") },
   savePerspective: () => { throw new Error("Not implemented") },
 } as TypedDocumentContextType)
@@ -21,7 +19,6 @@ export const TypedDocumentContext = React.createContext<TypedDocumentContextType
 export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
 
   type LocalStorageDataInternal = {
-    entities: Entity[]
     menuItems: NavigationMenuItem[]
     perspectives: Perspective[]
   }
@@ -29,7 +26,6 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
   const LOCAL_STORAGE_KEY = "typedDocument"
   const [ready, setReady] = React.useState(false)
   const [localStorageData, setLocalStorageData] = React.useState<LocalStorageDataInternal>({
-    entities: [],
     menuItems: [],
     perspectives: [],
   })
@@ -66,34 +62,6 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
     return Promise.resolve(newPerspective)
   })
 
-  const loadEntityTypePageData: TypedDocumentContextType["loadEntityTypePageData"] = useEvent(entityTypeId => {
-    const entityType = localStorageData.perspectives.find(et => et.perspectiveId === entityTypeId)
-    const entities = localStorageData.entities.filter(e => e.typeId === entityTypeId)
-
-    if (entityType) {
-      return Promise.resolve({
-        perspective: {
-          ...entityType,
-          nodes: entities,
-        }
-      } satisfies PerspectivePageData)
-    } else {
-      return Promise.resolve(undefined)
-    }
-  })
-
-  const tryDeleteEntityType: TypedDocumentContextType["tryDeleteEntityType"] = useEvent(entityTypeId => {
-    const isInUse = localStorageData.entities.some(e => e.entityId === entityTypeId)
-    if (isInUse) return Promise.resolve(false)
-
-    setLocalStorageData(prev => ({
-      ...prev,
-      perspectives: prev.perspectives.filter(et => et.perspectiveId !== entityTypeId),
-      menuItems: prev.menuItems.filter(item => item.type !== "perspective" || item.id !== entityTypeId),
-    }))
-    return Promise.resolve(true)
-  })
-
   const loadPerspectivePageData: TypedDocumentContextType["loadPerspectivePageData"] = useEvent(perspectiveId => {
     const perspective = localStorageData.perspectives.find(p => p.perspectiveId === perspectiveId)
     if (perspective) {
@@ -127,8 +95,6 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
     isReady: ready,
     loadNavigationMenus,
     createPerspective,
-    loadEntityTypePageData,
-    tryDeleteEntityType,
     loadPerspectivePageData,
     savePerspective,
   }

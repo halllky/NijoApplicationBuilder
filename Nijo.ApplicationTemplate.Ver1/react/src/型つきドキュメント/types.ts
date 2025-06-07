@@ -98,16 +98,6 @@ export type TypedDocumentContextType = {
   /** グラフを作成する。永続化まで伴う */
   createPerspective: (perspective: Perspective) => Promise<Perspective>
 
-  //#region エンティティ型画面
-
-  /** エンティティ型ページ初期表示処理 */
-  loadEntityTypePageData: (entityTypeId: string) => Promise<PerspectivePageData | undefined>
-
-  /** 型を削除する。この型を参照しているエンティティがある場合は削除できない */
-  tryDeleteEntityType: (entityTypeId: string) => Promise<boolean>
-
-  //#endregion エンティティ型画面
-
   //#region グラフ画面
 
   /** グラフ画面初期表示処理 */
