@@ -3,6 +3,7 @@ import * as ReactHookForm from 'react-hook-form';
 import useEvent from 'react-use-event-hook';
 import * as Layout from '../../layout';
 import { Entity, Perspective, PerspectivePageData } from './types';
+import { MentionUtil } from './MentionTextarea';
 
 export interface EntityTypePageProps {
   perspective: Perspective | undefined;
@@ -49,7 +50,7 @@ export const EntityTypePage = React.forwardRef<
                 </React.Fragment>
               ))}
               <span className="flex-1 truncate">
-                {context.cell.getValue() as string}
+                {MentionUtil.toPlainText(context.cell.getValue() as string)}
               </span>
             </div>
           );
@@ -76,7 +77,7 @@ export const EntityTypePage = React.forwardRef<
             },
             renderCell: context => {
               const value = context.row.original.attributeValues[attrDef.attributeId];
-              return <PlainCell>{value}</PlainCell>;
+              return <PlainCell>{MentionUtil.toPlainText(value)}</PlainCell>;
             },
           })
         );

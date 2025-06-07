@@ -10,6 +10,7 @@ import { PerspectiveNode, PerspectivePageData } from './types';
 import cytoscape from 'cytoscape'; // cytoscapeの型情報をインポート
 import { ViewState } from '../../layout/GraphView/Cy';
 import ExpandCollapseFunctions from '../../layout/GraphView/Cy.ExpandCollapse';
+import { MentionUtil } from './MentionTextarea';
 
 export const PerspectivePageGraph = ({
   formMethods,
@@ -27,7 +28,7 @@ export const PerspectivePageGraph = ({
   const graphNodes: Layout.Node[] | undefined = React.useMemo(() => {
     return watchedNodes.map((node: PerspectiveNode) => ({
       id: node.entityId,
-      label: node.entityName,
+      label: MentionUtil.toPlainText(node.entityName),
     } satisfies Layout.Node));
   }, [watchedNodes]);
 

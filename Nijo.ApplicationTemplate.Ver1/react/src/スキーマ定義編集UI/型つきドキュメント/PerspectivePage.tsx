@@ -23,6 +23,21 @@ export const PerspectivePage = () => {
   const [defaultValues, setDefaultValues] = React.useState<PerspectivePageData | null>(null);
   const [error, setError] = React.useState<string | null>(null);
 
+  const [afterLoadedRef, setAfterLoadedRef] = React.useState<AfterLoadedRef | null>(null);
+  const afterLoadedRefCallback = React.useCallback((ref: AfterLoadedRef) => {
+    setAfterLoadedRef(ref);
+  }, []);
+
+  // クエリパラメータでフォーカス対象が指定されている場合はそのエンティティを選択する
+  const [searchParams] = ReactRouter.useSearchParams();
+  React.useEffect(() => {
+    if (!afterLoadedRef) return;
+
+    const focusEntityId = searchParams.get(NIJOUI_CLIENT_ROUTE_PARAMS.FOCUS_ENTITY_ID);
+    if (!focusEntityId) return;
+    afterLoadedRef.selectEntity(focusEntityId);
+  }, [afterLoadedRef, searchParams]);
+
   const {
     typedDoc: {
       isReady,
@@ -83,6 +98,7 @@ export const PerspectivePage = () => {
   }
   return (
     <AfterLoaded
+      ref={afterLoadedRefCallback}
       key={perspectiveId}
       defaultValues={defaultValues}
       onSubmit={onSubmit}
@@ -90,13 +106,21 @@ export const PerspectivePage = () => {
   )
 }
 
+// --------------------------------------
+
+type AfterLoadedProps = {
+  defaultValues: PerspectivePageData
+  onSubmit: (data: PerspectivePageData) => Promise<void>
+}
+
+type AfterLoadedRef = {
+  selectEntity: (entityId: string) => void
+}
+
 /**
  * データ読み込み後のフォーム
  */
-export const AfterLoaded = ({ defaultValues, onSubmit }: {
-  defaultValues: PerspectivePageData
-  onSubmit: (data: PerspectivePageData) => Promise<void>
-}) => {
+export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({ defaultValues, onSubmit }, ref) => {
   const formMethods = ReactHookForm.useForm<PerspectivePageData>({ defaultValues });
   const { handleSubmit, formState: { isDirty }, getValues, control, setValue, watch } = formMethods;
   const { pushDialog } = Layout.useDialogContext()
@@ -245,6 +269,7 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
     update(selectedEntityIndex, entity);
   });
 
+  // ---------------------------------------
   // 画面離脱防止
   const blocker = ReactRouter.useBlocker(
     ({ currentLocation, nextLocation }) =>
@@ -260,10 +285,12 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
     }
   }, [blocker]);
 
+  // ---------------------------------------
+  // フォーカス
+
   // グラフのノードがダブルクリックされたらそのノードに紐づくエンティティを選択
   const handleNodeDoubleClick = useEvent((nodeId: string) => {
-    const nodes = getValues('perspective.nodes');
-    const rowIndex = nodes.findIndex(n => n.entityId === nodeId);
+    const rowIndex = getValues('perspective.nodes').findIndex(n => n.entityId === nodeId);
     if (rowIndex === -1 || !gridRef.current) {
       setSelectedEntityIndex(undefined);
     } else {
@@ -271,6 +298,20 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
       setSelectedEntityIndex(rowIndex);
     }
   });
+
+  React.useImperativeHandle(ref, () => ({
+    selectEntity: (entityId: string) => {
+      const rowIndex = getValues('perspective.nodes').findIndex(n => n.entityId === entityId);
+      if (rowIndex === -1 || !gridRef.current) {
+        setSelectedEntityIndex(undefined);
+      } else {
+        gridRef.current.selectRow(rowIndex, rowIndex);
+        setSelectedEntityIndex(rowIndex);
+      }
+    }
+  }), [gridRef, getValues]);
+
+  // ---------------------------------------
 
   // パネルのサイズを保存する
   const panelStorage = React.useMemo<PanelGroupStorage>(() => ({
@@ -350,4 +391,4 @@ export const AfterLoaded = ({ defaultValues, onSubmit }: {
       </form>
     </ReactHookForm.FormProvider>
   );
-};
+});
