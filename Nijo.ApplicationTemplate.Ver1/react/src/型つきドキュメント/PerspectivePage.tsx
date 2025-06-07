@@ -171,7 +171,16 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
   });
 
   // ---------------------------------------
-  // 画面離脱防止
+  // キーボードイベント
+  const handleKeyDown = useEvent((e: React.KeyboardEvent<HTMLFormElement>) => {
+    // 保存
+    if (e.ctrlKey && e.key === 's') {
+      e.preventDefault();
+      onSubmit(getValues());
+    }
+  });
+
+  // ---------------------------------------
   const blocker = ReactRouter.useBlocker(
     ({ currentLocation, nextLocation }) =>
       isDirty && currentLocation.pathname !== nextLocation.pathname
@@ -222,7 +231,11 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
 
   return (
     <ReactHookForm.FormProvider {...formMethods}>
-      <form onSubmit={handleSubmit(onSubmit)} className="h-full flex flex-col gap-1 pl-1 pt-1">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        onKeyDown={handleKeyDown}
+        className="h-full flex flex-col gap-1 pl-1 pt-1"
+      >
         <div className="flex flex-wrap gap-1 items-center mb-2">
           <div className="font-semibold">{getValues('perspective.name')}</div>
           <Input.IconButton hideText onClick={handleOpenEntityTypeEditDialog} icon={Icon.PencilSquareIcon}>型定義編集</Input.IconButton>
