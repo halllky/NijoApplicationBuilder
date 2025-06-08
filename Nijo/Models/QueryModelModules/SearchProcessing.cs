@@ -391,12 +391,16 @@ namespace Nijo.Models.QueryModelModules {
             //     .Create1To1PropertiesRecursively()
             //     .ToDictionary(x => x.Metadata.SchemaPathNode.ToMappingKey());
 
+            // CreateQuerySource で GROUP BY したクエリを onlyExistsInDisplayData で変換できないことがあったのでいったんオフ
+            const bool FILTER_ONLY_DISPLAY_MEMBERS = false;
+
             return $$"""
                 /// <summary>
                 /// {{_rootAggregate.DisplayName}}の検索結果型を画面表示用の型に変換する式を返します。
                 /// 検索条件には存在するが画面表示用データには存在しない項目は、この式の結果に含まれません。
                 /// </summary>
                 protected virtual async Task<{{displayData.CsClassName}}[]> {{ToDisplayData}}(IQueryable<{{searchResult.CsClassName}}> query) {
+                {{If(FILTER_ONLY_DISPLAY_MEMBERS, () => $$"""
 
                     // クエリの項目のうち画面表示用データに含まれるもののみを抽出
                     var onlyExistsInDisplayData = query.Select({{right.Name}} => new {
@@ -406,6 +410,11 @@ namespace Nijo.Models.QueryModelModules {
 
                     // ここでSQLを発行
                     var searchResultList = await onlyExistsInDisplayData.ToArrayAsync();
+                """).Else(() => $$"""
+
+                    // ここでSQLを発行
+                    var searchResultList = await query.ToArrayAsync();
+                """)}}
 
                     // 画面表示用データへの変換はC#メモリ上で行なう
                     var displayDataList = searchResultList.Select({{right.Name}} => new {{displayData.CsClassName}}() {
