@@ -224,8 +224,14 @@ public class OverridedApplicationConfigure : DefaultConfiguration {
         public override YearMonth? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
             if (reader.TokenType == JsonTokenType.Number) {
                 return new YearMonth(reader.GetInt32());
+
             } else if (reader.TokenType == JsonTokenType.String) {
                 string value = reader.GetString() ?? throw new JsonException();
+
+                if (string.IsNullOrWhiteSpace(value)) {
+                    return null;
+                }
+
                 if (int.TryParse(value, out int result)) {
                     return new YearMonth(result);
                 }
