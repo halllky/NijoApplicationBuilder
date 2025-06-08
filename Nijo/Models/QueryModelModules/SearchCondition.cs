@@ -5,6 +5,7 @@ using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Nijo.Models.QueryModelModules {
 
@@ -213,10 +214,29 @@ namespace Nijo.Models.QueryModelModules {
                         return
                       }
                     {{keys.SelectTextTemplate((k, i) => $$"""
-                      {{dataProperties[k.ToMappingKey()].GetJoinedPathFromInstance(E_CsTs.TypeScript, ".")}} = keys[{{i}}]
+                      {{WithIndent(RenderMember(k, i), "  ")}}
                     """)}}
                     }
                     """;
+
+                string RenderMember(ValueMember vm, int index) {
+                    // 数値ならNumberにかける
+                    var value = vm.Type.TsTypeName == "number"
+                        ? $"Number(keys[{index}])"
+                        : $"keys[{index}]";
+
+                    // 範囲検索の場合はfrom, to 両方に代入する
+                    if (vm.Type.SearchBehavior != null && Regex.IsMatch(vm.Type.SearchBehavior.FilterTsTypeName, @"\{.*from.*to.*\}")) {
+                        return $$"""
+                            {{dataProperties[vm.ToMappingKey()].GetJoinedPathFromInstance(E_CsTs.TypeScript, ".")}} = { from: {{value}}, to: {{value}} }
+                            """;
+
+                    } else {
+                        return $$"""
+                            {{dataProperties[vm.ToMappingKey()].GetJoinedPathFromInstance(E_CsTs.TypeScript, ".")}} = {{value}}
+                            """;
+                    }
+                }
             }
 
             #endregion 主キーアサイン関数

@@ -31,7 +31,9 @@ export const 売上分析一覧検索画面 = () => {
         <VForm3.Root labelWidth="8rem">
           <VForm3.BreakPoint>
             <VForm3.Item label="年月">
-              <Input.Word name="filter.年月" control={control} />
+              <Input.DateInput name="filter.年月.from" yearMonth control={control} />
+              ～
+              <Input.DateInput name="filter.年月.to" yearMonth control={control} />
             </VForm3.Item>
           </VForm3.BreakPoint>
           <VForm3.BreakPoint label="店舗">

@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <NijoApplicationBuilder RootNamespace="MyApp.Core">
   <!-- GDQM かつ GenerateBatchUpdateCommand のデータモデル -->
-  <商品マスタ Type="data-model" GenerateDefaultQueryModel="True" GenerateBatchUpdateCommand="True" LatinName="Product Master" UniqueId="8d569c4e-e43a-45be-b1f2-e2ce0ea98dcc">
-    <ID Type="word" IsRequired="True" MaxLength="20" IsKey="True" DbName="PRODUCT_ID" UniqueId="a7fb34e2-a4b0-42d8-8579-e24a0aa52f97" />
-    <商品名 Type="word" IsRequired="True" MaxLength="100" DbName="PRODUCT_NAME" UniqueId="73b82d70-15df-4af4-87f4-d9f20deccaba" />
+  <商品マスタ Type="data-model" GenerateBatchUpdateCommand="True" LatinName="Product Master" GenerateDefaultQueryModel="True" UniqueId="8d569c4e-e43a-45be-b1f2-e2ce0ea98dcc">
+    <ID Type="word" IsRequired="True" DbName="PRODUCT_ID" IsKey="True" MaxLength="20" UniqueId="a7fb34e2-a4b0-42d8-8579-e24a0aa52f97" />
+    <商品名 Type="word" IsRequired="True" DbName="PRODUCT_NAME" MaxLength="100" UniqueId="73b82d70-15df-4af4-87f4-d9f20deccaba" />
     <価格 Type="int" IsRequired="True" DbName="PRICE" UniqueId="d2059102-3214-4958-a7b5-58f1036615a0" />
     <カテゴリ Type="ref-to:カテゴリマスタ" IsRequired="True" DbName="CATEGORY_ID" UniqueId="aeec1447-d6d5-4845-afa3-11a4ca3be794" />
     <仕入先 Type="ref-to:仕入先マスタ" IsRequired="False" DbName="SUPPLIER_ID" UniqueId="02b63bb5-c26c-4292-a499-677679eb79bd" />
     <商品詳細 Type="child" DbName="PRODUCT_DETAIL" UniqueId="ff74783f-ae74-433e-bffb-c35fa50a3b3b">
-      <説明文 Type="description" MaxLength="1000" DbName="DESCRIPTION" UniqueId="7b2da5ec-75bc-47a2-aae6-6815bbe989eb" />
+      <説明文 Type="description" DbName="DESCRIPTION" MaxLength="1000" UniqueId="7b2da5ec-75bc-47a2-aae6-6815bbe989eb" />
       <商品仕様 Type="child" DbName="PRODUCT_SPEC" UniqueId="c2a44749-b885-4ead-be6d-af6f7d1ab490">
         <重量 Type="int" DbName="WEIGHT" UniqueId="a59ae224-d46f-46d2-9d8b-9d586947ee82" />
         <サイズ Type="child" DbName="SIZE" UniqueId="6b7fb117-5c79-4be5-8546-236d042f16b8">
@@ -18,17 +18,17 @@
         </サイズ>
       </商品仕様>
       <付属品 Type="children" DbName="ACCESSORIES" UniqueId="bde4de97-f173-4546-923c-06016ff1dc5f">
-        <付属品ID Type="word" MaxLength="20" IsKey="True" DbName="ACCESSORY_ID" UniqueId="af0cea1d-d359-4c7b-9182-244ac42cc530" />
-        <付属品名 Type="word" MaxLength="50" DbName="ACCESSORY_NAME" UniqueId="192da758-9ffb-46ed-bbd0-cf3e9b99ef4f" />
+        <付属品ID Type="word" DbName="ACCESSORY_ID" IsKey="True" MaxLength="20" UniqueId="af0cea1d-d359-4c7b-9182-244ac42cc530" />
+        <付属品名 Type="word" DbName="ACCESSORY_NAME" MaxLength="50" UniqueId="192da758-9ffb-46ed-bbd0-cf3e9b99ef4f" />
         <数量 Type="int" DbName="QUANTITY" UniqueId="6037bce6-870b-42f4-baaf-588a959ba789" />
       </付属品>
     </商品詳細>
     <在庫情報 Type="children" DbName="INVENTORY" UniqueId="65fe1528-d59c-47b8-8db5-9d0a687e7ca5">
-      <倉庫 Type="ref-to:倉庫マスタ" IsKey="True" DbName="WAREHOUSE_ID" UniqueId="4c0b04e6-adf7-4784-8a21-65bdc34c2741" />
+      <倉庫 Type="ref-to:倉庫マスタ" DbName="WAREHOUSE_ID" IsKey="True" UniqueId="4c0b04e6-adf7-4784-8a21-65bdc34c2741" />
       <在庫数 Type="int" DbName="STOCK_QUANTITY" UniqueId="11f18299-e8a5-4a76-8886-9d0b5d653cde" />
       <棚卸日時 Type="datetime" DbName="INVENTORY_DATE" UniqueId="cb51234e-cfa3-4d0e-8cf5-f1d66d3cc3f5" />
       <在庫状況履歴 Type="children" DbName="STOCK_HISTORY" UniqueId="9f448928-15d8-4afd-ba98-d7318a041606">
-        <履歴ID Type="word" MaxLength="36" IsKey="True" DbName="HISTORY_ID" UniqueId="43f5254e-f887-48cd-8805-dcf4a3449a4c" />
+        <履歴ID Type="word" DbName="HISTORY_ID" IsKey="True" MaxLength="36" UniqueId="43f5254e-f887-48cd-8805-dcf4a3449a4c" />
         <変更日時 Type="datetime" DbName="CHANGE_DATE" UniqueId="94926815-9a7b-435f-ba4b-50feac65a806" />
         <変更前在庫数 Type="int" DbName="PREVIOUS_QUANTITY" UniqueId="381619fe-b516-470b-a07d-37bb74ffd67d" />
         <変更後在庫数 Type="int" DbName="CURRENT_QUANTITY" UniqueId="fd6d9e66-fd26-43c3-9bc9-7232870406a4" />
@@ -38,18 +38,18 @@
   </商品マスタ>
   <!-- GDQMでない複雑なデータ構造を持つデータモデル -->
   <注文履歴 Type="data-model" LatinName="Order History" UniqueId="696c1fb8-79e6-4150-bf7a-0d7ac70a49aa">
-    <注文ID Type="word" IsRequired="True" MaxLength="20" IsKey="True" DbName="ORDER_ID" UniqueId="d11bc7f7-14eb-4143-a58e-d451398ea6b6" />
+    <注文ID Type="word" IsRequired="True" DbName="ORDER_ID" IsKey="True" MaxLength="20" UniqueId="d11bc7f7-14eb-4143-a58e-d451398ea6b6" />
     <注文日時 Type="datetime" IsRequired="True" DbName="ORDER_DATE" UniqueId="24bc2d61-fe97-4927-ac3a-132399ebcf5d" />
     <顧客 Type="ref-to:顧客マスタ" IsRequired="True" DbName="CUSTOMER_ID" UniqueId="d725ee9e-0dfd-4c5c-b44e-534ce0bba98f" />
     <店舗 Type="ref-to:店舗マスタ" IsRequired="True" DbName="STORE_ID" UniqueId="9cb3db35-3410-4e94-a639-346c110c058b" />
     <担当者 Type="ref-to:従業員マスタ" DbName="STAFF_ID" UniqueId="0461e601-728b-4755-a8a6-129f8ba03fae" />
     <注文明細 Type="children" DbName="ORDER_DETAILS" UniqueId="9970562a-2db5-496f-a57a-ad33a7d7dbfd">
-      <商品 Type="ref-to:商品マスタ" IsKey="True" DbName="PRODUCT_ID" UniqueId="47ff7f6d-a2fc-4b32-ab23-2841ec561d2d" />
+      <商品 Type="ref-to:商品マスタ" DbName="PRODUCT_ID" IsKey="True" UniqueId="47ff7f6d-a2fc-4b32-ab23-2841ec561d2d" />
       <数量 Type="int" IsRequired="True" DbName="QUANTITY" UniqueId="1a3d2671-a12b-48c9-b78d-2ce30053d39e" />
       <単価 Type="int" IsRequired="True" DbName="UNIT_PRICE" UniqueId="0f7eb112-b619-4376-9d4f-cfbe86df6de8" />
       <小計 Type="int" IsRequired="True" DbName="SUBTOTAL" UniqueId="6980545c-474c-40a2-9f6a-5d5b461b09ee" />
       <割引情報 Type="child" DbName="DISCOUNT_INFO" UniqueId="22702b57-cfb0-4b5a-8d0d-67aed549e42e">
-        <割引コード Type="word" MaxLength="10" DbName="DISCOUNT_CODE" UniqueId="2f1e649e-fde3-4dd2-8d00-63d0cba34bb6" />
+        <割引コード Type="word" DbName="DISCOUNT_CODE" MaxLength="10" UniqueId="2f1e649e-fde3-4dd2-8d00-63d0cba34bb6" />
         <割引率 Type="decimal" DbName="DISCOUNT_RATE" UniqueId="c156c7f1-85ab-411b-884e-3d9f8c0f4322" />
         <割引額 Type="int" DbName="DISCOUNT_AMOUNT" UniqueId="247946a8-c6a2-46fb-846e-0482cab8d890" />
       </割引情報>
@@ -60,103 +60,103 @@
       <支払状況 Type="payment_status" DbName="PAYMENT_STATUS" UniqueId="41af2a01-2423-4a41-9dfb-f8dd52193738" />
       <カード情報 Type="child" DbName="CARD_INFO" UniqueId="150f4df8-8e72-448b-bc2a-7d46d35f881a">
         <カード種類 Type="card_type" DbName="CARD_TYPE" UniqueId="cfad1d6a-0196-4853-8aea-8e609b1412e8" />
-        <下4桁 Type="word" MaxLength="4" DbName="LAST_FOUR_DIGITS" UniqueId="51217137-c898-414f-98e7-1ea508242988" />
+        <下4桁 Type="word" DbName="LAST_FOUR_DIGITS" MaxLength="4" UniqueId="51217137-c898-414f-98e7-1ea508242988" />
         <有効期限 Type="date" DbName="EXPIRY_DATE" UniqueId="9466f0b2-44d0-421c-8019-7769cb9ddcc6" />
       </カード情報>
     </支払情報>
     <配送情報 Type="child" DbName="SHIPPING_INFO" UniqueId="2b85deb8-6860-4e6e-a9fe-501f126db800">
       <配送方法 Type="shipping_method" IsRequired="True" DbName="SHIPPING_METHOD" UniqueId="e3734def-aaa0-4857-9afe-d2e343f563ec" />
       <配送先住所 Type="child" DbName="SHIPPING_ADDRESS" UniqueId="85a069d0-4794-4c3d-a1b1-724d739da092">
-        <郵便番号 Type="word" MaxLength="8" DbName="POSTAL_CODE" UniqueId="2c8a7fb7-762d-409f-a67a-7f2ac447cb86" />
-        <都道府県 Type="word" MaxLength="10" DbName="PREFECTURE" UniqueId="ba8fb48b-8b47-4130-92ed-be0d8dbc33cc" />
-        <市区町村 Type="word" MaxLength="20" DbName="CITY" UniqueId="e4c9419e-dd38-45ab-b494-dc728a805393" />
-        <番地建物名 Type="word" MaxLength="100" DbName="ADDRESS_LINE" UniqueId="c6e92497-2666-49fa-9e9a-081a0d9137de" />
+        <郵便番号 Type="word" DbName="POSTAL_CODE" MaxLength="8" UniqueId="2c8a7fb7-762d-409f-a67a-7f2ac447cb86" />
+        <都道府県 Type="word" DbName="PREFECTURE" MaxLength="10" UniqueId="ba8fb48b-8b47-4130-92ed-be0d8dbc33cc" />
+        <市区町村 Type="word" DbName="CITY" MaxLength="20" UniqueId="e4c9419e-dd38-45ab-b494-dc728a805393" />
+        <番地建物名 Type="word" DbName="ADDRESS_LINE" MaxLength="100" UniqueId="c6e92497-2666-49fa-9e9a-081a0d9137de" />
       </配送先住所>
       <配送状況 Type="children" DbName="SHIPPING_STATUS" UniqueId="e1cd182b-b82c-493d-9d4b-61c101470f58">
-        <ステータス Type="shipping_status" IsKey="True" DbName="STATUS" UniqueId="2baa7814-5d3e-45f4-952a-40c162976136" />
+        <ステータス Type="shipping_status" DbName="STATUS" IsKey="True" UniqueId="2baa7814-5d3e-45f4-952a-40c162976136" />
         <更新日時 Type="datetime" DbName="UPDATE_DATE" UniqueId="3a5c5a6e-859b-446d-a4bc-5da16cff4c97" />
-        <備考 Type="description" MaxLength="500" DbName="REMARKS" UniqueId="cc9d7e12-b9f4-41a2-bba1-a5e232f055dc" />
+        <備考 Type="description" DbName="REMARKS" MaxLength="500" UniqueId="cc9d7e12-b9f4-41a2-bba1-a5e232f055dc" />
       </配送状況>
     </配送情報>
   </注文履歴>
   <!-- GDQMだがGenerateBatchUpdateCommandではない -->
-  <顧客マスタ Type="data-model" GenerateDefaultQueryModel="True" LatinName="Customer Master" UniqueId="908d0556-71a2-4d56-849a-2bdf202e050b">
-    <顧客ID Type="word" IsRequired="True" MaxLength="20" IsKey="True" DbName="CUSTOMER_ID" UniqueId="09ad98f4-727e-48ad-afa4-c334742d94db" />
-    <氏名 Type="word" IsRequired="True" MaxLength="50" DbName="CUSTOMER_NAME" UniqueId="8b63f997-693a-40fe-b898-1e2893cf459c" />
-    <氏名カナ Type="word" MaxLength="50" DbName="CUSTOMER_KANA" UniqueId="3c878553-0d99-4293-b599-72a597a6d919" />
+  <顧客マスタ Type="data-model" LatinName="Customer Master" GenerateDefaultQueryModel="True" UniqueId="908d0556-71a2-4d56-849a-2bdf202e050b">
+    <顧客ID Type="word" IsRequired="True" DbName="CUSTOMER_ID" IsKey="True" MaxLength="20" UniqueId="09ad98f4-727e-48ad-afa4-c334742d94db" />
+    <氏名 Type="word" IsRequired="True" DbName="CUSTOMER_NAME" MaxLength="50" UniqueId="8b63f997-693a-40fe-b898-1e2893cf459c" />
+    <氏名カナ Type="word" DbName="CUSTOMER_KANA" MaxLength="50" UniqueId="3c878553-0d99-4293-b599-72a597a6d919" />
     <生年月日 Type="date" DbName="BIRTH_DATE" UniqueId="629c04c5-4224-4b4a-8836-8676dbf877ba" />
     <性別 Type="gender_type" DbName="GENDER" UniqueId="5a78ee7b-a83a-4748-abe6-036164e70c24" />
-    <メールアドレス Type="word" MaxLength="100" DbName="EMAIL" UniqueId="53feec9a-36f3-4089-8a49-a3e76ca6755e" />
-    <電話番号 Type="word" MaxLength="20" DbName="PHONE" UniqueId="6d60cc31-fe65-4293-89a3-a289490dd0d2" />
+    <メールアドレス Type="word" DbName="EMAIL" MaxLength="100" UniqueId="53feec9a-36f3-4089-8a49-a3e76ca6755e" />
+    <電話番号 Type="word" DbName="PHONE" MaxLength="20" UniqueId="6d60cc31-fe65-4293-89a3-a289490dd0d2" />
     <住所 Type="child" DbName="CUSTOMER_ADDRESS" UniqueId="566c76b2-f5e1-4cf2-bfc8-0a8fe2c1a54c">
-      <郵便番号 Type="word" MaxLength="8" DbName="POSTAL_CODE" UniqueId="5d77c9e0-fbbd-49f7-89b4-30f16cd5b3ed" />
-      <都道府県 Type="word" MaxLength="10" DbName="PREFECTURE" UniqueId="aa110a67-8912-4321-b089-eeb6a09fcddd" />
-      <市区町村 Type="word" MaxLength="20" DbName="CITY" UniqueId="2ae7cc87-e01b-4f72-8b26-321dabbec68f" />
-      <番地建物名 Type="word" MaxLength="100" DbName="ADDRESS_LINE" UniqueId="80127496-d0d8-4d33-8c40-adb5fa7be507" />
+      <郵便番号 Type="word" DbName="POSTAL_CODE" MaxLength="8" UniqueId="5d77c9e0-fbbd-49f7-89b4-30f16cd5b3ed" />
+      <都道府県 Type="word" DbName="PREFECTURE" MaxLength="10" UniqueId="aa110a67-8912-4321-b089-eeb6a09fcddd" />
+      <市区町村 Type="word" DbName="CITY" MaxLength="20" UniqueId="2ae7cc87-e01b-4f72-8b26-321dabbec68f" />
+      <番地建物名 Type="word" DbName="ADDRESS_LINE" MaxLength="100" UniqueId="80127496-d0d8-4d33-8c40-adb5fa7be507" />
     </住所>
     <会員情報 Type="child" DbName="MEMBERSHIP" UniqueId="60a4fc5f-52e3-459d-a7f0-cde81fd19719">
       <会員ランク Type="member_rank" DbName="RANK" UniqueId="37d56cc1-49c7-40af-9b01-9c79280249b9" />
       <入会日 Type="date" DbName="JOIN_DATE" UniqueId="a12ced55-4c8f-4d2e-8b01-7fbde8b65c0a" />
       <最終来店日 Type="date" DbName="LAST_VISIT" UniqueId="1ba0d5a4-986d-4109-b3bc-dbbbc7503040" />
       <ポイント履歴 Type="children" DbName="POINT_HISTORY" UniqueId="db25e2e5-81fd-4759-8d88-3f25f8f1ed61">
-        <履歴ID Type="word" MaxLength="36" IsKey="True" DbName="HISTORY_ID" UniqueId="946af0e3-4adf-4f96-80e2-8defe5e058b0" />
+        <履歴ID Type="word" DbName="HISTORY_ID" IsKey="True" MaxLength="36" UniqueId="946af0e3-4adf-4f96-80e2-8defe5e058b0" />
         <日付 Type="date" DbName="DATE" UniqueId="0197a1a3-4eb5-4c95-89fe-c7cfb085960e" />
         <ポイント Type="int" DbName="POINTS" UniqueId="1d09115e-f2ce-4755-b832-772537c1fe42" />
-        <理由 Type="word" MaxLength="100" DbName="REASON" UniqueId="30c77e2c-cd0a-4824-b539-3eaea9dd5972" />
+        <理由 Type="word" DbName="REASON" MaxLength="100" UniqueId="30c77e2c-cd0a-4824-b539-3eaea9dd5972" />
       </ポイント履歴>
     </会員情報>
   </顧客マスタ>
   <!-- 主キーが外部参照1個だけから構成されるデータモデル -->
   <従業員プロフィール Type="data-model" LatinName="Employee Profile" UniqueId="cdff7488-fbe7-4086-a00e-627764605bc7">
-    <従業員 Type="ref-to:従業員マスタ" IsKey="True" DbName="EMPLOYEE_ID" UniqueId="039ce4d0-c017-4b0e-8fe7-4be2e6d15981" />
-    <写真URL Type="word" MaxLength="200" DbName="PHOTO_URL" UniqueId="d2b21623-9585-40fa-8e12-24491ec3f6f6" />
-    <自己紹介 Type="description" MaxLength="1000" DbName="SELF_INTRODUCTION" UniqueId="9b150b8b-5368-44ae-a3a5-8f4fb9abe064" />
-    <得意分野 Type="word" MaxLength="100" DbName="SPECIALTY" UniqueId="f76997c7-2451-47ad-8c5c-fe79e7779d63" />
+    <従業員 Type="ref-to:従業員マスタ" DbName="EMPLOYEE_ID" IsKey="True" UniqueId="039ce4d0-c017-4b0e-8fe7-4be2e6d15981" />
+    <写真URL Type="word" DbName="PHOTO_URL" MaxLength="200" UniqueId="d2b21623-9585-40fa-8e12-24491ec3f6f6" />
+    <自己紹介 Type="description" DbName="SELF_INTRODUCTION" MaxLength="1000" UniqueId="9b150b8b-5368-44ae-a3a5-8f4fb9abe064" />
+    <得意分野 Type="word" DbName="SPECIALTY" MaxLength="100" UniqueId="f76997c7-2451-47ad-8c5c-fe79e7779d63" />
     <資格 Type="children" DbName="QUALIFICATIONS" UniqueId="6ed9bea2-6789-4b0e-ab82-4a65e1ffaeb7">
-      <資格名 Type="word" MaxLength="50" IsKey="True" DbName="QUALIFICATION_NAME" UniqueId="b1a7f4e7-6c16-4cd9-bd9d-d2372ee104a4" />
+      <資格名 Type="word" DbName="QUALIFICATION_NAME" IsKey="True" MaxLength="50" UniqueId="b1a7f4e7-6c16-4cd9-bd9d-d2372ee104a4" />
       <取得日 Type="date" DbName="ACQUISITION_DATE" UniqueId="08728ba0-c349-41dc-91fe-8250d69d207c" />
       <有効期限 Type="date" DbName="EXPIRY_DATE" UniqueId="4eb7fb95-6736-4b19-b575-7c1c50b4dd42" />
     </資格>
   </従業員プロフィール>
   <!-- 主キーが外部参照複数個から構成されるデータモデル -->
   <シフト Type="data-model" LatinName="Shift Schedule" UniqueId="6643e2c0-7d6b-4d0d-8e66-efcc2403cda7">
-    <従業員 Type="ref-to:従業員マスタ" IsKey="True" DbName="EMPLOYEE_ID" UniqueId="8ddc7a69-93a0-47ee-8d93-34804cbba236" />
-    <店舗 Type="ref-to:店舗マスタ" IsKey="True" DbName="STORE_ID" UniqueId="efbf9922-ed8d-47d0-acf0-2cbabb9b090c" />
-    <日付 Type="date" IsKey="True" DbName="DATE" UniqueId="070edeb4-874d-454d-9f9e-63ec4b14a4a6" />
-    <開始時間 Type="word" MaxLength="5" DbName="START_TIME" UniqueId="930ad231-2e35-4d58-beca-26abb790aff6" />
-    <終了時間 Type="word" MaxLength="5" DbName="END_TIME" UniqueId="cddb7bd7-ddf3-466e-873b-aff68f4d2a1d" />
+    <従業員 Type="ref-to:従業員マスタ" DbName="EMPLOYEE_ID" IsKey="True" UniqueId="8ddc7a69-93a0-47ee-8d93-34804cbba236" />
+    <店舗 Type="ref-to:店舗マスタ" DbName="STORE_ID" IsKey="True" UniqueId="efbf9922-ed8d-47d0-acf0-2cbabb9b090c" />
+    <日付 Type="date" DbName="DATE" IsKey="True" UniqueId="070edeb4-874d-454d-9f9e-63ec4b14a4a6" />
+    <開始時間 Type="word" DbName="START_TIME" MaxLength="5" UniqueId="930ad231-2e35-4d58-beca-26abb790aff6" />
+    <終了時間 Type="word" DbName="END_TIME" MaxLength="5" UniqueId="cddb7bd7-ddf3-466e-873b-aff68f4d2a1d" />
     <休憩時間 Type="int" DbName="BREAK_TIME" UniqueId="8d0647e6-3d01-4e27-8602-10486f7c7d3e" />
-    <備考 Type="description" MaxLength="200" DbName="REMARKS" UniqueId="5e985a1c-466b-4c80-84a6-62f8c979cdaf" />
+    <備考 Type="description" DbName="REMARKS" MaxLength="200" UniqueId="5e985a1c-466b-4c80-84a6-62f8c979cdaf" />
   </シフト>
   <!-- ref-toがさらにref-toを持つパターン（診察・予約連鎖） -->
-  <予約 Type="data-model" GenerateDefaultQueryModel="True" LatinName="Reservation" UniqueId="43c8b062-8c44-4453-8398-2abd7cd35302">
-    <予約ID Type="word" IsRequired="True" MaxLength="20" IsKey="True" DbName="RESERVATION_ID" UniqueId="d63bdfd1-6157-4dbc-81b4-20c6d1b5449c" />
+  <予約 Type="data-model" LatinName="Reservation" GenerateDefaultQueryModel="True" UniqueId="43c8b062-8c44-4453-8398-2abd7cd35302">
+    <予約ID Type="word" IsRequired="True" DbName="RESERVATION_ID" IsKey="True" MaxLength="20" UniqueId="d63bdfd1-6157-4dbc-81b4-20c6d1b5449c" />
     <予約日時 Type="datetime" IsRequired="True" DbName="RESERVATION_DATETIME" UniqueId="6f192de1-d3ea-4dd8-8e66-18d92fe5123b" />
     <患者 Type="ref-to:顧客マスタ" IsRequired="True" DbName="CUSTOMER_ID" UniqueId="09f75291-4607-4ace-9848-64b94da4f4bb" />
     <予約区分 Type="reservation_type" DbName="RESERVATION_TYPE" UniqueId="4bb99778-638b-4450-b400-1622c32a46ae" />
-    <予約メモ Type="description" MaxLength="500" DbName="RESERVATION_NOTE" UniqueId="8306512c-16e3-423e-ac8a-ca68158b3824" />
+    <予約メモ Type="description" DbName="RESERVATION_NOTE" MaxLength="500" UniqueId="8306512c-16e3-423e-ac8a-ca68158b3824" />
     <担当従業員 Type="ref-to:従業員マスタ" DbName="EMPLOYEE_ID" UniqueId="a421be49-f46b-4071-8823-4948f73fb0a8" />
   </予約>
   <診察記録 Type="data-model" LatinName="Medical Examination" UniqueId="639e360d-6409-46a6-b4de-079d2cf2d0b1">
-    <予約 Type="ref-to:予約" IsKey="True" DbName="RESERVATION_ID" UniqueId="9c5bd55b-9ee7-4405-b15a-a0d380179a32" />
+    <予約 Type="ref-to:予約" DbName="RESERVATION_ID" IsKey="True" UniqueId="9c5bd55b-9ee7-4405-b15a-a0d380179a32" />
     <診察開始時刻 Type="datetime" DbName="START_TIME" UniqueId="438e1ef4-7987-47bd-a37e-fd960bd7477a" />
     <診察終了時刻 Type="datetime" DbName="END_TIME" UniqueId="c2359d09-44db-483b-a6cf-b23e610396c4" />
     <体温 Type="decimal" DbName="TEMPERATURE" UniqueId="5fbeb1e1-d862-434a-b878-19bd7e912dc5" />
     <血圧上 Type="int" DbName="BLOOD_PRESSURE_HIGH" UniqueId="544042fc-11c1-4de0-bf32-973eac8a7ee9" />
     <血圧下 Type="int" DbName="BLOOD_PRESSURE_LOW" UniqueId="197433f2-178f-4494-87d2-492a97a43582" />
-    <メモ Type="description" MaxLength="1000" DbName="NOTE" UniqueId="2e9bfa3c-cff4-4f8e-8bbf-6cf39b7fcf7f" />
+    <メモ Type="description" DbName="NOTE" MaxLength="1000" UniqueId="2e9bfa3c-cff4-4f8e-8bbf-6cf39b7fcf7f" />
     <処方 Type="children" DbName="PRESCRIPTIONS" UniqueId="5b533227-a18b-41e8-877f-dc54e3eabc5a">
-      <薬剤ID Type="word" MaxLength="20" IsKey="True" DbName="MEDICINE_ID" UniqueId="ba5f648b-3747-49b4-acd5-3acb0c35fa80" />
-      <薬剤名 Type="word" MaxLength="100" DbName="MEDICINE_NAME" UniqueId="7c9463f9-6c9d-4830-aa3c-45dfbbeeb0bd" />
+      <薬剤ID Type="word" DbName="MEDICINE_ID" IsKey="True" MaxLength="20" UniqueId="ba5f648b-3747-49b4-acd5-3acb0c35fa80" />
+      <薬剤名 Type="word" DbName="MEDICINE_NAME" MaxLength="100" UniqueId="7c9463f9-6c9d-4830-aa3c-45dfbbeeb0bd" />
       <用量 Type="int" DbName="DOSAGE" UniqueId="b4ab42a7-79c3-4148-b8bf-d2729467e458" />
-      <用法 Type="word" MaxLength="100" DbName="USAGE" UniqueId="4cc9b7de-6756-4b28-9dc2-463c801b0954" />
+      <用法 Type="word" DbName="USAGE" MaxLength="100" UniqueId="4cc9b7de-6756-4b28-9dc2-463c801b0954" />
       <日数 Type="int" DbName="DAYS" UniqueId="d679b042-171a-4854-9776-f0eb24a6ffc0" />
-      <備考 Type="description" MaxLength="200" DbName="REMARKS" UniqueId="8218aa3c-8954-4850-a84d-15da6e0eba28" />
+      <備考 Type="description" DbName="REMARKS" MaxLength="200" UniqueId="8218aa3c-8954-4850-a84d-15da6e0eba28" />
     </処方>
   </診察記録>
   <!-- 複雑なデータ構造をもったクエリモデル -->
   <売上分析 Type="query-model" LatinName="Sales Analysis" UniqueId="9442b4d0-b48e-45b1-ab23-597ad74b1058">
-    <年月 Type="word" IsKey="True" UniqueId="5b240e6c-fdfa-4450-a313-3ed437d4584e" />
+    <年月 Type="yearmonth" IsKey="True" UniqueId="5b240e6c-fdfa-4450-a313-3ed437d4584e" />
     <!-- 例: "2023/10" -->
     <店舗 Type="ref-to:店舗マスタ" IsKey="True" UniqueId="81b85306-d103-4404-957e-1394ddb12fb7" />
     <売上合計 Type="int" UniqueId="7ad3568d-04f9-4751-bbd6-b890f6cdd586" />
@@ -180,7 +180,6 @@
       <売上件数 Type="int" UniqueId="6b384442-8b6f-4b93-884b-4560ce033d06" />
       <!-- 注文件数 -->
       <平均客単価 Type="int" UniqueId="5dad6b1c-3ece-461d-8e8f-15f455a7452c" />
-      <!-- (時間帯別売上.売上金額 / 時間帯別売上.売上件数) -->
     </時間帯別売上>
   </売上分析>
   <!-- シンプルなCommandModelの構造 -->
@@ -239,20 +238,20 @@
     </在庫調整ReturnValue>
   </在庫調整>
   <!-- 部署と従業員の年度ごとの所属関係（year型の使用） -->
-  <部署 Type="data-model" GenerateDefaultQueryModel="True" DbName="BUSHO" LatinName="Department" UniqueId="8977ab28-8f27-4acf-882a-61eea645aeba">
-    <部署コード Type="word" IsRequired="True" MaxLength="10" IsKey="True" DbName="BUSHO_CD" UniqueId="5b72589a-8727-44b2-ab2b-22b5ed4acaed" />
-    <部署名 Type="word" IsRequired="True" MaxLength="40" DbName="BUSHO_NAME" UniqueId="725c421d-f3b8-477e-940c-ca67cfc03959" />
+  <部署 Type="data-model" DbName="BUSHO" LatinName="Department" GenerateDefaultQueryModel="True" UniqueId="8977ab28-8f27-4acf-882a-61eea645aeba">
+    <部署コード Type="word" IsRequired="True" DbName="BUSHO_CD" IsKey="True" MaxLength="10" UniqueId="5b72589a-8727-44b2-ab2b-22b5ed4acaed" />
+    <部署名 Type="word" IsRequired="True" DbName="BUSHO_NAME" MaxLength="40" UniqueId="725c421d-f3b8-477e-940c-ca67cfc03959" />
   </部署>
-  <従業員マスタ Type="data-model" GenerateDefaultQueryModel="True" DbName="EMPLOYEE" UniqueId="6822cfa1-31a5-400b-a950-165c2e7a10db">
-    <従業員ID Type="従業員ID型" IsRequired="True" IsKey="True" DbName="ID" UniqueId="ac69617c-49b2-46fc-a28e-5a3d60535a3f" />
-    <氏名 Type="word" IsRequired="True" MaxLength="40" DbName="NAME" UniqueId="22f63acb-431c-402f-b079-5aaeac4bedf5" />
-    <氏名カナ Type="word" MaxLength="40" DbName="NAME_KANA" UniqueId="86230d91-0bdc-47f1-8d8e-d49bd1461825" />
+  <従業員マスタ Type="data-model" DbName="EMPLOYEE" GenerateDefaultQueryModel="True" UniqueId="6822cfa1-31a5-400b-a950-165c2e7a10db">
+    <従業員ID Type="従業員ID型" IsRequired="True" DbName="ID" IsKey="True" UniqueId="ac69617c-49b2-46fc-a28e-5a3d60535a3f" />
+    <氏名 Type="word" IsRequired="True" DbName="NAME" MaxLength="40" UniqueId="22f63acb-431c-402f-b079-5aaeac4bedf5" />
+    <氏名カナ Type="word" DbName="NAME_KANA" MaxLength="40" UniqueId="86230d91-0bdc-47f1-8d8e-d49bd1461825" />
     <所属部署 Type="children" DbName="SHOZOKU" UniqueId="231bbbff-3824-4f63-bb89-5de53fd832c6">
-      <年度 Type="year" IsRequired="True" IsKey="True" DbName="NENDO" UniqueId="ff1c3792-0f48-4445-86a9-4f970aa40d31" />
+      <年度 Type="year" IsRequired="True" DbName="NENDO" IsKey="True" UniqueId="ff1c3792-0f48-4445-86a9-4f970aa40d31" />
       <部署 Type="ref-to:部署" IsRequired="True" DbName="BUSHO_CD" UniqueId="27344468-19f3-4868-8b0a-3b3793e6fd7d" />
     </所属部署>
     <権限 Type="children" DbName="AUTHORITY" UniqueId="c2967548-d50f-42df-8ebe-4c9a6271a5e9">
-      <権限レベル Type="権限レベル" IsKey="True" DbName="AUTHORITY_LEVEL" UniqueId="c6a89875-1645-4cde-acee-66134f00a9d2" />
+      <権限レベル Type="権限レベル" DbName="AUTHORITY_LEVEL" IsKey="True" UniqueId="c6a89875-1645-4cde-acee-66134f00a9d2" />
     </権限>
     <退職日 Type="date" DbName="TAISHOKU" UniqueId="83a3e269-70ca-4ec7-b33b-1482e265dcd2" />
   </従業員マスタ>
@@ -262,40 +261,40 @@
   </権限レベル>
   <!-- その他必要なエンティティ定義 -->
   <カテゴリマスタ Type="data-model" GenerateDefaultQueryModel="True" UniqueId="a0606f83-9804-4ff7-b219-8699850f784a">
-    <カテゴリID Type="word" MaxLength="10" IsKey="True" DbName="CATEGORY_ID" UniqueId="fdf8efe1-b11e-42e7-9b62-29fab434ed6a" />
-    <カテゴリ名 Type="word" MaxLength="50" DbName="CATEGORY_NAME" UniqueId="b53f5f41-8069-4cf1-891e-03ed52e84f84" />
+    <カテゴリID Type="word" DbName="CATEGORY_ID" IsKey="True" MaxLength="10" UniqueId="fdf8efe1-b11e-42e7-9b62-29fab434ed6a" />
+    <カテゴリ名 Type="word" DbName="CATEGORY_NAME" MaxLength="50" UniqueId="b53f5f41-8069-4cf1-891e-03ed52e84f84" />
   </カテゴリマスタ>
   <仕入先マスタ Type="data-model" GenerateDefaultQueryModel="True" UniqueId="1f8e6b71-8167-4381-94fc-cfdc49dc7cdb">
-    <仕入先ID Type="word" MaxLength="10" IsKey="True" DbName="SUPPLIER_ID" UniqueId="892227fc-4dc6-40ce-bff8-311ec557cc29" />
-    <仕入先名 Type="word" MaxLength="100" DbName="SUPPLIER_NAME" UniqueId="067d7895-1942-450f-9ef1-ce22252100a7" />
-    <担当者名 Type="word" MaxLength="50" DbName="CONTACT_PERSON" UniqueId="92470c2c-c2e3-4b51-b7ea-43f8b5c319d9" />
-    <電話番号 Type="word" MaxLength="20" DbName="PHONE" UniqueId="d96b00fd-7fbd-4f4e-8cd1-b3de7cfda8a0" />
-    <メールアドレス Type="word" MaxLength="100" DbName="EMAIL" UniqueId="826969ef-5974-49ab-a973-ee4b075c487d" />
+    <仕入先ID Type="word" DbName="SUPPLIER_ID" IsKey="True" MaxLength="10" UniqueId="892227fc-4dc6-40ce-bff8-311ec557cc29" />
+    <仕入先名 Type="word" DbName="SUPPLIER_NAME" MaxLength="100" UniqueId="067d7895-1942-450f-9ef1-ce22252100a7" />
+    <担当者名 Type="word" DbName="CONTACT_PERSON" MaxLength="50" UniqueId="92470c2c-c2e3-4b51-b7ea-43f8b5c319d9" />
+    <電話番号 Type="word" DbName="PHONE" MaxLength="20" UniqueId="d96b00fd-7fbd-4f4e-8cd1-b3de7cfda8a0" />
+    <メールアドレス Type="word" DbName="EMAIL" MaxLength="100" UniqueId="826969ef-5974-49ab-a973-ee4b075c487d" />
   </仕入先マスタ>
   <倉庫マスタ Type="data-model" GenerateDefaultQueryModel="True" UniqueId="2e2bbe87-8951-46a1-a838-92c879daa4f0">
-    <ID Type="word" MaxLength="10" IsKey="True" DbName="WAREHOUSE_ID" UniqueId="5ca6b5ae-e232-491f-9c99-40728b22f213" />
-    <倉庫名 Type="word" MaxLength="50" DbName="WAREHOUSE_NAME" UniqueId="6b6a77de-e183-41ab-9660-216215ed6706" />
+    <ID Type="word" DbName="WAREHOUSE_ID" IsKey="True" MaxLength="10" UniqueId="5ca6b5ae-e232-491f-9c99-40728b22f213" />
+    <倉庫名 Type="word" DbName="WAREHOUSE_NAME" MaxLength="50" UniqueId="6b6a77de-e183-41ab-9660-216215ed6706" />
     <住所 Type="child" DbName="WAREHOUSE_ADDRESS" UniqueId="4d8c711f-0a52-4ff9-a62c-3fa335741ccf">
-      <郵便番号 Type="word" MaxLength="8" DbName="POSTAL_CODE" UniqueId="c77b3ae2-c491-4b03-932d-b58cebf2d5b5" />
-      <都道府県 Type="word" MaxLength="10" DbName="PREFECTURE" UniqueId="04bf8c1e-fefe-4ee0-9358-d74169f8682e" />
-      <市区町村 Type="word" MaxLength="20" DbName="CITY" UniqueId="53167141-2b16-4206-8eb1-c40ea2e9030a" />
-      <番地建物名 Type="word" MaxLength="100" DbName="ADDRESS_LINE" UniqueId="60b3a74c-9f7c-4ba9-ad24-d54246366143" />
+      <郵便番号 Type="word" DbName="POSTAL_CODE" MaxLength="8" UniqueId="c77b3ae2-c491-4b03-932d-b58cebf2d5b5" />
+      <都道府県 Type="word" DbName="PREFECTURE" MaxLength="10" UniqueId="04bf8c1e-fefe-4ee0-9358-d74169f8682e" />
+      <市区町村 Type="word" DbName="CITY" MaxLength="20" UniqueId="53167141-2b16-4206-8eb1-c40ea2e9030a" />
+      <番地建物名 Type="word" DbName="ADDRESS_LINE" MaxLength="100" UniqueId="60b3a74c-9f7c-4ba9-ad24-d54246366143" />
     </住所>
     <管理責任者 Type="ref-to:従業員マスタ" DbName="MANAGER_ID" UniqueId="2bc1dd2a-76ef-4901-8013-b1c9cc367a6a" />
   </倉庫マスタ>
   <店舗マスタ Type="data-model" GenerateDefaultQueryModel="True" UniqueId="be9d0172-ba9d-40cf-bd11-4a8c5eaaca8d">
-    <店舗ID Type="word" MaxLength="10" IsKey="True" DbName="STORE_ID" UniqueId="e1f08ff1-4139-407e-9890-3bc2b7b05f32" />
-    <店舗名 Type="word" MaxLength="50" DbName="STORE_NAME" UniqueId="e87f2d1b-4b85-48c0-88f3-88743d4dff83" />
-    <電話番号 Type="word" MaxLength="20" DbName="PHONE" UniqueId="344b8547-68e2-47bc-b540-797b456f3874" />
+    <店舗ID Type="word" DbName="STORE_ID" IsKey="True" MaxLength="10" UniqueId="e1f08ff1-4139-407e-9890-3bc2b7b05f32" />
+    <店舗名 Type="word" DbName="STORE_NAME" MaxLength="50" UniqueId="e87f2d1b-4b85-48c0-88f3-88743d4dff83" />
+    <電話番号 Type="word" DbName="PHONE" MaxLength="20" UniqueId="344b8547-68e2-47bc-b540-797b456f3874" />
     <住所 Type="child" DbName="STORE_ADDRESS" UniqueId="8abb1eba-e5d4-4155-b6ca-3fd440edb800">
-      <郵便番号 Type="word" MaxLength="8" DbName="POSTAL_CODE" UniqueId="759c7f7c-e07c-4571-be40-fbe9250fbede" />
-      <都道府県 Type="word" MaxLength="10" DbName="PREFECTURE" UniqueId="ad20ce1f-c20d-4380-ace9-11949426c8af" />
-      <市区町村 Type="word" MaxLength="20" DbName="CITY" UniqueId="0f20fb6c-0185-4b82-a017-b123a91ce304" />
-      <番地建物名 Type="word" MaxLength="100" DbName="ADDRESS_LINE" UniqueId="653d837d-f72a-448e-8ed7-6db6f7c64b85" />
+      <郵便番号 Type="word" DbName="POSTAL_CODE" MaxLength="8" UniqueId="759c7f7c-e07c-4571-be40-fbe9250fbede" />
+      <都道府県 Type="word" DbName="PREFECTURE" MaxLength="10" UniqueId="ad20ce1f-c20d-4380-ace9-11949426c8af" />
+      <市区町村 Type="word" DbName="CITY" MaxLength="20" UniqueId="0f20fb6c-0185-4b82-a017-b123a91ce304" />
+      <番地建物名 Type="word" DbName="ADDRESS_LINE" MaxLength="100" UniqueId="653d837d-f72a-448e-8ed7-6db6f7c64b85" />
     </住所>
     <営業時間 Type="child" DbName="BUSINESS_HOURS" UniqueId="83034ddf-e204-4f4a-9970-fc544b5d389a">
-      <開店時間 Type="word" MaxLength="5" DbName="OPENING_TIME" UniqueId="dfa206d2-a487-48fe-a10b-9be3dba6835e" />
-      <閉店時間 Type="word" MaxLength="5" DbName="CLOSING_TIME" UniqueId="b9dc4e42-c3b3-47fd-9274-0e6a44a80789" />
+      <開店時間 Type="word" DbName="OPENING_TIME" MaxLength="5" UniqueId="dfa206d2-a487-48fe-a10b-9be3dba6835e" />
+      <閉店時間 Type="word" DbName="CLOSING_TIME" MaxLength="5" UniqueId="b9dc4e42-c3b3-47fd-9274-0e6a44a80789" />
     </営業時間>
     <店長 Type="ref-to:従業員マスタ" DbName="MANAGER_ID" UniqueId="2d777b3a-09b2-4e3f-9b04-51ab5d097c53" />
   </店舗マスタ>
@@ -358,21 +357,21 @@
     <検査 DisplayName="検査（けんさ）" key="3" UniqueId="72f8ac89-5c4d-401a-9e4c-502a7d6f13d0" />
   </reservation_type>
   <!-- Childrenへの参照をキーに含むデータモデル -->
-  <在庫調査報告 Type="data-model" GenerateDefaultQueryModel="True" LatinName="Inventory Survey Report" UniqueId="97a49474-33d6-4279-918b-4794ada7d823">
-    <対象在庫 Type="ref-to:商品マスタ/在庫情報" IsKey="True" DbName="INVENTORY_REF" UniqueId="5f567cb6-483b-4138-bd9b-62b6bcd31a62" />
+  <在庫調査報告 Type="data-model" LatinName="Inventory Survey Report" GenerateDefaultQueryModel="True" UniqueId="97a49474-33d6-4279-918b-4794ada7d823">
+    <対象在庫 Type="ref-to:商品マスタ/在庫情報" DbName="INVENTORY_REF" IsKey="True" UniqueId="5f567cb6-483b-4138-bd9b-62b6bcd31a62" />
     <調査日 Type="date" IsRequired="True" DbName="SURVEY_DATE" UniqueId="e18d2fde-0d1d-4bb9-a22b-5ab6f4382431" />
     <調査担当者 Type="ref-to:従業員マスタ" IsRequired="True" DbName="SURVEYOR_ID" UniqueId="bbb4c1a3-1623-4dd8-aaf1-7b93c9274823" />
     <実地棚卸数 Type="int" IsRequired="True" DbName="ACTUAL_COUNT" UniqueId="e0e4eef1-a7bc-498e-a093-6502496a7fed" />
     <在庫差異 Type="int" DbName="INVENTORY_DIFF" UniqueId="060e9328-ab71-47e2-a0d5-5489f36e3e28" />
-    <調査メモ Type="description" MaxLength="500" DbName="SURVEY_NOTE" UniqueId="41ebd83d-f9e3-4394-bb67-7c678bc35b98" />
-    <写真URL Type="word" MaxLength="200" DbName="PHOTO_URL" UniqueId="e4ee2a5d-a0bd-445d-9b5b-18907998f00e" />
+    <調査メモ Type="description" DbName="SURVEY_NOTE" MaxLength="500" UniqueId="41ebd83d-f9e3-4394-bb67-7c678bc35b98" />
+    <写真URL Type="word" DbName="PHOTO_URL" MaxLength="200" UniqueId="e4ee2a5d-a0bd-445d-9b5b-18907998f00e" />
     <アクション Type="children" DbName="ACTIONS" UniqueId="64878bde-df28-431b-ace2-1e71c516f567">
-      <アクションID Type="word" MaxLength="20" IsKey="True" DbName="ACTION_ID" UniqueId="d5c5bf35-3de9-4420-8891-0de393525a57" />
+      <アクションID Type="word" DbName="ACTION_ID" IsKey="True" MaxLength="20" UniqueId="d5c5bf35-3de9-4420-8891-0de393525a57" />
       <アクション種別 Type="action_type" DbName="ACTION_TYPE" UniqueId="8b5398a2-c74a-431c-b208-d428cf19c75c" />
       <実施状況 Type="status_type" DbName="STATUS" UniqueId="2d849dd0-53fb-4ba1-adc5-7087d91fc6e4" />
       <実施日 Type="date" DbName="ACTION_DATE" UniqueId="648ecfbf-1f43-46cf-a74f-3f08b369ec8d" />
       <実施担当者 Type="ref-to:従業員マスタ" DbName="EXECUTOR_ID" UniqueId="4ee0c2a9-7cf5-4e60-97cf-1c650b6b516a" />
-      <アクション詳細 Type="description" MaxLength="500" DbName="ACTION_DETAIL" UniqueId="2a372724-06c5-4441-b570-a2fe6ee7ef94" />
+      <アクション詳細 Type="description" DbName="ACTION_DETAIL" MaxLength="500" UniqueId="2a372724-06c5-4441-b570-a2fe6ee7ef94" />
     </アクション>
   </在庫調査報告>
   <!-- 在庫調査報告用の列挙型 -->
@@ -390,25 +389,25 @@
     <中止 DisplayName="中止" key="4" UniqueId="f79da147-e9d4-47cf-a84f-48b5ff539131" />
   </status_type>
   <!-- Childrenへの参照をキーに含むデータモデルのChildrenへの参照をキーに含むデータモデル -->
-  <アクション結果 Type="data-model" GenerateDefaultQueryModel="True" LatinName="Action Result" UniqueId="1097486f-9616-40f0-bde6-a29b2f540f8f">
-    <対象アクション Type="ref-to:在庫調査報告/アクション" IsKey="True" DbName="ACTION_REF" UniqueId="fc5cb3c5-8941-4766-9526-177ed6cf0d68" />
+  <アクション結果 Type="data-model" LatinName="Action Result" GenerateDefaultQueryModel="True" UniqueId="1097486f-9616-40f0-bde6-a29b2f540f8f">
+    <対象アクション Type="ref-to:在庫調査報告/アクション" DbName="ACTION_REF" IsKey="True" UniqueId="fc5cb3c5-8941-4766-9526-177ed6cf0d68" />
     <結果日時 Type="datetime" IsRequired="True" DbName="RESULT_DATETIME" UniqueId="d0d65eea-7e83-435d-8570-f7375cf514f9" />
     <結果担当者 Type="ref-to:従業員マスタ" IsRequired="True" DbName="RESULT_STAFF_ID" UniqueId="c9cbc4c0-b6e2-4312-9ed2-1aa5ca202a41" />
     <成果 Type="int" DbName="ACHIEVEMENT" UniqueId="89b0ab6f-ff19-4a64-a7ca-43e2b692b211" />
     <結果状態 Type="result_status" IsRequired="True" DbName="RESULT_STATUS" UniqueId="43132ecc-6643-4fb1-831b-35b4c0e6d9a4" />
     <添付資料 Type="children" DbName="ATTACHMENTS" UniqueId="1431f1d1-308f-4d0c-a2db-815846feb714">
-      <資料ID Type="word" MaxLength="20" IsKey="True" DbName="DOCUMENT_ID" UniqueId="476879bc-5afd-42b6-81f8-54943dd2c694" />
-      <資料名 Type="word" IsRequired="True" MaxLength="100" DbName="DOCUMENT_NAME" UniqueId="641bb2ba-7a2f-424e-b851-0235d987d70d" />
+      <資料ID Type="word" DbName="DOCUMENT_ID" IsKey="True" MaxLength="20" UniqueId="476879bc-5afd-42b6-81f8-54943dd2c694" />
+      <資料名 Type="word" IsRequired="True" DbName="DOCUMENT_NAME" MaxLength="100" UniqueId="641bb2ba-7a2f-424e-b851-0235d987d70d" />
       <資料種別 Type="document_type" DbName="DOCUMENT_TYPE" UniqueId="1e28b7b0-fc39-4b4b-8b4d-4cc5715ef312" />
-      <ファイルパス Type="word" MaxLength="200" DbName="FILE_PATH" UniqueId="9773ffaa-be92-45bc-94bf-00ab73cf02cd" />
+      <ファイルパス Type="word" DbName="FILE_PATH" MaxLength="200" UniqueId="9773ffaa-be92-45bc-94bf-00ab73cf02cd" />
       <登録日時 Type="datetime" DbName="REGISTER_DATETIME" UniqueId="9c6abba9-2b35-47bb-bbdd-af903678e5db" />
     </添付資料>
-    <フィードバック Type="description" MaxLength="1000" DbName="FEEDBACK" UniqueId="352f278d-68ba-4458-b5dd-05392b6167f5" />
+    <フィードバック Type="description" DbName="FEEDBACK" MaxLength="1000" UniqueId="352f278d-68ba-4458-b5dd-05392b6167f5" />
     <次回アクション Type="child" DbName="NEXT_ACTION" UniqueId="cc087406-5da9-49f6-aec1-95f53040f06e">
       <アクション種別 Type="action_type" DbName="NEXT_ACTION_TYPE" UniqueId="e7ab2799-bc67-42c6-a4d3-499f1d0bc5e0" />
       <予定日 Type="date" DbName="PLANNED_DATE" UniqueId="cc452b00-3f73-4acb-9a78-9a02efba743b" />
       <担当者 Type="ref-to:従業員マスタ" DbName="NEXT_STAFF_ID" UniqueId="d8c3e934-8fa8-4750-8d10-5dde1af74c93" />
-      <内容 Type="description" MaxLength="500" DbName="NEXT_CONTENT" UniqueId="e84743ba-ac50-47ba-a8a4-64a27e06a346" />
+      <内容 Type="description" DbName="NEXT_CONTENT" MaxLength="500" UniqueId="e84743ba-ac50-47ba-a8a4-64a27e06a346" />
     </次回アクション>
   </アクション結果>
   <!-- アクション結果用の列挙型 -->
