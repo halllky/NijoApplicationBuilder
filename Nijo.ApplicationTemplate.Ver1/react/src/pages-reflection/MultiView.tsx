@@ -93,11 +93,13 @@ const deserializeSearchCondition = <TSearchCond extends TSearchConditionGeneric>
   }
   const filterObject = (newCondition as any).filter;
 
-  for (const entry of entries) {
-    const pathString = entry.path.join('.');
-    const memberMeta = entry.member;
-    const paramValue = params.get(pathString);
+  // URLSearchParams を列挙し、対応するメタデータエントリを見つけて型変換
+  for (const [pathString, paramValue] of params) {
+    // pathStringに対応するメタデータエントリを見つける
+    const entry = entries.find(e => e.path.join('.') === pathString);
+    if (!entry) continue; // 対応するメタデータが見つからない場合はスキップ
 
+    const memberMeta = entry.member;
     if (memberMeta.type === 'RootAggregate' || memberMeta.type === 'ChildAggregate' || memberMeta.type === 'ChildrenAggregate') {
       continue;
     }
@@ -157,17 +159,9 @@ const deserializeSearchCondition = <TSearchCond extends TSearchConditionGeneric>
       } else { // 上記以外の単純な型
         deserializedValue = paramValue;
       }
-    } else {
-      // URLパラメータが存在しない場合、型に応じたデフォルト値を設定
-      if (valueMeta.type === 'datetime' || valueMeta.type === 'date' || valueMeta.type === 'int' || valueMeta.type === 'decimal' || valueMeta.type === 'yearmonth' || valueMeta.type === 'year') {
-        deserializedValue = { from: '', to: '' };
-      } else if (valueMeta.type !== 'ref-to' && (valueMeta.enumType || valueMeta.type === 'bool')) { // 列挙型またはブール型オブジェクト
-        deserializedValue = {}; // 空オブジェクトをデフォルトとする
-      } else {
-        deserializedValue = '';
-      }
+
+      ReactHookForm.set(filterObject, pathString, deserializedValue);
     }
-    ReactHookForm.set(filterObject, pathString, deserializedValue);
   }
   return newCondition;
 };
