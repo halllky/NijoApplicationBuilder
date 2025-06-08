@@ -22,7 +22,7 @@ public partial class カテゴリ別売上SearchResult {
     // ここでは主にリレーションシップのためのプロパティを定義します。
 
     // 親の売上分析への外部キーとナビゲーションプロパティ
-    public string? 売上分析_年月 { get; set; }
+    public int? 売上分析_年月 { get; set; }
     public string? 売上分析_店舗_店舗ID { get; set; }
     public virtual 売上分析SearchResult? 売上分析 { get; set; }
 
@@ -35,7 +35,7 @@ public partial class 商品別売上SearchResult {
     // 親エンティティへのリレーション定義に必要な外部キーとナビゲーションプロパティを定義します。
 
     // カテゴリ別売上SearchResultへの外部キー
-    public string? カテゴリ別売上_売上分析_年月 { get; set; }
+    public int? カテゴリ別売上_売上分析_年月 { get; set; }
     public string? カテゴリ別売上_売上分析_店舗_店舗ID { get; set; }
     public string? カテゴリ別売上_カテゴリ_カテゴリID { get; set; }
     public virtual カテゴリ別売上SearchResult? カテゴリ別売上 { get; set; }
@@ -50,7 +50,7 @@ public partial class 時間帯別売上SearchResult {
     // ここでは主にリレーションシップのためのプロパティを定義します。
 
     // 親の売上分析への外部キーとナビゲーションプロパティ
-    public string? 売上分析_年月 { get; set; }
+    public int? 売上分析_年月 { get; set; }
     public string? 売上分析_店舗_店舗ID { get; set; }
     public virtual 売上分析SearchResult? 売上分析 { get; set; }
 

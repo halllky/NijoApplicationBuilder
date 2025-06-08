@@ -1,8 +1,8 @@
 CREATE VIEW V_商品別売上 AS
 SELECT
-    STRFTIME('%Y/%m', T1.ORDER_DATE) AS 売上分析_年月,
-    T1."店舗_STORE_ID" AS 売上分析_店舗_店舗ID,
-    T3."カテゴリ_CATEGORY_ID" AS カテゴリ_カテゴリID,
+    CAST(STRFTIME('%Y%m', T1.ORDER_DATE) AS INTEGER) AS カテゴリ別売上_売上分析_年月,
+    T1."店舗_STORE_ID" AS カテゴリ別売上_売上分析_店舗_店舗ID,
+    T3."カテゴリ_CATEGORY_ID" AS カテゴリ別売上_カテゴリ_カテゴリID,
     T2."商品_PRODUCT_ID" AS 商品_ID,
     T3.PRODUCT_NAME AS 商品_商品名,
     T3.PRICE AS 商品_価格,
@@ -33,7 +33,7 @@ FROM
     LEFT JOIN ACCESSORIES AS ACC ON PD.Parent_PRODUCT_ID = ACC.Parent_Parent_PRODUCT_ID
     LEFT JOIN INVENTORY AS INV ON T3.PRODUCT_ID = INV.Parent_PRODUCT_ID
 GROUP BY
-    STRFTIME('%Y/%m', T1.ORDER_DATE),
+    CAST(STRFTIME('%Y%m', T1.ORDER_DATE) AS INTEGER),
     T1."店舗_STORE_ID",
     T3."カテゴリ_CATEGORY_ID",
     T2."商品_PRODUCT_ID",
