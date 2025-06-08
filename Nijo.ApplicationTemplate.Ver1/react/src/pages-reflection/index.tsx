@@ -42,12 +42,8 @@ export const getReflectionPages = (): RouteObjectWithSideMenuSetting[] => {
       sideMenuLabel: structureMetadata.displayName,
       element: multiView,
     }, {
-      // 詳細編集画面（新規モード）
-      path: `${rootAggregatePhysicalName}/new`,
-      element: singleView,
-    }, {
-      // 詳細編集画面（編集モード）
-      path: `${rootAggregatePhysicalName}/detail/${keys.map(key => `:${key}`).join('/')}`,
+      // 詳細編集画面（新規モード: "new"、編集モード: "detail"）
+      path: `${rootAggregatePhysicalName}/:mode/${keys.map(key => `:${key}?`).join('/')}`,
       element: singleView,
     }]
   })
