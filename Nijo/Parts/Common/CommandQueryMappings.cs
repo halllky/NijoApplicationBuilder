@@ -22,6 +22,11 @@ namespace Nijo.Parts.Common {
         /// </summary>
         internal const string QUERY_MODEL_TYPE = "QueryModelType";
         /// <summary>
+        /// JavaScript用: QueryModelのルート集約, Child, Children の集約名。
+        /// 子孫集約の名前はルート集約からのスラッシュ区切り。
+        /// </summary>
+        internal const string QUERY_MODEL_TYPE_ALL = "QueryModelTypeAll";
+        /// <summary>
         /// JavaScript用: ほかの集約から参照されているQueryModelの型名のリテラル型
         /// </summary>
         internal const string REFERED_QUERY_MODEL_TYPE = "ReferedQueryModelType";
@@ -87,6 +92,13 @@ namespace Nijo.Parts.Common {
             var queryModelsOrderByDataFlow = _queryModels.OrderByDataFlow().ToArray();
             var commandModelsOrderByDataFlow = _commandModels.OrderByDataFlow().ToArray();
 
+            // QueryModelのルート集約だけでなくツリー全部
+            var queryModelAggregateTypes = queryModelsOrderByDataFlow
+                .SelectMany(x => x.EnumerateThisAndDescendants())
+                .OrderBy(x => x.GetRoot().GetIndexOfDataFlow())
+                .ThenBy(x => x.GetOrderInTree())
+                .ToArray();
+
             // 一括更新処理可能なQueryModel
             var batchUpdatableQueryModels = dataModelsOrderByDataFlow
                 .Where(root => root.GenerateBatchUpdateCommand)
@@ -105,6 +117,7 @@ namespace Nijo.Parts.Common {
                 var searchCondition = new SearchCondition.Entry(rootAggregate);
                 var displayData = new DisplayData(rootAggregate);
 
+                // ルート集約のモジュール
                 var modules = new List<string> {
                     searchCondition.TsTypeName,
                     searchCondition.TsNewObjectFunction,
@@ -114,6 +127,13 @@ namespace Nijo.Parts.Common {
                     displayData.PkExtractFunctionName,
                     displayData.PkAssignFunctionName,
                 };
+
+                // 子孫集約のモジュール
+                foreach (var child in rootAggregate.EnumerateDescendants()) {
+                    var childDisplayData = new DisplayData(child);
+                    modules.Add(childDisplayData.TsTypeName);
+                    modules.Add(childDisplayData.TsNewObjectFunction);
+                }
 
                 // Ref関連モジュールは他から参照されているもののみを追加
                 if (referedRefEntires.TryGetValue(rootAggregate, out var refEntries)) {
@@ -151,13 +171,23 @@ namespace Nijo.Parts.Common {
 
                     //#region Command,Queryの種類の一覧
 
-                    /** QueryModelの種類の一覧 */
+                    /** QueryModelの種類の一覧。ルート集約のみ。 */
                     export type {{QUERY_MODEL_TYPE}}
                     {{If(queryModelsOrderByDataFlow.Length == 0, () => $$"""
                       = never
                     """).Else(() => $$"""
                     {{queryModelsOrderByDataFlow.SelectTextTemplate((agg, i) => $$"""
                       {{(i == 0 ? "=" : "|")}} '{{agg.PhysicalName}}'
+                    """)}}
+                    """)}}
+
+                    /** QueryModelのルート集約, Child, Children の集約名。 */
+                    export type {{QUERY_MODEL_TYPE_ALL}}
+                    {{If(queryModelAggregateTypes.Length == 0, () => $$"""
+                      = never
+                    """).Else(() => $$"""
+                    {{queryModelAggregateTypes.SelectTextTemplate((agg, i) => $$"""
+                      {{(i == 0 ? "=" : "|")}} '{{agg.EnumerateThisAndAncestors().Select(x => x.PhysicalName).Join("/")}}'
                     """)}}
                     """)}}
 
@@ -221,14 +251,14 @@ namespace Nijo.Parts.Common {
                     export namespace DisplayData {
                       /** DisplayData型一覧 */
                       export interface TypeMap {
-                    {{queryModelsOrderByDataFlow.SelectTextTemplate(agg => $$"""
-                        '{{agg.PhysicalName}}': {{new DisplayData(agg).TsTypeName}}
+                    {{queryModelAggregateTypes.SelectTextTemplate(agg => $$"""
+                        '{{agg.EnumerateThisAndAncestors().Select(x => x.PhysicalName).Join("/")}}': {{new DisplayData(agg).TsTypeName}}
                     """)}}
                       }
                       /** DisplayData新規作成関数 */
-                      export const create: { [K in {{QUERY_MODEL_TYPE}}]: (() => TypeMap[K]) } = {
-                    {{queryModelsOrderByDataFlow.SelectTextTemplate(agg => $$"""
-                        '{{agg.PhysicalName}}': {{new DisplayData(agg).TsNewObjectFunction}},
+                      export const create: { [K in {{QUERY_MODEL_TYPE_ALL}}]: (() => TypeMap[K]) } = {
+                    {{queryModelAggregateTypes.SelectTextTemplate(agg => $$"""
+                        '{{agg.EnumerateThisAndAncestors().Select(x => x.PhysicalName).Join("/")}}': {{new DisplayData(agg).TsNewObjectFunction}},
                     """)}}
                       }
                       /** 主キーの抽出関数 */
