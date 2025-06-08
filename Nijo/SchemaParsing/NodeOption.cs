@@ -133,8 +133,13 @@ internal static class BasicNodeOptions {
         Type = E_NodeOptionType.Boolean,
         HelpText = $$"""
             この項目がその集約のキーであることを表します。
-            ルート集約またはChildrenの場合、指定必須。
-            ChildやVariationには指定不可。Commandの要素にも指定不可。
+            DataModelのルート集約またはChildrenの場合、指定必須。
+            Commandの要素には指定不可。
+            QueryModelのキーはルート集約にのみ指定可能。
+
+            なお自動生成される処理でQueryModelのキーに依存する処理は無い。
+            DisplayDataの主キーアサイン関数にのみ影響する。
+            （カスタマイズ処理でURLとDisplayDataの間のデータのやり取りに使用する想定）
             """,
         Validate = ctx => {
             var nodeType = ctx.SchemaParseContext.GetNodeType(ctx.XElement);

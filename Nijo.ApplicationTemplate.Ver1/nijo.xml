@@ -156,9 +156,9 @@
   </診察記録>
   <!-- 複雑なデータ構造をもったクエリモデル -->
   <売上分析 Type="query-model" LatinName="Sales Analysis" UniqueId="9442b4d0-b48e-45b1-ab23-597ad74b1058">
-    <年月 Type="yearmonth" IsKey="True" UniqueId="5b240e6c-fdfa-4450-a313-3ed437d4584e" />
+    <年月 Type="yearmonth" UniqueId="5b240e6c-fdfa-4450-a313-3ed437d4584e" />
     <!-- 例: "2023/10" -->
-    <店舗 Type="ref-to:店舗マスタ" IsKey="True" UniqueId="81b85306-d103-4404-957e-1394ddb12fb7" />
+    <店舗 Type="ref-to:店舗マスタ" UniqueId="81b85306-d103-4404-957e-1394ddb12fb7" />
     <売上合計 Type="int" UniqueId="7ad3568d-04f9-4751-bbd6-b890f6cdd586" />
     <客数 Type="int" UniqueId="e276f4f7-e4e9-4734-8d7c-23dac44f2914" />
     <客単価 Type="int" UniqueId="d8007572-69a6-4902-b155-7127a9c4d8e5" />

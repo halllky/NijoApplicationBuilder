@@ -20,11 +20,6 @@ namespace Nijo.Models {
         public string SchemaName => NODE_TYPE;
 
         public void Validate(XElement rootAggregateElement, SchemaParseContext context, Action<XElement, string> addError) {
-            // ルート集約はURLにかかわるのでキー必須
-            if (rootAggregateElement.Elements().All(member => member.Attribute(BasicNodeOptions.IsKey.AttributeName) == null)) {
-                addError(rootAggregateElement, "キーが指定されていません。");
-            }
-
             // 子集約には主キー属性を付与できない
             var childAggregates = rootAggregateElement.Descendants()
                 .Where(el => el.Attribute(SchemaParseContext.ATTR_NODE_TYPE)?.Value == SchemaParseContext.NODE_TYPE_CHILD);
