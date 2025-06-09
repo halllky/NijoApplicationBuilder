@@ -299,7 +299,7 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
 
           {/* 詳細画面 */}
           <Panel collapsible minSize={12}>
-            {selectedEntityIndex !== undefined && (
+            {selectedEntityIndex !== undefined && fields[selectedEntityIndex] && (
               <EntityDetailPane
                 key={fields[selectedEntityIndex].entityId}
                 entity={fields[selectedEntityIndex]}
