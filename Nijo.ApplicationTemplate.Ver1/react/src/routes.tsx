@@ -91,6 +91,9 @@ export const getNijoUiRoutesForEmbedded = (): RouteObjectWithSideMenuSetting[] =
       </ContextProviders>
     ),
     children: [{
+      index: true,
+      element: <NijoUiMainContent />,
+    }, {
       path: `schema/:${NIJOUI_CLIENT_ROUTE_PARAMS.AGGREGATE_ID}?`,
       element: <NijoUiMainContent />,
     }, {
