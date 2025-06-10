@@ -4,13 +4,11 @@ import { Home } from "./pages/Home"
 import getQueryModelRoutes from "./pages"
 import { getReflectionPages } from "./pages-reflection"
 import { getExamplePagesRoutes } from "./examples"
-import { getNijoUiRoutesForDebug } from "./スキーマ定義編集UI"
 import { NijoUi } from "./スキーマ定義編集UI/NijoUi"
 import { NijoUiDebugMenu } from "./スキーマ定義編集UI/デバッグメニュー/DebugMenu"
 import { NijoUiMainContent } from "./スキーマ定義編集UI/NijoUi"
 import { ContextProviders } from "./App"
 import { PerspectivePage } from "./型つきドキュメント/PerspectivePage"
-import { IS_EMBEDDED } from "./App"
 import * as Util from "./util"
 
 /** RouteObject に sideMenuLabel を追加した型 */
@@ -22,12 +20,6 @@ export type RouteObjectWithSideMenuSetting = ReactRouter.RouteObject & {
 
 /** ルーティング定義を取得する。 */
 export const getRouter = (): RouteObjectWithSideMenuSetting[] => {
-  // Viteのmodeが nijo-ui のときはスキーマ定義編集UIのルートのみを返す
-  if (IS_EMBEDDED()) {
-    return getNijoUiRoutesForDebug()
-  }
-
-  // それ以外のモードの場合のルーティング
   const pages: RouteObjectWithSideMenuSetting[] = []
 
   // トップページ
