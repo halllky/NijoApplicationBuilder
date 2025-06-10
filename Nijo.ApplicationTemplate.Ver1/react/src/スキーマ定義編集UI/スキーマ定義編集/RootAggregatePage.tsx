@@ -10,6 +10,8 @@ import useEvent from "react-use-event-hook"
 import { UUID } from "uuidjs"
 import { useAttrDefs } from "./AttrDefContext"
 import { TYPE_COLUMN_DEF } from "./getAttrTypeColumnDef"
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
+import NijoUiErrorMessagePane from "./NijoUiErrorMessagePane"
 
 /**
  * Data, Query, Command のルート集約1件を表示・編集するページ。
@@ -23,7 +25,13 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
   const { control } = formMethods
   const { fields, insert, remove, update } = ReactHookForm.useFieldArray({ control, name: `xmlElementTrees.${rootAggregateIndex}.xmlElements` })
   const attributeDefs = useAttrDefs()
-  const { validationContext: { getValidationResult, trigger } } = ReactRouter.useOutletContext<SchemaDefinitionOutletContextType>()
+  const {
+    validationContext: {
+      getValidationResult,
+      trigger,
+      validationResult,
+    },
+  } = ReactRouter.useOutletContext<SchemaDefinitionOutletContextType>()
 
   // メンバーグリッドの列定義
   const getColumnDefs: Layout.GetColumnDefsFunction<GridRowType> = React.useCallback(cellType => {
@@ -133,26 +141,38 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
   })
 
   return (
-    <div className={`h-full flex flex-col gap-1 ${className}`}>
-      <div className="flex flex-wrap gap-1 items-center">
-        <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRow}>行挿入</Input.IconButton>
-        <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRowBelow}>下挿入</Input.IconButton>
-        <Input.IconButton outline mini icon={Icon.TrashIcon} onClick={handleDeleteRow}>行削除</Input.IconButton>
-        <div className="basis-2"></div>
-        <Input.IconButton outline mini icon={Icon.ChevronDoubleLeftIcon} onClick={handleIndentDown}>インデント下げ</Input.IconButton>
-        <Input.IconButton outline mini icon={Icon.ChevronDoubleRightIcon} onClick={handleIndentUp}>インデント上げ</Input.IconButton>
-        <div className="flex-1"></div>
-      </div>
-      <div className="flex-1 overflow-y-auto">
-        <Layout.EditableGrid
-          ref={gridRef}
-          rows={fields}
-          getColumnDefs={getColumnDefs}
-          onChangeRow={handleChangeRow}
-          className="h-full border-y border-l border-gray-300"
+    <PanelGroup className={`h-full ${className ?? ''}`} direction="vertical">
+      <Panel className="flex flex-col gap-1">
+        <div className="flex flex-wrap gap-1 items-center">
+          <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRow}>行挿入</Input.IconButton>
+          <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRowBelow}>下挿入</Input.IconButton>
+          <Input.IconButton outline mini icon={Icon.TrashIcon} onClick={handleDeleteRow}>行削除</Input.IconButton>
+          <div className="basis-2"></div>
+          <Input.IconButton outline mini icon={Icon.ChevronDoubleLeftIcon} onClick={handleIndentDown}>インデント下げ</Input.IconButton>
+          <Input.IconButton outline mini icon={Icon.ChevronDoubleRightIcon} onClick={handleIndentUp}>インデント上げ</Input.IconButton>
+          <div className="flex-1"></div>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          <Layout.EditableGrid
+            ref={gridRef}
+            rows={fields}
+            getColumnDefs={getColumnDefs}
+            onChangeRow={handleChangeRow}
+            className="h-full border-y border-l border-gray-300"
+          />
+        </div>
+      </Panel>
+
+      <PanelResizeHandle className="h-1" />
+
+      <Panel defaultSize={20} minSize={8} collapsible>
+        <NijoUiErrorMessagePane
+          getValues={formMethods.getValues}
+          validationResult={validationResult}
+          className="h-full"
         />
-      </div>
-    </div>
+      </Panel>
+    </PanelGroup>
   )
 }
 
