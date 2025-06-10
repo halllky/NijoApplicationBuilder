@@ -1,5 +1,6 @@
 import * as ReactHookForm from "react-hook-form"
 import { ValidationContextType } from "./ValidationContext"
+import { TypedDocumentContextType } from "../../型つきドキュメント/types"
 
 /** スキーマ定義編集におけるアプリケーション全体の状態 */
 export type SchemaDefinitionGlobalState = {
@@ -15,8 +16,10 @@ export type SchemaDefinitionGlobalState = {
 
 /** スキーマ定義編集におけるReact router のOutletのコンテキスト */
 export type SchemaDefinitionOutletContextType = {
+  executeSave: () => void
   formMethods: ReactHookForm.UseFormReturn<SchemaDefinitionGlobalState>
   validationContext: ValidationContextType
+  typedDoc: TypedDocumentContextType
 }
 
 /** Model定義画面のデータ型定義 */

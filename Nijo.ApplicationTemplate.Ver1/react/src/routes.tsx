@@ -7,11 +7,11 @@ import { getReflectionPages } from "./pages-reflection"
 import { getExamplePagesRoutes } from "./examples"
 import { NijoUi } from "./スキーマ定義編集UI/NijoUi"
 import { NijoUiDebugMenu } from "./スキーマ定義編集UI/デバッグメニュー/DebugMenu"
-import { NijoUiMainContent } from "./スキーマ定義編集UI/NijoUi"
 import { ContextProviders } from "./App"
 import { PerspectivePage } from "./型つきドキュメント/PerspectivePage"
 import * as Util from "./util"
 import { NijoUiAggregateDiagram } from "./スキーマ定義編集UI/スキーマ定義編集/NijoUiAggregateDiagram"
+import { NijoUiTopPage } from "./スキーマ定義編集UI/NijoUiTopPage"
 
 /** RouteObject に sideMenuLabel を追加した型 */
 export type RouteObjectWithSideMenuSetting = ReactRouter.RouteObject & {
@@ -63,27 +63,28 @@ export const getRouterForNijoUi = (): RouteObjectWithSideMenuSetting[] => {
       </ContextProviders>
     ),
     children: [{
+      path: '',
       index: true,
-      element: <NijoUiMainContent />,
+      element: <NijoUiTopPage />,
     }, {
       path: `schema`,
       element: <NijoUiAggregateDiagram />,
-    }, {
-      path: `schema/:${NIJOUI_CLIENT_ROUTE_PARAMS.AGGREGATE_ID}`,
-      element: <NijoUiMainContent />,
     }, {
       path: 'debug-menu',
       element: <NijoUiDebugMenu />,
     }, {
       path: `typed-doc/perspective/:${NIJOUI_CLIENT_ROUTE_PARAMS.PERSPECTIVE_ID}`,
       element: <PerspectivePage />,
+    }, {
+      path: '*',
+      element: <div>Not Found</div>,
     }]
   }]
 }
 
 /** WindowsForms埋め込みアプリまたはそのデバッグ用のルーティングパラメーター */
 export const NIJOUI_CLIENT_ROUTE_PARAMS = {
-  /** ルート集約単位の画面の表示に使われるID */
+  /** @deprecated */
   AGGREGATE_ID: 'aggregateId',
   OUTLINER_ID: 'outlinerId',
   /** 型つきドキュメントの画面の表示に使われるID */
@@ -98,7 +99,8 @@ export const getNavigationUrl = (arg?:
   { aggregateId?: never, page: 'debug-menu' } |
   { aggregateId?: never, page: 'outliner', outlinerId: string } |
   { aggregateId?: never, page: 'typed-document-entity', entityTypeId: string } |
-  { aggregateId?: never, page: 'typed-document-perspective', perspectiveId: string, focusEntityId?: string }
+  { aggregateId?: never, page: 'typed-document-perspective', perspectiveId: string, focusEntityId?: string } |
+  { aggregateId?: never, page: 'schema' }
 ): string => {
   if (arg?.page === 'debug-menu') {
     return '/nijo-ui/debug-menu'
@@ -110,6 +112,8 @@ export const getNavigationUrl = (arg?:
     const searchParams = new URLSearchParams()
     if (arg.focusEntityId) searchParams.set(NIJOUI_CLIENT_ROUTE_PARAMS.FOCUS_ENTITY_ID, arg.focusEntityId)
     return `/nijo-ui/typed-doc/perspective/${arg.perspectiveId}?${searchParams.toString()}`
+  } else if (arg?.page === 'schema') {
+    return `/nijo-ui/schema/`
   } else {
     return `/nijo-ui/schema/${arg?.aggregateId ?? ''}`
   }

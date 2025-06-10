@@ -1,10 +1,11 @@
 import React from "react"
 import useEvent from "react-use-event-hook"
+import * as ReactHookForm from "react-hook-form"
 import * as Input from "../../input"
 import * as Icon from "@heroicons/react/24/solid"
 import { GraphView, GraphViewRef } from "../../layout/GraphView"
 import * as ReactRouter from "react-router-dom"
-import { SchemaDefinitionOutletContextType, XmlElementItem, ATTR_TYPE, TYPE_DATA_MODEL, TYPE_COMMAND_MODEL, TYPE_QUERY_MODEL, TYPE_CHILD, TYPE_CHILDREN, ATTR_GENERATE_DEFAULT_QUERY_MODEL } from "./types"
+import { SchemaDefinitionOutletContextType, XmlElementItem, ATTR_TYPE, TYPE_DATA_MODEL, TYPE_COMMAND_MODEL, TYPE_QUERY_MODEL, TYPE_CHILD, TYPE_CHILDREN, ATTR_GENERATE_DEFAULT_QUERY_MODEL, TYPE_STATIC_ENUM_MODEL, TYPE_VALUE_OBJECT_MODEL } from "./types"
 import { CytoscapeDataSet, ViewState } from "../../layout/GraphView/Cy"
 import { Node as CyNode, Edge as CyEdge } from "../../layout/GraphView/DataSource"
 import * as AutoLayout from "../../layout/GraphView/Cy.AutoLayout"
@@ -15,6 +16,7 @@ import cytoscape from 'cytoscape'; // cytoscapeの型情報をインポート
 import { useLayoutSaving } from './NijoUiAggregateDiagram.StateSaving';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import { PageRootAggregate } from "./RootAggregatePage"
+import { UUID } from "uuidjs"
 
 export const NijoUiAggregateDiagram = () => {
   // ノード状態の保存と復元
@@ -42,8 +44,8 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, defaultValues }: {
     savedViewState: Partial<ViewState>
   }
 }) => {
-  const { formMethods } = ReactRouter.useOutletContext<SchemaDefinitionOutletContextType>()
-  const { getValues } = formMethods
+  const { executeSave, formMethods } = ReactRouter.useOutletContext<SchemaDefinitionOutletContextType>()
+  const { getValues, control } = formMethods
   const xmlElementTrees = getValues("xmlElementTrees")
   const graphViewRef = React.useRef<GraphViewRef>(null)
   const navigate = ReactRouter.useNavigate()
@@ -61,9 +63,9 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, defaultValues }: {
       const rootElement = rootAggregateGroup.xmlElements[0];
       if (!rootElement) continue;
 
-      // Data, Query, Commandのみ表示
+      // enum, valueObject を除いて表示
       const model = rootElement.attributes[ATTR_TYPE]
-      if (model !== TYPE_DATA_MODEL && model !== TYPE_COMMAND_MODEL && model !== TYPE_QUERY_MODEL) continue;
+      if (model === TYPE_STATIC_ENUM_MODEL || model === TYPE_VALUE_OBJECT_MODEL) continue;
 
       const treeHelper = asTree(rootAggregateGroup.xmlElements); // ツリーヘルパーを初期化
 
@@ -239,6 +241,14 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, defaultValues }: {
     }
   });
 
+  // 新規ルート集約の作成
+  const { append } = ReactHookForm.useFieldArray({ name: 'xmlElementTrees', control })
+  const handleNewRootAggregate = useEvent(() => {
+    const localName = prompt('ルート集約名を入力してください。')
+    if (!localName) return
+    append({ xmlElements: [{ uniqueId: UUID.generate(), indent: 0, localName, attributes: {} }] })
+  })
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex flex-wrap items-center p-1 gap-1">
@@ -260,6 +270,11 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, defaultValues }: {
           <Input.IconButton fill={editableGridPosition === "horizontal"} outline onClick={() => setEditableGridPosition("horizontal")}>横</Input.IconButton>
           <Input.IconButton fill={editableGridPosition === "vertical"} outline onClick={() => setEditableGridPosition("vertical")}>縦</Input.IconButton>
         </div>
+        <div className="flex-1"></div>
+        <Input.IconButton icon={Icon.PlusIcon} outline onClick={handleNewRootAggregate}>新規作成</Input.IconButton>
+        <Input.IconButton outline onClick={() => alert('未実装')}>区分定義</Input.IconButton>
+        <div className="basis-4"></div>
+        <Input.IconButton fill onClick={executeSave}>保存</Input.IconButton>
       </div>
       <PanelGroup className="flex-1" direction={editableGridPosition}>
         <Panel className="border border-gray-300">
