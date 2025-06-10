@@ -11,6 +11,7 @@ import { NijoUiMainContent } from "./スキーマ定義編集UI/NijoUi"
 import { ContextProviders } from "./App"
 import { PerspectivePage } from "./型つきドキュメント/PerspectivePage"
 import * as Util from "./util"
+import { NijoUiAggregateDiagram } from "./スキーマ定義編集UI/スキーマ定義編集/NijoUiAggregateDiagram"
 
 /** RouteObject に sideMenuLabel を追加した型 */
 export type RouteObjectWithSideMenuSetting = ReactRouter.RouteObject & {
@@ -65,7 +66,10 @@ export const getRouterForNijoUi = (): RouteObjectWithSideMenuSetting[] => {
       index: true,
       element: <NijoUiMainContent />,
     }, {
-      path: `schema/:${NIJOUI_CLIENT_ROUTE_PARAMS.AGGREGATE_ID}?`,
+      path: `schema`,
+      element: <NijoUiAggregateDiagram />,
+    }, {
+      path: `schema/:${NIJOUI_CLIENT_ROUTE_PARAMS.AGGREGATE_ID}`,
       element: <NijoUiMainContent />,
     }, {
       path: 'debug-menu',

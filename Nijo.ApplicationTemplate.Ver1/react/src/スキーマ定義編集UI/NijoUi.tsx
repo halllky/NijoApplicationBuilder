@@ -11,7 +11,6 @@ import { PageRootAggregate } from "./スキーマ定義編集/RootAggregatePage"
 import { AttrDefsProvider } from "./スキーマ定義編集/AttrDefContext"
 import { getNavigationUrl, NIJOUI_CLIENT_ROUTE_PARAMS, SERVER_DOMAIN } from "../routes"
 import { useValidationContextProvider, ValidationContext } from "./スキーマ定義編集/ValidationContext"
-import { NijoUiAggregateDiagram } from "./スキーマ定義編集/NijoUiAggregateDiagram"
 import { useTypedDocumentContextProvider } from "../型つきドキュメント/TypedDocumentContext"
 
 /**
@@ -173,12 +172,6 @@ export const NijoUiMainContent = () => {
     if (!xmlElementTrees) return undefined; // 初期ロード時など xmlElementTrees が未定義の場合
     return xmlElementTrees.findIndex(tree => tree.xmlElements[0].uniqueId === selectedRootAggregateId);
   }, [selectedRootAggregateId, xmlElementTrees]);
-
-  if (selectedRootAggregateId === undefined) {
-    return (
-      <NijoUiAggregateDiagram />
-    );
-  }
 
   if (selectedRootAggregateIndex === -1) {
     return (
