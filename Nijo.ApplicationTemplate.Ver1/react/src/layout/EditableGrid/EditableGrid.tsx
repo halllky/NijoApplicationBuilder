@@ -104,11 +104,18 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     return false;
   }, [isReadOnly, rows]);
 
+  // 編集状態管理
+  const [isEditing, setIsEditing] = useState(false);
+  const handleChangeEditing = useCallback((editing: boolean) => {
+    setIsEditing(editing);
+  }, []);
+
   // キーボードで文字入力したとき即座に編集を開始できるようにするため
   // アクティブセルが変更されるたびにセルエディタにフォーカスを当てる
   const onActiveCellChanged = useCallback((cell: CellPosition | null) => {
 
-    if (cell && cellEditorRef.current && tableRef.current) {
+    // 編集中の場合は、エディタの値を変更しないようにする
+    if (cell && cellEditorRef.current && tableRef.current && !isEditing) {
       const row = rows[cell.rowIndex]
       const visibleDataColumns = tableRef.current.getVisibleLeafColumns().filter(c => c.id !== 'rowHeader');
       const targetColumn = visibleDataColumns[cell.colIndex];
@@ -135,7 +142,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
 
     // セルが選択されたあとに発火されるコールバック
     propsOnActiveCellChanged?.(cell)
-  }, [cellEditorRef, rows, columnDefs, tableRef, propsOnActiveCellChanged])
+  }, [cellEditorRef, rows, columnDefs, tableRef, propsOnActiveCellChanged, isEditing])
 
   // 選択状態
   const {
@@ -154,12 +161,6 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     columnDefs.filter(cd => !cd.invisible).length,
     onActiveCellChanged
   )
-
-  // 編集状態管理
-  const [isEditing, setIsEditing] = useState(false);
-  const handleChangeEditing = useCallback((editing: boolean) => {
-    setIsEditing(editing);
-  }, []);
 
   // コピー＆ペースト機能
   const { handleCopy, handlePaste, setStringValuesToSelectedRange } = useCopyPaste({
