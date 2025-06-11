@@ -192,7 +192,7 @@ export const useCopyPaste = <TRow extends ReactHookForm.FieldValues,>({
       const clipboardText = e.clipboardData?.getData('text/plain') || '';
 
       // TSV形式のテキストを2次元配列に変換
-      let pastedData = fromTsvString(clipboardText);
+      const pastedData = fromTsvString(clipboardText);
 
       setStringValuesToSelectedRange(pastedData);
 

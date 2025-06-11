@@ -32,12 +32,12 @@ export interface IDataSourceHandler {
   Editor: DataSourceEditor | undefined
   reload: ReloadFunc
 }
-export type ReloadFunc<T = any> = (dataSource: T) => Promise<DataSet>
+export type ReloadFunc<T = unknown> = (dataSource: T) => Promise<DataSet>
 
 export type UnknownDataSource = {
   type?: string
 }
-export type DataSourceEditor<T = any> = (props: {
+export type DataSourceEditor<T = unknown> = (props: {
   value: T | undefined
   onChange: (v: T) => void
   onReload: () => void

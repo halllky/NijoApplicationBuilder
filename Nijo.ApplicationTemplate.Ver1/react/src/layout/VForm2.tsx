@@ -23,7 +23,7 @@ const Root = ({ label, estimatedLabelWidth, maxDepth, children }: {
     containerType: 'inline-size',
 
     // デフォルトのCSSファイルの中でこれらのCSS変数を使ってラベル列の横幅を計算している
-    // @ts-ignore
+    // @ts-expect-error 動的CSS属性なので型チェックを無視する
     '--vform-max-depth': maxDepth?.toString() ?? '0',
     '--vform-label-width': estimatedLabelWidth ?? DEFAULT_LABEL_WIDTH,
   }), [maxDepth, estimatedLabelWidth])

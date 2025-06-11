@@ -3,8 +3,7 @@
  * 表示中はこの裏にあるUIが操作不能になる。
  * どの範囲に覆いかぶさるかは、CSSの position:absolute で制御している。
  */
-export const NowLoading = ({ }: {
-}) => {
+export const NowLoading = () => {
   return (
     <div className="absolute inset-0 flex justify-center items-center" aria-label="読み込み中">
       {/* 半透明のシェード */}

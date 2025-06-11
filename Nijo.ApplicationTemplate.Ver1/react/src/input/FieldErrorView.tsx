@@ -9,7 +9,7 @@ type ValidationMessage = {
 // クライアント側バリデーションコンテキストの型定義
 export interface ClientSideValidationContext {
   getValidationMessages: (name: string) => ValidationMessage[];
-  validate?: (name: string, value: any) => void;
+  validate?: (name: string, value: unknown) => void;
 }
 
 // バリデーションコンテキスト

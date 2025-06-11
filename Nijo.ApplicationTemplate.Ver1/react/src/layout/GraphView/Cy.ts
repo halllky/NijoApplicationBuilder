@@ -211,13 +211,13 @@ const STYLESHEET: cytoscape.CytoscapeOptions['style'] = [{
   selector: 'node',
   css: {
     'shape': 'rectangle',
-    'width': (node: any) => Math.max(32, node.data('label')?.length * 20),
+    'width': (node: cytoscape.NodeSingular) => Math.max(32, (node.data('label') as string)?.length * 20),
     'text-valign': 'center',
     'text-halign': 'center',
-    'color': (node: any) => node.data('color') ?? '#000000',
+    'color': (node: cytoscape.NodeSingular) => (node.data('color') as string) ?? '#000000',
     'border-width': '1px',
-    'border-color': node => node.data('border-color') ?? '#909090',
-    'background-color': node => node.data('background-color') ?? '#666666',
+    'border-color': node => (node.data('border-color') as string) ?? '#909090',
+    'background-color': node => (node.data('background-color') as string) ?? '#666666',
     'background-opacity': .1,
     'label': 'data(label)',
   },
@@ -226,13 +226,13 @@ const STYLESHEET: cytoscape.CytoscapeOptions['style'] = [{
   style: {
     'border-style': 'dashed',
     'border-width': '1px',
-    'border-color': node => node.data('border-color:selected') ?? '#FF4F02',
+    'border-color': node => (node.data('border-color:selected') as string) ?? '#FF4F02',
   },
 }, {
   selector: 'node:parent', // 子要素をもつノードに適用される
   css: {
     'text-valign': 'top',
-    'color': (node: any) => node.data('color:container') ?? '#707070',
+    'color': (node: cytoscape.NodeSingular) => (node.data('color:container') as string) ?? '#707070',
   },
 }, {
   selector: 'edge',

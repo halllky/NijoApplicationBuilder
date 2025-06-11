@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react'
 import cytoscape from 'cytoscape'
-// @ts-ignore
+// @ts-expect-error このライブラリが型定義を提供していないので型チェックを無視する
 import klay from 'cytoscape-klay'
-// @ts-ignore
+// @ts-expect-error このライブラリが型定義を提供していないので型チェックを無視する
 import dagre from 'cytoscape-dagre'
-// @ts-ignore
+// @ts-expect-error このライブラリが型定義を提供していないので型チェックを無視する
 import fcose from 'cytoscape-fcose'
 
 const configure = (cy: typeof cytoscape) => {

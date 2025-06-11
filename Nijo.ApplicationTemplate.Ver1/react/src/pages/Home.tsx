@@ -31,8 +31,8 @@ export const Home: React.FC = () => {
       } else {
         setError('データベースの初期化リクエスト中にエラーが発生しました。');
       }
-    } catch (e: any) {
-      setError(`予期せぬエラーが発生しました: ${e.message}`);
+    } catch (e: unknown) {
+      setError(`予期せぬエラーが発生しました: ${e instanceof Error ? e.message : '不明なエラー'}`);
       console.error('Unhandled error during database reset:', e);
     } finally {
       setNowProcessing(false);

@@ -1,5 +1,5 @@
 import cytoscape from 'cytoscape'
-// @ts-ignore
+// @ts-expect-error このライブラリが型定義を提供していないので型チェックを無視する
 import cytospaceNavigator from 'cytoscape-navigator'
 import 'cytoscape-navigator/cytoscape.js-navigator.css'
 
@@ -10,7 +10,7 @@ const configure = (cy: typeof cytoscape) => {
 }
 
 const setupCyInstance = (cy: cytoscape.Core) => {
-  const nav = (cy as any).navigator({
+  const nav = (cy as unknown as { navigator: (options: unknown) => unknown }).navigator({
     container: `.${NAVIGATOR_CONTAINER}`, // string | false | undefined. Supported strings: an element id selector (like "#someId"), or a className selector (like ".someClassName"). Otherwise an element will be created by the library.
     viewLiveFramerate: 0, // set false to update graph pan only on drag end; set 0 to do it instantly; set a number (frames per second) to update not more than N times per second
     thumbnailEventFramerate: 30, // max thumbnail's updates per second triggered by graph updates

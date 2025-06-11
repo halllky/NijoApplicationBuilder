@@ -295,24 +295,6 @@ export const isDetailMessage = (value: DetailMessagesContainer | DetailMessage):
 }
 
 /**
- * 詳細メッセージを react-hook-form の `setError` によってエラー情報に変換する。
- * FieldError は `types` という1つのフィールドに複数のメッセージを格納するパターンをサポートしているので、
- * この関数は `types` というフィールドに複数のメッセージを格納する。
- */
-export const setErrorDetailMessage = (setError: ReactHookForm.UseFormSetError<any>, detail: DetailMessagesContainer) => {
-  const setErrorsRecursively = (path: string[], messages: DetailMessagesContainer | DetailMessage) => {
-    for (const [key, value] of Object.entries(messages)) {
-      if (isDetailMessage(value)) {
-        setError(path.join('.'), { types: value })
-      } else {
-        setErrorsRecursively([...path, key], value)
-      }
-    }
-  }
-  setErrorsRecursively([], detail)
-}
-
-/**
  * 添付ファイルのメタデータ。
  * ファイル1件ごとに発番されるID、ファイル名、ファイルサイズを保持する。
  */
