@@ -7,6 +7,7 @@ import { useIME } from '../../util/useIME'
 import { ColumnMetadataInternal } from './EditableGrid'
 import { CellPosition, EditableGridColumnDef, EditableGridProps } from './types'
 import { Virtualizer } from '@tanstack/react-virtual'
+import { ChevronDownIcon } from '@heroicons/react/24/solid'
 
 /** CellEditorのprops */
 export type CellEditorProps<T extends ReactHookForm.FieldValues> = {
@@ -128,7 +129,7 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
   })
 
   /** 編集確定 */
-  const commitEditing = useEvent(() => {
+  const commitEditing = useEvent((value?: string) => {
     if (editingCellInfo === undefined) {
       return;
     }
@@ -155,7 +156,7 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
     columnDef.onEndEditing?.({
       rowIndex: editingCellInfo.rowIndex,
       row: editingCellInfo.row,
-      value: editorRef.current?.value ?? '',
+      value: value ?? editorRef.current?.value ?? '',
       setEditedRow: (row: T) => {
         newRow = row
       },
@@ -172,12 +173,45 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
 
     setEditingCellInfo(undefined)
     onChangeEditing(false)
+    setCurrentOptions(undefined)
+    setHighlightedOptionIndex(undefined)
   })
 
   /** 編集キャンセル */
   const cancelEditing = useEvent(() => {
     setEditingCellInfo(undefined)
     onChangeEditing(false)
+    setCurrentOptions(undefined)
+    setHighlightedOptionIndex(undefined)
+  })
+
+  // ----------------------------------
+  // 選択肢
+  const [currentOptions, setCurrentOptions] = React.useState<string[] | undefined>()
+  const [highlightedOptionIndex, setHighlightedOptionIndex] = React.useState<number | undefined>()
+  React.useEffect(() => {
+    if (caretCellEditingInfo?.getOptions === undefined || uncomittedText === undefined || editingCellInfo === undefined) {
+      setCurrentOptions(undefined)
+      return
+    }
+    const options = caretCellEditingInfo.getOptions(uncomittedText, editingCellInfo.row, editingCellInfo.rowIndex)
+    if (options instanceof Promise) {
+      setCurrentOptions(undefined)
+      options.then(setCurrentOptions)
+    } else {
+      setCurrentOptions(options)
+    }
+    if (highlightedOptionIndex === undefined) {
+      setHighlightedOptionIndex(0)
+    }
+  }, [uncomittedText, editingCellInfo, caretCellEditingInfo])
+
+  const handleOptionClick: React.MouseEventHandler<HTMLLIElement> = useEvent((e) => {
+    const option = e.currentTarget.textContent
+    if (option === null) return
+    commitEditing(option)
+    e.stopPropagation()
+    e.preventDefault()
   })
 
   // ----------------------------------
@@ -185,7 +219,7 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
   const { isComposing: isImeOpen } = useIME()
   const handleKeyDown: React.KeyboardEventHandler<HTMLLabelElement> = useEvent(e => {
     if (editingCellInfo) {
-      // 編集を終わらせる
+      // 編集を確定させる
       if (e.key === 'Enter' || e.key === 'Tab') {
         if (isImeOpen) return // IMEが開いているときのEnterやTabでは編集終了しないようにする
 
@@ -196,10 +230,24 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
           e.preventDefault()
         }
 
-      } else if (e.key === 'Escape') {
+      }
+      // 編集をキャンセルする
+      else if (e.key === 'Escape') {
         cancelEditing()
         e.preventDefault()
         e.stopPropagation()
+      }
+      // ハイライトされる選択肢の位置を移動
+      else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        if (!e.ctrlKey && !e.metaKey && currentOptions !== undefined) {
+          const newIndex = e.key === 'ArrowDown'
+            ? Math.min(highlightedOptionIndex === undefined ? 0 : highlightedOptionIndex + 1, (currentOptions?.length ?? 0) - 1)
+            : Math.max(highlightedOptionIndex === undefined ? (currentOptions?.length ?? 0) - 1 : highlightedOptionIndex - 1, 0)
+          setHighlightedOptionIndex(newIndex)
+          setUnComittedText(currentOptions[newIndex])
+          e.preventDefault()
+          e.stopPropagation()
+        }
       }
     } else {
       // 編集を始める
@@ -232,7 +280,7 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
 
   return (
     <label ref={containerRef}
-      className="absolute min-w-4 min-h-4 flex items-stretch outline-none"
+      className="absolute min-w-4 min-h-4 flex items-stretch outline-none bg-white border border-gray-950"
       style={{
         zIndex: 30,
         // クイック編集のためCellEditor自体は常に存在し続けるが、セル編集モードでないときは見えないようにする
@@ -250,8 +298,21 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
         ref={editorRef}
         value={uncomittedText}
         onChange={handleChangeUncomittedText}
-        className="flex-1 bg-white resize-none field-sizing-content outline-none border border-gray-950"
+        className="flex-1 resize-none field-sizing-content outline-none"
       />
+
+      {caretCellEditingInfo?.getOptions && (
+        <ChevronDownIcon className="w-4 cursor-pointer" />
+      )}
+      {currentOptions && (
+        <ul className="absolute top-[calc(100%+2px)] left-[-1px] right-[-1px] max-h-64 overflow-y-auto bg-white border border-gray-950">
+          {currentOptions.map((option, index) => (
+            <li key={index} onClick={handleOptionClick} className={`cursor-pointer ${highlightedOptionIndex === index ? 'bg-gray-200' : ''}`}>
+              {option}
+            </li>
+          ))}
+        </ul>
+      )}
     </label>
   )
 }) as (<T extends ReactHookForm.FieldValues>(props: CellEditorProps<T> & { ref?: React.ForwardedRef<CellEditorRef<T>> }) => React.ReactNode);

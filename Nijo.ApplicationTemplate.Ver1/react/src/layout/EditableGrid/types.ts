@@ -126,6 +126,8 @@ export type EditableGridColumnDefOptions<TRow extends ReactHookForm.FieldValues>
   onStartEditing?: EditableGridColumnDefOnStartEditing<TRow>
   /** 編集終了時に呼び出される関数 */
   onEndEditing?: EditableGridColumnDefOnEndEditing<TRow>
+  /** 入力可能な値の候補を取得する関数 */
+  getOptions?: (currentValue: string, row: TRow, rowIndex: number) => (string[] | Promise<string[]>)
 }
 
 /** セルのレンダリング処理をカスタマイズする関数。 */
