@@ -36,8 +36,6 @@ export type Entity = {
   attributeValues: EntityAttributeValues
   /** このエンティティに対するコメント */
   comments: TypedDocumentComment[]
-  /** 古い情報かどうか */
-  outdated?: boolean
 }
 
 /** アウトライナーのデータ1件の属性の値 */
