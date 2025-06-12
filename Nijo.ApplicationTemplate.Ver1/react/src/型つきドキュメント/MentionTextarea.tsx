@@ -23,7 +23,7 @@ export const MentionTextarea = React.forwardRef((props: MentionTextareaProps, re
   // データソース
   const { typedDoc } = ReactRouter.useOutletContext<NijoUiOutletContextType>()
   const getSuggestions: ReactMention.DataFunc = React.useCallback(async (query, callback) => {
-    const sideMenuItems = await typedDoc.loadNavigationMenus()
+    const sideMenuItems = await typedDoc.appSettings()
     const entities: Entity[] = []
     for (const sideMenuItem of sideMenuItems.filter(item => item.type === 'perspective')) {
       const perspective = await typedDoc.loadPerspectivePageData(sideMenuItem.id)
@@ -53,7 +53,7 @@ export const MentionTextarea = React.forwardRef((props: MentionTextareaProps, re
 
     // typedDoc の中からリンク先エンティティのIDを含むページを探し
     // navigationでそこへ遷移する。
-    const sideMenuItems = await typedDoc.loadNavigationMenus()
+    const sideMenuItems = await typedDoc.appSettings()
 
     for (const sideMenuItem of sideMenuItems.filter(item => item.type === 'perspective')) {
       const perspective = await typedDoc.loadPerspectivePageData(sideMenuItem.id)

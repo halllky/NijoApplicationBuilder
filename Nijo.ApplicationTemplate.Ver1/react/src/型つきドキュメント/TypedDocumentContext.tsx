@@ -1,12 +1,13 @@
 import * as React from "react"
 import useEvent from "react-use-event-hook"
-import { Entity, NavigationMenuItem, Perspective, TypedDocumentContextType, PerspectivePageData } from "./types"
+import { Perspective, TypedDocumentContextType, AppSettingsForDisplay, AppSettingsForSave } from "./types"
 import { SERVER_DOMAIN } from "../routes"
 
 /** 型つきドキュメントのコンテキスト。各画面から利用する関数群 */
 export const TypedDocumentContext = React.createContext<TypedDocumentContextType>({
   isReady: false,
-  loadNavigationMenus: () => { throw new Error("Not implemented") },
+  loadAppSettings: () => { throw new Error("Not implemented") },
+  saveAppSettings: () => { throw new Error("Not implemented") },
   createPerspective: () => { throw new Error("Not implemented") },
   loadPerspectivePageData: () => { throw new Error("Not implemented") },
   savePerspective: () => { throw new Error("Not implemented") },
@@ -14,17 +15,23 @@ export const TypedDocumentContext = React.createContext<TypedDocumentContextType
 
 /** C#側と合わせる必要あり */
 const SERVER_URL_SUBDIRECTORY = {
-  LIST_MEMOS: `/typed-document/list`,
+  LOAD_SETTINGS: `/typed-document/load-settings`,
+  SAVE_SETTINGS: `/typed-document/save-settings`,
   LOAD_DATA: `/typed-document/load`,
   SAVE_DATA: `/typed-document/save`,
 } as const
 
 /** C#側と合わせる必要あり */
 type SERVER_API_TYPE_INFO = {
-  [SERVER_URL_SUBDIRECTORY.LIST_MEMOS]: {
+  [SERVER_URL_SUBDIRECTORY.LOAD_SETTINGS]: {
     body: undefined,
     query: undefined,
-    response: [entityId: string, entityName: string][]
+    response: AppSettingsForDisplay
+  }
+  [SERVER_URL_SUBDIRECTORY.SAVE_SETTINGS]: {
+    body: AppSettingsForSave,
+    query: undefined,
+    response: void
   }
   [SERVER_URL_SUBDIRECTORY.LOAD_DATA]: {
     body: undefined,
@@ -44,24 +51,48 @@ type SERVER_API_TYPE_INFO = {
  */
 export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
 
-  const loadNavigationMenus: TypedDocumentContextType["loadNavigationMenus"] = useEvent(async () => {
+  const loadAppSettings: TypedDocumentContextType["loadAppSettings"] = React.useCallback(async () => {
     try {
-      const response = await fetch(`${SERVER_DOMAIN}${SERVER_URL_SUBDIRECTORY.LIST_MEMOS}`, {
+      const response = await fetch(`${SERVER_DOMAIN}${SERVER_URL_SUBDIRECTORY.LOAD_SETTINGS}`, {
         method: 'GET',
       })
       if (!response.ok) {
         alert(`一覧を取得できませんでした。(${response.status} ${response.statusText})`)
-        return []
+        return {
+          applicationName: "",
+          entityTypeList: [],
+        }
       }
-      const data: SERVER_API_TYPE_INFO[typeof SERVER_URL_SUBDIRECTORY.LIST_MEMOS]["response"] = await response.json()
-      return data.map(item => ({
-        id: item[0],
-        label: item[1],
-        type: "perspective",
-      }))
+      const data: SERVER_API_TYPE_INFO[typeof SERVER_URL_SUBDIRECTORY.LOAD_SETTINGS]["response"] = await response.json()
+      return data
     } catch (error) {
       alert(`一覧を取得できませんでした。(${error})`)
-      return []
+      return {
+        applicationName: "",
+        entityTypeList: [],
+      }
+    }
+  }, [])
+
+  const saveAppSettings: TypedDocumentContextType["saveAppSettings"] = useEvent(async settings => {
+    try {
+      const body: SERVER_API_TYPE_INFO[typeof SERVER_URL_SUBDIRECTORY.SAVE_SETTINGS]["body"] = settings
+      const response = await fetch(`${SERVER_DOMAIN}${SERVER_URL_SUBDIRECTORY.SAVE_SETTINGS}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      })
+      if (!response.ok) {
+        alert(`保存できませんでした。(${response.status} ${response.statusText})`)
+        return false
+      }
+      await loadAppSettings()
+      return true
+    } catch (error) {
+      alert(`保存できませんでした。(${error})`)
+      return false
     }
   })
 
@@ -129,7 +160,8 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
 
   return {
     isReady: true,
-    loadNavigationMenus,
+    loadAppSettings,
+    saveAppSettings,
     createPerspective,
     loadPerspectivePageData,
     savePerspective,

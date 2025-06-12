@@ -96,13 +96,16 @@ export const NIJOUI_CLIENT_ROUTE_PARAMS = {
 /** WindowsForms埋め込みアプリまたはそのデバッグ用のナビゲーション用URLを取得する。 */
 export const getNavigationUrl = (arg?:
   { aggregateId?: string, page?: never } |
+  { aggregateId?: never, page: 'top-page' } |
   { aggregateId?: never, page: 'debug-menu' } |
   { aggregateId?: never, page: 'outliner', outlinerId: string } |
   { aggregateId?: never, page: 'typed-document-entity', entityTypeId: string } |
   { aggregateId?: never, page: 'typed-document-perspective', perspectiveId: string, focusEntityId?: string } |
   { aggregateId?: never, page: 'schema' }
 ): string => {
-  if (arg?.page === 'debug-menu') {
+  if (arg?.page === 'top-page') {
+    return '/nijo-ui'
+  } else if (arg?.page === 'debug-menu') {
     return '/nijo-ui/debug-menu'
   } else if (arg?.page === 'outliner') {
     return `/nijo-ui/outliner/${arg.outlinerId}`

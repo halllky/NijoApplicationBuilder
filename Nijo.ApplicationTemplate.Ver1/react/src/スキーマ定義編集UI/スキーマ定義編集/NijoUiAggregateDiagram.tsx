@@ -17,6 +17,7 @@ import { useLayoutSaving } from './NijoUiAggregateDiagram.StateSaving';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import { PageRootAggregate } from "./RootAggregatePage"
 import { UUID } from "uuidjs"
+import { ToTopPageButton } from "../ToTopPageButton"
 
 export const NijoUiAggregateDiagram = () => {
   // ノード状態の保存と復元
@@ -252,6 +253,15 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, defaultValues }: {
   return (
     <div className="h-full flex flex-col">
       <div className="flex flex-wrap items-center p-1 gap-1">
+
+        <ToTopPageButton />
+        <Icon.ChevronRightIcon className="w-4 h-4" />
+        <h1 className="select-none">
+          スキーマ定義
+        </h1>
+
+        <div className="basis-4"></div>
+
         <Input.IconButton onClick={handleAutoLayout} outline>
           整列
         </Input.IconButton>

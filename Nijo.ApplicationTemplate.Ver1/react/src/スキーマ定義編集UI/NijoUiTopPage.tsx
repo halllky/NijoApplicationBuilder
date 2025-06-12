@@ -2,65 +2,125 @@ import React from "react"
 import { Link, useOutletContext } from "react-router-dom"
 import { SchemaDefinitionOutletContextType } from "./スキーマ定義編集/types"
 import useEvent from "react-use-event-hook";
-import { NavigationMenuItem, Perspective } from "../型つきドキュメント/types";
+import { AppSettingsForDisplay, AppSettingsForSave, Perspective } from "../型つきドキュメント/types";
 import { UUID } from "uuidjs";
 import * as Input from "../input"
+import * as Layout from "../layout"
 import * as Icon from "@heroicons/react/24/solid"
 import { getNavigationUrl } from "../routes";
+import { useAppSettingsEditDialog } from "../型つきドキュメント/AppSettingsEditDialog";
 
 export const NijoUiTopPage = () => {
 
   const {
     typedDoc: {
       createPerspective,
-      isReady,
-      loadNavigationMenus,
+      loadAppSettings,
+      saveAppSettings,
       savePerspective,
+      loadPerspectivePageData,
     },
   } = useOutletContext<SchemaDefinitionOutletContextType>()
 
-  // Perspective一覧
-  const [perspectives, setPerspectives] = React.useState<NavigationMenuItem[]>([])
+  // アプリケーション全体の設定
+  const [appSettings, setAppSettings] = React.useState<AppSettingsForDisplay>({
+    applicationName: "",
+    entityTypeList: [],
+  })
+
   React.useEffect(() => {
-    if (isReady) {
-      loadNavigationMenus().then(menus => {
-        setPerspectives(menus.filter(menu => menu.type === 'perspective'))
-      })
-    }
-  }, [isReady, loadNavigationMenus])
+    loadAppSettings().then(setAppSettings)
+  }, [loadAppSettings])
 
-  // 新しいPerspectiveを追加する処理
-  const handleNewPerspective = useEvent(async () => {
-    const perspectiveName = prompt('新しいPerspective名を入力してください。');
-    if (!perspectiveName) return;
-
-    try {
-      const newPerspective: Perspective = { // Perspectiveをインポートする必要がある
-        perspectiveId: UUID.generate(),
-        name: perspectiveName,
-        nodes: [],
-        edges: [],
-        attributes: [],
-      };
-      await createPerspective(newPerspective);
-    } catch (error) {
-      console.error(error);
-      alert(`エラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
+  // アプリケーション設定編集
+  const openSettingsDialog = useAppSettingsEditDialog()
+  const handleClickSettings = useEvent(() => {
+    const defaultValues: AppSettingsForSave = {
+      applicationName: appSettings.applicationName,
+      entityTypeOrder: appSettings.entityTypeList.map(entityType => entityType.entityTypeId),
     }
-  });
+    openSettingsDialog(defaultValues, appSettings.entityTypeList, async (values, newPerspectives, entityNames) => {
+      // 既存ドキュメントの名前を更新
+      for (const [perspectiveId, newName] of Object.entries(entityNames)) {
+        const latest = await loadPerspectivePageData(perspectiveId)
+        if (!latest) continue
+        const success = await savePerspective({
+          perspective: {
+            ...latest.perspective,
+            name: newName,
+          },
+        })
+        if (!success) {
+          alert('ドキュメントの名前を更新できませんでした。')
+          return // 処理中断
+        }
+      }
+
+      // 新たに追加されたドキュメントのJSONファイルを作成
+      for (const perspective of newPerspectives) {
+        await createPerspective(perspective)
+      }
+
+      // settings.json を更新
+      const success = await saveAppSettings(values)
+      if (!success) {
+        alert('アプリケーション設定を保存できませんでした。')
+        return // 処理中断
+      }
+
+      // 再読み込み。JSON保存のタイムラグがあるので0.5秒待つ
+      await new Promise(resolve => setTimeout(resolve, 500))
+      const appSettings = await loadAppSettings()
+      setAppSettings(appSettings)
+    })
+  })
 
   return (
-    <div>
-      {perspectives.filter(perspective => perspective.type === 'perspective').map(perspective => (
-        <div key={perspective.id}>
-          <Link to={getNavigationUrl({ page: 'typed-document-perspective', perspectiveId: perspective.id })}>
-            {perspective.label}
-          </Link>
+    <div className="h-full w-full flex justify-center items-center">
+      <div className="flex flex-col items-start px-4 py-2">
+
+        <div className="flex justify-between items-center">
+          <h1 className="text-xl font-bold whitespace-nowrap">
+            {appSettings.applicationName}
+          </h1>
+          <div className="min-w-16"></div>
+          <Input.IconButton icon={Icon.PencilSquareIcon} mini onClick={handleClickSettings}>
+            編集
+          </Input.IconButton>
         </div>
-      ))}
-      <Input.IconButton icon={Icon.PlusIcon} outline onClick={handleNewPerspective}>メモ新規作成</Input.IconButton>
-      <br />
-      <Link to={getNavigationUrl({ page: 'schema' })}>スキーマ定義</Link>
+
+        <div className="basis-4"></div>
+
+        {appSettings.entityTypeList.map(entityType => (
+          <MenuItem
+            key={entityType.entityTypeId}
+            icon={Icon.TableCellsIcon}
+            link={getNavigationUrl({ page: 'typed-document-perspective', perspectiveId: entityType.entityTypeId })}
+          >
+            {entityType.entityTypeName}
+          </MenuItem>
+        ))}
+
+        <hr className="self-stretch border-t border-gray-300 mt-4 mb-2" />
+
+        <MenuItem icon={Icon.ShareIcon} link={getNavigationUrl({ page: 'schema' })}>
+          ソースコード自動生成設定
+        </MenuItem>
+      </div>
     </div>
+  )
+}
+
+/** アイコンつきリンクボタン */
+const MenuItem = ({ icon, children, link }: {
+  icon: React.ElementType,
+  children: React.ReactNode,
+  link: string,
+}) => {
+  return (
+    <Link to={link} className="self-stretch flex items-center gap-2 hover:bg-gray-200 py-1">
+      {React.createElement(icon, { className: "w-4 h-4" })}
+      {children}
+    </Link>
   )
 }

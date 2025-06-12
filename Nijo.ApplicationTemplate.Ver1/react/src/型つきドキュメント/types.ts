@@ -1,5 +1,27 @@
 import { ViewState } from "../layout/GraphView/Cy"
 
+/** アプリケーション全体の設定 */
+export type AppSettingsForDisplay = {
+  /** アプリケーション名 */
+  applicationName: string
+  /** エンティティ型の定義 */
+  entityTypeList: {
+    entityTypeId: string
+    entityTypeName: string
+  }[]
+}
+
+/** アプリケーション全体の設定。保存時にサーバー側に送られる */
+export type AppSettingsForSave = {
+  /** アプリケーション名 */
+  applicationName: string
+  /** トップページでのエンティティ型の表示順 */
+  entityTypeOrder: string[]
+}
+
+
+// -----------------------------------
+
 /** アウトライナーのデータ1件 */
 export type Entity = {
   /** アイテムの型ID */
@@ -92,8 +114,11 @@ export type TypedDocumentContextType = {
   /** コンテキストが準備できているかどうか */
   isReady: boolean
 
-  /** ナビゲーションメニューを取得する */
-  loadNavigationMenus: () => Promise<NavigationMenuItem[]>
+  /** アプリケーション全体の設定を取得する */
+  loadAppSettings: () => Promise<AppSettingsForDisplay>
+
+  /** アプリケーション全体の設定を保存する */
+  saveAppSettings: (settings: AppSettingsForSave) => Promise<boolean>
 
   /** グラフを作成する。永続化まで伴う */
   createPerspective: (perspective: Perspective) => Promise<Perspective>

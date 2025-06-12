@@ -15,6 +15,7 @@ import { EntityTypePage, EntityTypePageRef } from './PerspectivePage.Grid';
 import { EntityDetailPane } from './PerspectivePage.Details';
 import { EntityTypeEditDialog } from './PerspectivePage.Settings';
 import { Entity, Perspective, PerspectivePageData } from './types';
+import { ToTopPageButton } from '../スキーマ定義編集UI/ToTopPageButton';
 
 export const PerspectivePage = () => {
   const { [NIJOUI_CLIENT_ROUTE_PARAMS.PERSPECTIVE_ID]: perspectiveId } = ReactRouter.useParams();
@@ -245,7 +246,10 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
         className="h-full flex flex-col gap-1 pl-1 pt-1 outline-none"
       >
         <div className="flex flex-wrap gap-1 items-center mb-2">
+          <ToTopPageButton />
+          <Icon.ChevronRightIcon className="w-4 h-4" />
           <div className="font-semibold">{getValues('perspective.name')}</div>
+
           <Input.IconButton hideText onClick={handleOpenEntityTypeEditDialog} icon={Icon.PencilSquareIcon}>型定義編集</Input.IconButton>
           <div className="flex-1"></div>
           <Input.IconButton outline mini onClick={gridRef.current?.insertRow}>行挿入(Enter)</Input.IconButton>
