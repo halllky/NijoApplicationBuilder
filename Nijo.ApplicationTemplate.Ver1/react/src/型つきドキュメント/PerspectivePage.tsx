@@ -243,7 +243,7 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
         onSubmit={handleSubmit(onSubmit)}
         onKeyDown={handleKeyDown}
         tabIndex={0} // keydownイベントを拾うため
-        className="h-full flex flex-col gap-1 pl-1 pt-1 outline-none"
+        className="h-full flex flex-col gap-1 pl-1 py-1 outline-none"
       >
         <div className="flex flex-wrap gap-1 items-center mb-2">
           <ToTopPageButton />
@@ -286,7 +286,7 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
                 />
               </Panel>
 
-              <PanelResizeHandle className="h-1" />
+              <PanelResizeHandle className="h-2" />
 
               {/* グラフ */}
               <Panel collapsible minSize={12}>

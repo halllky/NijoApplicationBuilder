@@ -64,6 +64,7 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
         isFixed: true,
         renderCell: context => {
           const indent = context.row.original.indent;
+          const text = context.cell.getValue() as string
           return (
             <div className="flex-1 inline-flex text-left truncate">
               {Array.from({ length: indent }).map((_, i) => (
@@ -76,7 +77,7 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
                 </React.Fragment>
               ))}
               <span className="flex-1 truncate">
-                {MentionUtil.toPlainText(context.cell.getValue() as string)}
+                {MentionUtil.toPlainText(text || '-')}
               </span>
             </div>
           );
