@@ -13,7 +13,7 @@ import { Panel, PanelGroup, PanelGroupStorage, PanelResizeHandle } from 'react-r
 import { PerspectivePageGraph } from './PerspectivePage.Graph';
 import { EntityTypePage, EntityTypePageRef } from './PerspectivePage.Grid';
 import { EntityDetailPane } from './PerspectivePage.Details';
-import { EntityTypeEditDialog } from './PerspectivePage.Settings';
+import { EntityTypeEditDialog, EntityTypeSettingsDialogProps } from './PerspectivePage.Settings';
 import { Entity, Perspective, PerspectivePageData } from './types';
 import { ToTopPageButton } from '../スキーマ定義編集UI/ToTopPageButton';
 
@@ -123,7 +123,6 @@ type AfterLoadedRef = {
 export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({ defaultValues, onSubmit }, ref) => {
   const formMethods = ReactHookForm.useForm<PerspectivePageData>({ defaultValues });
   const { handleSubmit, formState: { isDirty }, getValues, control, setValue, watch } = formMethods;
-  const { pushDialog } = Layout.useDialogContext()
   const [selectedEntityIndex, setSelectedEntityIndex] = React.useState<number>()
   const gridRef = React.useRef<EntityTypePageRef>(null)
 
@@ -139,22 +138,23 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
 
   const perspective = watch('perspective')
 
-  // 型定義編集ダイアログを開く
+  // 型定義編集ダイアログ
+  const [entityTypeSettingsDialogProps, setEntityTypeSettingsDialogProps] = React.useState<EntityTypeSettingsDialogProps | undefined>(undefined);
   const handleOpenEntityTypeEditDialog = useEvent(() => {
     if (!perspective) {
       alert("エンティティ型が選択されていません。");
       return;
     }
-    pushDialog({ title: 'エンティティ型の編集', className: "max-w-lg max-h-[80vh]" }, ({ closeDialog }) => (
-      <EntityTypeEditDialog
-        initialEntityType={perspective}
-        onApply={(updatedEntityType) => {
-          setValue('perspective', updatedEntityType);
-          closeDialog();
-        }}
-        onCancel={closeDialog}
-      />
-    ));
+    setEntityTypeSettingsDialogProps({
+      initialEntityType: perspective,
+      onApply: (updatedEntityType) => {
+        setValue('perspective', updatedEntityType);
+        setEntityTypeSettingsDialogProps(undefined);
+      },
+      onCancel: () => {
+        setEntityTypeSettingsDialogProps(undefined);
+      },
+    })
   });
 
   // グリッドの行変更時イベント
@@ -317,6 +317,10 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
         </PanelGroup>
 
       </form>
+
+      {entityTypeSettingsDialogProps && (
+        <EntityTypeEditDialog {...entityTypeSettingsDialogProps} />
+      )}
     </ReactHookForm.FormProvider>
   );
 });

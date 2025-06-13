@@ -50,7 +50,9 @@ export type EntityAttribute = {
   /** 属性の型名 */
   attributeName: string
   /** 属性の型 */
-  attributeType: 'word' | 'description'
+  attributeType: 'word' | 'description' | 'select'
+  /** 選択肢（属性型が select の場合のみ） */
+  selectOptions?: string[]
 }
 
 // -----------------------------------

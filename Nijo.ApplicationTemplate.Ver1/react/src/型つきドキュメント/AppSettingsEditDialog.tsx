@@ -5,45 +5,9 @@ import { UUID } from "uuidjs";
 import * as Input from "../input"
 import * as Layout from "../layout"
 import * as Icon from "@heroicons/react/24/solid"
-import { useDialogContext } from "../layout";
 import { useForm, UseFormSetValue, useWatch } from "react-hook-form";
 
-/** ドキュメント種類編集グリッドの行 */
-type GridRow = { entityTypeId: string, entityTypeName: string | undefined }
-
-/** アプリケーション設定編集ダイアログ */
-export const useAppSettingsEditDialog = () => {
-  const dialogContext = useDialogContext()
-
-  return React.useCallback((
-    defaultValues: AppSettingsForSave,
-    entityTypeList: AppSettingsForDisplay['entityTypeList'],
-    onSave: (
-      values: AppSettingsForSave,
-      newPerspectives: Perspective[],
-      entityNames: Record<string, string>
-    ) => Promise<void>
-  ) => {
-    dialogContext.pushDialog({
-      title: '設定',
-      className: "max-w-lg max-h-[80vh]",
-    }, ({ closeDialog }) => (
-      <AppSettingsEditDialog
-        defaultValues={defaultValues}
-        entityTypeList={entityTypeList}
-        onSave={onSave}
-        closeDialog={closeDialog}
-      />
-    ))
-  }, [])
-}
-
-const AppSettingsEditDialog = ({
-  defaultValues,
-  entityTypeList,
-  onSave,
-  closeDialog,
-}: {
+export type AppSettingsEditDialogProps = {
   defaultValues: AppSettingsForSave,
   entityTypeList: AppSettingsForDisplay['entityTypeList'],
   onSave: (
@@ -51,10 +15,15 @@ const AppSettingsEditDialog = ({
     newPerspectives: Perspective[],
     entityNames: Record<string, string>
   ) => Promise<void>,
-  closeDialog: () => void,
-}) => {
+  onCancel: () => void,
+}
 
-  const { control, getValues, setValue } = useForm<AppSettingsForSave>({
+/** ドキュメント種類編集グリッドの行 */
+type GridRow = { entityTypeId: string, entityTypeName: string | undefined }
+
+export const AppSettingsEditDialog = ({ defaultValues, entityTypeList, onSave, onCancel }: AppSettingsEditDialogProps) => {
+
+  const { control, getValues, setValue, formState: { isDirty } } = useForm<AppSettingsForSave>({
     defaultValues,
   })
 
@@ -127,24 +96,36 @@ const AppSettingsEditDialog = ({
     }))
   })
 
+  const handleCancel = useEvent(() => {
+    // 画面離脱前確認
+    const isDirtyEx = isDirty || newPerspectives.length > 0 || Object.keys(editedEntityNames).length > 0
+    if (isDirtyEx && !window.confirm('キャンセルしますか？')) return;
+
+    onCancel()
+  })
+
   // 保存
   const [isSaving, setIsSaving] = React.useState(false)
   const handleSave = useEvent(async () => {
     setIsSaving(true)
     await onSave(getValues(), newPerspectives, editedEntityNames)
     setIsSaving(false)
-    closeDialog()
+    onCancel()
   })
 
   return (
-    <div className="w-full h-full flex flex-col gap-1 relative">
+    <Layout.ModalDialog open className="relative w-lg h-[80vh] bg-white flex flex-col gap-1 p-4 relative border border-gray-400" onOutsideClick={handleCancel}>
+      <h1 className="text-lg font-bold">設定</h1>
+
+      <div className="basis-2"></div>
+
       <div className="flex flex-col gap-1">
-        <div className="font-semibold">アプリケーション名</div>
+        <div className="font-semibold text-sm">アプリケーション名</div>
         <Input.Word name="applicationName" control={control} />
       </div>
       <div className="basis-4"></div>
       <div className="flex justify-between items-center">
-        <div className="font-semibold">ドキュメント種類</div>
+        <div className="font-semibold text-sm">ドキュメント種類</div>
         <Input.IconButton icon={Icon.PlusIcon} outline mini onClick={handleCreateNewPerspective}>
           新規追加
         </Input.IconButton>
@@ -155,14 +136,22 @@ const AppSettingsEditDialog = ({
         onChangeRow={handleChangeEntityTypesGridRow}
         className="flex-1"
       />
-      <Input.IconButton icon={Icon.CheckIcon} fill onClick={handleSave} loading={isSaving}>
-        保存
-      </Input.IconButton>
+
+      <hr className="my-2 border-t border-gray-300" />
+
+      <div className="flex justify-between gap-2">
+        <Input.IconButton icon={Icon.XMarkIcon} outline mini onClick={handleCancel}>
+          キャンセル
+        </Input.IconButton>
+        <Input.IconButton icon={Icon.CheckIcon} fill onClick={handleSave} loading={isSaving}>
+          保存
+        </Input.IconButton>
+      </div>
 
       {isSaving && (
-        <Layout.NowLoading />
+        <Layout.NowLoading className="z-10" />
       )}
-    </div>
+    </Layout.ModalDialog>
   )
 }
 

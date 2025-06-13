@@ -1,4 +1,5 @@
 import * as React from 'react';
+import * as ReactDOM from 'react-dom';
 import * as ReactHookForm from 'react-hook-form';
 import * as Icon from '@heroicons/react/24/solid';
 import useEvent from 'react-use-event-hook';
@@ -8,6 +9,12 @@ import * as Input from '../input';
 import * as Layout from '../layout';
 import { Perspective, EntityAttribute } from './types';
 
+export type EntityTypeSettingsDialogProps = {
+  initialEntityType: Perspective;
+  onApply: (updatedEntityType: Perspective) => void;
+  onCancel: () => void;
+}
+
 // ダイアログ内の属性グリッドの行の型
 export type AttributeRowForEdit = EntityAttribute & { uniqueId: string };
 
@@ -15,33 +22,58 @@ export const EntityTypeEditDialog = ({
   initialEntityType,
   onApply,
   onCancel,
-}: {
-  initialEntityType: Perspective;
-  onApply: (updatedEntityType: Perspective) => void;
-  onCancel: () => void;
-}) => {
+}: EntityTypeSettingsDialogProps) => {
+  // フォーム
   const formMethods = ReactHookForm.useForm<Perspective & { attributesGrid: AttributeRowForEdit[] }>({
     defaultValues: {
       ...initialEntityType,
       attributesGrid: initialEntityType.attributes.map(attr => ({ ...attr, uniqueId: UUID.generate() })),
     },
   });
-  const { register, control, handleSubmit } = formMethods;
+  const { register, control, handleSubmit, formState: { isDirty } } = formMethods;
 
-  // 属性編集グリッド用の useFieldArray
+  // 属性編集グリッド: 選択肢編集中
+  const [editingSelectOptions, setEditingSelectOptions] = React.useState<string[] | undefined>(undefined);
+
+  // 属性編集グリッド
+  const attributeGridRef = React.useRef<Layout.EditableGridRef<AttributeRowForEdit>>(null);
   const { fields: attributeFields, remove, update, move, append } = ReactHookForm.useFieldArray({
     control,
     name: 'attributesGrid',
     keyName: 'uniqueId',
   });
-
-  const attributeGridRef = React.useRef<Layout.EditableGridRef<AttributeRowForEdit>>(null);
-
   const getAttributeColumnDefs: Layout.GetColumnDefsFunction<AttributeRowForEdit> = React.useCallback(cellType => [
     cellType.text('attributeName', '属性名', { defaultWidth: 200 }),
-    cellType.text('attributeType', '属性型(word/description)', { defaultWidth: 100 }),
+    cellType.text('attributeType', '属性型', {
+      defaultWidth: 100,
+      getOptions: () => ['word', 'description', 'select'] satisfies AttributeRowForEdit['attributeType'][],
+    }),
+    cellType.other('', {
+      defaultWidth: 140,
+      renderCell: (context) => {
+        const handleEditSelectOptions = () => {
+          setEditingSelectOptions(context.row.original.selectOptions ?? [])
+        }
+
+        if (context.row.original.attributeType !== 'select') {
+          return undefined
+        }
+        return (
+          <div className="flex gap-1">
+            {context.row.original.selectOptions?.join(', ')}
+            <Input.IconButton
+              mini
+              icon={Icon.PencilIcon}
+              onClick={handleEditSelectOptions}
+            >
+              編集
+            </Input.IconButton>
+          </div>
+        )
+      },
+    }),
     cellType.other('操作', {
-      defaultWidth: 120,
+      defaultWidth: 180,
       renderCell: (context) => (
         <div className="flex gap-1">
           <Input.IconButton
@@ -70,8 +102,30 @@ export const EntityTypeEditDialog = ({
         </div>
       ),
     }),
-  ], [remove, move, attributeFields.length]);
+  ], [remove, move, attributeFields.length, setEditingSelectOptions]);
 
+  const handleChangeAttributeRow: Layout.RowChangeEvent<AttributeRowForEdit> = useEvent(e => {
+    for (const x of e.changedRows) {
+      update(x.rowIndex, x.newRow as AttributeRowForEdit);
+    }
+  });
+
+  const handleAddAttributeRow = useEvent(() => {
+    append({
+      uniqueId: UUID.generate(),
+      attributeId: UUID.generate(),
+      attributeName: '',
+      attributeType: 'word',
+    })
+  })
+
+  // キャンセル
+  const handleCancel = useEvent(() => {
+    if (isDirty && !window.confirm('キャンセルしますか？')) return;
+    onCancel()
+  })
+
+  // 適用
   const handleApply = useEvent((formData: Perspective & { attributesGrid: AttributeRowForEdit[] }) => {
     const { attributesGrid, ...restOfEntityType } = formData;
     const finalAttributes: EntityAttribute[] = attributesGrid.map(({ uniqueId, ...attr }) => attr);
@@ -83,55 +137,109 @@ export const EntityTypeEditDialog = ({
     onApply(updatedEntityType);
   });
 
-  const handleAddAttributeRow = useEvent(() => {
-    const newAttributeName = window.prompt('新しい属性名を入力してください:');
-    if (newAttributeName && newAttributeName.trim() !== '') {
-      append({
-        uniqueId: UUID.generate(),
-        attributeId: UUID.generate(),
-        attributeName: newAttributeName.trim(),
-        attributeType: 'word',
-      });
+  return (
+    <Layout.ModalDialog open className="relative w-[80vw] h-[80vh] bg-white flex flex-col gap-1 p-2 relative border border-gray-400" onOutsideClick={handleCancel}>
+      <ReactHookForm.FormProvider {...formMethods}>
+        <form onSubmit={handleSubmit(handleApply)} className="h-full flex flex-col gap-2 p-2">
+
+          <h1 className="font-bold select-none text-gray-700">設定</h1>
+
+          <div className="flex items-center gap-1">
+            <label className="basis-52 text-sm text-gray-500">ドキュメント名</label>
+            <input type="text" {...register('name')} className="flex-1 px-1 border border-gray-400" />
+          </div>
+
+          <div className="flex items-center gap-1">
+            <label className="basis-52 text-sm text-gray-500">詳細画面での属性名の横幅</label>
+            <input type="text" {...register('detailPageLabelWidth')} className="flex-1 px-1 border border-gray-400" />
+          </div>
+
+          <div className="flex-1 flex flex-col">
+            <div className="text-sm text-gray-500">属性定義</div>
+            <div className="flex-1 overflow-y-auto border border-gray-400">
+              <Layout.EditableGrid
+                ref={attributeGridRef}
+                rows={attributeFields}
+                getColumnDefs={getAttributeColumnDefs}
+                onChangeRow={handleChangeAttributeRow}
+                className="h-full"
+              />
+            </div>
+          </div>
+          <div className="flex justify-between items-center py-1">
+            <Input.IconButton icon={Icon.PlusCircleIcon} onClick={handleAddAttributeRow}>属性を追加</Input.IconButton>
+            <div className="flex gap-2">
+              <Input.IconButton onClick={handleCancel}>キャンセル</Input.IconButton>
+              <Input.IconButton submit fill>適用</Input.IconButton>
+            </div>
+          </div>
+        </form>
+      </ReactHookForm.FormProvider>
+
+      {editingSelectOptions && (
+        <SelectOptionsEditor
+          defaultValues={editingSelectOptions}
+          onApply={setEditingSelectOptions}
+        />
+      )}
+    </Layout.ModalDialog>
+  );
+};
+
+/**
+ * select型の属性の選択肢を編集するダイアログ
+ */
+const SelectOptionsEditor = ({
+  defaultValues,
+  onApply,
+}: {
+  defaultValues: string[]
+  onApply: (selectOptions: string[]) => void
+}) => {
+
+  type GridRowType = { value: string }
+
+  const memorizedDefaultValues = React.useMemo(() => {
+    return defaultValues.map(value => ({ value }))
+  }, [defaultValues]);
+  const formMethods = ReactHookForm.useForm<{ selectOptions: GridRowType[] }>({
+    defaultValues: { selectOptions: memorizedDefaultValues },
+  });
+  const { fields, remove, update, move, append } = ReactHookForm.useFieldArray({
+    control: formMethods.control,
+    name: 'selectOptions',
+  });
+
+  const getColumnDefs: Layout.GetColumnDefsFunction<GridRowType> = React.useCallback(cellType => [
+    cellType.text('value', '選択肢', { defaultWidth: 240 }),
+  ], []);
+
+  const handleChangeRow: Layout.RowChangeEvent<GridRowType> = useEvent(e => {
+    for (const x of e.changedRows) {
+      update(x.rowIndex, x.newRow as GridRowType);
     }
   });
 
-  const handleChangeAttributeRow: Layout.RowChangeEvent<AttributeRowForEdit> = useEvent(e => {
-    for (const x of e.changedRows) {
-      update(x.rowIndex, x.newRow as AttributeRowForEdit);
-    }
+  const handleApply = useEvent(() => {
+    const { selectOptions } = formMethods.getValues();
+    onApply(selectOptions.map(x => x.value));
   });
 
   return (
-    <ReactHookForm.FormProvider {...formMethods}>
-      <form onSubmit={handleSubmit(handleApply)} className="h-full flex flex-col gap-2 p-2">
-        <div>
-          <label className="block text-sm font-medium text-gray-700">エンティティ型名:</label>
-          <input type="text" {...register('name')} className="w-full px-px border border-gray-500" />
+    <div className="absolute inset-0 z-10 flex justify-center items-center">
+      <div className="w-md h-xl bg-white p-2 border border-gray-500">
+        {/* グリッド */}
+        <Layout.EditableGrid
+          rows={fields}
+          getColumnDefs={getColumnDefs}
+          onChangeRow={handleChangeRow}
+        />
+        <div className="flex">
+          <Input.IconButton onClick={() => onApply(defaultValues)}>キャンセル</Input.IconButton>
+          <div className="flex-1"></div>
+          <Input.IconButton fill onClick={handleApply}>適用</Input.IconButton>
         </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700">詳細画面での属性名の横幅:</label>
-          <input type="text" {...register('detailPageLabelWidth')} className="w-full px-px border border-gray-500" />
-        </div>
-
-        <div className="font-semibold mt-2">属性定義:</div>
-        <div className="flex-1 overflow-y-auto border rounded">
-          <Layout.EditableGrid
-            ref={attributeGridRef}
-            rows={attributeFields}
-            getColumnDefs={getAttributeColumnDefs}
-            onChangeRow={handleChangeAttributeRow}
-            className="h-full"
-          />
-        </div>
-        <div className="flex justify-between items-center p-1 border-t">
-          <Input.IconButton icon={Icon.PlusCircleIcon} onClick={handleAddAttributeRow}>属性を追加</Input.IconButton>
-          <div className="flex gap-2">
-            <Input.IconButton onClick={onCancel}>キャンセル</Input.IconButton>
-            <Input.IconButton submit={true} fill>適用</Input.IconButton>
-          </div>
-        </div>
-      </form>
-    </ReactHookForm.FormProvider >
-  );
-};
+      </div>
+    </div>
+  )
+}

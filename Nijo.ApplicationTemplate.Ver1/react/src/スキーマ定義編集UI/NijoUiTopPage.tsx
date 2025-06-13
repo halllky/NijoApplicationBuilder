@@ -8,7 +8,7 @@ import * as Input from "../input"
 import * as Layout from "../layout"
 import * as Icon from "@heroicons/react/24/solid"
 import { getNavigationUrl } from "../routes";
-import { useAppSettingsEditDialog } from "../型つきドキュメント/AppSettingsEditDialog";
+import { AppSettingsEditDialog, AppSettingsEditDialogProps } from "../型つきドキュメント/AppSettingsEditDialog";
 
 export const NijoUiTopPage = () => {
 
@@ -33,45 +33,50 @@ export const NijoUiTopPage = () => {
   }, [loadAppSettings])
 
   // アプリケーション設定編集
-  const openSettingsDialog = useAppSettingsEditDialog()
+  const [appSettingsDialogProps, setAppSettingsDialogProps] = React.useState<AppSettingsEditDialogProps | undefined>(undefined);
   const handleClickSettings = useEvent(() => {
     const defaultValues: AppSettingsForSave = {
       applicationName: appSettings.applicationName,
       entityTypeOrder: appSettings.entityTypeList.map(entityType => entityType.entityTypeId),
     }
-    openSettingsDialog(defaultValues, appSettings.entityTypeList, async (values, newPerspectives, entityNames) => {
-      // 既存ドキュメントの名前を更新
-      for (const [perspectiveId, newName] of Object.entries(entityNames)) {
-        const latest = await loadPerspectivePageData(perspectiveId)
-        if (!latest) continue
-        const success = await savePerspective({
-          perspective: {
-            ...latest.perspective,
-            name: newName,
-          },
-        })
+    setAppSettingsDialogProps({
+      defaultValues,
+      entityTypeList: appSettings.entityTypeList,
+      onSave: async (values: AppSettingsForSave, newPerspectives: Perspective[], entityNames: Record<string, string>) => {
+        // 既存ドキュメントの名前を更新
+        for (const [perspectiveId, newName] of Object.entries(entityNames)) {
+          const latest = await loadPerspectivePageData(perspectiveId)
+          if (!latest) continue
+          const success = await savePerspective({
+            perspective: {
+              ...latest.perspective,
+              name: newName,
+            },
+          })
+          if (!success) {
+            alert('ドキュメントの名前を更新できませんでした。')
+            return // 処理中断
+          }
+        }
+
+        // 新たに追加されたドキュメントのJSONファイルを作成
+        for (const perspective of newPerspectives) {
+          await createPerspective(perspective)
+        }
+
+        // settings.json を更新
+        const success = await saveAppSettings(values)
         if (!success) {
-          alert('ドキュメントの名前を更新できませんでした。')
+          alert('アプリケーション設定を保存できませんでした。')
           return // 処理中断
         }
-      }
 
-      // 新たに追加されたドキュメントのJSONファイルを作成
-      for (const perspective of newPerspectives) {
-        await createPerspective(perspective)
-      }
-
-      // settings.json を更新
-      const success = await saveAppSettings(values)
-      if (!success) {
-        alert('アプリケーション設定を保存できませんでした。')
-        return // 処理中断
-      }
-
-      // 再読み込み。JSON保存のタイムラグがあるので0.5秒待つ
-      await new Promise(resolve => setTimeout(resolve, 500))
-      const appSettings = await loadAppSettings()
-      setAppSettings(appSettings)
+        // 再読み込み。JSON保存のタイムラグがあるので0.5秒待つ
+        await new Promise(resolve => setTimeout(resolve, 500))
+        const appSettings = await loadAppSettings()
+        setAppSettings(appSettings)
+      },
+      onCancel: () => setAppSettingsDialogProps(undefined),
     })
   })
 
@@ -107,6 +112,11 @@ export const NijoUiTopPage = () => {
           ソースコード自動生成設定
         </MenuItem>
       </div>
+
+      {/* アプリケーション設定編集ダイアログ */}
+      {appSettingsDialogProps && (
+        <AppSettingsEditDialog {...appSettingsDialogProps} />
+      )}
     </div>
   )
 }

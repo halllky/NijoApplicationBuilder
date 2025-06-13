@@ -380,6 +380,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     rowVirtualizer,
     tableContainerRef,
     setStringValuesToSelectedRange,
+    table,
   });
 
   return (

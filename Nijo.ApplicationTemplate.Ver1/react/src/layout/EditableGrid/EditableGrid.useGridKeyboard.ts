@@ -1,10 +1,13 @@
 import React, { useEffect, useCallback, useRef } from "react";
-import { CellPosition, CellSelectionRange, EditableGridKeyboardEventHandler } from ".";
+import { CellPosition, CellSelectionRange, EditableGridKeyboardEventHandler, EditableGridColumnDef } from ".";
+import { ColumnMetadataInternal } from "./EditableGrid";
 import type { Virtualizer } from '@tanstack/react-virtual';
+import type * as RT from '@tanstack/react-table';
+import type * as ReactHookForm from 'react-hook-form';
 import * as Util from "../../util";
 import useEvent from "react-use-event-hook";
 
-export interface UseGridKeyboardProps {
+export interface UseGridKeyboardProps<TRow extends ReactHookForm.FieldValues> {
   /** EditableGridの外側で定義されるキーボードイベントハンドラ */
   propsKeyDown: EditableGridKeyboardEventHandler | undefined
   activeCell: CellPosition | null;
@@ -19,9 +22,11 @@ export interface UseGridKeyboardProps {
   rowVirtualizer: Virtualizer<HTMLDivElement, Element>;
   tableContainerRef: React.RefObject<HTMLDivElement | null>;
   setStringValuesToSelectedRange: (values: string[][]) => void;
+  /** テーブルインスタンス */
+  table: RT.Table<TRow>;
 }
 
-export function useGridKeyboard({
+export function useGridKeyboard<TRow extends ReactHookForm.FieldValues>({
   propsKeyDown,
   activeCell,
   selectedRange,
@@ -35,7 +40,8 @@ export function useGridKeyboard({
   rowVirtualizer,
   tableContainerRef,
   setStringValuesToSelectedRange,
-}: UseGridKeyboardProps) {
+  table,
+}: UseGridKeyboardProps<TRow>) {
   const anchorCellRef = useRef<CellPosition | null>(null);
 
   // キーボードイベントハンドラ
@@ -118,6 +124,21 @@ export function useGridKeyboard({
         break;
       case 'ArrowDown':
         e.preventDefault();
+
+        // Alt + ArrowDown の場合、getOptions が定義されている列で編集を開始
+        if (e.altKey) {
+          const visibleDataColumns = table.getVisibleLeafColumns().filter(c => c.id !== 'rowHeader');
+          const targetColumn = visibleDataColumns[colIndex];
+          if (targetColumn) {
+            const meta = targetColumn.columnDef.meta as ColumnMetadataInternal<TRow> | undefined;
+            const columnDef = meta?.originalColDef;
+            if (columnDef?.getOptions && !getIsReadOnly(rowIndex)) {
+              startEditing(rowIndex, colIndex);
+              return;
+            }
+          }
+        }
+
         if (rowIndex < rowCount - 1) {
           newRowIndex = rowIndex + 1;
           setActiveCell({ rowIndex: newRowIndex, colIndex });

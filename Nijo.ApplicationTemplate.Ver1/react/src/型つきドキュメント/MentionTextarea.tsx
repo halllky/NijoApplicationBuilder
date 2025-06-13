@@ -23,10 +23,10 @@ export const MentionTextarea = React.forwardRef((props: MentionTextareaProps, re
   // データソース
   const { typedDoc } = ReactRouter.useOutletContext<NijoUiOutletContextType>()
   const getSuggestions: ReactMention.DataFunc = React.useCallback(async (query, callback) => {
-    const sideMenuItems = await typedDoc.appSettings()
+    const sideMenuItems = await typedDoc.loadAppSettings()
     const entities: Entity[] = []
-    for (const sideMenuItem of sideMenuItems.filter(item => item.type === 'perspective')) {
-      const perspective = await typedDoc.loadPerspectivePageData(sideMenuItem.id)
+    for (const sideMenuItem of sideMenuItems.entityTypeList) {
+      const perspective = await typedDoc.loadPerspectivePageData(sideMenuItem.entityTypeId)
       if (!perspective) continue;
 
       const filtered = perspective.perspective.nodes.filter(e => e.entityName.includes(query))
@@ -53,10 +53,10 @@ export const MentionTextarea = React.forwardRef((props: MentionTextareaProps, re
 
     // typedDoc の中からリンク先エンティティのIDを含むページを探し
     // navigationでそこへ遷移する。
-    const sideMenuItems = await typedDoc.appSettings()
+    const sideMenuItems = await typedDoc.loadAppSettings()
 
-    for (const sideMenuItem of sideMenuItems.filter(item => item.type === 'perspective')) {
-      const perspective = await typedDoc.loadPerspectivePageData(sideMenuItem.id)
+    for (const sideMenuItem of sideMenuItems.entityTypeList) {
+      const perspective = await typedDoc.loadPerspectivePageData(sideMenuItem.entityTypeId)
       if (!perspective) continue;
 
       const filtered = perspective.perspective.nodes.filter(e => e.entityId === part.targetId)
@@ -64,7 +64,7 @@ export const MentionTextarea = React.forwardRef((props: MentionTextareaProps, re
 
       const url = getNavigationUrl({
         page: 'typed-document-perspective',
-        perspectiveId: sideMenuItem.id,
+        perspectiveId: sideMenuItem.entityTypeId,
         focusEntityId: part.targetId,
       })
       navigate(url)
