@@ -1,6 +1,6 @@
 import React, { useImperativeHandle, forwardRef, useEffect, useState } from 'react';
 import Navigator from './Cy.Navigator';
-import { useCytoscape, CytoscapeHookType, LayoutSelectorComponentType, ViewState, CytoscapeDataSet } from './Cy';
+import { useCytoscape, CytoscapeHookType, LayoutSelectorComponentType, ViewState, updateTagPositions } from './Cy';
 import cytoscape from 'cytoscape';
 import { LayoutLogicName } from './Cy.AutoLayout';
 import { Node as CyNode, Edge as CyEdge } from './DataSource';
@@ -88,7 +88,9 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>((props, ref) =
 
       // 不要になったノードを削除
       for (const [id, cyNode] of existingCyNodesMap) {
-        if (!newNodesMap.has(id)) {
+        if (!newNodesMap.has(id) && !cyNode.data('isTag')) {
+          // 通常のノードを削除する際は、関連するタグノードも削除
+          cy.nodes(`[parentNodeId="${id}"]`).remove();
           cy.remove(cyNode);
         }
       }
@@ -100,19 +102,40 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>((props, ref) =
           parent: newParentMap[newNode.id],
         };
         const existingNode = existingCyNodesMap.get(newNode.id);
-        if (existingNode) {
+        if (existingNode && !existingNode.data('isTag')) {
           // 既存ノードのデータを更新
           const oldParent = existingNode.parent();
           const oldParentId = oldParent.length > 0 ? oldParent[0].id() : undefined;
           existingNode.data(nodeDataForCy);
 
+          // 既存のタグノードを削除
+          cy.nodes(`[parentNodeId="${newNode.id}"]`).remove();
+
           // 親が実際に変更された場合、move API を使って明示的に移動
           if (oldParentId !== nodeDataForCy.parent) {
             existingNode.move({ parent: nodeDataForCy.parent === undefined ? null : nodeDataForCy.parent });
           }
-        } else {
+        } else if (!existingNode) {
           // 新しいノードを追加
           cy.add({ data: nodeDataForCy, group: 'nodes' });
+        }
+
+        // タグがある場合はタグ専用のノードを作成
+        if (newNode.tags && newNode.tags.length > 0) {
+          newNode.tags.forEach((tag, index) => {
+            const tagId = `${newNode.id}_tag_${index}`
+            const tagNodeData = {
+              id: tagId,
+              label: tag.label,
+              isTag: true,
+              tagIndex: index,
+              parentNodeId: newNode.id,
+              'color': tag['color'] || '#FFFFFF',
+              'background-color': tag['background-color'] || '#FF6B35',
+              'border-color': tag['background-color'] || '#FF6B35',
+            }
+            cy.add({ data: tagNodeData })
+          })
         }
       }
 
@@ -149,10 +172,14 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>((props, ref) =
           cy.remove(edge);
         }
       });
-
     } finally {
       cy.endBatch();
     }
+
+    // タグノードの位置を更新
+    cy.ready(() => {
+      updateTagPositions(cy)
+    })
 
     if (!isReadyCalled && cy.elements().length > 0) {
       props.onReady?.();

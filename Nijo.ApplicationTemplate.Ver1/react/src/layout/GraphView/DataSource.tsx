@@ -4,6 +4,8 @@ export type DataSet = {
   nodes: { [id: string]: Node }
   edges: Edge[]
 }
+
+/** グラフのノード */
 export type Node = {
   id: string
   label: string
@@ -13,7 +15,17 @@ export type Node = {
   'background-color'?: string
   'border-color:selected'?: string
   'color:container'?: string
+  tags?: NodeTag[]
 }
+
+/** ノードの右肩に表示するタグ */
+export type NodeTag = {
+  label: string
+  'color'?: string
+  'background-color'?: string
+}
+
+/** グラフのエッジ */
 export type Edge = {
   source: string
   target: string

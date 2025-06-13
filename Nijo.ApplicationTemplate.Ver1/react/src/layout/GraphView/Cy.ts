@@ -73,6 +73,9 @@ export const useCytoscape = (props: GraphViewProps): CytoscapeHookType => {
       cyInstance.on('dblclick', 'node', event => {
         propsRef.current.onNodeDoubleClick?.(event)
       });
+      cyInstance.on('drag', 'node', event => {
+        updateTagPositions(cyInstance)
+      });
       cyInstance.on('dragfree', 'node', event => {
         propsRef.current.onLayoutChange?.(event)
       });
@@ -87,6 +90,11 @@ export const useCytoscape = (props: GraphViewProps): CytoscapeHookType => {
       });
       cyInstance.on('unselect', event => {
         propsRef.current.onSelectionChange?.(event)
+      });
+
+      // レイアウト完了後にタグの位置を更新
+      cyInstance.on('layoutstop', () => {
+        updateTagPositions(cyInstance)
       });
 
       setCy(cyInstance)
@@ -153,6 +161,24 @@ export const useCytoscape = (props: GraphViewProps): CytoscapeHookType => {
       for (const { id, node } of nodesWithDepth) {
         if (node.parent) ensureNodeExists(node.parent)
         cy.add({ data: node })
+
+        // タグがある場合はタグ専用の子ノードを作成
+        if (node.tags && node.tags.length > 0) {
+          node.tags.forEach((tag, index) => {
+            const tagId = `${id}_tag_${index}`
+            const tagNodeData = {
+              id: tagId,
+              label: tag.label,
+              isTag: true,
+              tagIndex: index,
+              parentNodeId: id,
+              'color': tag['color'] || '#FFFFFF',
+              'background-color': tag['background-color'] || '#FF6B35',
+              'border-color': tag['background-color'] || '#FF6B35',
+            }
+            cy.add({ data: tagNodeData })
+          })
+        }
       }
       for (const edge of dataSet.edges) {
         ensureNodeExists(edge.source)
@@ -160,12 +186,16 @@ export const useCytoscape = (props: GraphViewProps): CytoscapeHookType => {
         const id = UUID.generate()
         cy.add({ data: { id, ...edge } })
       }
+
       // ノード位置などViewStateの復元
       if (viewState) {
         applyViewState(viewState)
       } else {
         applyViewState(viewStateBeforeQuery)
       }
+
+      // タグノードの位置を親ノードの右上に配置
+      updateTagPositions(cy)
 
     } finally {
       cy.endBatch()
@@ -207,6 +237,44 @@ export const useCytoscape = (props: GraphViewProps): CytoscapeHookType => {
   }
 }
 
+/** タグノードの位置を親ノードの右上に配置する */
+export const updateTagPositions = (cyInstance: cytoscape.Core) => {
+  // 保有者ID単位で処理するために、保有者IDとタグノードの配列をマップに格納
+  const ownerIdAndTags = new Map<string, cytoscape.NodeSingular[]>()
+  cyInstance.nodes('[isTag]').forEach((tagNode) => {
+    const parentId = tagNode.data('parentNodeId')
+    if (ownerIdAndTags.has(parentId)) {
+      ownerIdAndTags.get(parentId)?.push(tagNode)
+    } else {
+      ownerIdAndTags.set(parentId, [tagNode])
+    }
+  })
+
+  for (const [ownerId, tagNodes] of ownerIdAndTags) {
+    const ownerNode = cyInstance.getElementById(ownerId)
+    if (ownerNode.length === 0) continue
+
+    const ownerBB = ownerNode[0].boundingBox({
+      includeOverlays: false, // ドラッグ中のノードを囲うように表示されるオーバーレイのサイズを除外
+    })
+
+    // tagIndexが大きい順に右から左に向かって詰めて表示
+    const tagNodesSortedByIndex = tagNodes.sort((a, b) => (b.data('tagIndex') ?? 0) - (a.data('tagIndex') ?? 0))
+    let offsetXTotal = 0
+    for (const tagNode of tagNodesSortedByIndex) {
+      const width = tagNode.width()
+      const offsetX = (ownerBB.w / 2) - (width / 2) - offsetXTotal - 1
+      const offsetY = -(ownerBB.h / 2) - 4
+      tagNode.position({
+        x: ownerNode[0].position('x') + offsetX,
+        y: ownerNode[0].position('y') + offsetY,
+      })
+      offsetXTotal += width + 2
+    }
+  }
+}
+
+/** スタイルシート */
 const STYLESHEET: cytoscape.CytoscapeOptions['style'] = [{
   selector: 'node',
   css: {
@@ -222,6 +290,31 @@ const STYLESHEET: cytoscape.CytoscapeOptions['style'] = [{
     'label': 'data(label)',
   },
 }, {
+  selector: 'node[isTag]',
+  css: {
+    'shape': 'round-rectangle',
+    'width': (node: cytoscape.NodeSingular) => Math.max(20, (node.data('label') as string)?.length * 8 + 10),
+    'height': '18px',
+    'text-valign': 'center',
+    'text-halign': 'center',
+    'font-size': '10px',
+    'color': (node: cytoscape.NodeSingular) => (node.data('color') as string) ?? '#FFFFFF',
+    'border-width': '1px',
+    'border-color': node => (node.data('border-color') as string) ?? '#FF6B35',
+    'background-color': node => (node.data('background-color') as string) ?? '#FF6B35',
+    'background-opacity': 1,
+    'label': 'data(label)',
+    'text-outline-width': 0,
+    'z-index': 10,
+    'events': 'no',
+  },
+}, {
+  selector: 'node[tags]',
+  css: {
+    'label': 'data(label)',
+    'compound-sizing-wrt-labels': 'exclude',
+  },
+}, {
   selector: 'node:selected',
   style: {
     'border-style': 'dashed',
@@ -231,7 +324,8 @@ const STYLESHEET: cytoscape.CytoscapeOptions['style'] = [{
 }, {
   selector: 'node:parent', // 子要素をもつノードに適用される
   css: {
-    'text-valign': 'top',
+    'text-valign': 'top', // ラベルをノードの上部外側に配置
+    'padding': '20px', // parentが複数重なるとラベルが重なるので、ノードの上部分に余白を持たせる
     'color': (node: cytoscape.NodeSingular) => (node.data('color:container') as string) ?? '#707070',
   },
 }, {
