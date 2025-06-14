@@ -216,6 +216,9 @@ const AttributeValueView = ({ perspective, attribute, value, onChange, isEditing
   const handleChange = useEvent((value: string) => {
     onChange(attribute, value);
   })
+  const handleChangeSelect = useEvent((e: React.ChangeEvent<HTMLSelectElement>) => {
+    onChange(attribute, e.target.value);
+  })
 
   if (attribute.attributeType === 'word') {
     // 単語型の属性
@@ -225,7 +228,9 @@ const AttributeValueView = ({ perspective, attribute, value, onChange, isEditing
           <span className="text-xs select-none text-gray-500">
             {attribute.attributeName}
           </span>
-          &nbsp;
+          <span className="select-none">
+            &nbsp;
+          </span>
         </div>
 
         <MentionTextarea
@@ -237,7 +242,7 @@ const AttributeValueView = ({ perspective, attribute, value, onChange, isEditing
         />
       </div>
     )
-  } else {
+  } else if (attribute.attributeType === 'description') {
     // 複数行テキストの属性
     return (
       <div className={`self-stretch flex flex-col items-start gap-1 border ${isEditing ? 'border-gray-500' : 'border-transparent'}`}>
@@ -254,6 +259,45 @@ const AttributeValueView = ({ perspective, attribute, value, onChange, isEditing
           isReadOnly={!isEditing}
           className="self-stretch"
         />
+      </div>
+    )
+
+  } else if (attribute.attributeType === 'select') {
+    // 選択肢の属性
+    const options = perspective.attributes.find(a => a.attributeId === attribute.attributeId)?.selectOptions ?? [];
+
+    return (
+      <div className={`self-stretch flex items-start gap-1 border ${isEditing ? 'border-gray-500' : 'border-transparent'}`}>
+        <div className="flex-none flex items-center" style={{ width: perspective.detailPageLabelWidth ?? DEFAULT_LABEL_WIDTH }}>
+          <span className="text-xs select-none text-gray-500">
+            {attribute.attributeName}
+          </span>
+          <span className="select-none">
+            &nbsp;
+          </span>
+        </div>
+        <div className="flex-1">
+          {!isEditing && (
+            <span>
+              {value}
+            </span>
+          )}
+
+          {isEditing && (
+            <select
+              value={value}
+              onChange={handleChangeSelect}
+              className="w-full"
+            >
+              <option value=""></option>
+              {options.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
       </div>
     )
   }

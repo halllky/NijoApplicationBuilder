@@ -37,6 +37,9 @@ export type EntityTypePageRef = {
 // グリッドの行の型
 type GridRowType = Entity;
 
+/** 左端の列のID */
+const COLUMN_ID_ENTITY_NAME = 'col:entity-name';
+
 export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePageProps>(({
   perspective,
   useFieldArrayReturn: {
@@ -59,7 +62,7 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
     const columns: Layout.EditableGridColumnDef<GridRowType>[] = [];
     columns.push(
       cellType.text('entityName', '', {
-        columnId: 'col:entity-name',
+        columnId: COLUMN_ID_ENTITY_NAME,
         defaultWidth: 540,
         isFixed: true,
         renderCell: context => {
@@ -102,6 +105,9 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
               }
               e.setEditedRow(clone);
             },
+            getOptions: attrDef.attributeType === 'select'
+              ? (() => attrDef.selectOptions ?? [])
+              : undefined,
             renderCell: context => {
               const value = context.row.original.attributeValues[attrDef.attributeId];
               return <PlainCell>{MentionUtil.toPlainText(value)}</PlainCell>;
@@ -134,6 +140,11 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
     }
     setSelectedRowIndex(cell?.rowIndex);
   })
+
+  // select型の列のID
+  const selectColumnIds: Set<string> = React.useMemo(() => {
+    return new Set(perspective?.attributes.filter(attr => attr.attributeType === 'select').map(attr => `col:${attr.attributeId}`) ?? [])
+  }, [perspective?.attributes]);
 
   // --------------------------------------
   // 編集
@@ -262,12 +273,18 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
     } else if (e.shiftKey && e.key === 'Delete') {
       // 行削除(Shift + Delete)
       handleDeleteRow();
-    } else if (e.altKey && e.key === 'ArrowUp') {
-      // 上に移動(Alt + ↑)
-      handleMoveUp();
-    } else if (e.altKey && e.key === 'ArrowDown') {
-      // 下に移動(Alt + ↓)
-      handleMoveDown();
+    } else if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      // 上下に移動(Alt + ↑↓)
+      // ただし、select型のセルの場合、選択肢のドロップダウン展開もAlt+↑↓で行うため、その場合は移動しない
+      const activeCell = gridRef.current?.getActiveCell();
+      const activeColumnId = activeCell?.getColumnDef().columnId;
+      if (activeColumnId && selectColumnIds.has(activeColumnId)) {
+        return { handled: false };
+      } else if (e.key === 'ArrowUp') {
+        handleMoveUp();
+      } else if (e.key === 'ArrowDown') {
+        handleMoveDown();
+      }
     } else if (e.shiftKey && e.key === 'Tab') {
       // インデント下げ(Shift + Tab)
       handleIndentDown();

@@ -65,7 +65,7 @@ export type EditableGridRef<TRow extends ReactHookForm.FieldValues> = {
   getCheckedRows: () => { row: TRow, rowIndex: number }[]
   /** 特定の行を選択する */
   selectRow: (startRowIndex: number, endRowIndex: number) => void
-  getActiveCell: () => { rowIndex: number, colIndex: number } | undefined
+  getActiveCell: () => { rowIndex: number, colIndex: number, getRow: () => TRow, getColumnDef: () => EditableGridColumnDef<TRow> } | undefined
   getSelectedRange: () => { startRow: number, startCol: number, endRow: number, endCol: number } | undefined
 }
 

@@ -339,9 +339,17 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
         .map(rowIndex => ({ row: rows[rowIndex], rowIndex }))
     },
     selectRow: selectRows,
-    getActiveCell: () => activeCell ?? undefined,
+    getActiveCell: () => {
+      if (!activeCell) return undefined;
+      return {
+        rowIndex: activeCell.rowIndex,
+        colIndex: activeCell.colIndex,
+        getRow: () => rows[activeCell.rowIndex],
+        getColumnDef: () => columnDefs[activeCell.colIndex],
+      }
+    },
     getSelectedRange: () => selectedRange ?? undefined,
-  }), [checkedRows, rows, selectRows, activeCell, selectedRange]);
+  }), [checkedRows, rows, columnDefs, selectRows, activeCell, selectedRange]);
 
   // 初期状態設定
   useEffect(() => {

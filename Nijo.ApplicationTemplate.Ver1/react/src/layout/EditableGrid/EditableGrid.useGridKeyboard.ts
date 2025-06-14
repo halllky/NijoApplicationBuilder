@@ -97,6 +97,21 @@ export function useGridKeyboard<TRow extends ReactHookForm.FieldValues>({
     switch (e.key) {
       case 'ArrowUp':
         e.preventDefault();
+
+        // Alt + ArrowUp の場合、getOptions が定義されている列で編集を開始
+        if (e.altKey) {
+          const visibleDataColumns = table.getVisibleLeafColumns().filter(c => c.id !== 'rowHeader');
+          const targetColumn = visibleDataColumns[colIndex];
+          if (targetColumn) {
+            const meta = targetColumn.columnDef.meta as ColumnMetadataInternal<TRow> | undefined;
+            const columnDef = meta?.originalColDef;
+            if (columnDef?.getOptions && !getIsReadOnly(rowIndex)) {
+              startEditing(rowIndex, colIndex);
+              return;
+            }
+          }
+        }
+
         if (rowIndex > 0) {
           newRowIndex = rowIndex - 1;
           setActiveCell({ rowIndex: newRowIndex, colIndex });

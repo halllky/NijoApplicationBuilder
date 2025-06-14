@@ -32,16 +32,31 @@ export const EntityTypeEditDialog = ({
   });
   const { register, control, handleSubmit, formState: { isDirty } } = formMethods;
 
-  // 属性編集グリッド: 選択肢編集中
-  const [editingSelectOptions, setEditingSelectOptions] = React.useState<string[] | undefined>(undefined);
-
-  // 属性編集グリッド
   const attributeGridRef = React.useRef<Layout.EditableGridRef<AttributeRowForEdit>>(null);
   const { fields: attributeFields, remove, update, move, append } = ReactHookForm.useFieldArray({
     control,
     name: 'attributesGrid',
     keyName: 'uniqueId',
   });
+
+  // 属性編集グリッド: 選択肢編集
+  const [editingSelectOptionsAttributeIndex, setEditingSelectOptionsAttributeIndex] = React.useState<number | undefined>(undefined);
+  const [editingSelectOptionsAttributeName, setEditingSelectOptionsAttributeName] = React.useState<string | undefined>(undefined);
+  const [editingSelectOptions, setEditingSelectOptions] = React.useState<string[] | undefined>(undefined);
+  const handleCancelEditingSelectOptions = useEvent(() => {
+    setEditingSelectOptionsAttributeIndex(undefined);
+    setEditingSelectOptionsAttributeName(undefined);
+    setEditingSelectOptions(undefined);
+  })
+  const handleApplyEditingSelectOptions = useEvent((editedSelectOptions: string[]) => {
+    if (editingSelectOptionsAttributeIndex !== undefined) {
+      const row = attributeFields[editingSelectOptionsAttributeIndex];
+      update(editingSelectOptionsAttributeIndex, { ...row, selectOptions: editedSelectOptions });
+    }
+    handleCancelEditingSelectOptions();
+  })
+
+  // 属性編集グリッド
   const getAttributeColumnDefs: Layout.GetColumnDefsFunction<AttributeRowForEdit> = React.useCallback(cellType => [
     cellType.text('attributeName', '属性名', { defaultWidth: 200 }),
     cellType.text('attributeType', '属性型', {
@@ -52,6 +67,8 @@ export const EntityTypeEditDialog = ({
       defaultWidth: 140,
       renderCell: (context) => {
         const handleEditSelectOptions = () => {
+          setEditingSelectOptionsAttributeIndex(context.row.index);
+          setEditingSelectOptionsAttributeName(context.row.original.attributeName);
           setEditingSelectOptions(context.row.original.selectOptions ?? [])
         }
 
@@ -59,12 +76,15 @@ export const EntityTypeEditDialog = ({
           return undefined
         }
         return (
-          <div className="flex gap-1">
-            {context.row.original.selectOptions?.join(', ')}
+          <div className="w-full flex gap-1">
+            <span className="flex-1 truncate">
+              {context.row.original.selectOptions?.join(', ')}
+            </span>
             <Input.IconButton
               mini
               icon={Icon.PencilIcon}
               onClick={handleEditSelectOptions}
+              hideText
             >
               編集
             </Input.IconButton>
@@ -178,8 +198,10 @@ export const EntityTypeEditDialog = ({
 
       {editingSelectOptions && (
         <SelectOptionsEditor
+          attributeName={editingSelectOptionsAttributeName}
           defaultValues={editingSelectOptions}
-          onApply={setEditingSelectOptions}
+          onApply={handleApplyEditingSelectOptions}
+          onCancel={handleCancelEditingSelectOptions}
         />
       )}
     </Layout.ModalDialog>
@@ -190,11 +212,15 @@ export const EntityTypeEditDialog = ({
  * select型の属性の選択肢を編集するダイアログ
  */
 const SelectOptionsEditor = ({
+  attributeName,
   defaultValues,
   onApply,
+  onCancel,
 }: {
+  attributeName: string | undefined
   defaultValues: string[]
   onApply: (selectOptions: string[]) => void
+  onCancel: () => void
 }) => {
 
   type GridRowType = { value: string }
@@ -202,6 +228,7 @@ const SelectOptionsEditor = ({
   const memorizedDefaultValues = React.useMemo(() => {
     return defaultValues.map(value => ({ value }))
   }, [defaultValues]);
+
   const formMethods = ReactHookForm.useForm<{ selectOptions: GridRowType[] }>({
     defaultValues: { selectOptions: memorizedDefaultValues },
   });
@@ -211,31 +238,45 @@ const SelectOptionsEditor = ({
   });
 
   const getColumnDefs: Layout.GetColumnDefsFunction<GridRowType> = React.useCallback(cellType => [
-    cellType.text('value', '選択肢', { defaultWidth: 240 }),
-  ], []);
+    cellType.text('value', attributeName ?? '', { defaultWidth: 240 }),
+    cellType.other('', {
+      defaultWidth: 180,
+      renderCell: (context) => (
+        <div className="flex gap-1">
+          <Input.IconButton mini icon={Icon.ArrowUpIcon} onClick={() => move(context.row.index, context.row.index - 1)} />
+          <Input.IconButton mini icon={Icon.ArrowDownIcon} onClick={() => move(context.row.index, context.row.index + 1)} />
+          <Input.IconButton mini icon={Icon.TrashIcon} onClick={() => remove(context.row.index)} />
+        </div>
+      ),
+    }),
+  ], [attributeName, move, remove]);
 
   const handleChangeRow: Layout.RowChangeEvent<GridRowType> = useEvent(e => {
     for (const x of e.changedRows) {
-      update(x.rowIndex, x.newRow as GridRowType);
+      update(x.rowIndex, x.newRow);
     }
   });
 
   const handleApply = useEvent(() => {
-    const { selectOptions } = formMethods.getValues();
+    const selectOptions = formMethods.getValues('selectOptions');
     onApply(selectOptions.map(x => x.value));
   });
 
   return (
     <div className="absolute inset-0 z-10 flex justify-center items-center">
-      <div className="w-md h-xl bg-white p-2 border border-gray-500">
+      <div className="w-md h-96 bg-white p-2 flex flex-col gap-1 border border-gray-500">
+        <div className="flex items-center gap-1">
+          <Input.IconButton icon={Icon.PlusCircleIcon} onClick={() => append({ value: '' })}>追加</Input.IconButton>
+        </div>
         {/* グリッド */}
         <Layout.EditableGrid
           rows={fields}
           getColumnDefs={getColumnDefs}
           onChangeRow={handleChangeRow}
+          className="flex-1"
         />
-        <div className="flex">
-          <Input.IconButton onClick={() => onApply(defaultValues)}>キャンセル</Input.IconButton>
+        <div className="flex justify-between items-center">
+          <Input.IconButton onClick={onCancel}>キャンセル</Input.IconButton>
           <div className="flex-1"></div>
           <Input.IconButton fill onClick={handleApply}>適用</Input.IconButton>
         </div>
