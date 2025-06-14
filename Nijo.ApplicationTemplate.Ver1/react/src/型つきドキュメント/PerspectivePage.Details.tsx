@@ -303,8 +303,9 @@ const AttributeValueView = ({ perspective, attribute, value, onChange, isEditing
             </select>
           )}
           {!isEditing && (
-            <span className="flex-1 px-1 py-px">
+            <span className="flex-1 px-1 py-px select-all">
               {value}
+              &nbsp;
             </span>
           )}
         </label>

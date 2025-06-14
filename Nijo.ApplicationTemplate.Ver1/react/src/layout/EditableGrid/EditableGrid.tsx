@@ -394,7 +394,8 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   return (
     <div
       ref={tableContainerRef}
-      className={`overflow-auto bg-gray-200 relative ${className ?? ''}`}
+      className={`overflow-auto bg-gray-200 relative outline-none ${className ?? ''}`}
+      tabIndex={0} // 1行も無い場合であってもキーボード操作を受け付けるようにするため
       onKeyDown={handleKeyDown}
       onMouseMove={(e) => {
         if (isDragging && tableBodyRef.current) {

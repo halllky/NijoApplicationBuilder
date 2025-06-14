@@ -261,7 +261,8 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
             {getValues('perspective.name')}
           </h1>
 
-          <Input.IconButton hideText onClick={handleOpenEntityTypeEditDialog} icon={Icon.PencilSquareIcon}>型定義編集</Input.IconButton>
+          <div className="basis-1"></div>
+          <Input.IconButton onClick={handleOpenEntityTypeEditDialog} icon={Icon.PencilSquareIcon}>設定</Input.IconButton>
           <div className="flex-1"></div>
           <div className="basis-28 flex justify-end">
             <Input.IconButton submit fill mini>
