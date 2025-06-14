@@ -25,14 +25,22 @@ export const PerspectivePageGraph = ({
   const watchedNodes = ReactHookForm.useWatch({ name: 'perspective.nodes', control: formMethods.control })
   const graphViewRef = React.useRef<Layout.GraphViewRef>(null)
 
-  const graphNodes: Layout.Node[] | undefined = React.useMemo(() => {
-    const result: Layout.Node[] = [];
-    const formatConditions = formMethods.getValues('perspective.formatConditions');
+  // ノード、エッジ
+  const [graphNodes, graphEdges] = React.useMemo((): [
+    graphNodes: Layout.Node[],
+    graphEdges: Layout.Edge[],
+  ] => {
+    const attrDefs = formMethods.getValues('perspective.attributes')
+    const formatConditions = formMethods.getValues('perspective.formatConditions')
+
+    // ノード
+    const nodes: Map<string, Layout.Node> = new Map()
     for (const node of watchedNodes) {
+      // 条件付き書式の適用
       const formatCondition = applyFormatCondition(node, formatConditions);
       if (formatCondition.invisibleInGraph) continue;
 
-      result.push({
+      nodes.set(node.entityId, {
         id: node.entityId,
         label: MentionUtil.toPlainText(node.entityName),
         color: formatCondition.graphNodeColor,
@@ -40,9 +48,35 @@ export const PerspectivePageGraph = ({
         'border-color': formatCondition.graphNodeColor,
       } satisfies Layout.Node)
     }
-    return result;
+
+    // エッジ
+    const edges: Layout.Edge[] = []
+    const mentions = MentionUtil.collectMentionIds(watchedNodes, attrDefs)
+
+    for (const [sourceId, targetMap] of Object.entries(mentions)) {
+      for (const [targetId, mention] of Object.entries(targetMap)) {
+        edges.push({
+          source: sourceId,
+          target: targetId,
+          label: Array.from(mention.relations).join(','),
+        } satisfies Layout.Edge)
+
+        // 参照先が他のページのエンティティの場合、
+        // ここでグラフに参照先のノードを加える必要がある
+        if (!mention.targetIsInThisPerspective && !nodes.has(targetId)) {
+          nodes.set(targetId, {
+            id: targetId,
+            label: Array.from(mention.mentionTexts).join(','),
+            "border-color": "white",
+            "background-color": "white",
+          } satisfies Layout.Node)
+        }
+      }
+    }
+    return [Array.from(nodes.values()), edges]
   }, [watchedNodes]);
 
+  // 親子関係
   const parentMap: { [nodeId: string]: string } | undefined = React.useMemo(() => {
     const map: { [nodeId: string]: string } = {};
     watchedNodes.forEach((node, index, allNodes) => {
@@ -122,7 +156,7 @@ export const PerspectivePageGraph = ({
         ref={graphViewRef}
         nodes={graphNodes}
         parentMap={parentMap}
-        edges={undefined} // エッジ編集の仕組みがないので保留
+        edges={graphEdges}
         onNodeDoubleClick={handleNodeClick}
         onLayoutChange={handleLayoutChange}
         onReady={handleReadyGraph}

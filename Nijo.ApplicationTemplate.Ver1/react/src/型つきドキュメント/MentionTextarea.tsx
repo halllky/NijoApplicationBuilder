@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as ReactRouter from 'react-router';
 import * as ReactMention from 'react-mentions';
 import { NijoUiOutletContextType } from '../スキーマ定義編集UI/types';
-import { Entity } from './types';
+import { Entity, EntityAttribute, Perspective } from './types';
 import useEvent from 'react-use-event-hook';
 import { getNavigationUrl } from '../routes';
 
@@ -147,6 +147,88 @@ export namespace MentionUtil {
     return parseAsMentionText(text)
       .map(part => part.isMention ? `@${part.text}` : part.text)
       .join('')
+  }
+
+  /**
+   * このエンティティの中で登場するほかのエンティティへの参照を集める。
+   */
+  export const collectMentionIds = (entities: Entity[], attrDefs: EntityAttribute[]): {
+    [sourceId: string]: {
+      [targetId: string]: {
+        /** ターゲットがこのページのエンティティかどうか */
+        targetIsInThisPerspective: boolean
+        /** メンション上の参照名。ターゲットがこのページのエンティティでない場合に使用 */
+        mentionTexts: Set<string>
+        /** 関係性 */
+        relations: Set<string>
+      }
+    }
+  } => {
+
+    const attrDefMap = new Map(attrDefs.map(x => [x.attributeId, x]))
+    const thisPerspectiveEntityIds = new Set(entities.map(x => x.entityId))
+    const result: {
+      [sourceId: string]: {
+        [targetId: string]: {
+          targetIsInThisPerspective: boolean
+          mentionTexts: Set<string>
+          relations: Set<string>
+        }
+      }
+    } = {}
+
+    for (const node of entities) {
+      // エンティティ名
+      for (const part of parseAsMentionText(node.entityName)) {
+        if (!part.isMention) continue;
+
+        const objSource = result[node.entityId] ?? (result[node.entityId] = {})
+        const objTarget = objSource[part.targetId] ?? (objSource[part.targetId] = {
+          targetIsInThisPerspective: thisPerspectiveEntityIds.has(part.targetId),
+          mentionTexts: new Set(),
+          relations: new Set(),
+        })
+        objTarget.mentionTexts.add(part.text)
+      }
+
+      // 属性
+      for (const [attrId, attrValue] of Object.entries(node.attributeValues)) {
+        const attrDef = attrDefMap.get(attrId)
+        if (!attrDef) continue;
+
+        const parts = parseAsMentionText(attrValue)
+        for (const part of parts) {
+          if (!part.isMention) continue;
+
+          const objSource = result[node.entityId] ?? (result[node.entityId] = {})
+          const objTarget = objSource[part.targetId] ?? (objSource[part.targetId] = {
+            targetIsInThisPerspective: thisPerspectiveEntityIds.has(part.targetId),
+            mentionTexts: new Set(),
+            relations: new Set(),
+          })
+          objTarget.mentionTexts.add(part.text)
+          objTarget.relations.add(attrDef.attributeName)
+        }
+      }
+
+      // コメント
+      for (const comment of node.comments) {
+        for (const part of parseAsMentionText(comment.content)) {
+          if (!part.isMention) continue;
+
+          const objSource = result[node.entityId] ?? (result[node.entityId] = {})
+          const objTarget = objSource[part.targetId] ?? (objSource[part.targetId] = {
+            targetIsInThisPerspective: thisPerspectiveEntityIds.has(part.targetId),
+            mentionTexts: new Set(),
+            relations: new Set(),
+          })
+          objTarget.mentionTexts.add(part.text)
+          objTarget.relations.add('コメント')
+        }
+      }
+    }
+
+    return result
   }
 
   /**
