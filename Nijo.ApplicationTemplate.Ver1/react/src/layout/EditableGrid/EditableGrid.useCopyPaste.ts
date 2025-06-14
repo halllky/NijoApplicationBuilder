@@ -31,8 +31,8 @@ export const useCopyPaste = <TRow extends ReactHookForm.FieldValues,>({
 }: UseCopyPasteParams<TRow>) => {
 
   // クリップボードへのコピー処理
-  const handleCopy: React.ClipboardEventHandler = useCallback(e => {
-    if (!selectedRange || !rows.length) return;
+  const handleCopy: React.ClipboardEventHandler = useEvent(e => {
+    if (isEditing || !selectedRange || !rows.length) return;
 
     // 選択範囲内のセルの値を取得
     const dataArray: string[][] = [];
@@ -71,7 +71,7 @@ export const useCopyPaste = <TRow extends ReactHookForm.FieldValues,>({
       e.clipboardData.setData('text/plain', tsvData);
       e.preventDefault(); // デフォルトのコピー動作を防止
     }
-  }, [selectedRange, rows, columnDefs]);
+  });
 
   // stringの2次元配列を選択範囲にセットする
   const setStringValuesToSelectedRange = useEvent((values: string[][]) => {
@@ -183,8 +183,8 @@ export const useCopyPaste = <TRow extends ReactHookForm.FieldValues,>({
   });
 
   // クリップボードからのペースト処理
-  const handlePaste: React.ClipboardEventHandler = useCallback(e => {
-    if (!activeCell || getIsReadOnly(activeCell.rowIndex)) return;
+  const handlePaste: React.ClipboardEventHandler = useEvent(e => {
+    if (isEditing || !activeCell || getIsReadOnly(activeCell.rowIndex)) return;
 
     try {
       // クリップボードからテキストを取得。
@@ -201,7 +201,7 @@ export const useCopyPaste = <TRow extends ReactHookForm.FieldValues,>({
     } catch (err) {
       console.error('クリップボードからのペーストに失敗しました:', err);
     }
-  }, [setStringValuesToSelectedRange, activeCell, getIsReadOnly]);
+  });
 
   return {
     handleCopy,
