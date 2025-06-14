@@ -1,5 +1,6 @@
 import * as ReactResizablePanels from "react-resizable-panels"
 import * as CytoscapeWrapper from "../layout/GraphView/Cy"
+import { MentionUtil } from "./MentionTextarea"
 
 /** アプリケーション全体の設定 */
 export type AppSettingsForDisplay = {
@@ -163,7 +164,7 @@ export const applyFormatCondition = (row: Entity, formatCondition: FormatConditi
   let appliedInvisibleInGraph: boolean | undefined = undefined;
 
   for (const x of formatCondition) {
-    const value = row.attributeValues[x.if.attributeId];
+    const value = MentionUtil.toPlainText(row.attributeValues[x.if.attributeId] ?? '');
     if (value === undefined) continue;
 
     // 完全一致

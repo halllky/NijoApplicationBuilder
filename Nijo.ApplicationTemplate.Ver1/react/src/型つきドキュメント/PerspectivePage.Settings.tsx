@@ -318,7 +318,7 @@ const FormatConditionGrid = ({ formMethods, className }: {
   const attributesGrid = ReactHookForm.useWatch({ name: 'attributesGrid', control: formMethods.control });
   const getColumnDefs: Layout.GetColumnDefsFunction<FormatCondition> = React.useCallback(cellType => [
     cellType.text('if.attributeId', '属性', {
-      defaultWidth: 240,
+      defaultWidth: 160,
       renderCell: (context) => {
         const attribute = attributesGrid.find(x => x.attributeId === context.row.original.if.attributeId);
         return (
@@ -330,7 +330,7 @@ const FormatConditionGrid = ({ formMethods, className }: {
       getOptions: () => attributesGrid.map(x => ({ label: x.attributeName, value: x.attributeId })),
     }),
     cellType.text('if.search', '検索文字列', {
-      defaultWidth: 240,
+      defaultWidth: 120,
       renderCell: (context) => {
         return (
           <div className="px-1 truncate">
@@ -340,17 +340,17 @@ const FormatConditionGrid = ({ formMethods, className }: {
       },
     }),
     cellType.text('if.logic', '比較演算子', {
-      defaultWidth: 160,
+      defaultWidth: 332,
       renderCell: (context) => {
         let text = '';
         if (context.row.original.if.logic === 'equals') {
-          text = 'と等しい場合：';
+          text = 'と等しい場合は右のレイアウトとする：';
         } else if (context.row.original.if.logic === 'includes') {
-          text = 'を含む場合：';
+          text = 'を含む場合は右のレイアウトとする：';
         } else if (context.row.original.if.logic === 'notEquals') {
-          text = 'と等しくない場合：';
+          text = 'と等しくない場合は右のレイアウトとする：';
         } else if (context.row.original.if.logic === 'notIncludes') {
-          text = 'を含まない場合：';
+          text = 'を含まない場合は右のレイアウトとする：';
         } else {
           text = context.row.original.if.logic;
         }
@@ -420,6 +420,17 @@ const FormatConditionGrid = ({ formMethods, className }: {
         { label: '非表示', value: GRAPH_INVISIBLE },
         ...Object.keys(AVAILABLEFORMAT.GRAPH_NODE_COLOR).map(label => ({ label, value: label })),
       ],
+    }),
+    cellType.other('', {
+      defaultWidth: 180,
+      renderCell: (context) => {
+        const handleRemove = () => {
+          remove(context.row.index);
+        }
+        return (
+          <Input.IconButton mini icon={Icon.TrashIcon} onClick={handleRemove}>削除</Input.IconButton>
+        )
+      },
     }),
   ], [attributesGrid]);
 
