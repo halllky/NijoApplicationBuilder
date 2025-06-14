@@ -6,7 +6,7 @@ import { getNavigationUrl } from "../routes"
 export const ToTopPageButton = () => {
   return (
     <Link to={getNavigationUrl({ page: 'top-page' })}>
-      <Icon.HomeIcon className="w-6 h-6" />
+      <Icon.HomeIcon className="w-5 h-5" />
     </Link>
   )
 }

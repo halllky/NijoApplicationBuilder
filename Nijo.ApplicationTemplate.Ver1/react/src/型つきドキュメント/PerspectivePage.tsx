@@ -237,15 +237,24 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
     setItem: (key: string, value: string) => setValue(`perspective.resizablePaneState.${key}`, value),
   }), [getValues, setValue]);
 
+  // 詳細パネル
+  const [detailPanelCollapsed, setDetailPanelCollapsed] = React.useState(false);
+  const handleDetailPanelCollapse = useEvent(() => {
+    setDetailPanelCollapsed(true);
+  });
+  const handleDetailPanelExpand = useEvent(() => {
+    setDetailPanelCollapsed(false);
+  });
+
   return (
     <ReactHookForm.FormProvider {...formMethods}>
       <form
         onSubmit={handleSubmit(onSubmit)}
         onKeyDown={handleKeyDown}
         tabIndex={0} // keydownイベントを拾うため
-        className="h-full flex flex-col gap-1 pl-1 py-1 outline-none"
+        className="h-full flex flex-col gap-1 outline-none"
       >
-        <div className="flex flex-wrap gap-1 items-center mb-2">
+        <div className="flex flex-wrap gap-1 items-center px-1">
           <ToTopPageButton />
           <Icon.ChevronRightIcon className="w-4 h-4" />
           <div className="font-semibold">{getValues('perspective.name')}</div>
@@ -293,16 +302,21 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
                 <PerspectivePageGraph
                   formMethods={formMethods}
                   onNodeDoubleClick={handleNodeDoubleClick}
-                  className="h-full border border-gray-300"
+                  className="h-full"
                 />
               </Panel>
             </PanelGroup>
           </Panel>
 
-          <PanelResizeHandle className="w-1" />
+          <PanelResizeHandle className={`w-1 ${!detailPanelCollapsed ? 'border-l border-gray-200' : ''}`} />
 
           {/* 詳細画面 */}
-          <Panel collapsible minSize={12}>
+          <Panel
+            collapsible
+            minSize={12}
+            onCollapse={handleDetailPanelCollapse}
+            onExpand={handleDetailPanelExpand}
+          >
             {selectedEntityIndex !== undefined && fields[selectedEntityIndex] && (
               <EntityDetailPane
                 key={fields[selectedEntityIndex].entityId}

@@ -66,7 +66,7 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
           const indent = context.row.original.indent;
           const text = context.cell.getValue() as string
           return (
-            <div className="flex-1 inline-flex text-left truncate">
+            <div className="flex-1 inline-flex text-left truncate px-1">
               {Array.from({ length: indent }).map((_, i) => (
                 <React.Fragment key={i}>
                   <div className="basis-[20px] min-w-[20px] relative leading-none">
@@ -294,19 +294,15 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
   }));
 
   return (
-    <div className={`h-full flex flex-col gap-1 ${className ?? ''}`}>
-      <div className="flex-1 overflow-y-auto">
-        <Layout.EditableGrid
-          ref={gridRef}
-          rows={fields}
-          getColumnDefs={getColumnDefs}
-          onChangeRow={onChangeRow}
-          onActiveCellChanged={handleActiveCellChanged}
-          onKeyDown={handleKeyDown}
-          className="h-full border border-gray-300"
-          storage={gridColumnStorage}
-        />
-      </div>
-    </div>
+    <Layout.EditableGrid
+      ref={gridRef}
+      rows={fields}
+      getColumnDefs={getColumnDefs}
+      onChangeRow={onChangeRow}
+      onActiveCellChanged={handleActiveCellChanged}
+      onKeyDown={handleKeyDown}
+      className={className}
+      storage={gridColumnStorage}
+    />
   );
 });

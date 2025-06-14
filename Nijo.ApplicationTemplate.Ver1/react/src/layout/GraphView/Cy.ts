@@ -56,7 +56,6 @@ export const useCytoscape = (props: GraphViewProps): CytoscapeHookType => {
         elements: [],
         style: STYLESHEET,
         layout: AutoLayout.DEFAULT,
-        wheelSensitivity: USER_SETTING.wheelSensitivity.value,
       })
       if (propsRef.current.showNavigator) {
         setNavInstance(Navigator.setupCyInstance(cyInstance))

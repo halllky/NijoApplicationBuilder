@@ -83,7 +83,7 @@ export const EntityDetailPane: React.FC<EntityDetailPaneProps> = ({
   })
 
   return (
-    <div className="px-1 h-full flex flex-col gap-2">
+    <div className="px-1 pb-1 h-full flex flex-col gap-2">
 
       {/* エンティティ名 */}
       <EntityNameView
