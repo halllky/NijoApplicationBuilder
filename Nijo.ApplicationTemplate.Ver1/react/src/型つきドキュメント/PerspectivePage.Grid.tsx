@@ -1,10 +1,11 @@
 import * as React from 'react';
 import * as ReactHookForm from 'react-hook-form';
 import useEvent from 'react-use-event-hook';
+import * as Icon from '@heroicons/react/24/outline';
 import * as Input from '../input';
 import * as Layout from '../layout';
 import { applyFormatCondition, Entity, FormatCondition, Perspective, PerspectivePageData } from './types';
-import { MentionUtil } from './MentionTextarea';
+import { MentionTextarea, MentionUtil } from './MentionTextarea';
 import { UUID } from 'uuidjs';
 import { usePersonalSettings } from './PersonalSettings';
 
@@ -322,6 +323,7 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
         ref={gridRef}
         rows={fields}
         getColumnDefs={getColumnDefs}
+        editorComponent={CellEditorWithMention}
         onChangeRow={onChangeRow}
         onActiveCellChanged={handleActiveCellChanged}
         onKeyDown={handleKeyDown}
@@ -332,3 +334,36 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
     </div>
   );
 });
+
+/**
+ * メンションを含むセル編集エディタ
+ */
+const CellEditorWithMention = React.forwardRef(({
+  value,
+  onChange,
+  showOptions,
+}: Layout.EditorProps, ref: React.ForwardedRef<Layout.EditorRef>) => {
+
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+  React.useImperativeHandle(ref, () => ({
+    focus: () => textareaRef.current?.focus(),
+    select: () => textareaRef.current?.select(),
+    value: value ?? '',
+    setValue: onChange,
+  }), [value, onChange])
+
+  return (
+    <>
+      <MentionTextarea
+        ref={textareaRef}
+        value={value ?? ''}
+        onChange={onChange}
+        className="flex-1"
+      />
+      {showOptions && (
+        <Icon.ChevronDownIcon className="w-4 cursor-pointer" />
+      )}
+    </>
+  )
+})
