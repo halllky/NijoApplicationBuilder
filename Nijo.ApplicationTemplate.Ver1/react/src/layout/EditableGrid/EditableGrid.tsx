@@ -483,8 +483,10 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
             const row = tableRows[virtualRow.index];
             if (!row) return null;
 
+            const className = props.getRowClassName?.(row.original);
+
             return (
-              <tr key={row.id} style={{ height: `${virtualRow.size}px` }}>
+              <tr key={row.id} style={{ height: `${virtualRow.size}px` }} className={className}>
                 {row.getVisibleCells().map(cell => {
                   const rowIndex = row.index;
                   // 行ヘッダー列を除いた可視列の配列を取得し、その中でのインデックスを colIndex とする

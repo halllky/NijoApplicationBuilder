@@ -6,7 +6,7 @@ import useEvent from 'react-use-event-hook';
 
 import * as Input from '../input';
 import * as Layout from '../layout';
-import { PerspectiveNode, PerspectivePageData } from './types';
+import { applyFormatCondition, PerspectiveNode, PerspectivePageData } from './types';
 import cytoscape from 'cytoscape'; // cytoscapeの型情報をインポート
 import { ViewState } from '../layout/GraphView/Cy';
 import ExpandCollapseFunctions from '../layout/GraphView/Cy.ExpandCollapse';
@@ -26,10 +26,21 @@ export const PerspectivePageGraph = ({
   const graphViewRef = React.useRef<Layout.GraphViewRef>(null)
 
   const graphNodes: Layout.Node[] | undefined = React.useMemo(() => {
-    return watchedNodes.map((node: PerspectiveNode) => ({
-      id: node.entityId,
-      label: MentionUtil.toPlainText(node.entityName),
-    } satisfies Layout.Node));
+    const result: Layout.Node[] = [];
+    const formatConditions = formMethods.getValues('perspective.formatConditions');
+    for (const node of watchedNodes) {
+      const formatCondition = applyFormatCondition(node, formatConditions);
+      if (formatCondition.invisibleInGraph) continue;
+
+      result.push({
+        id: node.entityId,
+        label: MentionUtil.toPlainText(node.entityName),
+        color: formatCondition.graphNodeColor,
+        'background-color': formatCondition.graphNodeColor,
+        'border-color': formatCondition.graphNodeColor,
+      } satisfies Layout.Node)
+    }
+    return result;
   }, [watchedNodes]);
 
   const parentMap: { [nodeId: string]: string } | undefined = React.useMemo(() => {

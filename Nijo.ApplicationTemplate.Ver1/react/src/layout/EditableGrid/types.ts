@@ -42,6 +42,9 @@ export type EditableGridProps<TRow extends ReactHookForm.FieldValues> = {
 
   /** グリッドの列幅などの自動保存に使用するストレージのロジック定義。 */
   storage?: EditableGridAutoSaveStorage
+
+  /** 行のclassNameを取得する関数。基本的にその行のテキスト色を変更する程度の想定。 */
+  getRowClassName?: (row: TRow) => string
 }
 
 /**
@@ -127,7 +130,12 @@ export type EditableGridColumnDefOptions<TRow extends ReactHookForm.FieldValues>
   /** 編集終了時に呼び出される関数 */
   onEndEditing?: EditableGridColumnDefOnEndEditing<TRow>
   /** 入力可能な値の候補を取得する関数 */
-  getOptions?: (currentValue: string, row: TRow, rowIndex: number) => (string[] | Promise<string[]>)
+  getOptions?: (currentValue: string, row: TRow, rowIndex: number) => (SelectCellOption[] | Promise<SelectCellOption[]>)
+}
+
+export type SelectCellOption = {
+  value: string
+  label: string
 }
 
 /** セルのレンダリング処理をカスタマイズする関数。 */

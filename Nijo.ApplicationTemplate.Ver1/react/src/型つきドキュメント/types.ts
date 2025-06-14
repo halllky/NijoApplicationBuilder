@@ -71,6 +71,8 @@ export type Perspective = {
   edges: PerspectiveEdge[]
   /** この種類のデータそれぞれに指定できる属性の定義 */
   attributes: EntityAttribute[]
+  /** 書式条件。先頭のものがより優先度が高い。 */
+  formatConditions?: FormatCondition[]
   /** 詳細欄における単語型の属性のラベルの横幅。CSSの値で指定（"10rem"など） */
   detailPageLabelWidth?: string
   /** グラフの表示状態（pan, zoom, ノード位置など） */
@@ -93,6 +95,100 @@ export type PerspectiveEdge = {
   comments: TypedDocumentComment[]
   /** 古い情報かどうか */
   outdated?: boolean
+}
+
+// -----------------------------------
+// 書式条件
+
+export type FormatCondition = {
+  /** 条件式 */
+  if: {
+    /** 対象の属性ID */
+    attributeId: string
+    /** 比較演算子 */
+    logic: 'equals' | 'includes' | 'notEquals' | 'notIncludes'
+    /** 検索文字列 */
+    search: string
+  }
+  /** 条件式が真の場合の書式 */
+  then: {
+    /** グリッドのテキスト色。tailwindcssのクラス名。 */
+    gridRowTextColor?: string
+    /** グラフのノードのスタイル。tailwindcssのクラス名は使えないので、HEXカラーコードを指定する。 */
+    graphNodeColor?: string
+    /** グラフのノードを非表示にする */
+    invisibleInGraph?: boolean
+  }
+}
+
+/** 書式条件のオプション */
+export const AVAILABLEFORMAT = {
+  /** グリッドのテキスト色。tailwindcssのクラス名。 */
+  GRID_TEXT_COLOR: [
+    'text-gray-300',
+    'text-amber-600',
+    'text-sky-600',
+    'text-rose-600',
+  ],
+  /** グラフのノードのスタイル。tailwindcssのクラス名は使えないので、HEXカラーコードを指定する。 */
+  GRAPH_NODE_COLOR: {
+    'オレンジ': '#D97706', // text-amber-600
+    '青': '#0284C7', // text-sky-600
+    '赤': '#E11D48', // text-rose-600
+    '緑': '#059669', // text-emerald-600
+  },
+}
+
+/**
+ * 書式条件を適用する。戻り値は className
+ */
+export const applyFormatCondition = (row: Entity, formatCondition: FormatCondition[] | undefined): {
+  gridRowTextColor?: string
+  graphNodeColor?: string
+  invisibleInGraph?: boolean
+} => {
+  if (!formatCondition) return {};
+
+  let appliedTextColor = '';
+  let appliedGraphNodeColor: string | undefined = undefined;
+  let appliedInvisibleInGraph: boolean | undefined = undefined;
+
+  for (const x of formatCondition) {
+    const value = row.attributeValues[x.if.attributeId];
+    if (value === undefined) continue;
+
+    // 完全一致
+    if (x.if.logic === 'equals' && value === x.if.search) {
+      if (!appliedTextColor) appliedTextColor = x.then.gridRowTextColor ?? '';
+      if (!appliedGraphNodeColor) appliedGraphNodeColor = x.then.graphNodeColor;
+      if (!appliedInvisibleInGraph) appliedInvisibleInGraph = x.then.invisibleInGraph;
+    }
+    if (x.if.logic === 'notEquals' && value !== x.if.search) {
+      if (!appliedTextColor) appliedTextColor = x.then.gridRowTextColor ?? '';
+      if (!appliedGraphNodeColor) appliedGraphNodeColor = x.then.graphNodeColor;
+      if (!appliedInvisibleInGraph) appliedInvisibleInGraph = x.then.invisibleInGraph;
+    }
+
+    // 部分一致
+    if (x.if.logic === 'includes' && value.includes(x.if.search)) {
+      if (!appliedTextColor) appliedTextColor = x.then.gridRowTextColor ?? '';
+      if (!appliedGraphNodeColor) appliedGraphNodeColor = x.then.graphNodeColor;
+      if (!appliedInvisibleInGraph) appliedInvisibleInGraph = x.then.invisibleInGraph;
+    }
+    if (x.if.logic === 'notIncludes' && !value.includes(x.if.search)) {
+      if (!appliedTextColor) appliedTextColor = x.then.gridRowTextColor ?? '';
+      if (!appliedGraphNodeColor) appliedGraphNodeColor = x.then.graphNodeColor;
+      if (!appliedInvisibleInGraph) appliedInvisibleInGraph = x.then.invisibleInGraph;
+    }
+
+    if (appliedTextColor && appliedGraphNodeColor && appliedInvisibleInGraph) break;
+  }
+
+  return {
+    gridRowTextColor: appliedTextColor,
+    graphNodeColor: appliedGraphNodeColor,
+    invisibleInGraph: appliedInvisibleInGraph,
+  };
 }
 
 // -----------------------------------

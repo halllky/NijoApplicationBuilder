@@ -7,7 +7,7 @@ import { UUID } from 'uuidjs';
 
 import * as Input from '../input';
 import * as Layout from '../layout';
-import { Perspective, EntityAttribute } from './types';
+import { Perspective, EntityAttribute, FormatCondition, AVAILABLEFORMAT } from './types';
 
 export type EntityTypeSettingsDialogProps = {
   initialEntityType: Perspective;
@@ -61,7 +61,11 @@ export const EntityTypeEditDialog = ({
     cellType.text('attributeName', '属性名', { defaultWidth: 200 }),
     cellType.text('attributeType', '属性型', {
       defaultWidth: 100,
-      getOptions: () => ['word', 'description', 'select'] satisfies AttributeRowForEdit['attributeType'][],
+      getOptions: () => [
+        { value: 'word', label: '単語' },
+        { value: 'description', label: '文章' },
+        { value: 'select', label: '選択' },
+      ] satisfies { value: AttributeRowForEdit['attributeType'], label: string }[],
     }),
     cellType.other('', {
       defaultWidth: 140,
@@ -164,38 +168,46 @@ export const EntityTypeEditDialog = ({
   });
 
   return (
-    <Layout.ModalDialog open className="relative w-[80vw] h-[80vh] bg-white flex flex-col gap-1 p-2 relative border border-gray-400" onOutsideClick={handleCancel}>
+    <Layout.ModalDialog open className="relative w-[90vw] h-[90vh] bg-white flex flex-col gap-1 relative border border-gray-400" onOutsideClick={handleCancel}>
       <ReactHookForm.FormProvider {...formMethods}>
-        <form onSubmit={handleSubmit(handleApply)} className="h-full flex flex-col gap-2 p-2">
+        <form onSubmit={handleSubmit(handleApply)} className="h-full flex flex-col">
 
-          <h1 className="font-bold select-none text-gray-700">設定</h1>
+          <h1 className="font-bold select-none text-gray-700 px-8 py-1 border-b border-gray-200">
+            設定
+          </h1>
 
-          <div className="flex items-center gap-1">
-            <label className="basis-52 text-sm text-gray-500">ドキュメント名</label>
-            <input type="text" {...register('name')} className="flex-1 px-1 border border-gray-400" />
-          </div>
-
-          <div className="flex items-center gap-1">
-            <label className="basis-52 text-sm text-gray-500">詳細画面での属性名の横幅</label>
-            <input type="text" {...register('detailPageLabelWidth')} className="flex-1 px-1 border border-gray-400" />
-          </div>
-
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 overflow-y-auto px-8 pt-2 pb-96">
             <div className="flex items-center gap-1">
-              <div className="text-sm text-gray-500">属性定義</div>
-              <Input.IconButton icon={Icon.PlusCircleIcon} onClick={handleAddAttributeRow}>属性を追加</Input.IconButton>
+              <label className="basis-52 text-sm text-gray-500">ドキュメント名</label>
+              <input type="text" {...register('name')} className="flex-1 px-1 border border-gray-400" />
             </div>
-            <div className="flex-1 overflow-y-auto border border-gray-400">
+
+            <div className="flex items-center gap-1 mt-2">
+              <label className="basis-52 text-sm text-gray-500">詳細画面での属性名の横幅</label>
+              <input type="text" {...register('detailPageLabelWidth')} className="flex-1 px-1 border border-gray-400" />
+            </div>
+
+            <div className="flex flex-col mt-4 h-80 resize-y overflow-y-auto">
+              <div className="flex items-center gap-1">
+                <div className="text-sm text-gray-500">属性定義</div>
+                <Input.IconButton icon={Icon.PlusCircleIcon} onClick={handleAddAttributeRow}>追加</Input.IconButton>
+              </div>
               <Layout.EditableGrid
                 ref={attributeGridRef}
                 rows={attributeFields}
                 getColumnDefs={getAttributeColumnDefs}
                 onChangeRow={handleChangeAttributeRow}
-                className="h-full"
+                className="flex-1 border border-gray-400"
               />
             </div>
+
+            <FormatConditionGrid
+              formMethods={formMethods}
+              className="mt-4 h-56 resize-y overflow-y-auto"
+            />
           </div>
-          <div className="flex justify-end items-center gap-4 py-1">
+
+          <div className="flex justify-end items-center gap-4 py-2 px-8 border-t border-gray-200">
             <Input.IconButton onClick={handleCancel}>キャンセル</Input.IconButton>
             <Input.IconButton submit fill>適用</Input.IconButton>
           </div>
@@ -290,3 +302,156 @@ const SelectOptionsEditor = ({
     </div>
   )
 }
+
+/**
+ * 書式条件を編集するグリッド
+ */
+const FormatConditionGrid = ({ formMethods, className }: {
+  formMethods: ReactHookForm.UseFormReturn<Perspective & { attributesGrid: AttributeRowForEdit[] }>
+  className?: string
+}) => {
+  const { fields, remove, update, move, append } = ReactHookForm.useFieldArray({
+    control: formMethods.control,
+    name: 'formatConditions',
+  });
+
+  const attributesGrid = ReactHookForm.useWatch({ name: 'attributesGrid', control: formMethods.control });
+  const getColumnDefs: Layout.GetColumnDefsFunction<FormatCondition> = React.useCallback(cellType => [
+    cellType.text('if.attributeId', '属性', {
+      defaultWidth: 240,
+      renderCell: (context) => {
+        const attribute = attributesGrid.find(x => x.attributeId === context.row.original.if.attributeId);
+        return (
+          <div className="px-1 truncate">
+            {attribute?.attributeName ?? context.row.original.if.attributeId} が
+          </div>
+        )
+      },
+      getOptions: () => attributesGrid.map(x => ({ label: x.attributeName, value: x.attributeId })),
+    }),
+    cellType.text('if.search', '検索文字列', {
+      defaultWidth: 240,
+      renderCell: (context) => {
+        return (
+          <div className="px-1 truncate">
+            "{context.row.original.if.search}"
+          </div>
+        )
+      },
+    }),
+    cellType.text('if.logic', '比較演算子', {
+      defaultWidth: 160,
+      renderCell: (context) => {
+        let text = '';
+        if (context.row.original.if.logic === 'equals') {
+          text = 'と等しい場合：';
+        } else if (context.row.original.if.logic === 'includes') {
+          text = 'を含む場合：';
+        } else if (context.row.original.if.logic === 'notEquals') {
+          text = 'と等しくない場合：';
+        } else if (context.row.original.if.logic === 'notIncludes') {
+          text = 'を含まない場合：';
+        } else {
+          text = context.row.original.if.logic;
+        }
+        return (
+          <div className="px-1 truncate">
+            {text}
+          </div>
+        )
+      },
+      getOptions: () => [
+        { value: 'equals', label: 'と等しい場合' },
+        { value: 'includes', label: 'を含む場合' },
+        { value: 'notEquals', label: 'と等しくない場合' },
+        { value: 'notIncludes', label: 'を含まない場合' },
+      ] satisfies { value: FormatCondition['if']['logic'], label: string }[],
+    }),
+    cellType.text('then.gridRowTextColor', 'グリッドのテキスト色', {
+      defaultWidth: 180,
+      renderCell: (context) => {
+        const textColor = context.row.original.then.gridRowTextColor;
+        return (
+          <div className={`w-full px-1 truncate ${textColor ?? ''}`}>
+            {textColor}
+          </div>
+        )
+      },
+      getOptions: () => AVAILABLEFORMAT.GRID_TEXT_COLOR.map(color => ({ label: color, value: color })),
+    }),
+    cellType.text('then.graphNodeColor', 'グラフのノードのスタイル', {
+      defaultWidth: 240,
+      renderCell: (context) => {
+        const graphNodeColor = context.row.original.then.graphNodeColor;
+        let styleName = '';
+        if (context.row.original.then.invisibleInGraph) {
+          styleName = '非表示';
+        } else if (graphNodeColor) {
+          styleName = Object.entries(AVAILABLEFORMAT.GRAPH_NODE_COLOR)
+            .find(([key, value]) => value === graphNodeColor)
+            ?.[0] ?? '';
+          if (!styleName) styleName = `color: ${graphNodeColor}`;
+        }
+        return (
+          <div
+            className={`w-full px-1 truncate`}
+            style={{
+              color: graphNodeColor,
+              backgroundColor: graphNodeColor
+                ? `${graphNodeColor}44` // EditableGridのアクティブセルのカーソルが見えなくなるのを避けるため半透明にする
+                : undefined,
+            }}
+          >
+            {styleName}
+          </div>
+        )
+      },
+      onEndEditing: ev => {
+        if (!ev.value) {
+          ev.setEditedRow({ ...ev.row, then: { ...ev.row.then, graphNodeColor: undefined } });
+        } else if (ev.value === GRAPH_INVISIBLE) {
+          ev.setEditedRow({ ...ev.row, then: { ...ev.row.then, graphNodeColor: undefined, invisibleInGraph: true } });
+        } else {
+          const selectedValue = AVAILABLEFORMAT.GRAPH_NODE_COLOR[ev.value as keyof typeof AVAILABLEFORMAT.GRAPH_NODE_COLOR];
+          if (selectedValue) ev.setEditedRow({ ...ev.row, then: { ...ev.row.then, graphNodeColor: selectedValue, invisibleInGraph: false } });
+        }
+      },
+      getOptions: () => [
+        { label: '非表示', value: GRAPH_INVISIBLE },
+        ...Object.keys(AVAILABLEFORMAT.GRAPH_NODE_COLOR).map(label => ({ label, value: label })),
+      ],
+    }),
+  ], [attributesGrid]);
+
+  const handleAddFormatCondition = useEvent(() => {
+    append({
+      if: { attributeId: '', logic: 'equals', search: '' },
+      then: { gridRowTextColor: '' },
+    })
+  })
+
+  const handleChangeRow: Layout.RowChangeEvent<FormatCondition> = useEvent(e => {
+    for (const x of e.changedRows) {
+      update(x.rowIndex, x.newRow);
+    }
+  });
+
+  return (
+    <div className={`flex flex-col gap-1 ${className ?? ''}`}>
+      <div className="flex items-center gap-1">
+        <div className="text-sm text-gray-500">
+          書式条件（先頭のものほど優先）
+        </div>
+        <Input.IconButton icon={Icon.PlusCircleIcon} onClick={handleAddFormatCondition}>追加</Input.IconButton>
+      </div>
+      <Layout.EditableGrid
+        rows={fields}
+        getColumnDefs={getColumnDefs}
+        onChangeRow={handleChangeRow}
+        className="flex-1 border border-gray-400"
+      />
+    </div>
+  )
+}
+
+const GRAPH_INVISIBLE = '::invisibleInGraph::'

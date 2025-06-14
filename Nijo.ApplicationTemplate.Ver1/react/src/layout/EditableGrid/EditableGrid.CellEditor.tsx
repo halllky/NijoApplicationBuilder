@@ -5,7 +5,7 @@ import * as RT from '@tanstack/react-table'
 import { useOutsideClick } from '../../util/useOutsideClick'
 import { useIME } from '../../util/useIME'
 import { ColumnMetadataInternal } from './EditableGrid'
-import { CellPosition, EditableGridColumnDef, EditableGridProps } from './types'
+import { CellPosition, EditableGridColumnDef, EditableGridProps, SelectCellOption } from './types'
 import { Virtualizer } from '@tanstack/react-virtual'
 import { ChevronDownIcon } from '@heroicons/react/24/solid'
 
@@ -187,7 +187,7 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
 
   // ----------------------------------
   // 選択肢
-  const [currentOptions, setCurrentOptions] = React.useState<string[] | undefined>()
+  const [currentOptions, setCurrentOptions] = React.useState<SelectCellOption[] | undefined>()
   const [highlightedOptionIndex, setHighlightedOptionIndex] = React.useState<number | undefined>()
   React.useEffect(() => {
     if (caretCellEditingInfo?.getOptions === undefined || uncomittedText === undefined || editingCellInfo === undefined) {
@@ -244,7 +244,7 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
             ? Math.min(highlightedOptionIndex === undefined ? 0 : highlightedOptionIndex + 1, (currentOptions?.length ?? 0) - 1)
             : Math.max(highlightedOptionIndex === undefined ? (currentOptions?.length ?? 0) - 1 : highlightedOptionIndex - 1, 0)
           setHighlightedOptionIndex(newIndex)
-          setUnComittedText(currentOptions[newIndex])
+          setUnComittedText(currentOptions[newIndex].value)
           e.preventDefault()
           e.stopPropagation()
         }
@@ -308,7 +308,7 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
         <ul className="absolute top-[calc(100%+2px)] left-[-1px] right-[-1px] max-h-64 overflow-y-auto bg-white border border-gray-950">
           {currentOptions.map((option, index) => (
             <li key={index} onClick={handleOptionClick} className={`cursor-pointer ${highlightedOptionIndex === index ? 'bg-gray-200' : ''}`}>
-              {option}
+              {option.label}
             </li>
           ))}
         </ul>

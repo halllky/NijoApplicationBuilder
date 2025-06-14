@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as ReactHookForm from 'react-hook-form';
 import useEvent from 'react-use-event-hook';
 import * as Layout from '../layout';
-import { Entity, Perspective, PerspectivePageData } from './types';
+import { applyFormatCondition, Entity, FormatCondition, Perspective, PerspectivePageData } from './types';
 import { MentionUtil } from './MentionTextarea';
 import { UUID } from 'uuidjs';
 
@@ -109,7 +109,7 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
               e.setEditedRow(clone);
             },
             getOptions: attrDef.attributeType === 'select'
-              ? (() => attrDef.selectOptions ?? [])
+              ? (() => attrDef.selectOptions?.map(x => ({ value: x, label: x })) ?? [])
               : undefined,
             renderCell: context => {
               const value = context.row.original.attributeValues[attrDef.attributeId];
@@ -313,6 +313,10 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
     indentDown: handleIndentDown,
   }));
 
+  const getRowClassName = React.useCallback((row: GridRowType) => {
+    return applyFormatCondition(row, perspective?.formatConditions)?.gridRowTextColor ?? '';
+  }, [perspective?.formatConditions]);
+
   return (
     <Layout.EditableGrid
       ref={gridRef}
@@ -323,6 +327,7 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
       onKeyDown={handleKeyDown}
       className={className}
       storage={gridColumnStorage}
+      getRowClassName={getRowClassName}
     />
   );
 });
