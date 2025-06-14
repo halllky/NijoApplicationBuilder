@@ -9,7 +9,7 @@ import * as Input from '../input';
 import * as Layout from '../layout';
 import { NIJOUI_CLIENT_ROUTE_PARAMS } from '../routes';
 import { NijoUiOutletContextType } from '../スキーマ定義編集UI/types';
-import { Panel, PanelGroup, PanelGroupStorage, PanelResizeHandle } from 'react-resizable-panels';
+import { Panel, PanelGroup, PanelGroupProps, PanelGroupStorage, PanelResizeHandle } from 'react-resizable-panels';
 import { PerspectivePageGraph } from './PerspectivePage.Graph';
 import { EntityTypePage, EntityTypePageRef } from './PerspectivePage.Grid';
 import { EntityDetailPane } from './PerspectivePage.Details';
@@ -248,12 +248,6 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
 
   // 詳細パネル
   const [detailPanelCollapsed, setDetailPanelCollapsed] = React.useState(false);
-  const handleDetailPanelCollapse = useEvent(() => {
-    setDetailPanelCollapsed(true);
-  });
-  const handleDetailPanelExpand = useEvent(() => {
-    setDetailPanelCollapsed(false);
-  });
 
   return (
     <ReactHookForm.FormProvider {...formMethods}>
@@ -274,8 +268,8 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
           <Input.IconButton onClick={handleOpenEntityTypeEditDialog} icon={Icon.PencilSquareIcon}>設定</Input.IconButton>
           <div className="flex-1"></div>
           <div className="flex items-center">
-            <Input.IconButton onClick={handleClickGraphHorizontal} icon={Icon.PauseIcon} hideText outline={graphViewPosition === 'horizontal'} className="p-1">グラフをグリッドの横に表示</Input.IconButton>
-            <Input.IconButton onClick={handleClickGraphVertical} icon={Icon.Bars2Icon} hideText outline={graphViewPosition !== 'horizontal'} className="p-1">グラフをグリッドの下に表示</Input.IconButton>
+            <Input.IconButton onClick={handleClickGraphHorizontal} icon={Icon.Bars2Icon} hideText outline={graphViewPosition === 'horizontal'} className="p-1">グラフをグリッドの横に表示</Input.IconButton>
+            <Input.IconButton onClick={handleClickGraphVertical} icon={Icon.PauseIcon} hideText outline={graphViewPosition !== 'horizontal'} className="p-1">グラフをグリッドの下に表示</Input.IconButton>
           </div>
           <div className="basis-28 flex justify-end">
             <Input.IconButton submit fill mini>
@@ -284,58 +278,39 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
           </div>
         </div>
 
-        <PanelGroup direction="horizontal" autoSaveId="page-root-horizontal" storage={panelStorage}>
-
-          <Panel collapsible minSize={12}>
-            <PanelGroup direction={graphViewPosition ?? 'vertical'} autoSaveId="page-root-vertical" storage={panelStorage}>
-
-              {/* グリッド */}
-              <Panel collapsible minSize={12}>
-                <EntityTypePage
-                  ref={gridRef}
-                  useFieldArrayReturn={useFieldArrayReturn}
-                  perspective={perspective}
-                  onChangeRow={handleChangeRow}
-                  onSelectedRowChanged={setSelectedEntityIndex}
-                  setValue={setValue}
-                  className="h-full"
-                />
-              </Panel>
-
-              <PanelResizeHandle className={graphViewPosition === 'horizontal' ? 'w-8' : 'h-2'} />
-
-              {/* グラフ */}
-              <Panel collapsible minSize={12}>
-                <PerspectivePageGraph
-                  formMethods={formMethods}
-                  onNodeDoubleClick={handleNodeDoubleClick}
-                  className={`h-full ${!detailPanelCollapsed ? 'border-r border-gray-200' : ''}`}
-                />
-              </Panel>
-            </PanelGroup>
-          </Panel>
-
-          <PanelResizeHandle className="w-1" />
-
-          {/* 詳細画面 */}
-          <Panel
-            collapsible
-            minSize={12}
-            onCollapse={handleDetailPanelCollapse}
-            onExpand={handleDetailPanelExpand}
-          >
-            {selectedEntityIndex !== undefined && fields[selectedEntityIndex] && (
-              <EntityDetailPane
-                key={fields[selectedEntityIndex].entityId}
-                entity={fields[selectedEntityIndex]}
-                onEntityChanged={handleEntityChangedInDetailPage}
-                perspective={perspective}
-                entityIndex={selectedEntityIndex}
-              />
-            )}
-          </Panel>
-
-        </PanelGroup>
+        <VerticalOrHorizontalLayout
+          graphViewPosition={graphViewPosition}
+          panelStorage={panelStorage}
+          detailPanelCollapsed={detailPanelCollapsed}
+          onDetailPanelCollapsedChanged={setDetailPanelCollapsed}
+          grid={className => (
+            <EntityTypePage
+              ref={gridRef}
+              useFieldArrayReturn={useFieldArrayReturn}
+              perspective={perspective}
+              onChangeRow={handleChangeRow}
+              onSelectedRowChanged={setSelectedEntityIndex}
+              setValue={setValue}
+              className={className}
+            />
+          )}
+          graph={className => (
+            <PerspectivePageGraph
+              formMethods={formMethods}
+              onNodeDoubleClick={handleNodeDoubleClick}
+              className={className}
+            />
+          )}
+          detail={() => selectedEntityIndex !== undefined && fields[selectedEntityIndex] && (
+            <EntityDetailPane
+              key={fields[selectedEntityIndex].entityId}
+              entity={fields[selectedEntityIndex]}
+              onEntityChanged={handleEntityChangedInDetailPage}
+              perspective={perspective}
+              entityIndex={selectedEntityIndex}
+            />
+          )}
+        />
 
       </form>
 
@@ -345,3 +320,147 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
     </ReactHookForm.FormProvider>
   );
 });
+
+/**
+ * グリッドとグラフが縦方向か横方向に並ぶレイアウト
+ */
+const VerticalOrHorizontalLayout = (props: {
+  graphViewPosition: PanelGroupProps['direction'] | undefined
+  grid: (className: string) => React.ReactNode
+  graph: (className: string) => React.ReactNode
+  detail: (className: string) => React.ReactNode
+  panelStorage: PanelGroupStorage
+  detailPanelCollapsed: boolean
+  onDetailPanelCollapsedChanged: (collapsed: boolean) => void
+}) => {
+  const { graphViewPosition, ...rest } = props
+
+  return graphViewPosition === 'horizontal' ? (
+    <HorizontalLayout {...rest} />
+  ) : (
+    <VerticalLayout {...rest} />
+  )
+}
+
+const AUTOSAVEID_VERTICAL_LAYOUT = 'page-root-vertical';
+const AUTOSAVEID_HORIZONTAL_LAYOUT = 'page-root-horizontal';
+
+/**
+ * グリッドとグラフが縦方向に並ぶレイアウト
+ */
+const VerticalLayout = ({
+  grid,
+  graph,
+  detail,
+  panelStorage,
+  detailPanelCollapsed,
+  onDetailPanelCollapsedChanged,
+}: {
+  grid: (className: string) => React.ReactNode
+  graph: (className: string) => React.ReactNode
+  detail: (className: string) => React.ReactNode
+  panelStorage: PanelGroupStorage
+  detailPanelCollapsed: boolean
+  onDetailPanelCollapsedChanged: (collapsed: boolean) => void
+}) => {
+
+  const handleDetailPanelCollapse = useEvent(() => {
+    onDetailPanelCollapsedChanged(true);
+  });
+  const handleDetailPanelExpand = useEvent(() => {
+    onDetailPanelCollapsedChanged(false);
+  });
+
+  return (
+    <PanelGroup direction="horizontal" autoSaveId={AUTOSAVEID_HORIZONTAL_LAYOUT} storage={panelStorage}>
+
+      <Panel collapsible minSize={12}>
+        <PanelGroup direction="vertical" autoSaveId={AUTOSAVEID_VERTICAL_LAYOUT} storage={panelStorage}>
+
+          {/* グリッド */}
+          <Panel collapsible minSize={12}>
+            {grid('h-full')}
+          </Panel>
+
+          <PanelResizeHandle className="h-2" />
+
+          {/* グラフ */}
+          <Panel collapsible minSize={12}>
+            {graph(`h-full ${!detailPanelCollapsed ? 'border-r border-gray-200' : ''}`)}
+          </Panel>
+        </PanelGroup>
+      </Panel>
+
+      <PanelResizeHandle className="w-1" />
+
+      {/* 詳細画面 */}
+      <Panel
+        collapsible
+        minSize={12}
+        onCollapse={handleDetailPanelCollapse}
+        onExpand={handleDetailPanelExpand}
+      >
+        {detail('')}
+      </Panel>
+
+    </PanelGroup>
+  )
+}
+
+/**
+ * グリッドとグラフが横方向に並ぶレイアウト
+ */
+const HorizontalLayout = ({
+  grid,
+  graph,
+  detail,
+  panelStorage,
+  detailPanelCollapsed,
+  onDetailPanelCollapsedChanged,
+}: {
+  grid: (className: string) => React.ReactNode
+  graph: (className: string) => React.ReactNode
+  detail: (className: string) => React.ReactNode
+  panelStorage: PanelGroupStorage
+  detailPanelCollapsed: boolean
+  onDetailPanelCollapsedChanged: (collapsed: boolean) => void
+}) => {
+  const handleDetailPanelCollapse = useEvent(() => {
+    onDetailPanelCollapsedChanged(true);
+  });
+  const handleDetailPanelExpand = useEvent(() => {
+    onDetailPanelCollapsedChanged(false);
+  });
+
+  return (
+    <PanelGroup direction="horizontal" autoSaveId={AUTOSAVEID_HORIZONTAL_LAYOUT} storage={panelStorage}>
+
+      <Panel collapsible minSize={12}>
+        {grid('h-full')}
+      </Panel>
+
+      <PanelResizeHandle className="w-1" />
+
+      <Panel collapsible minSize={12}>
+        <PanelGroup direction="vertical" autoSaveId={AUTOSAVEID_VERTICAL_LAYOUT} storage={panelStorage}>
+          <Panel collapsible minSize={12}>
+            {graph(`h-full ${!detailPanelCollapsed ? 'border-b border-gray-400' : ''}`)}
+          </Panel>
+
+          <PanelResizeHandle className="h-2 mb-4" />
+
+          <Panel
+            collapsible
+            minSize={12}
+            onCollapse={handleDetailPanelCollapse}
+            onExpand={handleDetailPanelExpand}
+          >
+            {detail('')}
+          </Panel>
+        </PanelGroup>
+
+      </Panel>
+
+    </PanelGroup>
+  )
+}
