@@ -2,60 +2,67 @@
 
 @layer components {
 
-  /* 単にクラス名で指定していないのは、index.cssで指定されているTailwind既定のスタイルリセットの優先度に負けてしまうから。 */
-  .button-style-fill,
-  button[type="button"].button-style-fill,
-  button[type="submit"].button-style-fill,
-  button[type="reset"].button-style-fill {
-    @apply bg-cyan-700 text-cyan-50 cursor-pointer;
+  /* 背景（塗りつぶしあり） */
+  .button-style-bg-fill,
+  button[type="button"].button-style-bg-fill,
+  button[type="submit"].button-style-bg-fill,
+  button[type="reset"].button-style-bg-fill {
+    @apply bg-cyan-700;
   }
 
-  .button-style-fill-loading,
-  button[type="button"].button-style-fill-loading,
-  button[type="submit"].button-style-fill-loading,
-  button[type="reset"].button-style-fill-loading {
-    @apply bg-cyan-200 text-cyan-50 dark:text-cyan-950;
+  /* 背景（塗りつぶしあり）の読み込み中 */
+  .button-style-bg-fill-loading,
+  button[type="button"].button-style-bg-fill-loading,
+  button[type="submit"].button-style-bg-fill-loading,
+  button[type="reset"].button-style-bg-fill-loading {
+    @apply bg-cyan-200;
   }
 
+  /* 枠線 */
   .button-style-outline,
   button[type="button"].button-style-outline,
   button[type="submit"].button-style-outline,
   button[type="reset"].button-style-outline {
-    @apply border text-cyan-600 border-cyan-600 cursor-pointer;
+    @apply border-cyan-600;
   }
 
+  /* 枠線の読み込み中 */
   .button-style-outline-loading,
   button[type="button"].button-style-outline-loading,
   button[type="submit"].button-style-outline-loading,
   button[type="reset"].button-style-outline-loading {
-    @apply border text-cyan-200 border-cyan-200 dark:border-cyan-300;
+    @apply border-cyan-200;
   }
 
-  .button-style-link,
-  button[type="button"].button-style-link,
-  button[type="submit"].button-style-link,
-  button[type="reset"].button-style-link {
-    @apply border-b text-cyan-600 border-cyan-600 cursor-pointer;
-  }
-
-  .button-style-link-loading,
-  button[type="button"].button-style-link-loading,
-  button[type="submit"].button-style-link-loading,
-  button[type="reset"].button-style-link-loading {
-    @apply border-b text-cyan-300 border-cyan-300;
-  }
-
+  /* 文字色 */
   .button-style-text,
-  button[type="button"].button-style-link,
-  button[type="submit"].button-style-link,
-  button[type="reset"].button-style-link {
-    @apply text-cyan-600 cursor-pointer;
+  button[type="button"].button-style-text,
+  button[type="submit"].button-style-text,
+  button[type="reset"].button-style-text {
+    @apply text-cyan-600;
   }
 
+  /* 文字色の読み込み中 */
   .button-style-text-loading,
-  button[type="button"].button-style-link-loading,
-  button[type="submit"].button-style-link-loading,
-  button[type="reset"].button-style-link-loading {
-    @apply text-cyan-300 dark:text-cyan-300;
+  button[type="button"].button-style-text-loading,
+  button[type="submit"].button-style-text-loading,
+  button[type="reset"].button-style-text-loading {
+    @apply text-cyan-200;
+  }
+
+  /* 文字色（背景塗りつぶしありの場合） */
+  .button-style-text-fill,
+  button[type="button"].button-style-text-fill,
+  button[type="submit"].button-style-text-fill,
+  button[type="reset"].button-style-text-fill {
+    @apply text-cyan-50;
+  }
+
+  /* 文字色（背景塗りつぶしありの場合）の読み込み中 */
+  .button-style-text-fill-loading,
+  button[type="button"].button-style-text-fill-loading,
+  button[type="submit"].button-style-text-fill-loading,
+  button[type="reset"].button-style-text-fill-loading {
+    @apply text-cyan-200;
   }
 }

@@ -80,8 +80,8 @@ export const MentionTextarea = React.forwardRef((props: MentionTextareaProps, re
           <React.Fragment key={index}>
             {part.isMention ? (
               <span
-                className="text-sky-600 cursor-pointer hover:bg-sky-100"
-                onDoubleClick={() => handleDoubleClickMention(part)}
+                className="text-sky-600 cursor-pointer underline underline-offset-2 hover:bg-sky-100"
+                onClick={() => handleDoubleClickMention(part)}
               >
                 @{part.text}
               </span>

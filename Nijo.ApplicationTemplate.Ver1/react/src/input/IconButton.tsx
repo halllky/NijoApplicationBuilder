@@ -37,44 +37,39 @@ export const IconButton = (args: {
   form?: string
 }) => {
 
-  const flex = args.inline ? 'inline-flex' : 'flex'
-  const direction = args.iconRight ? 'flex-row-reverse' : 'flex-row'
+  let className
+    = 'justify-center items-center gap-1 select-none'
+    + (args.inline ? ' inline-flex' : ' flex')
+    + (args.iconRight ? ' flex-row-reverse' : ' flex-row')
+    + (args.mini ? ' px-1 py-px' : ' px-2 py-1')
+    + (args.underline ? ' underline underline-offset-2' : '')
+    + (args.loading ? '' : ' cursor-pointer')
 
-  let className = `${flex} ${direction} justify-center items-center gap-1 select-none ${args.className}`
-
-  if (args.fill || args.outline) {
-    className += (args.mini ? ' px-1 py-px' : ' px-2 py-1')
-  }
-
+  // 文字色
   if (args.fill) {
     className += args.loading
-      ? ' button-style-fill-loading'
-      : ' button-style-fill'
-
-    // 普通に text-color-8 などとするとTailwind既定のスタイルリセットに優先度で負けるので背景色は独自クラスを指定
-    // className += args.loading
-    //   ? ` text-color-0 bg-color-button-loading`
-    //   : ` text-color-0 bg-color-button`
-  } else if (args.outline) {
-    className += args.loading || args.disabled
-      ? ' button-style-outline-loading'
-      : ' button-style-outline'
-
-    // className += args.loading
-    //   ? ` border border-color-5 text-color-5`
-    //   : ` border border-color-7`
-  } else if (args.underline) {
-    className += args.loading || args.disabled
-      ? ' button-style-link-loading'
-      : ' button-style-link'
-
-    // className += args.loading
-    //   ? ` pr-1 text-sky-300 border-b border-sky-300`
-    //   : ` pr-1 text-sky-600 border-b border-sky-600`
+      ? ' button-style-text-fill-loading'
+      : ' button-style-text-fill'
   } else {
-    className += args.loading || args.disabled
+    className += args.loading
       ? ' button-style-text-loading'
       : ' button-style-text'
+  }
+
+  // 枠線
+  if (args.outline) {
+    className += args.loading
+      ? ' border button-style-outline-loading'
+      : ' border button-style-outline'
+  } else {
+    className += ' border border-transparent'
+  }
+
+  // 塗りつぶし
+  if (args.fill) {
+    className += args.loading
+      ? ' button-style-bg-fill-loading'
+      : ' button-style-bg-fill'
   }
 
   // 読み込み中のくるくる
@@ -106,9 +101,9 @@ export const IconButton = (args: {
       )}
 
       {/* テキスト */}
-      {args.children && (
+      {!args.hideText && args.children && (
         <span className={`text-sm whitespace-nowrap relative ${(args.loading && !args.icon ? '' : '')}`}>
-          {args.hideText ? '\u200B' : args.children}
+          {!args.hideText && args.children}
           {args.loading && !args.icon && (
             <div className={`absolute inset-0 m-auto ${nowLoadingStyle}`}></div>
           )}

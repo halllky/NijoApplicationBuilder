@@ -201,7 +201,7 @@ const EntityNameView = React.forwardRef<HTMLTextAreaElement, {
       value={entityName}
       onChange={onChange}
       onKeyDown={handleKeyDown}
-      className={`font-bold border ${isEditing ? 'border-gray-500' : 'border-transparent select-all'} ${className ?? ''}`}
+      className={`font-bold border ${isEditing ? 'border-gray-500' : 'border-transparent'} ${className ?? ''}`}
       isReadOnly={!isEditing}
     />
   )
@@ -248,7 +248,7 @@ const AttributeValueView = ({ perspective, attribute, value, onChange, isEditing
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           isReadOnly={!isEditing}
-          className={`w-full border ${isEditing ? 'border-gray-500' : 'border-transparent select-all'}`}
+          className={`w-full border ${isEditing ? 'border-gray-500' : 'border-transparent'}`}
         />
       </div>
     )
@@ -303,7 +303,7 @@ const AttributeValueView = ({ perspective, attribute, value, onChange, isEditing
             </select>
           )}
           {!isEditing && (
-            <span className="flex-1 px-1 py-px select-all">
+            <span className="flex-1 px-1 py-px">
               {value}
               &nbsp;
             </span>

@@ -1,4 +1,5 @@
-import { ViewState } from "../layout/GraphView/Cy"
+import * as ReactResizablePanels from "react-resizable-panels"
+import * as CytoscapeWrapper from "../layout/GraphView/Cy"
 
 /** アプリケーション全体の設定 */
 export type AppSettingsForDisplay = {
@@ -81,8 +82,10 @@ export type Perspective = {
   formatConditions?: FormatCondition[]
   /** 詳細欄における単語型の属性のラベルの横幅。CSSの値で指定（"10rem"など） */
   detailPageLabelWidth?: string
+  /** グラフがグリッドに対して縦方向と横方向のどちらに表示されるか。 */
+  graphViewPosition?: ReactResizablePanels.PanelGroupProps['direction']
   /** グラフの表示状態（pan, zoom, ノード位置など） */
-  viewState?: ViewState
+  viewState?: CytoscapeWrapper.ViewState
   /** パネルのサイズの保存。具体的な値の形は react-resizable-panels の PanelGroupStorage の仕様に従う。 */
   resizablePaneState?: { [key: string]: string }
   /** グリッドの列幅の保存。具体的な値の形は EditableGrid の仕様に従う。 */

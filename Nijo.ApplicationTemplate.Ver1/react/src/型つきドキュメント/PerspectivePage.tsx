@@ -126,6 +126,15 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
   const [selectedEntityIndex, setSelectedEntityIndex] = React.useState<number>()
   const gridRef = React.useRef<EntityTypePageRef>(null)
 
+  // グラフの表示方向
+  const graphViewPosition = ReactHookForm.useWatch({ name: 'perspective.graphViewPosition', control })
+  const handleClickGraphHorizontal = useEvent(() => {
+    setValue('perspective.graphViewPosition', 'horizontal');
+  });
+  const handleClickGraphVertical = useEvent(() => {
+    setValue('perspective.graphViewPosition', 'vertical');
+  });
+
   // グリッドの行の型 (EntityTypePageから移動してきたGridRowType相当)
   type GridRowType = Entity;
 
@@ -264,6 +273,10 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
           <div className="basis-1"></div>
           <Input.IconButton onClick={handleOpenEntityTypeEditDialog} icon={Icon.PencilSquareIcon}>設定</Input.IconButton>
           <div className="flex-1"></div>
+          <div className="flex items-center">
+            <Input.IconButton onClick={handleClickGraphHorizontal} icon={Icon.PauseIcon} hideText outline={graphViewPosition === 'horizontal'} className="p-1">グラフをグリッドの横に表示</Input.IconButton>
+            <Input.IconButton onClick={handleClickGraphVertical} icon={Icon.Bars2Icon} hideText outline={graphViewPosition !== 'horizontal'} className="p-1">グラフをグリッドの下に表示</Input.IconButton>
+          </div>
           <div className="basis-28 flex justify-end">
             <Input.IconButton submit fill mini>
               {showSaveSuccessText ? '保存しました。' : '保存(Ctrl + S)'}
@@ -274,7 +287,7 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
         <PanelGroup direction="horizontal" autoSaveId="page-root-horizontal" storage={panelStorage}>
 
           <Panel collapsible minSize={12}>
-            <PanelGroup direction="vertical" autoSaveId="page-root-vertical" storage={panelStorage}>
+            <PanelGroup direction={graphViewPosition ?? 'vertical'} autoSaveId="page-root-vertical" storage={panelStorage}>
 
               {/* グリッド */}
               <Panel collapsible minSize={12}>
@@ -289,7 +302,7 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
                 />
               </Panel>
 
-              <PanelResizeHandle className="h-2" />
+              <PanelResizeHandle className={graphViewPosition === 'horizontal' ? 'w-8' : 'h-2'} />
 
               {/* グラフ */}
               <Panel collapsible minSize={12}>
