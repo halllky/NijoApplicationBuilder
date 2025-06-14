@@ -53,6 +53,10 @@ export type EntityAttribute = {
   attributeType: 'word' | 'description' | 'select'
   /** 選択肢（属性型が select の場合のみ） */
   selectOptions?: string[]
+  /** グリッドの列に表示しない */
+  invisibleInGrid?: boolean
+  /** 詳細欄に表示しない */
+  invisibleInDetail?: boolean
 }
 
 // -----------------------------------

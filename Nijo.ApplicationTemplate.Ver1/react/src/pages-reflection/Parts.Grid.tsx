@@ -121,7 +121,7 @@ const toGridColumnDef = <
   }
 
   if (member.type === "bool") {
-    return cellType.boolean(fieldPath as ReactHookForm.FieldPathByValue<TRow, boolean>, member.displayName)
+    return cellType.boolean(fieldPath as ReactHookForm.FieldPathByValue<TRow, boolean | undefined>, member.displayName)
   }
 
   return cellType.other(member.displayName)

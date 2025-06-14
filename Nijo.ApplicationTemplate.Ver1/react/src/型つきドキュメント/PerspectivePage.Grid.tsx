@@ -89,6 +89,9 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
     );
     if (perspective) {
       perspective.attributes.forEach((attrDef) => {
+        // グリッドで非表示の場合はスキップ
+        if (attrDef.invisibleInGrid) return;
+
         columns.push(
           cellType.other(attrDef.attributeName, {
             columnId: `col:${attrDef.attributeId}`,

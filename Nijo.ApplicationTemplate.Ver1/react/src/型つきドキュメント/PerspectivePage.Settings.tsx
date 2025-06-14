@@ -92,6 +92,12 @@ export const EntityTypeEditDialog = ({
         )
       },
     }),
+    cellType.boolean('invisibleInGrid', 'グリッドで非表示', {
+      defaultWidth: 140,
+    }),
+    cellType.boolean('invisibleInDetail', '詳細欄で非表示', {
+      defaultWidth: 140,
+    }),
     cellType.other('操作', {
       defaultWidth: 180,
       renderCell: (context) => (

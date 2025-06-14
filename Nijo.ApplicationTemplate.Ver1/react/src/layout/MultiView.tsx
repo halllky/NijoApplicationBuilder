@@ -59,7 +59,7 @@ export const MultiView = <TQueryModel extends QueryModelType>(
   const [isSearching, setIsSearching] = useState(false)
 
   // 列定義
-  const cellType = useCellTypes<DisplayData.TypeMap[TQueryModel]>()
+  const cellType = useCellTypes<DisplayData.TypeMap[TQueryModel]>(undefined)
   const columnDefs = useMemo(() => getColumnDefs(cellType), [getColumnDefs, cellType])
 
   // 検索実行関数

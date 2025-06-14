@@ -1,10 +1,14 @@
+import * as React from "react"
 import * as ReactHookForm from "react-hook-form"
-import { EditableGridColumnDef, EditableGridColumnDefOnEndEditing, EditableGridColumnDefOnStartEditing, EditableGridColumnDefOptions } from "./types"
+import { EditableGridColumnDef, EditableGridColumnDefOnEndEditing, EditableGridColumnDefOnStartEditing, EditableGridColumnDefOptions, RowChangeEvent } from "./types"
 import { getValueByPath, setValueByPath } from "./EditableGrid.utils";
 
 /** 列定義ヘルパー関数の一覧を返します。 */
-export const useCellTypes = <TRow extends ReactHookForm.FieldValues>(): ColumnDefFactories<TRow> => {
-  return {
+export const useCellTypes = <TRow extends ReactHookForm.FieldValues>(
+  onChangeRow: RowChangeEvent<TRow> | undefined,
+): ColumnDefFactories<TRow> => {
+
+  return React.useMemo(() => ({
     /** 既定の文字列型セル */
     text: (fieldPath, header, options) => {
       return {
@@ -49,11 +53,25 @@ export const useCellTypes = <TRow extends ReactHookForm.FieldValues>(): ColumnDe
       return {
         header,
         fieldPath,
-        onStartEditing: e => {
-          const value = getValueByPath(e.row, fieldPath) as boolean | undefined
-          e.setEditorInitialValue(value?.toString() ?? '')
-        },
-        onEndEditing: getDefaultOnEndEditing(fieldPath),
+        renderCell: options?.renderCell ?? (context => {
+          const handleClick = () => {
+            const value = getValueByPath(context.row.original, fieldPath) as boolean | undefined
+            const clone = window.structuredClone(context.row.original)
+            setValueByPath(clone, fieldPath, !value)
+            onChangeRow?.({
+              changedRows: [{
+                rowIndex: context.row.index,
+                oldRow: context.row.original,
+                newRow: clone,
+              }]
+            })
+          }
+          return (
+            <div className="w-full flex items-center justify-center" onClick={handleClick}>
+              {context.row.original[fieldPath] ? '✔' : ''}
+            </div>
+          )
+        }),
         ...options,
       };
     },
@@ -64,7 +82,7 @@ export const useCellTypes = <TRow extends ReactHookForm.FieldValues>(): ColumnDe
         ...options,
       };
     },
-  };
+  }), [onChangeRow])
 }
 
 // -----------------------------------------
@@ -88,7 +106,7 @@ export type ColumnDefFactories<TRow extends ReactHookForm.FieldValues> = {
   /** 日付型の列を定義します。 */
   date: BoundColumnDefFactory<TRow, string | undefined>
   /** 真偽値型の列を定義します。 */
-  boolean: BoundColumnDefFactory<TRow, boolean>
+  boolean: BoundColumnDefFactory<TRow, boolean | undefined>
   /** その他の型の列を定義します。 */
   other: UnboundColumnDefFactory<TRow>
 }

@@ -118,7 +118,7 @@ export const EntityDetailPane: React.FC<EntityDetailPaneProps> = ({
 
         {/* 属性 */}
         <div className="flex flex-col gap-1">
-          {perspective.attributes.map((attribute, index) => (
+          {perspective.attributes.filter(a => !a.invisibleInDetail).map((attribute, index) => (
             <React.Fragment key={attribute.attributeId}>
               {index > 0 && (
                 <hr className="border-gray-200" />

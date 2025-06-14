@@ -69,7 +69,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   const cellEditorRef = useRef<CellEditorRef<TRow>>(null);
 
   // 列定義の取得
-  const cellType = useCellTypes<TRow>()
+  const cellType = useCellTypes<TRow>(props.onChangeRow)
   const columnDefs = React.useMemo(() => {
     return getColumnDefs(cellType)
   }, [getColumnDefs, cellType])
