@@ -75,7 +75,7 @@ export const MentionTextarea = React.forwardRef((props: MentionTextareaProps, re
   // メンション部分をリンクに変換して表示する。
   if (props.isReadOnly) {
     return (
-      <div className={`whitespace-pre-wrap pb-[2px] ${props.className ?? ''}`}>
+      <div className={`whitespace-pre-wrap break-all pb-[2px] ${props.className ?? ''}`}>
         {MentionUtil.parseAsMentionText(props.value).map((part, index) => (
           <React.Fragment key={index}>
             {part.isMention ? (
@@ -107,7 +107,7 @@ export const MentionTextarea = React.forwardRef((props: MentionTextareaProps, re
       onKeyDown={handleKeyDownNewCommentText2}
       spellCheck={false}
       placeholder={props.placeholder}
-      className={`[&_textarea]:outline-none resize-none field-sizing-content ${props.className ?? ''}`}
+      className={`[&_textarea]:outline-none break-all resize-none field-sizing-content ${props.className ?? ''}`}
       suggestionsPortalHost={document.body}
       allowSuggestionsAboveCursor
       customSuggestionsContainer={children => (
