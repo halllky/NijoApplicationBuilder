@@ -77,8 +77,8 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
         const bottom = getPixel({ position: 'bottom', rowIndex: caretCell.rowIndex })
         containerRef.current.style.left = `${left}px`
         containerRef.current.style.top = `${top}px`
-        containerRef.current.style.minWidth = `${right - left + 1}px`
-        containerRef.current.style.minHeight = `${bottom - top + 1}px`
+        containerRef.current.style.minWidth = `${right - left}px`
+        containerRef.current.style.minHeight = `${bottom - top}px`
       }
       // 前のセルで入力した値をクリアする
       // setUnComittedText('')
@@ -281,7 +281,6 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
     <label ref={containerRef}
       className="absolute min-w-4 min-h-4 flex items-stretch outline-none bg-white border border-gray-950"
       style={{
-        zIndex: 30,
         // クイック編集のためCellEditor自体は常に存在し続けるが、セル編集モードでないときは見えないようにする
         opacity: editingCellInfo === undefined ? 0 : undefined,
         pointerEvents: editingCellInfo === undefined ? 'none' : undefined,

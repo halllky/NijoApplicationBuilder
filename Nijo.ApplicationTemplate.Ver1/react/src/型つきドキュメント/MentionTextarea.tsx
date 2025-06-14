@@ -111,7 +111,7 @@ export const MentionTextarea = React.forwardRef((props: MentionTextareaProps, re
       suggestionsPortalHost={document.body}
       allowSuggestionsAboveCursor
       customSuggestionsContainer={children => (
-        <div className="max-w-96 max-h-96 overflow-y-auto bg-white border border-gray-400">
+        <div className="max-w-96 max-h-96 overflow-y-auto bg-white border">
           {children}
         </div>
       )}
@@ -120,7 +120,6 @@ export const MentionTextarea = React.forwardRef((props: MentionTextareaProps, re
         trigger="@"
         markup="@[__display__](__id__)"
         data={getSuggestions}
-        appendSpaceOnAdd
         displayTransform={(id, display) => `@${display}`}
         className="bg-sky-100 rounded-sm"
         renderSuggestion={(item, search, highlightedDisplay, index, focused) => (
