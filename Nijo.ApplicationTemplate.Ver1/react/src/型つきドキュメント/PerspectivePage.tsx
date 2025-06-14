@@ -157,7 +157,7 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
     setEntityTypeSettingsDialogProps({
       initialEntityType: perspective,
       onApply: (updatedEntityType) => {
-        setValue('perspective', updatedEntityType);
+        setValue('perspective', updatedEntityType, { shouldDirty: true });
         setEntityTypeSettingsDialogProps(undefined);
       },
       onCancel: () => {
@@ -190,6 +190,14 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
   });
 
   // ---------------------------------------
+  // ページの再読み込み前に確認ダイアログを表示する
+  ReactRouter.useBeforeUnload(e => {
+    if (isDirty) {
+      e.preventDefault();
+    }
+  });
+
+  // 別のページへの遷移をブロックする
   const blocker = ReactRouter.useBlocker(
     ({ currentLocation, nextLocation }) =>
       isDirty && currentLocation.pathname !== nextLocation.pathname
