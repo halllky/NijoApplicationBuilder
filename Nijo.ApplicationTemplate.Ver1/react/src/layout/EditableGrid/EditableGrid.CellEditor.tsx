@@ -5,7 +5,7 @@ import * as RT from '@tanstack/react-table'
 import { useOutsideClick } from '../../util/useOutsideClick'
 import { useIME } from '../../util/useIME'
 import { ColumnMetadataInternal } from './EditableGrid'
-import { CellPosition, EditableGridColumnDef, EditableGridProps, GridCellEditorComponent, EditorProps, EditorRef, SelectCellOption } from './types'
+import { CellPosition, EditableGridColumnDef, EditableGridProps, GridCellEditorComponent, CellEditorTextareaProps, CellEditorTextareaRef, SelectCellOption } from './types'
 import { Virtualizer } from '@tanstack/react-virtual'
 import { ChevronDownIcon } from '@heroicons/react/24/solid'
 
@@ -24,7 +24,7 @@ export type CellEditorRef<T> = {
   focus: () => void
   setEditorInitialValue: (value: string | undefined) => void
   startEditing: (cell: RT.Cell<T, unknown>) => void
-  textarea: EditorRef | null
+  textarea: CellEditorTextareaRef | null
 }
 
 /**
@@ -60,7 +60,7 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
   const [caretCellEditingInfo, setCaretCellEditingInfo] = React.useState<EditableGridColumnDef<T> | undefined>()
 
   const containerRef = React.useRef<HTMLLabelElement>(null)
-  const editorRef = React.useRef<EditorRef>(null)
+  const editorTextareaRef = React.useRef<CellEditorTextareaRef>(null)
 
   React.useEffect(() => {
     if (caretCell) {
@@ -87,7 +87,7 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
     }
   }, [caretCell, api, containerRef, getPixel])
   React.useEffect(() => {
-    if (caretCellEditingInfo) editorRef.current?.focus()
+    if (caretCellEditingInfo) editorTextareaRef.current?.focus()
   }, [caretCellEditingInfo, getPixel])
 
   /** 編集開始 */
@@ -124,7 +124,7 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
       block: 'nearest',
       inline: 'nearest',
     })
-    editorRef.current?.focus({ preventScroll: true }); // 編集開始時にエディタにフォーカスを当てる
+    editorTextareaRef.current?.focus({ preventScroll: true }); // 編集開始時にエディタにフォーカスを当てる
   })
 
   /** 編集確定 */
@@ -155,7 +155,7 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
     columnDef.onEndEditing?.({
       rowIndex: editingCellInfo.rowIndex,
       row: editingCellInfo.row,
-      value: value ?? editorRef.current?.value ?? '',
+      value: value ?? editorTextareaRef.current?.value ?? '',
       setEditedRow: (row: T) => {
         newRow = row
       },
@@ -271,11 +271,11 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
   }, [commitEditing])
 
   React.useImperativeHandle(ref, () => ({
-    focus: () => editorRef.current?.focus({ preventScroll: true }),
+    focus: () => editorTextareaRef.current?.focus({ preventScroll: true }),
     setEditorInitialValue: setUnComittedText,
     startEditing,
-    textarea: editorRef.current,
-  }), [startEditing, editorRef, setUnComittedText])
+    textarea: editorTextareaRef.current,
+  }), [startEditing, editorTextareaRef, setUnComittedText])
 
   return (
     <label ref={containerRef}
@@ -297,7 +297,7 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
         value: uncomittedText,
         onChange: setUnComittedText,
         showOptions: caretCellEditingInfo?.getOptions !== undefined,
-        ref: editorRef,
+        ref: editorTextareaRef,
       })}
 
       {currentOptions && (

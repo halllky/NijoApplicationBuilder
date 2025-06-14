@@ -342,7 +342,7 @@ const CellEditorWithMention = React.forwardRef(({
   value,
   onChange,
   showOptions,
-}: Layout.EditorProps, ref: React.ForwardedRef<Layout.EditorRef>) => {
+}: Layout.CellEditorTextareaProps, ref: React.ForwardedRef<Layout.CellEditorTextareaRef>) => {
 
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
@@ -350,7 +350,6 @@ const CellEditorWithMention = React.forwardRef(({
     focus: () => textareaRef.current?.focus(),
     select: () => textareaRef.current?.select(),
     value: value ?? '',
-    setValue: onChange,
   }), [value, onChange])
 
   return (

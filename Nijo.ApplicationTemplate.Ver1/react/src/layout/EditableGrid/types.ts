@@ -191,19 +191,18 @@ export type EditableGridKeyboardEventHandler = (
 
 // ----------------------------------
 /** セル編集エディタのコンポーネント */
-export type GridCellEditorComponent = React.ElementType<EditorProps & { ref?: React.ForwardedRef<EditorRef> }>
+export type GridCellEditorComponent = React.ElementType<CellEditorTextareaProps & { ref?: React.ForwardedRef<CellEditorTextareaRef> }>
 
 /** テキストエリアのprops */
-export type EditorProps = {
+export type CellEditorTextareaProps = {
   value: string | null | undefined
   onChange: (value: string) => void
   showOptions: boolean
 }
 
 /** テキストエリアのref */
-export type EditorRef = {
+export type CellEditorTextareaRef = {
   focus: (options?: FocusOptions) => void
   select: () => void
   value: string | null | undefined
-  setValue: (value: string) => void
 }
