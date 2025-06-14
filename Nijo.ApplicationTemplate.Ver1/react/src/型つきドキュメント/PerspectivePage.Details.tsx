@@ -26,6 +26,14 @@ export const EntityDetailPane: React.FC<EntityDetailPaneProps> = ({
   entityIndex,
 }) => {
 
+  const [isEditing, setIsEditing] = React.useState(false);
+  const handleStartEditing = useEvent(() => {
+    setIsEditing(true);
+  })
+  const handleEndEditing = useEvent(() => {
+    setIsEditing(false);
+  })
+
   // ---------------------------------------
   // エンティティ名
   const handleEntityNameChanged = useEvent((entityName: string) => {
@@ -85,11 +93,26 @@ export const EntityDetailPane: React.FC<EntityDetailPaneProps> = ({
   return (
     <div className="px-1 pb-1 h-full flex flex-col gap-2">
 
-      {/* エンティティ名 */}
-      <EntityNameView
-        entityName={entity.entityName}
-        onChange={handleEntityNameChanged}
-      />
+      <div className="flex items-center gap-1">
+        {/* エンティティ名 */}
+        <EntityNameView
+          entityName={entity.entityName}
+          onChange={handleEntityNameChanged}
+          onCtrlEnter={handleEndEditing}
+          isEditing={isEditing}
+          className="flex-1"
+        />
+
+        {isEditing ? (
+          <Input.IconButton onClick={handleEndEditing} icon={Icon.CheckIcon} hideText mini>
+            編集終了
+          </Input.IconButton>
+        ) : (
+          <Input.IconButton onClick={handleStartEditing} icon={Icon.PencilIcon} hideText mini>
+            編集
+          </Input.IconButton>
+        )}
+      </div>
 
       <div className="flex-1 flex flex-col justify-start gap-2 py-1 overflow-y-auto">
 
@@ -105,6 +128,8 @@ export const EntityDetailPane: React.FC<EntityDetailPaneProps> = ({
                 attribute={attribute}
                 value={entity.attributeValues[attribute.attributeId]}
                 onChange={handleAttributeChanged}
+                onCtrlEnter={handleEndEditing}
+                isEditing={isEditing}
               />
             </React.Fragment>
           ))}
@@ -151,103 +176,45 @@ export const EntityDetailPane: React.FC<EntityDetailPaneProps> = ({
 /**
  * エンティティ名の表示
  */
-const EntityNameView = ({ entityName, onChange }: {
+const EntityNameView = ({ entityName, onChange, isEditing, onCtrlEnter, className }: {
   entityName: string
   onChange: (entityName: string) => void
+  isEditing: boolean
+  onCtrlEnter: () => void
+  className?: string
 }) => {
-  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
-  const [isEditing, setIsEditing] = React.useState(false);
-  const [unCommitedValue, setUnCommitedValue] = React.useState<string>();
-
-  const handleStartEditing = useEvent(() => {
-    setIsEditing(true);
-    window.setTimeout(() => {
-      textareaRef.current?.focus();
-      textareaRef.current?.select();
-    }, 0);
-  })
-  const handleSave = useEvent(() => {
-    setIsEditing(false);
-    if (unCommitedValue !== undefined) onChange(unCommitedValue);
-    setUnCommitedValue(undefined);
-  })
-  const handleCancel = useEvent(() => {
-    setIsEditing(false);
-    setUnCommitedValue(undefined);
-  })
   const handleKeyDown = useEvent((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.ctrlKey && e.key === 'Enter') handleSave();
-    if (e.key === 'Escape') handleCancel();
+    if (e.ctrlKey && e.key === 'Enter') onCtrlEnter();
   })
 
   return (
-    <div className={`self-stretch flex flex-wrap items-center gap-1 border ${isEditing ? 'border-gray-500' : 'border-transparent'}`}>
-      <MentionTextarea
-        ref={textareaRef}
-        value={unCommitedValue ?? entityName}
-        onChange={setUnCommitedValue}
-        onKeyDown={handleKeyDown}
-        className="flex-1 font-bold"
-        isReadOnly={!isEditing}
-      />
-      {isEditing && (
-        <>
-          <Input.IconButton onClick={handleCancel} icon={Icon.XMarkIcon} hideText mini>
-            キャンセル
-          </Input.IconButton>
-          <Input.IconButton onClick={handleSave} icon={Icon.CheckIcon} hideText mini>
-            保存
-          </Input.IconButton>
-        </>
-      )}
-      {!isEditing && (
-        <Input.IconButton onClick={handleStartEditing} icon={Icon.PencilIcon} hideText mini>
-          編集
-        </Input.IconButton>
-      )}
-    </div>
+    <MentionTextarea
+      value={entityName}
+      onChange={onChange}
+      onKeyDown={handleKeyDown}
+      className={`font-bold border ${isEditing ? 'border-gray-500' : 'border-transparent'} ${className ?? ''}`}
+      isReadOnly={!isEditing}
+    />
   )
 }
 
 /**
  * 属性名と値のペア1件分の表示
  */
-const AttributeValueView = ({ perspective, attribute, value, onChange }: {
+const AttributeValueView = ({ perspective, attribute, value, onChange, isEditing, onCtrlEnter }: {
   perspective: Perspective
   attribute: EntityAttribute
   value: string
   onChange: (attribute: EntityAttribute, value: string) => void
+  isEditing: boolean
+  onCtrlEnter: () => void
 }) => {
 
-  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
-  const [isEditing, setIsEditing] = React.useState(false);
-  const [unCommitedValue, setUnCommitedValue] = React.useState<string>();
-
-  const handleStartEditing = useEvent(() => {
-    setIsEditing(true);
-    setUnCommitedValue(value);
-    setTimeout(() => {
-      textareaRef.current?.focus();
-      if (attribute.attributeType === 'word') {
-        textareaRef.current?.select();
-      } else {
-        textareaRef.current?.setSelectionRange(value.length, value.length); // 文字の末尾を選択
-      }
-    }, 0);
+  const handleKeyDown = useEvent((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.ctrlKey && e.key === 'Enter') onCtrlEnter();
   })
-  const handleSave = useEvent(() => {
-    setIsEditing(false);
-    if (unCommitedValue !== undefined) onChange(attribute, unCommitedValue);
-    setUnCommitedValue(undefined);
-  })
-  const handleCancel = useEvent(() => {
-    if (unCommitedValue !== value && !window.confirm('キャンセルしますか？')) return;
-    setIsEditing(false);
-    setUnCommitedValue(undefined);
-  })
-  const handleKeyDownTextarea = useEvent((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.ctrlKey && e.key === 'Enter') handleSave();
-    if (e.key === 'Escape') handleCancel();
+  const handleChange = useEvent((value: string) => {
+    onChange(attribute, value);
   })
 
   if (attribute.attributeType === 'word') {
@@ -262,29 +229,12 @@ const AttributeValueView = ({ perspective, attribute, value, onChange }: {
         </div>
 
         <MentionTextarea
-          ref={textareaRef}
-          value={unCommitedValue ?? value}
-          onChange={setUnCommitedValue}
-          onKeyDown={handleKeyDownTextarea}
+          value={value}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
           isReadOnly={!isEditing}
           className="w-full"
         />
-
-        {isEditing && (
-          <>
-            <Input.IconButton onClick={handleCancel} icon={Icon.XMarkIcon} hideText mini>
-              キャンセル
-            </Input.IconButton>
-            <Input.IconButton onClick={handleSave} icon={Icon.CheckIcon} hideText mini>
-              保存
-            </Input.IconButton>
-          </>
-        )}
-        {!isEditing && (
-          <Input.IconButton onClick={handleStartEditing} icon={Icon.PencilIcon} hideText mini>
-            編集
-          </Input.IconButton>
-        )}
       </div>
     )
   } else {
@@ -296,27 +246,11 @@ const AttributeValueView = ({ perspective, attribute, value, onChange }: {
             {attribute.attributeName}
           </span>
           <div className="flex-1"></div>
-          {isEditing && (
-            <>
-              <Input.IconButton onClick={handleCancel} icon={Icon.XMarkIcon} hideText mini className="flex-none mt-1">
-                キャンセル
-              </Input.IconButton>
-              <Input.IconButton onClick={handleSave} icon={Icon.CheckIcon} hideText mini className="flex-none mt-1">
-                保存
-              </Input.IconButton>
-            </>
-          )}
-          {!isEditing && (
-            <Input.IconButton onClick={handleStartEditing} icon={Icon.PencilIcon} hideText mini className="flex-none mt-1">
-              編集
-            </Input.IconButton>
-          )}
         </div>
         <MentionTextarea
-          ref={textareaRef}
-          value={unCommitedValue ?? value}
-          onChange={setUnCommitedValue}
-          onKeyDown={handleKeyDownTextarea}
+          value={value}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
           isReadOnly={!isEditing}
           className="self-stretch"
         />
