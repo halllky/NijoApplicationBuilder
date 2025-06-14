@@ -101,10 +101,13 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
             },
             onEndEditing: e => {
               const clone = window.structuredClone(e.row);
-              if (String(e.value).trim() === '') {
+              const trimmed = String(e.value).trim();
+              if (trimmed === '') {
+                delete clone.attributeValues[attrDef.attributeId];
+              } else if (attrDef.attributeType === 'select' && !attrDef.selectOptions?.includes(trimmed)) {
                 delete clone.attributeValues[attrDef.attributeId];
               } else {
-                clone.attributeValues[attrDef.attributeId] = String(e.value);
+                clone.attributeValues[attrDef.attributeId] = trimmed;
               }
               e.setEditedRow(clone);
             },

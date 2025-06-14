@@ -277,7 +277,7 @@ const SelectOptionsEditor = ({
 
   const handleApply = useEvent(() => {
     const selectOptions = formMethods.getValues('selectOptions');
-    onApply(selectOptions.map(x => x.value));
+    onApply(selectOptions.map(x => x.value.trim()).filter(x => x !== ''));
   });
 
   return (

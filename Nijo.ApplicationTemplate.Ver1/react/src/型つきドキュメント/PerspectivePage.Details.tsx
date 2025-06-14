@@ -144,7 +144,7 @@ export const EntityDetailPane: React.FC<EntityDetailPaneProps> = ({
         <div className="flex-1"></div>
 
         {/* コメント */}
-        <hr className="border-gray-200" />
+        <hr className="border-gray-300" />
         <div className="flex flex-col gap-1">
           <span className="text-xs select-none text-gray-500">
             コメント
@@ -219,7 +219,7 @@ const AttributeValueView = ({ perspective, attribute, value, onChange, isEditing
   onCtrlEnter: () => void
 }) => {
 
-  const handleKeyDown = useEvent((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = useEvent((e: React.KeyboardEvent<HTMLTextAreaElement | HTMLSelectElement>) => {
     if (e.ctrlKey && e.key === 'Enter') onCtrlEnter();
     if (e.key === 'Escape') onCtrlEnter();
   })
@@ -234,7 +234,7 @@ const AttributeValueView = ({ perspective, attribute, value, onChange, isEditing
     // 単語型の属性
     return (
       <div className="self-stretch flex items-start gap-1">
-        <div className="flex-none flex items-center" style={{ width: perspective.detailPageLabelWidth ?? DEFAULT_LABEL_WIDTH }}>
+        <div className="flex-none flex items-center border border-transparent" style={{ width: perspective.detailPageLabelWidth ?? DEFAULT_LABEL_WIDTH }}>
           <span className="text-xs select-none text-gray-500">
             {attribute.attributeName}
           </span>
@@ -278,7 +278,7 @@ const AttributeValueView = ({ perspective, attribute, value, onChange, isEditing
 
     return (
       <div className="self-stretch flex items-start gap-1">
-        <div className="flex-none flex items-center" style={{ width: perspective.detailPageLabelWidth ?? DEFAULT_LABEL_WIDTH }}>
+        <div className="flex-none flex items-center border border-transparent" style={{ width: perspective.detailPageLabelWidth ?? DEFAULT_LABEL_WIDTH }}>
           <span className="text-xs select-none text-gray-500">
             {attribute.attributeName}
           </span>
@@ -286,21 +286,28 @@ const AttributeValueView = ({ perspective, attribute, value, onChange, isEditing
             &nbsp;
           </span>
         </div>
-        <div className="flex-1">
-          <select
-            value={value}
-            onChange={handleChangeSelect}
-            className={`w-full border ${isEditing ? 'border-gray-500' : 'border-transparent select-all'}`}
-            disabled={!isEditing}
-          >
-            <option value=""></option>
-            {options.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </div>
+        <label className={`flex-1 flex items-center break-all whitespace-pre-wrap overflow-hidden border ${isEditing ? 'border-gray-500' : 'border-transparent'}`}>
+          {isEditing && (
+            <select
+              value={value}
+              onChange={handleChangeSelect}
+              className="flex-1"
+              onKeyDown={handleKeyDown}
+            >
+              <option value=""></option>
+              {options.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          )}
+          {!isEditing && (
+            <span className="flex-1 px-1 py-px">
+              {value}
+            </span>
+          )}
+        </label>
       </div>
     )
   }
