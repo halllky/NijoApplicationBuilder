@@ -77,7 +77,7 @@ export const EntityTypeEditDialog = ({
         }
         return (
           <div className="w-full flex gap-1">
-            <span className="flex-1 truncate">
+            <span className="truncate">
               {context.row.original.selectOptions?.join(', ')}
             </span>
             <Input.IconButton
@@ -181,7 +181,10 @@ export const EntityTypeEditDialog = ({
           </div>
 
           <div className="flex-1 flex flex-col">
-            <div className="text-sm text-gray-500">属性定義</div>
+            <div className="flex items-center gap-1">
+              <div className="text-sm text-gray-500">属性定義</div>
+              <Input.IconButton icon={Icon.PlusCircleIcon} onClick={handleAddAttributeRow}>属性を追加</Input.IconButton>
+            </div>
             <div className="flex-1 overflow-y-auto border border-gray-400">
               <Layout.EditableGrid
                 ref={attributeGridRef}
@@ -192,12 +195,9 @@ export const EntityTypeEditDialog = ({
               />
             </div>
           </div>
-          <div className="flex justify-between items-center py-1">
-            <Input.IconButton icon={Icon.PlusCircleIcon} onClick={handleAddAttributeRow}>属性を追加</Input.IconButton>
-            <div className="flex gap-2">
-              <Input.IconButton onClick={handleCancel}>キャンセル</Input.IconButton>
-              <Input.IconButton submit fill>適用</Input.IconButton>
-            </div>
+          <div className="flex justify-end items-center gap-4 py-1">
+            <Input.IconButton onClick={handleCancel}>キャンセル</Input.IconButton>
+            <Input.IconButton submit fill>適用</Input.IconButton>
           </div>
         </form>
       </ReactHookForm.FormProvider>

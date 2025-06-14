@@ -54,7 +54,7 @@ export const useCellTypes = <TRow extends ReactHookForm.FieldValues>(
         header,
         fieldPath,
         renderCell: options?.renderCell ?? (context => {
-          const handleClick = () => {
+          const handleDoubleClick = () => {
             const value = getValueByPath(context.row.original, fieldPath) as boolean | undefined
             const clone = window.structuredClone(context.row.original)
             setValueByPath(clone, fieldPath, !value)
@@ -67,7 +67,7 @@ export const useCellTypes = <TRow extends ReactHookForm.FieldValues>(
             })
           }
           return (
-            <div className="w-full flex items-center justify-center" onClick={handleClick}>
+            <div className="w-full flex items-center justify-center cursor-pointer" onDoubleClick={handleDoubleClick}>
               {context.row.original[fieldPath] ? '✔' : ''}
             </div>
           )
