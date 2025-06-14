@@ -28,7 +28,7 @@ import { useCopyPaste } from "./EditableGrid.useCopyPaste";
 
 // CSS
 import "./EditableGrid.css";
-import { CellEditor, CellEditorRef, useGetPixel } from "./EditableGrid.CellEditor";
+import { CellEditor, CellEditorRef, DefaultEditor, useGetPixel } from "./EditableGrid.CellEditor";
 
 /**
  * 編集可能なグリッドを表示するコンポーネント
@@ -617,6 +617,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
 
       <CellEditor
         ref={cellEditorRef}
+        editorComponent={props.editorComponent ?? DefaultEditor}
         api={table}
         caretCell={activeCell ?? undefined}
         getPixel={getPixel}

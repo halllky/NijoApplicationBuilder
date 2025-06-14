@@ -45,6 +45,9 @@ export type EditableGridProps<TRow extends ReactHookForm.FieldValues> = {
 
   /** 行のclassNameを取得する関数。基本的にその行のテキスト色を変更する程度の想定。 */
   getRowClassName?: (row: TRow) => string
+
+  /** セル編集エディタのコンポーネント */
+  editorComponent?: GridCellEditorComponent
 }
 
 /**
@@ -185,3 +188,22 @@ export type EditableGridKeyboardEventHandler = (
   /** セル編集中か否か */
   isEditing: boolean
 ) => { handled: boolean }
+
+// ----------------------------------
+/** セル編集エディタのコンポーネント */
+export type GridCellEditorComponent = React.ElementType<EditorProps & { ref?: React.ForwardedRef<EditorRef> }>
+
+/** テキストエリアのprops */
+export type EditorProps = {
+  value: string | null | undefined
+  onChange: (value: string) => void
+  showOptions: boolean
+}
+
+/** テキストエリアのref */
+export type EditorRef = {
+  focus: (options?: FocusOptions) => void
+  select: () => void
+  value: string | null | undefined
+  setValue: (value: string) => void
+}

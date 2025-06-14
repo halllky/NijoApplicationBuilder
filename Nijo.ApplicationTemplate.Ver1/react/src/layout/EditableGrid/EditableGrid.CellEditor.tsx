@@ -5,12 +5,13 @@ import * as RT from '@tanstack/react-table'
 import { useOutsideClick } from '../../util/useOutsideClick'
 import { useIME } from '../../util/useIME'
 import { ColumnMetadataInternal } from './EditableGrid'
-import { CellPosition, EditableGridColumnDef, EditableGridProps, SelectCellOption } from './types'
+import { CellPosition, EditableGridColumnDef, EditableGridProps, GridCellEditorComponent, EditorProps, EditorRef, SelectCellOption } from './types'
 import { Virtualizer } from '@tanstack/react-virtual'
 import { ChevronDownIcon } from '@heroicons/react/24/solid'
 
 /** CellEditorのprops */
 export type CellEditorProps<T extends ReactHookForm.FieldValues> = {
+  editorComponent: GridCellEditorComponent
   api: RT.Table<T>
   caretCell: CellPosition | undefined
   getPixel: GetPixelFunction
@@ -23,7 +24,7 @@ export type CellEditorRef<T> = {
   focus: () => void
   setEditorInitialValue: (value: string | undefined) => void
   startEditing: (cell: RT.Cell<T, unknown>) => void
-  textarea: HTMLTextAreaElement | null
+  textarea: EditorRef | null
 }
 
 /**
@@ -35,6 +36,7 @@ export type CellEditorRef<T> = {
  * EditableGrid にフォーカスが当たっているうちは、見えないだけで、必ずこのコンポーネントにフォーカスが当たる。
  */
 export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>({
+  editorComponent,
   api,
   caretCell,
   getPixel,
@@ -53,15 +55,12 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
 
   // エディタの値
   const [uncomittedText, setUnComittedText] = React.useState<string>()
-  const handleChangeUncomittedText = useEvent((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setUnComittedText(e.target.value)
-  })
 
   // エディタ設定。caretセルが移動するたびに更新される。
   const [caretCellEditingInfo, setCaretCellEditingInfo] = React.useState<EditableGridColumnDef<T> | undefined>()
 
   const containerRef = React.useRef<HTMLLabelElement>(null)
-  const editorRef = React.useRef<HTMLTextAreaElement>(null)
+  const editorRef = React.useRef<EditorRef>(null)
 
   React.useEffect(() => {
     if (caretCell) {
@@ -294,16 +293,13 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
       tabIndex={0}
     >
 
-      <textarea
-        ref={editorRef}
-        value={uncomittedText}
-        onChange={handleChangeUncomittedText}
-        className="flex-1 resize-none field-sizing-content outline-none"
-      />
+      {React.createElement(editorComponent, {
+        value: uncomittedText,
+        onChange: setUnComittedText,
+        showOptions: caretCellEditingInfo?.getOptions !== undefined,
+        ref: editorRef,
+      })}
 
-      {caretCellEditingInfo?.getOptions && (
-        <ChevronDownIcon className="w-4 cursor-pointer" />
-      )}
       {currentOptions && (
         <ul className="absolute top-[calc(100%+2px)] left-[-1px] right-[-1px] max-h-64 overflow-y-auto bg-white border border-gray-950">
           {currentOptions.map((option, index) => (
@@ -316,6 +312,45 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
     </label>
   )
 }) as (<T extends ReactHookForm.FieldValues>(props: CellEditorProps<T> & { ref?: React.ForwardedRef<CellEditorRef<T>> }) => React.ReactNode);
+
+// ----------------------------------
+// テキストエリア
+
+/** editorComponentが指定されていない場合のデフォルトのエディタ */
+export const DefaultEditor: GridCellEditorComponent = React.forwardRef(({
+  value,
+  onChange,
+  showOptions,
+}, ref) => {
+
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null)
+
+  const handleChange = useEvent((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    onChange(e.target.value)
+  })
+
+  React.useImperativeHandle(ref, () => ({
+    focus: options => textareaRef.current?.focus(options),
+    select: () => textareaRef.current?.select(),
+    value: value ?? '',
+    setValue: onChange,
+  }), [value, onChange])
+
+  return (
+    <>
+      <textarea
+        ref={textareaRef}
+        value={value ?? ''}
+        onChange={handleChange}
+        className="flex-1 resize-none field-sizing-content outline-none"
+      />
+
+      {showOptions && (
+        <ChevronDownIcon className="w-4 cursor-pointer" />
+      )}
+    </>
+  )
+})
 
 // ----------------------------------
 // 座標計算
