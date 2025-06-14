@@ -9,6 +9,7 @@ import * as Layout from "../layout"
 import * as Icon from "@heroicons/react/24/solid"
 import { getNavigationUrl } from "../routes";
 import { AppSettingsEditDialog, AppSettingsEditDialogProps } from "../型つきドキュメント/AppSettingsEditDialog";
+import { PersonalSettingsEditDialog } from "../型つきドキュメント/PersonalSettings";
 
 export const NijoUiTopPage = () => {
 
@@ -80,6 +81,15 @@ export const NijoUiTopPage = () => {
     })
   })
 
+  // 個人設定
+  const [openPersonalSettingsDialog, setOpenPersonalSettingsDialog] = React.useState(false);
+  const handleClickPersonalSettings = useEvent(() => {
+    setOpenPersonalSettingsDialog(true)
+  })
+  const handleClosePersonalSettingsDialog = useEvent(() => {
+    setOpenPersonalSettingsDialog(false)
+  })
+
   return (
     <div className="h-full w-full flex justify-center items-center">
       <div className="flex flex-col items-start px-4 py-2">
@@ -111,26 +121,41 @@ export const NijoUiTopPage = () => {
         <MenuItem icon={Icon.ShareIcon} link={getNavigationUrl({ page: 'schema' })}>
           ソースコード自動生成設定
         </MenuItem>
+
+        <MenuItem icon={Icon.Cog6ToothIcon} onClick={handleClickPersonalSettings}>
+          個人設定
+        </MenuItem>
       </div>
 
       {/* アプリケーション設定編集ダイアログ */}
       {appSettingsDialogProps && (
         <AppSettingsEditDialog {...appSettingsDialogProps} />
       )}
+
+      {/* 個人設定ダイアログ */}
+      {openPersonalSettingsDialog && (
+        <PersonalSettingsEditDialog onClose={handleClosePersonalSettingsDialog} />
+      )}
     </div>
   )
 }
 
 /** アイコンつきリンクボタン */
-const MenuItem = ({ icon, children, link }: {
+const MenuItem = ({ icon, children, link, onClick }: {
   icon: React.ElementType,
   children: React.ReactNode,
-  link: string,
+  link?: string,
+  onClick?: () => void,
 }) => {
-  return (
+  return link ? (
     <Link to={link} className="self-stretch flex items-center gap-2 hover:bg-gray-200 py-1">
       {React.createElement(icon, { className: "w-4 h-4" })}
       {children}
     </Link>
+  ) : (
+    <div className="self-stretch flex items-center gap-2 hover:bg-gray-200 py-1 cursor-pointer" onClick={onClick}>
+      {React.createElement(icon, { className: "w-4 h-4" })}
+      {children}
+    </div>
   )
 }

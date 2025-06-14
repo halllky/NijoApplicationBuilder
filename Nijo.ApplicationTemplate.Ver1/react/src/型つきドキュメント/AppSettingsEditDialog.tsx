@@ -23,7 +23,7 @@ type GridRow = { entityTypeId: string, entityTypeName: string | undefined }
 
 export const AppSettingsEditDialog = ({ defaultValues, entityTypeList, onSave, onCancel }: AppSettingsEditDialogProps) => {
 
-  const { control, getValues, setValue, formState: { isDirty } } = useForm<AppSettingsForSave>({
+  const { control, getValues, setValue, register, formState: { isDirty } } = useForm<AppSettingsForSave>({
     defaultValues,
   })
 
@@ -45,7 +45,7 @@ export const AppSettingsEditDialog = ({ defaultValues, entityTypeList, onSave, o
   }, [entityOrder, newPerspectives, entityTypeList, editedEntityNames])
 
   const getEntityTypesGridColumns: Layout.GetColumnDefsFunction<GridRow> = React.useCallback(cellType => [
-    cellType.text('entityTypeName', '種類名', { defaultWidth: 280 }),
+    cellType.text('entityTypeName', 'ドキュメント', { defaultWidth: 280 }),
     cellType.other('並び替え', {
       defaultWidth: 100,
       renderCell: renderEntityTypeOrderColumn(entityOrder, setValue),
@@ -114,32 +114,40 @@ export const AppSettingsEditDialog = ({ defaultValues, entityTypeList, onSave, o
   })
 
   return (
-    <Layout.ModalDialog open className="relative w-lg h-[80vh] bg-white flex flex-col gap-1 p-4 relative border border-gray-400" onOutsideClick={handleCancel}>
-      <h1 className="text-lg font-bold">設定</h1>
-
-      <div className="basis-2"></div>
-
-      <div className="flex flex-col gap-1">
-        <div className="font-semibold text-sm">アプリケーション名</div>
-        <Input.Word name="applicationName" control={control} />
+    <Layout.ModalDialog open className="relative w-lg h-[80vh] bg-white flex flex-col gap-1 relative border border-gray-400" onOutsideClick={handleCancel}>
+      <div className="flex flex-col gap-px px-8 py-1 border-b border-gray-300">
+        <h1 className="text-lg font-bold">アプリケーション設定</h1>
+        <p className="text-sm text-gray-500">
+          この設定はチーム全員に適用されます。
+        </p>
       </div>
-      <div className="basis-4"></div>
-      <div className="flex justify-between items-center">
-        <div className="font-semibold text-sm">ドキュメント種類</div>
-        <Input.IconButton icon={Icon.PlusIcon} outline mini onClick={handleCreateNewPerspective}>
-          新規追加
-        </Input.IconButton>
+
+      <div className="flex-1 px-8 pt-1 pb-32 overflow-y-auto">
+        <div className="flex flex-col gap-1">
+          <div className="font-semibold text-sm">アプリケーション名</div>
+          <input type="text" {...register('applicationName')} className="px-1 border border-gray-500" />
+        </div>
+
+        <div className="flex flex-col gap-1 mt-4 resize-y overflow-y-auto">
+          <div className="flex justify-start gap-2 items-center">
+            <div className="font-semibold text-sm">
+              ドキュメント種類
+            </div>
+            <Input.IconButton icon={Icon.PlusIcon} outline mini onClick={handleCreateNewPerspective}>
+              新規追加
+            </Input.IconButton>
+          </div>
+          <Layout.EditableGrid
+            rows={entityTypesGridRows}
+            getColumnDefs={getEntityTypesGridColumns}
+            onChangeRow={handleChangeEntityTypesGridRow}
+            className="flex-1 border border-gray-300"
+          />
+        </div>
+
       </div>
-      <Layout.EditableGrid
-        rows={entityTypesGridRows}
-        getColumnDefs={getEntityTypesGridColumns}
-        onChangeRow={handleChangeEntityTypesGridRow}
-        className="flex-1"
-      />
 
-      <hr className="my-2 border-t border-gray-300" />
-
-      <div className="flex justify-between gap-2">
+      <div className="flex justify-between gap-2 px-8 py-1 border-t border-gray-300">
         <Input.IconButton icon={Icon.XMarkIcon} outline mini onClick={handleCancel}>
           キャンセル
         </Input.IconButton>

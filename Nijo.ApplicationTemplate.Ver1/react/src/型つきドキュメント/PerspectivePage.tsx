@@ -254,23 +254,16 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
         tabIndex={0} // keydownイベントを拾うため
         className="h-full flex flex-col gap-1 outline-none"
       >
-        <div className="flex flex-wrap gap-1 items-center px-1">
+        <div className="flex flex-wrap gap-1 items-center p-1">
           <ToTopPageButton />
           <Icon.ChevronRightIcon className="w-4 h-4" />
-          <div className="font-semibold">{getValues('perspective.name')}</div>
+          <h1>
+            {getValues('perspective.name')}
+          </h1>
 
           <Input.IconButton hideText onClick={handleOpenEntityTypeEditDialog} icon={Icon.PencilSquareIcon}>型定義編集</Input.IconButton>
           <div className="flex-1"></div>
-          <Input.IconButton outline mini onClick={gridRef.current?.insertRow}>行挿入(Enter)</Input.IconButton>
-          <Input.IconButton outline mini onClick={gridRef.current?.insertRowBelow}>下挿入(Ctrl + Enter)</Input.IconButton>
-          <Input.IconButton outline mini onClick={gridRef.current?.deleteRow}>行削除(Shift + Delete)</Input.IconButton>
-          <div className="basis-2"></div>
-          <Input.IconButton outline mini onClick={gridRef.current?.moveUp}>上に移動(Alt + ↑)</Input.IconButton>
-          <Input.IconButton outline mini onClick={gridRef.current?.moveDown}>下に移動(Alt + ↓)</Input.IconButton>
-          <div className="basis-2"></div>
-          <Input.IconButton outline mini onClick={gridRef.current?.indentDown}>インデント下げ(Shift + Tab)</Input.IconButton>
-          <Input.IconButton outline mini onClick={gridRef.current?.indentUp}>インデント上げ(Tab)</Input.IconButton>
-          <div className="basis-28 flex justify-end pr-1">
+          <div className="basis-28 flex justify-end">
             <Input.IconButton submit fill mini>
               {showSaveSuccessText ? '保存しました。' : '保存(Ctrl + S)'}
             </Input.IconButton>
@@ -302,13 +295,13 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
                 <PerspectivePageGraph
                   formMethods={formMethods}
                   onNodeDoubleClick={handleNodeDoubleClick}
-                  className="h-full"
+                  className={`h-full ${!detailPanelCollapsed ? 'border-r border-gray-200' : ''}`}
                 />
               </Panel>
             </PanelGroup>
           </Panel>
 
-          <PanelResizeHandle className={`w-1 ${!detailPanelCollapsed ? 'border-l border-gray-200' : ''}`} />
+          <PanelResizeHandle className="w-1" />
 
           {/* 詳細画面 */}
           <Panel

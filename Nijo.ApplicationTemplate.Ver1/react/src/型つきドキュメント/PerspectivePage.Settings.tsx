@@ -173,10 +173,10 @@ export const EntityTypeEditDialog = ({
         <form onSubmit={handleSubmit(handleApply)} className="h-full flex flex-col">
 
           <h1 className="font-bold select-none text-gray-700 px-8 py-1 border-b border-gray-200">
-            設定
+            ドキュメント詳細設定
           </h1>
 
-          <div className="flex-1 overflow-y-auto px-8 pt-2 pb-96">
+          <div className="flex-1 overflow-y-auto px-8 pt-2 pb-32">
             <div className="flex items-center gap-1">
               <label className="basis-52 text-sm text-gray-500">ドキュメント名</label>
               <input type="text" {...register('name')} className="flex-1 px-1 border border-gray-400" />

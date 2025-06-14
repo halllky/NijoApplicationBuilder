@@ -257,7 +257,7 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, defaultValues }: {
         <ToTopPageButton />
         <Icon.ChevronRightIcon className="w-4 h-4" />
         <h1 className="select-none">
-          スキーマ定義
+          ソースコード自動生成設定
         </h1>
 
         <div className="basis-4"></div>

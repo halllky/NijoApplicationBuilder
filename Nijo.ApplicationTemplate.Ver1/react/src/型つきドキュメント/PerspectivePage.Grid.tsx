@@ -1,10 +1,12 @@
 import * as React from 'react';
 import * as ReactHookForm from 'react-hook-form';
 import useEvent from 'react-use-event-hook';
+import * as Input from '../input';
 import * as Layout from '../layout';
 import { applyFormatCondition, Entity, FormatCondition, Perspective, PerspectivePageData } from './types';
 import { MentionUtil } from './MentionTextarea';
 import { UUID } from 'uuidjs';
+import { usePersonalSettings } from './PersonalSettings';
 
 export interface EntityTypePageProps {
   perspective: Perspective | undefined;
@@ -18,20 +20,6 @@ export interface EntityTypePageProps {
 export type EntityTypePageRef = {
   /** 行選択 */
   selectRow: (startRowIndex: number, endRowIndex: number) => void;
-  /** 行挿入 */
-  insertRow: () => void;
-  /** 下挿入 */
-  insertRowBelow: () => void;
-  /** 行削除 */
-  deleteRow: () => void;
-  /** 上に移動 */
-  moveUp: () => void;
-  /** 下に移動 */
-  moveDown: () => void;
-  /** インデント上げ */
-  indentUp: () => void;
-  /** インデント下げ */
-  indentDown: () => void;
 }
 
 // グリッドの行の型
@@ -307,30 +295,40 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
     selectRow: (startRowIndex: number, endRowIndex: number) => {
       gridRef.current?.selectRow(startRowIndex, endRowIndex);
     },
-    insertRow: handleInsertRow,
-    insertRowBelow: handleInsertRowBelow,
-    deleteRow: handleDeleteRow,
-    moveUp: handleMoveUp,
-    moveDown: handleMoveDown,
-    indentUp: handleIndentUp,
-    indentDown: handleIndentDown,
   }));
+
+  const { personalSettings } = usePersonalSettings()
 
   const getRowClassName = React.useCallback((row: GridRowType) => {
     return applyFormatCondition(row, perspective?.formatConditions)?.gridRowTextColor ?? '';
   }, [perspective?.formatConditions]);
 
   return (
-    <Layout.EditableGrid
-      ref={gridRef}
-      rows={fields}
-      getColumnDefs={getColumnDefs}
-      onChangeRow={onChangeRow}
-      onActiveCellChanged={handleActiveCellChanged}
-      onKeyDown={handleKeyDown}
-      className={className}
-      storage={gridColumnStorage}
-      getRowClassName={getRowClassName}
-    />
+    <div className={`flex flex-col ${className ?? ''}`}>
+      {!personalSettings.hideGridButtons && (
+        <div className="flex flex-wrap gap-1 items-center p-1">
+          <Input.IconButton outline mini onClick={handleInsertRow}>行挿入(Enter)</Input.IconButton>
+          <Input.IconButton outline mini onClick={handleInsertRowBelow}>下挿入(Ctrl + Enter)</Input.IconButton>
+          <Input.IconButton outline mini onClick={handleDeleteRow}>行削除(Shift + Delete)</Input.IconButton>
+          <div className="basis-2"></div>
+          <Input.IconButton outline mini onClick={handleMoveUp}>上に移動(Alt + ↑)</Input.IconButton>
+          <Input.IconButton outline mini onClick={handleMoveDown}>下に移動(Alt + ↓)</Input.IconButton>
+          <div className="basis-2"></div>
+          <Input.IconButton outline mini onClick={handleIndentDown}>インデント下げ(Shift + Tab)</Input.IconButton>
+          <Input.IconButton outline mini onClick={handleIndentUp}>インデント上げ(Tab)</Input.IconButton>
+        </div>
+      )}
+      <Layout.EditableGrid
+        ref={gridRef}
+        rows={fields}
+        getColumnDefs={getColumnDefs}
+        onChangeRow={onChangeRow}
+        onActiveCellChanged={handleActiveCellChanged}
+        onKeyDown={handleKeyDown}
+        className="flex-1"
+        storage={gridColumnStorage}
+        getRowClassName={getRowClassName}
+      />
+    </div>
   );
 });
