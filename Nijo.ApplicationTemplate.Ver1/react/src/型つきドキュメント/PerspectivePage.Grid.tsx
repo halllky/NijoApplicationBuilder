@@ -105,7 +105,13 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
               : undefined,
             renderCell: context => {
               const value = context.row.original.attributeValues[attrDef.attributeId];
-              return <PlainCell>{MentionUtil.toPlainText(value)}</PlainCell>;
+              return (
+                <div className={`flex-1 inline-flex px-1 text-left ${attrDef.attributeType === 'description' ? 'whitespace-pre-wrap' : 'truncate'}`}>
+                  <span className="flex-1">
+                    {MentionUtil.toPlainText(value)}
+                  </span>
+                </div>
+              )
             },
           })
         );
@@ -113,19 +119,6 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
     }
     return columns;
   }, [perspective?.attributes, perspective?.wrapEntityName]);
-
-  const PlainCell = ({ children, className }: {
-    children?: React.ReactNode
-    className?: string
-  }) => {
-    return (
-      <div className={`flex-1 inline-flex px-1 text-left truncate ${className ?? ''}`}>
-        <span className="flex-1 truncate">
-          {children}
-        </span>
-      </div>
-    )
-  }
 
   // 選択されている行のインデックス
   const [selectedRowIndex, setSelectedRowIndex] = React.useState<number | undefined>(undefined);
@@ -304,6 +297,12 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
     return applyFormatCondition(row, perspective?.formatConditions)?.gridRowTextColor ?? '';
   }, [perspective?.formatConditions]);
 
+  const showHorizontalBorder = React.useMemo(() => {
+    const hasDescription = perspective?.attributes
+      .some(attr => attr.attributeType === 'description' && !attr.invisibleInGrid);
+    return perspective?.wrapEntityName || hasDescription;
+  }, [perspective?.attributes, perspective?.wrapEntityName]);
+
   return (
     <div className={`flex flex-col ${className ?? ''}`}>
       {!personalSettings.hideGridButtons && (
@@ -330,7 +329,7 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
         className="flex-1"
         storage={gridColumnStorage}
         getRowClassName={getRowClassName}
-        showHorizontalBorder={perspective?.wrapEntityName}
+        showHorizontalBorder={showHorizontalBorder}
       />
     </div>
   );
