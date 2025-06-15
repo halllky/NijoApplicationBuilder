@@ -304,6 +304,7 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
           {currentOptions.map((option, index) => (
             <li key={index} onClick={handleOptionClick} className={`cursor-pointer ${highlightedOptionIndex === index ? 'bg-gray-200' : ''}`}>
               {option.label}
+              &nbsp;
             </li>
           ))}
         </ul>

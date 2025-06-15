@@ -53,26 +53,25 @@ export const useCellTypes = <TRow extends ReactHookForm.FieldValues>(
       return {
         header,
         fieldPath,
-        renderCell: options?.renderCell ?? (context => {
-          const handleDoubleClick = () => {
-            const value = getValueByPath(context.row.original, fieldPath) as boolean | undefined
-            const clone = window.structuredClone(context.row.original)
-            setValueByPath(clone, fieldPath, !value)
-            onChangeRow?.({
-              changedRows: [{
-                rowIndex: context.row.index,
-                oldRow: context.row.original,
-                newRow: clone,
-              }]
-            })
-          }
-          return (
-            <div className="w-full flex items-center justify-center cursor-pointer" onDoubleClick={handleDoubleClick}>
-              {context.row.original[fieldPath] ? '✔' : ''}
-            </div>
-          )
-        }),
         ...options,
+        renderCell: options?.renderCell ?? (context => (
+          <div className="w-full">
+            {getValueByPath(context.row.original, fieldPath) ? '✔' : ''}
+          </div>
+        )),
+        onStartEditing: options?.onStartEditing ?? (e => {
+          const value = getValueByPath(e.row, fieldPath) as boolean | undefined
+          e.setEditorInitialValue(value ? '✔' : '')
+        }),
+        onEndEditing: options?.onEndEditing ?? (e => {
+          const clone = window.structuredClone(e.row)
+          setValueByPath(clone, fieldPath, e.value === '✔')
+          e.setEditedRow(clone)
+        }),
+        getOptions: options?.getOptions ?? (() => ([
+          { label: '✔', value: '✔' },
+          { label: '', value: '' },
+        ]))
       };
     },
     /** その他の型のセル */
