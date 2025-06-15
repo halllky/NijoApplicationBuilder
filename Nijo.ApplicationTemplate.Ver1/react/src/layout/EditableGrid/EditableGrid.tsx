@@ -389,7 +389,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     tableContainerRef,
     setStringValuesToSelectedRange,
     table,
-getPixel,
+    getPixel,
   });
 
   return (
@@ -459,7 +459,7 @@ getPixel,
                       <div
                         onMouseDown={header.getResizeHandler()}
                         onTouchStart={header.getResizeHandler()}
-                        className={`absolute top-0 right-0 h-full w-1.5 cursor-col-resize select-none touch-none ${header.column.getIsResizing() ? 'bg-blue-500 opacity-50' : 'hover:bg-gray-400'}`}
+                        className={`absolute top-0 right-0 h-full w-1.5 cursor-col-resize select-none touch-none ${header.column.getIsResizing() ? 'bg-sky-500 opacity-50' : 'hover:bg-gray-400'}`}
                       >
                       </div>
                     )}
@@ -532,9 +532,9 @@ getPixel,
                   let dataColumnClassName = 'outline-none align-middle'
 
                   if (isActive) {
-                    dataColumnClassName += ' bg-blue-200' // アクティブセル
+                    dataColumnClassName += ' bg-sky-200' // アクティブセル
                   } else if (isInRange) {
-                    dataColumnClassName += ' bg-blue-100' // 選択範囲
+                    dataColumnClassName += ' bg-sky-100' // 選択範囲
                   } else if (activeCell &&
                     (rowIndex === activeCell.rowIndex || colIndex === activeCell.colIndex) &&
                     !(rowIndex === activeCell.rowIndex && colIndex === activeCell.colIndex)
