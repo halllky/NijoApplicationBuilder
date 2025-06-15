@@ -88,7 +88,7 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
   }, [caretCell, api, containerRef, getPixel])
   React.useEffect(() => {
     if (caretCellEditingInfo) editorTextareaRef.current?.focus()
-  }, [caretCellEditingInfo, getPixel])
+  }, [caretCellEditingInfo])
 
   /** 編集開始 */
   const startEditing = useEvent((cell: RT.Cell<T, unknown>) => {
@@ -359,7 +359,7 @@ export const DefaultEditor: GridCellEditorComponent = React.forwardRef(({
  * rowIndexやcolIndexから、スクロールエリア内でのx, y座標のピクセルを導出する関数。
  * 列幅変更や行の仮想化を考慮している。
  */
-type GetPixelFunction = (args
+export type GetPixelFunction = (args
   : { position: 'top', rowIndex: number, colIndex?: never }
   | { position: 'bottom', rowIndex: number, colIndex?: never }
   | { position: 'left', colIndex: number, rowIndex?: never }

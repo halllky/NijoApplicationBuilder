@@ -66,21 +66,17 @@ export function useGridKeyboard<TRow extends ReactHookForm.FieldValues>({
     let newColIndex = colIndex;
 
     // スクロール処理を関数化
-    const scrollToCell = (rIndex: number, cIndex: number, isVertical: boolean) => {
-      if (isVertical) {
-        rowVirtualizer.scrollToIndex(rIndex, { align: 'auto' });
-      } else {
-        // 列方向のスクロール
-        const tableElement = tableContainerRef.current;
-        if (tableElement) {
-          // ヘッダーから対象列の要素を探す (より堅牢な方法は列IDを使うことだが、ここでは簡略化)
-          // 注意: この方法は表示されている列ヘッダーのみを対象とし、colIndexが可視列のインデックスであることを前提とします。
-          //       実際には、React TableのAPIや列定義と照らし合わせてDOM要素を特定する必要があるかもしれません。
-          const thSelector = `thead th:nth-child(${cIndex + 2})`; // +1 for 1-based index, +1 for rowHeader column
-          const thElement = tableElement.querySelector(thSelector) as HTMLElement | null;
-          if (thElement) {
-            thElement.scrollIntoView({ inline: 'nearest', block: 'nearest' });
-          }
+    const scrollToCell = (rIndex: number, cIndex: number) => {
+      // 列方向のスクロール
+      const tableElement = tableContainerRef.current;
+      if (tableElement) {
+        // ヘッダーから対象列の要素を探す (より堅牢な方法は列IDを使うことだが、ここでは簡略化)
+        // 注意: この方法は表示されている列ヘッダーのみを対象とし、colIndexが可視列のインデックスであることを前提とします。
+        //       実際には、React TableのAPIや列定義と照らし合わせてDOM要素を特定する必要があるかもしれません。
+        const thSelector = `thead th:nth-child(${cIndex + 2})`; // +1 for 1-based index, +1 for rowHeader column
+        const thElement = tableElement.querySelector(thSelector) as HTMLElement | null;
+        if (thElement) {
+          thElement.scrollIntoView({ inline: 'nearest', block: 'nearest' });
         }
       }
     };
@@ -184,7 +180,7 @@ export function useGridKeyboard<TRow extends ReactHookForm.FieldValues>({
         if (colIndex > 0) {
           newColIndex = colIndex - 1;
           setActiveCell({ rowIndex, colIndex: newColIndex });
-          scrollToCell(rowIndex, newColIndex, false);
+          scrollToCell(rowIndex, newColIndex);
 
           if (e.shiftKey && anchorCell) { // anchorCell の存在を確認
             // 範囲選択（Shift + 矢印キー）
@@ -211,7 +207,7 @@ export function useGridKeyboard<TRow extends ReactHookForm.FieldValues>({
         if (colIndex < colCount - 1) {
           newColIndex = colIndex + 1;
           setActiveCell({ rowIndex, colIndex: newColIndex });
-          scrollToCell(rowIndex, newColIndex, false);
+          scrollToCell(rowIndex, newColIndex);
 
           if (e.shiftKey && anchorCell) { // anchorCell の存在を確認
             // 範囲選択（Shift + 矢印キー）
@@ -246,7 +242,7 @@ export function useGridKeyboard<TRow extends ReactHookForm.FieldValues>({
           // 前のセル
           if (colIndex > 0) {
             setActiveCell({ rowIndex, colIndex: colIndex - 1 });
-            scrollToCell(rowIndex, colIndex - 1, false);
+            scrollToCell(rowIndex, colIndex - 1);
             setSelectedRange({
               startRow: rowIndex,
               startCol: colIndex - 1,
@@ -268,7 +264,7 @@ export function useGridKeyboard<TRow extends ReactHookForm.FieldValues>({
           // 次のセル
           if (colIndex < colCount - 1) {
             setActiveCell({ rowIndex, colIndex: colIndex + 1 });
-            scrollToCell(rowIndex, colIndex + 1, false);
+            scrollToCell(rowIndex, colIndex + 1);
             setSelectedRange({
               startRow: rowIndex,
               startCol: colIndex + 1,
