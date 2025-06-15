@@ -70,18 +70,47 @@ export function useGridKeyboard<TRow extends ReactHookForm.FieldValues>({
 
     // 列方向のスクロール
     const scrollHorizontal = (cIndex: number) => {
-      const left = getPixel({ position: 'left', colIndex: cIndex })
-      const right = getPixel({ position: 'right', colIndex: cIndex })
       const tableElement = tableContainerRef.current
-      if (tableElement) {
-        const tableWidth = tableElement.clientWidth
-        const scrollLeft = tableElement.scrollLeft
-        const scrollRight = scrollLeft + tableWidth
-        if (scrollLeft > left) {
-          tableElement.scrollTo({ left: left, behavior: 'instant' })
-        } else if (scrollRight < right) {
-          tableElement.scrollTo({ left: right - tableWidth, behavior: 'instant' })
+      if (!tableElement) return
+
+      // 固定列の右端の列番号を取得
+      const maxFixedColumnIndex = Math.max(...table
+        .getVisibleLeafColumns()
+        .filter(c => (c.columnDef.meta as ColumnMetadataInternal<TRow> | undefined)?.originalColDef?.isFixed)
+        .map(c => c.getIndex()))
+
+      // スクロール先が固定列ならばテーブル自体の水平方向のスクロール位置を0にする
+      if (cIndex <= maxFixedColumnIndex) {
+        tableElement.scrollTo({ left: 0, behavior: 'instant' })
+        return
+      }
+
+      // スクロール先
+      const columnLeft = getPixel({ position: 'left', colIndex: cIndex })
+      const columnRight = getPixel({ position: 'right', colIndex: cIndex })
+
+      // 左端の列が固定されており、スクロール先が固定されていない列の場合、
+      // スクロール先のセルが固定セルの下に潜りこまないようにする。
+      // （つまりスクロール先のセルの左端が固定セルの右端よりも左になるようにする）
+      const fixedColumnWidth = maxFixedColumnIndex >= 0
+        ? getPixel({ position: 'right', colIndex: maxFixedColumnIndex })
+        : 0
+      if (maxFixedColumnIndex >= 0) {
+        if (columnLeft < fixedColumnWidth) {
+          tableElement.scrollTo({ left: fixedColumnWidth, behavior: 'instant' })
+        } else if (columnRight > fixedColumnWidth) {
+          tableElement.scrollTo({ left: columnRight - tableElement.clientWidth, behavior: 'instant' })
         }
+        return
+      }
+
+      const tableWidth = tableElement.clientWidth
+      const currentLeft = tableElement.scrollLeft
+      const currentRight = currentLeft + tableWidth
+      if (currentLeft > columnLeft) {
+        tableElement.scrollTo({ left: columnLeft, behavior: 'instant' })
+      } else if (currentRight < columnRight) {
+        tableElement.scrollTo({ left: columnRight - tableWidth, behavior: 'instant' })
       }
     }
 
