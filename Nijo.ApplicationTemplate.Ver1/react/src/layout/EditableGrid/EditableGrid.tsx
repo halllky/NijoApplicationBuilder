@@ -565,7 +565,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                       tabIndex={0}
                     >
                       <div
-                        className={`flex select-none truncate ${cellMeta?.originalColDef?.isFixed ? 'border-r border-gray-200' : ''}`}
+                        className={`flex select-none truncate border-gray-200 ${props.showHorizontalBorder ? 'border-b' : ''} ${cellMeta?.originalColDef?.isFixed ? 'border-r' : ''}`}
                         style={{
                           width: cell.column.getSize(),
                           minHeight: ESTIMATED_ROW_HEIGHT, // 動的行高さ対応: heightの代わりにminHeightを使用

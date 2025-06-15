@@ -48,6 +48,9 @@ export type EditableGridProps<TRow extends ReactHookForm.FieldValues> = {
 
   /** セル編集エディタのコンポーネント */
   editorComponent?: GridCellEditorComponent
+
+  /** 水平方向のボーダーを表示するかどうか */
+  showHorizontalBorder?: boolean
 }
 
 /**

@@ -330,6 +330,7 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
         className="flex-1"
         storage={gridColumnStorage}
         getRowClassName={getRowClassName}
+        showHorizontalBorder={perspective?.wrapEntityName}
       />
     </div>
   );
