@@ -5,6 +5,8 @@ import { NijoUiOutletContextType } from '../スキーマ定義編集UI/types';
 import { Entity, EntityAttribute, Perspective } from './types';
 import useEvent from 'react-use-event-hook';
 import { getNavigationUrl } from '../routes';
+import LinkifyJs from 'linkifyjs';
+import Linkify from 'linkify-react';
 
 export type MentionTextareaProps = {
   value?: string
@@ -76,23 +78,25 @@ export const MentionTextarea = React.forwardRef((props: MentionTextareaProps, re
   if (props.isReadOnly) {
     return (
       <div className={`whitespace-pre-wrap break-all pb-[2px] ${props.className ?? ''}`}>
-        {MentionUtil.parseAsMentionText(props.value).map((part, index) => (
-          <React.Fragment key={index}>
-            {part.isMention ? (
-              <span
-                className="text-sky-600 cursor-pointer underline underline-offset-2 hover:bg-sky-100"
-                onClick={() => handleDoubleClickMention(part)}
-              >
-                @{part.text}
-              </span>
-            ) : (
-              <span>
-                {part.text}
-              </span>
-            )}
-          </React.Fragment>
-        ))}
-        &nbsp;
+        <Linkify options={LINKIFY_OPTIONS}>
+          {MentionUtil.parseAsMentionText(props.value).map((part, index) => (
+            <React.Fragment key={index}>
+              {part.isMention ? (
+                <span
+                  className="text-sky-600 cursor-pointer underline underline-offset-2 hover:bg-sky-100"
+                  onClick={() => handleDoubleClickMention(part)}
+                >
+                  @{part.text}
+                </span>
+              ) : (
+                <span>
+                  {part.text}
+                </span>
+              )}
+            </React.Fragment>
+          ))}
+          &nbsp;
+        </Linkify>
       </div>
     )
   }
@@ -134,6 +138,11 @@ export const MentionTextarea = React.forwardRef((props: MentionTextareaProps, re
     </ReactMention.MentionsInput>
   )
 })
+
+const LINKIFY_OPTIONS: LinkifyJs.Opts = {
+  target: '_blank',
+  className: 'text-sky-600 cursor-pointer underline underline-offset-2 hover:bg-sky-100',
+}
 
 export namespace MentionUtil {
 
