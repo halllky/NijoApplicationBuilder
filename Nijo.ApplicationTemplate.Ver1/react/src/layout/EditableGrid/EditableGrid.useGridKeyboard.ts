@@ -6,6 +6,7 @@ import type * as RT from '@tanstack/react-table';
 import type * as ReactHookForm from 'react-hook-form';
 import * as Util from "../../util";
 import useEvent from "react-use-event-hook";
+import { GetPixelFunction } from "./EditableGrid.CellEditor";
 
 export interface UseGridKeyboardProps<TRow extends ReactHookForm.FieldValues> {
   /** EditableGridの外側で定義されるキーボードイベントハンドラ */
@@ -24,6 +25,7 @@ export interface UseGridKeyboardProps<TRow extends ReactHookForm.FieldValues> {
   setStringValuesToSelectedRange: (values: string[][]) => void;
   /** テーブルインスタンス */
   table: RT.Table<TRow>;
+  getPixel: GetPixelFunction
 }
 
 export function useGridKeyboard<TRow extends ReactHookForm.FieldValues>({
@@ -41,6 +43,7 @@ export function useGridKeyboard<TRow extends ReactHookForm.FieldValues>({
   tableContainerRef,
   setStringValuesToSelectedRange,
   table,
+  getPixel,
 }: UseGridKeyboardProps<TRow>) {
   const anchorCellRef = useRef<CellPosition | null>(null);
 
@@ -65,21 +68,22 @@ export function useGridKeyboard<TRow extends ReactHookForm.FieldValues>({
     let newRowIndex = rowIndex;
     let newColIndex = colIndex;
 
-    // スクロール処理を関数化
-    const scrollToCell = (rIndex: number, cIndex: number) => {
-      // 列方向のスクロール
-      const tableElement = tableContainerRef.current;
+    // 列方向のスクロール
+    const scrollHorizontal = (cIndex: number) => {
+      const left = getPixel({ position: 'left', colIndex: cIndex })
+      const right = getPixel({ position: 'right', colIndex: cIndex })
+      const tableElement = tableContainerRef.current
       if (tableElement) {
-        // ヘッダーから対象列の要素を探す (より堅牢な方法は列IDを使うことだが、ここでは簡略化)
-        // 注意: この方法は表示されている列ヘッダーのみを対象とし、colIndexが可視列のインデックスであることを前提とします。
-        //       実際には、React TableのAPIや列定義と照らし合わせてDOM要素を特定する必要があるかもしれません。
-        const thSelector = `thead th:nth-child(${cIndex + 2})`; // +1 for 1-based index, +1 for rowHeader column
-        const thElement = tableElement.querySelector(thSelector) as HTMLElement | null;
-        if (thElement) {
-          thElement.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+        const tableWidth = tableElement.clientWidth
+        const scrollLeft = tableElement.scrollLeft
+        const scrollRight = scrollLeft + tableWidth
+        if (scrollLeft > left) {
+          tableElement.scrollTo({ left: left, behavior: 'instant' })
+        } else if (scrollRight < right) {
+          tableElement.scrollTo({ left: right - tableWidth, behavior: 'instant' })
         }
       }
-    };
+    }
 
     // Shiftキーが押されていない場合、または anchorCell が未設定の場合にアンカーを更新
     if (!e.shiftKey || !anchorCellRef.current) {
@@ -180,7 +184,7 @@ export function useGridKeyboard<TRow extends ReactHookForm.FieldValues>({
         if (colIndex > 0) {
           newColIndex = colIndex - 1;
           setActiveCell({ rowIndex, colIndex: newColIndex });
-          scrollToCell(rowIndex, newColIndex);
+          scrollHorizontal(newColIndex);
 
           if (e.shiftKey && anchorCell) { // anchorCell の存在を確認
             // 範囲選択（Shift + 矢印キー）
@@ -207,7 +211,7 @@ export function useGridKeyboard<TRow extends ReactHookForm.FieldValues>({
         if (colIndex < colCount - 1) {
           newColIndex = colIndex + 1;
           setActiveCell({ rowIndex, colIndex: newColIndex });
-          scrollToCell(rowIndex, newColIndex);
+          scrollHorizontal(newColIndex);
 
           if (e.shiftKey && anchorCell) { // anchorCell の存在を確認
             // 範囲選択（Shift + 矢印キー）
@@ -242,7 +246,7 @@ export function useGridKeyboard<TRow extends ReactHookForm.FieldValues>({
           // 前のセル
           if (colIndex > 0) {
             setActiveCell({ rowIndex, colIndex: colIndex - 1 });
-            scrollToCell(rowIndex, colIndex - 1);
+            scrollHorizontal(colIndex - 1);
             setSelectedRange({
               startRow: rowIndex,
               startCol: colIndex - 1,
@@ -264,7 +268,7 @@ export function useGridKeyboard<TRow extends ReactHookForm.FieldValues>({
           // 次のセル
           if (colIndex < colCount - 1) {
             setActiveCell({ rowIndex, colIndex: colIndex + 1 });
-            scrollToCell(rowIndex, colIndex + 1);
+            scrollHorizontal(colIndex + 1);
             setSelectedRange({
               startRow: rowIndex,
               startCol: colIndex + 1,

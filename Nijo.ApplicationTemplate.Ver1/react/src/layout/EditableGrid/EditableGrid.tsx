@@ -389,6 +389,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     tableContainerRef,
     setStringValuesToSelectedRange,
     table,
+getPixel,
   });
 
   return (
