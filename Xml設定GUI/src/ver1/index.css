@@ -1,0 +1,305 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  このファイルはソース自動生成時に動的に変更が加えられます。
+  変更内容についての詳細は、このファイルのファイル名でgrepをかけ、変更処理を行っているソースを参照してください。
+*/
+
+html {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  -moz-osx-font-smoothing: grayscale;
+
+  font-family: "BIZ UDGothic", sans-serif;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+/* tailwind */
+.page-content-root {
+  @apply flex flex-col justify-start h-full overflow-auto;
+}
+
+.ellipsis-ex {
+  @apply overflow-hidden whitespace-nowrap text-ellipsis;
+}
+
+input:read-only,
+textarea:read-only {
+  @apply bg-transparent;
+}
+
+.border-color-0 {
+  @apply border-white dark:border-black;
+}
+
+.border-color-1 {
+  @apply border-neutral-50 dark:border-neutral-950;
+}
+
+.border-color-2 {
+  @apply border-neutral-100 dark:border-neutral-900;
+}
+
+.border-color-3 {
+  @apply border-neutral-200 dark:border-neutral-800;
+}
+
+.border-color-4 {
+  @apply border-neutral-300 dark:border-neutral-700;
+}
+
+.border-color-5 {
+  @apply border-neutral-400 dark:border-neutral-600;
+}
+
+.border-color-6 {
+  @apply border-neutral-500 dark:border-neutral-500;
+}
+
+.border-color-7 {
+  @apply border-neutral-600 dark:border-neutral-400;
+}
+
+.border-color-8 {
+  @apply border-neutral-700 dark:border-neutral-300;
+}
+
+.border-color-9 {
+  @apply border-neutral-800 dark:border-neutral-200;
+}
+
+.border-color-10 {
+  @apply border-neutral-900 dark:border-neutral-100;
+}
+
+.border-color-11 {
+  @apply border-neutral-950 dark:border-neutral-50;
+}
+
+.border-color-12 {
+  @apply border-black dark:border-white;
+}
+
+.text-color-0 {
+  @apply text-white dark:text-black;
+}
+
+.text-color-1 {
+  @apply text-neutral-50 dark:text-neutral-950;
+}
+
+.text-color-2 {
+  @apply text-neutral-100 dark:text-neutral-900;
+}
+
+.text-color-3 {
+  @apply text-neutral-200 dark:text-neutral-800;
+}
+
+.text-color-4 {
+  @apply text-neutral-300 dark:text-neutral-700;
+}
+
+.text-color-5 {
+  @apply text-neutral-400 dark:text-neutral-600;
+}
+
+.text-color-6 {
+  @apply text-neutral-500 dark:text-neutral-500;
+}
+
+.text-color-7 {
+  @apply text-neutral-600 dark:text-neutral-400;
+}
+
+.text-color-8 {
+  @apply text-neutral-700 dark:text-neutral-300;
+}
+
+.text-color-9 {
+  @apply text-neutral-800 dark:text-neutral-200;
+}
+
+.text-color-10 {
+  @apply text-neutral-900 dark:text-neutral-100;
+}
+
+.text-color-11 {
+  @apply text-neutral-950 dark:text-neutral-50;
+}
+
+.text-color-12 {
+  @apply text-black dark:text-white;
+}
+
+.bg-color-0 {
+  @apply bg-white dark:bg-black;
+}
+
+.bg-color-1 {
+  @apply bg-neutral-50 dark:bg-neutral-950;
+}
+
+.bg-color-2 {
+  @apply bg-neutral-100 dark:bg-neutral-900;
+}
+
+.bg-color-3 {
+  @apply bg-neutral-200 dark:bg-neutral-800;
+}
+
+.bg-color-4 {
+  @apply bg-neutral-300 dark:bg-neutral-700;
+}
+
+.bg-color-5 {
+  @apply bg-neutral-400 dark:bg-neutral-600;
+}
+
+.bg-color-6 {
+  @apply bg-neutral-500 dark:bg-neutral-500;
+}
+
+.bg-color-7 {
+  @apply bg-neutral-600 dark:bg-neutral-400;
+}
+
+.bg-color-8 {
+  @apply bg-neutral-700 dark:bg-neutral-300;
+}
+
+.bg-color-9 {
+  @apply bg-neutral-800 dark:bg-neutral-200;
+}
+
+.bg-color-10 {
+  @apply bg-neutral-900 dark:bg-neutral-100;
+}
+
+.bg-color-11 {
+  @apply bg-neutral-950 dark:bg-neutral-50;
+}
+
+.bg-color-12 {
+  @apply bg-black dark:bg-white;
+}
+
+.bg-color-base {
+  @apply bg-white dark:bg-neutral-800;
+}
+
+.bg-color-ridge {
+  @apply bg-neutral-50 dark:bg-[#333333];
+}
+
+.bg-color-gutter {
+  @apply bg-neutral-200 dark:bg-neutral-950;
+}
+
+/* 単にクラス名で指定していないのは、index.cssで指定されているTailwind既定のスタイルリセットの優先度に負けてしまうから。 */
+.button-style-fill,
+button[type="button"].button-style-fill,
+button[type="submit"].button-style-fill,
+button[type="reset"].button-style-fill {
+  @apply bg-cyan-700 dark:bg-cyan-300 text-cyan-50 dark:text-cyan-950;
+}
+
+.button-style-fill-loading,
+button[type="button"].button-style-fill-loading,
+button[type="submit"].button-style-fill-loading,
+button[type="reset"].button-style-fill-loading {
+  @apply bg-cyan-200 dark:bg-cyan-700 text-cyan-50 dark:text-cyan-950;
+}
+
+.button-style-outline,
+button[type="button"].button-style-outline,
+button[type="submit"].button-style-outline,
+button[type="reset"].button-style-outline {
+  @apply border text-cyan-600 dark:text-cyan-300 border-cyan-600 dark:border-cyan-300;
+}
+
+.button-style-outline-loading,
+button[type="button"].button-style-outline-loading,
+button[type="submit"].button-style-outline-loading,
+button[type="reset"].button-style-outline-loading {
+  @apply border text-cyan-200 dark:text-cyan-300 border-cyan-200 dark:border-cyan-300;
+}
+
+.button-style-link,
+button[type="button"].button-style-link,
+button[type="submit"].button-style-link,
+button[type="reset"].button-style-link {
+  @apply border-b text-cyan-600 border-cyan-600;
+}
+
+.button-style-link-loading,
+button[type="button"].button-style-link-loading,
+button[type="submit"].button-style-link-loading,
+button[type="reset"].button-style-link-loading {
+  @apply border-b text-cyan-300 border-cyan-300;
+}
+
+.button-style-text,
+button[type="button"].button-style-link,
+button[type="submit"].button-style-link,
+button[type="reset"].button-style-link {
+  @apply text-cyan-600 dark:text-cyan-300;
+}
+
+.button-style-text-loading,
+button[type="button"].button-style-link-loading,
+button[type="submit"].button-style-link-loading,
+button[type="reset"].button-style-link-loading {
+  @apply text-cyan-300 dark:text-cyan-300;
+}
+
+.text-color-link {
+  @apply text-sky-600 dark:text-sky-300 underline;
+}
+
+.text-color-error {
+  @apply text-rose-600 dark:text-rose-300;
+}
+
+.bg-color-selected {
+  @apply bg-sky-500 bg-opacity-25;
+}
+
+.bg-color-selected-svg {
+  @apply fill-black dark:fill-white opacity-25;
+}
+
+.border-vform {
+  /* neutral-200 */
+  box-shadow: 0 0 0 1px #d4d4d4;
+}
+
+.dark .border-vform {
+  /* neutral-800 */
+  box-shadow: 0 0 0 1px #404040;
+}
+
+/* react-simplemde-editor, easymde 用の設定 */
+.EasyMDEContainer .CodeMirror {
+  padding: 0;
+}
+
+/* react-simplemde-editor, easymde 用の設定: ダークモードに無理やり対応させる */
+.dark .EasyMDEContainer .CodeMirror {
+  filter: invert(1);
+}

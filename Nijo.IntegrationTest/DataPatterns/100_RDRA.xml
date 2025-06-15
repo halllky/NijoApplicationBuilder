@@ -1,42 +1,40 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
-<自動テストで作成されたプロジェクト>
+<自動テストで作成されたプロジェクト RootNamespace="MyApp.Core">
 
-  <アクター is="write-model-2 generate-default-read-model">
-    <アクターID is="uuid key" />
-    <アクター名 is="word name" />
-    <種別 is="variation">
-      <人 is="variation-item:1">
-        <自社か社外か is="word" />
-      </人>
-      <外部システム is="variation-item:2">
-      </外部システム>
-    </種別>
+  <アクター Type="data-model" GenerateDefaultQueryModel="True">
+    <アクターID Type="word" IsKey="True" />
+    <アクター名 Type="word" />
+    <人 Type="child">
+      <自社か社外か Type="word" />
+    </人>
+    <外部システム Type="child">
+    </外部システム>
   </アクター>
 
-  <ユースケース is="write-model-2 generate-default-read-model">
-    <ユースケースID is="uuid key" />
-    <概要 is="sentence name" />
-    <主体 is="ref-to:アクター" />
-    <関連機能 is="children">
-      <機能 is="ref-to:機能 key" />
-      <メモ is="sentence name" />
+  <ユースケース Type="data-model" GenerateDefaultQueryModel="True">
+    <ユースケースID Type="word" IsKey="True" />
+    <概要 Type="description" />
+    <主体 Type="ref-to:アクター" />
+    <関連機能 Type="children">
+      <機能 Type="ref-to:機能" IsKey="True" />
+      <メモ Type="description" />
     </関連機能>
   </ユースケース>
 
-  <機能 is="write-model-2 generate-default-read-model">
-    <機能ID is="uuid key" />
-    <機能名 is="word name" />
-    <参照更新の別 is="E_参照更新" />
-    <非機能要件 is="child">
-      <レスポンス is="sentence name" />
-      <セキュリティ is="sentence name" />
+  <機能 Type="data-model" GenerateDefaultQueryModel="True">
+    <機能ID Type="word" IsKey="True" />
+    <機能名 Type="word" />
+    <参照更新の別 Type="E_参照更新" />
+    <非機能要件 Type="child">
+      <レスポンス Type="description" />
+      <セキュリティ Type="description" />
     </非機能要件>
   </機能>
 
-  <E_参照更新 is="enum">
-    <参照系機能 />
-    <更新系機能 />
+  <E_参照更新 Type="enum">
+    <参照系機能 key="1" />
+    <更新系機能 key="2" />
   </E_参照更新>
 
 </自動テストで作成されたプロジェクト>

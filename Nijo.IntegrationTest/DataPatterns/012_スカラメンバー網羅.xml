@@ -1,73 +1,85 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
-<自動テストで作成されたプロジェクト>
-  <親集約 is="write-model-2 generate-default-read-model form-label-width:5.8 form-depth:0">
+<自動テストで作成されたプロジェクト RootNamespace="MyApp.Core" CustomizeAllUi="True">
+  <親集約 Type="data-model" GenerateDefaultQueryModel="True" FormLabelWidth="5.8" FormDepth="0">
     <!--ID-->
-    <ID is="uuid key" />
+    <ID Type="word" IsKey="True" />
 
     <!-- キー -->
-    <整数のキー is="int key" />
-    <日付のキー is="date key" />
-    <列挙体のキー is="MyEnum key" />
-    <値オブジェクトのキー is="ParentID key" />
+    <整数のキー Type="int" IsKey="True" />
+    <日付のキー Type="datetime" IsKey="True" />
+    <列挙体のキー Type="MyEnum" IsKey="True" />
+    <値オブジェクトのキー Type="ParentID" IsKey="True" />
 
     <!--文字列系-->
-    <単語 is="word" />
-    <文章 is="sentence name" />
+    <単語 Type="word" />
+    <単語半角英数 DisplayName="単語(半角英数)" Type="word" />
+    <文章 Type="description" />
 
     <!--数値系-->
-    <整数 is="int" />
-    <実数 is="decimal" />
+    <整数 Type="int" />
+    <実数 Type="decimal" />
 
     <!--日付系-->
-    <日付時刻 is="datetime" />
-    <日付 is="date" />
-    <年月 is="year-month" />
-    <年 is="year" />
+    <日付時刻 Type="datetime" />
+    <日付 Type="date" />
+    <年月 Type="yearmonth" />
+    <年 Type="year" />
 
     <!--その他-->
-    <参照 is="ref-to:参照先" />
-    <真偽値 is="bool" />
-    <列挙体 is="MyEnum" />
-    <バイト配列 is="bytearray hidden" />
+    <参照 Type="ref-to:参照先" />
+    <真偽値 Type="bool" />
+    <列挙体 Type="MyEnum" />
 
-    <Children is="children">
+    <Children Type="children">
       <!--値オブジェクト-->
-      <ChildrenId is="ChildrenID key max-length:25" />
+      <ChildrenId Type="ChildrenID" IsKey="True" />
 
       <!--文字列系-->
-      <単語 is="word" />
-      <文章 is="sentence name" />
+      <単語 Type="word" />
+      <文章 Type="description" />
 
       <!--数値系-->
-      <整数 is="int" />
-      <実数 is="numeric" />
+      <整数 Type="int" />
+      <実数 Type="decimal" />
 
       <!--日付系-->
-      <日付時刻 is="datetime" />
-      <日付 is="date" />
-      <年月 is="year-month" />
-      <年 is="year" />
+      <日付時刻 Type="datetime" />
+      <日付 Type="date" />
+      <年月 Type="yearmonth" />
+      <年 Type="year" />
 
       <!--その他-->
-      <参照 is="ref-to:参照先" />
-      <真偽値 is="bool" />
-      <列挙体 is="MyEnum" />
-      <バイト配列 is="bytearray hidden" />
+      <参照 Type="ref-to:参照先" />
+      <真偽値 Type="bool" />
+      <列挙体 Type="MyEnum" />
     </Children>
   </親集約>
 
-  <MyEnum is="enum">
-    <選択肢1 />
-    <選択肢2 />
-    <選択肢3 DisplayName="選択肢3ここから {(! &quot; 選択肢3ここまで" />
+  <MyEnum Type="enum">
+    <選択肢1 key="1" />
+    <選択肢2 key="2" />
+    <選択肢3 key="3" DisplayName="選択肢3ここから {(! &quot; 選択肢3ここまで" />
   </MyEnum>
 
-  <参照先 is="write-model-2 generate-default-read-model">
-    <参照先ID is="word key" />
-    <Name is="word name" />
+  <参照先 Type="data-model" GenerateDefaultQueryModel="True">
+    <参照先ID Type="word" IsKey="True" />
+    <Name Type="word" />
   </参照先>
 
-  <ParentID is="value-object" />
-  <ChildrenID is="value-object" />
+  <!-- bytearrayは純粋なDataModelにしか定義できない -->
+  <ユーザーアカウント Type="data-model">
+    <ID Type="word" IsKey="True" />
+    <ユーザー名 Type="word" />
+    <パスワード Type="word" />
+    <SALT Type="bytearray" />
+    <過去の直近のパスワードの履歴 Type="children">
+      <履歴番号 Type="int" IsKey="True" />
+      <パスワード Type="word" />
+      <SALT Type="bytearray" />
+    </過去の直近のパスワードの履歴>
+  </ユーザーアカウント>
+
+  <ParentID Type="value-object" />
+  <ChildrenID Type="value-object" />
 </自動テストで作成されたプロジェクト>

@@ -1,0 +1,86 @@
+{
+  "extensions": {
+    "recommendations": [
+      "EditorConfig.EditorConfig",
+      "yzhang.markdown-all-in-one",
+      "redhat.vscode-xml",
+      "bierner.markdown-preview-github-styles"
+    ]
+  },
+  "folders": [
+    {
+      "path": "."
+    },
+    {
+      "name": "ユニットテスト結果",
+      "path": "Test/bin/Debug/net9.0/test-log"
+    }
+  ],
+  "settings": {
+    "editor.formatOnSave": true,
+    "[bat]": {
+      "editor.formatOnSave": false
+    },
+    "[sql]": {
+      "editor.formatOnSave": false
+    },
+    "workbench.editorAssociations": {
+      "*.md": "vscode.markdown.preview.editor"
+    },
+    "markdown.preview.breaks": true,
+    "extensions.ignoreRecommendations": false,
+    "workbench.colorCustomizations": {
+      "titleBar.activeBackground": "#492818",
+      "titleBar.activeForeground": "#cccccc",
+      "activityBar.background": "#492818",
+      "activityBar.foreground": "#cccccc"
+    },
+    "xml.format.maxLineWidth": 0,
+    "[xml]": {
+      "files.trimFinalNewlines": false
+    },
+    "omnisharp.enableEditorConfigSupport": true
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Nijo: コード自動生成をかけなおす",
+        "command": ".\\run-nijo-exe.bat",
+        "type": "shell",
+        "args": [
+          "generate"
+        ],
+        "options": {
+          "cwd": "${workspaceFolder:Nijo.ApplicationTemplate.Ver1}"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "Nijo: デバッグ実行を開始する",
+        "command": ".\\run-nijo-exe.bat",
+        "type": "shell",
+        "args": [
+          "run"
+        ],
+        "options": {
+          "cwd": "${workspaceFolder:Nijo.ApplicationTemplate.Ver1}"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "Nijo: デバッグ実行を開始する（コード自動生成スキップ）",
+        "command": ".\\run-nijo-exe.bat",
+        "type": "shell",
+        "args": [
+          "run",
+          "--no-build"
+        ],
+        "options": {
+          "cwd": "${workspaceFolder:Nijo.ApplicationTemplate.Ver1}"
+        },
+        "problemMatcher": []
+      }
+    ]
+  }
+}

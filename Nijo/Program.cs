@@ -10,16 +10,20 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Nijo.Core;
 using Nijo.Util.DotnetEx;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Build.Evaluation;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Nijo.Parts.WebServer;
-using Nijo.Runtime;
 using System.Security.Policy;
+using Nijo.SchemaParsing;
+using System.Xml.Linq;
+using Nijo.CodeGenerating.Helpers;
+using Nijo.Models.DataModelModules;
+using Nijo.Models.QueryModelModules;
+using Nijo.ImmutableSchema;
+using Nijo.CodeGenerating;
+using Nijo.Models;
 
 [assembly: InternalsVisibleTo("Nijo.IntegrationTest")]
 
@@ -59,170 +63,390 @@ namespace Nijo {
         private static RootCommand DefineCommand(CancellationTokenSource cancellationTokenSource) {
             var rootCommand = new RootCommand("nijo");
 
-            // DI
-            var services = new ServiceCollection();
-            GeneratedProject.ConfigureDefaultServices(services);
-            var serviceProvider = services.BuildServiceProvider();
+            // ---------------------------------------------------
+            // ** 引数定義 **
 
-            // 引数定義
-            var verbose = new Option<bool>(
-                name: "--verbose",
-                description: "詳細なログを出力します。");
-
+            // プロジェクト相対パス
             var path = new Argument<string?>(
                 name: "project path",
                 getDefaultValue: () => string.Empty,
                 description: "カレントディレクトリから操作対象のnijoプロジェクトへの相対パス");
 
-            var applicationName = new Argument<string?>(
-                name: "application name",
-                description: "新規作成されるアプリケーションの名前");
-
-            var keepTempIferror = new Option<bool>(
-                name: "--keep-temp-if-error",
-                description: "作成に失敗した場合、原因調査ができるようにするため一時フォルダを削除せず残します。");
-
-            var mermaid = new Option<bool>(
-                name: "--mermaid",
-                description: "スキーマ定義をMermaid形式で表示します。");
-
+            // ビルドスキップ
             var noBuild = new Option<bool>(
                 ["-n", "--no-build"],
                 description: "デバッグ開始時にコード自動生成をせず、アプリケーションの起動のみ行います。");
 
+            // デバッグ実行時、ブラウザを立ち上げない
+            var noBrowser = new Option<bool>(
+                ["-b", "--no-browser"],
+                description: "デバッグ開始時にブラウザを立ち上げません。");
+
+            // 未実装を許可
+            var allowNotImplemented = new Option<bool>(
+                ["-a", "--allow-not-implemented"],
+                description: "QueryModelのデータ構造定義などの必ず実装しなければならないメソッドは通常abstractでレンダリングされるが、コンパイルエラーの確認などのためにあえてvirtualでレンダリングする。");
+
+            // デバッグ実行キャンセルファイル
+            var cancelFile = new Option<string?>(
+                ["-c", "--cancel-file"],
+                description: "デバッグ実行の終了のトリガーは、通常はユーザーからのキー入力ですが、これを指定したときはこのファイルが存在したら終了と判定します。");
+
+            // GUI用のサービスが実行されるポート
             var port = new Option<int?>(
                 ["-p", "--port"],
-                description: "スキーマ定義編集アプリケーションが実行されるポートを明示的に指定します。");
+                description: "GUI用のサービスが実行されるポートを明示的に指定します。");
 
-            var noBrowser = new Option<bool>(
-                ["-n", "--no-browser"],
-                description: "スキーマ定義編集アプリケーションの開始時に自動的にブラウザを開くのを防ぎます。");
+            // npm ciをスキップするオプションを追加
+            var skipNpmCi = new Option<bool>(
+                ["--skip-npm-ci"],
+                description: "npm ciコマンドの実行をスキップします。");
 
-            var timeout = new Option<int?>(
-                ["-t", "--timeout"],
-                description: "TypeScriptやC#のビルドのタイムアウト時間。単位は秒。");
+            // ---------------------------------------------------
+            // ** コマンド **
 
-            // コマンド定義
-            var create = new Command(name: "create", description: "新しいプロジェクトを作成します。") { verbose, applicationName, keepTempIferror };
-            create.SetHandler((verbose, applicationName, keepTempIferror) => {
-                if (string.IsNullOrEmpty(applicationName)) throw new ArgumentException($"Application name is required.");
-                var logger = ILoggerExtension.CreateConsoleLogger(verbose);
-                var projectRootDir = Path.Combine(Directory.GetCurrentDirectory(), applicationName);
-                GeneratedProject.Create(
-                    projectRootDir,
-                    applicationName,
-                    keepTempIferror,
-                    serviceProvider,
-                    cancellationTokenSource.Token,
-                    logger);
-            }, verbose, applicationName, keepTempIferror);
-            rootCommand.AddCommand(create);
+            // 新規プロジェクト作成
+            var newProject = new Command(
+                name: "new",
+                description: "新規プロジェクトを作成します。")
+                { path, skipNpmCi };
+            newProject.SetHandler(NewProject, path, skipNpmCi);
+            rootCommand.AddCommand(newProject);
 
-            var update = new Command(name: "update", description: "コード自動生成処理をかけなおします。") { verbose, path };
-            update.SetHandler((verbose, path) => {
-                var logger = ILoggerExtension.CreateConsoleLogger(verbose);
-                GeneratedProject
-                    .Open(path, serviceProvider, logger)
-                    .CodeGenerator
-                    .GenerateCode();
-            }, verbose, path);
-            rootCommand.AddCommand(update);
+            // 検証
+            var validate = new Command(
+                name: "validate",
+                description: "スキーマ定義の検証を行ないます。")
+                { path };
+            validate.SetHandler(Validate, path);
+            rootCommand.AddCommand(validate);
 
-            var debug = new Command(name: "debug", description: "プロジェクトのデバッグを開始します。") { verbose, path, noBuild, timeout };
-            debug.SetHandler((verbose, path, noBuild, timeout) => {
-                var logger = ILoggerExtension.CreateConsoleLogger(verbose);
-                var project = GeneratedProject.Open(path, serviceProvider, logger);
-                var firstLaunch = true;
-                while (true) {
-                    logger.LogInformation("-----------------------------------------------");
-                    logger.LogInformation("デバッグを開始します。キーボードのQで終了します。それ以外のキーでリビルドします。");
+            // コード自動生成
+            var generate = new Command(
+                name: "generate",
+                description: "ソースコードの自動生成を実行します。")
+                { path, allowNotImplemented };
+            generate.SetHandler(Generate, path, allowNotImplemented);
+            rootCommand.AddCommand(generate);
 
-                    using var launcher = project.CreateLauncher();
+            // デバッグ実行開始
+            var run = new Command(
+                name: "run",
+                description: "プロジェクトのデバッグを開始します。")
+                { path, noBuild, noBrowser, allowNotImplemented, cancelFile };
+            run.SetHandler(Run, path, noBuild, noBrowser, allowNotImplemented, cancelFile);
+            rootCommand.AddCommand(run);
+
+            // スキーマダンプ
+            var dump = new Command(
+                name: "dump",
+                description: "スキーマ定義とプロパティパスの情報をMarkdown形式で出力します。")
+                { path };
+            dump.SetHandler(Dump, path);
+            rootCommand.AddCommand(dump);
+
+            // スキーマ定義オプション
+            var generateInternal = new Command(
+                name: "generate-internal",
+                description: "スキーマ定義で使用できるオプションを説明するドキュメントをMarkdown形式で出力します。");
+            generateInternal.SetHandler(GenerateInternal);
+            rootCommand.AddCommand(generateInternal);
+
+            // GUI用のサービスを展開する
+            var runUiService = new Command(
+                name: "run-ui-service",
+                description: "GUI用のサービスを展開します。")
+                { path, port };
+            runUiService.SetHandler(RunUiService, path, port);
+            rootCommand.AddCommand(runUiService);
+
+            return rootCommand;
+        }
+
+
+        /// <summary>
+        /// 新規プロジェクトを作成します。
+        /// </summary>
+        /// <param name="path">対象フォルダまでの相対パス</param>
+        /// <param name="skipNpmCi">npm ciコマンドをスキップする場合はtrue</param>
+        private static async Task NewProject(string? path, bool skipNpmCi) {
+            var projectRoot = path == null
+                ? Directory.GetCurrentDirectory()
+                : Path.Combine(Directory.GetCurrentDirectory(), path);
+            var logger = ILoggerExtension.CreateConsoleLogger();
+
+            if (Directory.Exists(projectRoot)) {
+                logger.LogError("既にプロジェクトが存在します: {projectRoot}", projectRoot);
+                return;
+            }
+
+            if (skipNpmCi) {
+                logger.LogInformation("npm ciコマンドをスキップします。");
+            }
+
+            var (success, errorMessage) = await GeneratedProject.CreatePhysicalProjectAndInstallDependenciesAsync(projectRoot, logger, skipNpmCi);
+
+            if (success) {
+                logger.LogInformation("プロジェクトの作成が完了しました: {projectRoot}", projectRoot);
+            } else {
+                logger.LogError(errorMessage ?? "プロジェクトの作成に失敗しました。");
+                // 作成途中のディレクトリが残っている可能性があるので削除を試みる
+                if (Directory.Exists(projectRoot)) {
                     try {
-                        if (!noBuild) {
-                            project.CodeGenerator.GenerateCode();
-                        }
-
-                        launcher.Launch();
-
-                        var timeoutTimespan = timeout == null
-                            ? (TimeSpan?)null
-                            : TimeSpan.FromSeconds(timeout.Value);
-                        launcher.WaitForReady(timeoutTimespan);
-
-                        // 初回ビルド時はブラウザ立ち上げ
-                        if (firstLaunch) {
-                            try {
-                                var npmUrl = project.ReactProject.GetDebuggingClientUrl();
-                                var launchBrowser = new Process();
-                                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                                    launchBrowser.StartInfo.FileName = "cmd";
-                                    launchBrowser.StartInfo.Arguments = $"/c \"start {npmUrl}\"";
-                                } else {
-                                    launchBrowser.StartInfo.FileName = "open";
-                                    launchBrowser.StartInfo.Arguments = npmUrl.ToString();
-                                }
-                                launchBrowser.Start();
-                                launchBrowser.WaitForExit();
-                            } catch (Exception ex) {
-                                logger.LogError("Fail to launch browser: {msg}", ex.Message);
-                            }
-                            firstLaunch = false;
-                        }
+                        Directory.Delete(projectRoot, recursive: true);
                     } catch (Exception ex) {
-                        logger.LogError("{msg}", ex.ToString());
+                        logger.LogWarning($"作成失敗したプロジェクトディレクトリの削除に失敗しました: {projectRoot}, {ex.Message}");
+                    }
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// スキーマ定義の検証を行ないます。
+        /// </summary>
+        /// <param name="path">対象フォルダまでの相対パス</param>
+        private static void Validate(string? path) {
+            var projectRoot = path == null
+                ? Directory.GetCurrentDirectory()
+                : Path.Combine(Directory.GetCurrentDirectory(), path);
+            var logger = ILoggerExtension.CreateConsoleLogger();
+
+            if (!GeneratedProject.TryOpen(projectRoot, out var project, out var error)) {
+                logger.LogError(error);
+                return;
+            }
+            var rule = SchemaParseRule.Default();
+            var parseContext = new SchemaParseContext(XDocument.Load(project.SchemaXmlPath), rule);
+
+            project.ValidateSchema(parseContext, logger);
+        }
+
+
+        /// <summary>
+        /// ソースコードの自動生成を実行します。
+        /// </summary>
+        /// <param name="path">対象フォルダまでの相対パス</param>
+        private static void Generate(string? path, bool allowNotImplemented) {
+            var projectRoot = path == null
+                ? Directory.GetCurrentDirectory()
+                : Path.Combine(Directory.GetCurrentDirectory(), path);
+            var logger = ILoggerExtension.CreateConsoleLogger();
+
+            if (!GeneratedProject.TryOpen(projectRoot, out var project, out var error)) {
+                logger.LogError(error);
+                Environment.ExitCode = 1;
+                return;
+            }
+            var rule = SchemaParseRule.Default();
+            var parseContext = new SchemaParseContext(XDocument.Load(project.SchemaXmlPath), rule);
+            var renderingOptions = new CodeRenderingOptions {
+                AllowNotImplemented = allowNotImplemented,
+            };
+
+            if (project.GenerateCode(parseContext, renderingOptions, logger)) {
+                Environment.ExitCode = 0;
+            } else {
+                Environment.ExitCode = 1;
+            }
+        }
+
+
+        /// <summary>
+        /// 対象プロジェクトのデバッグ実行を開始します。
+        /// </summary>
+        /// <param name="path">対象フォルダまでの相対パス</param>
+        /// <param name="noBuild">ソースコードの自動生成をスキップする場合はtrue</param>
+        /// <param name="noBrowser">デバッグ開始時にブラウザを立ち上げない</param>
+        /// <param name="allowNotImplemented">抽象メソッドをabstractでなくvirtualで生成</param>
+        /// <param name="cancelFile">デバッグ実行を終了するトリガー。このファイルが存在したら終了する。</param>
+        private static async Task Run(string? path, bool noBuild, bool noBrowser, bool allowNotImplemented, string? cancelFile) {
+            var projectRoot = path == null
+                ? Directory.GetCurrentDirectory()
+                : Path.Combine(Directory.GetCurrentDirectory(), path);
+            var cancelFileFullPath = cancelFile == null
+                ? null
+                : Path.GetFullPath(cancelFile);
+            var logger = ILoggerExtension.CreateConsoleLogger();
+
+            if (!GeneratedProject.TryOpen(projectRoot, out var project, out var error)) {
+                logger.LogError(error);
+                return;
+            }
+
+            var firstLaunch = true;
+            while (true) {
+                logger.LogInformation("-----------------------------------------------");
+                if (cancelFileFullPath == null) {
+                    logger.LogInformation("デバッグを開始します。キーボードのQで終了します。それ以外のキーでリビルドします。");
+                } else {
+                    logger.LogInformation("デバッグを開始します。右記パスにファイルが存在したら終了します: {cancelFile}", cancelFileFullPath);
+                }
+
+                var config = project.GetConfig();
+                using var launcher = new Runtime.GeneratedProjectLauncher(
+                    project.WebapiProjectRoot,
+                    project.ReactProjectRoot,
+                    new Uri(config.DotnetDebuggingUrl),
+                    new Uri(config.ReactDebuggingUrl),
+                    logger);
+                try {
+                    if (!noBuild) {
+                        var rule = SchemaParseRule.Default();
+                        var parseContext = new SchemaParseContext(XDocument.Load(project.SchemaXmlPath), rule);
+                        var renderingOptions = new CodeRenderingOptions {
+                            AllowNotImplemented = allowNotImplemented,
+                        };
+
+                        project.GenerateCode(parseContext, renderingOptions, logger);
                     }
 
+                    launcher.Launch();
+                    launcher.WaitForReady();
+
+                    // 初回ビルド時はブラウザ立ち上げ
+                    if (firstLaunch && !noBrowser) {
+                        try {
+                            var launchBrowser = new Process();
+                            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                                launchBrowser.StartInfo.FileName = "cmd";
+                                launchBrowser.StartInfo.Arguments = $"/c \"start {config.ReactDebuggingUrl}\"";
+                            } else {
+                                launchBrowser.StartInfo.FileName = "open";
+                                launchBrowser.StartInfo.Arguments = config.ReactDebuggingUrl;
+                            }
+                            launchBrowser.Start();
+                            launchBrowser.WaitForExit();
+                        } catch (Exception ex) {
+                            logger.LogError("Fail to launch browser: {msg}", ex.Message);
+                        }
+                        firstLaunch = false;
+                    }
+                } catch (Exception ex) {
+                    logger.LogError("{msg}", ex.ToString());
+                }
+
+                // 待機。breakで終了。continueでリビルド
+                if (cancelFileFullPath == null) {
                     // キー入力待機
                     var input = Console.ReadKey(true);
                     if (input.Key == ConsoleKey.Q) break;
-                }
-            }, verbose, path, noBuild, timeout);
-            rootCommand.AddCommand(debug);
 
-            var dump = new Command(
-                name: "dump",
-                description: "スキーマ定義から構築したスキーマ詳細を出力します。")
-                { verbose, path, mermaid };
-            dump.SetHandler((verbose, path, mermaid) => {
-                var logger = ILoggerExtension.CreateConsoleLogger(verbose);
-                var schema = GeneratedProject
-                    .Open(path, serviceProvider, logger)
-                    .BuildSchema();
-                if (mermaid) {
-                    Console.WriteLine(schema.ToMermaidText());
                 } else {
-                    Console.WriteLine(schema.DumpTsv());
+                    // キャンセルファイル監視
+                    while (!File.Exists(cancelFileFullPath)) {
+                        await Task.Delay(500);
+                    }
+                    break;
                 }
-            }, verbose, path, mermaid);
-            rootCommand.AddCommand(dump);
+            }
+        }
 
-            var ui = new Command(
-                name: "ui",
-                description: $"スキーマ定義をGUIで編集します。")
-                { path, port, noBrowser };
-            ui.SetHandler(async (path, port, noBrowser) => {
-                var project = GeneratedProject.Open(path, serviceProvider);
-                var editor = new NijoUi(project);
-                var app = editor.CreateApp();
+        /// <summary>
+        /// スキーマ定義とプロパティパスの情報をMarkdown形式で出力します。
+        /// </summary>
+        /// <param name="path">対象フォルダまでの相対パス</param>
+        private static void Dump(string? path) {
+            var projectRoot = path == null
+                ? Directory.GetCurrentDirectory()
+                : Path.Combine(Directory.GetCurrentDirectory(), path);
+            var logger = ILoggerExtension.CreateConsoleLogger();
 
-                var url = $"https://localhost:{port ?? 5000}";
+            if (!GeneratedProject.TryOpen(projectRoot, out var project, out var error)) {
+                logger.LogError(error);
+                return;
+            }
 
-                // ブラウザを開く
-                if (!noBrowser) {
-                    Process.Start(new ProcessStartInfo {
-                        FileName = url,
-                        UseShellExecute = true,
-                    });
+            var rule = SchemaParseRule.Default();
+            var xDocument = XDocument.Load(project.SchemaXmlPath);
+            var parseContext = new SchemaParseContext(xDocument, rule);
+
+            // TryBuildSchemaメソッドを使用してApplicationSchemaのインスタンスを生成
+            if (parseContext.TryBuildSchema(xDocument, out var appSchema, out var errors)) {
+                // ApplicationSchemaクラスのGenerateMarkdownDumpメソッドを使用
+                var markdownContent = appSchema.GenerateMarkdownDump();
+
+                // 標準出力に出力
+                Console.WriteLine(markdownContent);
+            } else {
+                logger.LogError("スキーマのビルドに失敗したため、ダンプを生成できませんでした。");
+                foreach (var err in errors) {
+                    var xmlPath = err.XElement
+                        .AncestorsAndSelf()
+                        .Reverse()
+                        .Skip(1)
+                        .Select(el => el.Name.LocalName)
+                        .Join("/");
+
+                    var errorMessages = err.OwnErrors
+                        .Concat(err.AttributeErrors.SelectMany(x => x.Value, (p, v) => $"[{p.Key}] {v}"))
+                        .ToArray();
+                    var summary = errorMessages.Length >= 2
+                        ? $"{errorMessages.Length}件のエラー（{errorMessages.Join(", ")}）"
+                        : errorMessages.Single();
+                    logger.LogError("  * {xmlPath}: {summary}", xmlPath, summary);
                 }
+            }
+        }
 
-                // アプリケーション起動
-                await app.RunAsync(url);
+        /// <summary>
+        /// Nijoプロジェクト内部にファイルを生成する
+        /// </summary>
+        private static void GenerateInternal() {
+            var logger = ILoggerExtension.CreateConsoleLogger();
+            var rule = SchemaParseRule.Default();
 
-            }, path, port, noBrowser);
-            rootCommand.AddCommand(ui);
+            // 各モデルでどういったオプションを使用できるかを記載
+            var modelsDir = Path.GetFullPath(Path.Combine(
+                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, // net9.0
+                "..", // Debug
+                "..", // bin
+                "..", // Nijo
+                "Models"));
+            void RenderOptionsMd(string filename, IModel model) {
+                var fullpath = Path.Combine(modelsDir, filename);
+                var availableOptions = rule.GetAvailableOptionsFor(model);
 
-            return rootCommand;
+                File.WriteAllText(fullpath, $$"""
+                    # {{model.GetType().Name}}に指定することができるオプション
+                    {{availableOptions.SelectTextTemplate(opt => $$"""
+
+                    ## `{{opt.AttributeName}}` （{{opt.DisplayName}}）
+                    {{opt.HelpText}}
+                    """)}}
+                    """.Replace(SKIP_MARKER, string.Empty), new UTF8Encoding(false, false));
+
+                logger.LogInformation("オプション属性ドキュメントを生成しました: {0}", fullpath);
+            }
+
+            RenderOptionsMd("DataModel.Options.md", new DataModel());
+            RenderOptionsMd("QueryModel.Options.md", new QueryModel());
+            RenderOptionsMd("CommandModel.Options.md", new CommandModel());
+        }
+
+        /// <summary>
+        /// GUI用のサービスを展開する
+        /// </summary>
+        private static async Task RunUiService(string? path, int? port) {
+            var logger = ILoggerExtension.CreateConsoleLogger();
+
+            // 既にプロジェクトが存在していることが前提
+            var projectRoot = path == null
+                ? Directory.GetCurrentDirectory()
+                : Path.Combine(Directory.GetCurrentDirectory(), path);
+            if (!GeneratedProject.TryOpen(projectRoot, out var project, out var error)) {
+                logger.LogError(error);
+                return;
+            }
+
+            // サービス内容定義
+            var nijoUi = new Ui.NijoUi(project);
+            var app = nijoUi.BuildWebApplication(logger);
+
+            // 起動
+            var url = $"https://localhost:{port ?? 5000}";
+            logger.LogInformation("GUI用のサービスを起動します: {url}", url);
+            await app.RunAsync(url);
         }
     }
 }

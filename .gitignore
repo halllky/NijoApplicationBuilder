@@ -1,4 +1,11 @@
 /自動テストで作成されたプロジェクト/*
+/プロジェクト新規作成処理のテストで作成されたプロジェクト/*
+/Nijo.IntegrationTest.Log/*
+/Nijo.IntegrationTest.DataPatternsImplementors/*
+/Nijo.ApplicationTemplate.Ver1/memo/*
+
+# リリース用一時フォルダ
+/temp_release/*
 
 # 開発者個人設定
 appsettings.Development.json

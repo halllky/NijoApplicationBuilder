@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
-<自動テストで作成されたプロジェクト>
+<自動テストで作成されたプロジェクト RootNamespace="MyApp.Core">
 
   <!--
     想定シナリオ
@@ -9,28 +9,28 @@
     3. 変換後のデータを登録する
   -->
 
-  <従業員 is="write-model-2 generate-default-read-model">
-    <内部ID is="uuid key" />
-    <従業員コード is="word" />
-    <名前 is="word name" />
-    <区分 is="従業員区分" />
+  <従業員 Type="data-model" GenerateDefaultQueryModel="True">
+    <内部ID Type="word" IsKey="True" />
+    <従業員コード Type="word" />
+    <名前 Type="word" />
+    <区分 Type="従業員区分" />
   </従業員>
 
-  <従業員区分 is="enum">
-    <ベテラン />
-    <ビギナー />
+  <従業員区分 Type="enum">
+    <ベテラン key="1" />
+    <ビギナ key="2" />
   </従業員区分>
 
-  <従業員データ一括取り込み is="command">
+  <従業員データ一括取り込み Type="command-model">
+    <従業員データ一括取り込みParameter Type="child">
+      <取込ファイル Type="word" />
+      <!-- <取込ファイル Type="file" /> -->
 
-    <取込ファイル is="word" />
-    <!-- <取込ファイル is="file" /> -->
-
-    <処理範囲 is="variation">
-      <特定データのみ is="variation-item:1">
-        <従業員 is="ref-to:従業員" />
+      <特定データのみ Type="child">
+        <従業員 Type="ref-to:従業員" />
       </特定データのみ>
-      <全部更新 is="variation-item:2" />
-    </処理範囲>
+      <全部更新 Type="child" />
+    </従業員データ一括取り込みParameter>
+    <従業員データ一括取り込みReturnValue Type="child"></従業員データ一括取り込みReturnValue>
   </従業員データ一括取り込み>
 </自動テストで作成されたプロジェクト>

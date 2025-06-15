@@ -1,0 +1,133 @@
+{
+  "extensions": {
+    "recommendations": [
+      "EditorConfig.EditorConfig",
+      "yzhang.markdown-all-in-one",
+      "redhat.vscode-xml",
+      "bierner.markdown-preview-github-styles",
+      "ms-dotnettools.vscode-dotnet-runtime",
+      "bierner.markdown-mermaid"
+    ]
+  },
+  "folders": [
+    {
+      "name": "NijoApplicationBuilder",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "editor.formatOnSave": true,
+    "[bat]": {
+      "editor.formatOnSave": false
+    },
+    "[sql]": {
+      "editor.formatOnSave": false
+    },
+    "markdown.preview.breaks": true,
+    "extensions.ignoreRecommendations": false,
+    "workbench.colorCustomizations": {
+      "titleBar.activeBackground": "#492818",
+      "titleBar.activeForeground": "#cccccc",
+      "activityBar.background": "#492818",
+      "activityBar.foreground": "#cccccc"
+    },
+    "xml.format.maxLineWidth": 0,
+    "[xml]": {
+      "files.trimFinalNewlines": false
+    },
+    "omnisharp.enableEditorConfigSupport": true
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Nijo: テンプレプロジェクトのコード自動生成をかけなおす",
+        "command": ".\\run-nijo-exe.bat",
+        "type": "shell",
+        "args": [
+          "generate"
+        ],
+        "options": {
+          "cwd": "${workspaceFolder:NijoApplicationBuilder}/Nijo.ApplicationTemplate.Ver1"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "Nijo: テンプレプロジェクトのデバッグ実行を開始する",
+        "command": ".\\run-nijo-exe.bat",
+        "type": "shell",
+        "args": [
+          "run"
+        ],
+        "options": {
+          "cwd": "${workspaceFolder:NijoApplicationBuilder}/Nijo.ApplicationTemplate.Ver1"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "Nijo: テンプレプロジェクトのデバッグ実行を開始する（コード自動生成スキップ）",
+        "command": ".\\run-nijo-exe.bat",
+        "type": "shell",
+        "args": [
+          "run",
+          "--no-build"
+        ],
+        "options": {
+          "cwd": "${workspaceFolder:NijoApplicationBuilder}/Nijo.ApplicationTemplate.Ver1"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "Nijo: 「自動テストで作成されたプロジェクト」のコード自動生成をかけなおす",
+        "command": ".\\run-nijo-exe.bat",
+        "type": "shell",
+        "args": [
+          "generate",
+        ],
+        "options": {
+          "cwd": "${workspaceFolder:NijoApplicationBuilder}/自動テストで作成されたプロジェクト"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "Nijo: 「自動テストで作成されたプロジェクト」のコンパイルエラーチェック",
+        "command": ".\\build-and-error-check.bat",
+        "type": "shell",
+        "args": [
+          "generate",
+        ],
+        "options": {
+          "cwd": "${workspaceFolder:NijoApplicationBuilder}/自動テストで作成されたプロジェクト"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "Nijo: スキーマ定義編集UIのデバッグ実行を開始する",
+        "command": ".\\TASK_DEBUG.bat",
+        "type": "shell",
+        "problemMatcher": [],
+        "options": {
+          "cwd": "${workspaceFolder:NijoApplicationBuilder}/Nijo.Ui"
+        },
+      },
+      {
+        "label": "Nijo: スキーマ定義編集UIのビルドおよび発行を行う",
+        "command": ".\\TASK_PUBLISH.bat",
+        "type": "shell",
+        "problemMatcher": [],
+        "options": {
+          "cwd": "${workspaceFolder:NijoApplicationBuilder}/Nijo.Ui"
+        },
+      },
+      {
+        "label": "Nijo: リリースモジュール作成",
+        "command": ".\\release.bat",
+        "type": "shell",
+        "problemMatcher": [],
+        "options": {
+          "cwd": "${workspaceFolder:NijoApplicationBuilder}"
+        },
+      }
+    ]
+  }
+}

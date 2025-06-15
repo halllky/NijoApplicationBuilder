@@ -1,87 +1,87 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
-<自動テストで作成されたプロジェクト>
+<自動テストで作成されたプロジェクト RootNamespace="MyApp.Core">
   <!-- ************ マスタデータ ************** -->
-  <商品 is="write-model-2 generate-default-read-model">
-    <商品ID is="uuid key" />
-    <商品名 is="word" />
+  <商品 Type="data-model" GenerateDefaultQueryModel="True">
+    <商品ID Type="word" IsKey="True" />
+    <商品名 Type="word" />
   </商品>
 
   <!-- ************ トランザクションデータ ************** -->
-  <受注 is="write-model-2 generate-default-read-model">
-    <受注ID is="uuid key" />
-    <受注日 is="word" />
-    <受注明細 is="children">
-      <商品 is="ref-to:商品 key" />
-      <数量 is="int" />
-      <単価 is="int" />
+  <受注 Type="data-model" GenerateDefaultQueryModel="True">
+    <受注ID Type="word" IsKey="True" />
+    <受注日 Type="word" />
+    <受注明細 Type="children">
+      <商品 Type="ref-to:商品" IsKey="True" />
+      <数量 Type="int" />
+      <単価 Type="int" />
     </受注明細>
   </受注>
 
-  <納品 is="write-model-2 generate-default-read-model">
-    <商品ID is="uuid key" />
-    <納品日 is="word" />
-    <納品明細 is="children">
-      <ID is="uuid key" />
-      <商品 is="ref-to:商品" />
-      <数量 is="int" />
-      <受注 is="ref-to:受注" />
+  <納品 Type="data-model" GenerateDefaultQueryModel="True">
+    <商品ID Type="word" IsKey="True" />
+    <納品日 Type="word" />
+    <納品明細 Type="children">
+      <ID Type="word" IsKey="True" />
+      <商品 Type="ref-to:商品" />
+      <数量 Type="int" />
+      <受注 Type="ref-to:受注" />
     </納品明細>
   </納品>
 
-  <請求 is="write-model-2 generate-default-read-model">
-    <請求ID is="uuid key" />
-    <請求日 is="word" />
-    <納品 is="ref-to:納品" />
-    <請求明細 is="children">
-      <ID is="uuid key" />
-      <商品 is="ref-to:商品" />
-      <数量 is="int" />
-      <単価 is="int" />
+  <請求 Type="data-model" GenerateDefaultQueryModel="True">
+    <請求ID Type="word" IsKey="True" />
+    <請求日 Type="word" />
+    <納品 Type="ref-to:納品" />
+    <請求明細 Type="children">
+      <ID Type="word" IsKey="True" />
+      <商品 Type="ref-to:商品" />
+      <数量 Type="int" />
+      <単価 Type="int" />
     </請求明細>
   </請求>
 
-  <入金 is="write-model-2 generate-default-read-model">
-    <入金ID is="uuid key" />
-    <入金日 is="word" />
-    <金額 is="int" />
-    <請求 is="ref-to:請求" />
+  <入金 Type="data-model" GenerateDefaultQueryModel="True">
+    <入金ID Type="word" IsKey="True" />
+    <入金日 Type="word" />
+    <金額 Type="int" />
+    <請求 Type="ref-to:請求" />
   </入金>
 
   <!-- ************ トランザクションデータ（全部まとめて表示） ************** -->
-  <受注から入金まで is="read-model-2">
-    <受注ID is="uuid key" />
-    <受注日 is="word" />
-    <受注明細2 is="children">
-      <商品 is="ref-to:商品 key" />
-      <数量 is="int" />
-      <単価 is="int" />
+  <受注から入金まで Type="query-model">
+    <受注ID Type="word" IsKey="True" />
+    <受注日 Type="word" />
+    <受注明細2 Type="children">
+      <商品 Type="ref-to:商品" IsKey="True" />
+      <数量 Type="int" />
+      <単価 Type="int" />
 
-      <納品2 is="child has-lifecycle">
-        <商品ID is="uuid key" />
-        <納品日 is="word" />
-        <納品明細2 is="children">
-          <ID is="uuid key" />
-          <商品 is="ref-to:商品" />
-          <数量 is="int" />
+      <納品2 Type="child" HasLifecycle="True">
+        <商品ID Type="word" IsKey="True" />
+        <納品日 Type="word" />
+        <納品明細2 Type="children">
+          <ID Type="word" IsKey="True" />
+          <商品 Type="ref-to:商品" />
+          <数量 Type="int" />
         </納品明細2>
       </納品2>
 
-      <請求2 is="child has-lifecycle">
-        <請求ID is="uuid key" />
-        <請求日 is="word" />
-        <請求明細2 is="children">
-          <ID is="uuid key" />
-          <商品 is="ref-to:商品" />
-          <数量 is="int" />
-          <単価 is="int" />
+      <請求2 Type="child" HasLifecycle="True">
+        <請求ID Type="word" IsKey="True" />
+        <請求日 Type="word" />
+        <請求明細2 Type="children">
+          <ID Type="word" IsKey="True" />
+          <商品 Type="ref-to:商品" />
+          <数量 Type="int" />
+          <単価 Type="int" />
         </請求明細2>
       </請求2>
 
-      <入金2 is="child has-lifecycle">
-        <入金ID is="uuid key" />
-        <入金日 is="word" />
-        <金額 is="int" />
+      <入金2 Type="child" HasLifecycle="True">
+        <入金ID Type="word" IsKey="True" />
+        <入金日 Type="word" />
+        <金額 Type="int" />
       </入金2>
     </受注明細2>
   </受注から入金まで>

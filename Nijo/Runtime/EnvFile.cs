@@ -14,11 +14,13 @@ namespace Nijo.Runtime {
     /// </summary>
     internal class EnvFile {
 
-        internal EnvFile(GeneratedProject generatedProject, ILogger logger) {
-            _generatedProject = generatedProject;
+        internal EnvFile(Uri webapiServerUrl, string reactProjectRoot, ILogger logger) {
+            _webapiServerUrl = webapiServerUrl;
+            _reactProjectRoot = reactProjectRoot;
             _logger = logger;
         }
-        private readonly GeneratedProject _generatedProject;
+        private readonly Uri _webapiServerUrl;
+        private readonly string _reactProjectRoot;
         private readonly ILogger _logger;
 
         internal void Overwrite() {
@@ -26,11 +28,11 @@ namespace Nijo.Runtime {
                 // この名前の環境ファイルはdevelopmentモードでのみ読み込まれる。またgitには無視される
                 const string FILENAME = ".env.development.local";
 
-                var filepath = Path.Combine(_generatedProject.ReactProject.ProjectRoot, FILENAME);
+                var filepath = Path.Combine(_reactProjectRoot, FILENAME);
                 var fileEncoding = new UTF8Encoding(false, false);
                 const string NEWLINE = "\n";
 
-                var url = _generatedProject.WebApiProject.GetDebugUrl();
+                var url = _webapiServerUrl;
 
                 if (!File.Exists(filepath)) {
                     var value = $"VITE_BACKEND_API={url}{NEWLINE}";
