@@ -96,9 +96,9 @@ export const EntityDetailPane: React.FC<EntityDetailPaneProps> = ({
   })
 
   return (
-    <div className="px-1 pb-1 h-full flex flex-col gap-2">
+    <div className="px-1 pb-1 h-full flex flex-col">
 
-      <div className="flex flex-row-reverse items-start gap-1">
+      <div className={`flex flex-row-reverse items-start gap-1 border ${isEditing ? 'border-gray-500' : 'border-transparent border-b-gray-300'}`}>
         {isEditing ? (
           <Input.IconButton onClick={handleEndEditing} icon={Icon.CheckIcon} hideText mini className="mt-1">
             編集終了
@@ -144,7 +144,6 @@ export const EntityDetailPane: React.FC<EntityDetailPaneProps> = ({
         <div className="flex-1"></div>
 
         {/* コメント */}
-        <hr className="border-gray-300" />
         <div className="flex flex-col gap-1">
           <span className="text-xs select-none text-gray-500">
             コメント
@@ -171,7 +170,7 @@ export const EntityDetailPane: React.FC<EntityDetailPaneProps> = ({
           placeholder="新規コメント"
           className="self-stretch"
         />
-        <Input.IconButton onClick={handleAddComment} className="mt-2 flex-none self-start">
+        <Input.IconButton onClick={handleAddComment} className="ml-[-10px] self-start">
           コメントを追加（Ctrl + Enter）
         </Input.IconButton>
       </div>
@@ -201,7 +200,7 @@ const EntityNameView = React.forwardRef<HTMLTextAreaElement, {
       value={entityName}
       onChange={onChange}
       onKeyDown={handleKeyDown}
-      className={`font-bold border ${isEditing ? 'border-gray-500' : 'border-transparent'} ${className ?? ''}`}
+      className={`font-bold ${className ?? ''}`}
       isReadOnly={!isEditing}
     />
   )
@@ -248,7 +247,7 @@ const AttributeValueView = ({ perspective, attribute, value, onChange, isEditing
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           isReadOnly={!isEditing}
-          className={`w-full border ${isEditing ? 'border-gray-500' : 'border-transparent'}`}
+          className={`px-1 [&_textarea]:px-1 w-full border ${isEditing ? 'border-gray-500' : 'border-transparent'}`}
         />
       </div>
     )
@@ -362,8 +361,8 @@ const CommentView = ({ comment, onCommentChanged, onCommentDeleted }: {
   })
 
   return (
-    <div className={`flex flex-col border ${isEditing ? 'border-gray-500' : 'border-transparent'}`}>
-      <div className="flex items-start gap-2">
+    <div className={`flex flex-col py-px px-1 bg-gray-100 border ${isEditing ? 'border-gray-500' : 'border-gray-300'}`}>
+      <div className="flex items-start gap-1">
         <MentionTextarea
           ref={textareaRef}
           value={unCommitedText ?? comment.content}
@@ -371,24 +370,24 @@ const CommentView = ({ comment, onCommentChanged, onCommentDeleted }: {
           onKeyDown={handleKeyDown}
           isReadOnly={!isEditing}
           placeholder="コメントを入力..."
-          className="flex-grow"
+          className="flex-grow text-sm"
         />
 
         {isEditing ? (
           <>
-            <Input.IconButton onClick={handleCancel} icon={Icon.XMarkIcon} hideText mini className="flex-none mt-1">
+            <Input.IconButton onClick={handleCancel} icon={Icon.XMarkIcon} hideText mini>
               キャンセル
             </Input.IconButton>
-            <Input.IconButton onClick={handleSave} icon={Icon.CheckIcon} hideText mini className="flex-none mt-1">
+            <Input.IconButton onClick={handleSave} icon={Icon.CheckIcon} hideText mini>
               保存
             </Input.IconButton>
           </>
         ) : (
           <>
-            <Input.IconButton onClick={handleStartEditing} icon={Icon.PencilIcon} hideText mini className="flex-none mt-1">
+            <Input.IconButton onClick={handleStartEditing} icon={Icon.PencilIcon} hideText mini>
               編集
             </Input.IconButton>
-            <Input.IconButton onClick={handleDelete} icon={Icon.TrashIcon} hideText mini className="flex-none mt-1">
+            <Input.IconButton onClick={handleDelete} icon={Icon.TrashIcon} hideText mini>
               コメント削除
             </Input.IconButton>
           </>

@@ -72,6 +72,9 @@ export const IconButton = (args: {
       : ' button-style-bg-fill'
   }
 
+  // 画面側で指定されたレイアウト
+  className += ` ${args.className ?? ''}`
+
   // 読み込み中のくるくる
   let nowLoadingStyle = `animate-spin h-4 w-4 border-2 rounded-full border-t-transparent`
   if (args.fill) {
