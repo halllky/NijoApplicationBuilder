@@ -119,7 +119,7 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
     className?: string
   }) => {
     return (
-      <div className={`flex-1 inline-flex text-left truncate ${className ?? ''}`}>
+      <div className={`flex-1 inline-flex px-1 text-left truncate ${className ?? ''}`}>
         <span className="flex-1 truncate">
           {children}
         </span>
@@ -358,7 +358,7 @@ const CellEditorWithMention = React.forwardRef(({
         ref={textareaRef}
         value={value ?? ''}
         onChange={onChange}
-        className="flex-1"
+        className="flex-1 my-[-1px] mx-[3px]"
       />
       {showOptions && (
         <Icon.ChevronDownIcon className="w-4 cursor-pointer" />
