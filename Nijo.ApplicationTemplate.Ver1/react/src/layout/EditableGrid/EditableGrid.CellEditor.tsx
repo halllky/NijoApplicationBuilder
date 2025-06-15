@@ -368,7 +368,6 @@ export type GetPixelFunction = (args
 
 // x,y座標を返す関数
 export const useGetPixel = (
-  tdRefs: React.RefObject<{ [rowIndexInPropsData: number]: React.RefObject<HTMLTableCellElement>[] }>,
   rowVirtualizer: Virtualizer<HTMLDivElement, Element>,
   estimatedRowHeight: number,
   /** 表示されている列のindexから列幅を取得する関数。 */
@@ -386,24 +385,20 @@ export const useGetPixel = (
       return sum
     }
 
-    // 上下の計算について、描画範囲内にあるセルの場合はtd要素のclientRectで、範囲外は計算で導出する
-    if (rowVirtualizer.range
-      && args.rowIndex >= rowVirtualizer.range.startIndex
-      && args.rowIndex <= rowVirtualizer.range.endIndex) {
-      const td = tdRefs.current
-        ?.[args.rowIndex]
-        ?.[0] // ここではtdの縦幅さえ採れればよいので先頭列決め打ち
-        ?.current
-      if (td) {
-        return args.position === 'top'
-          ? td.offsetTop
-          : (td.offsetTop + td.offsetHeight)
-      }
+    // 上下の位置は仮想化アイテムから直接位置を取得
+    const virtualItem = rowVirtualizer.getVirtualItems().find(item => item.index === args.rowIndex);
+    const theadHeight = estimatedRowHeight; // ヘッダーは1行分の高さ（theadはsticky positionでtbodyの上にある）
+    if (virtualItem) {
+      return args.position === 'top'
+        ? virtualItem.start + theadHeight
+        : virtualItem.start + virtualItem.size + theadHeight
     }
+
+    // 仮想化範囲外の場合は推定値で計算
     if (args.position === 'top') {
-      return args.rowIndex * estimatedRowHeight
+      return args.rowIndex * estimatedRowHeight + theadHeight
     } else {
-      return (args.rowIndex + 1) * estimatedRowHeight
+      return (args.rowIndex + 1) * estimatedRowHeight + theadHeight
     }
   })
 

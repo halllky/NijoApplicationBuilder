@@ -81,6 +81,8 @@ export type Perspective = {
   attributes: EntityAttribute[]
   /** 書式条件。先頭のものがより優先度が高い。 */
   formatConditions?: FormatCondition[]
+  /** グリッドでエンティティ名を折り返して表示するか */
+  wrapEntityName?: boolean
   /** 詳細欄における単語型の属性のラベルの横幅。CSSの値で指定（"10rem"など） */
   detailPageLabelWidth?: string
   /** グラフがグリッドに対して縦方向と横方向のどちらに表示されるか。 */

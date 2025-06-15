@@ -185,6 +185,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     count: rows.length,
     getScrollElement: () => tableContainerRef.current,
     estimateSize: () => ESTIMATED_ROW_HEIGHT,
+    measureElement: element => element?.getBoundingClientRect().height,
     overscan: 5,
   });
 
@@ -298,31 +299,8 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
 
   const virtualItems = rowVirtualizer.getVirtualItems();
 
-  // 実際に表示されていない行の余白部分の高さを計算
-  const [paddingTop, paddingBottom] = useMemo(() => {
-    if (!virtualItems.length) {
-      return [0, 0];
-    }
-    return [
-      notUndefined(virtualItems[0]).start - rowVirtualizer.options.scrollMargin,
-      rowVirtualizer.getTotalSize() - notUndefined(virtualItems[virtualItems.length - 1]).end,
-    ];
-  }, [virtualItems, rowVirtualizer]);
-
-  // td要素の二次元配列のref
-  const tdRefs = useRef<{ [rowIndexInPropsData: number]: React.RefObject<HTMLTableCellElement>[] }>({})
-  const tdRefsPrevious = { ...tdRefs.current }
-  tdRefs.current = {}
-  for (const virtualItem of virtualItems) {
-    // 前回のレンダリングで作成されたrefがある場合は再利用し、
-    // 画面スクロールなどにより新しく出現した行の場合はcreateRefする
-    tdRefs.current[virtualItem.index]
-      = tdRefsPrevious[virtualItem.index]
-      ?? Array.from({ length: columnDefs?.length ?? 0 }).map(() => React.createRef())
-  }
-
   // ピクセル数取得関数
-  const getPixel = useGetPixel(tdRefs, rowVirtualizer, ESTIMATED_ROW_HEIGHT, getColWidthByVisibleColumnIndex)
+  const getPixel = useGetPixel(rowVirtualizer, ESTIMATED_ROW_HEIGHT, getColWidthByVisibleColumnIndex)
 
   // ref用の公開メソッド
   useImperativeHandle(ref, () => ({
@@ -423,21 +401,21 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
       onPaste={handlePaste}
     >
       <table
-        className={`table-fixed border-collapse border-spacing-0`}
+        className={`grid border-collapse border-spacing-0`}
         style={{ minWidth: tableTotalWidth }}
       >
 
         {/* 列ヘッダ */}
-        <thead className="sticky top-0 z-10 grid-header-group">
+        <thead className="grid sticky top-0 z-10 grid-header-group">
           {table.getHeaderGroups().map(headerGroup => (
-            <tr key={headerGroup.id}>
+            <tr key={headerGroup.id} className="flex w-full">
               {headerGroup.headers.map(header => {
                 const headerMeta = header.column.columnDef.meta as ColumnMetadataInternal<TRow> | undefined
                 const isFixedColumn = !!headerMeta?.originalColDef?.isFixed;
                 const isRowHeader = !!headerMeta?.isRowHeader;
 
-                let className = 'bg-gray-200 relative text-left select-none'
-                if (isRowHeader) className += ' sticky left-0 z-20'
+                let className = 'flex bg-gray-200 relative text-left select-none'
+                if (isRowHeader) className += ' sticky z-20'
                 else if (isFixedColumn) className += ' sticky z-10'
 
                 return (
@@ -469,26 +447,34 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
             </tr>
           ))}
         </thead>
-        <tbody ref={tableBodyRef} className="grid-body">
-          {/* 仮想化のための上部パディング行 */}
-          {paddingTop > 0 && (
-            <tr>
-              <td
-                style={{ height: `${paddingTop}px` }}
-                colSpan={table.getAllColumns().length}
-              />
-            </tr>
-          )}
-
+        <tbody
+          ref={tableBodyRef}
+          className="grid relative"
+          style={{
+            height: `${rowVirtualizer.getTotalSize()}px`, // スクロールバーにテーブルのサイズを伝える
+          }}
+        >
           {/* 画面のスクロール範囲内に表示されている行のみレンダリングされる */}
           {virtualItems.map(virtualRow => {
             const row = tableRows[virtualRow.index];
             if (!row) return null;
 
-            const className = props.getRowClassName?.(row.original);
+            const className = `flex absolute w-full ${props.getRowClassName?.(row.original) ?? ''}`
 
             return (
-              <tr key={row.id} style={{ height: `${virtualRow.size}px` }} className={className}>
+              <tr
+                key={row.id}
+                data-index={virtualRow.index} // 動的行高さ測定に必要
+                ref={node => {
+                  if (node) {
+                    rowVirtualizer.measureElement(node); // 動的行高さを測定
+                  }
+                }}
+                style={{
+                  transform: `translateY(${virtualRow.start}px)`, // スクロールでの変更のため常にstyleとして設定
+                }}
+                className={className}
+              >
                 {row.getVisibleCells().map(cell => {
                   const rowIndex = row.index;
                   // 行ヘッダー列を除いた可視列の配列を取得し、その中でのインデックスを colIndex とする
@@ -508,7 +494,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                     return (
                       <td
                         key={cell.id}
-                        className="bg-gray-200 align-middle text-center sticky left-0"
+                        className="flex bg-gray-200 align-middle text-center sticky left-0"
                         style={{ width: cell.column.getSize() }}
                       >
                         <div
@@ -529,7 +515,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                   }
 
                   // データ列
-                  let dataColumnClassName = 'outline-none align-middle'
+                  let dataColumnClassName = 'flex outline-none align-middle'
 
                   if (isActive) {
                     dataColumnClassName += ' bg-sky-200' // アクティブセル
@@ -552,7 +538,6 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                   return (
                     <td
                       key={cell.id}
-                      ref={tdRefs.current[rowIndex]?.[colIndex]}
                       className={dataColumnClassName}
                       style={{
                         width: cell.column.getSize(),
@@ -583,7 +568,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                         className={`flex select-none truncate ${cellMeta?.originalColDef?.isFixed ? 'border-r border-gray-200' : ''}`}
                         style={{
                           width: cell.column.getSize(),
-                          height: ESTIMATED_ROW_HEIGHT,
+                          minHeight: ESTIMATED_ROW_HEIGHT, // 動的行高さ対応: heightの代わりにminHeightを使用
                         }}
                       >
                         {renderCell?.(cell.getContext()) ?? cell.getValue()?.toString()}
@@ -595,20 +580,10 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
             );
           })}
 
-          {/* 仮想化のための下部パディング行 */}
-          {paddingBottom > 0 && (
-            <tr>
-              <td
-                style={{ height: `${paddingBottom}px` }}
-                colSpan={table.getAllColumns().length}
-              />
-            </tr>
-          )}
-
           {/* データが空の場合のメッセージ */}
           {rows.length === 0 && (
-            <tr>
-              <td colSpan={table.getAllColumns().length}>
+            <tr className="flex absolute w-full">
+              <td colSpan={table.getAllColumns().length} className="flex w-full">
                 <EmptyDataMessage />
               </td>
             </tr>

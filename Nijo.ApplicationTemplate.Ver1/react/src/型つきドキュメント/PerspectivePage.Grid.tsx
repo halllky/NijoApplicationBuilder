@@ -58,7 +58,7 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
           const indent = context.row.original.indent;
           const text = context.cell.getValue() as string
           return (
-            <div className="flex-1 inline-flex text-left truncate px-1">
+            <div className="w-full flex-1 inline-flex text-left px-1">
               {Array.from({ length: indent }).map((_, i) => (
                 <React.Fragment key={i}>
                   <div className="basis-[20px] min-w-[20px] relative leading-none">
@@ -68,7 +68,7 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
                   </div>
                 </React.Fragment>
               ))}
-              <span className="flex-1 truncate">
+              <span className={`flex-1 ${perspective?.wrapEntityName ? 'whitespace-pre-wrap' : 'truncate'}`}>
                 {MentionUtil.toPlainText(text || '-')}
               </span>
             </div>
@@ -112,7 +112,7 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
       });
     }
     return columns;
-  }, [perspective?.attributes]);
+  }, [perspective?.attributes, perspective?.wrapEntityName]);
 
   const PlainCell = ({ children, className }: {
     children?: React.ReactNode
@@ -358,7 +358,7 @@ const CellEditorWithMention = React.forwardRef(({
         ref={textareaRef}
         value={value ?? ''}
         onChange={onChange}
-        className="flex-1 my-[-1px] mx-[3px]"
+        className="flex-1 mx-[3px]"
       />
       {showOptions && (
         <Icon.ChevronDownIcon className="w-4 cursor-pointer" />

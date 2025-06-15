@@ -187,6 +187,14 @@ export const EntityTypeEditDialog = ({
               <input type="text" {...register('detailPageLabelWidth')} className="flex-1 px-1 border border-gray-400" />
             </div>
 
+            <div className="flex items-center gap-1 mt-2">
+              <div className="basis-52"></div>
+              <label className="flex-1 text-sm text-gray-500">
+                <input type="checkbox" {...register('wrapEntityName')} className="mr-1" />
+                グリッドでエンティティ名を折り返す
+              </label>
+            </div>
+
             <div className="flex flex-col mt-4 h-80 resize-y overflow-y-auto">
               <div className="flex items-center gap-1">
                 <div className="text-sm text-gray-500">属性定義</div>
