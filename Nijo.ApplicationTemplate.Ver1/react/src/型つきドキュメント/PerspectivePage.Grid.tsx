@@ -106,8 +106,8 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
             renderCell: context => {
               const value = context.row.original.attributeValues[attrDef.attributeId];
               return (
-                <div className={`flex-1 inline-flex px-1 text-left ${attrDef.attributeType === 'description' ? 'whitespace-pre-wrap' : 'truncate'}`}>
-                  <span className="flex-1">
+                <div className={`w-full px-1 text-left `}>
+                  <span className={`block w-full ${attrDef.attributeType === 'description' ? 'whitespace-pre-wrap' : 'truncate'}`}>
                     {MentionUtil.toPlainText(value)}
                   </span>
                 </div>
