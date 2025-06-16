@@ -14,7 +14,7 @@ export interface EntityTypePageProps {
   useFieldArrayReturn: ReactHookForm.UseFieldArrayReturn<PerspectivePageData, 'perspective.nodes', 'uniqueId'>;
   onChangeRow: Layout.RowChangeEvent<GridRowType>;
   onSelectedRowChanged: (rowIndex: number) => void;
-  setValue: ReactHookForm.UseFormSetValue<PerspectivePageData>;
+  reset: ReactHookForm.UseFormReset<PerspectivePageData>;
   className?: string;
 }
 
@@ -39,7 +39,7 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
     fields,
   },
   onSelectedRowChanged,
-  setValue,
+  reset,
   onChangeRow,
   className,
 }, ref) => {
@@ -244,8 +244,14 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
     loadState: () => {
       return perspective?.gridStates?.['root-grid'] ?? null
     },
-    saveState: (value) => setValue('perspective.gridStates.root-grid', value),
-  }), [setValue, perspective?.gridStates])
+    saveState: (value) => {
+      // isDirtyがtrueにならないようにするため、setValueではなくresetを使う
+      reset(defaultValues => {
+        defaultValues.perspective.gridStates = { 'root-grid': value }
+        return defaultValues
+      })
+    },
+  }), [reset, perspective?.gridStates])
 
   // グリッドのキーボード操作
   const handleKeyDown: Layout.EditableGridKeyboardEventHandler = useEvent((e, isEditing) => {

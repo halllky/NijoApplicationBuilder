@@ -70,16 +70,17 @@ export const PerspectivePage = () => {
   }, [isReady, perspectiveId]);
 
   // 保存処理
-  const onSubmit = useEvent(async (data: PerspectivePageData) => {
-    if (isSaving) return;
+  const onSubmit = useEvent(async (data: PerspectivePageData): Promise<boolean> => {
+    if (isSaving) return false;
     setIsSaving(true);
     setError(null);
 
     // 保存
     try {
       const isSaved = await savePerspective(data);
-      if (!isSaved) return;
+      if (!isSaved) return false;
       afterLoadedRef?.saveSucceeded();
+      return true;
 
     } finally {
       setIsSaving(false);
@@ -109,7 +110,7 @@ export const PerspectivePage = () => {
 
 type AfterLoadedProps = {
   defaultValues: PerspectivePageData
-  onSubmit: (data: PerspectivePageData) => Promise<void>
+  onSubmit: (data: PerspectivePageData) => Promise<boolean>
 }
 
 type AfterLoadedRef = {
@@ -122,7 +123,7 @@ type AfterLoadedRef = {
  */
 export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({ defaultValues, onSubmit }, ref) => {
   const formMethods = ReactHookForm.useForm<PerspectivePageData>({ defaultValues });
-  const { handleSubmit, formState: { isDirty }, getValues, control, setValue, watch } = formMethods;
+  const { handleSubmit, formState: { isDirty }, getValues, control, reset, setValue, watch } = formMethods;
   const [selectedEntityIndex, setSelectedEntityIndex] = React.useState<number>()
   const gridRef = React.useRef<EntityTypePageRef>(null)
 
@@ -181,11 +182,16 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
 
   // ---------------------------------------
   // キーボードイベント
-  const handleKeyDown = useEvent((e: React.KeyboardEvent<HTMLFormElement>) => {
+  const handleKeyDown = useEvent(async (e: React.KeyboardEvent<HTMLFormElement>) => {
     // 保存
     if (e.ctrlKey && e.key === 's') {
       e.preventDefault();
-      onSubmit(getValues());
+
+      const currentValues = getValues();
+      const success = await onSubmit(currentValues);
+
+      // 画面離脱時の確認ダイアログが表示されないようにするためreset
+      if (success) formMethods.reset(currentValues);
     }
   });
 
@@ -298,7 +304,7 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
               perspective={perspective}
               onChangeRow={handleChangeRow}
               onSelectedRowChanged={setSelectedEntityIndex}
-              setValue={setValue}
+              reset={reset}
               className={className}
             />
           )}
