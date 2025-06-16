@@ -260,7 +260,8 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
     setItem: (key: string, value: string) => setValue(`perspective.resizablePaneState.${key}`, value),
   }), [getValues, setValue]);
 
-  // 詳細パネル
+  // パネル開閉状態
+  const [graphPanelCollapsed, setGraphPanelCollapsed] = React.useState(false);
   const [detailPanelCollapsed, setDetailPanelCollapsed] = React.useState(false);
 
   return (
@@ -295,7 +296,9 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
         <VerticalOrHorizontalLayout
           graphViewPosition={graphViewPosition}
           panelStorage={panelStorage}
+          graphPanelCollapsed={graphPanelCollapsed}
           detailPanelCollapsed={detailPanelCollapsed}
+          onGraphPanelCollapsedChanged={setGraphPanelCollapsed}
           onDetailPanelCollapsedChanged={setDetailPanelCollapsed}
           grid={className => (
             <EntityTypePage
@@ -344,7 +347,9 @@ const VerticalOrHorizontalLayout = (props: {
   graph: (className: string) => React.ReactNode
   detail: (className: string) => React.ReactNode
   panelStorage: PanelGroupStorage
+  graphPanelCollapsed: boolean
   detailPanelCollapsed: boolean
+  onGraphPanelCollapsedChanged: (collapsed: boolean) => void
   onDetailPanelCollapsedChanged: (collapsed: boolean) => void
 }) => {
   const { graphViewPosition, ...rest } = props
@@ -429,14 +434,18 @@ const HorizontalLayout = ({
   graph,
   detail,
   panelStorage,
+  graphPanelCollapsed,
   detailPanelCollapsed,
+  onGraphPanelCollapsedChanged,
   onDetailPanelCollapsedChanged,
 }: {
   grid: (className: string) => React.ReactNode
   graph: (className: string) => React.ReactNode
   detail: (className: string) => React.ReactNode
   panelStorage: PanelGroupStorage
+  graphPanelCollapsed: boolean
   detailPanelCollapsed: boolean
+  onGraphPanelCollapsedChanged: (collapsed: boolean) => void
   onDetailPanelCollapsedChanged: (collapsed: boolean) => void
 }) => {
   const handleDetailPanelCollapse = useEvent(() => {
@@ -444,6 +453,12 @@ const HorizontalLayout = ({
   });
   const handleDetailPanelExpand = useEvent(() => {
     onDetailPanelCollapsedChanged(false);
+  });
+  const handleGraphPanelCollapse = useEvent(() => {
+    onGraphPanelCollapsedChanged(true);
+  });
+  const handleGraphPanelExpand = useEvent(() => {
+    onGraphPanelCollapsedChanged(false);
   });
 
   return (
@@ -457,11 +472,16 @@ const HorizontalLayout = ({
 
       <Panel collapsible minSize={12}>
         <PanelGroup direction="vertical" autoSaveId={AUTOSAVEID_VERTICAL_LAYOUT} storage={panelStorage}>
-          <Panel collapsible minSize={12}>
-            {graph(`h-full ${!detailPanelCollapsed ? 'border-b border-gray-400' : ''}`)}
+          <Panel
+            collapsible
+            minSize={12}
+            onCollapse={handleGraphPanelCollapse}
+            onExpand={handleGraphPanelExpand}
+          >
+            {graph(`h-full ${detailPanelCollapsed ? '' : 'border-b border-gray-400'}`)}
           </Panel>
 
-          <PanelResizeHandle className="h-2 mb-4" />
+          <PanelResizeHandle className={`${graphPanelCollapsed ? '' : 'h-2 mb-4'}`} />
 
           <Panel
             collapsible
