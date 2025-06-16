@@ -34,6 +34,11 @@ export const useCopyPaste = <TRow extends ReactHookForm.FieldValues,>({
   const handleCopy: React.ClipboardEventHandler = useEvent(e => {
     if (isEditing || !selectedRange || !rows.length) return;
 
+    // デフォルトのコピー動作を防止
+    // ※ここで防止しないと、透明で表示されているセルエディタの内容のコピーが優先されてしまう
+    e.preventDefault();
+    e.stopPropagation();
+
     // 選択範囲内のセルの値を取得
     const dataArray: string[][] = [];
     for (let r = selectedRange.startRow; r <= selectedRange.endRow; r++) {
@@ -69,7 +74,6 @@ export const useCopyPaste = <TRow extends ReactHookForm.FieldValues,>({
     const tsvData = toTsvString(dataArray);
     if (e.clipboardData) {
       e.clipboardData.setData('text/plain', tsvData);
-      e.preventDefault(); // デフォルトのコピー動作を防止
     }
   });
 
@@ -186,6 +190,10 @@ export const useCopyPaste = <TRow extends ReactHookForm.FieldValues,>({
   const handlePaste: React.ClipboardEventHandler = useEvent(e => {
     if (isEditing || !activeCell || getIsReadOnly(activeCell.rowIndex)) return;
 
+    // デフォルトのペースト動作を防止
+    e.preventDefault();
+    e.stopPropagation();
+
     try {
       // クリップボードからテキストを取得。
       // 空文字をペーストしたいケースがありうるのでスキップはしない
@@ -195,8 +203,6 @@ export const useCopyPaste = <TRow extends ReactHookForm.FieldValues,>({
       const pastedData = fromTsvString(clipboardText);
 
       setStringValuesToSelectedRange(pastedData);
-
-      e.preventDefault(); // デフォルトのペースト動作を防止
 
     } catch (err) {
       console.error('クリップボードからのペーストに失敗しました:', err);
