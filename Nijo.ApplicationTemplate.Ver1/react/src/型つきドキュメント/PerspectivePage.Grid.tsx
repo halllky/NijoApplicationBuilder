@@ -68,7 +68,7 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
                   </div>
                 </React.Fragment>
               ))}
-              <span className={`flex-1 ${perspective?.wrapEntityName ? 'whitespace-pre-wrap' : 'truncate'}`}>
+              <span className={`flex-1 ${perspective?.wrapEntityName ? 'whitespace-pre-wrap break-all' : 'truncate'}`}>
                 {MentionUtil.toPlainText(text || '-')}
               </span>
             </div>
@@ -107,7 +107,7 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
               const value = context.row.original.attributeValues[attrDef.attributeId];
               return (
                 <div className={`w-full px-1 text-left `}>
-                  <span className={`block w-full ${attrDef.attributeType === 'description' ? 'whitespace-pre-wrap' : 'truncate'}`}>
+                  <span className={`block w-full ${attrDef.attributeType === 'description' ? 'whitespace-pre-wrap break-all' : 'truncate'}`}>
                     {MentionUtil.toPlainText(value)}
                   </span>
                 </div>

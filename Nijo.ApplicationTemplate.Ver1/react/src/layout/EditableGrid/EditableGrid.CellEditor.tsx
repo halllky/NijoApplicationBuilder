@@ -387,7 +387,7 @@ export const useGetPixel = (
 
     // 上下の位置は仮想化アイテムから直接位置を取得
     const virtualItem = rowVirtualizer.getVirtualItems().find(item => item.index === args.rowIndex);
-    const theadHeight = estimatedRowHeight; // ヘッダーは1行分の高さ（theadはsticky positionでtbodyの上にある）
+    const theadHeight = estimatedRowHeight + 1; // ヘッダーは1行分の高さ（theadはsticky positionでtbodyの上にある）。 +1 はヘッダーのborder分
     if (virtualItem) {
       return args.position === 'top'
         ? virtualItem.start + theadHeight
