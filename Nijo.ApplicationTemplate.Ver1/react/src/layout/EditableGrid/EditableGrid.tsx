@@ -196,21 +196,19 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     const rowHeaderColumn = columnHelper.display({
       id: 'rowHeader',
       enableResizing: false,
-      header: () => {
+      header: cell => {
         const handleClick = (e: React.MouseEvent) => {
           e.stopPropagation(); // イベント伝播を停止
-
-          // アクティブセルを左上ボディセルに設定
-          if (rows.length > 0 && columnDefs.filter(cd => !cd.invisible).length > 0) {
-            setActiveCell({ rowIndex: 0, colIndex: 0 });
-          }
         };
 
         return (
           <div
-            className="flex justify-center items-center border-b border-r border-gray-300"
+            className="flex justify-center items-center border-b border-r border-gray-300 sticky"
             onClick={handleClick}
-            style={{ height: ESTIMATED_ROW_HEIGHT }}
+            style={{
+              width: cell.column.getSize(),
+              height: ESTIMATED_ROW_HEIGHT,
+            }}
           >
             {showCheckBox && (
               <input
@@ -259,7 +257,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
 
     const generatedColumns = showCheckBox ? [rowHeaderColumn, ...dataColumns] : dataColumns;
     return generatedColumns;
-  }, [columnDefs, showCheckBox, allRowsChecked, handleToggleAllRows, columnHelper, rows.length, setActiveCell, cellType]);
+  }, [columnDefs, showCheckBox, allRowsChecked, handleToggleAllRows, columnHelper, cellType]);
 
   const table = useReactTable({
     data: rows,
@@ -271,7 +269,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
         'rowHeader': showCheckBox !== undefined && showCheckBox !== false,
         ...Object.fromEntries(
           columnDefs.map((colDef, i) => [
-            colDef.columnId ?? `col-${colDef.fieldPath || colDef.header || i}`,
+            colDef.columnId ?? `col-${i}`,
             !colDef.invisible
           ])
         ),
@@ -424,7 +422,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                     className={className}
                     style={{
                       width: header.getSize(),
-                      left: isFixedColumn ? `${header.getStart()}px` : undefined,
+                      left: (isRowHeader || isFixedColumn) ? `${header.getStart()}px` : undefined,
                     }}
                   >
                     {!header.isPlaceholder && flexRender(
