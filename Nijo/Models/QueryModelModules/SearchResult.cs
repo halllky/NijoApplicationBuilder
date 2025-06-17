@@ -88,6 +88,9 @@ namespace Nijo.Models.QueryModelModules {
                         // aggregateが参照先の場合、かつ子から親へ辿られたとき、循環参照を防ぐ
                         if (aggregate.PreviousNode == (ISchemaPathNode)children) continue;
 
+                        // 参照先のChildrenは、コンフィグで明示的に指定されていない場合は生成しない
+                        if (isOutOfEntryTree && !CodeRenderingContext.CurrentContext.Config.GenerateRefToChildrenDisplayData) continue;
+
                         yield return new SearchResultChildrenMember(children, isOutOfEntryTree);
 
                     } else if (member is ChildAggregate child) {

@@ -300,29 +300,41 @@ namespace Nijo.Models.QueryModelModules {
                 .Where(prop => prop.Metadata.Type.SearchBehavior != null)
                 .ToArray();
 
-            FilterStatementRenderingContext CreateContext(InstanceValueProperty searchConditionProp) {
-                var query = queryVarMemberes.GetValueOrDefault(searchConditionProp.Metadata.SchemaPathNode.ToMappingKey())
-                    ?? throw new InvalidOperationException($"{searchConditionProp.Metadata.SchemaPathNode.ToMappingKey()}と対応するクエリのメンバーが見つからない");
-                return new() {
-                    Query = query,
-                    SearchCondition = searchConditionProp,
-                    CodeRenderingContext = ctx,
-                };
-            }
-
             return $$"""
                 /// <summary>
                 /// {{_rootAggregate.DisplayName}}のクエリに画面で指定された検索条件（SQLで言うWHERE句）を付加する
                 /// </summary>
                 protected virtual IQueryable<{{searchResult.CsClassName}}> {{APPEND_WHERE_CLAUSE}}(IQueryable<{{searchResult.CsClassName}}> {{queryVar.Name}}, {{searchCondition.CsClassName}} {{scVar.Name}}) {
-                {{searchConditionMembers.SelectTextTemplate(prop => $$"""
-                    // 絞り込み: {{prop.Metadata.DisplayName}}
-                    {{WithIndent(prop.Metadata.Type.SearchBehavior!.RenderFiltering(CreateContext(prop)), "    ")}}
-
-                """)}}
+                    {{WithIndent(searchConditionMembers.Select(RenderMember), "    ")}}
                     return query;
                 }
                 """;
+
+            string RenderMember(InstanceValueProperty prop) {
+                var query = queryVarMemberes.GetValueOrDefault(prop.Metadata.SchemaPathNode.ToMappingKey());
+
+                if (query == null) {
+                    // SearchConditionと対応するSearchResultのメンバーが無い場合
+                    // （このメンバーが参照先のChildrenの場合）
+                    return $$"""
+                        // 絞り込み: {{prop.Metadata.DisplayName}}
+                        // このメンバーの検索条件は無視されます。
+
+                        """;
+
+                } else {
+                    var context = new FilterStatementRenderingContext {
+                        Query = query,
+                        SearchCondition = prop,
+                        CodeRenderingContext = ctx,
+                    };
+                    return $$"""
+                        // 絞り込み: {{prop.Metadata.DisplayName}}
+                        {{prop.Metadata.Type.SearchBehavior!.RenderFiltering(context)}}
+
+                        """;
+                }
+            }
         }
 
         /// <summary>

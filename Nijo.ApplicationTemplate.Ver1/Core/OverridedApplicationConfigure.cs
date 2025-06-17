@@ -121,12 +121,6 @@ public class OverridedApplicationConfigure : DefaultConfiguration {
                 e.売上分析_年月,
                 e.売上分析_店舗_店舗ID,
             });
-
-        // 関連するナビゲーションもすべてキーを指定しなければならないので無視できないか実験。
-        売上分析Entity.Ignore(e => e.店舗_店長_所属部署);
-        売上分析Entity.Ignore(e => e.店舗_店長_権限);
-        商品別売上Entity.Ignore(e => e.商品_商品詳細_付属品);
-        商品別売上Entity.Ignore(e => e.商品_在庫情報);
     }
     #endregion DB
 
