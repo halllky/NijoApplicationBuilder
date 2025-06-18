@@ -2,7 +2,7 @@ import React, { useCallback } from "react";
 import useEvent from "react-use-event-hook";
 import type * as ReactHookForm from 'react-hook-form';
 import { getValueByPath } from "./EditableGrid.utils";
-import { EditableGridProps, EditableGridColumnDef } from "./types";
+import { EditableGridProps, EditableGridColumnDef, CellSelectionRange } from "./types";
 import { toTsvString, fromTsvString } from "../../util/tsv-util";
 import * as RT from "@tanstack/react-table";
 import { ColumnMetadataInternal } from "./EditableGrid";
@@ -10,12 +10,8 @@ import { ColumnMetadataInternal } from "./EditableGrid";
 interface UseCopyPasteParams<TRow extends ReactHookForm.FieldValues> {
   tableRef: React.RefObject<RT.Table<TRow> | null>;
   activeCell: { rowIndex: number; colIndex: number } | null;
-  selectedRange: {
-    startRow: number;
-    startCol: number;
-    endRow: number;
-    endCol: number;
-  } | null;
+  selectedRange: CellSelectionRange | null;
+  setSelectedRange: (range: CellSelectionRange | null) => void;
   isEditing: boolean;
   getIsReadOnly: (rowIndex: number) => boolean;
   props: EditableGridProps<TRow>;
@@ -25,6 +21,7 @@ export const useCopyPaste = <TRow extends ReactHookForm.FieldValues,>({
   tableRef,
   activeCell,
   selectedRange,
+  setSelectedRange,
   isEditing,
   getIsReadOnly,
   props
@@ -117,17 +114,38 @@ export const useCopyPaste = <TRow extends ReactHookForm.FieldValues,>({
     const startRow = selectedRange ? selectedRange.startRow : activeCell.rowIndex;
     const startCol = selectedRange ? selectedRange.startCol : activeCell.colIndex;
 
-    // 選択範囲の行数に関わらず、ペーストデータの行数に基づいて範囲を拡張する
-    // これにより複数行のデータがペーストされる
-    let endRow = selectedRange ? selectedRange.endRow : activeCell.rowIndex;
-    const calculatedEndRow = startRow + values.length - 1;
+    // ペースト範囲の拡張が発生した場合はペースト後にセルの範囲選択を実行する
+    let extendedRange = false;
 
-    // ペーストデータの行数が選択範囲より多い場合、範囲を拡張
-    if (calculatedEndRow > endRow) {
-      endRow = Math.min(calculatedEndRow, rows.length - 1);
+    // ペースト先の下辺の行インデックス。
+    // 選択している範囲のサイズが1x1ならばペーストしようとしているデータの行数を使う
+    // それ以外の場合は選択している範囲の下端の行インデックスを使う
+    let endRow: number
+    if (selectedRange
+      && selectedRange.startRow === selectedRange.endRow
+      && selectedRange.startCol === selectedRange.endCol) {
+      endRow = startRow + values.length - 1;
+      extendedRange = true;
+    } else if (selectedRange) {
+      endRow = selectedRange.endRow;
+    } else {
+      endRow = activeCell.rowIndex;
     }
 
-    const endCol = selectedRange ? selectedRange.endCol : activeCell.colIndex;
+    // ペースト先の右辺の列インデックス。
+    // 選択している範囲のサイズが1x1ならばペーストしようとしているデータの列数を使う
+    // それ以外の場合は選択している範囲の右端の列インデックスを使う
+    let endCol: number
+    if (selectedRange
+      && selectedRange.startRow === selectedRange.endRow
+      && selectedRange.startCol === selectedRange.endCol) {
+      endCol = startCol + values[0].length - 1;
+      extendedRange = true;
+    } else if (selectedRange) {
+      endCol = selectedRange.endCol;
+    } else {
+      endCol = activeCell.colIndex;
+    }
 
     const rowCount = endRow - startRow + 1;
     const colCount = endCol - startCol + 1;
@@ -199,6 +217,15 @@ export const useCopyPaste = <TRow extends ReactHookForm.FieldValues,>({
     // 変更があった場合、onChangeRowコールバックを呼び出す
     if (changedRows.length > 0) {
       props.onChangeRow({ changedRows });
+    }
+
+    if (extendedRange) {
+      setSelectedRange({
+        startRow: startRow,
+        startCol: startCol,
+        endRow: endRow,
+        endCol: endCol
+      });
     }
   });
 

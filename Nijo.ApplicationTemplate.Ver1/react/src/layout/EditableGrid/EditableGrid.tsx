@@ -168,6 +168,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     tableRef,
     activeCell,
     selectedRange,
+    setSelectedRange,
     isEditing,
     getIsReadOnly,
     props
