@@ -196,31 +196,6 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     const rowHeaderColumn = columnHelper.display({
       id: 'rowHeader',
       enableResizing: false,
-      header: cell => {
-        const handleClick = (e: React.MouseEvent) => {
-          e.stopPropagation(); // イベント伝播を停止
-        };
-
-        return (
-          <div
-            className="flex justify-center items-center border-b border-r border-gray-300 sticky"
-            onClick={handleClick}
-            style={{
-              width: cell.column.getSize(),
-              height: ESTIMATED_ROW_HEIGHT,
-            }}
-          >
-            {showCheckBox && (
-              <input
-                type="checkbox"
-                checked={allRowsChecked}
-                onChange={(e) => handleToggleAllRows(e.target.checked)}
-                aria-label="全行選択"
-              />
-            )}
-          </div>
-        );
-      },
       meta: {
         isRowHeader: true,
         originalColDef: undefined,
@@ -237,16 +212,6 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
           id: colDef.columnId ?? `col-${colIndex}`,
           size: colDef.defaultWidth ?? DEFAULT_COLUMN_WIDTH,
           enableResizing: colDef.enableResizing ?? true,
-          header: ({ header }) => (
-            <div
-              className="flex pl-1 border-b border-r border-gray-300 text-gray-700 font-normal select-none"
-              style={{ width: header.getSize() }}
-            >
-              <span className="truncate">
-                {colDef.header === '' ? '\u00A0' : colDef.header}
-              </span>
-            </div>
-          ),
           meta: {
             originalColDef: colDef,
             isRowHeader: false,
@@ -425,9 +390,33 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                       left: (isRowHeader || isFixedColumn) ? `${header.getStart()}px` : undefined,
                     }}
                   >
-                    {!header.isPlaceholder && flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
+                    {isRowHeader ? (
+                      <div
+                        className="flex justify-center items-center border-b border-r border-gray-300 sticky"
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                          width: header.getSize(),
+                          height: ESTIMATED_ROW_HEIGHT,
+                        }}
+                      >
+                        {showCheckBox && (
+                          <input
+                            type="checkbox"
+                            checked={allRowsChecked}
+                            onChange={(e) => handleToggleAllRows(e.target.checked)}
+                            aria-label="全行選択"
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <div
+                        className="flex pl-1 border-b border-r border-gray-300 text-gray-700 font-normal select-none"
+                        style={{ width: header.getSize() }}
+                      >
+                        <span className="truncate">
+                          {headerMeta?.originalColDef?.header === '' ? '\u00A0' : headerMeta?.originalColDef?.header}
+                        </span>
+                      </div>
                     )}
 
                     {/* 列幅を変更できる場合はサイズ変更ハンドラを設定 */}
