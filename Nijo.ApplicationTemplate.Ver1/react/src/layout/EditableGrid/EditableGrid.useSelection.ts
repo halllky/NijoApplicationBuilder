@@ -8,6 +8,8 @@ export interface UseSelectionReturn {
   checkedRows: Set<number>;
   /** 全ての行がチェックボックスで選択されているかどうか */
   allRowsChecked: boolean;
+  /** 範囲選択のアンカーセル */
+  anchorCellRef: React.RefObject<CellPosition | null>;
   setActiveCell: (cell: CellPosition | null) => void;
   setSelectedRange: (range: CellSelectionRange | null) => void;
   handleCellClick: (event: React.MouseEvent, rowIndex: number, colIndex: number) => void;
@@ -27,9 +29,8 @@ export function useSelection(
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [allRowsSelected, setAllRowsSelected] = useState(false);
 
-  const lastClickedCellRef = useRef<CellPosition | null>(null);
   const activeCellRef = useRef<CellPosition | null>(null);
-  const anchorCell = useRef<CellPosition | null>(null);
+  const anchorCellRef = useRef<CellPosition | null>(null);
 
   // 全行選択トグルのハンドラ
   const handleToggleAllRows = useCallback((checked: boolean) => {
@@ -62,13 +63,13 @@ export function useSelection(
   const handleCellClick = useCallback((event: React.MouseEvent, rowIndex: number, colIndex: number) => {
     const currentCell = { rowIndex, colIndex };
 
-    if (event.shiftKey && lastClickedCellRef.current) {
+    if (event.shiftKey && anchorCellRef.current) {
       setActiveCell(currentCell);
       setSelectedRange({
-        startRow: Math.min(lastClickedCellRef.current.rowIndex, currentCell.rowIndex),
-        startCol: Math.min(lastClickedCellRef.current.colIndex, currentCell.colIndex),
-        endRow: Math.max(lastClickedCellRef.current.rowIndex, currentCell.rowIndex),
-        endCol: Math.max(lastClickedCellRef.current.colIndex, currentCell.colIndex)
+        startRow: Math.min(anchorCellRef.current.rowIndex, currentCell.rowIndex),
+        startCol: Math.min(anchorCellRef.current.colIndex, currentCell.colIndex),
+        endRow: Math.max(anchorCellRef.current.rowIndex, currentCell.rowIndex),
+        endCol: Math.max(anchorCellRef.current.colIndex, currentCell.colIndex)
       });
     } else {
       setActiveCell(currentCell);
@@ -79,8 +80,9 @@ export function useSelection(
         endCol: currentCell.colIndex
       });
     }
-
-    lastClickedCellRef.current = currentCell;
+    if (!event.shiftKey) {
+      anchorCellRef.current = currentCell;
+    }
   }, []);
 
   // 行範囲選択
@@ -101,7 +103,7 @@ export function useSelection(
   useEffect(() => {
     if (activeCellRef.current) {
       setActiveCell_useState(activeCellRef.current);
-      anchorCell.current = activeCellRef.current;
+      anchorCellRef.current = activeCellRef.current;
     }
   }, []);
 
@@ -116,6 +118,7 @@ export function useSelection(
     selectedRange,
     checkedRows: selectedRows,
     allRowsChecked: allRowsSelected,
+    anchorCellRef,
     setActiveCell,
     setSelectedRange,
     handleCellClick,

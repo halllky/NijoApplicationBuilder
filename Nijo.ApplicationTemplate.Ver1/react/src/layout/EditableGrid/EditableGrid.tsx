@@ -150,6 +150,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     selectedRange,
     checkedRows,
     allRowsChecked,
+    anchorCellRef,
     setActiveCell,
     setSelectedRange,
     handleCellClick,
@@ -177,7 +178,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     isDragging,
     handleMouseDown,
     handleMouseMove
-  } = useDragSelection(setActiveCell, setSelectedRange)
+  } = useDragSelection(setActiveCell, setSelectedRange, anchorCellRef)
 
   // 仮想化設定
   const rowVirtualizer = useVirtualizer({
@@ -312,6 +313,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     colCount: table.getVisibleLeafColumns().length,
     setActiveCell,
     setSelectedRange,
+    anchorCellRef,
     startEditing: (rowIndex, colIndex) => {
       const visibleDataColumns = table.getVisibleLeafColumns()
       const targetColumn = visibleDataColumns[colIndex];
@@ -522,7 +524,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                         const visibleDataColumns = table.getVisibleLeafColumns()
                         const colIndex = visibleDataColumns.findIndex(c => c.id === cell.column.id);
                         if (cell.column.id !== ROW_HEADER_COLUMN_ID && colIndex !== -1) {
-                          handleMouseDown(rowIndex, colIndex);
+                          handleMouseDown(e, rowIndex, colIndex);
                         }
                       }}
                       onMouseEnter={() => {

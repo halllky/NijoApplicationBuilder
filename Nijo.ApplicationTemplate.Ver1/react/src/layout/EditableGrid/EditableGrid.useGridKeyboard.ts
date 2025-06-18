@@ -27,6 +27,8 @@ export interface UseGridKeyboardProps<TRow extends ReactHookForm.FieldValues> {
   /** テーブルインスタンス */
   table: RT.Table<TRow>;
   getPixel: GetPixelFunction
+  /** 範囲選択のアンカーセル */
+  anchorCellRef: React.RefObject<CellPosition | null>;
 }
 
 export function useGridKeyboard<TRow extends ReactHookForm.FieldValues>({
@@ -46,9 +48,8 @@ export function useGridKeyboard<TRow extends ReactHookForm.FieldValues>({
   setStringValuesToSelectedRange,
   table,
   getPixel,
+  anchorCellRef,
 }: UseGridKeyboardProps<TRow>) {
-  const anchorCellRef = useRef<CellPosition | null>(null);
-
   // キーボードイベントハンドラ
   const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = useEvent(e => {
     // 画面側で何らかの制御が指定されている場合はそちらが優先
