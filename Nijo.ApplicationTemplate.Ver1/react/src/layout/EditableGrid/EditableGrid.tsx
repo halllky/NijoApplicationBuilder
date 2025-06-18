@@ -54,7 +54,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
         if (json) {
           const obj: EditableGridAutoSaveStoragedValueInternal = JSON.parse(json)
           if (typeof obj === 'object' && (obj["column-sizing"] === undefined || typeof obj["column-sizing"] === 'object')) {
-            setColumnSizing(obj["column-sizing"] ?? { 'rowHeader': ROW_HEADER_WIDTH })
+            setColumnSizing(obj["column-sizing"] ?? { [ROW_HEADER_COLUMN_ID]: ROW_HEADER_WIDTH })
           }
         }
       } catch {
@@ -79,7 +79,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
 
   // 列状態 (サイズ変更用)
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>(() => ({
-    'rowHeader': ROW_HEADER_WIDTH
+    [ROW_HEADER_COLUMN_ID]: ROW_HEADER_WIDTH
   }));
   React.useEffect(() => {
     props.storage?.saveState(JSON.stringify({ 'column-sizing': columnSizing }))
@@ -117,7 +117,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     // 編集中の場合は、エディタの値を変更しないようにする
     if (cell && cellEditorRef.current && tableRef.current && !isEditing) {
       const row = rows[cell.rowIndex]
-      const visibleDataColumns = tableRef.current.getVisibleLeafColumns().filter(c => c.id !== 'rowHeader');
+      const visibleDataColumns = tableRef.current.getVisibleLeafColumns()
       const targetColumn = visibleDataColumns[cell.colIndex];
       if (targetColumn) {
         const meta = targetColumn.columnDef.meta as ColumnMetadataInternal<TRow> | undefined;
@@ -164,8 +164,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
 
   // コピー＆ペースト機能
   const { handleCopy, handlePaste, setStringValuesToSelectedRange } = useCopyPaste({
-    rows,
-    columnDefs,
+    tableRef,
     activeCell,
     selectedRange,
     isEditing,
@@ -194,7 +193,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   const columns = useMemo(() => {
     // 行ヘッダー（チェックボックス列）
     const rowHeaderColumn = columnHelper.display({
-      id: 'rowHeader',
+      id: ROW_HEADER_COLUMN_ID,
       enableResizing: false,
       meta: {
         isRowHeader: true,
@@ -231,7 +230,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     state: {
       columnSizing,
       columnVisibility: {
-        'rowHeader': showCheckBox !== undefined && showCheckBox !== false,
+        [ROW_HEADER_COLUMN_ID]: showCheckBox !== undefined && showCheckBox !== false,
         ...Object.fromEntries(
           columnDefs.map((colDef, i) => [
             colDef.columnId ?? `col-${i}`,
@@ -253,9 +252,6 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
 
   // 横幅情報
   const tableTotalWidth = table.getTotalSize();
-  const getColWidthByVisibleColumnIndex = useCallback((colIndex: number) => {
-    return table.getVisibleLeafColumns()[colIndex]?.getSize() ?? DEFAULT_COLUMN_WIDTH
-  }, [table])
 
   // 仮想化設定
   const { rows: tableRows } = table.getRowModel();
@@ -263,7 +259,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   const virtualItems = rowVirtualizer.getVirtualItems();
 
   // ピクセル数取得関数
-  const getPixel = useGetPixel(rowVirtualizer, ESTIMATED_ROW_HEIGHT, getColWidthByVisibleColumnIndex)
+  const getPixel = useGetPixel(tableRef, rowVirtualizer, ESTIMATED_ROW_HEIGHT)
 
   // ref用の公開メソッド
   useImperativeHandle(ref, () => ({
@@ -308,15 +304,16 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   // キーボード操作のセットアップ
   const handleKeyDown = useGridKeyboard({
     propsKeyDown: props.onKeyDown,
+    showCheckBox: showCheckBox !== undefined,
     activeCell,
     selectedRange,
     isEditing,
     rowCount: rows.length,
-    colCount: table.getVisibleLeafColumns().filter(c => c.id !== 'rowHeader').length,
+    colCount: table.getVisibleLeafColumns().length,
     setActiveCell,
     setSelectedRange,
     startEditing: (rowIndex, colIndex) => {
-      const visibleDataColumns = table.getVisibleLeafColumns().filter(c => c.id !== 'rowHeader');
+      const visibleDataColumns = table.getVisibleLeafColumns()
       const targetColumn = visibleDataColumns[colIndex];
       if (targetColumn) {
         const targetCell = table.getRow(rowIndex.toString()).getAllCells().find(c => c.column.id === targetColumn.id);
@@ -466,7 +463,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                   const rowIndex = row.index;
                   // 行ヘッダー列を除いた可視列の配列を取得し、その中でのインデックスを colIndex とする
                   const cellMeta = cell.column.columnDef.meta as ColumnMetadataInternal<TRow> | undefined;
-                  const visibleDataColumns = table.getAllLeafColumns().filter(c => !(c.columnDef.meta as ColumnMetadataInternal<TRow>)?.isRowHeader);
+                  const visibleDataColumns = table.getAllLeafColumns()
                   const colIndex = cellMeta?.isRowHeader
                     ? -1 // 行ヘッダーの場合
                     : visibleDataColumns.findIndex(c => c.id === cell.column.id);
@@ -531,9 +528,9 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                         left: cellMeta?.originalColDef?.isFixed ? `${cell.column.getStart()}px` : undefined,
                       }}
                       onClick={(e) => {
-                        const visibleDataColumns = table.getVisibleLeafColumns().filter(c => c.id !== 'rowHeader');
+                        const visibleDataColumns = table.getVisibleLeafColumns()
                         const colIndex = visibleDataColumns.findIndex(c => c.id === cell.column.id);
-                        if (cell.column.id !== 'rowHeader' && colIndex !== -1) {
+                        if (cell.column.id !== ROW_HEADER_COLUMN_ID && colIndex !== -1) {
                           handleCellClick(e, rowIndex, colIndex);
                         }
                       }}
@@ -543,9 +540,9 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                         }
                       }}
                       onMouseDown={(e) => {
-                        const visibleDataColumns = table.getVisibleLeafColumns().filter(c => c.id !== 'rowHeader');
+                        const visibleDataColumns = table.getVisibleLeafColumns()
                         const colIndex = visibleDataColumns.findIndex(c => c.id === cell.column.id);
-                        if (cell.column.id !== 'rowHeader' && colIndex !== -1) {
+                        if (cell.column.id !== ROW_HEADER_COLUMN_ID && colIndex !== -1) {
                           handleMouseDown(rowIndex, colIndex);
                         }
                       }}
@@ -599,6 +596,9 @@ export type ColumnMetadataInternal<TRow extends ReactHookForm.FieldValues> = {
   isRowHeader: boolean | undefined
   originalColDef: EditableGridColumnDef<TRow> | undefined
 }
+
+/** 行ヘッダー列のID */
+export const ROW_HEADER_COLUMN_ID = 'rowHeader'
 
 /** 推定行高さ */
 const ESTIMATED_ROW_HEIGHT = 24

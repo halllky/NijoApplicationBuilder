@@ -64,8 +64,8 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
 
   React.useEffect(() => {
     if (caretCell) {
-      // チェックボックス列を除いた表示列を取得
-      const visibleDataColumns = api.getVisibleLeafColumns().filter(c => (c.columnDef.meta as ColumnMetadataInternal<T> | undefined)?.isRowHeader !== true);
+      // 表示列を取得
+      const visibleDataColumns = api.getVisibleLeafColumns()
       const columnDef = (visibleDataColumns[caretCell.colIndex]?.columnDef.meta as ColumnMetadataInternal<T> | undefined)?.originalColDef
       setCaretCellEditingInfo(columnDef)
 
@@ -367,21 +367,26 @@ export type GetPixelFunction = (args
 ) => number
 
 // x,y座標を返す関数
-export const useGetPixel = (
+export const useGetPixel = <TRow,>(
+  tableRef: React.RefObject<RT.Table<TRow> | null>,
   rowVirtualizer: Virtualizer<HTMLDivElement, Element>,
   estimatedRowHeight: number,
-  /** 表示されている列のindexから列幅を取得する関数。 */
-  getColWidthByVisibleColumnIndex: (colIndex: number) => number,
 ): GetPixelFunction => {
   return useEvent(args => {
-    // 左右のpxを導出するのに必要な情報は列幅変更フックが持っている
-    if (args.position === 'left') {
+    // 左右のpxを導出するのに必要な情報はtableRefが持っている
+    if (args.position === 'left' || args.position === 'right') {
+      const colsByIndex = tableRef.current?.getAllColumns().map(col => ({
+        index: col.getIndex(),
+        size: col.getSize(),
+      }))
+      const loopEnd = args.position === 'left'
+        ? args.colIndex
+        : args.colIndex + 1
+
       let sum = 0
-      for (let i = 0; i < args.colIndex; i++) sum += getColWidthByVisibleColumnIndex(i)
-      return sum
-    } else if (args.position === 'right') {
-      let sum = 0
-      for (let i = 0; i <= args.colIndex; i++) sum += getColWidthByVisibleColumnIndex(i)
+      for (let i = 0; i < loopEnd; i++) {
+        sum += colsByIndex?.find(col => col.index === i)?.size ?? 0
+      }
       return sum
     }
 

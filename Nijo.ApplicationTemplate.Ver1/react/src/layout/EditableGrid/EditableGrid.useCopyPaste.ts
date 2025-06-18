@@ -4,10 +4,11 @@ import type * as ReactHookForm from 'react-hook-form';
 import { getValueByPath } from "./EditableGrid.utils";
 import { EditableGridProps, EditableGridColumnDef } from "./types";
 import { toTsvString, fromTsvString } from "../../util/tsv-util";
+import * as RT from "@tanstack/react-table";
+import { ColumnMetadataInternal } from "./EditableGrid";
 
 interface UseCopyPasteParams<TRow extends ReactHookForm.FieldValues> {
-  rows: TRow[];
-  columnDefs: EditableGridColumnDef<TRow>[];
+  tableRef: React.RefObject<RT.Table<TRow> | null>;
   activeCell: { rowIndex: number; colIndex: number } | null;
   selectedRange: {
     startRow: number;
@@ -21,8 +22,7 @@ interface UseCopyPasteParams<TRow extends ReactHookForm.FieldValues> {
 }
 
 export const useCopyPaste = <TRow extends ReactHookForm.FieldValues,>({
-  rows,
-  columnDefs,
+  tableRef,
   activeCell,
   selectedRange,
   isEditing,
@@ -32,12 +32,20 @@ export const useCopyPaste = <TRow extends ReactHookForm.FieldValues,>({
 
   // クリップボードへのコピー処理
   const handleCopy: React.ClipboardEventHandler = useEvent(e => {
-    if (isEditing || !selectedRange || !rows.length) return;
+    if (isEditing || !selectedRange) return;
+
+    const rows = tableRef.current?.getRowModel().rows.map(row => row.original) ?? []
+    if (rows.length === 0) return;
 
     // デフォルトのコピー動作を防止
     // ※ここで防止しないと、透明で表示されているセルエディタの内容のコピーが優先されてしまう
     e.preventDefault();
     e.stopPropagation();
+
+    const columnDefs = tableRef.current
+      ?.getAllLeafColumns()
+      .map(col => (col.columnDef.meta as ColumnMetadataInternal<TRow> | undefined)?.originalColDef)
+      ?? []
 
     // 選択範囲内のセルの値を取得
     const dataArray: string[][] = [];
@@ -79,10 +87,18 @@ export const useCopyPaste = <TRow extends ReactHookForm.FieldValues,>({
 
   // stringの2次元配列を選択範囲にセットする
   const setStringValuesToSelectedRange = useEvent((values: string[][]) => {
-    if (!activeCell || !rows.length || getIsReadOnly(activeCell.rowIndex)) return;
+    if (!activeCell || getIsReadOnly(activeCell.rowIndex)) return;
 
     // 変更イベントが未定義の場合は処理しても意味がないのでスキップ
     if (!props.onChangeRow) return;
+
+    const rows = tableRef.current?.getRowModel().rows.map(row => row.original) ?? []
+    if (rows.length === 0) return;
+
+    const columnDefs = tableRef.current
+      ?.getAllLeafColumns()
+      .map(col => (col.columnDef.meta as ColumnMetadataInternal<TRow> | undefined)?.originalColDef)
+      ?? []
 
     // セルの値をまとめてクリアしたい場合があるので、
     // ペーストデータのうち長さ0の配列部分は長さ1の配列と読み替える

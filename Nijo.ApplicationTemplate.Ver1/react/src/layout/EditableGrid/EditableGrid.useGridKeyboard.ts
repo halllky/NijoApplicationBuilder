@@ -11,6 +11,7 @@ import { GetPixelFunction } from "./EditableGrid.CellEditor";
 export interface UseGridKeyboardProps<TRow extends ReactHookForm.FieldValues> {
   /** EditableGridの外側で定義されるキーボードイベントハンドラ */
   propsKeyDown: EditableGridKeyboardEventHandler | undefined
+  showCheckBox: boolean;
   activeCell: CellPosition | null;
   selectedRange: CellSelectionRange | null;
   isEditing: boolean;
@@ -30,6 +31,7 @@ export interface UseGridKeyboardProps<TRow extends ReactHookForm.FieldValues> {
 
 export function useGridKeyboard<TRow extends ReactHookForm.FieldValues>({
   propsKeyDown,
+  showCheckBox,
   activeCell,
   selectedRange,
   isEditing,
@@ -129,7 +131,7 @@ export function useGridKeyboard<TRow extends ReactHookForm.FieldValues>({
 
         // Alt + ArrowUp の場合、getOptions が定義されている列で編集を開始
         if (e.altKey) {
-          const visibleDataColumns = table.getVisibleLeafColumns().filter(c => c.id !== 'rowHeader');
+          const visibleDataColumns = table.getVisibleLeafColumns()
           const targetColumn = visibleDataColumns[colIndex];
           if (targetColumn) {
             const meta = targetColumn.columnDef.meta as ColumnMetadataInternal<TRow> | undefined;
@@ -171,7 +173,7 @@ export function useGridKeyboard<TRow extends ReactHookForm.FieldValues>({
 
         // Alt + ArrowDown の場合、getOptions が定義されている列で編集を開始
         if (e.altKey) {
-          const visibleDataColumns = table.getVisibleLeafColumns().filter(c => c.id !== 'rowHeader');
+          const visibleDataColumns = table.getVisibleLeafColumns()
           const targetColumn = visibleDataColumns[colIndex];
           if (targetColumn) {
             const meta = targetColumn.columnDef.meta as ColumnMetadataInternal<TRow> | undefined;
@@ -210,7 +212,8 @@ export function useGridKeyboard<TRow extends ReactHookForm.FieldValues>({
         break;
       case 'ArrowLeft':
         e.preventDefault();
-        if (colIndex > 0) {
+        const min = showCheckBox ? 1 : 0
+        if (colIndex > min) {
           newColIndex = colIndex - 1;
           setActiveCell({ rowIndex, colIndex: newColIndex });
           scrollHorizontal(newColIndex);
