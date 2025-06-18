@@ -83,7 +83,7 @@ export function useSelection(
     if (!event.shiftKey) {
       anchorCellRef.current = currentCell;
     }
-  }, []);
+  }, [anchorCellRef]);
 
   // 行範囲選択
   const selectRows = useCallback((startRowIndex: number, endRowIndex: number) => {

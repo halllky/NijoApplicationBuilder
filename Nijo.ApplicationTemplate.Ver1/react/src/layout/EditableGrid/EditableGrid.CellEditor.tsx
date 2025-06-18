@@ -371,8 +371,10 @@ export const useGetPixel = <TRow,>(
   tableRef: React.RefObject<RT.Table<TRow> | null>,
   rowVirtualizer: Virtualizer<HTMLDivElement, Element>,
   estimatedRowHeight: number,
+  /** 依存配列にのみ使用。列幅が変わったときは当然再計算が必要 */
+  columnSizingState: RT.ColumnSizingState
 ): GetPixelFunction => {
-  return useEvent(args => {
+  return React.useCallback(args => {
     // 左右のpxを導出するのに必要な情報はtableRefが持っている
     if (args.position === 'left' || args.position === 'right') {
       const colsByIndex = tableRef.current?.getAllColumns().map(col => ({
@@ -405,6 +407,6 @@ export const useGetPixel = <TRow,>(
     } else {
       return (args.rowIndex + 1) * estimatedRowHeight + theadHeight
     }
-  })
+  }, [tableRef, rowVirtualizer, estimatedRowHeight, columnSizingState])
 
 }

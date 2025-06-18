@@ -7,7 +7,9 @@ import {
   useReactTable,
   flexRender,
   ColumnSizingState,
-  OnChangeFn
+  OnChangeFn,
+  Cell,
+  Table
 } from '@tanstack/react-table';
 import {
   useVirtualizer,
@@ -29,6 +31,7 @@ import { useCopyPaste } from "./EditableGrid.useCopyPaste";
 // CSS
 import "./EditableGrid.css";
 import { CellEditor, CellEditorRef, DefaultEditor, useGetPixel } from "./EditableGrid.CellEditor";
+import { ActiveCell } from "./EditableGrid.ActiveCell";
 
 /**
  * 編集可能なグリッドを表示するコンポーネント
@@ -90,19 +93,21 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     if (!showCheckBox) return false;
     if (showCheckBox === true) return true;
     if (typeof showCheckBox === 'function' && rowIndex >= 0 && rowIndex < rows.length) {
-      return showCheckBox(rows[rowIndex], rowIndex);
+      const row = tableRef.current?.getRow(rowIndex.toString())?.original
+      if (row) return showCheckBox(row, rowIndex);
     }
     return false;
-  }, [showCheckBox, rows]);
+  }, [showCheckBox, tableRef]);
 
   // 編集可否の判定
   const getIsReadOnly = useCallback((rowIndex: number): boolean => {
     if (isReadOnly === true) return true;
     if (typeof isReadOnly === 'function' && rowIndex >= 0 && rowIndex < rows.length) {
-      return isReadOnly(rows[rowIndex], rowIndex);
+      const row = tableRef.current?.getRow(rowIndex.toString())?.original
+      if (row) return isReadOnly(row, rowIndex);
     }
     return false;
-  }, [isReadOnly, rows]);
+  }, [isReadOnly, tableRef]);
 
   // 編集状態管理
   const [isEditing, setIsEditing] = useState(false);
@@ -261,7 +266,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   const virtualItems = rowVirtualizer.getVirtualItems();
 
   // ピクセル数取得関数
-  const getPixel = useGetPixel(tableRef, rowVirtualizer, ESTIMATED_ROW_HEIGHT)
+  const getPixel = useGetPixel(tableRef, rowVirtualizer, ESTIMATED_ROW_HEIGHT, columnSizing)
 
   // ref用の公開メソッド
   useImperativeHandle(ref, () => ({
@@ -441,117 +446,24 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                 }}
                 className={className}
               >
-                {row.getVisibleCells().map(cell => {
-                  const rowIndex = row.index;
-                  // 行ヘッダー列を除いた可視列の配列を取得し、その中でのインデックスを colIndex とする
-                  const cellMeta = cell.column.columnDef.meta as ColumnMetadataInternal<TRow> | undefined;
-                  const visibleDataColumns = table.getAllLeafColumns()
-                  const colIndex = cellMeta?.isRowHeader
-                    ? -1 // 行ヘッダーの場合
-                    : visibleDataColumns.findIndex(c => c.id === cell.column.id);
-
-                  const isActive = activeCell?.rowIndex === rowIndex && activeCell?.colIndex === colIndex;
-                  const isInRange = Boolean(selectedRange &&
-                    rowIndex >= selectedRange.startRow && rowIndex <= selectedRange.endRow &&
-                    colIndex >= selectedRange.startCol && colIndex <= selectedRange.endCol);
-
-                  // 行選択チェックボックス列
-                  if (cellMeta?.isRowHeader) {
-                    return (
-                      <td
-                        key={cell.id}
-                        className="flex bg-gray-200 align-middle text-center sticky left-0"
-                        style={{ width: cell.column.getSize() }}
-                      >
-                        <div
-                          className="h-full flex justify-center items-center border-r border-gray-300"
-                          style={{ width: cell.column.getSize(), height: ESTIMATED_ROW_HEIGHT }}
-                        >
-                          {getShouldShowCheckBox(rowIndex) && (
-                            <input
-                              type="checkbox"
-                              checked={checkedRows.has(rowIndex)}
-                              onChange={(e) => handleToggleRow(rowIndex, e.target.checked)}
-                              aria-label={`行${rowIndex + 1}を選択`}
-                            />
-                          )}
-                        </div>
-                      </td>
-                    );
-                  }
-
-                  // データ列
-                  let dataColumnClassName = 'flex outline-none align-middle'
-
-                  if (isActive) {
-                    dataColumnClassName += ' bg-sky-200' // アクティブセル
-                  } else if (isInRange) {
-                    dataColumnClassName += ' bg-sky-100' // 選択範囲
-                  } else if (activeCell &&
-                    (rowIndex === activeCell.rowIndex || colIndex === activeCell.colIndex) &&
-                    !(rowIndex === activeCell.rowIndex && colIndex === activeCell.colIndex)
-                  ) {
-                    dataColumnClassName += ' bg-gray-50' // アクティブセルの十字方向
-                  } else {
-                    dataColumnClassName += ' bg-white' // その他
-                  }
-
-                  if (cellMeta?.originalColDef?.isFixed) dataColumnClassName += ` sticky` // z-indexをつけるとボディ列が列ヘッダより手前にきてしまうので設定しない
-
-                  // 画面側でレンダリング処理が決められている場合はそれを使用、決まっていないなら単にtoString
-                  const renderCell = (cell.column.columnDef.meta as ColumnMetadataInternal<TRow>)?.originalColDef?.renderCell
-
-                  return (
-                    <td
-                      key={cell.id}
-                      className={dataColumnClassName}
-                      style={{
-                        width: cell.column.getSize(),
-                        left: cellMeta?.originalColDef?.isFixed ? `${cell.column.getStart()}px` : undefined,
-                      }}
-                      onClick={(e) => {
-                        const visibleDataColumns = table.getVisibleLeafColumns()
-                        const colIndex = visibleDataColumns.findIndex(c => c.id === cell.column.id);
-                        if (cell.column.id !== ROW_HEADER_COLUMN_ID && colIndex !== -1) {
-                          handleCellClick(e, rowIndex, colIndex);
-                        }
-                      }}
-                      onDoubleClick={() => {
-                        if (!getIsReadOnly(rowIndex) && cellEditorRef.current) {
-                          cellEditorRef.current.startEditing(cell);
-                        }
-                      }}
-                      onMouseDown={(e) => {
-                        const visibleDataColumns = table.getVisibleLeafColumns()
-                        const colIndex = visibleDataColumns.findIndex(c => c.id === cell.column.id);
-                        if (cell.column.id !== ROW_HEADER_COLUMN_ID && colIndex !== -1) {
-                          handleMouseDown(e, rowIndex, colIndex);
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        // ドラッグ中のときのみ範囲選択を更新
-                        if (isDragging) {
-                          const visibleDataColumns = table.getVisibleLeafColumns()
-                          const colIndex = visibleDataColumns.findIndex(c => c.id === cell.column.id);
-                          if (cell.column.id !== ROW_HEADER_COLUMN_ID && colIndex !== -1) {
-                            handleMouseMove(rowIndex, colIndex);
-                          }
-                        }
-                      }}
-                      tabIndex={0}
-                    >
-                      <div
-                        className={`flex select-none truncate border-gray-200 ${props.showHorizontalBorder ? 'border-b' : ''} ${cellMeta?.originalColDef?.isFixed ? 'border-r' : ''}`}
-                        style={{
-                          width: cell.column.getSize(),
-                          minHeight: ESTIMATED_ROW_HEIGHT, // 動的行高さ対応: heightの代わりにminHeightを使用
-                        }}
-                      >
-                        {renderCell?.(cell.getContext()) ?? cell.getValue()?.toString()}
-                      </div>
-                    </td>
-                  );
-                })}
+                {row.getVisibleCells().map(cell => (
+                  <MemorizedBodyCell<TRow>
+                    key={cell.id}
+                    cell={cell}
+                    rowIndex={row.index}
+                    tableRef={tableRef}
+                    getShouldShowCheckBox={getShouldShowCheckBox}
+                    checkedRows={checkedRows}
+                    handleToggleRow={handleToggleRow}
+                    handleCellClick={handleCellClick}
+                    getIsReadOnly={getIsReadOnly}
+                    isDragging={isDragging}
+                    handleMouseDown={handleMouseDown}
+                    handleMouseMove={handleMouseMove}
+                    cellEditorRef={cellEditorRef}
+                    showHorizontalBorder={props.showHorizontalBorder}
+                  />
+                ))}
               </tr>
             );
           })}
@@ -567,6 +479,11 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
         </tbody>
       </table>
 
+      <ActiveCell
+        selectedRange={selectedRange}
+        getPixel={getPixel}
+      />
+
       <CellEditor
         ref={cellEditorRef}
         editorComponent={props.editorComponent ?? DefaultEditor}
@@ -580,6 +497,123 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     </div>
   );
 }) as (<TRow extends ReactHookForm.FieldValues, >(props: EditableGridProps<TRow> & { ref?: React.ForwardedRef<EditableGridRef<TRow>> }) => React.ReactNode);
+
+// ------------------------------------
+
+type MemorizedBodyCellProps<TRow extends ReactHookForm.FieldValues> = {
+  cell: Cell<TRow, unknown>,
+  rowIndex: number,
+  tableRef: React.RefObject<Table<TRow> | null>,
+  getShouldShowCheckBox: (rowIndex: number) => boolean,
+  checkedRows: Set<number>,
+  handleToggleRow: (rowIndex: number, checked: boolean) => void,
+  handleCellClick: (e: React.MouseEvent<HTMLTableCellElement>, rowIndex: number, colIndex: number) => void,
+  getIsReadOnly: (rowIndex: number) => boolean,
+  isDragging: boolean,
+  handleMouseDown: (e: React.MouseEvent<HTMLTableCellElement>, rowIndex: number, colIndex: number) => void,
+  handleMouseMove: (rowIndex: number, colIndex: number) => void,
+  cellEditorRef: React.RefObject<CellEditorRef<TRow> | null>,
+  showHorizontalBorder: boolean | undefined,
+}
+
+/** メモ化されたtdセル */
+const MemorizedBodyCell = React.memo(<TRow extends ReactHookForm.FieldValues>({ cell, rowIndex, tableRef, getShouldShowCheckBox, checkedRows, handleToggleRow, handleCellClick, getIsReadOnly, isDragging, handleMouseDown, handleMouseMove, cellEditorRef, showHorizontalBorder }: MemorizedBodyCellProps<TRow>) => {
+
+  // 行ヘッダー列を除いた可視列の配列を取得し、その中でのインデックスを colIndex とする
+  const cellMeta = cell.column.columnDef.meta as ColumnMetadataInternal<TRow> | undefined;
+
+  // 行選択チェックボックス列
+  if (cellMeta?.isRowHeader) {
+    return (
+      <td
+        key={cell.id}
+        className="flex bg-gray-200 align-middle text-center sticky left-0"
+        style={{ width: cell.column.getSize() }}
+      >
+        <div
+          className="h-full flex justify-center items-center border-r border-gray-300"
+          style={{ width: cell.column.getSize(), height: ESTIMATED_ROW_HEIGHT }}
+        >
+          {getShouldShowCheckBox(rowIndex) && (
+            <input
+              type="checkbox"
+              checked={checkedRows.has(rowIndex)}
+              onChange={(e) => handleToggleRow(rowIndex, e.target.checked)}
+              aria-label={`行${rowIndex + 1}を選択`}
+            />
+          )}
+        </div>
+      </td>
+    );
+  }
+
+  // データ列
+  let dataColumnClassName = 'flex outline-none align-middle bg-white'
+
+  if (cellMeta?.originalColDef?.isFixed) dataColumnClassName += ` sticky` // z-indexをつけるとボディ列が列ヘッダより手前にきてしまうので設定しない
+
+  // 画面側でレンダリング処理が決められている場合はそれを使用、決まっていないなら単にtoString
+  const renderCell = (cell.column.columnDef.meta as ColumnMetadataInternal<TRow>)?.originalColDef?.renderCell
+
+  return (
+    <td
+      key={cell.id}
+      className={dataColumnClassName}
+      style={{
+        width: cell.column.getSize(),
+        left: cellMeta?.originalColDef?.isFixed ? `${cell.column.getStart()}px` : undefined,
+      }}
+      onClick={(e) => {
+        const visibleDataColumns = tableRef.current?.getVisibleLeafColumns() ?? []
+        const colIndex = visibleDataColumns.findIndex(c => c.id === cell.column.id);
+        if (cell.column.id !== ROW_HEADER_COLUMN_ID && colIndex !== -1) {
+          handleCellClick(e, rowIndex, colIndex);
+        }
+      }}
+      onDoubleClick={() => {
+        if (!getIsReadOnly(rowIndex) && cellEditorRef.current) {
+          cellEditorRef.current.startEditing(cell);
+        }
+      }}
+      onMouseDown={(e) => {
+        const visibleDataColumns = tableRef.current?.getVisibleLeafColumns() ?? []
+        const colIndex = visibleDataColumns.findIndex(c => c.id === cell.column.id);
+        if (cell.column.id !== ROW_HEADER_COLUMN_ID && colIndex !== -1) {
+          handleMouseDown(e, rowIndex, colIndex);
+        }
+      }}
+      onMouseEnter={() => {
+        // ドラッグ中のときのみ範囲選択を更新
+        if (isDragging) {
+          const visibleDataColumns = tableRef.current?.getVisibleLeafColumns() ?? []
+          const colIndex = visibleDataColumns.findIndex(c => c.id === cell.column.id);
+          if (cell.column.id !== ROW_HEADER_COLUMN_ID && colIndex !== -1) {
+            handleMouseMove(rowIndex, colIndex);
+          }
+        }
+      }}
+      tabIndex={0}
+    >
+      <div
+        className={`flex select-none truncate border-gray-200 ${showHorizontalBorder ? 'border-b' : ''} ${cellMeta?.originalColDef?.isFixed ? 'border-r' : ''}`}
+        style={{
+          width: cell.column.getSize(),
+          minHeight: ESTIMATED_ROW_HEIGHT, // 動的行高さ対応: heightの代わりにminHeightを使用
+        }}
+      >
+        {renderCell?.(cell.getContext()) ?? cell.getValue()?.toString()}
+      </div>
+    </td>
+  );
+}, (prevProps, nextProps) => {
+  // cellは毎回新しいインスタンスに生まれ変わるので、それ以外のpropsが変わったときのみ再レンダリングする
+  const { cell, ...prevRest } = prevProps
+  const { cell: _, ...nextRest } = nextProps
+  for (const key in prevRest) {
+    if (!Object.is(prevRest[key as keyof typeof prevRest], nextRest[key as keyof typeof nextRest])) return false
+  }
+  return true
+}) as (<TRow extends ReactHookForm.FieldValues>(props: MemorizedBodyCellProps<TRow>) => React.ReactNode)
 
 // ------------------------------------
 
