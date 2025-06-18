@@ -17,16 +17,23 @@ export function useDragSelection(
   // マウスダウンハンドラ
   const handleMouseDown = useCallback((event: React.MouseEvent, rowIndex: number, colIndex: number) => {
     const newCell: CellPosition = { rowIndex, colIndex };
-    setActiveCell(newCell);
-    setSelectedRange({
-      startRow: Math.min(anchorCellRef.current?.rowIndex ?? rowIndex, rowIndex),
-      startCol: Math.min(anchorCellRef.current?.colIndex ?? colIndex, colIndex),
-      endRow: Math.max(anchorCellRef.current?.rowIndex ?? rowIndex, rowIndex),
-      endCol: Math.max(anchorCellRef.current?.colIndex ?? colIndex, colIndex)
-    });
-    // アンカーセルを設定
-    if (!event.shiftKey) {
+    if (event.shiftKey) {
+      setActiveCell(newCell);
+      setSelectedRange({
+        startRow: Math.min(anchorCellRef.current?.rowIndex ?? rowIndex, rowIndex),
+        startCol: Math.min(anchorCellRef.current?.colIndex ?? colIndex, colIndex),
+        endRow: Math.max(anchorCellRef.current?.rowIndex ?? rowIndex, rowIndex),
+        endCol: Math.max(anchorCellRef.current?.colIndex ?? colIndex, colIndex)
+      });
+    } else {
       anchorCellRef.current = newCell;
+      setActiveCell(newCell);
+      setSelectedRange({
+        startRow: rowIndex,
+        startCol: colIndex,
+        endRow: rowIndex,
+        endCol: colIndex
+      });
     }
     setIsDragging(true);
   }, [setActiveCell, setSelectedRange, anchorCellRef]);
