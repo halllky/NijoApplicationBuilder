@@ -336,27 +336,6 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
       className={`overflow-auto bg-gray-200 relative outline-none ${className ?? ''}`}
       tabIndex={0} // 1行も無い場合であってもキーボード操作を受け付けるようにするため
       onKeyDown={handleKeyDown}
-      onMouseMove={(e) => {
-        if (isDragging && tableBodyRef.current) {
-          // マウス位置からテーブル内の行と列のインデックスを計算
-          const rect = tableBodyRef.current.getBoundingClientRect();
-          const x = e.clientX - rect.left;
-          const y = e.clientY - rect.top;
-
-          // 行インデックスの計算（仮想化を考慮）
-          const rowHeight = ESTIMATED_ROW_HEIGHT; // 推定行高さ
-          const visibleStartRow = Math.floor(tableBodyRef.current.scrollTop / rowHeight);
-          const rowIndex = visibleStartRow + Math.floor(y / rowHeight);
-
-          // 列インデックスの計算（簡易的）
-          const colWidth = rect.width / columnDefs.length;
-          const colIndex = Math.floor(x / colWidth);
-
-          if (rowIndex >= 0 && rowIndex < rows.length && colIndex >= 0 && colIndex < columnDefs.length) {
-            handleMouseMove(rowIndex, colIndex);
-          }
-        }
-      }}
       onCopy={handleCopy}
       onPaste={handlePaste}
     >
@@ -544,6 +523,16 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                         const colIndex = visibleDataColumns.findIndex(c => c.id === cell.column.id);
                         if (cell.column.id !== ROW_HEADER_COLUMN_ID && colIndex !== -1) {
                           handleMouseDown(rowIndex, colIndex);
+                        }
+                      }}
+                      onMouseEnter={() => {
+                        // ドラッグ中のときのみ範囲選択を更新
+                        if (isDragging) {
+                          const visibleDataColumns = table.getVisibleLeafColumns()
+                          const colIndex = visibleDataColumns.findIndex(c => c.id === cell.column.id);
+                          if (cell.column.id !== ROW_HEADER_COLUMN_ID && colIndex !== -1) {
+                            handleMouseMove(rowIndex, colIndex);
+                          }
                         }
                       }}
                       tabIndex={0}

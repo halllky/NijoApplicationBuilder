@@ -35,10 +35,10 @@ export function useDragSelection(
 
       // 選択範囲を更新
       setSelectedRange({
-        startRow: dragStartCell.rowIndex,
-        startCol: dragStartCell.colIndex,
-        endRow: rowIndex,
-        endCol: colIndex
+        startRow: Math.min(dragStartCell.rowIndex, rowIndex),
+        startCol: Math.min(dragStartCell.colIndex, colIndex),
+        endRow: Math.max(dragStartCell.rowIndex, rowIndex),
+        endCol: Math.max(dragStartCell.colIndex, colIndex)
       });
     }
   }, [isDragging, dragStartCell, setActiveCell, setSelectedRange]);
