@@ -480,6 +480,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
       </table>
 
       <ActiveCell
+        anchorCellRef={anchorCellRef}
         selectedRange={selectedRange}
         getPixel={getPixel}
       />
