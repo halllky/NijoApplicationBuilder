@@ -70,10 +70,10 @@ export const ActiveCell = ({ anchorCellRef, selectedRange, getPixel }: {
       <div ref={containerRef} className="absolute border-1 border-sky-500 pointer-events-none"></div>
 
       {/* アクティブセルの位置だけ背景色なし、それ以外の選択セルは背景色あり、とするため、4つのdivでアクティブセル以外の部分を覆う */}
-      <div ref={leftRef} className="absolute bg-sky-200/25 pointer-events-none" />
-      <div ref={rightRef} className="absolute bg-sky-200/25 pointer-events-none" />
-      <div ref={aboveRef} className="absolute bg-sky-200/25 pointer-events-none" />
-      <div ref={belowRef} className="absolute bg-sky-200/25 pointer-events-none" />
+      <div ref={leftRef} className="absolute bg-sky-200/25 mix-blend-multiply pointer-events-none" />
+      <div ref={rightRef} className="absolute bg-sky-200/25 mix-blend-multiply pointer-events-none" />
+      <div ref={aboveRef} className="absolute bg-sky-200/25 mix-blend-multiply pointer-events-none" />
+      <div ref={belowRef} className="absolute bg-sky-200/25 mix-blend-multiply pointer-events-none" />
     </>
   )
 }
