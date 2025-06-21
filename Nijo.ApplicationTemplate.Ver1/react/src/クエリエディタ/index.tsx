@@ -54,7 +54,9 @@ export default function ({ className }: QueryEditorProps) {
 
   if (!allTableNames || !defaultValues) {
     return (
-      <Layout.NowLoading />
+      <div className={`relative ${className ?? ""}`}>
+        <Layout.NowLoading />
+      </div>
     )
   }
 
