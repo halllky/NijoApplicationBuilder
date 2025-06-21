@@ -9,6 +9,7 @@ import SqlAndResultView from "./SqlAndResultView"
 import useQueryEditorServerApi from "./useQueryEditorServerApi"
 import useEvent from "react-use-event-hook"
 import { UUID } from "uuidjs"
+import { CommentView } from "./CommentView"
 
 export type QueryEditorProps = {
   className?: string
@@ -157,6 +158,26 @@ const AfterReady = ({ allTableNames, defaultValues, onSave, className }: {
     remove(itemIndex)
   })
 
+  // ---------------------------------
+  // コメント
+  const commentFields = ReactHookForm.useFieldArray({ name: 'comments', control, keyName: 'use-field-array-id' })
+  const handleAddComment = useEvent(() => {
+    commentFields.append({
+      id: UUID.generate(),
+      content: "",
+      layout: {
+        x: 0,
+        y: 0,
+        width: 320,
+        height: 200,
+      },
+    })
+  })
+  const handleRemoveComment = useEvent((commentIndex: number) => {
+    if (!window.confirm(`${commentFields.fields[commentIndex].content}を削除しますか？`)) return;
+    commentFields.remove(commentIndex)
+  })
+
   return (
     <div
       className={`relative flex flex-col overflow-auto resize outline-none ${className ?? ""}`}
@@ -171,6 +192,20 @@ const AfterReady = ({ allTableNames, defaultValues, onSave, className }: {
 
       {/* スクロールエリア */}
       <div className="flex-1 relative overflow-auto bg-white border border-gray-500" style={{ zoom }}>
+
+        {/* コメント */}
+        {commentFields.fields.map((comment, index) => (
+          <CommentView
+            key={comment.id}
+            commentIndex={index}
+            comment={comment}
+            onChangeComment={commentFields.update}
+            onDeleteComment={handleRemoveComment}
+            zoom={zoom}
+          />
+        ))}
+
+        {/* クエリウィンドウ、テーブル編集ウィンドウ */}
         {fields.map((item, index) => item.type === "sqlAndResult" ? (
           <SqlAndResultView
             key={item.id}
@@ -215,6 +250,9 @@ const AfterReady = ({ allTableNames, defaultValues, onSave, className }: {
         <Input.IconButton icon={Icon.PlusIcon} onClick={handleAddQuery} fill>
           クエリ追加
         </Input.IconButton>
+        <Input.IconButton icon={Icon.PlusIcon} onClick={handleAddComment} fill>
+          コメント追加
+        </Input.IconButton>
       </div>
 
       {/* ズーム */}
@@ -244,6 +282,7 @@ const GET_DEFAULT_DATA = (): QueryEditor => ({
   id: UUID.generate(),
   title: "クエリエディタ",
   items: [],
+  comments: [],
 })
 
 const createNewQueryEditorItem = (type: "sqlAndResult" | "dbTableEditor", queryTitleOrTableName: string): QueryEditorItem => {

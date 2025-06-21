@@ -3,6 +3,7 @@ export type QueryEditor = {
   id: string
   title: string
   items: QueryEditorItem[]
+  comments: Comment[]
 }
 
 /** クエリエディタのアイテム */
@@ -37,6 +38,15 @@ export type EditorItemLayout = {
   y: number
   width: number
   height: number
+}
+
+// ------------------------------------
+/** コメント */
+export type Comment = {
+  id: string
+  title?: string
+  content: string
+  layout: EditorItemLayout
 }
 
 // ------------------------------------
