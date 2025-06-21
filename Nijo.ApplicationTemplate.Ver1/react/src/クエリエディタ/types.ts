@@ -80,7 +80,6 @@ export type ExecuteQueryReturn = {
 }
 
 export type GetDbRecordsReturn = {
-  columns: string[]
   records: EditableDbRecord[]
 }
 

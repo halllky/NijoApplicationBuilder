@@ -69,7 +69,6 @@ export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeD
         setError(null)
       } else {
         reset({
-          columns: [],
           records: [],
         })
         setError(res.error)
@@ -103,9 +102,11 @@ export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeD
         </div>
       ),
     })
-    const valueColumns = defaultValues?.columns?.map(column => cellType.text(
-      `values.${column}` as ReactHookForm.FieldPathByValue<EditableDbRecord, string | undefined>,
-      column ?? '',
+
+    const thisTableMetadata = tableMetadata.find(table => table.tableName === value.tableName)
+    const valueColumns = thisTableMetadata?.columns.map(column => cellType.text(
+      `values.${column.columnName}` as ReactHookForm.FieldPathByValue<EditableDbRecord, string | undefined>,
+      column.columnName ?? '',
       {
 
       })) ?? []
@@ -114,7 +115,7 @@ export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeD
       status,
       ...valueColumns,
     ]
-  }, [defaultValues])
+  }, [defaultValues, tableMetadata])
 
   // ---------------------------------
   // レコード変更

@@ -128,12 +128,6 @@ public class QueryEditorServerApi : ControllerBase {
 
             using var reader = await command.ExecuteReaderAsync();
 
-            // カラム名収集
-            var columns = new List<string>();
-            for (int i = 0; i < reader.FieldCount; i++) {
-                columns.Add(reader.GetName(i));
-            }
-
             // 行データ収集
             var records = new List<EditableDbRecord>();
             while (await reader.ReadAsync()) {
@@ -153,7 +147,6 @@ public class QueryEditorServerApi : ControllerBase {
             }
 
             return Ok(new GetDbRecordsReturn {
-                Columns = columns,
                 Records = records,
             });
         } catch (Exception ex) {
@@ -342,8 +335,6 @@ public class DbTableEditor {
 /// 更新対象レコード取得結果
 /// </summary>
 public class GetDbRecordsReturn {
-    [JsonPropertyName("columns")]
-    public List<string> Columns { get; set; } = [];
     [JsonPropertyName("records")]
     public List<EditableDbRecord> Records { get; set; } = [];
 }
