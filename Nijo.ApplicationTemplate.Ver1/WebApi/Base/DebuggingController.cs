@@ -195,7 +195,7 @@ public class DebuggingController : ControllerBase {
     /// DB再作成
     /// </summary>
     [HttpPost("destroy-and-reset-database")]
-    public async Task<IActionResult> DestroyAndResetDatabase() {
+    public async Task<IActionResult> DestroyAndResetDatabase([FromBody] DummyDataGenerateOptions options) {
         var serviceProvider = HttpContext.RequestServices;
 
         try {
@@ -219,7 +219,7 @@ public class DebuggingController : ControllerBase {
                 // ダミーデータを投入
                 var generator = new OverridedDummyDataGenerator();
                 var dbDescriptor = new DummyDataDbOutput(dbContext);
-                await generator.GenerateAsync(dbDescriptor);
+                await generator.GenerateAsync(dbDescriptor, options);
             }
 
             return Ok(new {

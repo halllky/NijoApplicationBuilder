@@ -14,6 +14,7 @@ namespace Nijo.Models.DataModelModules {
 
         internal const string CLASS_NAME = "DummyDataGenerator";
         internal const string GENERATE_ASYNC = "GenerateAsync";
+        private const string DUMMY_DATA_GENERATE_OPTIONS = "DummyDataGenerateOptions";
 
         private static string CreateAggregateMethodName(RootAggregate rootAggregate) => $"CreateRandom{rootAggregate.PhysicalName}";
         private static string CreatePatternMethodName(RootAggregate rootAggregate) => $"CreatePatternsOf{rootAggregate.PhysicalName}";
@@ -40,6 +41,12 @@ namespace Nijo.Models.DataModelModules {
                     utilDir.Generate(RenderBulkInsertInterface(ctx));
                     utilDir.Generate(RenderDummyDataGenerator(ctx));
                     utilDir.Generate(RenderDummyDataGenerateContext(ctx));
+                    utilDir.Generate(RenderDummyDataGenerateOptionsCSharp(ctx));
+                });
+            });
+            ctx.ReactProject(dir => {
+                dir.Directory("util", utilDir => {
+                    utilDir.Generate(RenderDummyDataGenerateOptionsTypeScript(ctx));
                 });
             });
         }
@@ -67,7 +74,7 @@ namespace Nijo.Models.DataModelModules {
                         /// ダミーデータ作成処理を実行します。
                         /// 現在登録されているデータは全て削除されます。
                         /// </summary>
-                        public async Task {{GENERATE_ASYNC}}({{I_DUMMY_DATA_OUTPUT}} dummyDataOutput) {
+                        public async Task {{GENERATE_ASYNC}}({{I_DUMMY_DATA_OUTPUT}} dummyDataOutput, {{DUMMY_DATA_GENERATE_OPTIONS}}? options = null) {
 
                             // ランダム値採番等のコンテキスト
                             var context = new {{DUMMY_DATA_GENERATE_CONTEXT}} {
@@ -77,8 +84,10 @@ namespace Nijo.Models.DataModelModules {
 
                             // データフローの順番でダミーデータのパターンを作成
                     {{rootAggregatesOrderByDataFlow.SelectTextTemplate(rootAggregate => $$"""
-                            context.{{GeneratedList(rootAggregate)}} = {{CreatePatternMethodName(rootAggregate)}}(context).ToArray();
-                            context.ResetSequence();
+                            if (options?.{{rootAggregate.PhysicalName}} != false) {
+                                context.{{GeneratedList(rootAggregate)}} = {{CreatePatternMethodName(rootAggregate)}}(context).ToArray();
+                                context.ResetSequence();
+                            }
                     """)}}
 
                             // データフローの順番で登録実行
@@ -439,5 +448,59 @@ namespace Nijo.Models.DataModelModules {
             };
         }
         #endregion DB操作
+
+
+        #region オプションクラス
+        private SourceFile RenderDummyDataGenerateOptionsCSharp(CodeRenderingContext ctx) {
+            // データフロー順に並び替え
+            var rootAggregatesOrderByDataFlow = _rootAggregates
+                .OrderByDataFlow()
+                .ToArray();
+
+            return new SourceFile {
+                FileName = "DummyDataGenerateOptions.cs",
+                Contents = $$"""
+                    using System.Text.Json.Serialization;
+
+                    namespace {{ctx.Config.RootNamespace}};
+
+                    /// <summary>
+                    /// ダミーデータ作成処理のオプション
+                    /// </summary>
+                    public sealed class {{DUMMY_DATA_GENERATE_OPTIONS}} {
+                    {{rootAggregatesOrderByDataFlow.SelectTextTemplate(agg => $$"""
+                        /// <summary>{{agg.DisplayName}}およびその子孫テーブルのダミーデータを作成するかどうか</summary>
+                        [JsonPropertyName("{{agg.PhysicalName}}")]
+                        public bool {{agg.PhysicalName}} { get; set; } = true;
+                    """)}}
+                    }
+                    """,
+            };
+        }
+        private SourceFile RenderDummyDataGenerateOptionsTypeScript(CodeRenderingContext ctx) {
+            // データフロー順に並び替え
+            var rootAggregatesOrderByDataFlow = _rootAggregates
+                .OrderByDataFlow()
+                .ToArray();
+
+            return new SourceFile {
+                FileName = "DummyDataGenerateOptions.ts",
+                Contents = $$"""
+                    /** ダミーデータ作成処理のオプション */
+                    export type {{DUMMY_DATA_GENERATE_OPTIONS}} = {
+                    {{rootAggregatesOrderByDataFlow.SelectTextTemplate(agg => $$"""
+                      {{agg.PhysicalName}}: boolean
+                    """)}}
+                    }
+                    /** ダミーデータ作成処理のオプション新規作成関数 */
+                    export const createNewDummyDataGenerateOptions = (): {{DUMMY_DATA_GENERATE_OPTIONS}} => ({
+                    {{rootAggregatesOrderByDataFlow.SelectTextTemplate(agg => $$"""
+                      {{agg.PhysicalName}}: true,
+                    """)}}
+                    })
+                    """,
+            };
+        }
+        #endregion オプションクラス
     }
 }
