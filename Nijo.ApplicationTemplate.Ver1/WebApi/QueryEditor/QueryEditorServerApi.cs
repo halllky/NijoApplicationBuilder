@@ -61,24 +61,6 @@ public class QueryEditorServerApi : ControllerBase {
         }
     }
 
-    [Obsolete("Use GetTableMetadata instead.")]
-    [HttpGet("get-table-names")]
-    public IActionResult GetTableNames() {
-        try {
-            var tableNames = _app.DbContext.Model
-            .GetEntityTypes()
-            .Select(entityType => entityType.GetTableName())
-            .Where(tableName => tableName != null)
-            .Distinct()
-            .OrderBy(tableName => tableName)
-            .ToList();
-            return Ok(tableNames);
-
-        } catch (Exception ex) {
-            return Problem(ex.Message);
-        }
-    }
-
     [HttpGet("get-table-metadata")]
     public IActionResult GetTableMetadata() {
         try {

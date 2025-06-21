@@ -29,16 +29,6 @@ export default function useQueryEditorServerApi(): UseQueryEditorServerApiReturn
     }
   }, [])
 
-  const getTableNames: UseQueryEditorServerApiReturn["getTableNames"] = React.useCallback(async () => {
-    const response = await fetch(`${BACKEND_API}api/query-editor/get-table-names`)
-    if (response.ok) {
-      const data = await response.json()
-      return { ok: true, tableNames: data }
-    } else {
-      return { ok: false, error: await response.text() }
-    }
-  }, [])
-
   const getDbRecords: UseQueryEditorServerApiReturn["getDbRecords"] = React.useCallback(async (query: DbTableEditor) => {
     const response = await fetch(`${BACKEND_API}api/query-editor/get-db-records`, {
       method: "POST",
@@ -69,7 +59,6 @@ export default function useQueryEditorServerApi(): UseQueryEditorServerApiReturn
   return {
     executeQuery,
     getTableMetadata,
-    getTableNames,
     getDbRecords,
     batchUpdate,
   }
