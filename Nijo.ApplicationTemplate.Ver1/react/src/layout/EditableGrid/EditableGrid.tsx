@@ -462,6 +462,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                     handleMouseMove={handleMouseMove}
                     cellEditorRef={cellEditorRef}
                     showHorizontalBorder={props.showHorizontalBorder}
+                    columnSizing={columnSizing?.[cell.column.id]}
                   />
                 ))}
               </tr>
@@ -515,6 +516,7 @@ type MemorizedBodyCellProps<TRow extends ReactHookForm.FieldValues> = {
   handleMouseMove: (rowIndex: number, colIndex: number) => void,
   cellEditorRef: React.RefObject<CellEditorRef<TRow> | null>,
   showHorizontalBorder: boolean | undefined,
+  columnSizing: number | null | undefined,
 }
 
 /** メモ化されたtdセル */
