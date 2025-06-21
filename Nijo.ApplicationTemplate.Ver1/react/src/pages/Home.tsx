@@ -52,7 +52,7 @@ export const Home: React.FC = () => {
         このアプリケーションでは React.js と ASP.NET Core を使用しています。
       </p>
 
-      <div className="flex flex-col gap-2 m-4 p-2 border border-gray-300">
+      <div className="flex flex-col gap-2 my-4 p-2 border border-gray-300">
         <h2>開発用デバッグ機能</h2>
         <div>
           <Input.IconButton onClick={handleResetDatabase} fill loading={nowProcessing}>
@@ -68,7 +68,10 @@ export const Home: React.FC = () => {
         </div>
       </div>
 
-      <QueryEditor className="h-96" />
+      <div>
+        クエリエディタ
+        <QueryEditor className="h-96" />
+      </div>
     </div>
   )
 }

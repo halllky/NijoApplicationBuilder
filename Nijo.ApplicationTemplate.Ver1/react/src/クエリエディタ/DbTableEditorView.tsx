@@ -183,86 +183,90 @@ export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeD
     <DraggableWindow
       layout={value.layout}
       onMove={handleMouseMove}
-      header={(<>
-        <span className="select-none">
-          {value.tableName}
-        </span>
-        <Input.IconButton icon={Icon.PencilIcon} hideText onClick={handleChangeTitle}>
-          名前を変更
-        </Input.IconButton>
-        <div className="flex-1"></div>
-
-        {!error && (
-          <>
-            <Input.IconButton icon={Icon.PlusCircleIcon} onClick={handleAddRecord}>
-              追加
-            </Input.IconButton>
-            <Input.IconButton icon={Icon.TrashIcon} onClick={handleDeleteRecord}>
-              削除
-            </Input.IconButton>
-            <Input.IconButton icon={Icon.ArrowUturnLeftIcon} onClick={handleClickReset}>
-              リセット
-            </Input.IconButton>
-          </>
-        )}
-        <Input.IconButton
-          icon={value.isSettingCollapsed ? Icon.ChevronUpIcon : Icon.ChevronDownIcon}
-          hideText
-          onClick={handleToggleCollapse}
-        >
-          折りたたみ
-        </Input.IconButton>
-        <Input.IconButton icon={Icon.XMarkIcon} hideText onClick={handleDeleteWindow}>
-          削除
-        </Input.IconButton>
-      </>)}
+      className="bg-gray-100 border border-gray-500"
     >
-      <div className="flex flex-col h-full">
-        {/* テーブル名, WHERE句 */}
-        <div className={`flex flex-col gap-1 p-1 font-mono bg-white border-t border-gray-300 ${value.isSettingCollapsed ? 'hidden' : ''}`}>
-          <div className="flex gap-2">
-            <span className="select-none text-gray-500">
-              SELECT * FROM
-            </span>
+      {({ DragHandle, handleMouseDown }) => (<>
+        <div className="flex gap-1 items-center">
+          {DragHandle}
+          <span className="select-none">
+            {value.tableName}
+          </span>
+          <Input.IconButton icon={Icon.PencilIcon} hideText onClick={handleChangeTitle}>
+            名前を変更
+          </Input.IconButton>
+          <div className="flex-1"></div>
 
-            <select
-              value={value.tableName}
-              onChange={handleChangeTableName}
-              className="border border-gray-500"
-            >
-              {allTableNames.map((tableName) => (
-                <option key={tableName} value={tableName}>{tableName}</option>
-              ))}
-            </select>
-
-            <span className="select-none text-gray-500">
-              WHERE
-            </span>
-          </div>
-
-          <SqlTextarea
-            value={value.whereClause}
-            onChange={handleChangeWhereClause}
-            placeholder="抽出条件がある場合はここに記載"
-            className="flex-1"
-          />
+          {!error && (
+            <>
+              <Input.IconButton icon={Icon.PlusCircleIcon} onClick={handleAddRecord}>
+                追加
+              </Input.IconButton>
+              <Input.IconButton icon={Icon.TrashIcon} onClick={handleDeleteRecord}>
+                削除
+              </Input.IconButton>
+              <Input.IconButton icon={Icon.ArrowUturnLeftIcon} onClick={handleClickReset}>
+                リセット
+              </Input.IconButton>
+            </>
+          )}
+          <Input.IconButton
+            icon={value.isSettingCollapsed ? Icon.ChevronUpIcon : Icon.ChevronDownIcon}
+            hideText
+            onClick={handleToggleCollapse}
+          >
+            折りたたみ
+          </Input.IconButton>
+          <Input.IconButton icon={Icon.XMarkIcon} hideText onClick={handleDeleteWindow}>
+            削除
+          </Input.IconButton>
         </div>
+        <div className="flex flex-col h-full">
+          {/* テーブル名, WHERE句 */}
+          <div className={`flex flex-col gap-1 p-1 font-mono bg-white border-t border-gray-300 ${value.isSettingCollapsed ? 'hidden' : ''}`}>
+            <div className="flex gap-2">
+              <span className="select-none text-gray-500">
+                SELECT * FROM
+              </span>
 
-        {/* レコード */}
-        {error ? (
-          <div className="flex-1 text-red-500 border-t border-gray-300">
-            {error}
+              <select
+                value={value.tableName}
+                onChange={handleChangeTableName}
+                className="border border-gray-500"
+              >
+                {allTableNames.map((tableName) => (
+                  <option key={tableName} value={tableName}>{tableName}</option>
+                ))}
+              </select>
+
+              <span className="select-none text-gray-500">
+                WHERE
+              </span>
+            </div>
+
+            <SqlTextarea
+              value={value.whereClause}
+              onChange={handleChangeWhereClause}
+              placeholder="抽出条件がある場合はここに記載"
+              className="flex-1"
+            />
           </div>
-        ) : (
-          <Layout.EditableGrid
-            ref={gridRef}
-            rows={fields}
-            getColumnDefs={getColumnDefs}
-            onChangeRow={handleChangeRecords}
-            className="flex-1 border-t border-gray-300"
-          />
-        )}
-      </div>
+
+          {/* レコード */}
+          {error ? (
+            <div className="flex-1 text-red-500 border-t border-gray-300">
+              {error}
+            </div>
+          ) : (
+            <Layout.EditableGrid
+              ref={gridRef}
+              rows={fields}
+              getColumnDefs={getColumnDefs}
+              onChangeRow={handleChangeRecords}
+              className="flex-1 border-t border-gray-300"
+            />
+          )}
+        </div>
+      </>)}
     </DraggableWindow>
   )
 })

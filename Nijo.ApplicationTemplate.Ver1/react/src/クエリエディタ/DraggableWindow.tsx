@@ -5,11 +5,13 @@ import { EditorItemLayout } from "./types"
 /**
  * ドラッグで位置を変更できるウィンドウ
  */
-export default function DraggableWindow({ layout, children, onMove, header, className }: {
+export default function DraggableWindow({ layout, children, onMove, className }: {
   layout: EditorItemLayout
   onMove: (e: MouseEvent) => void
-  header?: React.ReactNode
-  children: React.ReactNode
+  children: (props: {
+    DragHandle: React.ReactNode
+    handleMouseDown: React.MouseEventHandler<SVGSVGElement>
+  }) => React.ReactNode
   className?: string
 }) {
   const handleMouseDown = useEvent((e: React.MouseEvent<SVGSVGElement>) => {
@@ -23,7 +25,7 @@ export default function DraggableWindow({ layout, children, onMove, header, clas
 
   return (
     <div
-      className={`absolute z-0 flex flex-col resize overflow-hidden cursor-auto bg-gray-100 border border-gray-500 ${className ?? ""}`}
+      className={`absolute z-0 flex flex-col resize overflow-hidden cursor-auto ${className ?? ""}`}
       style={{
         left: layout.x,
         top: layout.y,
@@ -31,19 +33,15 @@ export default function DraggableWindow({ layout, children, onMove, header, clas
         height: layout.height,
       }}
     >
-
-      {/* ヘッダ */}
-      <div className="flex flex-wrap items-center gap-px">
-        <Icon.Bars3Icon
-          className="mx-1 basis-4 min-w-4 h-8 text-sky-600 cursor-grab"
-          onMouseDown={handleMouseDown}
-        />
-        {header}
-      </div>
-
-      <div className="flex-1 overflow-hidden">
-        {children}
-      </div>
+      {children({
+        DragHandle: (
+          <Icon.Bars3Icon
+            className="mx-1 basis-4 min-w-4 h-8 text-sky-600 cursor-grab"
+            onMouseDown={handleMouseDown}
+          />
+        ),
+        handleMouseDown,
+      })}
     </div>
   )
 }

@@ -52,23 +52,31 @@ export const CommentView = ({ commentIndex, comment, zoom, onChangeComment, onDe
     <DraggableWindow
       layout={comment.layout}
       onMove={handleMouseMove}
-      header={(<>
-        <span className="select-none">{comment.title ?? "コメント"}</span>
-        <Input.IconButton icon={Icon.PencilIcon} hideText onClick={handleChangeTitle}>
-          タイトルを変更
-        </Input.IconButton>
-        <div className="flex-1"></div>
-        <Input.IconButton icon={Icon.XMarkIcon} hideText onClick={handleDeleteWindow}>
-          削除
-        </Input.IconButton>
-      </>)}
+      className="bg-sky-100 border border-sky-200"
     >
-      <textarea
-        value={comment.content}
-        onChange={handleChangeContent}
-        spellCheck={false}
-        className="w-full h-full field-sizing-content outline-none resize-none p-1"
-      />
+      {({ DragHandle, handleMouseDown }) => (
+        <div className="flex flex-col h-full">
+          <div className="flex gap-1 items-center">
+            {DragHandle}
+            <span className="select-none text-sky-600">
+              {comment.title ?? "コメント"}
+            </span>
+            <Input.IconButton icon={Icon.PencilIcon} hideText onClick={handleChangeTitle}>
+              名前を変更
+            </Input.IconButton>
+            <div className="flex-1"></div>
+            <Input.IconButton icon={Icon.XMarkIcon} hideText onClick={handleDeleteWindow}>
+              削除
+            </Input.IconButton>
+          </div>
+          <textarea
+            value={comment.content}
+            onChange={handleChangeContent}
+            spellCheck={false}
+            className="w-full h-full field-sizing-content outline-none resize-none p-1"
+          />
+        </div>
+      )}
     </DraggableWindow>
   )
 }

@@ -174,7 +174,7 @@ const AfterReady = ({ allTableNames, defaultValues, onSave, className }: {
     })
   })
   const handleRemoveComment = useEvent((commentIndex: number) => {
-    if (!window.confirm(`${commentFields.fields[commentIndex].content}を削除しますか？`)) return;
+    if (!window.confirm(`${commentFields.fields[commentIndex].title ?? "コメント"}を削除しますか？`)) return;
     commentFields.remove(commentIndex)
   })
 
@@ -192,18 +192,6 @@ const AfterReady = ({ allTableNames, defaultValues, onSave, className }: {
 
       {/* スクロールエリア */}
       <div className="flex-1 relative overflow-auto bg-white border border-gray-500" style={{ zoom }}>
-
-        {/* コメント */}
-        {commentFields.fields.map((comment, index) => (
-          <CommentView
-            key={comment.id}
-            commentIndex={index}
-            comment={comment}
-            onChangeComment={commentFields.update}
-            onDeleteComment={handleRemoveComment}
-            zoom={zoom}
-          />
-        ))}
 
         {/* クエリウィンドウ、テーブル編集ウィンドウ */}
         {fields.map((item, index) => item.type === "sqlAndResult" ? (
@@ -226,6 +214,18 @@ const AfterReady = ({ allTableNames, defaultValues, onSave, className }: {
             onDeleteDefinition={handleRemoveWindow}
             allTableNames={allTableNames}
             trigger={trigger}
+            zoom={zoom}
+          />
+        ))}
+
+        {/* コメント */}
+        {commentFields.fields.map((comment, index) => (
+          <CommentView
+            key={comment.id}
+            commentIndex={index}
+            comment={comment}
+            onChangeComment={commentFields.update}
+            onDeleteComment={handleRemoveComment}
             zoom={zoom}
           />
         ))}
