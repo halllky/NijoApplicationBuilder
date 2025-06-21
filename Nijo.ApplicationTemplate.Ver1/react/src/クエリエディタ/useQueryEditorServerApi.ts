@@ -29,7 +29,7 @@ export default function useQueryEditorServerApi(): UseQueryEditorServerApiReturn
     }
   }, [])
 
-  const getDbRecords: UseQueryEditorServerApiReturn["getDbRecords"] = React.useCallback(async (query: DbTableEditor) => {
+  const getDbRecords: UseQueryEditorServerApiReturn["getDbRecords"] = React.useCallback(async query => {
     const response = await fetch(`${BACKEND_API}api/query-editor/get-db-records`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -55,9 +55,14 @@ export type UseQueryEditorServerApiReturn = {
   /** テーブルメタデータ取得 */
   getTableMetadata: () => Promise<{ ok: true, data: DbTableMetadata[] } | { ok: false, error: string }>
   /** 更新用レコード取得 */
-  getDbRecords: (query: DbTableEditor) => Promise<{ ok: true, data: GetDbRecordsReturn } | { ok: false, error: string }>
+  getDbRecords: (query: GetDbRecordsParameter) => Promise<{ ok: true, data: GetDbRecordsReturn } | { ok: false, error: string }>
   /** レコード一括更新 */
   batchUpdate: (records: EditableDbRecord[]) => Promise<{ ok: true } | { ok: false, error: string }>
+}
+
+export type GetDbRecordsParameter = {
+  tableName: string
+  whereClause: string
 }
 
 export type DbTableMetadata = {

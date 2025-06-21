@@ -77,6 +77,7 @@ export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeD
   }, [trigger])
 
   // 列定義
+  const [foreignKeyReferenceDialog, setForeignKeyReferenceDialog] = React.useState<ForeignKeyReferenceDialogProps | null>(null)
   const getColumnDefs: Layout.GetColumnDefsFunction<EditableDbRecord> = React.useCallback(cellType => {
     const status = cellType.other('', {
       defaultWidth: 48,
@@ -104,12 +105,53 @@ export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeD
     })
 
     const thisTableMetadata = tableMetadata.find(table => table.tableName === value.tableName)
-    const valueColumns = thisTableMetadata?.columns.map(column => cellType.text(
-      `values.${column.columnName}` as ReactHookForm.FieldPathByValue<EditableDbRecord, string | undefined>,
-      column.columnName ?? '',
-      {
+    const valueColumns: Layout.EditableGridColumnDef<EditableDbRecord>[] = []
 
-      })) ?? []
+    for (const column of thisTableMetadata?.columns ?? []) {
+      if (column.foreignKeyTableName) {
+        // 外部キーの列の場合は値を直接入力するのではなくダイアログから選択
+        valueColumns.push(cellType.other(
+          column.columnName ?? '',
+          {
+            renderCell: cell => {
+              const handleClick = () => {
+                setForeignKeyReferenceDialog({
+                  tableMetadata: tableMetadata.find(table => table.tableName === column.foreignKeyTableName)!,
+                  onSelect: selectedRecord => {
+                    const clone = window.structuredClone(cell.row.original)
+                    const value = ReactHookForm.get(selectedRecord, `values.${column.foreignKeyColumnName}` as ReactHookForm.FieldPathByValue<EditableDbRecord, string | undefined>)
+                    clone.changed = true
+                    ReactHookForm.set(clone, `values.${column.columnName}`, value)
+                    update(cell.row.index, clone)
+                    setForeignKeyReferenceDialog(null)
+                  },
+                  onCancel: () => setForeignKeyReferenceDialog(null),
+                })
+              }
+
+              return (
+                <div className="w-full flex overflow-hidden">
+                  <Input.IconButton icon={Icon.MagnifyingGlassIcon} hideText onClick={handleClick}>
+                    検索
+                  </Input.IconButton>
+                  <span className="flex-1">
+                    {ReactHookForm.get(cell.row.original, `values.${column.columnName}` as ReactHookForm.FieldPathByValue<EditableDbRecord, string | undefined>)}
+                  </span>
+                </div>
+              )
+            },
+          })
+        )
+      } else {
+        // 外部キーの列でない場合は値を直接入力。
+        // 数値や日付などのバリエーションは特に考慮しない。
+        valueColumns.push(cellType.text(
+          `values.${column.columnName}` as ReactHookForm.FieldPathByValue<EditableDbRecord, string | undefined>,
+          column.columnName ?? '',
+          {})
+        )
+      }
+    }
 
     return [
       status,
@@ -184,7 +226,7 @@ export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeD
     e.stopPropagation()
   })
 
-  return (
+  return (<>
     <DraggableWindow
       layout={value.layout}
       onMove={handleMouseMove}
@@ -274,5 +316,107 @@ export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeD
         </div>
       )}
     </DraggableWindow>
-  )
+
+    {/* 外部参照テーブルのレコード選択ダイアログ */}
+    {foreignKeyReferenceDialog && (
+      <ForeignKeyReferenceDialog {...foreignKeyReferenceDialog} />
+    )}
+  </>)
 })
+
+// -----------------------------------
+type ForeignKeyReferenceDialogProps = {
+  tableMetadata: DbTableMetadata
+  onSelect: (record: EditableDbRecord) => void
+  onCancel: () => void
+}
+
+/**
+ * 外部参照テーブルのレコード選択ダイアログ
+ */
+const ForeignKeyReferenceDialog = ({
+  tableMetadata,
+  onSelect,
+  onCancel,
+}: ForeignKeyReferenceDialogProps) => {
+  const { getDbRecords } = useQueryEditorServerApi()
+  const [records, setRecords] = React.useState<EditableDbRecord[]>()
+  const [error, setError] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    (async () => {
+      const res = await getDbRecords({
+        tableName: tableMetadata.tableName,
+        whereClause: "",
+      })
+      if (res.ok) {
+        setRecords(res.data.records)
+      } else {
+        setError(res.error)
+      }
+    })()
+  }, [])
+
+  const columnDefs: Layout.GetColumnDefsFunction<EditableDbRecord> = React.useCallback(cellType => {
+    // 選択
+    const selectColumn = cellType.other('', {
+      defaultWidth: 60,
+      isFixed: true,
+      renderCell: cell => (
+        <Input.IconButton underline mini onClick={() => {
+          onSelect(cell.row.original)
+        }}>
+          選択
+        </Input.IconButton>
+      ),
+    })
+
+    const valueColumns = tableMetadata.columns.map(column => cellType.text(
+      `values.${column.columnName}` as ReactHookForm.FieldPathByValue<EditableDbRecord, string | undefined>,
+      column.columnName ?? '',
+      {
+      })) ?? []
+
+    return [
+      selectColumn,
+      ...valueColumns,
+    ]
+  }, [tableMetadata])
+
+  return (
+    <Layout.ModalDialog
+      open
+      className="relative w-[80vw] h-[80vh] bg-white flex flex-col gap-1 relative border border-gray-400"
+    >
+      <div className="h-full w-full flex flex-col p-1 gap-1">
+
+        <div className="flex gap-1 p-1">
+          <span className="font-bold">
+            {tableMetadata.tableName}
+          </span>
+          <div className="flex-1"></div>
+          <Input.IconButton outline mini onClick={onCancel}>
+            キャンセル
+          </Input.IconButton>
+        </div>
+
+        {error && (
+          <div className="text-red-500 flex-1">
+            {error}
+          </div>
+        )}
+        {records && (
+          <Layout.EditableGrid
+            rows={records}
+            getColumnDefs={columnDefs}
+            className="flex-1"
+          />
+        )}
+      </div>
+
+      {!error && !records && (
+        <Layout.NowLoading />
+      )}
+    </Layout.ModalDialog>
+  )
+}

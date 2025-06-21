@@ -113,7 +113,7 @@ public class QueryEditorServerApi : ControllerBase {
     }
 
     [HttpPost("get-db-records")]
-    public async Task<IActionResult> GetDbRecords([FromBody] DbTableEditor query) {
+    public async Task<IActionResult> GetDbRecords([FromBody] GetDbRecordsParameter query) {
         try {
             using var conn = _app.DbContext.Database.GetDbConnection();
             if (conn.State != ConnectionState.Open) await conn.OpenAsync();
@@ -324,7 +324,7 @@ public class ExecuteQueryReturn {
 /// <summary>
 /// 更新対象レコード取得リクエスト
 /// </summary>
-public class DbTableEditor {
+public class GetDbRecordsParameter {
     [JsonPropertyName("tableName")]
     public string TableName { get; set; } = "";
     [JsonPropertyName("whereClause")]
