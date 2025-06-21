@@ -253,12 +253,12 @@ const createNewQueryEditorItem = (type: "sqlAndResult" | "dbTableEditor", queryT
       title: queryTitleOrTableName,
       type,
       sql: "SELECT 1",
+      isSettingCollapsed: false,
       layout: {
         x: 0,
         y: 0,
         width: 640,
         height: 200,
-        isSettingCollapsed: false,
       },
     }
   } else {
@@ -268,12 +268,12 @@ const createNewQueryEditorItem = (type: "sqlAndResult" | "dbTableEditor", queryT
       type,
       tableName: queryTitleOrTableName,
       whereClause: "",
+      isSettingCollapsed: false,
       layout: {
         x: 0,
         y: 0,
         width: 640,
         height: 200,
-        isSettingCollapsed: false,
       },
     }
   }

@@ -1,12 +1,12 @@
 import * as Icon from "@heroicons/react/24/outline"
 import useEvent from "react-use-event-hook"
-import { EditorLayout } from "./types"
+import { EditorItemLayout } from "./types"
 
 /**
  * ドラッグで位置を変更できるウィンドウ
  */
 export default function DraggableWindow({ layout, children, onMove, header, className }: {
-  layout: EditorLayout
+  layout: EditorItemLayout
   onMove: (e: MouseEvent) => void
   header?: React.ReactNode
   children: React.ReactNode

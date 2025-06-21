@@ -76,10 +76,7 @@ export default function SqlAndResultView({ itemIndex, value, onChangeDefinition,
   const handleToggleCollapse = useEvent(() => {
     onChangeDefinition(itemIndex, {
       ...value,
-      layout: {
-        ...value.layout,
-        isSettingCollapsed: !value.layout.isSettingCollapsed,
-      },
+      isSettingCollapsed: !value.isSettingCollapsed,
     })
   })
 
@@ -111,7 +108,7 @@ export default function SqlAndResultView({ itemIndex, value, onChangeDefinition,
         <div className="flex-1"></div>
 
         <Input.IconButton
-          icon={value.layout.isSettingCollapsed ? Icon.ChevronUpIcon : Icon.ChevronDownIcon}
+          icon={value.isSettingCollapsed ? Icon.ChevronUpIcon : Icon.ChevronDownIcon}
           hideText
           onClick={handleToggleCollapse}
         >
@@ -127,7 +124,7 @@ export default function SqlAndResultView({ itemIndex, value, onChangeDefinition,
         <SqlTextarea
           value={value.sql}
           onChange={handleChangeSql}
-          className={`border-t border-gray-300 bg-white p-1 ${value.layout.isSettingCollapsed ? 'hidden' : ''}`}
+          className={`border-t border-gray-300 bg-white p-1 ${value.isSettingCollapsed ? 'hidden' : ''}`}
         />
 
         {/* 結果 */}

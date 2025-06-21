@@ -161,10 +161,7 @@ export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeD
   const handleToggleCollapse = useEvent(() => {
     onChangeDefinition(itemIndex, {
       ...value,
-      layout: {
-        ...value.layout,
-        isSettingCollapsed: !value.layout.isSettingCollapsed,
-      },
+      isSettingCollapsed: !value.isSettingCollapsed,
     })
   })
 
@@ -209,7 +206,7 @@ export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeD
           </>
         )}
         <Input.IconButton
-          icon={value.layout.isSettingCollapsed ? Icon.ChevronUpIcon : Icon.ChevronDownIcon}
+          icon={value.isSettingCollapsed ? Icon.ChevronUpIcon : Icon.ChevronDownIcon}
           hideText
           onClick={handleToggleCollapse}
         >
@@ -222,7 +219,7 @@ export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeD
     >
       <div className="flex flex-col h-full">
         {/* テーブル名, WHERE句 */}
-        <div className={`flex flex-col gap-1 p-1 font-mono bg-white border-t border-gray-300 ${value.layout.isSettingCollapsed ? 'hidden' : ''}`}>
+        <div className={`flex flex-col gap-1 p-1 font-mono bg-white border-t border-gray-300 ${value.isSettingCollapsed ? 'hidden' : ''}`}>
           <div className="flex gap-2">
             <span className="select-none text-gray-500">
               SELECT * FROM

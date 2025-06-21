@@ -14,7 +14,8 @@ export type SqlAndResult = {
   title: string
   type: "sqlAndResult"
   sql: string
-  layout: EditorLayout
+  isSettingCollapsed: boolean
+  layout: EditorItemLayout
 }
 
 /** データベースのテーブルを表示するアイテム */
@@ -24,18 +25,18 @@ export type DbTableEditor = {
   type: "dbTableEditor"
   tableName: string
   whereClause: string
-  layout: EditorLayout
+  isSettingCollapsed: boolean
+  layout: EditorItemLayout
 }
 
 /** 各クエリやテーブル編集がサーバーからの再読み込みをトリガーするためのトークン */
 export type ReloadTrigger = unknown
 
-export type EditorLayout = {
+export type EditorItemLayout = {
   x: number
   y: number
   width: number
   height: number
-  isSettingCollapsed: boolean
 }
 
 // ------------------------------------
