@@ -6,24 +6,29 @@ import * as Icon from "@heroicons/react/24/outline"
 import useQueryEditorServerApi from "./useQueryEditorServerApi"
 import useEvent from "react-use-event-hook"
 import { SqlTextarea } from "./SqlTextarea"
+import DraggableWindow from "./DraggableWindow"
 
 /**
  * GUI上でSQLを入力して、結果を表示するコンポーネント。
  * レコードの編集はできない。
  */
-export default function SqlAndResultView({ itemIndex, value, onChangeDefinition, trigger }: {
+export default function SqlAndResultView({ itemIndex, value, onChangeDefinition, onDeleteDefinition, trigger, zoom }: {
   itemIndex: number
   value: SqlAndResult
   onChangeDefinition: (index: number, value: SqlAndResult) => void
+  onDeleteDefinition: (index: number) => void
   trigger: ReloadTrigger
+  zoom: number
 }) {
 
   // ---------------------------------
   // 定義編集
-  const handleChangeTitle = useEvent((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChangeTitle = useEvent(() => {
+    const newTitle = window.prompt(`${value.title ?? 'クエリ'}の名前を入力してください`)
+    if (!newTitle) return;
     onChangeDefinition(itemIndex, {
       ...value,
-      title: e.target.value,
+      title: newTitle,
     })
   })
   const handleChangeSql = useEvent((e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -51,13 +56,7 @@ export default function SqlAndResultView({ itemIndex, value, onChangeDefinition,
     })()
   }, [trigger])
 
-  // ---------------------------------
-  // 折りたたみ
-  const [isCollapsed, setIsCollapsed] = React.useState(false)
-  const handleToggleCollapse = useEvent(() => {
-    setIsCollapsed(state => !state)
-  })
-
+  // 列定義
   const getColumnDefs: Layout.GetColumnDefsFunction<ExecuteQueryReturn['rows'][number]> = React.useCallback(e => {
     return queryResult.columns.map(colName => ({
       header: colName,
@@ -66,47 +65,84 @@ export default function SqlAndResultView({ itemIndex, value, onChangeDefinition,
     }))
   }, [queryResult])
 
-  return (
-    <div className="flex flex-col resize overflow-hidden border border-gray-500">
+  // ---------------------------------
+  // ウィンドウの削除
+  const handleDeleteWindow = useEvent(() => {
+    onDeleteDefinition(itemIndex)
+  })
 
-      {/* タイトル */}
-      <div className="flex gap-1">
-        <input type="text"
-          value={value.title}
-          onChange={handleChangeTitle}
-          spellCheck={false}
-          className="w-full px-1 outline-none"
-          placeholder="タイトル"
-        />
+  // ---------------------------------
+  // 折りたたみ
+  const handleToggleCollapse = useEvent(() => {
+    onChangeDefinition(itemIndex, {
+      ...value,
+      layout: {
+        ...value.layout,
+        isSettingCollapsed: !value.layout.isSettingCollapsed,
+      },
+    })
+  })
+
+  // ドラッグで位置を変更
+  const handleMouseMove = useEvent((e: MouseEvent) => {
+    const deltaX = e.movementX / zoom
+    const deltaY = e.movementY / zoom
+    onChangeDefinition(itemIndex, {
+      ...value,
+      layout: {
+        ...value.layout,
+        x: Math.max(0, value.layout.x + deltaX),
+        y: Math.max(0, value.layout.y + deltaY),
+      },
+    })
+  })
+
+  return (
+    <DraggableWindow
+      layout={value.layout}
+      onMove={handleMouseMove}
+      header={(<>
+        <span className="select-none">
+          {value.title}
+        </span>
+        <Input.IconButton icon={Icon.PencilIcon} hideText onClick={handleChangeTitle}>
+          名前を変更
+        </Input.IconButton>
+        <div className="flex-1"></div>
+
         <Input.IconButton
-          icon={isCollapsed ? Icon.ChevronUpIcon : Icon.ChevronDownIcon}
+          icon={value.layout.isSettingCollapsed ? Icon.ChevronUpIcon : Icon.ChevronDownIcon}
           hideText
           onClick={handleToggleCollapse}
         >
           折りたたみ
         </Input.IconButton>
-      </div>
-
-      {/* SQL */}
-      <SqlTextarea
-        value={value.sql}
-        onChange={handleChangeSql}
-        className={`border-t border-gray-300 bg-white p-1 ${isCollapsed ? 'hidden' : ''}`}
-      />
-
-      {/* 結果 */}
-      {error ? (
-        <div className="text-red-500 flex-1 border-t border-gray-300">
-          {error}
-        </div>
-      ) : (
-        <Layout.EditableGrid
-          rows={queryResult.rows}
-          getColumnDefs={getColumnDefs}
-          className="flex-1 border-t border-gray-300"
+        <Input.IconButton icon={Icon.XMarkIcon} hideText onClick={handleDeleteWindow}>
+          削除
+        </Input.IconButton>
+      </>)}
+    >
+      <div className="flex flex-col h-full">
+        {/* SQL */}
+        <SqlTextarea
+          value={value.sql}
+          onChange={handleChangeSql}
+          className={`border-t border-gray-300 bg-white p-1 ${value.layout.isSettingCollapsed ? 'hidden' : ''}`}
         />
-      )}
 
-    </div >
+        {/* 結果 */}
+        {error ? (
+          <div className="text-red-500 flex-1 border-t border-gray-300">
+            {error}
+          </div>
+        ) : (
+          <Layout.EditableGrid
+            rows={queryResult.rows}
+            getColumnDefs={getColumnDefs}
+            className="flex-1 border-t border-gray-300"
+          />
+        )}
+      </div>
+    </DraggableWindow>
   )
 }

@@ -7,25 +7,30 @@ import * as Layout from "../layout"
 import React from "react"
 import useQueryEditorServerApi from "./useQueryEditorServerApi"
 import { SqlTextarea } from "./SqlTextarea"
+import DraggableWindow from "./DraggableWindow"
 
 export type DbTableEditorViewRef = {
   getCurrentRecords: () => EditableDbRecord[]
 }
 
-export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeDefinition, allTableNames, trigger }: {
+export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeDefinition, onDeleteDefinition, allTableNames, trigger, zoom }: {
   itemIndex: number
   value: DbTableEditor
   onChangeDefinition: (index: number, value: DbTableEditor) => void
+  onDeleteDefinition: (index: number) => void
   allTableNames: string[]
   trigger: ReloadTrigger
+  zoom: number
 }, ref: React.ForwardedRef<DbTableEditorViewRef>) => {
 
   // ---------------------------------
   // 定義編集
-  const handleChangeTitle = useEvent((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChangeTitle = useEvent(() => {
+    const newTitle = window.prompt(`${value.title ?? 'テーブル編集'}の名前を入力してください`)
+    if (!newTitle) return;
     onChangeDefinition(itemIndex, {
       ...value,
-      title: e.target.value,
+      title: newTitle,
     })
   })
 
@@ -138,31 +143,58 @@ export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeD
     remove(removedIndexes)
   })
 
-  // キャンセル
-  const handleCancel = useEvent(() => {
-    if (!window.confirm('変更を取り消しますか？')) return
+  // リセット
+  const handleClickReset = useEvent(() => {
+    if (!window.confirm('データの変更を取り消しますか？')) return
     reset(defaultValues)
     setError(null)
   })
 
   // ---------------------------------
+  // ウィンドウの削除
+  const handleDeleteWindow = useEvent(() => {
+    onDeleteDefinition(itemIndex)
+  })
+
+  // ---------------------------------
   // 折りたたみ
-  const [isCollapsed, setIsCollapsed] = React.useState(false)
   const handleToggleCollapse = useEvent(() => {
-    setIsCollapsed(state => !state)
+    onChangeDefinition(itemIndex, {
+      ...value,
+      layout: {
+        ...value.layout,
+        isSettingCollapsed: !value.layout.isSettingCollapsed,
+      },
+    })
+  })
+
+  // ドラッグで位置を変更
+  const handleMouseMove = useEvent((e: MouseEvent) => {
+    const deltaX = e.movementX / zoom
+    const deltaY = e.movementY / zoom
+    onChangeDefinition(itemIndex, {
+      ...value,
+      layout: {
+        ...value.layout,
+        x: Math.max(0, value.layout.x + deltaX),
+        y: Math.max(0, value.layout.y + deltaY),
+      },
+    })
   })
 
   return (
-    <div className="flex flex-col resize overflow-hidden border border-gray-500">
+    <DraggableWindow
+      layout={value.layout}
+      onMove={handleMouseMove}
+      header={(<>
+        <span className="select-none">
+          {value.tableName}
+        </span>
+        <Input.IconButton icon={Icon.PencilIcon} hideText onClick={handleChangeTitle}>
+          名前を変更
+        </Input.IconButton>
+        <div className="flex-1"></div>
 
-      {/* タイトル */}
-      <div className="flex gap-1">
-        <input type="text"
-          value={value.title}
-          onChange={handleChangeTitle}
-          className="w-full px-1 outline-none"
-          placeholder="タイトル"
-        />
         {!error && (
           <>
             <Input.IconButton icon={Icon.PlusCircleIcon} onClick={handleAddRecord}>
@@ -171,64 +203,69 @@ export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeD
             <Input.IconButton icon={Icon.TrashIcon} onClick={handleDeleteRecord}>
               削除
             </Input.IconButton>
-            <Input.IconButton icon={Icon.ArrowPathIcon} onClick={handleCancel}>
-              キャンセル
+            <Input.IconButton icon={Icon.ArrowUturnLeftIcon} onClick={handleClickReset}>
+              リセット
             </Input.IconButton>
           </>
         )}
         <Input.IconButton
-          icon={isCollapsed ? Icon.ChevronUpIcon : Icon.ChevronDownIcon}
+          icon={value.layout.isSettingCollapsed ? Icon.ChevronUpIcon : Icon.ChevronDownIcon}
           hideText
           onClick={handleToggleCollapse}
         >
           折りたたみ
         </Input.IconButton>
-      </div>
+        <Input.IconButton icon={Icon.XMarkIcon} hideText onClick={handleDeleteWindow}>
+          削除
+        </Input.IconButton>
+      </>)}
+    >
+      <div className="flex flex-col h-full">
+        {/* テーブル名, WHERE句 */}
+        <div className={`flex flex-col gap-1 p-1 font-mono bg-white border-t border-gray-300 ${value.layout.isSettingCollapsed ? 'hidden' : ''}`}>
+          <div className="flex gap-2">
+            <span className="select-none text-gray-500">
+              SELECT * FROM
+            </span>
 
-      {/* テーブル名, WHERE句 */}
-      <div className={`flex flex-col gap-1 p-1 font-mono bg-white border-t border-gray-300 ${isCollapsed ? 'hidden' : ''}`}>
-        <div className="flex gap-2">
-          <span className="select-none text-gray-500">
-            SELECT * FROM
-          </span>
+            <select
+              value={value.tableName}
+              onChange={handleChangeTableName}
+              className="border border-gray-500"
+            >
+              {allTableNames.map((tableName) => (
+                <option key={tableName} value={tableName}>{tableName}</option>
+              ))}
+            </select>
 
-          <select
-            value={value.tableName}
-            onChange={handleChangeTableName}
-            className="border border-gray-500"
-          >
-            {allTableNames.map((tableName) => (
-              <option key={tableName} value={tableName}>{tableName}</option>
-            ))}
-          </select>
+            <span className="select-none text-gray-500">
+              WHERE
+            </span>
+          </div>
 
-          <span className="select-none text-gray-500">
-            WHERE
-          </span>
+          <SqlTextarea
+            value={value.whereClause}
+            onChange={handleChangeWhereClause}
+            placeholder="抽出条件がある場合はここに記載"
+            className="flex-1"
+          />
         </div>
 
-        <SqlTextarea
-          value={value.whereClause}
-          onChange={handleChangeWhereClause}
-          placeholder="抽出条件がある場合はここに記載"
-          className="flex-1"
-        />
+        {/* レコード */}
+        {error ? (
+          <div className="flex-1 text-red-500 border-t border-gray-300">
+            {error}
+          </div>
+        ) : (
+          <Layout.EditableGrid
+            ref={gridRef}
+            rows={fields}
+            getColumnDefs={getColumnDefs}
+            onChangeRow={handleChangeRecords}
+            className="flex-1 border-t border-gray-300"
+          />
+        )}
       </div>
-
-      {/* レコード */}
-      {error ? (
-        <div className="flex-1 text-red-500 border-t border-gray-300">
-          {error}
-        </div>
-      ) : (
-        <Layout.EditableGrid
-          ref={gridRef}
-          rows={fields}
-          getColumnDefs={getColumnDefs}
-          onChangeRow={handleChangeRecords}
-          className="flex-1 border-t border-gray-300"
-        />
-      )}
-    </div>
+    </DraggableWindow>
   )
 })

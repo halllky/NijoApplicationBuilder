@@ -68,7 +68,7 @@ export const Home: React.FC = () => {
         </div>
       </div>
 
-      <QueryEditor />
+      <QueryEditor className="h-96" />
     </div>
   )
 }
