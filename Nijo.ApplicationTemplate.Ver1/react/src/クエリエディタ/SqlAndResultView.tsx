@@ -107,49 +107,51 @@ export default function SqlAndResultView({ itemIndex, value, onChangeDefinition,
       onMove={handleMouseMove}
       className="bg-gray-100 border border-gray-500"
     >
-      {({ handleMouseDown }) => (<>
-        <div className="flex gap-1 pl-1 py-[2px] items-center cursor-grab" onMouseDown={handleMouseDown}>
-          <span className="select-none">
-            {value.title}
-          </span>
-          <Input.IconButton icon={Icon.PencilIcon} hideText onClick={handleChangeTitle} onMouseDown={handleMouseDownButtons}>
-            名前を変更
-          </Input.IconButton>
-          <div className="flex-1"></div>
+      {({ handleMouseDown }) => (
+        <div className="h-full flex flex-col">
+          <div className="flex gap-1 pl-1 py-[2px] items-center cursor-grab" onMouseDown={handleMouseDown}>
+            <span className="select-none">
+              {value.title}
+            </span>
+            <Input.IconButton icon={Icon.PencilIcon} hideText onClick={handleChangeTitle} onMouseDown={handleMouseDownButtons}>
+              名前を変更
+            </Input.IconButton>
+            <div className="flex-1"></div>
 
-          <Input.IconButton
-            icon={value.isSettingCollapsed ? Icon.ChevronUpIcon : Icon.ChevronDownIcon}
-            hideText
-            onClick={handleToggleCollapse}
-          >
-            折りたたみ
-          </Input.IconButton>
-          <Input.IconButton icon={Icon.XMarkIcon} hideText onClick={handleDeleteWindow}>
-            削除
-          </Input.IconButton>
-        </div>
-        <div className="flex flex-col h-full">
-          {/* SQL */}
-          <SqlTextarea
-            value={value.sql}
-            onChange={handleChangeSql}
-            className={`border-t border-gray-300 bg-white p-1 ${value.isSettingCollapsed ? 'hidden' : ''}`}
-          />
-
-          {/* 結果 */}
-          {error ? (
-            <div className="text-red-500 flex-1 border-t border-gray-300">
-              {error}
-            </div>
-          ) : (
-            <Layout.EditableGrid
-              rows={queryResult.rows}
-              getColumnDefs={getColumnDefs}
-              className="flex-1 border-t border-gray-300"
+            <Input.IconButton
+              icon={value.isSettingCollapsed ? Icon.ChevronUpIcon : Icon.ChevronDownIcon}
+              hideText
+              onClick={handleToggleCollapse}
+            >
+              折りたたみ
+            </Input.IconButton>
+            <Input.IconButton icon={Icon.XMarkIcon} hideText onClick={handleDeleteWindow}>
+              削除
+            </Input.IconButton>
+          </div>
+          <div className="flex-1 flex flex-col min-h-0">
+            {/* SQL */}
+            <SqlTextarea
+              value={value.sql}
+              onChange={handleChangeSql}
+              className={`border-t border-gray-300 bg-white p-1 ${value.isSettingCollapsed ? 'hidden' : ''}`}
             />
-          )}
+
+            {/* 結果 */}
+            {error ? (
+              <div className="text-red-500 flex-1 border-t border-gray-300">
+                {error}
+              </div>
+            ) : (
+              <Layout.EditableGrid
+                rows={queryResult.rows}
+                getColumnDefs={getColumnDefs}
+                className="flex-1 border-t border-gray-300"
+              />
+            )}
+          </div>
         </div>
-      </>)}
+      )}
     </DraggableWindow >
   )
 }

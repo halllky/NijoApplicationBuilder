@@ -32,7 +32,7 @@ export default function DraggableWindow({ layout, children, onMove, className }:
 
   return (
     <div
-      className={`absolute z-0 flex flex-col resize overflow-hidden cursor-auto ${className ?? ""}`}
+      className={`absolute z-0 resize overflow-auto cursor-auto ${className ?? ""}`}
       style={{
         left: layout.x,
         top: layout.y,
