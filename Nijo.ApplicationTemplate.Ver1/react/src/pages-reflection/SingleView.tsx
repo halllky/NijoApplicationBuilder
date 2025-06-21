@@ -82,6 +82,7 @@ export const SingleView = <
         </Layout.PageFrameTitle>
       )}
       className="p-4 relative"
+      style={SINGLE_VIEW_STYLE}
     >
       {nowLoading && (
         <Layout.NowLoading />
@@ -124,4 +125,8 @@ const AfterLoaded = <
       formMethods={form as unknown as ReactHookForm.UseFormReturn<ReactHookForm.FieldValues>}
     />
   )
+}
+
+const SINGLE_VIEW_STYLE: React.CSSProperties = {
+  fontFamily: '"ＭＳ 明朝", sans-serif',
 }

@@ -296,6 +296,7 @@ export const MultiView = ({ rootAggregatePhysicalName, metadata, schema }: {
           )}
         </>
       )}
+      style={MULTI_VIEW_STYLE}
     >
       <PanelGroup direction="vertical">
         <Panel collapsible minSize={8}>
@@ -330,4 +331,8 @@ export const MultiView = ({ rootAggregatePhysicalName, metadata, schema }: {
       </PanelGroup>
     </Layout.PageFrame>
   )
+}
+
+const MULTI_VIEW_STYLE: React.CSSProperties = {
+  fontFamily: '"ＭＳ 明朝", sans-serif',
 }

@@ -1,0 +1,65 @@
+import React from "react"
+import { DbRecord, DbTableEditor, UseQueryEditorServerApiReturn } from "./types"
+
+const BACKEND_API = import.meta.env.VITE_BACKEND_API
+
+export default function useQueryEditorServerApi(): UseQueryEditorServerApiReturn {
+
+  const executeQuery: UseQueryEditorServerApiReturn["executeQuery"] = React.useCallback(async (sql: string) => {
+    const response = await fetch(`${BACKEND_API}api/query-editor/execute-query`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(sql),
+    })
+    if (response.ok) {
+      const data = await response.json()
+      return { ok: true, records: data }
+    } else {
+      return { ok: false, error: await response.text() }
+    }
+  }, [])
+
+  const getTableNames: UseQueryEditorServerApiReturn["getTableNames"] = React.useCallback(async () => {
+    const response = await fetch(`${BACKEND_API}api/query-editor/get-table-names`)
+    if (response.ok) {
+      const data = await response.json()
+      return { ok: true, tableNames: data }
+    } else {
+      return { ok: false, error: await response.text() }
+    }
+  }, [])
+
+  const getDbRecords: UseQueryEditorServerApiReturn["getDbRecords"] = React.useCallback(async (query: DbTableEditor) => {
+    const response = await fetch(`${BACKEND_API}api/query-editor/get-db-records`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(query),
+    })
+    if (response.ok) {
+      const data = await response.json()
+      return { ok: true, records: data }
+    } else {
+      return { ok: false, error: await response.text() }
+    }
+  }, [])
+
+  const batchUpdate: UseQueryEditorServerApiReturn["batchUpdate"] = React.useCallback(async (records: DbRecord[]) => {
+    const response = await fetch(`${BACKEND_API}api/query-editor/batch-update`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(records),
+    })
+    if (response.ok) {
+      return { ok: true }
+    } else {
+      return { ok: false, error: await response.text() }
+    }
+  }, [])
+
+  return {
+    executeQuery,
+    getTableNames,
+    getDbRecords,
+    batchUpdate,
+  }
+}

@@ -4,12 +4,13 @@ type PageFrameProps = {
   headerContent?: React.ReactNode
   children?: React.ReactNode
   className?: string
+  style?: React.CSSProperties
 };
 
 /** 画面の枠 */
 export const PageFrame = (props: PageFrameProps) => {
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full" style={props.style}>
 
       {/* 画面ヘッダ部 */}
       <div className="flex flex-wrap items-center p-1 gap-2 border-b">

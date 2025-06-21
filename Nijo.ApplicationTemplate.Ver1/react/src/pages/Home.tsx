@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import * as Input from '../input'
 import { useHttpRequest } from '../util/useHttpRequest'
 import useEvent from 'react-use-event-hook';
+import QueryEditor from '../クエリエディタ'
 
 export const Home: React.FC = () => {
   const [message, setMessage] = useState<string | null>(null);
@@ -39,6 +40,10 @@ export const Home: React.FC = () => {
     }
   });
 
+  const handleShowSwagger = useEvent(() => {
+    window.open(`${import.meta.env.VITE_BACKEND_API}swagger/index.html`, '_blank')
+  })
+
   return (
     <div className="container">
       <h1>アプリケーションテンプレート</h1>
@@ -47,14 +52,23 @@ export const Home: React.FC = () => {
         このアプリケーションでは React.js と ASP.NET Core を使用しています。
       </p>
 
-      <div style={{ marginTop: '20px', padding: '10px', border: '1px solid #eee' }}>
+      <div className="flex flex-col gap-2 m-4 p-2 border border-gray-300">
         <h2>開発用デバッグ機能</h2>
-        <Input.IconButton onClick={handleResetDatabase} fill loading={nowProcessing}>
-          データベースを初期化 (データ消去＆再作成)
-        </Input.IconButton>
-        {message && <p style={{ color: 'green', marginTop: '10px' }}>{message}</p>}
-        {error && <p style={{ color: 'red', marginTop: '10px' }}>{error}</p>}
+        <div>
+          <Input.IconButton onClick={handleResetDatabase} fill loading={nowProcessing}>
+            データベースを初期化 (データ消去＆再作成)
+          </Input.IconButton>
+          {message && <p style={{ color: 'green', marginTop: '10px' }}>{message}</p>}
+          {error && <p style={{ color: 'red', marginTop: '10px' }}>{error}</p>}
+        </div>
+        <div>
+          <Input.IconButton onClick={handleShowSwagger} fill>
+            Swaggerを表示
+          </Input.IconButton>
+        </div>
       </div>
+
+      <QueryEditor />
     </div>
   )
 }

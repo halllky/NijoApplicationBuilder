@@ -6,8 +6,6 @@ import App, { IS_EMBEDDED } from './App.tsx'
 import './App.css'
 if (IS_EMBEDDED()) {
   import('./App.NijoUi.css')
-} else {
-  import('./App.ReflectionPage.css')
 }
 
 createRoot(document.getElementById('root')!).render(
