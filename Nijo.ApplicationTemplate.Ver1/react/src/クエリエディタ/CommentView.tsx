@@ -37,6 +37,17 @@ export const CommentView = ({ commentIndex, comment, zoom, onChangeComment, onDe
     })
   })
 
+  const handleSizeChange = useEvent((width: number, height: number) => {
+    onChangeComment(commentIndex, {
+      ...comment,
+      layout: {
+        ...comment.layout,
+        width,
+        height,
+      },
+    })
+  })
+
   const handleDeleteWindow = useEvent(() => {
     onDeleteComment(commentIndex)
   })
@@ -48,6 +59,7 @@ export const CommentView = ({ commentIndex, comment, zoom, onChangeComment, onDe
     <DraggableWindow
       layout={comment.layout}
       onMove={handleMouseMove}
+      onResize={handleSizeChange}
       className="bg-sky-100 border border-sky-200"
     >
       {({ handleMouseDown }) => (

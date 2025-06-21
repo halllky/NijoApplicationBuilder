@@ -6,15 +6,37 @@ import React from "react"
 /**
  * ドラッグで位置を変更できるウィンドウ
  */
-export default function DraggableWindow({ layout, children, onMove, className }: {
+export default function DraggableWindow({ layout, children, onMove, onResize, className }: {
   layout: EditorItemLayout
   onMove: (e: MouseEvent) => void
+  onResize?: (width: number, height: number) => void
   children: (props: {
     DragHandle: React.ReactNode
     handleMouseDown: React.MouseEventHandler<Element>
   }) => React.ReactNode
   className?: string
 }) {
+
+  // ResizeObserverを使用してリサイズを検知
+  const resizeObserverRef = React.useRef<ResizeObserver | null>(null)
+  const observerCallback = useEvent((entries: ResizeObserverEntry[]) => {
+    if (!onResize) return
+    for (const entry of entries) {
+      const borderBoxSize = entry.borderBoxSize[0]
+      if (!borderBoxSize) continue
+      onResize(borderBoxSize.inlineSize, borderBoxSize.blockSize)
+    }
+  })
+  const divRefCallback = React.useCallback((div: HTMLDivElement | null) => {
+    // 初回のみResizeObserverを作成
+    if (!resizeObserverRef.current) {
+      resizeObserverRef.current = new ResizeObserver(observerCallback)
+    }
+
+    // divとオブザーバーを接続する
+    resizeObserverRef.current.disconnect()
+    if (div) resizeObserverRef.current.observe(div)
+  }, [resizeObserverRef, observerCallback])
 
   const handleMouseDown: React.MouseEventHandler<HTMLDivElement> = useEvent(e => {
     // スクロールエリアのパン操作が発生しないようにする
@@ -32,6 +54,7 @@ export default function DraggableWindow({ layout, children, onMove, className }:
 
   return (
     <div
+      ref={divRefCallback}
       className={`absolute z-0 resize overflow-auto cursor-auto ${className ?? ""}`}
       style={{
         left: layout.x,

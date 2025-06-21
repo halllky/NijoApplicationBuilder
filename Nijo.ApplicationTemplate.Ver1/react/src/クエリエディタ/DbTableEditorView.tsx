@@ -222,6 +222,17 @@ export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeD
     })
   })
 
+  const handleSizeChange = useEvent((width: number, height: number) => {
+    onChangeDefinition(itemIndex, {
+      ...value,
+      layout: {
+        ...value.layout,
+        width,
+        height,
+      },
+    })
+  })
+
   const handleMouseDownButtons = useEvent((e: React.MouseEvent<Element>) => {
     e.stopPropagation()
   })
@@ -230,6 +241,7 @@ export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeD
     <DraggableWindow
       layout={value.layout}
       onMove={handleMouseMove}
+      onResize={handleSizeChange}
       className="bg-gray-100 border border-gray-500"
     >
       {({ handleMouseDown }) => (
