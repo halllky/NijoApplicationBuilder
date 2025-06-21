@@ -97,19 +97,22 @@ export default function SqlAndResultView({ itemIndex, value, onChangeDefinition,
     })
   })
 
+  const handleMouseDownButtons = useEvent((e: React.MouseEvent<Element>) => {
+    e.stopPropagation()
+  })
+
   return (
     <DraggableWindow
       layout={value.layout}
       onMove={handleMouseMove}
       className="bg-gray-100 border border-gray-500"
     >
-      {({ DragHandle, handleMouseDown }) => (<>
-        <div className="flex gap-1 items-center">
-          {DragHandle}
+      {({ handleMouseDown }) => (<>
+        <div className="flex gap-1 pl-1 py-[2px] items-center cursor-grab" onMouseDown={handleMouseDown}>
           <span className="select-none">
             {value.title}
           </span>
-          <Input.IconButton icon={Icon.PencilIcon} hideText onClick={handleChangeTitle}>
+          <Input.IconButton icon={Icon.PencilIcon} hideText onClick={handleChangeTitle} onMouseDown={handleMouseDownButtons}>
             名前を変更
           </Input.IconButton>
           <div className="flex-1"></div>

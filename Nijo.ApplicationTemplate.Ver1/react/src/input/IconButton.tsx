@@ -35,6 +35,8 @@ export const IconButton = (args: {
   className?: string
   /** このボタンをクリックしたときに送信するformのid */
   form?: string
+  /** マウスダウン時の処理 */
+  onMouseDown?: React.MouseEventHandler
 }) => {
 
   let className
@@ -89,6 +91,7 @@ export const IconButton = (args: {
     <button
       type={args.submit ? undefined : 'button'}
       onClick={args.loading ? undefined : args.onClick}
+      onMouseDown={args.onMouseDown}
       className={className}
       title={args.hideText ? (args.children as string) : undefined}
       tabIndex={args.tabIndex}

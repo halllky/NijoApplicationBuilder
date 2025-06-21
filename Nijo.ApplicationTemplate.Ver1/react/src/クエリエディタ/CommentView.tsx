@@ -22,7 +22,11 @@ export const CommentView = ({ commentIndex, comment, zoom, onChangeComment, onDe
     const deltaY = e.movementY / zoom
     onChangeComment(commentIndex, {
       ...comment,
-      layout: { ...comment.layout, x: comment.layout.x + deltaX, y: comment.layout.y + deltaY },
+      layout: {
+        ...comment.layout,
+        x: Math.max(0, comment.layout.x + deltaX),
+        y: Math.max(0, comment.layout.y + deltaY),
+      },
     })
   })
 
@@ -36,16 +40,8 @@ export const CommentView = ({ commentIndex, comment, zoom, onChangeComment, onDe
   const handleDeleteWindow = useEvent(() => {
     onDeleteComment(commentIndex)
   })
-
-  const handleChangeTitle = useEvent(() => {
-    const newTitle = window.prompt("タイトルを入力してください。")
-    const item = { ...comment }
-    if (newTitle) {
-      item.title = newTitle
-    } else {
-      delete item.title
-    }
-    onChangeComment(commentIndex, item)
+  const handleMouseDownDeleteButton = useEvent((e: React.MouseEvent<Element>) => {
+    e.stopPropagation()
   })
 
   return (
@@ -54,18 +50,11 @@ export const CommentView = ({ commentIndex, comment, zoom, onChangeComment, onDe
       onMove={handleMouseMove}
       className="bg-sky-100 border border-sky-200"
     >
-      {({ DragHandle, handleMouseDown }) => (
+      {({ handleMouseDown }) => (
         <div className="flex flex-col h-full">
-          <div className="flex gap-1 items-center">
-            {DragHandle}
-            <span className="select-none text-sky-600">
-              {comment.title ?? "コメント"}
-            </span>
-            <Input.IconButton icon={Icon.PencilIcon} hideText onClick={handleChangeTitle}>
-              名前を変更
-            </Input.IconButton>
+          <div onMouseDown={handleMouseDown} className="flex gap-1 items-center cursor-grab bg-sky-200">
             <div className="flex-1"></div>
-            <Input.IconButton icon={Icon.XMarkIcon} hideText onClick={handleDeleteWindow}>
+            <Input.IconButton icon={Icon.XMarkIcon} hideText onClick={handleDeleteWindow} onMouseDown={handleMouseDownDeleteButton}>
               削除
             </Input.IconButton>
           </div>
@@ -73,7 +62,7 @@ export const CommentView = ({ commentIndex, comment, zoom, onChangeComment, onDe
             value={comment.content}
             onChange={handleChangeContent}
             spellCheck={false}
-            className="w-full h-full field-sizing-content outline-none resize-none p-1"
+            className="w-full h-full field-sizing-content outline-none resize-none p-1 text-sky-800"
           />
         </div>
       )}

@@ -174,7 +174,7 @@ const AfterReady = ({ allTableNames, defaultValues, onSave, className }: {
     })
   })
   const handleRemoveComment = useEvent((commentIndex: number) => {
-    if (!window.confirm(`${commentFields.fields[commentIndex].title ?? "コメント"}を削除しますか？`)) return;
+    if (!window.confirm(`コメントを削除しますか？`)) return;
     commentFields.remove(commentIndex)
   })
 

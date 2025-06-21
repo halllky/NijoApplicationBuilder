@@ -10,7 +10,7 @@ export default function DraggableWindow({ layout, children, onMove, className }:
   onMove: (e: MouseEvent) => void
   children: (props: {
     DragHandle: React.ReactNode
-    handleMouseDown: React.MouseEventHandler<SVGSVGElement>
+    handleMouseDown: React.MouseEventHandler<Element>
   }) => React.ReactNode
   className?: string
 }) {
