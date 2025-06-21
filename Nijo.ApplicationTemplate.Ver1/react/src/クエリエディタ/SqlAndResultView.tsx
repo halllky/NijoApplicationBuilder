@@ -117,7 +117,7 @@ export default function SqlAndResultView({ itemIndex, value, onChangeDefinition,
       layout={value.layout}
       onMove={handleMouseMove}
       onResize={handleSizeChange}
-      className="bg-gray-100 border border-gray-500"
+      className="bg-gray-200 border border-gray-300"
     >
       {({ handleMouseDown }) => (
         <div className="h-full flex flex-col">
