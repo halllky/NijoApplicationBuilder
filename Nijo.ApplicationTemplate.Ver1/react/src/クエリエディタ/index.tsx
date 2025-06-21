@@ -1,5 +1,5 @@
 import React from "react"
-import { EditableDbRecord, QueryEditor, QueryEditorItem } from "./types"
+import { DbTableMetadata, EditableDbRecord, QueryEditor, QueryEditorItem } from "./types"
 import * as ReactHookForm from "react-hook-form"
 import * as Input from "../input"
 import * as Icon from "@heroicons/react/24/outline"
@@ -20,16 +20,21 @@ export type QueryEditorProps = {
  * 複数のテーブルや、SQLとその結果を表示するUIです。
  */
 export default function ({ className }: QueryEditorProps) {
-  const { getTableNames } = useQueryEditorServerApi()
-  const [allTableNames, setAllTableNames] = React.useState<string[]>()
+  const { getTableMetadata } = useQueryEditorServerApi()
+  const [loadError, setLoadError] = React.useState<string>()
+  const [tableMetadata, setTableMetadata] = React.useState<DbTableMetadata[]>()
   const [defaultValues, setDefaultValues] = React.useState<QueryEditor>()
 
   React.useEffect(() => {
+    setLoadError(undefined);
+
     // テーブル名一覧を取得
     (async () => {
-      const res = await getTableNames()
+      const res = await getTableMetadata()
       if (res.ok) {
-        setAllTableNames(res.tableNames)
+        setTableMetadata(res.data)
+      } else {
+        setLoadError(res.error)
       }
     })()
 
@@ -45,14 +50,22 @@ export default function ({ className }: QueryEditorProps) {
     } catch {
       setDefaultValues(GET_DEFAULT_DATA())
     }
-  }, [getTableNames])
+  }, [getTableMetadata])
 
   // ローカルストレージに保存
   const handleSave = useEvent((data: QueryEditor) => {
     localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(data))
   })
 
-  if (!allTableNames || !defaultValues) {
+  if (loadError) {
+    return (
+      <div className={`relative ${className ?? ""}`}>
+        <div className="text-red-500 text-sm whitespace-pre-wrap">{loadError}</div>
+      </div>
+    )
+  }
+
+  if (!tableMetadata || !defaultValues) {
     return (
       <div className={`relative ${className ?? ""}`}>
         <Layout.NowLoading />
@@ -62,7 +75,7 @@ export default function ({ className }: QueryEditorProps) {
 
   return (
     <AfterReady
-      allTableNames={allTableNames}
+      tableMetadata={tableMetadata}
       defaultValues={defaultValues}
       onSave={handleSave}
       className={className}
@@ -70,8 +83,8 @@ export default function ({ className }: QueryEditorProps) {
   )
 }
 
-const AfterReady = ({ allTableNames, defaultValues, onSave, className }: {
-  allTableNames: string[]
+const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
+  tableMetadata: DbTableMetadata[]
   defaultValues: QueryEditor
   onSave: (data: QueryEditor) => void
   className?: string
@@ -279,7 +292,7 @@ const AfterReady = ({ allTableNames, defaultValues, onSave, className }: {
               value={item}
               onChangeDefinition={update}
               onDeleteDefinition={handleRemoveWindow}
-              allTableNames={allTableNames}
+              tableMetadata={tableMetadata}
               trigger={trigger}
               zoom={zoom}
             />
@@ -307,8 +320,8 @@ const AfterReady = ({ allTableNames, defaultValues, onSave, className }: {
             onChange={handleChangeNewTableName}
             className="flex-1 bg-white border border-gray-500"
           >
-            {allTableNames.map(name => (
-              <option key={name} value={name}>{name}</option>
+            {tableMetadata.map(table => (
+              <option key={table.tableName} value={table.tableName}>{table.tableName}</option>
             ))}
           </select>
           <Input.IconButton onClick={handleAddTableEditor} fill>

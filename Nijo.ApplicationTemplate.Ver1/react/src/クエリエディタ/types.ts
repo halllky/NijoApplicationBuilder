@@ -52,12 +52,31 @@ export type Comment = {
 export type UseQueryEditorServerApiReturn = {
   /** クエリを実行する */
   executeQuery: (sql: string) => Promise<{ ok: true, records: ExecuteQueryReturn } | { ok: false, error: string }>
-  /** テーブル名一覧 */
+  /** テーブルメタデータ取得 */
+  getTableMetadata: () => Promise<{ ok: true, data: DbTableMetadata[] } | { ok: false, error: string }>
+  /**
+   * テーブル名一覧
+   * @deprecated Use getTableMetadata instead.
+   */
   getTableNames: () => Promise<{ ok: true, tableNames: string[] } | { ok: false, error: string }>
   /** 更新用レコード取得 */
   getDbRecords: (query: DbTableEditor) => Promise<{ ok: true, data: GetDbRecordsReturn } | { ok: false, error: string }>
   /** レコード一括更新 */
   batchUpdate: (records: EditableDbRecord[]) => Promise<{ ok: true } | { ok: false, error: string }>
+}
+
+export type DbTableMetadata = {
+  tableName: string
+  columns: DbColumnMetadata[]
+}
+
+export type DbColumnMetadata = {
+  columnName: string
+  type: string
+  isPrimaryKey: boolean
+  isNullable: boolean
+  foreignKeyTableName: string | null
+  foreignKeyColumnName: string | null
 }
 
 export type ExecuteQueryReturn = {

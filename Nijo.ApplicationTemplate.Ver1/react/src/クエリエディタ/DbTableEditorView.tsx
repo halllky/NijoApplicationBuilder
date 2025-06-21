@@ -1,7 +1,7 @@
 import useEvent from "react-use-event-hook"
 import * as ReactHookForm from "react-hook-form"
 import * as Icon from "@heroicons/react/24/outline"
-import { EditableDbRecord, DbTableEditor, ReloadTrigger, GetDbRecordsReturn } from "./types"
+import { EditableDbRecord, DbTableEditor, ReloadTrigger, GetDbRecordsReturn, DbTableMetadata } from "./types"
 import * as Input from "../input"
 import * as Layout from "../layout"
 import React from "react"
@@ -13,12 +13,12 @@ export type DbTableEditorViewRef = {
   getCurrentRecords: () => EditableDbRecord[]
 }
 
-export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeDefinition, onDeleteDefinition, allTableNames, trigger, zoom }: {
+export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeDefinition, onDeleteDefinition, tableMetadata, trigger, zoom }: {
   itemIndex: number
   value: DbTableEditor
   onChangeDefinition: (index: number, value: DbTableEditor) => void
   onDeleteDefinition: (index: number) => void
-  allTableNames: string[]
+  tableMetadata: DbTableMetadata[]
   trigger: ReloadTrigger
   zoom: number
 }, ref: React.ForwardedRef<DbTableEditorViewRef>) => {
@@ -237,8 +237,8 @@ export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeD
                   onChange={handleChangeTableName}
                   className="border border-gray-500"
                 >
-                  {allTableNames.map((tableName) => (
-                    <option key={tableName} value={tableName}>{tableName}</option>
+                  {tableMetadata.map(table => (
+                    <option key={table.tableName} value={table.tableName}>{table.tableName}</option>
                   ))}
                 </select>
 

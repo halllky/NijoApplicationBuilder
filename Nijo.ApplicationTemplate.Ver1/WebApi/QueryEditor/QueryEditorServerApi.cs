@@ -3,6 +3,8 @@ using System.Data.Common;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using MyApp.Core;
 
 namespace Nijo.ApplicationTemplate.Ver1.WebApi.QueryEditor;
@@ -59,6 +61,7 @@ public class QueryEditorServerApi : ControllerBase {
         }
     }
 
+    [Obsolete("Use GetTableMetadata instead.")]
     [HttpGet("get-table-names")]
     public IActionResult GetTableNames() {
         try {
@@ -73,6 +76,57 @@ public class QueryEditorServerApi : ControllerBase {
 
         } catch (Exception ex) {
             return Problem(ex.Message);
+        }
+    }
+
+    [HttpGet("get-table-metadata")]
+    public IActionResult GetTableMetadata() {
+        try {
+            var model = _app.DbContext.GetService<IDesignTimeModel>().Model;
+            var result = new List<DbTableMetadata>();
+
+            foreach (var entityType in model.GetEntityTypes()) {
+                var tableName = entityType.GetTableName();
+
+                // ビューの場合はTableNameがnullになる
+                if (tableName == null) continue;
+
+                var tableMetadata = new DbTableMetadata {
+                    TableName = tableName,
+                };
+
+                foreach (var property in entityType.GetProperties().OrderBy(c => c.GetColumnOrder())) {
+                    // 外部キーの場合は相手方テーブルのカラム情報を取得
+                    var firstForeignKey = property.IsForeignKey()
+                        ? property.GetContainingForeignKeys().First()
+                        : null;
+                    // 対応する参照先カラム名を取得
+                    string? foreignKeyColumnName = null;
+                    if (firstForeignKey != null) {
+                        // 現在のプロパティが外部キーの何番目の要素かを調べる
+                        var foreignKeyPropertyIndex = firstForeignKey.Properties.ToList().IndexOf(property);
+                        if (foreignKeyPropertyIndex >= 0 && foreignKeyPropertyIndex < firstForeignKey.PrincipalKey.Properties.Count) {
+                            foreignKeyColumnName = firstForeignKey.PrincipalKey.Properties[foreignKeyPropertyIndex].GetColumnName();
+                        }
+                    }
+
+                    tableMetadata.Columns.Add(new DbColumnMetadata {
+                        ColumnName = property.GetColumnName()!,
+                        Type = property.GetColumnType()!,
+                        IsPrimaryKey = property.IsPrimaryKey(),
+                        IsNullable = property.IsColumnNullable(),
+                        ForeignKeyTableName = firstForeignKey?.PrincipalEntityType.GetTableName(),
+                        ForeignKeyColumnName = foreignKeyColumnName,
+                    });
+                }
+
+                result.Add(tableMetadata);
+            }
+
+            return Ok(result);
+
+        } catch (Exception ex) {
+            return Problem(ex.ToString());
         }
     }
 
@@ -253,6 +307,33 @@ public class QueryEditorServerApi : ControllerBase {
             }
         }
     }
+}
+
+/// <summary>
+/// テーブルのメタデータ
+/// </summary>
+public class DbTableMetadata {
+    [JsonPropertyName("tableName")]
+    public string TableName { get; set; } = "";
+    [JsonPropertyName("columns")]
+    public List<DbColumnMetadata> Columns { get; set; } = [];
+}
+/// <summary>
+/// カラムのメタデータ
+/// </summary>
+public class DbColumnMetadata {
+    [JsonPropertyName("columnName")]
+    public string ColumnName { get; set; } = "";
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = "";
+    [JsonPropertyName("isPrimaryKey")]
+    public bool IsPrimaryKey { get; set; }
+    [JsonPropertyName("isNullable")]
+    public bool IsNullable { get; set; }
+    [JsonPropertyName("foreignKeyTableName")]
+    public string? ForeignKeyTableName { get; set; }
+    [JsonPropertyName("foreignKeyColumnName")]
+    public string? ForeignKeyColumnName { get; set; }
 }
 
 /// <summary>

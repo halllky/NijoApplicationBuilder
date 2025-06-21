@@ -19,6 +19,16 @@ export default function useQueryEditorServerApi(): UseQueryEditorServerApiReturn
     }
   }, [])
 
+  const getTableMetadata: UseQueryEditorServerApiReturn["getTableMetadata"] = React.useCallback(async () => {
+    const response = await fetch(`${BACKEND_API}api/query-editor/get-table-metadata`)
+    if (response.ok) {
+      const data = await response.json()
+      return { ok: true, data }
+    } else {
+      return { ok: false, error: await response.text() }
+    }
+  }, [])
+
   const getTableNames: UseQueryEditorServerApiReturn["getTableNames"] = React.useCallback(async () => {
     const response = await fetch(`${BACKEND_API}api/query-editor/get-table-names`)
     if (response.ok) {
@@ -58,6 +68,7 @@ export default function useQueryEditorServerApi(): UseQueryEditorServerApiReturn
 
   return {
     executeQuery,
+    getTableMetadata,
     getTableNames,
     getDbRecords,
     batchUpdate,
