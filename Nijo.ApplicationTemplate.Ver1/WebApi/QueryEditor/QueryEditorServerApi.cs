@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using System.Data.Common;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
@@ -86,14 +86,26 @@ public class QueryEditorServerApi : ControllerBase {
             if (conn.State != ConnectionState.Open) await conn.OpenAsync();
 
             using var command = conn.CreateCommand();
-            command.CommandText = $"SELECT * FROM \"{query.TableName}\" WHERE {query.WhereClause}";
+            var whereClause = string.IsNullOrWhiteSpace(query.WhereClause)
+                ? ""
+                : $" WHERE {query.WhereClause}";
+            command.CommandText = $$"""
+                SELECT * FROM "{{query.TableName}}"{{whereClause}}
+                """;
 
             using var reader = await command.ExecuteReaderAsync();
-            var records = new List<DbRecord>();
+            var columns = new List<string>();
+            var records = new List<EditableDbRecord>();
             while (await reader.ReadAsync()) {
-                var record = new DbRecord();
+                var record = new EditableDbRecord();
                 record.TableName = query.TableName;
                 record.ExistsInDb = true;
+
+                if (columns.Count == 0) {
+                    for (int i = 0; i < reader.FieldCount; i++) {
+                        columns.Add(reader.GetName(i));
+                    }
+                }
 
                 for (int i = 0; i < reader.FieldCount; i++) {
                     var value = reader.GetValue(i);
@@ -106,14 +118,17 @@ public class QueryEditorServerApi : ControllerBase {
                 records.Add(record);
             }
 
-            return Ok(records);
+            return Ok(new GetDbRecordsReturn {
+                Columns = columns,
+                Records = records,
+            });
         } catch (Exception ex) {
             return BadRequest(ex.Message);
         }
     }
 
     [HttpPost("batch-update")]
-    public async Task<IActionResult> BatchUpdate([FromBody] List<DbRecord> records) {
+    public async Task<IActionResult> BatchUpdate([FromBody] List<EditableDbRecord> records) {
         try {
             using var conn = _app.DbContext.Database.GetDbConnection();
             if (conn.State != ConnectionState.Open) await conn.OpenAsync();
@@ -121,117 +136,122 @@ public class QueryEditorServerApi : ControllerBase {
             using var tran = await conn.BeginTransactionAsync();
 
             foreach (var record in records) {
-                try {
-                    await InsertOrUpdateOrDelete(conn, tran, record);
-                } catch (Exception ex) {
-                    throw new InvalidOperationException($"レコードの更新に失敗しました。{record.TableName} {record.Values.Select(x => $"{x.Key} = {x.Value}").Aggregate((x, y) => $"{x}, {y}")}", ex);
-                }
+                await InsertOrUpdateOrDelete(conn, record);
             }
+
+            await tran.CommitAsync();
 
             return Ok();
         } catch (Exception ex) {
             return BadRequest(ex.Message);
         }
 
-        async Task InsertOrUpdateOrDelete(DbConnection conn, DbTransaction tran, DbRecord record) {
+        async Task InsertOrUpdateOrDelete(DbConnection conn, EditableDbRecord record) {
 
             // 更新対象のテーブルのキー情報を探す
-            var entityType = _app.DbContext.Model.FindEntityType(record.TableName);
+            var entityType = _app.DbContext.Model
+                .GetEntityTypes()
+                .FirstOrDefault(x => x.GetTableName() == record.TableName);
             if (entityType == null) {
                 throw new Exception($"テーブル {record.TableName} が見つかりません");
             }
             var keyProperties = entityType
-                .GetKeys()
-                .Select(x => x.GetName()!)
+                .GetProperties()
+                .Where(x => x.IsPrimaryKey())
+                .Select(x => x.GetColumnName()!)
                 .ToList();
             if (keyProperties.Count == 0) {
                 throw new Exception($"テーブル {record.TableName} に主キーがありません");
             }
 
-            if (!record.ExistsInDb) {
-                // SQL文生成
-                using var insertCommand = conn.CreateCommand();
-                insertCommand.CommandText = $$"""
-                    INSERT INTO "{{record.TableName}}" (
-                    {{string.Join(Environment.NewLine, record.Values.Keys.Select((key, ix) => $$"""
-                        {{(ix == 0 ? "" : ",")}}"{{key}}"
-                    """))}}
-                    ) VALUES (
-                    {{string.Join(Environment.NewLine, record.Values.Values.Select((x, ix) => $$"""
-                        {{(ix == 0 ? "" : ",")}} @p{{ix}}
-                    """))}}
-                    )
-                    """;
+            try {
 
-                // パラメータ設定
-                for (int ix = 0; ix < record.Values.Count; ix++) {
-                    var parameter = insertCommand.CreateParameter();
-                    parameter.ParameterName = $"p{ix}";
-                    var value = record.Values.Values.ElementAt(ix);
-                    if (value == null) {
-                        parameter.Value = DBNull.Value;
-                    } else {
-                        parameter.Value = value;
+                if (!record.ExistsInDb) {
+                    // SQL文生成
+                    using var insertCommand = conn.CreateCommand();
+                    insertCommand.CommandText = $$"""
+                        INSERT INTO "{{record.TableName}}" (
+                        {{string.Join(Environment.NewLine, record.Values.Keys.Select((key, ix) => $$"""
+                            {{(ix == 0 ? "" : ",")}}"{{key}}"
+                        """))}}
+                        ) VALUES (
+                        {{string.Join(Environment.NewLine, record.Values.Values.Select((x, ix) => $$"""
+                            {{(ix == 0 ? "" : ",")}} @p{{ix}}
+                        """))}}
+                        )
+                        """;
+
+                    // パラメータ設定
+                    for (int ix = 0; ix < record.Values.Count; ix++) {
+                        var parameter = ToDbParameter(insertCommand, $"p{ix}", record.Values.Values.ElementAt(ix));
+                        insertCommand.Parameters.Add(parameter);
                     }
-                    insertCommand.Parameters.Add(parameter);
+
+                    // 実行
+                    var affectedRows = await insertCommand.ExecuteNonQueryAsync();
+                    if (affectedRows == 0) {
+                        throw new Exception($"INSERTにより影響を受けたレコードの数が0でした。");
+                    }
+
+                } else if (record.Deleted) {
+                    // SQL文生成
+                    using var deleteCommand = conn.CreateCommand();
+                    deleteCommand.CommandText = $$"""
+                        DELETE FROM "{{record.TableName}}"
+                        WHERE {{string.Join(" AND ", keyProperties.Select((colName, i) => $"\"{colName}\" = @p{i}"))}}
+                        """;
+
+                    for (int i = 0; i < keyProperties.Count; i++) {
+                        var parameter = ToDbParameter(deleteCommand, $"p{i}", record.Values[keyProperties[i]]);
+                        deleteCommand.Parameters.Add(parameter);
+                    }
+
+                    var affectedRows = await deleteCommand.ExecuteNonQueryAsync();
+                    if (affectedRows == 0) {
+                        throw new Exception($"削除対象のレコードが見つかりませんでした。");
+                    }
+
+                } else if (record.Changed) {
+                    // SQL文生成
+                    using var updateCommand = conn.CreateCommand();
+                    var values = record.Values.ToArray();
+                    updateCommand.CommandText = $$"""
+                        UPDATE "{{record.TableName}}"
+                        SET {{string.Join(", ", values.Select((x, i) => $"\"{x.Key}\" = @pv{i}"))}}
+                        WHERE {{string.Join(" AND ", keyProperties.Select((colName, i) => $"\"{colName}\" = @pk{i}"))}}
+                        """;
+
+                    // パラメータ（主キー）
+                    for (int i = 0; i < keyProperties.Count; i++) {
+                        var parameter = ToDbParameter(updateCommand, $"pk{i}", record.Values[keyProperties[i]]);
+                        updateCommand.Parameters.Add(parameter);
+                    }
+
+                    // パラメータ（更新対象）
+                    for (int i = 0; i < values.Length; i++) {
+                        var parameter = ToDbParameter(updateCommand, $"pv{i}", values[i].Value);
+                        updateCommand.Parameters.Add(parameter);
+                    }
+
+                    var affectedRows = await updateCommand.ExecuteNonQueryAsync();
+                    if (affectedRows == 0) {
+                        throw new Exception($"更新対象のレコードが見つかりませんでした。");
+                    }
                 }
 
-                // 実行
-                var affectedRows = await insertCommand.ExecuteNonQueryAsync();
-                if (affectedRows == 0) {
-                    throw new Exception($"INSERTにより影響を受けたレコードの数が0でした。");
+            } catch (Exception ex) {
+                throw new Exception($"【{record.TableName}（{string.Join(",", keyProperties.Select(x => $"{x}: {record.Values[x]}"))}）】: {ex.Message}", ex);
+            }
+
+            DbParameter ToDbParameter(DbCommand command, string name, string? value) {
+                var parameter = command.CreateParameter();
+                parameter.ParameterName = name;
+                if (value == null) {
+                    parameter.Value = DBNull.Value;
+                } else {
+                    parameter.Value = value;
                 }
-
-            } else if (record.Deleted) {
-                // SQL文生成
-                using var deleteCommand = conn.CreateCommand();
-                deleteCommand.CommandText = $$"""
-                    DELETE FROM "{{record.TableName}}"
-                    WHERE {{string.Join(" AND ", keyProperties.Select((colName, i) => $"\"{colName}\" = @p{i}"))}}
-                    """;
-
-                for (int i = 0; i < keyProperties.Count; i++) {
-                    var parameter = deleteCommand.CreateParameter();
-                    parameter.ParameterName = $"p{i}";
-                    parameter.Value = record.Values[keyProperties[i]];
-                    deleteCommand.Parameters.Add(parameter);
-                }
-
-                var affectedRows = await deleteCommand.ExecuteNonQueryAsync();
-                if (affectedRows == 0) {
-                    throw new Exception($"削除対象のレコードが見つかりませんでした。");
-                }
-
-            } else if (record.Changed) {
-                // SQL文生成
-                using var updateCommand = conn.CreateCommand();
-                var values = record.Values.ToArray();
-                updateCommand.CommandText = $$"""
-                    UPDATE "{{record.TableName}}"
-                    SET {{string.Join(", ", values.Select((x, i) => $"\"{x.Key}\" = @pv{i}"))}}
-                    WHERE {{string.Join(" AND ", keyProperties.Select((colName, i) => $"\"{colName}\" = @pk{i}"))}}
-                    """;
-
-                // パラメータ（主キー）
-                for (int i = 0; i < keyProperties.Count; i++) {
-                    var parameter = updateCommand.CreateParameter();
-                    parameter.ParameterName = $"pk{i}";
-                    parameter.Value = record.Values[keyProperties[i]];
-                    updateCommand.Parameters.Add(parameter);
-                }
-
-                // パラメータ（更新対象）
-                for (int i = 0; i < values.Length; i++) {
-                    var parameter = updateCommand.CreateParameter();
-                    parameter.ParameterName = $"pv{i}";
-                    parameter.Value = values[i].Value;
-                    updateCommand.Parameters.Add(parameter);
-                }
-
-                var affectedRows = await updateCommand.ExecuteNonQueryAsync();
-                if (affectedRows == 0) {
-                    throw new Exception($"更新対象のレコードが見つかりませんでした。");
-                }
+                return parameter;
             }
         }
     }
@@ -258,9 +278,19 @@ public class DbTableEditor {
 }
 
 /// <summary>
+/// 更新対象レコード取得結果
+/// </summary>
+public class GetDbRecordsReturn {
+    [JsonPropertyName("columns")]
+    public List<string> Columns { get; set; } = [];
+    [JsonPropertyName("records")]
+    public List<EditableDbRecord> Records { get; set; } = [];
+}
+
+/// <summary>
 /// 更新対象レコード
 /// </summary>
-public class DbRecord {
+public class EditableDbRecord {
     [JsonPropertyName("tableName")]
     public string TableName { get; set; } = "";
     [JsonPropertyName("values")]

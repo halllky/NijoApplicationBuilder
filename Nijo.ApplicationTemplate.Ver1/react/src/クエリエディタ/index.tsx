@@ -1,8 +1,8 @@
 import React from "react"
-import { QueryEditor } from "./types"
+import { EditableDbRecord, QueryEditor } from "./types"
 import * as ReactHookForm from "react-hook-form"
 import * as Layout from "../layout"
-import DbTableEditorView from "./DbTableEditorView"
+import { DbTableEditorView, DbTableEditorViewRef } from "./DbTableEditorView"
 import SqlAndResultView from "./SqlAndResultView"
 import useQueryEditorServerApi from "./useQueryEditorServerApi"
 import useEvent from "react-use-event-hook"
@@ -22,7 +22,7 @@ export default function () {
         setAllTableNames(res.tableNames)
       }
     })()
-  }, [])
+  }, [getTableNames])
 
   if (!allTableNames) {
     return (
@@ -48,22 +48,55 @@ const AfterReady = ({ allTableNames }: {
 
   // ---------------------------------
   // 保存、およびSQL結果取得トリガー
+  const { batchUpdate } = useQueryEditorServerApi()
+  const [saveError, setSaveError] = React.useState<string>()
   const [trigger, setTrigger] = React.useState(-1)
 
-  const handleKeyDown = useEvent((e: React.KeyboardEvent<HTMLDivElement>) => {
+  const dbTableEditorsRef = React.useRef<React.RefObject<DbTableEditorViewRef | null>[]>([])
+  dbTableEditorsRef.current = []
+  for (let i = 0; i < fields.length; i++) {
+    dbTableEditorsRef.current[i] = React.createRef()
+  }
+
+  const handleKeyDown = useEvent(async (e: React.KeyboardEvent<HTMLDivElement>) => {
     // Ctrl + S でSQL再読み込みを実行
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault()
+
+      // 編集中のテーブルエディタの値を保存する。
+      // どれか1件でもエラーがあればロールバックされる
+      const recordsToSave: EditableDbRecord[] = []
+      for (const editorRef of dbTableEditorsRef.current) {
+        if (editorRef.current) {
+          const records = editorRef.current.getCurrentRecords()
+          recordsToSave.push(...records)
+        }
+      }
+
+      if (recordsToSave.length > 0) {
+        const result = await batchUpdate(recordsToSave)
+        if (!result.ok) {
+          setSaveError(result.error)
+          return
+        }
+      }
+
+      setSaveError(undefined)
       setTrigger(trigger * -1)
     }
   })
 
   return (
     <div
-      className="flex flex-col gap-px p-4 resize outline-none"
+      className="flex flex-col gap-4 p-4 resize outline-none"
       tabIndex={0} // キーボード操作を可能にする
       onKeyDown={handleKeyDown}
     >
+      {saveError && (
+        <div className="text-red-500 text-sm">
+          {saveError}
+        </div>
+      )}
 
       {fields.map((item, index) => item.type === "sqlAndResult" ? (
         <SqlAndResultView
@@ -75,6 +108,7 @@ const AfterReady = ({ allTableNames }: {
         />
       ) : (
         <DbTableEditorView
+          ref={dbTableEditorsRef.current[index]}
           key={item.id}
           itemIndex={index}
           value={item}
@@ -97,5 +131,12 @@ const GET_TEST_DATA = (): QueryEditor => ({
       type: "sqlAndResult",
       sql: "SELECT * FROM 顧客マスタ WHERE CUSTOMER_NAME LIKE '%3%'",
     },
+    {
+      id: "2",
+      type: "dbTableEditor",
+      title: "顧客マスタ",
+      tableName: "顧客マスタ",
+      whereClause: "",
+    }
   ]
 })

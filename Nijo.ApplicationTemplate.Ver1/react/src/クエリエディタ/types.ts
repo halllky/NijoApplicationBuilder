@@ -35,9 +35,9 @@ export type UseQueryEditorServerApiReturn = {
   /** テーブル名一覧 */
   getTableNames: () => Promise<{ ok: true, tableNames: string[] } | { ok: false, error: string }>
   /** 更新用レコード取得 */
-  getDbRecords: (query: DbTableEditor) => Promise<{ ok: true, records: DbRecord[] } | { ok: false, error: string }>
+  getDbRecords: (query: DbTableEditor) => Promise<{ ok: true, data: GetDbRecordsReturn } | { ok: false, error: string }>
   /** レコード一括更新 */
-  batchUpdate: (records: DbRecord[]) => Promise<{ ok: true } | { ok: false, error: string }>
+  batchUpdate: (records: EditableDbRecord[]) => Promise<{ ok: true } | { ok: false, error: string }>
 }
 
 export type ExecuteQueryReturn = {
@@ -45,7 +45,12 @@ export type ExecuteQueryReturn = {
   rows: Record<string, string | null>[]
 }
 
-export type DbRecord = {
+export type GetDbRecordsReturn = {
+  columns: string[]
+  records: EditableDbRecord[]
+}
+
+export type EditableDbRecord = {
   tableName: string
   values: Record<string, string | null>
   existsInDb: boolean

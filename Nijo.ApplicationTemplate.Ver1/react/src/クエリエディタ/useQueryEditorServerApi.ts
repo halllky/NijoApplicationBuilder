@@ -1,5 +1,5 @@
 import React from "react"
-import { DbRecord, DbTableEditor, UseQueryEditorServerApiReturn } from "./types"
+import { EditableDbRecord, DbTableEditor, UseQueryEditorServerApiReturn } from "./types"
 
 const BACKEND_API = import.meta.env.VITE_BACKEND_API
 
@@ -37,13 +37,13 @@ export default function useQueryEditorServerApi(): UseQueryEditorServerApiReturn
     })
     if (response.ok) {
       const data = await response.json()
-      return { ok: true, records: data }
+      return { ok: true, data }
     } else {
       return { ok: false, error: await response.text() }
     }
   }, [])
 
-  const batchUpdate: UseQueryEditorServerApiReturn["batchUpdate"] = React.useCallback(async (records: DbRecord[]) => {
+  const batchUpdate: UseQueryEditorServerApiReturn["batchUpdate"] = React.useCallback(async (records: EditableDbRecord[]) => {
     const response = await fetch(`${BACKEND_API}api/query-editor/batch-update`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
