@@ -27,20 +27,17 @@ public class QueryEditorServerApi : ControllerBase {
             command.CommandText = sql;
 
             using var reader = await command.ExecuteReaderAsync();
-            var columns = new List<string>();
-            var rows = new List<Dictionary<string, string?>>();
 
+            // カラム名収集
+            var columns = new List<string>();
+            for (int i = 0; i < reader.FieldCount; i++) {
+                columns.Add(reader.GetName(i));
+            }
+
+            // 行データ収集
+            var rows = new List<Dictionary<string, string?>>();
             while (await reader.ReadAsync()) {
                 var row = new Dictionary<string, string?>();
-
-                // カラム名収集
-                if (columns.Count == 0) {
-                    for (int i = 0; i < reader.FieldCount; i++) {
-                        columns.Add(reader.GetName(i));
-                    }
-                }
-
-                // 行データ収集
                 for (int i = 0; i < reader.FieldCount; i++) {
                     var value = reader.GetValue(i);
                     if (value == DBNull.Value) {
@@ -94,18 +91,19 @@ public class QueryEditorServerApi : ControllerBase {
                 """;
 
             using var reader = await command.ExecuteReaderAsync();
+
+            // カラム名収集
             var columns = new List<string>();
+            for (int i = 0; i < reader.FieldCount; i++) {
+                columns.Add(reader.GetName(i));
+            }
+
+            // 行データ収集
             var records = new List<EditableDbRecord>();
             while (await reader.ReadAsync()) {
                 var record = new EditableDbRecord();
                 record.TableName = query.TableName;
                 record.ExistsInDb = true;
-
-                if (columns.Count == 0) {
-                    for (int i = 0; i < reader.FieldCount; i++) {
-                        columns.Add(reader.GetName(i));
-                    }
-                }
 
                 for (int i = 0; i < reader.FieldCount; i++) {
                     var value = reader.GetValue(i);
