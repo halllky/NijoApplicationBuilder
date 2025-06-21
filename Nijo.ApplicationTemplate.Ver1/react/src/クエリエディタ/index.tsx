@@ -135,6 +135,56 @@ const AfterReady = ({ allTableNames, defaultValues, onSave, className }: {
   })
 
   // ---------------------------------
+  // パン操作（背景ドラッグでの移動）
+  const [panOffset, setPanOffset] = React.useState({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = React.useState(false)
+  const [dragStart, setDragStart] = React.useState({ x: 0, y: 0 })
+  const [dragStartOffset, setDragStartOffset] = React.useState({ x: 0, y: 0 })
+
+  const scrollRef = React.useRef<HTMLDivElement>(null)
+  const canvasRef = React.useRef<HTMLDivElement>(null)
+  const handleMouseDown = useEvent((e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement
+    if (target === canvasRef.current || target === scrollRef.current) {
+      setIsDragging(true)
+      setDragStart({ x: e.clientX, y: e.clientY })
+      setDragStartOffset({ ...panOffset })
+      e.preventDefault()
+    }
+  })
+
+  // パン操作開始
+  React.useEffect(() => {
+    if (!isDragging) return
+
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      const deltaX = (e.clientX - dragStart.x) / zoom
+      const deltaY = (e.clientY - dragStart.y) / zoom
+      setPanOffset({
+        x: dragStartOffset.x + deltaX,
+        y: dragStartOffset.y + deltaY,
+      })
+    }
+
+    // パン操作終了
+    const handleGlobalMouseUp = () => {
+      setIsDragging(false)
+    }
+
+    document.addEventListener('mousemove', handleGlobalMouseMove)
+    document.addEventListener('mouseup', handleGlobalMouseUp)
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove)
+      document.removeEventListener('mouseup', handleGlobalMouseUp)
+    }
+  }, [isDragging, dragStart.x, dragStart.y, dragStartOffset.x, dragStartOffset.y])
+
+  const handleResetPan = useEvent(() => {
+    setPanOffset({ x: 0, y: 0 })
+  })
+
+  // ---------------------------------
   // ウィンドウの追加（クエリ）
   const handleAddQuery = useEvent(() => {
     const newQueryTitle = window.prompt("クエリのタイトルを入力してください")
@@ -180,7 +230,7 @@ const AfterReady = ({ allTableNames, defaultValues, onSave, className }: {
 
   return (
     <div
-      className={`relative flex flex-col overflow-auto resize outline-none ${className ?? ""}`}
+      className={`relative flex flex-col overflow-hidden resize outline-none ${className ?? ""}`}
       tabIndex={0} // キーボード操作を可能にする
       onKeyDown={handleKeyDown}
     >
@@ -191,44 +241,60 @@ const AfterReady = ({ allTableNames, defaultValues, onSave, className }: {
       )}
 
       {/* スクロールエリア */}
-      <div className="flex-1 relative overflow-auto bg-white border border-gray-500" style={{ zoom }}>
+      <div
+        ref={scrollRef}
+        className="flex-1 relative overflow-hidden bg-white border border-gray-500 select-none"
+        style={{
+          zoom,
+          cursor: isDragging ? 'grabbing' : 'grab',
+        }}
+        onMouseDown={handleMouseDown}
+      >
+        {/* キャンバス領域 */}
+        <div
+          ref={canvasRef}
+          className="relative w-[150vw] h-[150vh] min-w-[150vw] min-h-[150vh]"
+          style={{
+            transform: `translate(${panOffset.x}px, ${panOffset.y}px)`,
+          }}
+        >
+          {/* クエリウィンドウ、テーブル編集ウィンドウ */}
+          {fields.map((item, index) => item.type === "sqlAndResult" ? (
+            <SqlAndResultView
+              key={item.id}
+              itemIndex={index}
+              value={item}
+              onChangeDefinition={update}
+              onDeleteDefinition={handleRemoveWindow}
+              trigger={trigger}
+              zoom={zoom}
+            />
+          ) : (
+            <DbTableEditorView
+              ref={dbTableEditorsRef.current[index]}
+              key={item.id}
+              itemIndex={index}
+              value={item}
+              onChangeDefinition={update}
+              onDeleteDefinition={handleRemoveWindow}
+              allTableNames={allTableNames}
+              trigger={trigger}
+              zoom={zoom}
+            />
+          ))}
 
-        {/* クエリウィンドウ、テーブル編集ウィンドウ */}
-        {fields.map((item, index) => item.type === "sqlAndResult" ? (
-          <SqlAndResultView
-            key={item.id}
-            itemIndex={index}
-            value={item}
-            onChangeDefinition={update}
-            onDeleteDefinition={handleRemoveWindow}
-            trigger={trigger}
-            zoom={zoom}
-          />
-        ) : (
-          <DbTableEditorView
-            ref={dbTableEditorsRef.current[index]}
-            key={item.id}
-            itemIndex={index}
-            value={item}
-            onChangeDefinition={update}
-            onDeleteDefinition={handleRemoveWindow}
-            allTableNames={allTableNames}
-            trigger={trigger}
-            zoom={zoom}
-          />
-        ))}
-
-        {/* コメント */}
-        {commentFields.fields.map((comment, index) => (
-          <CommentView
-            key={comment.id}
-            commentIndex={index}
-            comment={comment}
-            onChangeComment={commentFields.update}
-            onDeleteComment={handleRemoveComment}
-            zoom={zoom}
-          />
-        ))}
+          {/* コメント */}
+          {commentFields.fields.map((comment, index) => (
+            <CommentView
+              key={comment.id}
+              commentIndex={index}
+              comment={comment}
+              onChangeComment={commentFields.update}
+              onDeleteComment={handleRemoveComment}
+              zoom={zoom}
+            />
+          ))}
+        </div>
       </div>
 
       {/* ウィンドウの追加削除 */}
@@ -247,18 +313,20 @@ const AfterReady = ({ allTableNames, defaultValues, onSave, className }: {
             追加
           </Input.IconButton>
         </div>
-        <Input.IconButton icon={Icon.PlusIcon} onClick={handleAddQuery} fill>
-          クエリ追加
-        </Input.IconButton>
-        <Input.IconButton icon={Icon.PlusIcon} onClick={handleAddComment} fill>
-          コメント追加
-        </Input.IconButton>
+        <div className="flex gap-1">
+          <Input.IconButton icon={Icon.PlusIcon} onClick={handleAddQuery} fill>
+            クエリ追加
+          </Input.IconButton>
+          <Input.IconButton icon={Icon.PlusIcon} onClick={handleAddComment} fill>
+            コメント追加
+          </Input.IconButton>
+        </div>
       </div>
 
       {/* ズーム */}
       <div className="flex flex-col absolute bottom-4 right-4">
         <div className="text-sm select-none">
-          ズーム
+          ズーム {Math.round(zoom * 100)}%
         </div>
         <div className="flex gap-1">
           <Input.IconButton icon={Icon.MinusIcon} onClick={handleZoomOut} fill hideText>
@@ -271,6 +339,10 @@ const AfterReady = ({ allTableNames, defaultValues, onSave, className }: {
             リセット
           </Input.IconButton>
         </div>
+        <div className="basis-1"></div>
+        <Input.IconButton icon={Icon.ArrowPathIcon} onClick={handleResetPan} fill>
+          位置リセット
+        </Input.IconButton>
       </div>
     </div>
   )

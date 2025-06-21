@@ -173,8 +173,8 @@ export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeD
       ...value,
       layout: {
         ...value.layout,
-        x: Math.max(0, value.layout.x + deltaX),
-        y: Math.max(0, value.layout.y + deltaY),
+        x: value.layout.x + deltaX,
+        y: value.layout.y + deltaY,
       },
     })
   })

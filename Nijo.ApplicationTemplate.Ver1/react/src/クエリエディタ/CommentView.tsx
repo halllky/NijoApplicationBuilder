@@ -24,8 +24,8 @@ export const CommentView = ({ commentIndex, comment, zoom, onChangeComment, onDe
       ...comment,
       layout: {
         ...comment.layout,
-        x: Math.max(0, comment.layout.x + deltaX),
-        y: Math.max(0, comment.layout.y + deltaY),
+        x: comment.layout.x + deltaX,
+        y: comment.layout.y + deltaY,
       },
     })
   })

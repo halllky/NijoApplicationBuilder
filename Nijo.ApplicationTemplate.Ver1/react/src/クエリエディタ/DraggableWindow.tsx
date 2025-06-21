@@ -1,6 +1,7 @@
 import * as Icon from "@heroicons/react/24/outline"
 import useEvent from "react-use-event-hook"
 import { EditorItemLayout } from "./types"
+import React from "react"
 
 /**
  * ドラッグで位置を変更できるウィンドウ
@@ -14,7 +15,13 @@ export default function DraggableWindow({ layout, children, onMove, className }:
   }) => React.ReactNode
   className?: string
 }) {
-  const handleMouseDown = useEvent((e: React.MouseEvent<SVGSVGElement>) => {
+
+  const handleMouseDown: React.MouseEventHandler<HTMLDivElement> = useEvent(e => {
+    // スクロールエリアのパン操作が発生しないようにする
+    e.stopPropagation()
+  })
+
+  const handleMouseDownInContents = useEvent((e: React.MouseEvent<SVGSVGElement>) => {
     e.preventDefault()
     e.stopPropagation()
     window.addEventListener("mousemove", onMove)
@@ -32,15 +39,16 @@ export default function DraggableWindow({ layout, children, onMove, className }:
         width: layout.width,
         height: layout.height,
       }}
+      onMouseDown={handleMouseDown}
     >
       {children({
         DragHandle: (
           <Icon.Bars3Icon
             className="mx-1 basis-4 min-w-4 h-8 text-sky-600 cursor-grab"
-            onMouseDown={handleMouseDown}
+            onMouseDown={handleMouseDownInContents}
           />
         ),
-        handleMouseDown,
+        handleMouseDown: handleMouseDownInContents,
       })}
     </div>
   )
