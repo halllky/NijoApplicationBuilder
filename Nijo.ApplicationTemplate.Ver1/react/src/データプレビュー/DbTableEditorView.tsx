@@ -213,7 +213,7 @@ export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeD
 
   return (<>
     <div className="bg-gray-200 border border-gray-300 h-full flex flex-col">
-      <div className="flex gap-1 pl-1 items-center">
+      <div className="flex gap-1 pl-1 items-center bg-gray-100">
         <span onMouseDown={handleMouseDown} className="select-none cursor-grab">
           {value.tableName}
         </span>

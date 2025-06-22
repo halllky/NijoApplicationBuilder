@@ -45,6 +45,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     getColumnDefs,
     showCheckBox,
     isReadOnly,
+    onChangeRow,
     onActiveCellChanged: propsOnActiveCellChanged,
     className
   } = props;
@@ -375,7 +376,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                 const isFixedColumn = !!headerMeta?.originalColDef?.isFixed;
                 const isRowHeader = !!headerMeta?.isRowHeader;
 
-                let className = 'flex bg-gray-200 relative text-left select-none'
+                let className = 'flex bg-gray-100 relative text-left select-none'
                 if (isRowHeader) className += ' sticky z-20'
                 else if (isFixedColumn) className += ' sticky z-10'
 
@@ -390,7 +391,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                   >
                     {isRowHeader ? (
                       <div
-                        className="flex justify-center items-center border-b border-r border-gray-300 sticky"
+                        className="flex justify-center items-center border-b border-r border-gray-200 sticky"
                         onClick={e => e.stopPropagation()}
                         style={{
                           width: header.getSize(),
@@ -408,7 +409,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                       </div>
                     ) : (
                       <div
-                        className="flex pl-1 border-b border-r border-gray-300 text-gray-700 font-normal select-none"
+                        className="flex pl-1 border-b border-r border-gray-200 text-gray-700 font-normal select-none"
                         style={{ width: header.getSize() }}
                       >
                         <span className="truncate">
@@ -466,6 +467,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
                     cell={cell}
                     rowIndex={row.index}
                     tableRef={tableRef}
+                    onChangeRow={props.onChangeRow}
                     getShouldShowCheckBox={getShouldShowCheckBox}
                     checkedRows={checkedRows}
                     handleToggleRow={handleToggleRow}
@@ -533,10 +535,26 @@ type MemorizedBodyCellProps<TRow extends ReactHookForm.FieldValues> = {
   cellEditorRef: React.RefObject<CellEditorRef<TRow> | null>,
   showHorizontalBorder: boolean | undefined,
   columnSizing: number | null | undefined,
+  onChangeRow: unknown,
 }
 
 /** メモ化されたtdセル */
-const MemorizedBodyCell = React.memo(<TRow extends ReactHookForm.FieldValues>({ cell, rowIndex, tableRef, getShouldShowCheckBox, checkedRows, handleToggleRow, handleCellClick, getIsReadOnly, isDragging, handleMouseDown, handleMouseMove, cellEditorRef, showHorizontalBorder }: MemorizedBodyCellProps<TRow>) => {
+const MemorizedBodyCell = React.memo(<TRow extends ReactHookForm.FieldValues>({
+  cell,
+  rowIndex,
+  tableRef,
+  getShouldShowCheckBox,
+  checkedRows,
+  handleToggleRow,
+  handleCellClick,
+  getIsReadOnly,
+  isDragging,
+  handleMouseDown,
+  handleMouseMove,
+  cellEditorRef,
+  showHorizontalBorder,
+  ...props
+}: MemorizedBodyCellProps<TRow>) => {
 
   // 行ヘッダー列を除いた可視列の配列を取得し、その中でのインデックスを colIndex とする
   const cellMeta = cell.column.columnDef.meta as ColumnMetadataInternal<TRow> | undefined;
@@ -546,11 +564,11 @@ const MemorizedBodyCell = React.memo(<TRow extends ReactHookForm.FieldValues>({ 
     return (
       <td
         key={cell.id}
-        className="flex bg-gray-200 align-middle text-center sticky left-0"
+        className="flex bg-gray-100 align-middle text-center sticky left-0"
         style={{ width: cell.column.getSize() }}
       >
         <div
-          className="h-full flex justify-center items-center border-r border-gray-300"
+          className="h-full flex justify-center items-center border-r border-gray-200"
           style={{ width: cell.column.getSize(), height: ESTIMATED_ROW_HEIGHT }}
         >
           {getShouldShowCheckBox(rowIndex) && (
@@ -567,12 +585,21 @@ const MemorizedBodyCell = React.memo(<TRow extends ReactHookForm.FieldValues>({ 
   }
 
   // データ列
-  let dataColumnClassName = 'flex outline-none align-middle bg-white'
+  let dataColumnClassName = 'flex outline-none align-middle'
 
-  if (cellMeta?.originalColDef?.isFixed) dataColumnClassName += ` sticky` // z-indexをつけるとボディ列が列ヘッダより手前にきてしまうので設定しない
+  if (props.onChangeRow !== undefined
+    && (cellMeta?.originalColDef?.isReadOnly === undefined
+      || cellMeta?.originalColDef?.isReadOnly === false
+      || typeof cellMeta?.originalColDef?.isReadOnly === 'function'
+      && cellMeta.originalColDef.isReadOnly(cell.row.original, cell.row.index) === false)) {
+    dataColumnClassName += ` bg-white`
+  }
+
+  // z-indexをつけるとボディ列が列ヘッダより手前にきてしまうので設定しない
+  if (cellMeta?.originalColDef?.isFixed) dataColumnClassName += ` sticky`
 
   // 画面側でレンダリング処理が決められている場合はそれを使用、決まっていないなら単にtoString
-  const renderCell = (cell.column.columnDef.meta as ColumnMetadataInternal<TRow>)?.originalColDef?.renderCell
+  const renderCell = cellMeta?.originalColDef?.renderCell
 
   return (
     <td
