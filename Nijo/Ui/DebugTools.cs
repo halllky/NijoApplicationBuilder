@@ -37,9 +37,11 @@ internal class DebugTools {
 
         app.MapGet("/debug-state", DebugState);
 
-        app.MapPost("/start-debugging", StartDebugging);
+        app.MapPost("/start-npm-debugging", StartNpmDebugging);
+        app.MapPost("/stop-npm-debugging", StopNpmDebugging);
 
-        app.MapPost("/stop-debugging", StopDebugging);
+        app.MapPost("/start-dotnet-debugging", StartDotnetDebugging);
+        app.MapPost("/stop-dotnet-debugging", StopDotnetDebugging);
     }
 
     /// <summary>
@@ -52,9 +54,19 @@ internal class DebugTools {
     }
 
     /// <summary>
-    /// デバッグを別プロセスで開始する。
+    /// npm run devを別プロセスで開始する。既に開始されている場合は何もしない。
     /// </summary>
-    private async Task StartDebugging(HttpContext context) {
+    private async Task StartNpmDebugging(HttpContext context) {
+        var state = await CheckDebugState();
+
+        // 既に起動している場合は何もしない
+        if (state.EstimatedPidOfNodeJs != null) {
+            state.ConsoleOut += "npm run devは既に起動済みです。\n";
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(state, context.RequestAborted);
+            return;
+        }
+
         var errorSummary = new StringBuilder();
         var consoleOut = new StringBuilder();
 
@@ -64,12 +76,8 @@ internal class DebugTools {
         var workDir = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "temp"));
         var npmCmdFile = Path.Combine(workDir, "npm-run-dev.cmd");
         var npmLogFile = Path.Combine(workDir, "npm-run-dev.log");
-        var dotnetCmdFile = Path.Combine(workDir, "dotnet-run.cmd");
-        var dotnetLogFile = Path.Combine(workDir, "dotnet-run.log");
 
         Directory.CreateDirectory(workDir);
-
-        // ----------------------------
 
         consoleOut.AppendLine($"npm run devの作業ディレクトリ: {npmRunDir}");
 
@@ -91,6 +99,80 @@ internal class DebugTools {
 
         consoleOut.AppendLine($"npmプロセス開始用のcmdファイルを作成しました: {npmCmdFile}");
 
+        // cmdファイルをUseShellExecute=trueで実行
+        Process? npmRun;
+        try {
+            var startInfo = new ProcessStartInfo {
+                FileName = Path.GetFullPath(npmCmdFile),
+                UseShellExecute = true, // viteは UseShellExecute で実行しないとまともに動かない
+                WindowStyle = ProcessWindowStyle.Hidden,
+                WorkingDirectory = npmRunDir,
+            };
+
+            consoleOut.AppendLine($"npmプロセスを起動します: {npmCmdFile}");
+            npmRun = Process.Start(startInfo);
+
+            if (npmRun == null) {
+                throw new InvalidOperationException($"[ERROR] npmプロセスの起動に失敗しました。Process.Startがnullを返しました。");
+            }
+
+            consoleOut.AppendLine($"npmプロセスを起動しました (PID: {npmRun.Id})");
+        } catch (Exception ex) {
+            var errorState = await CheckDebugState();
+            errorState.ErrorSummary = $"npmプロセスの起動中に例外が発生しました: {ex.Message}";
+            errorState.ConsoleOut += consoleOut.ToString();
+
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(errorState, context.RequestAborted);
+            return;
+        }
+
+        // 開始されるまで一定時間待つ
+        var timeout = DateTime.Now.AddSeconds(10);
+        while (true) {
+            var currentState = await CheckDebugState();
+            if (currentState.EstimatedPidOfNodeJs != null) {
+                break;
+            }
+            if (DateTime.Now > timeout) {
+                errorSummary.AppendLine("一定時間経過しましたがnpmプロセスが起動しませんでした。");
+                break;
+            }
+            await Task.Delay(500);
+        }
+
+        // 起動し終わったのでpidを調べてクライアントに結果を返す
+        var stateAfterLaunch = await CheckDebugState();
+        stateAfterLaunch.ErrorSummary = errorSummary.ToString();
+        stateAfterLaunch.ConsoleOut += consoleOut.ToString();
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(stateAfterLaunch, context.RequestAborted);
+    }
+
+    /// <summary>
+    /// dotnet runを別プロセスで開始する。既に開始されている場合は何もしない。
+    /// </summary>
+    private async Task StartDotnetDebugging(HttpContext context) {
+        var state = await CheckDebugState();
+
+        // 既に起動している場合は何もしない
+        if (state.EstimatedPidOfAspNetCore != null) {
+            state.ConsoleOut += "dotnet runは既に起動済みです。\n";
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(state, context.RequestAborted);
+            return;
+        }
+
+        var errorSummary = new StringBuilder();
+        var consoleOut = new StringBuilder();
+
+        // 一時ファイル
+        var workDir = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "temp"));
+        var dotnetCmdFile = Path.Combine(workDir, "dotnet-run.cmd");
+        var dotnetLogFile = Path.Combine(workDir, "dotnet-run.log");
+
+        Directory.CreateDirectory(workDir);
+
         // dotnet runをcmdを介して実行するスクリプトを作成
         var dotnetRunDir = _project.WebapiProjectRoot;
         consoleOut.AppendLine($"dotnet runの作業ディレクトリ: {dotnetRunDir}");
@@ -111,35 +193,7 @@ internal class DebugTools {
 
         consoleOut.AppendLine($"dotnetプロセス開始用のcmdファイルを作成しました: {dotnetCmdFile}");
 
-        // cmdファイルをUseShellExecute=trueで実行
-        Process? npmRun;
-        try {
-            var startInfo = new ProcessStartInfo {
-                FileName = Path.GetFullPath(npmCmdFile),
-                UseShellExecute = true, // viteは UseShellExecute で実行しないとまともに動かない
-                WindowStyle = ProcessWindowStyle.Hidden,
-                WorkingDirectory = npmRunDir,
-            };
-
-            consoleOut.AppendLine($"npmプロセスを起動します: {npmCmdFile}");
-            npmRun = Process.Start(startInfo);
-
-            if (npmRun == null) {
-                throw new InvalidOperationException($"[ERROR] npmプロセスの起動に失敗しました。Process.Startがnullを返しました。");
-            }
-
-            consoleOut.AppendLine($"npmプロセスを起動しました (PID: {npmRun.Id})");
-        } catch (Exception ex) {
-            var state = await CheckDebugState();
-            state.ErrorSummary = $"npmプロセスの起動中に例外が発生しました: {ex.Message}";
-            state.ConsoleOut += consoleOut.ToString();
-
-            context.Response.ContentType = "application/json";
-            await context.Response.WriteAsJsonAsync(state, context.RequestAborted);
-            return;
-        }
-
-        // dotnet runもcmdファイルをUseShellExecute=trueで実行
+        // dotnet runをcmdファイルをUseShellExecute=trueで実行
         Process? dotnetRun;
         try {
             var startInfo = new ProcessStartInfo {
@@ -158,24 +212,24 @@ internal class DebugTools {
 
             consoleOut.AppendLine($"dotnetプロセスを起動しました (PID: {dotnetRun.Id})");
         } catch (Exception ex) {
-            var state = await CheckDebugState();
-            state.ErrorSummary = $"dotnetプロセスの起動中に例外が発生しました: {ex.Message}";
-            state.ConsoleOut += consoleOut.ToString();
+            var errorState = await CheckDebugState();
+            errorState.ErrorSummary = $"dotnetプロセスの起動中に例外が発生しました: {ex.Message}";
+            errorState.ConsoleOut += consoleOut.ToString();
 
             context.Response.ContentType = "application/json";
-            await context.Response.WriteAsJsonAsync(state, context.RequestAborted);
+            await context.Response.WriteAsJsonAsync(errorState, context.RequestAborted);
             return;
         }
 
         // 開始されるまで一定時間待つ
         var timeout = DateTime.Now.AddSeconds(10);
         while (true) {
-            var state = await CheckDebugState();
-            if (state.EstimatedPidOfNodeJs != null && state.EstimatedPidOfAspNetCore != null) {
+            var currentState = await CheckDebugState();
+            if (currentState.EstimatedPidOfAspNetCore != null) {
                 break;
             }
             if (DateTime.Now > timeout) {
-                errorSummary.AppendLine("一定時間経過しましたがデバッグプロセスが起動しませんでした。");
+                errorSummary.AppendLine("一定時間経過しましたがdotnetプロセスが起動しませんでした。");
                 break;
             }
             await Task.Delay(500);
@@ -183,14 +237,16 @@ internal class DebugTools {
 
         // 起動し終わったのでpidを調べてクライアントに結果を返す
         var stateAfterLaunch = await CheckDebugState();
+        stateAfterLaunch.ErrorSummary = errorSummary.ToString();
+        stateAfterLaunch.ConsoleOut += consoleOut.ToString();
         context.Response.ContentType = "application/json";
         await context.Response.WriteAsJsonAsync(stateAfterLaunch, context.RequestAborted);
     }
 
     /// <summary>
-    /// taskkillでデバッグを止める
+    /// taskkillでnpmデバッグを止める
     /// </summary>
-    private async Task StopDebugging(HttpContext context) {
+    private async Task StopNpmDebugging(HttpContext context) {
         var errorSummary = new StringBuilder();
         var consoleOut = new StringBuilder();
         var stateBeforeKill = await CheckDebugState();
@@ -216,7 +272,25 @@ internal class DebugTools {
                     errorSummary.AppendLine($"node.exeのtaskkillの終了コードが0ではありません。終了コード: {exitCode}");
                 }
             }
+        } else {
+            consoleOut.AppendLine("npm デバッグプロセスが見つかりませんでした。");
         }
+
+        var stateAfterKill = await CheckDebugState();
+        stateAfterKill.ErrorSummary = errorSummary.ToString();
+        stateAfterKill.ConsoleOut += consoleOut.ToString();
+
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(stateAfterKill, context.RequestAborted);
+    }
+
+    /// <summary>
+    /// taskkillでdotnetデバッグを止める
+    /// </summary>
+    private async Task StopDotnetDebugging(HttpContext context) {
+        var errorSummary = new StringBuilder();
+        var consoleOut = new StringBuilder();
+        var stateBeforeKill = await CheckDebugState();
 
         // ASP.NET Core のプロセスを止める
         if (stateBeforeKill.EstimatedPidOfAspNetCore != null) {
@@ -239,6 +313,8 @@ internal class DebugTools {
                     errorSummary.AppendLine($"WebApi.exeのtaskkillの終了コードが0ではありません。終了コード: {exitCode}");
                 }
             }
+        } else {
+            consoleOut.AppendLine("dotnet デバッグプロセスが見つかりませんでした。");
         }
 
         var stateAfterKill = await CheckDebugState();

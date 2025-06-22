@@ -122,6 +122,10 @@ export const NijoUiTopPage = () => {
           ソースコード自動生成設定
         </MenuItem>
 
+        <MenuItem icon={Icon.PlayCircleIcon} link={getNavigationUrl({ page: 'debug-menu' })}>
+          デバッグメニュー
+        </MenuItem>
+
         <MenuItem icon={Icon.Cog6ToothIcon} onClick={handleClickPersonalSettings}>
           個人設定
         </MenuItem>

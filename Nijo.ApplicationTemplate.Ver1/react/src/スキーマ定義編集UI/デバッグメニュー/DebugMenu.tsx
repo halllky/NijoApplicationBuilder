@@ -52,11 +52,11 @@ export const NijoUiDebugMenu = () => {
     fetchDebugState()
   }, [])
 
-  const [startDebuggingProcessing, setStartDebuggingProcessing] = useState(false)
-  const startDebugging = useEvent(async () => {
+  const [startNpmDebuggingProcessing, setStartNpmDebuggingProcessing] = useState(false)
+  const startNpmDebugging = useEvent(async () => {
     if (anyCommandProcessing) return
-    setStartDebuggingProcessing(true)
-    const response = await fetch(`${SERVER_DOMAIN}/start-debugging`, {
+    setStartNpmDebuggingProcessing(true)
+    const response = await fetch(`${SERVER_DOMAIN}/start-npm-debugging`, {
       method: 'POST',
     })
     if (!response.ok) {
@@ -64,14 +64,29 @@ export const NijoUiDebugMenu = () => {
     }
     const data: DebugProcessState = await response.json()
     setDebugState(data)
-    setStartDebuggingProcessing(false)
+    setStartNpmDebuggingProcessing(false)
   })
 
-  const [stopDebuggingProcessing, setStopDebuggingProcessing] = useState(false)
-  const stopDebugging = useEvent(async () => {
+  const [startDotnetDebuggingProcessing, setStartDotnetDebuggingProcessing] = useState(false)
+  const startDotnetDebugging = useEvent(async () => {
     if (anyCommandProcessing) return
-    setStopDebuggingProcessing(true)
-    const response = await fetch(`${SERVER_DOMAIN}/stop-debugging`, {
+    setStartDotnetDebuggingProcessing(true)
+    const response = await fetch(`${SERVER_DOMAIN}/start-dotnet-debugging`, {
+      method: 'POST',
+    })
+    if (!response.ok) {
+      throw new Error('Failed to start debugging')
+    }
+    const data: DebugProcessState = await response.json()
+    setDebugState(data)
+    setStartDotnetDebuggingProcessing(false)
+  })
+
+  const [stopNpmDebuggingProcessing, setStopNpmDebuggingProcessing] = useState(false)
+  const stopNpmDebugging = useEvent(async () => {
+    if (anyCommandProcessing) return
+    setStopNpmDebuggingProcessing(true)
+    const response = await fetch(`${SERVER_DOMAIN}/stop-npm-debugging`, {
       method: 'POST',
     })
     if (!response.ok) {
@@ -79,7 +94,22 @@ export const NijoUiDebugMenu = () => {
     }
     const data: DebugProcessState = await response.json()
     setDebugState(data)
-    setStopDebuggingProcessing(false)
+    setStopNpmDebuggingProcessing(false)
+  })
+
+  const [stopDotnetDebuggingProcessing, setStopDotnetDebuggingProcessing] = useState(false)
+  const stopDotnetDebugging = useEvent(async () => {
+    if (anyCommandProcessing) return
+    setStopDotnetDebuggingProcessing(true)
+    const response = await fetch(`${SERVER_DOMAIN}/stop-dotnet-debugging`, {
+      method: 'POST',
+    })
+    if (!response.ok) {
+      throw new Error('Failed to stop debugging')
+    }
+    const data: DebugProcessState = await response.json()
+    setDebugState(data)
+    setStopDotnetDebuggingProcessing(false)
   })
 
   const [regenerateProcessing, setRegenerateProcessing] = useState(false)
@@ -131,7 +161,12 @@ export const NijoUiDebugMenu = () => {
     }
   })
 
-  const anyCommandProcessing = loading || startDebuggingProcessing || stopDebuggingProcessing || regenerateProcessing
+  const anyCommandProcessing = loading
+    || startNpmDebuggingProcessing
+    || stopNpmDebuggingProcessing
+    || startDotnetDebuggingProcessing
+    || stopDotnetDebuggingProcessing
+    || regenerateProcessing
 
   const debugProcessIsRunning
     = debugState?.estimatedPidOfNodeJs !== undefined
@@ -159,12 +194,6 @@ export const NijoUiDebugMenu = () => {
         <div className="basis-4" />
         <Input.IconButton icon={Icon.ArrowPathIcon} onClick={fetchDebugState} loading={anyCommandProcessing} outline mini>
           再読み込み
-        </Input.IconButton>
-        <Input.IconButton icon={Icon.StopIcon} onClick={stopDebugging} loading={anyCommandProcessing} fill mini>
-          停止
-        </Input.IconButton>
-        <Input.IconButton icon={Icon.PlayIcon} onClick={startDebugging} loading={anyCommandProcessing} fill mini>
-          開始
         </Input.IconButton>
         <Input.IconButton icon={Icon.ArrowPathIcon} onClick={regenerateCode} loading={anyCommandProcessing} fill mini>
           再生成
@@ -201,13 +230,24 @@ export const NijoUiDebugMenu = () => {
             <thead>
               <tr className="border-b border-gray-300 bg-gray-200">
                 <th className="w-40 text-left"></th>
-                <th className="w-56 text-left">URL設定</th>
+                <th className="w-36 text-left">操作</th>
+                <th className="w-56 text-left">URL</th>
                 <th className="text-left">状態</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td className=" py-1">Node.js プロセス</td>
+                <td>
+                  <div className="flex gap-1">
+                    <Input.IconButton icon={Icon.StopIcon} onClick={stopNpmDebugging} loading={anyCommandProcessing} outline mini>
+                      停止
+                    </Input.IconButton>
+                    <Input.IconButton icon={Icon.PlayIcon} onClick={startNpmDebugging} loading={anyCommandProcessing} outline mini>
+                      開始
+                    </Input.IconButton>
+                  </div>
+                </td>
                 <td className="">
                   <LinkText url={debugState.nodeJsDebugUrl}>
                     {debugState.nodeJsDebugUrl}
@@ -222,6 +262,16 @@ export const NijoUiDebugMenu = () => {
               </tr>
               <tr>
                 <td className="py-1">ASP.NET Core プロセス</td>
+                <td>
+                  <div className="flex gap-1">
+                    <Input.IconButton icon={Icon.StopIcon} onClick={stopDotnetDebugging} loading={anyCommandProcessing} outline mini>
+                      停止
+                    </Input.IconButton>
+                    <Input.IconButton icon={Icon.PlayIcon} onClick={startDotnetDebugging} loading={anyCommandProcessing} outline mini>
+                      開始
+                    </Input.IconButton>
+                  </div>
+                </td>
                 <td className="">
                   <LinkText url={debugState.aspNetCoreDebugUrl}>
                     {debugState.aspNetCoreDebugUrl}
