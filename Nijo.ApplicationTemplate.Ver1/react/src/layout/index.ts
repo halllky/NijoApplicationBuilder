@@ -1,3 +1,4 @@
+export * from "./DiagramView"
 export * from "./EditableGrid"
 export * from "./EditableGrid/types"
 export * from "./EditableGrid/useCellTypes"
