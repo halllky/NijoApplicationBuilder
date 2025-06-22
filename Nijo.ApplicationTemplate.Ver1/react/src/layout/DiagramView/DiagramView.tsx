@@ -31,13 +31,48 @@ export default function DiagramView<T extends DiagramItem>({
     handleMouseDown,
   } = usePanAndZoom()
 
+  // ドラッグ開始時のオフセットを保存するためのRef
+  const dragOffsetRef = React.useRef<{ x: number; y: number } | null>(null)
+
+  // ドラッグ開始時の処理
+  const handleItemDragStart = useEvent((itemIndex: number, e: React.MouseEvent) => {
+    const item = items[itemIndex]
+    const containerRect = scrollRef.current?.getBoundingClientRect()
+    if (!containerRect) return
+
+    // コンテナ内の相対座標を計算
+    const relativeX = e.clientX - containerRect.left
+    const relativeY = e.clientY - containerRect.top
+
+    // 要素の現在位置（ズームとパンを考慮）
+    const elementX = (item.layout.x + panOffset.x) * zoom
+    const elementY = (item.layout.y + panOffset.y) * zoom
+
+    // ドラッグ開始時の要素内でのオフセットを記録
+    dragOffsetRef.current = {
+      x: relativeX - elementX,
+      y: relativeY - elementY,
+    }
+  })
+
   // アイテムの移動処理
   const handleItemMove = useEvent((itemIndex: number, e: MouseEvent) => {
     const item = items[itemIndex]
+    const dragOffset = dragOffsetRef.current
+
+    // DiagramViewコンテナの位置を取得
+    const containerRect = scrollRef.current?.getBoundingClientRect()
+    if (!containerRect || !dragOffset) return
+
+    // コンテナ内の相対座標を計算
+    const relativeX = e.clientX - containerRect.left
+    const relativeY = e.clientY - containerRect.top
+
+    // ドラッグオフセットを考慮した要素の位置を計算
     const newLayout: DiagramItemLayout = {
       ...item.layout,
-      x: e.clientX / zoom - panOffset.x,
-      y: e.clientY / zoom - panOffset.y,
+      x: (relativeX - dragOffset.x) / zoom - panOffset.x,
+      y: (relativeY - dragOffset.y) / zoom - panOffset.y,
     }
     onUpdateItem(itemIndex, { ...item, layout: newLayout } as T)
   })
@@ -91,7 +126,10 @@ export default function DiagramView<T extends DiagramItem>({
                   },
                   onRemove: () => onRemoveItem(index),
                   zoom,
-                  handleMouseDown,
+                  handleMouseDown: (e: React.MouseEvent) => {
+                    handleItemDragStart(index, e)
+                    handleMouseDown(e)
+                  },
                 })
               }
             </DraggableWindow>
