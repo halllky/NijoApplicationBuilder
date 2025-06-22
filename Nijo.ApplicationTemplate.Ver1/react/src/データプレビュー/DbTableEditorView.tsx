@@ -11,7 +11,7 @@ export type DbTableEditorViewRef = {
   getCurrentRecords: () => EditableDbRecord[]
 }
 
-export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeDefinition, onDeleteDefinition, tableMetadata, trigger, zoom, DragHandle }: {
+export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeDefinition, onDeleteDefinition, tableMetadata, trigger, zoom, handleMouseDown }: {
   itemIndex: number
   value: DbTableEditor
   onChangeDefinition: (index: number, value: DbTableEditor) => void
@@ -19,7 +19,7 @@ export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeD
   tableMetadata: DbTableMetadata[]
   trigger: ReloadTrigger
   zoom: number
-  DragHandle?: React.ReactNode
+  handleMouseDown: React.MouseEventHandler<Element>
 }, ref: React.ForwardedRef<DbTableEditorViewRef>) => {
 
   // ---------------------------------
@@ -214,14 +214,13 @@ export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeD
   return (<>
     <div className="bg-gray-200 border border-gray-300 h-full flex flex-col">
       <div className="flex gap-1 pl-1 items-center">
-        {DragHandle}
-        <span className="select-none">
+        <span onMouseDown={handleMouseDown} className="select-none cursor-grab">
           {value.tableName}
         </span>
         <Input.IconButton icon={Icon.PencilIcon} hideText onClick={handleChangeTitle} onMouseDown={handleMouseDownButtons}>
           名前を変更
         </Input.IconButton>
-        <div className="flex-1"></div>
+        <div onMouseDown={handleMouseDown} className="flex-1 self-stretch cursor-grab"></div>
 
         {!error && (
           <>

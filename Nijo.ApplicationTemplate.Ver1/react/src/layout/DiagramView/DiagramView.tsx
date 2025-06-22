@@ -84,14 +84,13 @@ export default function DiagramView<T extends DiagramItem>({
               onMove={(e: MouseEvent) => handleItemMove(index, e)}
               onResize={(width: number, height: number) => handleItemResize(index, width, height)}
             >
-              {({ DragHandle, handleMouseDown }) =>
+              {({ handleMouseDown }) =>
                 renderItem(item, index, {
                   onUpdateLayout: (layout: DiagramItemLayout) => {
                     onUpdateItem(index, { ...item, layout } as T)
                   },
                   onRemove: () => onRemoveItem(index),
                   zoom,
-                  DragHandle,
                   handleMouseDown,
                 })
               }

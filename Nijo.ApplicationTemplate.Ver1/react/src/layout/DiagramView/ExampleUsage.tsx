@@ -65,16 +65,17 @@ export default function ExampleUsage() {
     setItems([...items, newItem])
   }
 
-  const renderItem = (item: ExampleItem, index: number, { onRemove, zoom, DragHandle }: {
+  const renderItem = (item: ExampleItem, index: number, { onRemove, zoom, handleMouseDown }: {
     onUpdateLayout: (layout: any) => void
     onRemove: () => void
     zoom: number
-    DragHandle: React.ReactNode
     handleMouseDown: React.MouseEventHandler<Element>
   }) => (
     <div className={`border rounded shadow-md ${item.color}`}>
-      <div className="flex items-center bg-gray-50 p-2 rounded-t border-b">
-        {DragHandle}
+      <div
+        className="flex items-center bg-gray-50 p-2 rounded-t border-b cursor-grab"
+        onMouseDown={handleMouseDown}
+      >
         <h3 className="font-bold flex-1 text-sm">{item.title}</h3>
         <button
           onClick={onRemove}
@@ -114,7 +115,7 @@ export default function ExampleUsage() {
         </button>
         <div className="bg-white border rounded p-2 text-xs text-gray-600">
           <div className="font-bold mb-1">操作方法:</div>
-          <div>• ハンドル部分をドラッグして移動</div>
+          <div>• タイトルバーをドラッグして移動</div>
           <div>• 端をドラッグしてリサイズ</div>
           <div>• 背景をドラッグしてパン</div>
           <div>• 右下でズーム操作</div>

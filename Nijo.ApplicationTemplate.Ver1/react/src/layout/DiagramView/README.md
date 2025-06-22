@@ -43,10 +43,9 @@ function MyDiagramComponent() {
     setItems(newItems)
   }
 
-  const renderItem = (item: MyItem, index: number, { onRemove, zoom, DragHandle }) => (
+  const renderItem = (item: MyItem, index: number, { onRemove, zoom, handleMouseDown }) => (
     <div className="bg-white border rounded shadow-md">
-      <div className="flex items-center bg-gray-100 p-2 rounded-t">
-        {DragHandle}
+      <div onMouseDown={handleMouseDown} className="flex items-center bg-gray-100 p-2 rounded-t">
         <h3 className="font-bold flex-1">{item.title}</h3>
         <button onClick={onRemove} className="text-red-500">×</button>
       </div>
@@ -105,7 +104,6 @@ interface DiagramViewProps<T extends DiagramItem> {
     onUpdateLayout: (layout: DiagramItemLayout) => void
     onRemove: () => void
     zoom: number
-    DragHandle: React.ReactNode
     handleMouseDown: React.MouseEventHandler<Element>
   }) => React.ReactNode
   className?: string

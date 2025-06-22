@@ -10,14 +10,14 @@ import { SqlTextarea } from "./SqlTextarea"
  * GUI上でSQLを入力して、結果を表示するコンポーネント。
  * レコードの編集はできない。
  */
-export default function SqlAndResultView({ itemIndex, value, onChangeDefinition, onDeleteDefinition, trigger, zoom, DragHandle }: {
+export default function SqlAndResultView({ itemIndex, value, onChangeDefinition, onDeleteDefinition, trigger, zoom, handleMouseDown }: {
   itemIndex: number
   value: SqlAndResult
   onChangeDefinition: (index: number, value: SqlAndResult) => void
   onDeleteDefinition: (index: number) => void
   trigger: ReloadTrigger
   zoom: number
-  DragHandle?: React.ReactNode
+  handleMouseDown: React.MouseEventHandler<Element>
 }) {
 
   // ---------------------------------
@@ -89,14 +89,13 @@ export default function SqlAndResultView({ itemIndex, value, onChangeDefinition,
   return (
     <div className="bg-gray-200 border border-gray-300 h-full flex flex-col">
       <div className="flex gap-1 pl-1 py-[2px] items-center">
-        {DragHandle}
-        <span className="select-none">
+        <span onMouseDown={handleMouseDown} className="select-none cursor-grab">
           {value.title}
         </span>
         <Input.IconButton icon={Icon.PencilIcon} hideText onClick={handleChangeTitle} onMouseDown={handleMouseDownButtons}>
           名前を変更
         </Input.IconButton>
-        <div className="flex-1"></div>
+        <div onMouseDown={handleMouseDown} className="flex-1 self-stretch cursor-grab"></div>
 
         <Input.IconButton
           icon={value.isSettingCollapsed ? Icon.ChevronUpIcon : Icon.ChevronDownIcon}

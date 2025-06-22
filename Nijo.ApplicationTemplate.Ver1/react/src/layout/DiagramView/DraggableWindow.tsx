@@ -1,4 +1,3 @@
-import * as Icon from "@heroicons/react/24/outline"
 import useEvent from "react-use-event-hook"
 import { DraggableWindowProps } from "./types"
 import React from "react"
@@ -62,12 +61,6 @@ export default function DraggableWindow({
       onMouseDown={handleMouseDown}
     >
       {children({
-        DragHandle: (
-          <Icon.Bars3Icon
-            className="mx-1 basis-4 min-w-4 h-8 text-sky-600 cursor-grab"
-            onMouseDown={handleMouseDownInContents}
-          />
-        ),
         handleMouseDown: handleMouseDownInContents,
       })}
     </div>

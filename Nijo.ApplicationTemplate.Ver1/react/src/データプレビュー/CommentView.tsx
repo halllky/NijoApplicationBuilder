@@ -1,6 +1,5 @@
 import * as Input from "../input"
 import * as Icon from "@heroicons/react/24/outline"
-import { SqlTextarea } from "./SqlTextarea"
 import { Comment } from "./types"
 import useEvent from "react-use-event-hook"
 
@@ -8,13 +7,13 @@ import useEvent from "react-use-event-hook"
  * コメントを表示するコンポーネント。
  * コメントは、テキストエリアで入力できる。
  */
-export const CommentView = ({ commentIndex, comment, zoom, onChangeComment, onDeleteComment, DragHandle }: {
+export const CommentView = ({ commentIndex, comment, zoom, onChangeComment, onDeleteComment, handleMouseDown }: {
   commentIndex: number
   comment: Comment
   zoom: number
   onChangeComment: (index: number, comment: Comment) => void
   onDeleteComment: (index: number) => void
-  DragHandle?: React.ReactNode
+  handleMouseDown: React.MouseEventHandler<Element>
 }) => {
 
   const handleChangeContent = useEvent((e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -34,8 +33,7 @@ export const CommentView = ({ commentIndex, comment, zoom, onChangeComment, onDe
   return (
     <div className="bg-sky-100 border border-sky-200 flex flex-col h-full">
       <div className="flex gap-1 items-center bg-sky-200">
-        {DragHandle}
-        <div className="flex-1"></div>
+        <div onMouseDown={handleMouseDown} className="flex-1 self-stretch cursor-grab"></div>
         <Input.IconButton icon={Icon.XMarkIcon} hideText onClick={handleDeleteWindow} onMouseDown={handleMouseDownDeleteButton}>
           削除
         </Input.IconButton>

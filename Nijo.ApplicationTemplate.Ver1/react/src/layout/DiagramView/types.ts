@@ -34,7 +34,6 @@ export interface DraggableWindowProps {
   onMove: (e: MouseEvent) => void
   onResize?: (width: number, height: number) => void
   children: (props: {
-    DragHandle: React.ReactNode
     handleMouseDown: React.MouseEventHandler<Element>
   }) => React.ReactNode
   className?: string
@@ -49,7 +48,6 @@ export interface DiagramViewProps<T extends DiagramItem> {
     onUpdateLayout: (layout: DiagramItemLayout) => void
     onRemove: () => void
     zoom: number
-    DragHandle: React.ReactNode
     handleMouseDown: React.MouseEventHandler<Element>
   }) => React.ReactNode
   className?: string

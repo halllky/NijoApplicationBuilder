@@ -11,6 +11,7 @@ import useQueryEditorServerApi, { QueryEditorServerApiContext } from "./useQuery
 import useEvent from "react-use-event-hook"
 import { UUID } from "uuidjs"
 import { CommentView } from "./CommentView"
+import { DiagramItemLayout } from "../layout/DiagramView/types"
 
 export type QueryEditorProps = {
   /** データ操作対象のバックエンドのURL */
@@ -78,12 +79,12 @@ export default function ({ backendUrl, className }: QueryEditorProps) {
 
   return (
     <QueryEditorServerApiContext.Provider value={backendUrl}>
-    <AfterReady
-      tableMetadata={tableMetadata}
-      defaultValues={defaultValues}
-      onSave={handleSave}
-      className={className}
-    />
+      <AfterReady
+        tableMetadata={tableMetadata}
+        defaultValues={defaultValues}
+        onSave={handleSave}
+        className={className}
+      />
     </QueryEditorServerApiContext.Provider>
   )
 }
@@ -176,13 +177,13 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
       if (commentIndex >= 0) {
         if (!window.confirm(`コメントを削除しますか？`)) return
         commentFields.remove(commentIndex)
-    }
+      }
     } else {
       const itemIndex = fields.findIndex(f => f.id === item.id)
       if (itemIndex >= 0) {
         if (!window.confirm(`${item.title}を削除しますか？`)) return
         remove(itemIndex)
-    }
+      }
     }
   })
 
@@ -205,11 +206,10 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
 
   // ---------------------------------
   // DiagramView用のrenderItem関数
-  const renderDiagramItem = React.useCallback((item: QueryEditorDiagramItem, index: number, { zoom, DragHandle }: {
-    onUpdateLayout: (layout: any) => void
+  const renderDiagramItem = React.useCallback((item: QueryEditorDiagramItem, index: number, { zoom, handleMouseDown }: {
+    onUpdateLayout: (layout: DiagramItemLayout) => void
     onRemove: () => void
     zoom: number
-    DragHandle: React.ReactNode
     handleMouseDown: React.MouseEventHandler<Element>
   }) => {
     if (item.type === "comment") {
@@ -224,7 +224,7 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
           }}
           onDeleteComment={() => handleRemoveDiagramItem(index)}
           zoom={zoom}
-          DragHandle={DragHandle}
+          handleMouseDown={handleMouseDown}
         />
       )
     } else if (item.type === "sqlAndResult") {
@@ -237,7 +237,7 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
           onDeleteDefinition={() => handleRemoveDiagramItem(index)}
           trigger={trigger}
           zoom={zoom}
-          DragHandle={DragHandle}
+          handleMouseDown={handleMouseDown}
         />
       )
     } else {
@@ -253,7 +253,7 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
           tableMetadata={tableMetadata}
           trigger={trigger}
           zoom={zoom}
-          DragHandle={DragHandle}
+          handleMouseDown={handleMouseDown}
         />
       )
     }
@@ -292,32 +292,32 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
         onRemoveItem={handleRemoveDiagramItem}
         renderItem={renderDiagramItem}
         className="flex-1"
-        >
-      {/* ウィンドウの追加削除 */}
-      <div className="absolute top-4 right-4 flex flex-col gap-1 items-end">
-        <div className="flex gap-1">
-          <select
-            value={newTableName}
-            onChange={handleChangeNewTableName}
-            className="flex-1 bg-white border border-gray-500"
-          >
-            {tableMetadata.map(table => (
-              <option key={table.tableName} value={table.tableName}>{table.tableName}</option>
-            ))}
-          </select>
-          <Input.IconButton onClick={handleAddTableEditor} fill>
-            追加
-          </Input.IconButton>
+      >
+        {/* ウィンドウの追加削除 */}
+        <div className="absolute top-4 right-4 flex flex-col gap-1 items-end">
+          <div className="flex gap-1">
+            <select
+              value={newTableName}
+              onChange={handleChangeNewTableName}
+              className="flex-1 bg-white border border-gray-500"
+            >
+              {tableMetadata.map(table => (
+                <option key={table.tableName} value={table.tableName}>{table.tableName}</option>
+              ))}
+            </select>
+            <Input.IconButton onClick={handleAddTableEditor} fill>
+              追加
+            </Input.IconButton>
+          </div>
+          <div className="flex gap-1">
+            <Input.IconButton icon={Icon.PlusIcon} onClick={handleAddQuery} fill>
+              クエリ追加
+            </Input.IconButton>
+            <Input.IconButton icon={Icon.PlusIcon} onClick={handleAddComment} fill>
+              コメント追加
+            </Input.IconButton>
+          </div>
         </div>
-        <div className="flex gap-1">
-          <Input.IconButton icon={Icon.PlusIcon} onClick={handleAddQuery} fill>
-            クエリ追加
-          </Input.IconButton>
-          <Input.IconButton icon={Icon.PlusIcon} onClick={handleAddComment} fill>
-            コメント追加
-          </Input.IconButton>
-        </div>
-      </div>
       </DiagramView>
     </div>
   )
