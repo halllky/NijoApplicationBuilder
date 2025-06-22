@@ -215,58 +215,46 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
     if (item.type === "comment") {
       const commentIndex = commentFields.fields.findIndex(c => c.id === item.id)
       return (
-        <div className="relative">
-          <div className="absolute top-0 left-0 z-10">
-            {DragHandle}
-          </div>
-          <CommentView
-            commentIndex={commentIndex}
-            comment={item}
-            onChangeComment={(idx, updatedComment) => {
-              const updatedItem = { ...updatedComment, type: "comment" as const }
-              handleUpdateDiagramItem(index, updatedItem)
-            }}
-            onDeleteComment={() => handleRemoveDiagramItem(index)}
-            zoom={zoom}
-          />
-        </div>
+        <CommentView
+          commentIndex={commentIndex}
+          comment={item}
+          onChangeComment={(idx, updatedComment) => {
+            const updatedItem = { ...updatedComment, type: "comment" as const }
+            handleUpdateDiagramItem(index, updatedItem)
+          }}
+          onDeleteComment={() => handleRemoveDiagramItem(index)}
+          zoom={zoom}
+          DragHandle={DragHandle}
+        />
       )
     } else if (item.type === "sqlAndResult") {
       const itemIndex = fields.findIndex(f => f.id === item.id)
       return (
-        <div className="relative">
-          <div className="absolute top-0 left-0 z-10">
-            {DragHandle}
-          </div>
-          <SqlAndResultView
-            itemIndex={itemIndex}
-            value={item}
-            onChangeDefinition={(idx, updatedItem) => handleUpdateDiagramItem(index, updatedItem)}
-            onDeleteDefinition={() => handleRemoveDiagramItem(index)}
-            trigger={trigger}
-            zoom={zoom}
-          />
-        </div>
+        <SqlAndResultView
+          itemIndex={itemIndex}
+          value={item}
+          onChangeDefinition={(idx, updatedItem) => handleUpdateDiagramItem(index, updatedItem)}
+          onDeleteDefinition={() => handleRemoveDiagramItem(index)}
+          trigger={trigger}
+          zoom={zoom}
+          DragHandle={DragHandle}
+        />
       )
     } else {
       const itemIndex = fields.findIndex(f => f.id === item.id)
       const refIndex = itemIndex >= 0 ? itemIndex : 0
       return (
-        <div className="relative">
-          <div className="absolute top-0 left-0 z-10">
-            {DragHandle}
-          </div>
-          <DbTableEditorView
-            ref={dbTableEditorsRef.current[refIndex]}
-            itemIndex={itemIndex}
-            value={item}
-            onChangeDefinition={(idx, updatedItem) => handleUpdateDiagramItem(index, updatedItem)}
-            onDeleteDefinition={() => handleRemoveDiagramItem(index)}
-            tableMetadata={tableMetadata}
-            trigger={trigger}
-            zoom={zoom}
-          />
-        </div>
+        <DbTableEditorView
+          ref={dbTableEditorsRef.current[refIndex]}
+          itemIndex={itemIndex}
+          value={item}
+          onChangeDefinition={(idx, updatedItem) => handleUpdateDiagramItem(index, updatedItem)}
+          onDeleteDefinition={() => handleRemoveDiagramItem(index)}
+          tableMetadata={tableMetadata}
+          trigger={trigger}
+          zoom={zoom}
+          DragHandle={DragHandle}
+        />
       )
     }
   })

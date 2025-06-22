@@ -7,13 +7,11 @@ import * as Layout from "../layout"
 import React from "react"
 import useQueryEditorServerApi from "./useQueryEditorServerApi"
 import { SqlTextarea } from "./SqlTextarea"
-import DraggableWindow from "./DraggableWindow"
-
 export type DbTableEditorViewRef = {
   getCurrentRecords: () => EditableDbRecord[]
 }
 
-export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeDefinition, onDeleteDefinition, tableMetadata, trigger, zoom }: {
+export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeDefinition, onDeleteDefinition, tableMetadata, trigger, zoom, DragHandle }: {
   itemIndex: number
   value: DbTableEditor
   onChangeDefinition: (index: number, value: DbTableEditor) => void
@@ -21,6 +19,7 @@ export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeD
   tableMetadata: DbTableMetadata[]
   trigger: ReloadTrigger
   zoom: number
+  DragHandle?: React.ReactNode
 }, ref: React.ForwardedRef<DbTableEditorViewRef>) => {
 
   // ---------------------------------
@@ -208,126 +207,93 @@ export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeD
     })
   })
 
-  // ドラッグで位置を変更
-  const handleMouseMove = useEvent((e: MouseEvent) => {
-    const deltaX = e.movementX / zoom
-    const deltaY = e.movementY / zoom
-    onChangeDefinition(itemIndex, {
-      ...value,
-      layout: {
-        ...value.layout,
-        x: value.layout.x + deltaX,
-        y: value.layout.y + deltaY,
-      },
-    })
-  })
-
-  const handleSizeChange = useEvent((width: number, height: number) => {
-    onChangeDefinition(itemIndex, {
-      ...value,
-      layout: {
-        ...value.layout,
-        width,
-        height,
-      },
-    })
-  })
-
   const handleMouseDownButtons = useEvent((e: React.MouseEvent<Element>) => {
     e.stopPropagation()
   })
 
   return (<>
-    <DraggableWindow
-      layout={value.layout}
-      onMove={handleMouseMove}
-      onResize={handleSizeChange}
-      className="bg-gray-200 border border-gray-300"
-    >
-      {({ handleMouseDown }) => (
-        <div className="h-full flex flex-col">
-          <div className="flex gap-1 pl-1 items-center cursor-grab" onMouseDown={handleMouseDown}>
-            <span className="select-none">
-              {value.tableName}
-            </span>
-            <Input.IconButton icon={Icon.PencilIcon} hideText onClick={handleChangeTitle} onMouseDown={handleMouseDownButtons}>
-              名前を変更
-            </Input.IconButton>
-            <div className="flex-1"></div>
+    <div className="bg-gray-200 border border-gray-300 h-full flex flex-col">
+      <div className="flex gap-1 pl-1 items-center">
+        {DragHandle}
+        <span className="select-none">
+          {value.tableName}
+        </span>
+        <Input.IconButton icon={Icon.PencilIcon} hideText onClick={handleChangeTitle} onMouseDown={handleMouseDownButtons}>
+          名前を変更
+        </Input.IconButton>
+        <div className="flex-1"></div>
 
-            {!error && (
-              <>
-                <Input.IconButton icon={Icon.PlusCircleIcon} onClick={handleAddRecord}>
-                  追加
-                </Input.IconButton>
-                <Input.IconButton icon={Icon.TrashIcon} onClick={handleDeleteRecord}>
-                  削除
-                </Input.IconButton>
-                <Input.IconButton icon={Icon.ArrowUturnLeftIcon} onClick={handleClickReset}>
-                  リセット
-                </Input.IconButton>
-              </>
-            )}
-            <Input.IconButton
-              icon={value.isSettingCollapsed ? Icon.ChevronUpIcon : Icon.ChevronDownIcon}
-              hideText
-              onClick={handleToggleCollapse}
-            >
-              折りたたみ
+        {!error && (
+          <>
+            <Input.IconButton icon={Icon.PlusCircleIcon} onClick={handleAddRecord}>
+              追加
             </Input.IconButton>
-            <Input.IconButton icon={Icon.XMarkIcon} hideText onClick={handleDeleteWindow}>
+            <Input.IconButton icon={Icon.TrashIcon} onClick={handleDeleteRecord}>
               削除
             </Input.IconButton>
+            <Input.IconButton icon={Icon.ArrowUturnLeftIcon} onClick={handleClickReset}>
+              リセット
+            </Input.IconButton>
+          </>
+        )}
+        <Input.IconButton
+          icon={value.isSettingCollapsed ? Icon.ChevronUpIcon : Icon.ChevronDownIcon}
+          hideText
+          onClick={handleToggleCollapse}
+        >
+          折りたたみ
+        </Input.IconButton>
+        <Input.IconButton icon={Icon.XMarkIcon} hideText onClick={handleDeleteWindow}>
+          削除
+        </Input.IconButton>
+      </div>
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* テーブル名, WHERE句 */}
+        <div className={`flex flex-col gap-1 p-1 font-mono bg-white border-t border-gray-300 ${value.isSettingCollapsed ? 'hidden' : ''}`}>
+          <div className="flex gap-2">
+            <span className="select-none text-gray-500">
+              SELECT * FROM
+            </span>
+
+            <select
+              value={value.tableName}
+              onChange={handleChangeTableName}
+              className="border border-gray-500"
+            >
+              {tableMetadata.map(table => (
+                <option key={table.tableName} value={table.tableName}>{table.tableName}</option>
+              ))}
+            </select>
+
+            <span className="select-none text-gray-500">
+              WHERE
+            </span>
           </div>
-          <div className="flex-1 flex flex-col min-h-0">
-            {/* テーブル名, WHERE句 */}
-            <div className={`flex flex-col gap-1 p-1 font-mono bg-white border-t border-gray-300 ${value.isSettingCollapsed ? 'hidden' : ''}`}>
-              <div className="flex gap-2">
-                <span className="select-none text-gray-500">
-                  SELECT * FROM
-                </span>
 
-                <select
-                  value={value.tableName}
-                  onChange={handleChangeTableName}
-                  className="border border-gray-500"
-                >
-                  {tableMetadata.map(table => (
-                    <option key={table.tableName} value={table.tableName}>{table.tableName}</option>
-                  ))}
-                </select>
-
-                <span className="select-none text-gray-500">
-                  WHERE
-                </span>
-              </div>
-
-              <SqlTextarea
-                value={value.whereClause}
-                onChange={handleChangeWhereClause}
-                placeholder="抽出条件がある場合はここに記載"
-                className="flex-1"
-              />
-            </div>
-
-            {/* レコード */}
-            {error ? (
-              <div className="flex-1 text-red-500 border-t border-gray-300">
-                {error}
-              </div>
-            ) : (
-              <Layout.EditableGrid
-                ref={gridRef}
-                rows={fields}
-                getColumnDefs={getColumnDefs}
-                onChangeRow={handleChangeRecords}
-                className="flex-1 border-t border-gray-300"
-              />
-            )}
-          </div>
+          <SqlTextarea
+            value={value.whereClause}
+            onChange={handleChangeWhereClause}
+            placeholder="抽出条件がある場合はここに記載"
+            className="flex-1"
+          />
         </div>
-      )}
-    </DraggableWindow>
+
+        {/* レコード */}
+        {error ? (
+          <div className="flex-1 text-red-500 border-t border-gray-300">
+            {error}
+          </div>
+        ) : (
+          <Layout.EditableGrid
+            ref={gridRef}
+            rows={fields}
+            getColumnDefs={getColumnDefs}
+            onChangeRow={handleChangeRecords}
+            className="flex-1 border-t border-gray-300"
+          />
+        )}
+      </div>
+    </div>
 
     {/* 外部参照テーブルのレコード選択ダイアログ */}
     {foreignKeyReferenceDialog && (
