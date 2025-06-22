@@ -27,6 +27,12 @@ builder.Services.AddCors(options => {
         policy.WithOrigins("http://localhost:5173")
             .AllowAnyHeader()
             .AllowAnyMethod();
+
+        // nijo ui のデータプレビューからの閲覧のため。
+        // ポートはとりあえず決め打ち
+        policy.WithOrigins("https://localhost:8081")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
     });
 });
 
