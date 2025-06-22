@@ -12,6 +12,7 @@ import { PerspectivePage } from "./型つきドキュメント/PerspectivePage"
 import * as Util from "./util"
 import { NijoUiAggregateDiagram } from "./スキーマ定義編集UI/スキーマ定義編集/NijoUiAggregateDiagram"
 import { NijoUiTopPage } from "./スキーマ定義編集UI/NijoUiTopPage"
+import { DataPreviewAsNijoUiPage } from "./データプレビュー/IndexAsNijoUiPage"
 
 /** RouteObject に sideMenuLabel を追加した型 */
 export type RouteObjectWithSideMenuSetting = ReactRouter.RouteObject & {
@@ -76,6 +77,9 @@ export const getRouterForNijoUi = (): RouteObjectWithSideMenuSetting[] => {
       path: `typed-doc/perspective/:${NIJOUI_CLIENT_ROUTE_PARAMS.PERSPECTIVE_ID}`,
       element: <PerspectivePage />,
     }, {
+      path: 'data-preview',
+      element: <DataPreviewAsNijoUiPage />,
+    }, {
       path: '*',
       element: <div>Not Found</div>,
     }]
@@ -101,7 +105,8 @@ export const getNavigationUrl = (arg?:
   { aggregateId?: never, page: 'outliner', outlinerId: string } |
   { aggregateId?: never, page: 'typed-document-entity', entityTypeId: string } |
   { aggregateId?: never, page: 'typed-document-perspective', perspectiveId: string, focusEntityId?: string } |
-  { aggregateId?: never, page: 'schema' }
+  { aggregateId?: never, page: 'schema' } |
+  { aggregateId?: never, page: 'data-preview' }
 ): string => {
   if (arg?.page === 'top-page') {
     return '/nijo-ui'
@@ -117,6 +122,8 @@ export const getNavigationUrl = (arg?:
     return `/nijo-ui/typed-doc/perspective/${arg.perspectiveId}?${searchParams.toString()}`
   } else if (arg?.page === 'schema') {
     return `/nijo-ui/schema/`
+  } else if (arg?.page === 'data-preview') {
+    return '/nijo-ui/data-preview'
   } else {
     return `/nijo-ui/schema/${arg?.aggregateId ?? ''}`
   }

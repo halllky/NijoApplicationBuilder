@@ -105,7 +105,10 @@ export const Home: React.FC = () => {
 
       <div>
         データプレビュー
-        <DataPreview className="h-96" />
+        <DataPreview
+          backendUrl={import.meta.env.VITE_BACKEND_API}
+          className="h-96 border border-gray-500"
+        />
       </div>
     </div>
   )

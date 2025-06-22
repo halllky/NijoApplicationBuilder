@@ -6,12 +6,14 @@ import * as Icon from "@heroicons/react/24/outline"
 import * as Layout from "../layout"
 import { DbTableEditorView, DbTableEditorViewRef } from "./DbTableEditorView"
 import SqlAndResultView from "./SqlAndResultView"
-import useQueryEditorServerApi from "./useQueryEditorServerApi"
+import useQueryEditorServerApi, { QueryEditorServerApiContext } from "./useQueryEditorServerApi"
 import useEvent from "react-use-event-hook"
 import { UUID } from "uuidjs"
 import { CommentView } from "./CommentView"
 
 export type QueryEditorProps = {
+  /** データ操作対象のバックエンドのURL */
+  backendUrl: string
   className?: string
 }
 
@@ -19,8 +21,8 @@ export type QueryEditorProps = {
  * アプリケーション全体のデータの動きを確認してデータ構造の仕様の精度を上げるための、
  * 複数のテーブルや、SQLとその結果を表示するUIです。
  */
-export default function ({ className }: QueryEditorProps) {
-  const { getTableMetadata } = useQueryEditorServerApi()
+export default function ({ backendUrl, className }: QueryEditorProps) {
+  const { getTableMetadata } = useQueryEditorServerApi(backendUrl)
   const [loadError, setLoadError] = React.useState<string>()
   const [tableMetadata, setTableMetadata] = React.useState<DbTableMetadata[]>()
   const [defaultValues, setDefaultValues] = React.useState<QueryEditor>()
@@ -74,12 +76,14 @@ export default function ({ className }: QueryEditorProps) {
   }
 
   return (
-    <AfterReady
-      tableMetadata={tableMetadata}
-      defaultValues={defaultValues}
-      onSave={handleSave}
-      className={className}
-    />
+    <QueryEditorServerApiContext.Provider value={backendUrl}>
+      <AfterReady
+        tableMetadata={tableMetadata}
+        defaultValues={defaultValues}
+        onSave={handleSave}
+        className={className}
+      />
+    </QueryEditorServerApiContext.Provider>
   )
 }
 
@@ -258,7 +262,7 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
       {/* スクロールエリア */}
       <div
         ref={scrollRef}
-        className="flex-1 relative overflow-hidden bg-white border border-gray-500 select-none"
+        className="flex-1 relative overflow-hidden bg-white select-none"
         style={{
           zoom,
           cursor: isDragging ? 'grabbing' : 'grab',

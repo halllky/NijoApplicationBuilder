@@ -126,6 +126,10 @@ export const NijoUiTopPage = () => {
           デバッグメニュー
         </MenuItem>
 
+        <MenuItem icon={Icon.ChartBarIcon} link={getNavigationUrl({ page: 'data-preview' })}>
+          データプレビュー
+        </MenuItem>
+
         <MenuItem icon={Icon.Cog6ToothIcon} onClick={handleClickPersonalSettings}>
           個人設定
         </MenuItem>

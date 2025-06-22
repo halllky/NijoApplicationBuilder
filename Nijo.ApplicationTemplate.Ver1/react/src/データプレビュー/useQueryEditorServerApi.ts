@@ -1,12 +1,17 @@
 import React from "react"
-import { EditableDbRecord, DbTableEditor, UseQueryEditorServerApiReturn } from "./types"
+import { EditableDbRecord, UseQueryEditorServerApiReturn } from "./types"
 
-const BACKEND_API = import.meta.env.VITE_BACKEND_API
+export const QueryEditorServerApiContext = React.createContext<string>("")
 
-export default function useQueryEditorServerApi(): UseQueryEditorServerApiReturn {
+export default function useQueryEditorServerApi(backendApiViaProps?: string): UseQueryEditorServerApiReturn {
+
+  const backendApiViaContext = React.useContext(QueryEditorServerApiContext)
+  const backendUrl = backendApiViaProps ?? backendApiViaContext
 
   const executeQuery: UseQueryEditorServerApiReturn["executeQuery"] = React.useCallback(async (sql: string) => {
-    const response = await fetch(`${BACKEND_API}api/query-editor/execute-query`, {
+    if (!backendUrl) return { ok: false, error: "backendUrl is not set" }
+
+    const response = await fetch(`${(backendUrl.endsWith("/") ? backendUrl : backendUrl + "/")}api/query-editor/execute-query`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(sql),
@@ -17,20 +22,24 @@ export default function useQueryEditorServerApi(): UseQueryEditorServerApiReturn
     } else {
       return { ok: false, error: await response.text() }
     }
-  }, [])
+  }, [backendUrl])
 
   const getTableMetadata: UseQueryEditorServerApiReturn["getTableMetadata"] = React.useCallback(async () => {
-    const response = await fetch(`${BACKEND_API}api/query-editor/get-table-metadata`)
+    if (!backendUrl) return { ok: false, error: "backendUrl is not set" }
+
+    const response = await fetch(`${(backendUrl.endsWith("/") ? backendUrl : backendUrl + "/")}api/query-editor/get-table-metadata`)
     if (response.ok) {
       const data = await response.json()
       return { ok: true, data }
     } else {
       return { ok: false, error: await response.text() }
     }
-  }, [])
+  }, [backendUrl])
 
   const getDbRecords: UseQueryEditorServerApiReturn["getDbRecords"] = React.useCallback(async query => {
-    const response = await fetch(`${BACKEND_API}api/query-editor/get-db-records`, {
+    if (!backendUrl) return { ok: false, error: "backendUrl is not set" }
+
+    const response = await fetch(`${(backendUrl.endsWith("/") ? backendUrl : backendUrl + "/")}api/query-editor/get-db-records`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(query),
@@ -41,10 +50,12 @@ export default function useQueryEditorServerApi(): UseQueryEditorServerApiReturn
     } else {
       return { ok: false, error: await response.text() }
     }
-  }, [])
+  }, [backendUrl])
 
   const batchUpdate: UseQueryEditorServerApiReturn["batchUpdate"] = React.useCallback(async (records: EditableDbRecord[]) => {
-    const response = await fetch(`${BACKEND_API}api/query-editor/batch-update`, {
+    if (!backendUrl) return { ok: false, error: "backendUrl is not set" }
+
+    const response = await fetch(`${(backendUrl.endsWith("/") ? backendUrl : backendUrl + "/")}api/query-editor/batch-update`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(records),
@@ -54,7 +65,7 @@ export default function useQueryEditorServerApi(): UseQueryEditorServerApiReturn
     } else {
       return { ok: false, error: await response.text() }
     }
-  }, [])
+  }, [backendUrl])
 
   return {
     executeQuery,
