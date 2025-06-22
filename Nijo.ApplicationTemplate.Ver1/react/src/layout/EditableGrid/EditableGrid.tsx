@@ -647,7 +647,11 @@ const MemorizedBodyCell = React.memo(<TRow extends ReactHookForm.FieldValues>({
           minHeight: ESTIMATED_ROW_HEIGHT, // 動的行高さ対応: heightの代わりにminHeightを使用
         }}
       >
-        {renderCell?.(cell.getContext()) ?? cell.getValue()?.toString()}
+        {renderCell?.(cell.getContext()) ?? (
+          <span className="px-1 truncate">
+            {cell.getValue()?.toString() ?? '\u00A0'}
+          </span>
+        )}
       </div>
     </td>
   );
