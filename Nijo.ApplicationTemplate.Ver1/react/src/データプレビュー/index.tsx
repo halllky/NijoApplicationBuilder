@@ -205,7 +205,7 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
 
   // ---------------------------------
   // DiagramView用のrenderItem関数
-  const renderDiagramItem = useEvent((item: QueryEditorDiagramItem, index: number, { zoom, DragHandle }: {
+  const renderDiagramItem = React.useCallback((item: QueryEditorDiagramItem, index: number, { zoom, DragHandle }: {
     onUpdateLayout: (layout: any) => void
     onRemove: () => void
     zoom: number
@@ -257,7 +257,7 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
         />
       )
     }
-  })
+  }, [fields, commentFields.fields, tableMetadata, trigger, handleUpdateDiagramItem, handleRemoveDiagramItem, dbTableEditorsRef])
 
   // ---------------------------------
   // コメント

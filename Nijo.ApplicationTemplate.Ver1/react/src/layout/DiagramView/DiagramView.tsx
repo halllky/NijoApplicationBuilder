@@ -32,29 +32,25 @@ export default function DiagramView<T extends DiagramItem>({
     } = usePanAndZoom()
 
     // アイテムの移動処理
-    const createMoveHandler = useEvent((itemIndex: number) => {
-        return (e: MouseEvent) => {
-            const item = items[itemIndex]
-            const newLayout: DiagramItemLayout = {
-                ...item.layout,
-                x: e.clientX / zoom - panOffset.x,
-                y: e.clientY / zoom - panOffset.y,
-            }
-            onUpdateItem(itemIndex, { ...item, layout: newLayout } as T)
+    const handleItemMove = useEvent((itemIndex: number, e: MouseEvent) => {
+        const item = items[itemIndex]
+        const newLayout: DiagramItemLayout = {
+            ...item.layout,
+            x: e.clientX / zoom - panOffset.x,
+            y: e.clientY / zoom - panOffset.y,
         }
+        onUpdateItem(itemIndex, { ...item, layout: newLayout } as T)
     })
 
     // アイテムのリサイズ処理
-    const createResizeHandler = useEvent((itemIndex: number) => {
-        return (width: number, height: number) => {
-            const item = items[itemIndex]
-            const newLayout: DiagramItemLayout = {
-                ...item.layout,
-                width,
-                height,
-            }
-            onUpdateItem(itemIndex, { ...item, layout: newLayout } as T)
+    const handleItemResize = useEvent((itemIndex: number, width: number, height: number) => {
+        const item = items[itemIndex]
+        const newLayout: DiagramItemLayout = {
+            ...item.layout,
+            width,
+            height,
         }
+        onUpdateItem(itemIndex, { ...item, layout: newLayout } as T)
     })
 
     return (
@@ -85,8 +81,8 @@ export default function DiagramView<T extends DiagramItem>({
                         <DraggableWindow
                             key={item.id}
                             layout={item.layout}
-                            onMove={createMoveHandler(index)}
-                            onResize={createResizeHandler(index)}
+                            onMove={(e: MouseEvent) => handleItemMove(index, e)}
+                            onResize={(width: number, height: number) => handleItemResize(index, width, height)}
                         >
                             {({ DragHandle, handleMouseDown }) =>
                                 renderItem(item, index, {
