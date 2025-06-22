@@ -1,3 +1,5 @@
+import { DiagramItem } from "../layout/DiagramView"
+
 /** クエリエディタのデータ構造 */
 export type QueryEditor = {
   id: string
@@ -9,43 +11,36 @@ export type QueryEditor = {
 /** クエリエディタのアイテム */
 export type QueryEditorItem = SqlAndResult | DbTableEditor
 
+/** すべてのダイアグラムアイテム（クエリ、テーブル編集、コメント） */
+export type QueryEditorDiagramItem = SqlAndResult | DbTableEditor | (Comment & { type: "comment" })
+
 /** SQLとその結果を表示するアイテム */
-export type SqlAndResult = {
-  id: string
+export type SqlAndResult = DiagramItem & {
   title: string
   type: "sqlAndResult"
   sql: string
   isSettingCollapsed: boolean
-  layout: EditorItemLayout
 }
 
 /** データベースのテーブルを表示するアイテム */
-export type DbTableEditor = {
-  id: string
+export type DbTableEditor = DiagramItem & {
   title: string
   type: "dbTableEditor"
   tableName: string
   whereClause: string
   isSettingCollapsed: boolean
-  layout: EditorItemLayout
 }
 
 /** 各クエリやテーブル編集がサーバーからの再読み込みをトリガーするためのトークン */
 export type ReloadTrigger = unknown
 
-export type EditorItemLayout = {
-  x: number
-  y: number
-  width: number
-  height: number
-}
+// EditorItemLayoutはDiagramItemLayoutと同じなので削除
+// export type EditorItemLayout = DiagramItemLayout
 
 // ------------------------------------
 /** コメント */
-export type Comment = {
-  id: string
+export type Comment = DiagramItem & {
   content: string
-  layout: EditorItemLayout
 }
 
 // ------------------------------------

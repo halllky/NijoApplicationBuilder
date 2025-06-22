@@ -1,9 +1,10 @@
 import React from "react"
-import { DbTableMetadata, EditableDbRecord, QueryEditor, QueryEditorItem } from "./types"
+import { DbTableMetadata, EditableDbRecord, QueryEditor, QueryEditorItem, QueryEditorDiagramItem } from "./types"
 import * as ReactHookForm from "react-hook-form"
 import * as Input from "../input"
 import * as Icon from "@heroicons/react/24/outline"
 import * as Layout from "../layout"
+import { DiagramView } from "../layout/DiagramView"
 import { DbTableEditorView, DbTableEditorViewRef } from "./DbTableEditorView"
 import SqlAndResultView from "./SqlAndResultView"
 import useQueryEditorServerApi, { QueryEditorServerApiContext } from "./useQueryEditorServerApi"
@@ -77,12 +78,12 @@ export default function ({ backendUrl, className }: QueryEditorProps) {
 
   return (
     <QueryEditorServerApiContext.Provider value={backendUrl}>
-      <AfterReady
-        tableMetadata={tableMetadata}
-        defaultValues={defaultValues}
-        onSave={handleSave}
-        className={className}
-      />
+    <AfterReady
+      tableMetadata={tableMetadata}
+      defaultValues={defaultValues}
+      onSave={handleSave}
+      className={className}
+    />
     </QueryEditorServerApiContext.Provider>
   )
 }
@@ -98,6 +99,18 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
   // 定義編集
   const { control, getValues } = ReactHookForm.useForm<QueryEditor>({ defaultValues })
   const { fields, append, remove, update } = ReactHookForm.useFieldArray({ name: 'items', control, keyName: 'use-field-array-id' })
+
+  // DiagramView用にitemsとcommentsを統合
+  const commentFields = ReactHookForm.useFieldArray({ name: 'comments', control, keyName: 'use-field-array-id' })
+
+  const diagramItems: QueryEditorDiagramItem[] = React.useMemo(() => {
+    const items: QueryEditorDiagramItem[] = [...fields]
+    const comments: QueryEditorDiagramItem[] = commentFields.fields.map((comment): QueryEditorDiagramItem => ({
+      ...comment,
+      type: "comment" as const,
+    }))
+    return [...items, ...comments]
+  }, [fields, commentFields.fields])
 
   // ---------------------------------
   // 保存、およびSQL結果取得トリガー
@@ -141,66 +154,36 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
   })
 
   // ---------------------------------
-  // 拡大縮小（0.1 ～ 1.0）
-  const [zoom, setZoom] = React.useState(1)
-  const handleZoomOut = useEvent(() => {
-    setZoom(prev => Math.max(0.1, prev - 0.1))
-  })
-  const handleZoomIn = useEvent(() => {
-    setZoom(prev => Math.min(1, prev + 0.1))
-  })
-  const handleResetZoom = useEvent(() => {
-    setZoom(1)
-  })
-
-  // ---------------------------------
-  // パン操作（背景ドラッグでの移動）
-  const [panOffset, setPanOffset] = React.useState({ x: 0, y: 0 })
-  const [isDragging, setIsDragging] = React.useState(false)
-  const [dragStart, setDragStart] = React.useState({ x: 0, y: 0 })
-  const [dragStartOffset, setDragStartOffset] = React.useState({ x: 0, y: 0 })
-
-  const scrollRef = React.useRef<HTMLDivElement>(null)
-  const canvasRef = React.useRef<HTMLDivElement>(null)
-  const handleMouseDown = useEvent((e: React.MouseEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement
-    if (target === canvasRef.current || target === scrollRef.current) {
-      setIsDragging(true)
-      setDragStart({ x: e.clientX, y: e.clientY })
-      setDragStartOffset({ ...panOffset })
-      e.preventDefault()
+  // DiagramView用のハンドラー
+  const handleUpdateDiagramItem = useEvent((index: number, item: QueryEditorDiagramItem) => {
+    if (item.type === "comment") {
+      const commentIndex = commentFields.fields.findIndex(c => c.id === item.id)
+      if (commentIndex >= 0) {
+        commentFields.update(commentIndex, item)
+      }
+    } else {
+      const itemIndex = fields.findIndex(f => f.id === item.id)
+      if (itemIndex >= 0) {
+        update(itemIndex, item)
+      }
     }
   })
 
-  // パン操作開始
-  React.useEffect(() => {
-    if (!isDragging) return
-
-    const handleGlobalMouseMove = (e: MouseEvent) => {
-      const deltaX = (e.clientX - dragStart.x) / zoom
-      const deltaY = (e.clientY - dragStart.y) / zoom
-      setPanOffset({
-        x: dragStartOffset.x + deltaX,
-        y: dragStartOffset.y + deltaY,
-      })
+  const handleRemoveDiagramItem = useEvent((index: number) => {
+    const item = diagramItems[index]
+    if (item.type === "comment") {
+      const commentIndex = commentFields.fields.findIndex(c => c.id === item.id)
+      if (commentIndex >= 0) {
+        if (!window.confirm(`コメントを削除しますか？`)) return
+        commentFields.remove(commentIndex)
     }
-
-    // パン操作終了
-    const handleGlobalMouseUp = () => {
-      setIsDragging(false)
+    } else {
+      const itemIndex = fields.findIndex(f => f.id === item.id)
+      if (itemIndex >= 0) {
+        if (!window.confirm(`${item.title}を削除しますか？`)) return
+        remove(itemIndex)
     }
-
-    document.addEventListener('mousemove', handleGlobalMouseMove)
-    document.addEventListener('mouseup', handleGlobalMouseUp)
-
-    return () => {
-      document.removeEventListener('mousemove', handleGlobalMouseMove)
-      document.removeEventListener('mouseup', handleGlobalMouseUp)
     }
-  }, [isDragging, dragStart.x, dragStart.y, dragStartOffset.x, dragStartOffset.y])
-
-  const handleResetPan = useEvent(() => {
-    setPanOffset({ x: 0, y: 0 })
   })
 
   // ---------------------------------
@@ -212,7 +195,7 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
   })
 
   // ウィンドウの追加（テーブル編集）
-  const [newTableName, setNewTableName] = React.useState("")
+  const [newTableName, setNewTableName] = React.useState(tableMetadata[0]?.tableName ?? "")
   const handleChangeNewTableName = useEvent((e: React.ChangeEvent<HTMLSelectElement>) => {
     setNewTableName(e.target.value)
   })
@@ -221,15 +204,75 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
   })
 
   // ---------------------------------
-  // ウィンドウの削除
-  const handleRemoveWindow = useEvent((itemIndex: number) => {
-    if (!window.confirm(`${fields[itemIndex].title}を削除しますか？`)) return;
-    remove(itemIndex)
+  // DiagramView用のrenderItem関数
+  const renderDiagramItem = useEvent((item: QueryEditorDiagramItem, index: number, { zoom, DragHandle }: {
+    onUpdateLayout: (layout: any) => void
+    onRemove: () => void
+    zoom: number
+    DragHandle: React.ReactNode
+    handleMouseDown: React.MouseEventHandler<Element>
+  }) => {
+    if (item.type === "comment") {
+      const commentIndex = commentFields.fields.findIndex(c => c.id === item.id)
+      return (
+        <div className="relative">
+          <div className="absolute top-0 left-0 z-10">
+            {DragHandle}
+          </div>
+          <CommentView
+            commentIndex={commentIndex}
+            comment={item}
+            onChangeComment={(idx, updatedComment) => {
+              const updatedItem = { ...updatedComment, type: "comment" as const }
+              handleUpdateDiagramItem(index, updatedItem)
+            }}
+            onDeleteComment={() => handleRemoveDiagramItem(index)}
+            zoom={zoom}
+          />
+        </div>
+      )
+    } else if (item.type === "sqlAndResult") {
+      const itemIndex = fields.findIndex(f => f.id === item.id)
+      return (
+        <div className="relative">
+          <div className="absolute top-0 left-0 z-10">
+            {DragHandle}
+          </div>
+          <SqlAndResultView
+            itemIndex={itemIndex}
+            value={item}
+            onChangeDefinition={(idx, updatedItem) => handleUpdateDiagramItem(index, updatedItem)}
+            onDeleteDefinition={() => handleRemoveDiagramItem(index)}
+            trigger={trigger}
+            zoom={zoom}
+          />
+        </div>
+      )
+    } else {
+      const itemIndex = fields.findIndex(f => f.id === item.id)
+      const refIndex = itemIndex >= 0 ? itemIndex : 0
+      return (
+        <div className="relative">
+          <div className="absolute top-0 left-0 z-10">
+            {DragHandle}
+          </div>
+          <DbTableEditorView
+            ref={dbTableEditorsRef.current[refIndex]}
+            itemIndex={itemIndex}
+            value={item}
+            onChangeDefinition={(idx, updatedItem) => handleUpdateDiagramItem(index, updatedItem)}
+            onDeleteDefinition={() => handleRemoveDiagramItem(index)}
+            tableMetadata={tableMetadata}
+            trigger={trigger}
+            zoom={zoom}
+          />
+        </div>
+      )
+    }
   })
 
   // ---------------------------------
   // コメント
-  const commentFields = ReactHookForm.useFieldArray({ name: 'comments', control, keyName: 'use-field-array-id' })
   const handleAddComment = useEvent(() => {
     commentFields.append({
       id: UUID.generate(),
@@ -241,10 +284,6 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
         height: 200,
       },
     })
-  })
-  const handleRemoveComment = useEvent((commentIndex: number) => {
-    if (!window.confirm(`コメントを削除しますか？`)) return;
-    commentFields.remove(commentIndex)
   })
 
   return (
@@ -259,63 +298,13 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
         </div>
       )}
 
-      {/* スクロールエリア */}
-      <div
-        ref={scrollRef}
-        className="flex-1 relative overflow-hidden bg-white select-none"
-        style={{
-          zoom,
-          cursor: isDragging ? 'grabbing' : 'grab',
-        }}
-        onMouseDown={handleMouseDown}
-      >
-        {/* キャンバス領域 */}
-        <div
-          ref={canvasRef}
-          className="relative w-[150vw] h-[150vh] min-w-[150vw] min-h-[150vh]"
-          style={{
-            transform: `translate(${panOffset.x}px, ${panOffset.y}px)`,
-          }}
+      <DiagramView
+        items={diagramItems}
+        onUpdateItem={handleUpdateDiagramItem}
+        onRemoveItem={handleRemoveDiagramItem}
+        renderItem={renderDiagramItem}
+        className="flex-1"
         >
-          {/* クエリウィンドウ、テーブル編集ウィンドウ */}
-          {fields.map((item, index) => item.type === "sqlAndResult" ? (
-            <SqlAndResultView
-              key={item.id}
-              itemIndex={index}
-              value={item}
-              onChangeDefinition={update}
-              onDeleteDefinition={handleRemoveWindow}
-              trigger={trigger}
-              zoom={zoom}
-            />
-          ) : (
-            <DbTableEditorView
-              ref={dbTableEditorsRef.current[index]}
-              key={item.id}
-              itemIndex={index}
-              value={item}
-              onChangeDefinition={update}
-              onDeleteDefinition={handleRemoveWindow}
-              tableMetadata={tableMetadata}
-              trigger={trigger}
-              zoom={zoom}
-            />
-          ))}
-
-          {/* コメント */}
-          {commentFields.fields.map((comment, index) => (
-            <CommentView
-              key={comment.id}
-              commentIndex={index}
-              comment={comment}
-              onChangeComment={commentFields.update}
-              onDeleteComment={handleRemoveComment}
-              zoom={zoom}
-            />
-          ))}
-        </div>
-      </div>
-
       {/* ウィンドウの追加削除 */}
       <div className="absolute top-4 right-4 flex flex-col gap-1 items-end">
         <div className="flex gap-1">
@@ -341,28 +330,7 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
           </Input.IconButton>
         </div>
       </div>
-
-      {/* ズーム */}
-      <div className="flex flex-col absolute bottom-4 right-4">
-        <div className="text-sm select-none">
-          ズーム {Math.round(zoom * 100)}%
-        </div>
-        <div className="flex gap-1">
-          <Input.IconButton icon={Icon.MinusIcon} onClick={handleZoomOut} fill hideText>
-            ズームアウト
-          </Input.IconButton>
-          <Input.IconButton icon={Icon.PlusIcon} onClick={handleZoomIn} fill hideText>
-            ズームイン
-          </Input.IconButton>
-          <Input.IconButton icon={Icon.ArrowPathIcon} onClick={handleResetZoom} fill hideText>
-            リセット
-          </Input.IconButton>
-        </div>
-        <div className="basis-1"></div>
-        <Input.IconButton icon={Icon.ArrowPathIcon} onClick={handleResetPan} fill>
-          位置リセット
-        </Input.IconButton>
-      </div>
+      </DiagramView>
     </div>
   )
 }
