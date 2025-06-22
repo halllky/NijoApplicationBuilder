@@ -97,7 +97,8 @@ export function useSelection(
     setSelectedRows(newSelectedRows);
     setSelectedRange({ startCol: 0, endCol: totalColumns - 1, startRow: min, endRow: max });
     setAllRowsSelected(newSelectedRows.size === totalRows);
-  }, [totalRows, totalColumns]);
+    anchorCellRef.current = { rowIndex: min, colIndex: 0 };
+  }, [totalRows, totalColumns, anchorCellRef]);
 
   // 初期選択状態の設定（オプション）
   useEffect(() => {
