@@ -96,7 +96,7 @@ export default function DiagramView<T extends DiagramItem>({
       {/* スクロールエリア */}
       <div
         ref={scrollRef}
-        className="flex-1 relative overflow-hidden bg-white border border-gray-500 select-none"
+        className="flex-1 relative overflow-hidden bg-white select-none"
         style={{
           zoom,
           cursor: isDragging ? 'grabbing' : 'grab',
