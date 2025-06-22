@@ -6,6 +6,7 @@ import * as Layout from "../../layout"
 import { DebugProcessState, SchemaDefinitionOutletContextType } from "../スキーマ定義編集/types"
 import { SERVER_DOMAIN } from "../../routes"
 import useEvent from "react-use-event-hook"
+import { ToTopPageButton } from "../ToTopPageButton"
 
 export const NijoUiDebugMenu = () => {
   const { formMethods, validationContext: { trigger } } = ReactRouter.useOutletContext<SchemaDefinitionOutletContextType>()
@@ -188,6 +189,8 @@ export const NijoUiDebugMenu = () => {
   return (
     <div className="p-2 h-full overflow-y-auto">
       <h2 className="flex items-center gap-2">
+        <ToTopPageButton />
+        <Icon.ChevronRightIcon className="w-4 h-4" />
         <span className="font-semibold">
           デバッグメニュー
         </span>
