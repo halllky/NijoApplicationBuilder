@@ -17,6 +17,7 @@ export type CellEditorProps<T extends ReactHookForm.FieldValues> = {
   getPixel: GetPixelFunction
   onChangeEditing: (editing: boolean) => void
   onChangeRow: EditableGridProps<T>['onChangeRow']
+  isFocused: boolean
 }
 
 /** CellEditorのref */
@@ -42,6 +43,7 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
   getPixel,
   onChangeEditing,
   onChangeRow,
+  isFocused,
 }: CellEditorProps<T>,
   ref: React.ForwardedRef<CellEditorRef<T>>
 ) => {
@@ -249,6 +251,9 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
         }
       }
     } else {
+      // フォーカスが当たっていないグリッドでは新しい編集を開始しない
+      if (!isFocused) return;
+
       // 編集を始める
       if (caretCell && (
         e.key === 'F2'
@@ -267,8 +272,11 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
   })
 
   useOutsideClick(containerRef, () => {
-    commitEditing()
-  }, [commitEditing])
+    // 編集中の場合は編集を確定する（フォーカス状態に関係なく）
+    if (editingCellInfo) {
+      commitEditing()
+    }
+  }, [commitEditing, editingCellInfo])
 
   React.useImperativeHandle(ref, () => ({
     focus: () => editorTextareaRef.current?.focus({ preventScroll: true }),

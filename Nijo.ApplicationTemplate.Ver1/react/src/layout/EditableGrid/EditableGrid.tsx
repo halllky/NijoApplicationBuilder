@@ -168,6 +168,9 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     onActiveCellChanged
   )
 
+  // フォーカス状態の管理
+  const [isFocused, setIsFocused] = useState(false);
+
   // コピー＆ペースト機能
   const { handleCopy, handlePaste, setStringValuesToSelectedRange } = useCopyPaste({
     tableRef,
@@ -338,6 +341,15 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     getPixel,
   });
 
+  // フォーカス制御のハンドラ
+  const handleFocus = useCallback(() => {
+    setIsFocused(true);
+  }, []);
+
+  const handleBlur = useCallback(() => {
+    setIsFocused(false);
+  }, []);
+
   return (
     <div
       ref={tableContainerRef}
@@ -346,6 +358,8 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
       onKeyDown={handleKeyDown}
       onCopy={handleCopy}
       onPaste={handlePaste}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
     >
       <table
         className={`grid border-collapse border-spacing-0`}
@@ -484,6 +498,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
         anchorCellRef={anchorCellRef}
         selectedRange={selectedRange}
         getPixel={getPixel}
+        isFocused={isFocused}
       />
 
       <CellEditor
@@ -494,6 +509,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
         getPixel={getPixel}
         onChangeEditing={handleChangeEditing}
         onChangeRow={props.onChangeRow}
+        isFocused={isFocused}
       />
 
     </div>
