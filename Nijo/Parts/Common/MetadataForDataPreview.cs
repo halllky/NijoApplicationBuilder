@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Nijo.CodeGenerating;
+using Nijo.CodeGenerating.Helpers;
 using Nijo.ImmutableSchema;
 using Nijo.Models.DataModelModules;
 using Nijo.Util.DotnetEx;
@@ -112,12 +113,6 @@ internal class MetadataForDataPreview : IMultiAggregateSourceFile {
                         /// </summary>
                         [JsonPropertyName("type")]
                         public required string Type { get; set; }
-                        /// <summary>
-                        /// 外部参照先テーブルとの間の関係性の表示用名称。
-                        /// このメンバーがref-keyでない場合はnull。
-                        /// </summary>
-                        [JsonPropertyName("refRelationName")]
-                        public required string? RefRelationName { get; set; }
                         [JsonPropertyName("physicalName")]
                         public required string PhysicalName { get; set; }
                         [JsonPropertyName("displayName")]
@@ -142,6 +137,19 @@ internal class MetadataForDataPreview : IMultiAggregateSourceFile {
                         public required bool IsPrimaryKey { get; set; }
                         [JsonPropertyName("isNullable")]
                         public required bool IsNullable { get; set; }
+
+                        /// <summary>
+                        /// 外部参照先テーブルのルート集約からのパス（スラッシュ区切り）。
+                        /// このメンバーがref-keyでない場合はnull。
+                        /// </summary>
+                        [JsonPropertyName("refToAggregatePath")]
+                        public required string? RefToAggregatePath { get; set; }
+                        /// <summary>
+                        /// このメンバーと対応する、外部参照先テーブルのメンバーのDB上のカラム名。
+                        /// このメンバーがref-keyでない場合はnull。
+                        /// </summary>
+                        [JsonPropertyName("refToColumnName")]
+                        public required string? RefToColumnName { get; set; }
                     }
                     #endregion 型
                 }
@@ -196,14 +204,22 @@ internal class MetadataForDataPreview : IMultiAggregateSourceFile {
                     ? $"\"{staticEnumMember.Definition.TsTypeName.Replace("\"", "\\\"")}\""
                     : "null";
 
-                var refRelationName = column is EFCoreEntity.RefKeyMember refKeyMember
-                    ? $"\"{refKeyMember.RefEntry.DisplayName.Replace("\"", "\\\"")}\""
-                    : "null";
+                string? refToAggregatePath = null;
+                string? refToColumnName = null;
+                if (column is EFCoreEntity.RefKeyMember refKeyMember && !refKeyMember.IsParentKey) {
+                    refToAggregatePath = $"\"{refKeyMember.RefEntry.RefTo.EnumerateThisAndAncestors().Select(a => a.PhysicalName).Join("/")}\"";
+
+                    var mappingKey = column.Member.ToMappingKey();
+                    var refToColumns = new EFCoreEntity(refKeyMember.RefEntry.RefTo).GetColumns();
+                    refToColumnName = $"\"{refToColumns.First(c => c.Member.ToMappingKey() == mappingKey).DbName}\"";
+                } else {
+                    refToAggregatePath = "null";
+                    refToColumnName = "null";
+                }
 
                 yield return ($$"""
                     new ValueMember {
                         Type = "{{type}}",
-                        RefRelationName = {{refRelationName}},
                         PhysicalName = "{{column.PhysicalName}}",
                         DisplayName = "{{column.DisplayName.Replace("\"", "\\\"")}}",
                         ColumnName = "{{column.DbName}}",
@@ -212,6 +228,8 @@ internal class MetadataForDataPreview : IMultiAggregateSourceFile {
                         EnumType = {{enumType}},
                         IsPrimaryKey = {{(column.IsKey ? "true" : "false")}},
                         IsNullable = {{(!column.IsKey && !column.Member.IsRequired ? "true" : "false")}},
+                        RefToAggregatePath = {{refToAggregatePath}},
+                        RefToColumnName = {{refToColumnName}},
                     }
                     """, column.Member.Order);
             }
@@ -265,10 +283,10 @@ internal class MetadataForDataPreview : IMultiAggregateSourceFile {
                   export type AggregateMember = {
                     type: "own-column" | "parent-key" | "ref-key"
                     /**
-                     * 外部参照先テーブルとの間の関係性の表示用名称。
+                     * 外部参照先テーブルのルート集約からのパス（スラッシュ区切り）。
                      * このメンバーがref-keyでない場合はnull。
                      */
-                    refRelationName: string | null
+                    refToAggregatePath: string | null
                     physicalName: string
                     displayName: string
                     columnName: string
@@ -284,8 +302,17 @@ internal class MetadataForDataPreview : IMultiAggregateSourceFile {
                     enumType: string | null
                     isPrimaryKey: boolean
                     isNullable: boolean
+                    /**
+                     * 外部参照先テーブルのルート集約からのパス（スラッシュ区切り）。
+                     * このメンバーがref-keyでない場合はnull。
+                     */
+                    refToAggregatePath: string | null
+                    /**
+                     * このメンバーと対応する、外部参照先テーブルのメンバーのDB上のカラム名。
+                     * このメンバーがref-keyでない場合はnull。
+                     */
+                    refToColumnName: string | null
                   }
-
                 }
                 """,
         };

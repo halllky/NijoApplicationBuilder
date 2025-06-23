@@ -110,8 +110,8 @@ export const DbTableMultiEditorView = React.forwardRef(({ itemIndex, value, onCh
     const thisTableMetadata = tableMetadata.find(table => table.tableName === value.tableName)
     const valueColumns: Layout.EditableGridColumnDef<EditableDbRecord>[] = []
 
-    for (const column of thisTableMetadata?.columns ?? []) {
-      if (column.foreignKeyTableName) {
+    for (const column of thisTableMetadata?.members ?? []) {
+      if (column.refToAggregatePath) {
         // 外部キーの列の場合は値を直接入力するのではなくダイアログから選択
         valueColumns.push(cellType.other(
           column.columnName ?? '',
@@ -119,10 +119,10 @@ export const DbTableMultiEditorView = React.forwardRef(({ itemIndex, value, onCh
             renderCell: cell => {
               const handleClick = () => {
                 setForeignKeyReferenceDialog({
-                  tableMetadata: tableMetadata.find(table => table.tableName === column.foreignKeyTableName)!,
+                  tableMetadata: tableMetadata.find(table => table.tableName === column.refToAggregatePath)!,
                   onSelect: selectedRecord => {
                     const clone = window.structuredClone(cell.row.original)
-                    const value = ReactHookForm.get(selectedRecord, `values.${column.foreignKeyColumnName}` as ReactHookForm.FieldPathByValue<EditableDbRecord, string | undefined>)
+                    const value = ReactHookForm.get(selectedRecord, `values.${column.refToColumnName}` as ReactHookForm.FieldPathByValue<EditableDbRecord, string | undefined>)
                     clone.changed = true
                     ReactHookForm.set(clone, `values.${column.columnName}`, value)
                     update(cell.row.index, clone)
@@ -352,7 +352,7 @@ const ForeignKeyReferenceDialog = ({
       ),
     })
 
-    const valueColumns = tableMetadata.columns.map(column => cellType.text(
+    const valueColumns = tableMetadata.members.map(column => cellType.text(
       `values.${column.columnName}` as ReactHookForm.FieldPathByValue<EditableDbRecord, string | undefined>,
       column.columnName ?? '',
       {

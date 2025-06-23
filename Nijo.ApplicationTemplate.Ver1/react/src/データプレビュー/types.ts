@@ -68,7 +68,7 @@ export type GetDbRecordsParameter = {
 
 export type DbTableMetadata = {
   tableName: string
-  columns: DbColumnMetadata[]
+  members: DbColumnMetadata[]
 }
 
 export type DbColumnMetadata = {
@@ -76,8 +76,8 @@ export type DbColumnMetadata = {
   type: string
   isPrimaryKey: boolean
   isNullable: boolean
-  foreignKeyTableName: string | null
-  foreignKeyColumnName: string | null
+  refToAggregatePath: string | null
+  refToColumnName: string | null
 }
 
 export type ExecuteQueryReturn = {

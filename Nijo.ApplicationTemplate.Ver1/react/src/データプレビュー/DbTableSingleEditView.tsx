@@ -45,7 +45,7 @@ export const DbTableSingleItemSelectorDialog = ({
       renderCell: cell => {
 
         const handleClick = () => {
-          const primaryKeyColumns = tableMetadata.columns
+          const primaryKeyColumns = tableMetadata.members
             .filter(c => c.isPrimaryKey)
             .map(c => c.columnName)
           const primaryKeyValues = primaryKeyColumns.map(c => cell.row.original.values[c] ?? '')
@@ -60,7 +60,7 @@ export const DbTableSingleItemSelectorDialog = ({
       },
     })
 
-    const valueColumns = tableMetadata.columns.map(column => cellType.text(
+    const valueColumns = tableMetadata.members.map(column => cellType.text(
       `values.${column.columnName}` as ReactHookForm.FieldPathByValue<EditableDbRecord, string | undefined>,
       column.columnName ?? '',
       {
