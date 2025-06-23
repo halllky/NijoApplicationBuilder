@@ -27,6 +27,11 @@ namespace Nijo.ValueMemberTypes {
         /// <inheritdoc cref="EnumDefParser"/>
         private readonly EnumDefParser _parser;
 
+        /// <summary>
+        /// 列挙型の種類定義
+        /// </summary>
+        public EnumDefParser Definition => _parser;
+
         public string TypePhysicalName => _xElement.Name.LocalName;
         public string SchemaTypeName => _xElement.Name.LocalName;
         public string CsDomainTypeName => _parser.CsEnumName;

@@ -60,7 +60,7 @@ namespace Nijo.Models.DataModelModules {
 
             var parent = Aggregate.GetParent();
             if (parent != null) {
-                foreach (var parentKey in EnumerateKeysRecursively(parent, null, ["Parent"])) {
+                foreach (var parentKey in EnumerateKeysRecursively(true, parent, null, ["Parent"])) {
                     yield return parentKey;
                 }
             }
@@ -71,7 +71,7 @@ namespace Nijo.Models.DataModelModules {
                     yield return new OwnColumnMember(vm);
 
                 } else if (member is RefToMember refTo) {
-                    foreach (var refToKey in EnumerateKeysRecursively(refTo.RefTo, refTo, [refTo.PhysicalName])) {
+                    foreach (var refToKey in EnumerateKeysRecursively(false, refTo.RefTo, refTo, [refTo.PhysicalName])) {
                         yield return refToKey;
                     }
                 }
@@ -80,11 +80,11 @@ namespace Nijo.Models.DataModelModules {
             // 親や参照先の集約のキーを辿る。
             // 子孫テーブルは祖先のキーを継承する。
             // 参照元は参照先のキーを継承する（FOREIGN KEY）。
-            static IEnumerable<EFCoreEntityColumn> EnumerateKeysRecursively(AggregateBase parentOrRef, RefToMember? refEntry, IEnumerable<string> path) {
+            static IEnumerable<EFCoreEntityColumn> EnumerateKeysRecursively(bool isParent, AggregateBase parentOrRef, RefToMember? refEntry, IEnumerable<string> path) {
                 // 親のさらに親
                 var ancestor = parentOrRef.GetParent();
                 if (ancestor != null) {
-                    foreach (var ancestorKey in EnumerateKeysRecursively(ancestor, refEntry, [.. path, "Parent"])) {
+                    foreach (var ancestorKey in EnumerateKeysRecursively(true, ancestor, refEntry, [.. path, "Parent"])) {
                         yield return ancestorKey;
                     }
                 }
@@ -92,11 +92,11 @@ namespace Nijo.Models.DataModelModules {
                 foreach (var member in parentOrRef.GetMembers()) {
                     if (member is ValueMember vm && vm.IsKey) {
                         yield return refEntry != null
-                            ? new RefKeyMember(refEntry, vm, path) // 祖先かつ参照先の場合は参照先が優先
+                            ? new RefKeyMember(refEntry, vm, path, isParent) // 祖先かつ参照先の場合は参照先が優先
                             : new ParentKeyMember(vm, path);
 
                     } else if (member is RefToMember refTo && refTo.IsKey) {
-                        foreach (var refToKey in EnumerateKeysRecursively(refTo.RefTo, refEntry ?? refTo, [.. path, refTo.PhysicalName])) {
+                        foreach (var refToKey in EnumerateKeysRecursively(isParent, refTo.RefTo, refEntry ?? refTo, [.. path, refTo.PhysicalName])) {
                             yield return refToKey;
                         }
                     }
@@ -416,11 +416,12 @@ namespace Nijo.Models.DataModelModules {
         /// 外部参照がある場合の、参照先のキーを継承したカラム
         /// </summary>
         internal class RefKeyMember : EFCoreEntityColumn {
-            internal RefKeyMember(RefToMember refEntry, ValueMember member, IEnumerable<string> path) {
+            internal RefKeyMember(RefToMember refEntry, ValueMember member, IEnumerable<string> path, bool isParentKey) {
                 RefEntry = refEntry;
                 Member = member;
                 PhysicalName = $"{path.Join("_")}_{member.PhysicalName}";
                 DbName = $"{path.Join("_")}_{member.DbName}";
+                IsParentKey = isParentKey;
             }
             internal RefToMember RefEntry { get; }
             internal override ValueMember Member { get; }
@@ -429,6 +430,10 @@ namespace Nijo.Models.DataModelModules {
             internal override string DisplayName => Member.DisplayName;
             internal override string DbName { get; }
             internal override bool IsKey => RefEntry.IsKey;
+            /// <summary>
+            /// この参照先キーが同時に <see cref="ParentKeyMember"/> であるかどうか。
+            /// </summary>
+            internal bool IsParentKey { get; }
         }
         #endregion メンバー
 

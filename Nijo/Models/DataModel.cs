@@ -249,6 +249,9 @@ namespace Nijo.Models {
                 aggregateFile.AddAppSrvMethod(batchUpdate.RenderAppSrvMethod(ctx), "一括更新処理");
             }
 
+            // メタデータ
+            ctx.Use<MetadataForDataPreview>().Register(rootAggregate);
+
             aggregateFile.ExecuteRendering(ctx);
         }
 
