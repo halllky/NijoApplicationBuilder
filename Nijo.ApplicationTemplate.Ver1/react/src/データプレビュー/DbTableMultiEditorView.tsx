@@ -11,7 +11,10 @@ export type DbTableEditorViewRef = {
   getCurrentRecords: () => EditableDbRecord[]
 }
 
-export const DbTableEditorView = React.forwardRef(({ itemIndex, value, onChangeDefinition, onDeleteDefinition, tableMetadata, trigger, zoom, handleMouseDown }: {
+/**
+ * DBレコード一括編集ウィンドウ
+ */
+export const DbTableMultiEditorView = React.forwardRef(({ itemIndex, value, onChangeDefinition, onDeleteDefinition, tableMetadata, trigger, zoom, handleMouseDown }: {
   itemIndex: number
   value: DbTableEditor
   onChangeDefinition: (index: number, value: DbTableEditor) => void

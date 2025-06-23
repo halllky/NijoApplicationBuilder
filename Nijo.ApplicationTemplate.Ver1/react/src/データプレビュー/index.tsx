@@ -5,7 +5,7 @@ import * as Input from "../input"
 import * as Icon from "@heroicons/react/24/outline"
 import * as Layout from "../layout"
 import { DiagramView } from "../layout/DiagramView"
-import { DbTableEditorView, DbTableEditorViewRef } from "./DbTableEditorView"
+import { DbTableMultiEditorView, DbTableEditorViewRef } from "./DbTableMultiEditorView"
 import SqlAndResultView from "./SqlAndResultView"
 import useQueryEditorServerApi, { QueryEditorServerApiContext } from "./useQueryEditorServerApi"
 import useEvent from "react-use-event-hook"
@@ -244,7 +244,7 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
       const itemIndex = fields.findIndex(f => f.id === item.id)
       const refIndex = itemIndex >= 0 ? itemIndex : 0
       return (
-        <DbTableEditorView
+        <DbTableMultiEditorView
           ref={dbTableEditorsRef.current[refIndex]}
           itemIndex={itemIndex}
           value={item}
