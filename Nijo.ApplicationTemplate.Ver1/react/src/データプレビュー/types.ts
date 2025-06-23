@@ -9,10 +9,10 @@ export type QueryEditor = {
 }
 
 /** クエリエディタのアイテム */
-export type QueryEditorItem = SqlAndResult | DbTableEditor
+export type QueryEditorItem = SqlAndResult | DbTableMultiItemEditor | DbTableSingleItemEditor
 
 /** すべてのダイアグラムアイテム（クエリ、テーブル編集、コメント） */
-export type QueryEditorDiagramItem = SqlAndResult | DbTableEditor | (Comment & { type: "comment" })
+export type QueryEditorDiagramItem = SqlAndResult | DbTableMultiItemEditor | DbTableSingleItemEditor | (Comment & { type: "comment" })
 
 /** SQLとその結果を表示するアイテム */
 export type SqlAndResult = DiagramItem & {
@@ -22,8 +22,8 @@ export type SqlAndResult = DiagramItem & {
   isSettingCollapsed: boolean
 }
 
-/** データベースのテーブルを表示するアイテム */
-export type DbTableEditor = DiagramItem & {
+/** データベースのテーブルを一括編集するアイテム */
+export type DbTableMultiItemEditor = DiagramItem & {
   title: string
   type: "dbTableEditor"
   tableName: string
@@ -31,11 +31,17 @@ export type DbTableEditor = DiagramItem & {
   isSettingCollapsed: boolean
 }
 
+/** データベースのテーブルを集約単位で1件分編集するアイテム */
+export type DbTableSingleItemEditor = DiagramItem & {
+  title: string
+  type: "dbTableSingleEditor"
+  rootTableName: string
+  rootItemKey: string[]
+  isSettingCollapsed: boolean
+}
+
 /** 各クエリやテーブル編集がサーバーからの再読み込みをトリガーするためのトークン */
 export type ReloadTrigger = unknown
-
-// EditorItemLayoutはDiagramItemLayoutと同じなので削除
-// export type EditorItemLayout = DiagramItemLayout
 
 // ------------------------------------
 /** コメント */

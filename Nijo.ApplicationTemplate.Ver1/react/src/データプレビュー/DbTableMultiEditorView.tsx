@@ -1,12 +1,13 @@
 import useEvent from "react-use-event-hook"
 import * as ReactHookForm from "react-hook-form"
 import * as Icon from "@heroicons/react/24/outline"
-import { EditableDbRecord, DbTableEditor, ReloadTrigger, GetDbRecordsReturn, DbTableMetadata } from "./types"
+import { EditableDbRecord, DbTableMultiItemEditor, ReloadTrigger, GetDbRecordsReturn, DbTableMetadata } from "./types"
 import * as Input from "../input"
 import * as Layout from "../layout"
 import React from "react"
 import useQueryEditorServerApi from "./useQueryEditorServerApi"
 import { SqlTextarea } from "./SqlTextarea"
+
 export type DbTableEditorViewRef = {
   getCurrentRecords: () => EditableDbRecord[]
 }
@@ -16,8 +17,8 @@ export type DbTableEditorViewRef = {
  */
 export const DbTableMultiEditorView = React.forwardRef(({ itemIndex, value, onChangeDefinition, onDeleteDefinition, tableMetadata, trigger, zoom, handleMouseDown }: {
   itemIndex: number
-  value: DbTableEditor
-  onChangeDefinition: (index: number, value: DbTableEditor) => void
+  value: DbTableMultiItemEditor
+  onChangeDefinition: (index: number, value: DbTableMultiItemEditor) => void
   onDeleteDefinition: (index: number) => void
   tableMetadata: DbTableMetadata[]
   trigger: ReloadTrigger

@@ -12,6 +12,7 @@ import useEvent from "react-use-event-hook"
 import { UUID } from "uuidjs"
 import { CommentView } from "./CommentView"
 import { DiagramItemLayout } from "../layout/DiagramView/types"
+import { DbTableSingleEditView, DbTableSingleItemSelectorDialog, DbTableSingleItemSelectorDialogProps } from "./DbTableSingleEditView"
 
 export type QueryEditorProps = {
   /** データ操作対象のバックエンドのURL */
@@ -195,13 +196,33 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
     append(createNewQueryEditorItem("sqlAndResult", newQueryTitle))
   })
 
-  // ウィンドウの追加（テーブル編集）
+  // ウィンドウの追加（テーブル一括編集）
   const [newTableName, setNewTableName] = React.useState(tableMetadata[0]?.tableName ?? "")
   const handleChangeNewTableName = useEvent((e: React.ChangeEvent<HTMLSelectElement>) => {
     setNewTableName(e.target.value)
   })
-  const handleAddTableEditor = useEvent(() => {
+  const handleAddMultiItemEditor = useEvent(() => {
     append(createNewQueryEditorItem("dbTableEditor", newTableName))
+  })
+
+  // ウィンドウの追加（テーブル詳細編集）
+  const [dbTableSingleItemSelectorDialogProps, setDbTableSingleItemSelectorDialogProps] = React.useState<DbTableSingleItemSelectorDialogProps | null>(null)
+  const handleOpenSingleItemSelector = useEvent(() => {
+    const editTableMetadata = tableMetadata.find(t => t.tableName === newTableName)
+    if (!editTableMetadata) {
+      console.log("テーブルが見つかりません", newTableName)
+      return
+    }
+    setDbTableSingleItemSelectorDialogProps({
+      tableMetadata: editTableMetadata,
+      onSelect: (keys: string[]) => {
+        append(createNewQueryEditorItem("dbTableSingleEditor", newTableName, keys))
+        setDbTableSingleItemSelectorDialogProps(null)
+      },
+      onCancel: () => {
+        setDbTableSingleItemSelectorDialogProps(null)
+      },
+    })
   })
 
   // ---------------------------------
@@ -240,7 +261,7 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
           handleMouseDown={handleMouseDown}
         />
       )
-    } else {
+    } else if (item.type === "dbTableEditor") {
       const itemIndex = fields.findIndex(f => f.id === item.id)
       const refIndex = itemIndex >= 0 ? itemIndex : 0
       return (
@@ -248,8 +269,22 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
           ref={dbTableEditorsRef.current[refIndex]}
           itemIndex={itemIndex}
           value={item}
-          onChangeDefinition={(idx, updatedItem) => handleUpdateDiagramItem(index, updatedItem)}
-          onDeleteDefinition={() => handleRemoveDiagramItem(index)}
+          onChangeDefinition={handleUpdateDiagramItem}
+          onDeleteDefinition={handleRemoveDiagramItem}
+          tableMetadata={tableMetadata}
+          trigger={trigger}
+          zoom={zoom}
+          handleMouseDown={handleMouseDown}
+        />
+      )
+    } else {
+      const itemIndex = fields.findIndex(f => f.id === item.id)
+      return (
+        <DbTableSingleEditView
+          itemIndex={itemIndex}
+          value={item}
+          onChangeDefinition={handleUpdateDiagramItem}
+          onDeleteDefinition={handleRemoveDiagramItem}
           tableMetadata={tableMetadata}
           trigger={trigger}
           zoom={zoom}
@@ -305,8 +340,11 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
                 <option key={table.tableName} value={table.tableName}>{table.tableName}</option>
               ))}
             </select>
-            <Input.IconButton onClick={handleAddTableEditor} fill>
-              追加
+            <Input.IconButton onClick={handleAddMultiItemEditor} fill>
+              一括編集
+            </Input.IconButton>
+            <Input.IconButton onClick={handleOpenSingleItemSelector} fill>
+              詳細編集
             </Input.IconButton>
           </div>
           <div className="flex gap-1">
@@ -319,6 +357,10 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
           </div>
         </div>
       </DiagramView>
+
+      {dbTableSingleItemSelectorDialogProps && (
+        <DbTableSingleItemSelectorDialog {...dbTableSingleItemSelectorDialogProps} />
+      )}
     </div>
   )
 }
@@ -332,7 +374,7 @@ const GET_DEFAULT_DATA = (): QueryEditor => ({
   comments: [],
 })
 
-const createNewQueryEditorItem = (type: "sqlAndResult" | "dbTableEditor", queryTitleOrTableName: string): QueryEditorItem => {
+const createNewQueryEditorItem = (type: "sqlAndResult" | "dbTableEditor" | "dbTableSingleEditor", queryTitleOrTableName: string, keys?: string[]): QueryEditorItem => {
   if (type === "sqlAndResult") {
     return {
       id: UUID.generate(),
@@ -347,13 +389,30 @@ const createNewQueryEditorItem = (type: "sqlAndResult" | "dbTableEditor", queryT
         height: 200,
       },
     }
-  } else {
+  } else if (type === "dbTableEditor") {
     return {
       id: UUID.generate(),
       title: queryTitleOrTableName,
       type,
       tableName: queryTitleOrTableName,
       whereClause: "",
+      isSettingCollapsed: false,
+      layout: {
+        x: 0,
+        y: 0,
+        width: 640,
+        height: 200,
+      },
+    }
+  } else {
+    if (!keys) throw new Error("keys is required")
+
+    return {
+      id: UUID.generate(),
+      title: queryTitleOrTableName,
+      type,
+      rootTableName: queryTitleOrTableName,
+      rootItemKey: keys,
       isSettingCollapsed: false,
       layout: {
         x: 0,
