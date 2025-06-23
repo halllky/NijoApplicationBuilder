@@ -93,6 +93,15 @@ public class SchemaParseContext {
     internal string GetLatinName(XElement xElement) {
         return xElement.Attribute(BasicNodeOptions.LatinName.AttributeName)?.Value ?? xElement.Name.LocalName.ToHashedString();
     }
+    /// <summary>
+    /// このXElementの直前にXCommentがあればそのテキストを返し、なければ空文字列を返します。
+    /// 改行コードは \r\n または \n に置き換えられます。
+    /// </summary>
+    internal string GetComment(XElement xElement, E_CsTs csts) {
+        var rawText = xElement.PreviousNode is XComment comment ? comment.Value.Trim() : string.Empty;
+        var lineEnding = csts == E_CsTs.CSharp ? "\\r\\n" : "\\n";
+        return rawText.Replace("\r\n", lineEnding).Replace("\n", lineEnding);
+    }
 
 
     /// <summary>

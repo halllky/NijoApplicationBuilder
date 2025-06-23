@@ -28,6 +28,7 @@ namespace Nijo.ImmutableSchema {
         public string PhysicalName => _ctx.GetPhysicalName(_xElement);
         public string DisplayName => _ctx.GetDisplayName(_xElement);
         public decimal Order => _xElement.ElementsBeforeSelf().Count();
+        public string GetComment(E_CsTs csts) => _ctx.GetComment(_xElement, csts);
 
         /// <summary>
         /// 参照元集約

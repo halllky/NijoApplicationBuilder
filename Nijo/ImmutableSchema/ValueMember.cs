@@ -28,6 +28,7 @@ namespace Nijo.ImmutableSchema {
         public string DisplayName => _ctx.GetDisplayName(XElement);
         public string DbName => _ctx.GetDbName(XElement);
         public decimal Order => XElement.ElementsBeforeSelf().Count();
+        public string GetComment(E_CsTs csts) => _ctx.GetComment(XElement, csts);
 
         public AggregateBase Owner => XElement.Parent == PreviousNode?.XElement
             ? (AggregateBase?)PreviousNode ?? throw new InvalidOperationException() // パスの巻き戻しの場合
