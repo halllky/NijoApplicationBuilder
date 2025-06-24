@@ -175,15 +175,25 @@ public class QueryEditorServerApi : ControllerBase {
                 if (!record.ExistsInDb) {
                     // SQL文生成
                     using var insertCommand = conn.CreateCommand();
+
+                    // 排他制御用のバージョンカラムはUIでは表示しないのでここで強制的に0を設定する
+                    var hasVersion = entityType.GetProperties().Any(x => x.GetColumnName() == "Version");
+
                     insertCommand.CommandText = $$"""
                         INSERT INTO "{{record.TableName}}" (
                         {{string.Join(Environment.NewLine, record.Values.Keys.Select((key, ix) => $$"""
                             {{(ix == 0 ? "" : ",")}}"{{key}}"
                         """))}}
+                        {{(hasVersion ? $$"""
+                            ,"Version"
+                        """ : string.Empty)}}
                         ) VALUES (
                         {{string.Join(Environment.NewLine, record.Values.Values.Select((x, ix) => $$"""
                             {{(ix == 0 ? "" : ",")}} @p{{ix}}
                         """))}}
+                        {{(hasVersion ? $$"""
+                            ,0
+                        """ : string.Empty)}}
                         )
                         """;
 

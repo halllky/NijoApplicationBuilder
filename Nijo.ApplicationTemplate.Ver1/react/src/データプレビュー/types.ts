@@ -55,7 +55,7 @@ export type UseQueryEditorServerApiReturn = {
   /** クエリを実行する */
   executeQuery: (sql: string) => Promise<{ ok: true, records: ExecuteQueryReturn } | { ok: false, error: string }>
   /** テーブルメタデータ取得 */
-  getTableMetadata: () => Promise<{ ok: true, data: DataModelMetadata.Aggregate[] } | { ok: false, error: string }>
+  getTableMetadata: () => Promise<{ ok: true, data: TableMetadataHelper } | { ok: false, error: string }>
   /** 更新用レコード取得 */
   getDbRecords: (query: GetDbRecordsParameter) => Promise<{ ok: true, data: GetDbRecordsReturn } | { ok: false, error: string }>
   /** レコード一括更新 */
@@ -82,4 +82,57 @@ export type EditableDbRecord = {
   existsInDb: boolean
   changed: boolean
   deleted: boolean
+}
+
+// ------------------------------------
+export type TableMetadataHelper = ReturnType<typeof tableMetadataHelper>
+
+export const tableMetadataHelper = (rootAggregates: DataModelMetadata.Aggregate[]) => {
+
+  /** すべての集約の一覧を返す */
+  const allAggregates = () => {
+    const result: DataModelMetadata.Aggregate[] = []
+    const pushRecursively = (aggregate: DataModelMetadata.Aggregate) => {
+      result.push(aggregate)
+      for (const member of aggregate.members) {
+        if (member.type === "child" || member.type === "children") {
+          pushRecursively(member)
+        }
+      }
+    }
+    for (const aggregate of rootAggregates) {
+      pushRecursively(aggregate)
+    }
+    return result
+  }
+
+  /** ルート集約を探して返す */
+  const getRoot = (metadata: DataModelMetadata.Aggregate) => {
+    // パスの先頭がルート集約の物理名
+    const rootPath = metadata.path.split("/")[0]
+    const rootAggregate = rootAggregates.find(m => m.physicalName === rootPath)
+    if (!rootAggregate) {
+      throw new Error(`ルート集約が見つかりません: ${rootPath}`)
+    }
+    return rootAggregate
+  }
+
+  /** 外部参照先テーブルを探して返す */
+  const getRefTo = (column: DataModelMetadata.AggregateMember) => {
+    if (column.type !== "ref-key") {
+      return undefined
+    }
+    return allAggregates().find(m => m.path === column.refToAggregatePath)
+  }
+
+  return {
+    /** ルート集約の一覧を返す */
+    rootAggregates: () => [...rootAggregates],
+    /** すべての集約の一覧を返す */
+    allAggregates,
+    /** ルート集約を探して返す */
+    getRoot,
+    /** 外部参照先テーブルを探して返す */
+    getRefTo,
+  }
 }

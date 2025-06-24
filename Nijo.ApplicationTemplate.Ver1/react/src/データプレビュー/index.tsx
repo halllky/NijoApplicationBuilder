@@ -1,5 +1,5 @@
 import React from "react"
-import { EditableDbRecord, QueryEditor, QueryEditorItem, QueryEditorDiagramItem } from "./types"
+import { EditableDbRecord, QueryEditor, QueryEditorItem, QueryEditorDiagramItem, TableMetadataHelper } from "./types"
 import * as ReactHookForm from "react-hook-form"
 import * as Input from "../input"
 import * as Icon from "@heroicons/react/24/outline"
@@ -28,7 +28,7 @@ export type QueryEditorProps = {
 export default function ({ backendUrl, className }: QueryEditorProps) {
   const { getTableMetadata } = useQueryEditorServerApi(backendUrl)
   const [loadError, setLoadError] = React.useState<string>()
-  const [tableMetadata, setTableMetadata] = React.useState<DataModelMetadata.Aggregate[]>()
+  const [tableMetadata, setTableMetadata] = React.useState<TableMetadataHelper>()
   const [defaultValues, setDefaultValues] = React.useState<QueryEditor>()
 
   React.useEffect(() => {
@@ -92,7 +92,7 @@ export default function ({ backendUrl, className }: QueryEditorProps) {
 }
 
 const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
-  tableMetadata: DataModelMetadata.Aggregate[]
+  tableMetadata: TableMetadataHelper
   defaultValues: QueryEditor
   onSave: (data: QueryEditor) => void
   className?: string
@@ -198,7 +198,7 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
   })
 
   // ウィンドウの追加（テーブル一括編集）
-  const [newTableName, setNewTableName] = React.useState(tableMetadata[0]?.tableName ?? "")
+  const [newTableName, setNewTableName] = React.useState(tableMetadata.rootAggregates()[0]?.tableName ?? "")
   const handleChangeNewTableName = useEvent((e: React.ChangeEvent<HTMLSelectElement>) => {
     setNewTableName(e.target.value)
   })
@@ -209,13 +209,16 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
   // ウィンドウの追加（テーブル詳細編集）
   const [dbTableSingleItemSelectorDialogProps, setDbTableSingleItemSelectorDialogProps] = React.useState<DbTableSingleItemSelectorDialogProps | null>(null)
   const handleOpenSingleItemSelector = useEvent(() => {
-    const editTableMetadata = tableMetadata.find(t => t.tableName === newTableName)
+    const editTableMetadata = tableMetadata.allAggregates().find(t => t.tableName === newTableName)
     if (!editTableMetadata) {
       console.log("テーブルが見つかりません", newTableName)
       return
     }
+
+    // 詳細編集は必ずルート集約単位なので、selectで子孫集約が選択された場合はルート集約を選択したものとして扱う
+    const rootAggregate = tableMetadata.getRoot(editTableMetadata)
     setDbTableSingleItemSelectorDialogProps({
-      tableMetadata: editTableMetadata,
+      tableMetadata: rootAggregate,
       onSelect: (keys: string[]) => {
         append(createNewQueryEditorItem("dbTableSingleEditor", newTableName, keys))
         setDbTableSingleItemSelectorDialogProps(null)
@@ -337,7 +340,7 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
               onChange={handleChangeNewTableName}
               className="flex-1 bg-white border border-gray-500"
             >
-              {tableMetadata.map(table => (
+              {tableMetadata.allAggregates().map(table => (
                 <option key={table.tableName} value={table.tableName}>{table.tableName}</option>
               ))}
             </select>

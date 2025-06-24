@@ -276,7 +276,7 @@ internal class MetadataForDataPreview : IMultiAggregateSourceFile {
                     displayName: string
                     tableName: string
                     description: string
-                    members: AggregateMember[]
+                    members: (AggregateMember | Aggregate)[]
                   }
 
                   /** 集約のメンバー */

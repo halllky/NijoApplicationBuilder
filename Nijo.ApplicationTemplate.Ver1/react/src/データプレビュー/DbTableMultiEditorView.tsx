@@ -1,7 +1,7 @@
 import useEvent from "react-use-event-hook"
 import * as ReactHookForm from "react-hook-form"
 import * as Icon from "@heroicons/react/24/outline"
-import { EditableDbRecord, DbTableMultiItemEditor, ReloadTrigger, GetDbRecordsReturn } from "./types"
+import { EditableDbRecord, DbTableMultiItemEditor, ReloadTrigger, GetDbRecordsReturn, TableMetadataHelper } from "./types"
 import * as Input from "../input"
 import * as Layout from "../layout"
 import React from "react"
@@ -21,7 +21,7 @@ export const DbTableMultiEditorView = React.forwardRef(({ itemIndex, value, onCh
   value: DbTableMultiItemEditor
   onChangeDefinition: (index: number, value: DbTableMultiItemEditor) => void
   onDeleteDefinition: (index: number) => void
-  tableMetadata: DataModelMetadata.Aggregate[]
+  tableMetadata: TableMetadataHelper
   trigger: ReloadTrigger
   zoom: number
   handleMouseDown: React.MouseEventHandler<Element>
@@ -108,19 +108,27 @@ export const DbTableMultiEditorView = React.forwardRef(({ itemIndex, value, onCh
       ),
     })
 
-    const thisTableMetadata = tableMetadata.find(table => table.tableName === value.tableName)
+    const thisTableMetadata = tableMetadata.allAggregates().find(table => table.tableName === value.tableName)
     const valueColumns: Layout.EditableGridColumnDef<EditableDbRecord>[] = []
 
     for (const column of thisTableMetadata?.members ?? []) {
-      if (column.refToAggregatePath) {
+      if (column.type === "root" || column.type === "child" || column.type === "children") {
+        // 子テーブルは別のウィンドウ
+        continue
+
+      } else if (column.type === "ref-key") {
         // 外部キーの列の場合は値を直接入力するのではなくダイアログから選択
         valueColumns.push(cellType.other(
           column.columnName ?? '',
           {
             renderCell: cell => {
               const handleClick = () => {
+                const refToAggregate = tableMetadata.getRefTo(column)
+                if (!refToAggregate) {
+                  throw new Error(`外部参照先テーブルが見つかりません: ${column.refToAggregatePath}`)
+                }
                 setForeignKeyReferenceDialog({
-                  tableMetadata: tableMetadata.find(table => table.tableName === column.refToAggregatePath)!,
+                  tableMetadata: refToAggregate,
                   onSelect: selectedRecord => {
                     const clone = window.structuredClone(cell.row.original)
                     const value = ReactHookForm.get(selectedRecord, `values.${column.refToColumnName}` as ReactHookForm.FieldPathByValue<EditableDbRecord, string | undefined>)
@@ -146,7 +154,7 @@ export const DbTableMultiEditorView = React.forwardRef(({ itemIndex, value, onCh
             },
           })
         )
-      } else {
+      } else if (column.type === "own-column" || column.type === "parent-key") {
         // 外部キーの列でない場合は値を直接入力。
         // 数値や日付などのバリエーションは特に考慮しない。
         valueColumns.push(cellType.text(
@@ -154,6 +162,8 @@ export const DbTableMultiEditorView = React.forwardRef(({ itemIndex, value, onCh
           column.columnName ?? '',
           {})
         )
+      } else {
+        throw new Error(`不明な列の種類: ${column.type}`)
       }
     }
 
@@ -264,7 +274,7 @@ export const DbTableMultiEditorView = React.forwardRef(({ itemIndex, value, onCh
               onChange={handleChangeTableName}
               className="border border-gray-500"
             >
-              {tableMetadata.map(table => (
+              {tableMetadata.allAggregates().map(table => (
                 <option key={table.tableName} value={table.tableName}>{table.tableName}</option>
               ))}
             </select>
@@ -353,11 +363,21 @@ const ForeignKeyReferenceDialog = ({
       ),
     })
 
-    const valueColumns = tableMetadata.members.map(column => cellType.text(
-      `values.${column.columnName}` as ReactHookForm.FieldPathByValue<EditableDbRecord, string | undefined>,
-      column.columnName ?? '',
-      {
-      })) ?? []
+    const valueColumns: Layout.EditableGridColumnDef<EditableDbRecord>[] = []
+
+    for (const column of tableMetadata.members) {
+      if (column.type === "root" || column.type === "child" || column.type === "children") {
+        // 子テーブルは別のウィンドウ
+        continue
+      } else if (column.type === "own-column" || column.type === "parent-key" || column.type === "ref-key") {
+        valueColumns.push(cellType.text(
+          `values.${column.columnName}` as ReactHookForm.FieldPathByValue<EditableDbRecord, string | undefined>,
+          column.columnName ?? '',
+          {}))
+      } else {
+        throw new Error(`不明な列の種類: ${column.type}`)
+      }
+    }
 
     return [
       selectColumn,
