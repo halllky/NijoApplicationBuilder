@@ -282,11 +282,6 @@ internal class MetadataForDataPreview : IMultiAggregateSourceFile {
                   /** 集約のメンバー */
                   export type AggregateMember = {
                     type: "own-column" | "parent-key" | "ref-key"
-                    /**
-                     * 外部参照先テーブルのルート集約からのパス（スラッシュ区切り）。
-                     * このメンバーがref-keyでない場合はnull。
-                     */
-                    refToAggregatePath: string | null
                     physicalName: string
                     displayName: string
                     columnName: string

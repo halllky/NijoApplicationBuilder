@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Data.Common;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -63,54 +64,32 @@ public class QueryEditorServerApi : ControllerBase {
 
     [HttpGet("get-table-metadata")]
     public IActionResult GetTableMetadata() {
-        try {
-            var model = _app.DbContext.GetService<IDesignTimeModel>().Model;
-            var result = new List<DbTableMetadata>();
+        var data = MetadataForDataPreview.EnumerateDataModelsOrderByDataFlow();
 
-            foreach (var entityType in model.GetEntityTypes()) {
-                var tableName = entityType.GetTableName();
+        // カスタムJsonConverterを使用してポリモーフィックシリアライゼーションを実現
+        var options = new JsonSerializerOptions {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = true,
+            Converters = { new AggregateMemberConverter() }
+        };
 
-                // ビューの場合はTableNameがnullになる
-                if (tableName == null) continue;
+        var json = JsonSerializer.Serialize(data, options);
+        return Content(json, "application/json");
+    }
+    /// <summary>
+    /// IAggregateMemberのポリモーフィックシリアライゼーション用のカスタムコンバーター
+    /// </summary>
+    private class AggregateMemberConverter : JsonConverter<MetadataForDataPreview.IAggregateMember> {
+        public override MetadataForDataPreview.IAggregateMember Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
+            throw new NotImplementedException("デシリアライゼーションは実装していません");
+        }
 
-                var tableMetadata = new DbTableMetadata {
-                    TableName = tableName,
-                };
-
-                foreach (var property in entityType.GetProperties().OrderBy(c => c.GetColumnOrder())) {
-                    // 外部キーの場合は相手方テーブルのカラム情報を取得
-                    var firstForeignKey = property.IsForeignKey()
-                        ? property.GetContainingForeignKeys().First()
-                        : null;
-                    // 対応する参照先カラム名を取得
-                    string? foreignKeyColumnName = null;
-                    if (firstForeignKey != null) {
-                        // 現在のプロパティが外部キーの何番目の要素かを調べる
-                        var foreignKeyPropertyIndex = firstForeignKey.Properties.ToList().IndexOf(property);
-                        if (foreignKeyPropertyIndex >= 0 && foreignKeyPropertyIndex < firstForeignKey.PrincipalKey.Properties.Count) {
-                            foreignKeyColumnName = firstForeignKey.PrincipalKey.Properties[foreignKeyPropertyIndex].GetColumnName();
-                        }
-                    }
-
-                    tableMetadata.Columns.Add(new DbColumnMetadata {
-                        ColumnName = property.GetColumnName()!,
-                        Type = property.GetColumnType()!,
-                        IsPrimaryKey = property.IsPrimaryKey(),
-                        IsNullable = property.IsColumnNullable(),
-                        ForeignKeyTableName = firstForeignKey?.PrincipalEntityType.GetTableName(),
-                        ForeignKeyColumnName = foreignKeyColumnName,
-                    });
-                }
-
-                result.Add(tableMetadata);
-            }
-
-            return Ok(result);
-
-        } catch (Exception ex) {
-            return Problem(ex.ToString());
+        public override void Write(Utf8JsonWriter writer, MetadataForDataPreview.IAggregateMember value, JsonSerializerOptions options) {
+            // 実際の型でシリアライゼーションを行う
+            JsonSerializer.Serialize(writer, value, value.GetType(), options);
         }
     }
+
 
     [HttpPost("get-db-records")]
     public async Task<IActionResult> GetDbRecords([FromBody] GetDbRecordsParameter query) {
@@ -282,33 +261,6 @@ public class QueryEditorServerApi : ControllerBase {
             }
         }
     }
-}
-
-/// <summary>
-/// テーブルのメタデータ
-/// </summary>
-public class DbTableMetadata {
-    [JsonPropertyName("tableName")]
-    public string TableName { get; set; } = "";
-    [JsonPropertyName("columns")]
-    public List<DbColumnMetadata> Columns { get; set; } = [];
-}
-/// <summary>
-/// カラムのメタデータ
-/// </summary>
-public class DbColumnMetadata {
-    [JsonPropertyName("columnName")]
-    public string ColumnName { get; set; } = "";
-    [JsonPropertyName("type")]
-    public string Type { get; set; } = "";
-    [JsonPropertyName("isPrimaryKey")]
-    public bool IsPrimaryKey { get; set; }
-    [JsonPropertyName("isNullable")]
-    public bool IsNullable { get; set; }
-    [JsonPropertyName("foreignKeyTableName")]
-    public string? ForeignKeyTableName { get; set; }
-    [JsonPropertyName("foreignKeyColumnName")]
-    public string? ForeignKeyColumnName { get; set; }
 }
 
 /// <summary>
