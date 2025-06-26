@@ -516,10 +516,10 @@ const AggregateGridView = (props: {
 
   const handleAddRow = useEvent(() => {
     // 親テーブルの主キーはここで設定する
-    // TODO: 親テーブルの主キーが複合キーの場合は未対応
+    // TODO: rootItemKeysではなく直近の親のキーの値を使用する必要がある
     const values: Record<string, string> = {}
     let index = 0
-    for (const m of owner.members) {
+    for (const m of childrenAggregate.members) {
       if (m.type !== "parent-key") continue;
       values[m.columnName] = rootItemKeys[index]
       index++
