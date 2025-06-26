@@ -52,6 +52,12 @@ export const useDbRecordGridColumnDef = (
       }
 
       if (column.type === "ref-key" || column.type === "own-column" || column.type === "parent-key") {
+
+        // SingleViewの子テーブルの場合は親キーの列は表示しない
+        if (mode === 'single-view-children' && column.type === "parent-key") {
+          continue
+        }
+
         valueColumns.push(cellType.other(column.columnName ?? '', {
           // 単一ビューの子テーブルの場合は主キーの列は編集不可
           isReadOnly: row => mode === 'single-view-children'

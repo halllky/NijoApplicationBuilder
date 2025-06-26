@@ -414,7 +414,7 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
   // テーブル自身の属性のカラム、または外部参照のキー項目
   if (member.type === "own-column" || member.type === "ref-key") {
     return (
-      <label className="flex gap-1 items-center">
+      <div className="flex gap-1 items-center">
         <div className="basis-40 text-sm break-all select-none text-gray-600">
           {member.columnName}
         </div>
@@ -436,7 +436,7 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
         {refKeySearchDialogProps && (
           <DbTableSingleItemSelectorDialog {...refKeySearchDialogProps} />
         )}
-      </label>
+      </div>
     )
   }
 
@@ -511,7 +511,7 @@ const AggregateGridView = (props: {
 
   return (
     <div className="h-56 w-full flex flex-col overflow-y-auto resize-y">
-      <div className="flex gap-1 p-1">
+      <div className="flex gap-1">
         <span className="text-sm select-none text-gray-500">
           {childrenAggregate.displayName}
         </span>
@@ -520,7 +520,7 @@ const AggregateGridView = (props: {
         rows={fields}
         getColumnDefs={getColumnDefs as unknown as Layout.GetColumnDefsFunction<ReactHookForm.FieldArrayWithId<SingleViewFormType, string, "id">>}
         onChangeRow={handleChangeRow}
-        className="flex-1 border border-gray-500"
+        className="flex-1 border border-gray-400"
       />
       {ForeignKeyReferenceDialog}
     </div>
