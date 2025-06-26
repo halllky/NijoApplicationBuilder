@@ -54,7 +54,7 @@ export const useDbRecordGridColumnDef = (
       if (column.type === "ref-key" || column.type === "own-column" || column.type === "parent-key") {
 
         // SingleViewの子テーブルの場合は親キーの列は表示しない
-        if (mode === 'single-view-children' && column.type === "parent-key") {
+        if (mode === 'single-view-children' && column.refToRelationName == null && column.type === "parent-key") {
           continue
         }
 
@@ -88,10 +88,14 @@ export const useDbRecordGridColumnDef = (
               setForeignKeyReferenceDialog({
                 tableMetadata: refToAggregate,
                 onSelect: selectedRecord => {
+                  // 複合キーの考慮のため、その相手方を参照するキーの値を全部代入する
                   const clone = window.structuredClone(cell.row.original)
-                  const value = ReactHookForm.get(selectedRecord, `values.${column.refToColumnName}` as ReactHookForm.FieldPathByValue<EditableDbRecord, string | undefined>)
+                  for (const m of thisTableMetadata?.members ?? []) {
+                    if (m.type !== "ref-key" || m.refToRelationName !== column.refToRelationName) continue;
+                    if (!m.refToColumnName) throw new Error(`${m.columnName}の参照先カラムが見つかりません。`) // ありえないが念のため
+                    clone.values[m.columnName] = selectedRecord.values[m.refToColumnName]
+                  }
                   clone.changed = true
-                  ReactHookForm.set(clone, `values.${column.columnName}`, value)
                   useFieldArrayUpdate(cell.row.index, clone)
                   setForeignKeyReferenceDialog(null)
                 },
