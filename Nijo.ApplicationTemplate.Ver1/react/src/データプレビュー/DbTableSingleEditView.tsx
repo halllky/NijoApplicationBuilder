@@ -226,6 +226,12 @@ export const DbTableSingleEditView = React.forwardRef((props: DbTableSingleEditV
     onDeleteDefinition(itemIndex)
   })
 
+  const handleClickReset = useEvent(() => {
+    if (!window.confirm('データの変更を取り消しますか？')) return
+    setDefaultValues(defaultValues)
+    setError(null)
+  })
+
   return (
     <div className="bg-gray-200 border border-gray-300 h-full flex flex-col">
       {/* ヘッダ */}
@@ -235,11 +241,14 @@ export const DbTableSingleEditView = React.forwardRef((props: DbTableSingleEditV
           （{propsValue.rootItemKey.join(", ")}）
         </span>
 
-        {rootAggregate && defaultValues && (
-          <Input.IconButton icon={Icon.XMarkIcon} hideText onClick={handleDeleteWindow}>
-            削除
+        {defaultValues && (
+          <Input.IconButton icon={Icon.ArrowUturnLeftIcon} mini outline onClick={handleClickReset}>
+            リセット
           </Input.IconButton>
         )}
+        <Input.IconButton icon={Icon.XMarkIcon} hideText onClick={handleDeleteWindow}>
+          削除
+        </Input.IconButton>
       </div>
 
       {/* ボディ */}
