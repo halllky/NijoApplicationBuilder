@@ -282,7 +282,7 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, defaultValues }: {
         </div>
         <div className="flex-1"></div>
         <Input.IconButton icon={Icon.PlusIcon} outline onClick={handleNewRootAggregate}>新規作成</Input.IconButton>
-        <Input.IconButton outline onClick={() => alert('未実装')}>区分定義</Input.IconButton>
+        <Input.IconButton outline onClick={() => alert('区分定義は未実装です。通常の単語型として定義してください。')}>区分定義</Input.IconButton>
         <div className="basis-4"></div>
         <Input.IconButton fill onClick={executeSave}>保存</Input.IconButton>
       </div>
