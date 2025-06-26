@@ -40,18 +40,34 @@ namespace Nijo {
                 return false;
             }
 
-            // Ver1フォルダをまるごとコピーする（暫定措置）
-            const string VER1_ROOT = @"C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\Nijo.ApplicationTemplate.Ver1";
-            if (!Directory.Exists(VER1_ROOT)) {
+            try {
+                Directory.CreateDirectory(projectRoot);
+
+                // git archive したアプリケーションテンプレートを展開する。
+                // アプリケーションテンプレートは埋め込みリソースになっている。
+                var assembly = Assembly.GetExecutingAssembly();
+                const string RESOURCE_NAME = "Nijo.ApplicationTemplate.Ver1.zip";
+                using (var stream = assembly.GetManifestResourceStream(RESOURCE_NAME)) {
+                    if (stream == null) {
+                        project = null;
+                        error = "アプリケーションテンプレートのリソースが見つかりません。" +
+                               "利用可能なリソースは以下です。\n" +
+                               string.Join("\n", assembly.GetManifestResourceNames());
+                        return false;
+                    }
+
+                    using var archive = new ZipArchive(stream);
+                    archive.ExtractToDirectory(projectRoot);
+                }
+
+                project = new GeneratedProject(Path.GetFullPath(projectRoot));
+                error = null;
+                return true;
+            } catch (Exception ex) {
                 project = null;
-                error = $"テンプレートフォルダが存在しません: {VER1_ROOT}";
+                error = $"プロジェクト作成中にエラーが発生しました: {ex.Message}";
                 return false;
             }
-            DirectoryHelper.CopyDirectoryRecursively(VER1_ROOT, projectRoot);
-
-            project = new GeneratedProject(Path.GetFullPath(projectRoot));
-            error = null;
-            return true;
         }
 
         /// <summary>
