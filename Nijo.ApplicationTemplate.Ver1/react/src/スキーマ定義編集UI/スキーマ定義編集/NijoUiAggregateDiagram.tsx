@@ -243,11 +243,24 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, defaultValues }: {
   });
 
   // 新規ルート集約の作成
-  const { append } = ReactHookForm.useFieldArray({ name: 'xmlElementTrees', control })
+  const { append, remove } = ReactHookForm.useFieldArray({ name: 'xmlElementTrees', control })
   const handleNewRootAggregate = useEvent(() => {
     const localName = prompt('ルート集約名を入力してください。')
     if (!localName) return
     append({ xmlElements: [{ uniqueId: UUID.generate(), indent: 0, localName, attributes: {} }] })
+  })
+
+  // 選択中のルート集約の削除
+  const handleDeleteRootAggregate = useEvent(() => {
+    if (selectedRootAggregateIndex === undefined) return
+
+    const rootAggregateTree = xmlElementTrees?.[selectedRootAggregateIndex]
+    const rootAggregateName = rootAggregateTree?.xmlElements?.[0]?.localName || 'ルート集約'
+
+    if (confirm(`「${rootAggregateName}」を削除しますか？この操作は取り消せません。`)) {
+      remove(selectedRootAggregateIndex)
+      setSelectedRootAggregateIndex(undefined) // 削除後は選択を解除
+    }
   })
 
   return (
@@ -282,6 +295,14 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, defaultValues }: {
         </div>
         <div className="flex-1"></div>
         <Input.IconButton icon={Icon.PlusIcon} outline onClick={handleNewRootAggregate}>新規作成</Input.IconButton>
+        <Input.IconButton
+          icon={Icon.TrashIcon}
+          outline
+          onClick={handleDeleteRootAggregate}
+          disabled={selectedRootAggregateIndex === undefined}
+        >
+          削除
+        </Input.IconButton>
         <Input.IconButton outline onClick={() => alert('区分定義は未実装です。通常の単語型として定義してください。')}>区分定義</Input.IconButton>
         <div className="basis-4"></div>
         <Input.IconButton fill onClick={executeSave}>保存</Input.IconButton>
