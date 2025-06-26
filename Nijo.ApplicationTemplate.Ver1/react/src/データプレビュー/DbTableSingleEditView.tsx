@@ -145,10 +145,12 @@ type SingleViewFormType = {
 }
 
 type SingleViewContextType = {
+  rootItemKeys: string[]
   formMethods: ReactHookForm.UseFormReturn<SingleViewFormType>
   tableMetadataHelper: TableMetadataHelper
 }
 const SingleViewContext = React.createContext<SingleViewContextType>({
+  rootItemKeys: [],
   formMethods: {} as ReactHookForm.UseFormReturn<SingleViewFormType>,
   tableMetadataHelper: {} as TableMetadataHelper,
 })
@@ -279,10 +281,11 @@ const DbTableSingleEditViewAfterLoaded = React.forwardRef((props: DbTableSingleE
   const formMethods = ReactHookForm.useForm<SingleViewFormType>({
     defaultValues,
   })
-  const singleViewContext = React.useMemo(() => ({
+  const singleViewContext: SingleViewContextType = React.useMemo(() => ({
+    rootItemKeys: value.rootItemKey,
     formMethods,
     tableMetadataHelper,
-  }), [formMethods, tableMetadataHelper])
+  }), [value.rootItemKey, formMethods, tableMetadataHelper])
 
   React.useImperativeHandle(ref, () => ({
     getCurrentRecords: () => {
@@ -491,10 +494,12 @@ const AggregateGridView = (props: {
   const {
     formMethods,
     tableMetadataHelper,
+    rootItemKeys,
   } = React.useContext(SingleViewContext)
 
   const { control } = formMethods
   const { fields, append, remove, update } = ReactHookForm.useFieldArray({ name: childrenAggregate.path, control })
+  const gridRef = React.useRef<Layout.EditableGridRef<ReactHookForm.FieldArrayWithId<SingleViewFormType, string, "id">>>(null)
 
   const handleChangeRow: Layout.RowChangeEvent<ReactHookForm.FieldArrayWithId<SingleViewFormType, string, "id">> = useEvent(e => {
     for (const r of e.changedRows) {
@@ -509,14 +514,54 @@ const AggregateGridView = (props: {
     update,
   )
 
+  const handleAddRow = useEvent(() => {
+    // 親テーブルの主キーはここで設定する
+    // TODO: 親テーブルの主キーが複合キーの場合は未対応
+    const values: Record<string, string> = {}
+    let index = 0
+    for (const m of owner.members) {
+      if (m.type !== "parent-key") continue;
+      values[m.columnName] = rootItemKeys[index]
+      index++
+    }
+    append({
+      tableName: childrenAggregate.tableName,
+      values,
+      existsInDb: false,
+      changed: false,
+      deleted: false,
+    })
+  })
+
+  const handleRemoveRow = useEvent(() => {
+    const selectedRows = gridRef.current?.getSelectedRows() ?? []
+    const removedIndexes: number[] = []
+    for (const { row, rowIndex } of selectedRows) {
+      if (row.existsInDb) {
+        update(rowIndex, { ...row, deleted: true })
+      } else {
+        removedIndexes.push(rowIndex)
+      }
+    }
+    remove(removedIndexes)
+  })
+
   return (
     <div className="h-56 w-full flex flex-col overflow-y-auto resize-y">
-      <div className="flex gap-1">
+      <div className="flex flex-wrap gap-1 py-px">
         <span className="text-sm select-none text-gray-500">
           {childrenAggregate.displayName}
         </span>
+        <div className="basis-2"></div>
+        <Input.IconButton icon={Icon.PlusIcon} mini outline onClick={handleAddRow}>
+          追加
+        </Input.IconButton>
+        <Input.IconButton icon={Icon.MinusIcon} mini outline onClick={handleRemoveRow}>
+          削除
+        </Input.IconButton>
       </div>
       <Layout.EditableGrid
+        ref={gridRef}
         rows={fields}
         getColumnDefs={getColumnDefs as unknown as Layout.GetColumnDefsFunction<ReactHookForm.FieldArrayWithId<SingleViewFormType, string, "id">>}
         onChangeRow={handleChangeRow}
