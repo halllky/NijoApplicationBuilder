@@ -56,6 +56,7 @@ export const NijoUiDebugMenu = () => {
   const [startNpmDebuggingProcessing, setStartNpmDebuggingProcessing] = useState(false)
   const startNpmDebugging = useEvent(async () => {
     if (anyCommandProcessing) return
+    setDebugState(state => ({ ...state, consoleOut: '' }))
     setStartNpmDebuggingProcessing(true)
     const response = await fetch(`${SERVER_DOMAIN}/start-npm-debugging`, {
       method: 'POST',
@@ -71,6 +72,7 @@ export const NijoUiDebugMenu = () => {
   const [startDotnetDebuggingProcessing, setStartDotnetDebuggingProcessing] = useState(false)
   const startDotnetDebugging = useEvent(async () => {
     if (anyCommandProcessing) return
+    setDebugState(state => ({ ...state, consoleOut: '' }))
     setStartDotnetDebuggingProcessing(true)
     const response = await fetch(`${SERVER_DOMAIN}/start-dotnet-debugging`, {
       method: 'POST',
@@ -86,6 +88,7 @@ export const NijoUiDebugMenu = () => {
   const [stopNpmDebuggingProcessing, setStopNpmDebuggingProcessing] = useState(false)
   const stopNpmDebugging = useEvent(async () => {
     if (anyCommandProcessing) return
+    setDebugState(state => ({ ...state, consoleOut: '' }))
     setStopNpmDebuggingProcessing(true)
     const response = await fetch(`${SERVER_DOMAIN}/stop-npm-debugging`, {
       method: 'POST',
@@ -101,6 +104,7 @@ export const NijoUiDebugMenu = () => {
   const [stopDotnetDebuggingProcessing, setStopDotnetDebuggingProcessing] = useState(false)
   const stopDotnetDebugging = useEvent(async () => {
     if (anyCommandProcessing) return
+    setDebugState(state => ({ ...state, consoleOut: '' }))
     setStopDotnetDebuggingProcessing(true)
     const response = await fetch(`${SERVER_DOMAIN}/stop-dotnet-debugging`, {
       method: 'POST',
@@ -116,6 +120,7 @@ export const NijoUiDebugMenu = () => {
   const [regenerateProcessing, setRegenerateProcessing] = useState(false)
   const regenerateCode = useEvent(async () => {
     if (anyCommandProcessing) return
+    setDebugState(state => ({ ...state, consoleOut: '' }))
     setRegenerateProcessing(true)
     setError(undefined)
     const applicationState = formMethods.getValues()
@@ -187,7 +192,7 @@ export const NijoUiDebugMenu = () => {
   }
 
   return (
-    <div className="p-2 h-full overflow-y-auto">
+    <div className="p-2 h-full overflow-y-auto flex flex-col">
       <h2 className="flex items-center gap-2">
         <ToTopPageButton />
         <Icon.ChevronRightIcon className="w-4 h-4" />
@@ -206,20 +211,19 @@ export const NijoUiDebugMenu = () => {
       <hr className="border-gray-300 my-2" />
 
       {debugState?.errorSummary && (
-        <div className="text-red-500 mt-3 p-1 bg-red-100 border border-rose-500">
+        <div className="text-rose-500 text-sm mt-3 p-1">
           {debugState.errorSummary}
         </div>
       )}
 
-      <span>
+      <span className="text-sm">
         {state}
       </span>
 
       {error && (
-        <div className="text-red-500 mt-3 p-3 bg-red-100 border border-red-400 rounded">
-          <p className="font-semibold">エラーが発生しました:</p>
-          <pre className="whitespace-pre-wrap">{error}</pre>
-        </div>
+        <pre className="text-rose-500 mt-3 p-3 text-sm whitespace-pre-wrap">
+          エラーが発生しました: {error}
+        </pre>
       )}
 
       {!debugState && !error && (
@@ -227,7 +231,7 @@ export const NijoUiDebugMenu = () => {
       )}
 
       {debugState && !error && (
-        <div className="flex flex-col gap-2 text-sm mt-2">
+        <div className="flex-1 overflow-hidden flex flex-col gap-2 text-sm mt-2">
 
           <table className="table-fixed border-collapse border border-gray-300">
             <thead>
@@ -290,12 +294,13 @@ export const NijoUiDebugMenu = () => {
             </tbody>
           </table>
 
-          <details className="text-xs">
-            <summary className="cursor-pointer text-gray-600">処理詳細</summary>
-            <pre className="bg-gray-800 text-white p-2 resize-y h-64 overflow-y-auto text-xs">
-              {debugState.consoleOut || '(出力なし)'}
-            </pre>
-          </details>
+          <span className="text-xs cursor-pointer text-gray-600">
+            ログ
+          </span>
+
+          <pre className="flex-1 overflow-y-auto text-xs bg-gray-800 text-white p-2">
+            {debugState.consoleOut}
+          </pre>
         </div>
       )}
     </div>

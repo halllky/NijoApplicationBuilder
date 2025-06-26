@@ -128,7 +128,7 @@ internal class DebugTools {
         }
 
         // 開始されるまで一定時間待つ
-        var timeout = DateTime.Now.AddSeconds(10);
+        var timeout = DateTime.Now.AddSeconds(120);
         while (true) {
             var currentState = await CheckDebugState();
             if (currentState.EstimatedPidOfNodeJs != null) {
@@ -142,20 +142,16 @@ internal class DebugTools {
         }
 
         // ログファイルの内容を読み込んでエラー情報として追加
-        try {
-            if (File.Exists(npmLogFile)) {
-                var logContent = await File.ReadAllTextAsync(npmLogFile);
-                consoleOut.AppendLine($"=== npm run dev ログファイルの内容 ===");
-                consoleOut.AppendLine(logContent);
+        var logContent = await TryReadLogFileAsync(npmLogFile, consoleOut);
+        if (!string.IsNullOrEmpty(logContent)) {
+            consoleOut.AppendLine($"=== npm run dev ログファイルの内容 ===");
+            consoleOut.AppendLine(logContent);
 
-                // ログにエラーらしき内容が含まれている場合はエラーサマリーに追加
-                if (logContent.Contains("ERROR") || logContent.Contains("error") ||
-                    logContent.Contains("ENOENT") || logContent.Contains("Command failed")) {
-                    errorSummary.AppendLine("npm run devの実行中にエラーが発生した可能性があります。詳細はログを確認してください。");
-                }
+            // ログにエラーらしき内容が含まれている場合はエラーサマリーに追加
+            if (logContent.Contains("ERROR") || logContent.Contains("error") ||
+                logContent.Contains("ENOENT") || logContent.Contains("Command failed")) {
+                errorSummary.AppendLine("npm run devの実行中にエラーが発生した可能性があります。詳細はログを確認してください。");
             }
-        } catch (Exception ex) {
-            consoleOut.AppendLine($"ログファイルの読み込み中にエラーが発生しました: {ex.Message}");
         }
 
         // 起動し終わったのでpidを調べてクライアントに結果を返す
@@ -239,7 +235,7 @@ internal class DebugTools {
         }
 
         // 開始されるまで一定時間待つ
-        var timeout = DateTime.Now.AddSeconds(10);
+        var timeout = DateTime.Now.AddSeconds(120);
         while (true) {
             var currentState = await CheckDebugState();
             if (currentState.EstimatedPidOfAspNetCore != null) {
@@ -253,21 +249,17 @@ internal class DebugTools {
         }
 
         // ログファイルの内容を読み込んでエラー情報として追加
-        try {
-            if (File.Exists(dotnetLogFile)) {
-                var logContent = await File.ReadAllTextAsync(dotnetLogFile);
-                consoleOut.AppendLine($"=== dotnet run ログファイルの内容 ===");
-                consoleOut.AppendLine(logContent);
+        var logContent = await TryReadLogFileAsync(dotnetLogFile, consoleOut);
+        if (!string.IsNullOrEmpty(logContent)) {
+            consoleOut.AppendLine($"=== dotnet run ログファイルの内容 ===");
+            consoleOut.AppendLine(logContent);
 
-                // ログにエラーらしき内容が含まれている場合はエラーサマリーに追加
-                if (logContent.Contains("ERROR") || logContent.Contains("error") ||
-                    logContent.Contains("fail") || logContent.Contains("Exception") ||
-                    logContent.Contains("Unable to")) {
-                    errorSummary.AppendLine("dotnet runの実行中にエラーが発生した可能性があります。詳細はログを確認してください。");
-                }
+            // ログにエラーらしき内容が含まれている場合はエラーサマリーに追加
+            if (logContent.Contains("ERROR") || logContent.Contains("error") ||
+                logContent.Contains("fail") || logContent.Contains("Exception") ||
+                logContent.Contains("Unable to")) {
+                errorSummary.AppendLine("dotnet runの実行中にエラーが発生した可能性があります。詳細はログを確認してください。");
             }
-        } catch (Exception ex) {
-            consoleOut.AppendLine($"ログファイルの読み込み中にエラーが発生しました: {ex.Message}");
         }
 
         // 起動し終わったのでpidを調べてクライアントに結果を返す
@@ -489,6 +481,45 @@ internal class DebugTools {
             AspNetCoreDebugUrl = $"https://localhost:{DOTNET_PORT}/swagger",
             ConsoleOut = consoleOutputBuilder.ToString(),
         };
+    }
+
+    /// <summary>
+    /// ログファイルを安全に読み込む。他のプロセスが使用中の場合はリトライする。
+    /// </summary>
+    private static async Task<string?> TryReadLogFileAsync(string filePath, StringBuilder consoleOut) {
+        const int maxRetries = 5;
+        const int retryDelayMs = 200;
+
+        if (!File.Exists(filePath)) {
+            consoleOut.AppendLine($"ログファイルが存在しません: {filePath}");
+            return null;
+        }
+
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                // FileShare.ReadWriteを使用してより柔軟なアクセスを試行
+                using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var reader = new StreamReader(stream, Encoding.UTF8)) {
+                    var content = await reader.ReadToEndAsync();
+                    if (attempt > 1) {
+                        consoleOut.AppendLine($"ログファイルの読み込みに成功しました（{attempt}回目の試行）");
+                    }
+                    return content;
+                }
+            } catch (IOException ex) when (ex.Message.Contains("being used by another process")) {
+                if (attempt < maxRetries) {
+                    consoleOut.AppendLine($"ログファイルが他のプロセスに使用中です。{retryDelayMs}ms後に再試行します。（{attempt}/{maxRetries}回目）");
+                    await Task.Delay(retryDelayMs);
+                } else {
+                    consoleOut.AppendLine($"ログファイルの読み込みに{maxRetries}回失敗しました。他のプロセスがファイルを占有している可能性があります: {ex.Message}");
+                }
+            } catch (Exception ex) {
+                consoleOut.AppendLine($"ログファイルの読み込み中に予期しないエラーが発生しました: {ex.Message}");
+                break;
+            }
+        }
+
+        return null;
     }
 }
 
