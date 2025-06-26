@@ -192,6 +192,14 @@ public class DebuggingController : ControllerBase {
     }
 
     /// <summary>
+    /// DB再作成のためのダミーデータ生成オプションを返す
+    /// </summary>
+    [HttpGet("dummy-data-generate-options")]
+    public IActionResult GetDummyDataGenerateOptions() {
+        return Ok(new DummyDataGenerateOptions());
+    }
+
+    /// <summary>
     /// DB再作成
     /// </summary>
     [HttpPost("destroy-and-reset-database")]

@@ -7,6 +7,8 @@ import { DebugProcessState, SchemaDefinitionOutletContextType } from "../スキ�
 import { SERVER_DOMAIN } from "../../routes"
 import useEvent from "react-use-event-hook"
 import { ToTopPageButton } from "../ToTopPageButton"
+import useQueryEditorServerApi from "../../データプレビュー/useQueryEditorServerApi"
+import { BACKEND_URL } from "../../データプレビュー/IndexAsNijoUiPage"
 
 export const NijoUiDebugMenu = () => {
   const { formMethods, validationContext: { trigger } } = ReactRouter.useOutletContext<SchemaDefinitionOutletContextType>()
@@ -294,6 +296,8 @@ export const NijoUiDebugMenu = () => {
           <pre ref={logRef} className="flex-1 overflow-y-auto text-xs bg-gray-800 text-white p-2">
             {debugState.consoleOut}
           </pre>
+
+          <ResetDatabase anyCommandProcessing={anyCommandProcessing} />
         </div>
       )}
     </div>
@@ -325,5 +329,114 @@ const ProcessInfoText = ({ pid, processName }: { pid: number | undefined, proces
     <span className="">
       実行中（PID: {pid}, プロセス名: {processName}）
     </span>
+  )
+}
+
+
+/**
+ * データベース初期化欄
+ */
+const ResetDatabase = ({ anyCommandProcessing }: { anyCommandProcessing: boolean }) => {
+
+  // データベース初期化関連のstate
+  const { getDummyDataGenerateOptions, destroyAndResetDatabase } = useQueryEditorServerApi(BACKEND_URL)
+  const [dummyDataGenerateOptions, setDummyDataGenerateOptions] = useState<{ [key: string]: boolean }>({})
+  const [dbResetMessage, setDbResetMessage] = useState<string | null>(null)
+  const [dbResetError, setDbResetError] = useState<string | null>(null)
+  const [dbResetProcessing, setDbResetProcessing] = useState(false)
+
+  React.useEffect(() => {
+    (async () => {
+      const result = await getDummyDataGenerateOptions()
+      if (result.ok) {
+        setDummyDataGenerateOptions(result.data)
+        setDbResetError(null)
+      } else {
+        setDbResetError(result.error)
+        setDummyDataGenerateOptions({})
+      }
+    })()
+  }, [])
+
+  // データベース初期化関連の関数
+  const selectAll = Object.values(dummyDataGenerateOptions).every(value => value)
+  const handleSelectAll = useEvent((e: React.ChangeEvent<HTMLInputElement>) => {
+    setDummyDataGenerateOptions(state => {
+      const newState = { ...state }
+      Object.keys(newState).forEach(key => {
+        newState[key as keyof typeof newState] = e.target.checked
+      })
+      return newState
+    })
+  })
+
+  const handleResetDatabase = useEvent(async () => {
+    if (anyCommandProcessing || dbResetProcessing) return
+    if (!window.confirm('データベースを初期化 (データ消去＆再作成) しますか？')) {
+      return
+    }
+    setDbResetMessage(null)
+    setDbResetError(null)
+    setDbResetProcessing(true)
+    try {
+      const result = await destroyAndResetDatabase(dummyDataGenerateOptions)
+      if (result.ok) {
+        setDbResetMessage('データベースが正常に初期化されました。')
+      } else {
+        setDbResetError(result.error)
+        setDbResetMessage(null)
+      }
+    } catch (e: unknown) {
+      setDbResetError(`予期せぬエラーが発生しました: ${e instanceof Error ? e.message : '不明なエラー'}`)
+      console.error('Unhandled error during database reset:', e)
+    } finally {
+      setDbResetProcessing(false)
+    }
+  })
+
+  return (
+    <div className="mt-8 flex flex-col items-start gap-1 p-2 border border-gray-300 mt-2">
+      <div className="flex items-center gap-2">
+        <h2 className="font-semibold">
+          データベース初期化 (データ消去＆再作成)
+        </h2>
+        <span className="text-xs text-gray-500">
+          ※ASP.NET Core プロセスが開始されている必要があります。
+        </span>
+      </div>
+
+      <hr className="self-stretch border-gray-300 my-2" />
+
+      <div className="flex gap-4 items-start">
+        <Input.IconButton onClick={handleResetDatabase} fill loading={dbResetProcessing || anyCommandProcessing}>
+          実行
+        </Input.IconButton>
+        <div className="flex flex-col gap-1">
+          <p className="text-xs">
+            ダミーデータ投入テーブル選択
+          </p>
+          <div className="flex flex-wrap gap-x-2 gap-y-1">
+            <label>
+              <input type="checkbox" checked={selectAll} onChange={handleSelectAll} />
+              すべて選択
+            </label>
+            {Object.entries(dummyDataGenerateOptions).map(([key, value]) => (
+              <label key={key}>
+                <input type="checkbox" checked={value} onChange={e => {
+                  setDummyDataGenerateOptions(state => {
+                    const newState = { ...state }
+                    newState[key as keyof typeof newState] = e.target.checked
+                    return newState
+                  })
+                }} />
+                {key}
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+      {dbResetMessage && <p style={{ color: 'green', marginTop: '10px' }}>{dbResetMessage}</p>}
+      {dbResetError && <p style={{ color: 'red', marginTop: '10px' }}>{dbResetError}</p>}
+    </div>
   )
 }

@@ -68,10 +68,39 @@ export default function useQueryEditorServerApi(backendApiViaProps?: string): Us
     }
   }, [backendUrl])
 
+  const getDummyDataGenerateOptions: UseQueryEditorServerApiReturn["getDummyDataGenerateOptions"] = React.useCallback(async () => {
+    if (!backendUrl) return { ok: false, error: "backendUrl is not set" }
+
+    const response = await fetch(`${(backendUrl.endsWith("/") ? backendUrl : backendUrl + "/")}api/debug-info/dummy-data-generate-options`)
+    if (response.ok) {
+      const data = await response.json()
+      return { ok: true, data }
+    } else {
+      return { ok: false, error: await response.text() }
+    }
+  }, [backendUrl])
+
+  const destroyAndResetDatabase: UseQueryEditorServerApiReturn["destroyAndResetDatabase"] = React.useCallback(async (options: { [key: string]: boolean }) => {
+    if (!backendUrl) return { ok: false, error: "backendUrl is not set" }
+
+    const response = await fetch(`${(backendUrl.endsWith("/") ? backendUrl : backendUrl + "/")}api/debug-info/destroy-and-reset-database`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(options),
+    })
+    if (response.ok) {
+      return { ok: true }
+    } else {
+      return { ok: false, error: await response.text() }
+    }
+  }, [backendUrl])
+
   return {
     executeQuery,
     getTableMetadata,
     getDbRecords,
     batchUpdate,
+    getDummyDataGenerateOptions,
+    destroyAndResetDatabase,
   }
 }

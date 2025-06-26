@@ -60,6 +60,11 @@ export type UseQueryEditorServerApiReturn = {
   getDbRecords: (query: GetDbRecordsParameter) => Promise<{ ok: true, data: GetDbRecordsReturn } | { ok: false, error: string }>
   /** レコード一括更新 */
   batchUpdate: (records: EditableDbRecord[]) => Promise<{ ok: true } | { ok: false, error: string }>
+
+  /** データベース初期化オプション取得 */
+  getDummyDataGenerateOptions: () => Promise<{ ok: true, data: { [key: string]: boolean } } | { ok: false, error: string }>
+  /** データベース初期化 */
+  destroyAndResetDatabase: (options: { [key: string]: boolean }) => Promise<{ ok: true } | { ok: false, error: string }>
 }
 
 export type GetDbRecordsParameter = {
