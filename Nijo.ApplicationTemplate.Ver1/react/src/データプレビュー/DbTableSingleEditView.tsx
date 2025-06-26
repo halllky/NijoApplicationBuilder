@@ -382,7 +382,7 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
   const handleChangeText: React.ChangeEventHandler<HTMLInputElement> = useEvent(e => {
     if (member.type !== "own-column" && member.type !== "ref-key") return;
     const clone = window.structuredClone(record)
-    clone.values[member.columnName] = e.target.value
+    clone.values[member.columnName] = e.target.value === '' ? null : e.target.value
     onChangeRecord(clone)
   })
 
@@ -401,7 +401,8 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
         let index = 0
         for (const m of owner.members) {
           if (m.type !== "ref-key" || m.refToRelationName !== member.refToRelationName) continue;
-          clone.values[m.columnName] = keys[index] as never
+          const value = keys[index] as string
+          clone.values[m.columnName] = value === '' ? null : value
           index++
         }
         onChangeRecord(clone)

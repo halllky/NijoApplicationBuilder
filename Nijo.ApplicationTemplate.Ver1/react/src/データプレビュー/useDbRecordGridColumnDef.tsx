@@ -70,7 +70,7 @@ export const useDbRecordGridColumnDef = (
 
           onEndEditing: e => {
             const clone = window.structuredClone(e.row)
-            clone.values[column.columnName] = e.value
+            clone.values[column.columnName] = e.value === '' ? null : e.value
             e.setEditedRow(clone)
           },
 
@@ -93,7 +93,8 @@ export const useDbRecordGridColumnDef = (
                   for (const m of thisTableMetadata?.members ?? []) {
                     if (m.type !== "ref-key" || m.refToRelationName !== column.refToRelationName) continue;
                     if (!m.refToColumnName) throw new Error(`${m.columnName}の参照先カラムが見つかりません。`) // ありえないが念のため
-                    clone.values[m.columnName] = selectedRecord.values[m.refToColumnName]
+                    const value = selectedRecord.values[m.refToColumnName]
+                    clone.values[m.columnName] = value === '' ? null : value
                   }
                   clone.changed = true
                   useFieldArrayUpdate(cell.row.index, clone)
