@@ -146,6 +146,7 @@ public class NijoUi {
                 }
 
                 // 保存
+                SortXmlAttributes(xDocument);
                 using (var writer = XmlWriter.Create(_project.SchemaXmlPath, new() {
                     Indent = true,
                     Encoding = new UTF8Encoding(false, false),
@@ -177,6 +178,7 @@ public class NijoUi {
                     await context.Response.WriteAsJsonAsync(saveErrors);
                     return;
                 }
+                SortXmlAttributes(xDocumentToSave);
                 using (var writer = XmlWriter.Create(_project.SchemaXmlPath, new() {
                     Indent = true,
                     Encoding = new UTF8Encoding(false, false),
@@ -288,5 +290,39 @@ public class NijoUi {
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// XDocumentの全ての要素の属性を名前順にソートして、保存時の順序を一定にする
+    /// </summary>
+    private static void SortXmlAttributes(XDocument document) {
+        if (document.Root != null) {
+            SortElementAttributes(document.Root);
+        }
+    }
+
+    /// <summary>
+    /// XML要素とその子要素の属性を再帰的に名前順にソートする
+    /// </summary>
+    private static void SortElementAttributes(XElement element) {
+        // 現在の要素の属性をソート
+        var attributes = element.Attributes().ToList();
+        if (attributes.Count > 1) {
+            // 属性を名前順にソート
+            var sortedAttributes = attributes.OrderBy(attr => attr.Name.LocalName).ToList();
+
+            // 既存の属性をすべて削除
+            element.RemoveAttributes();
+
+            // ソート済みの属性を再追加
+            foreach (var attr in sortedAttributes) {
+                element.SetAttributeValue(attr.Name, attr.Value);
+            }
+        }
+
+        // 子要素を再帰的に処理
+        foreach (var child in element.Elements()) {
+            SortElementAttributes(child);
+        }
     }
 }
