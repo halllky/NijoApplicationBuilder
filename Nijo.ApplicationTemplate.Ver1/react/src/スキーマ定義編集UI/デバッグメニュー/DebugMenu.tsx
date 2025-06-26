@@ -198,12 +198,12 @@ export const NijoUiDebugMenu = () => {
         <span className="font-semibold">
           デバッグメニュー
         </span>
-        <div className="basis-4" />
-        <Input.IconButton icon={Icon.ArrowPathIcon} onClick={fetchDebugState} loading={anyCommandProcessing} outline mini>
+        <Input.IconButton icon={Icon.ArrowPathIcon} onClick={fetchDebugState} loading={anyCommandProcessing} mini>
           再読み込み
         </Input.IconButton>
+        <div className="basis-4" />
         <Input.IconButton icon={Icon.ArrowPathIcon} onClick={regenerateCode} loading={anyCommandProcessing} fill mini>
-          再生成
+          ソースコード自動生成かけなおし
         </Input.IconButton>
       </h2>
 
