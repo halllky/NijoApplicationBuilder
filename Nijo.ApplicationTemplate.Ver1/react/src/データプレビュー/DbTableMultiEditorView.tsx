@@ -88,6 +88,7 @@ export const DbTableMultiEditorView = React.forwardRef(({ itemIndex, value, onCh
     return result
   }, [tableMetadataHelper, value.tableName])
   const { getColumnDefs, ForeignKeyReferenceDialog } = useDbRecordGridColumnDef(
+    'multi-record-editor',
     aggregate,
     tableMetadataHelper,
     update,
