@@ -122,7 +122,7 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
 
   const dbTableEditorsRef = React.useRef<React.RefObject<DbTableEditorViewRef | null>[]>([])
   dbTableEditorsRef.current = []
-  for (let i = 0; i < fields.length; i++) {
+  for (let i = 0; i < diagramItems.length; i++) {
     dbTableEditorsRef.current[i] = React.createRef()
   }
 

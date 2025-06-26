@@ -297,7 +297,7 @@ const DbTableSingleEditViewAfterLoaded = React.forwardRef((props: DbTableSingleE
   return (
     <SingleViewContext.Provider value={singleViewContext}>
       <AggregateFormView
-        itemIndexInForm={0} // ルート集約は1つしかないので0
+        itemIndexInDbRecordArray={0} // ルート集約は1つしかないので0
         aggregate={rootAggregate}
       />
     </SingleViewContext.Provider>
@@ -305,14 +305,21 @@ const DbTableSingleEditViewAfterLoaded = React.forwardRef((props: DbTableSingleE
 })
 
 const AggregateFormView = (props: {
-  itemIndexInForm: number
+  itemIndexInDbRecordArray: number
   aggregate: DataModelMetadata.Aggregate
 }) => {
 
   const {
-    itemIndexInForm,
+    itemIndexInDbRecordArray,
     aggregate,
   } = props
+
+  const { formMethods } = React.useContext(SingleViewContext)
+  const { fields, update } = ReactHookForm.useFieldArray({ name: aggregate.path, control: formMethods.control })
+
+  const handleChangeRecord = useEvent((record: EditableDbRecord) => {
+    update(itemIndexInDbRecordArray, { ...record, changed: true })
+  })
 
   return (
     <div className={`flex flex-col gap-px ${aggregate.type === "root" ? "p-1" : ""} ${aggregate.type === "child" ? "my-4" : ""}`}>
@@ -324,16 +331,20 @@ const AggregateFormView = (props: {
       {aggregate.members.map(member => (
         <AggregateMemberFormView
           key={member.physicalName}
+          record={fields[itemIndexInDbRecordArray]}
+          onChangeRecord={handleChangeRecord}
           owner={aggregate}
           member={member}
-          ownerName={`${aggregate.path}.${itemIndexInForm}`}
+          ownerName={`${aggregate.path}.${itemIndexInDbRecordArray}`}
         />
       ))}
     </div>
   )
 }
 
-const AggregateMemberFormView = ({ member, owner, ownerName }: {
+const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerName }: {
+  record: EditableDbRecord,
+  onChangeRecord: (value: EditableDbRecord) => void,
   member: DataModelMetadata.AggregateMember | DataModelMetadata.Aggregate
   owner: DataModelMetadata.Aggregate
   ownerName: string
@@ -345,16 +356,23 @@ const AggregateMemberFormView = ({ member, owner, ownerName }: {
   } = React.useContext(SingleViewContext)
 
   // 読み取り専用判定
-  const existsInDb = ReactHookForm.useWatch({ name: `${ownerName}.existsInDb`, control: formMethods.control })
   const isReadOnly = React.useMemo(() => {
     // 表示されないので未定義
     if (member.type === "root") return undefined
     if (member.type === "child") return undefined
     if (member.type === "children") return undefined
     if (member.type === "parent-key") return undefined
-    if (member.type === "own-column") return member.isPrimaryKey && existsInDb
-    if (member.type === "ref-key") return member.isPrimaryKey && existsInDb
-  }, [member, existsInDb])
+    if (member.type === "own-column") return member.isPrimaryKey && record.existsInDb
+    if (member.type === "ref-key") return member.isPrimaryKey && record.existsInDb
+  }, [member, record.existsInDb])
+
+  // テキストボックスの値変更時
+  const handleChangeText: React.ChangeEventHandler<HTMLInputElement> = useEvent(e => {
+    if (member.type !== "own-column" && member.type !== "ref-key") return;
+    const clone = window.structuredClone(record)
+    clone.values[member.columnName] = e.target.value
+    onChangeRecord(clone)
+  })
 
   // 参照キーの検索
   const [refKeySearchDialogProps, setRefKeySearchDialogProps] = React.useState<DbTableSingleItemSelectorDialogProps | null>(null)
@@ -366,13 +384,15 @@ const AggregateMemberFormView = ({ member, owner, ownerName }: {
       tableMetadata: refToTableMetadata,
       tableMetadataHelper: tableMetadataHelper,
       onSelect: keys => {
-        // 参照先テーブルが複合キーである可能性を考慮
+        // 参照先テーブルが複合キーである可能性を考慮し、当該参照先の全キーに代入
+        const clone = window.structuredClone(record)
         let index = 0
         for (const m of owner.members) {
           if (m.type !== "ref-key" || m.refToRelationName !== member.refToRelationName) continue;
-          formMethods.setValue(`${ownerName}.values.${m.columnName}`, keys[index] as never, { shouldDirty: true })
+          clone.values[m.columnName] = keys[index] as never
           index++
         }
+        onChangeRecord(clone)
         setRefKeySearchDialogProps(null)
       },
       onCancel: () => {
@@ -381,52 +401,36 @@ const AggregateMemberFormView = ({ member, owner, ownerName }: {
     })
   })
 
+  // ルート集約はAggregateViewで処理する。ここには来ない
+  if (member.type === "root") {
+    throw new Error("ルート集約はAggregateViewで処理する")
+  }
+
   // 親の主キー（非表示）
   if (member.type === "parent-key") {
     return undefined
   }
 
-  // テーブル自身の属性のカラム
-  if (member.type === "own-column") {
+  // テーブル自身の属性のカラム、または外部参照のキー項目
+  if (member.type === "own-column" || member.type === "ref-key") {
     return (
       <label className="flex gap-1 items-center">
         <div className="basis-40 text-sm break-all select-none text-gray-600">
           {member.columnName}
         </div>
-        <ReactHookForm.Controller
-          control={formMethods.control}
-          name={`${ownerName}.values.${member.columnName}`}
-          render={({ field }) => (
-            <input
-              type="text"
-              {...field}
-              spellCheck={false}
-              className={`flex-1 px-1 outline-none ${(isReadOnly ? '' : 'bg-white border border-gray-500')}`}
-              readOnly={isReadOnly}
-            />
+        <div className={`flex-1 flex ${isReadOnly ? '' : 'bg-white border border-gray-500'}`}>
+          {member.type === "ref-key" && !isReadOnly && (
+            <Input.IconButton icon={Icon.MagnifyingGlassIcon} hideText mini onClick={handleSearch}>
+              検索
+            </Input.IconButton>
           )}
-        />
-      </label>
-    )
-  }
-
-  // 参照キー
-  if (member.type === "ref-key") {
-    return (
-      <label className="flex gap-1 items-center">
-        <div className="basis-40 text-sm break-all select-none text-gray-600">
-          {member.columnName}
-        </div>
-        <div className="flex-1 flex gap-1 bg-white border border-gray-500">
-          <Input.IconButton icon={Icon.MagnifyingGlassIcon} hideText mini onClick={handleSearch}>
-            検索
-          </Input.IconButton>
-          <ReactHookForm.Controller
-            control={formMethods.control}
-            name={`${ownerName}.values.${member.columnName}`}
-            render={({ field }) => (
-              <input type="text" {...field} className="flex-1 px-1 outline-none" />
-            )}
+          <input
+            type="text"
+            value={record.values[member.columnName] ?? ''}
+            onChange={handleChangeText}
+            spellCheck={false}
+            className="flex-1 px-1 outline-none"
+            readOnly={isReadOnly}
           />
         </div>
         {refKeySearchDialogProps && (
@@ -436,10 +440,6 @@ const AggregateMemberFormView = ({ member, owner, ownerName }: {
     )
   }
 
-  if (member.type === "root") {
-    throw new Error("ルート集約はAggregateViewで処理する")
-  }
-
   if (member.type === "child") {
     const childAggregate = tableMetadataHelper.allAggregates().find(a => a.tableName === member.tableName)
     if (!childAggregate) {
@@ -447,7 +447,7 @@ const AggregateMemberFormView = ({ member, owner, ownerName }: {
     }
     return (
       <AggregateFormView
-        itemIndexInForm={0}
+        itemIndexInDbRecordArray={0}
         aggregate={childAggregate}
       />
     )
