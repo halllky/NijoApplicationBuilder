@@ -141,6 +141,23 @@ internal class DebugTools {
             await Task.Delay(500);
         }
 
+        // ログファイルの内容を読み込んでエラー情報として追加
+        try {
+            if (File.Exists(npmLogFile)) {
+                var logContent = await File.ReadAllTextAsync(npmLogFile);
+                consoleOut.AppendLine($"=== npm run dev ログファイルの内容 ===");
+                consoleOut.AppendLine(logContent);
+
+                // ログにエラーらしき内容が含まれている場合はエラーサマリーに追加
+                if (logContent.Contains("ERROR") || logContent.Contains("error") ||
+                    logContent.Contains("ENOENT") || logContent.Contains("Command failed")) {
+                    errorSummary.AppendLine("npm run devの実行中にエラーが発生した可能性があります。詳細はログを確認してください。");
+                }
+            }
+        } catch (Exception ex) {
+            consoleOut.AppendLine($"ログファイルの読み込み中にエラーが発生しました: {ex.Message}");
+        }
+
         // 起動し終わったのでpidを調べてクライアントに結果を返す
         var stateAfterLaunch = await CheckDebugState();
         stateAfterLaunch.ErrorSummary = errorSummary.ToString();
@@ -233,6 +250,24 @@ internal class DebugTools {
                 break;
             }
             await Task.Delay(500);
+        }
+
+        // ログファイルの内容を読み込んでエラー情報として追加
+        try {
+            if (File.Exists(dotnetLogFile)) {
+                var logContent = await File.ReadAllTextAsync(dotnetLogFile);
+                consoleOut.AppendLine($"=== dotnet run ログファイルの内容 ===");
+                consoleOut.AppendLine(logContent);
+
+                // ログにエラーらしき内容が含まれている場合はエラーサマリーに追加
+                if (logContent.Contains("ERROR") || logContent.Contains("error") ||
+                    logContent.Contains("fail") || logContent.Contains("Exception") ||
+                    logContent.Contains("Unable to")) {
+                    errorSummary.AppendLine("dotnet runの実行中にエラーが発生した可能性があります。詳細はログを確認してください。");
+                }
+            }
+        } catch (Exception ex) {
+            consoleOut.AppendLine($"ログファイルの読み込み中にエラーが発生しました: {ex.Message}");
         }
 
         // 起動し終わったのでpidを調べてクライアントに結果を返す
