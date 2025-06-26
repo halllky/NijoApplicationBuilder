@@ -213,11 +213,13 @@ public class NijoUi {
                 if (_project.GenerateCode(generationParseContext, renderingOptions, logger)) {
                     // 成功応答
                     context.Response.StatusCode = (int)HttpStatusCode.OK;
-                    await context.Response.WriteAsync("Code generation successful.");
+                    context.Response.ContentType = "application/json";
+                    await context.Response.WriteAsJsonAsync("Code generation successful.");
                 } else {
                     // 失敗応答（GenerateCode内でエラーログは出力されている想定）
                     context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                    await context.Response.WriteAsync("Code generation failed. Check server logs for details.");
+                    context.Response.ContentType = "application/json";
+                    await context.Response.WriteAsJsonAsync("Code generation failed. Check server logs for details.");
                 }
 
             } catch (Exception ex) {

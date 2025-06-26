@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import * as ReactRouter from "react-router-dom"
 import * as Icon from "@heroicons/react/24/outline"
 import * as Input from "../../input"
@@ -167,6 +167,14 @@ export const NijoUiDebugMenu = () => {
     }
   })
 
+  // ログの値が変わったときは末尾にスクロール
+  const logRef = React.useRef<HTMLPreElement>(null)
+  React.useEffect(() => {
+    if (logRef.current) {
+      logRef.current.scrollTop = logRef.current.scrollHeight
+    }
+  }, [debugState?.consoleOut])
+
   const anyCommandProcessing = loading
     || startNpmDebuggingProcessing
     || stopNpmDebuggingProcessing
@@ -179,17 +187,6 @@ export const NijoUiDebugMenu = () => {
     && debugState?.estimatedPidOfAspNetCore !== undefined
     && !isNaN(debugState.estimatedPidOfNodeJs)
     && !isNaN(debugState.estimatedPidOfAspNetCore)
-
-  let state: string
-  if (loading) {
-    state = ''
-  } else if (error) {
-    state = 'エラーが発生しました'
-  } else if (!debugProcessIsRunning) {
-    state = 'デバッグプロセスは開始されていません。'
-  } else {
-    state = 'デバッグプロセスは実行中です。'
-  }
 
   return (
     <div className="p-2 h-full overflow-y-auto flex flex-col">
@@ -215,10 +212,6 @@ export const NijoUiDebugMenu = () => {
           {debugState.errorSummary}
         </div>
       )}
-
-      <span className="text-sm">
-        {state}
-      </span>
 
       {error && (
         <pre className="text-rose-500 mt-3 p-3 text-sm whitespace-pre-wrap">
@@ -298,7 +291,7 @@ export const NijoUiDebugMenu = () => {
             ログ
           </span>
 
-          <pre className="flex-1 overflow-y-auto text-xs bg-gray-800 text-white p-2">
+          <pre ref={logRef} className="flex-1 overflow-y-auto text-xs bg-gray-800 text-white p-2">
             {debugState.consoleOut}
           </pre>
         </div>

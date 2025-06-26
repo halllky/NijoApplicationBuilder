@@ -127,9 +127,35 @@ internal class DebugTools {
             return;
         }
 
-        // 開始されるまで一定時間待つ
+        // 開始されるまで一定時間待つ（プロセス生存確認とログファイル監視付き）
         var timeout = DateTime.Now.AddSeconds(120);
         while (true) {
+            // プロセスが終了していないかチェック
+            if (npmRun.HasExited) {
+                consoleOut.AppendLine($"npmプロセスが終了しました。終了コード: {npmRun.ExitCode}");
+                if (npmRun.ExitCode != 0) {
+                    errorSummary.AppendLine($"npmプロセスがエラーで終了しました。終了コード: {npmRun.ExitCode}");
+                }
+                break;
+            }
+
+            // ログファイルをチェックしてエラーを早期検出
+            var currentLogContent = await TryReadLogFileAsync(npmLogFile, new StringBuilder());
+            if (!string.IsNullOrEmpty(currentLogContent)) {
+                if (currentLogContent.Contains("ERROR") || currentLogContent.Contains("error") ||
+                    currentLogContent.Contains("ENOENT") || currentLogContent.Contains("Command failed") ||
+                    currentLogContent.Contains("npm ERR!") || currentLogContent.Contains("Failed to")) {
+                    consoleOut.AppendLine("ログファイルにエラーが検出されました。早期終了します。");
+                    errorSummary.AppendLine("npm run devの実行中にエラーが発生しました。");
+                    break;
+                }
+                // "npm run dev終了" がログに含まれている場合も終了
+                if (currentLogContent.Contains("npm run dev終了")) {
+                    consoleOut.AppendLine("npm run devが終了しました。");
+                    break;
+                }
+            }
+
             var currentState = await CheckDebugState();
             if (currentState.EstimatedPidOfNodeJs != null) {
                 break;
@@ -234,9 +260,35 @@ internal class DebugTools {
             return;
         }
 
-        // 開始されるまで一定時間待つ
+        // 開始されるまで一定時間待つ（プロセス生存確認とログファイル監視付き）
         var timeout = DateTime.Now.AddSeconds(120);
         while (true) {
+            // プロセスが終了していないかチェック
+            if (dotnetRun.HasExited) {
+                consoleOut.AppendLine($"dotnetプロセスが終了しました。終了コード: {dotnetRun.ExitCode}");
+                if (dotnetRun.ExitCode != 0) {
+                    errorSummary.AppendLine($"dotnetプロセスがエラーで終了しました。終了コード: {dotnetRun.ExitCode}");
+                }
+                break;
+            }
+
+            // ログファイルをチェックしてエラーを早期検出
+            var currentLogContent = await TryReadLogFileAsync(dotnetLogFile, new StringBuilder());
+            if (!string.IsNullOrEmpty(currentLogContent)) {
+                if (currentLogContent.Contains("ERROR") || currentLogContent.Contains("error") ||
+                    currentLogContent.Contains("fail") || currentLogContent.Contains("Exception") ||
+                    currentLogContent.Contains("Unable to") || currentLogContent.Contains("Failed to")) {
+                    consoleOut.AppendLine("ログファイルにエラーが検出されました。早期終了します。");
+                    errorSummary.AppendLine("dotnet runの実行中にエラーが発生しました。");
+                    break;
+                }
+                // "dotnet run終了" がログに含まれている場合も終了
+                if (currentLogContent.Contains("dotnet run終了")) {
+                    consoleOut.AppendLine("dotnet runが終了しました。");
+                    break;
+                }
+            }
+
             var currentState = await CheckDebugState();
             if (currentState.EstimatedPidOfAspNetCore != null) {
                 break;
