@@ -104,6 +104,8 @@ export const useDbRecordGridColumnDef = (
               })
             }
 
+            const isNull = cell.row.original.values[column.columnName] === null
+
             return (
               <div className="w-full flex overflow-hidden px-1">
 
@@ -114,8 +116,8 @@ export const useDbRecordGridColumnDef = (
                   </Input.IconButton>
                 )}
 
-                <span className="flex-1 truncate">
-                  {ReactHookForm.get(cell.row.original, `values.${column.columnName}` as ReactHookForm.FieldPathByValue<EditableDbRecord, string | undefined>)}
+                <span className={`flex-1 truncate ${isNull ? 'text-gray-300' : ''}`}>
+                  {isNull ? 'NULL' : cell.row.original.values[column.columnName]}
                 </span>
               </div>
             )

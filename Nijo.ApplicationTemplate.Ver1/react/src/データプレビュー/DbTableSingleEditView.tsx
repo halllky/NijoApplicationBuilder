@@ -442,7 +442,8 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
             value={record.values[member.columnName] ?? ''}
             onChange={handleChangeText}
             spellCheck={false}
-            className="flex-1 px-1 outline-none"
+            placeholder="NULL"
+            className="flex-1 px-1 outline-none placeholder:text-gray-300"
             readOnly={isReadOnly}
           />
         </div>
