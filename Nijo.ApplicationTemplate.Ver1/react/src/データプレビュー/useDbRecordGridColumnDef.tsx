@@ -59,10 +59,8 @@ export const useDbRecordGridColumnDef = (
         }
 
         valueColumns.push(cellType.other(column.columnName ?? '', {
-          // 単一ビューの子テーブルの場合は主キーの列は編集不可
-          isReadOnly: row => mode === 'single-view-children'
-            && row.existsInDb
-            && column.isPrimaryKey,
+          // DBに存在する主キーの列は編集不可。
+          isReadOnly: row => row.existsInDb && column.isPrimaryKey,
 
           onStartEditing: e => {
             e.setEditorInitialValue(e.row.values[column.columnName] ?? '')
@@ -75,9 +73,7 @@ export const useDbRecordGridColumnDef = (
           },
 
           renderCell: cell => {
-            const isReadOnly = mode === 'single-view-children'
-              && cell.row.original.existsInDb
-              && column.isPrimaryKey
+            const isReadOnly = cell.row.original.existsInDb && column.isPrimaryKey
 
             // 外部キーの列の場合は検索ダイアログから選択できるようにする
             const handleClick = () => {
