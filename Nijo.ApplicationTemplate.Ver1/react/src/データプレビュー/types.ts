@@ -107,14 +107,29 @@ export const tableMetadataHelper = (rootAggregates: DataModelMetadata.Aggregate[
   }
 
   /** ルート集約を探して返す */
-  const getRoot = (metadata: DataModelMetadata.Aggregate) => {
+  const getRoot = (aggregate: DataModelMetadata.Aggregate) => {
     // パスの先頭がルート集約の物理名
-    const rootPath = metadata.path.split("/")[0]
+    const rootPath = aggregate.path.split("/")[0]
     const rootAggregate = rootAggregates.find(m => m.physicalName === rootPath)
     if (!rootAggregate) {
       throw new Error(`ルート集約が見つかりません: ${rootPath}`)
     }
     return rootAggregate
+  }
+
+  /** 対象の集約の子孫集約を列挙する */
+  const enumerateDescendants = (aggregate: DataModelMetadata.Aggregate) => {
+    const result: DataModelMetadata.Aggregate[] = []
+    const pushRecursively = (agg: DataModelMetadata.Aggregate) => {
+      for (const member of agg.members) {
+        if (member.type === "child" || member.type === "children") {
+          result.push(member)
+          pushRecursively(member)
+        }
+      }
+    }
+    pushRecursively(aggregate)
+    return result
   }
 
   /** 外部参照先テーブルを探して返す */
@@ -132,6 +147,8 @@ export const tableMetadataHelper = (rootAggregates: DataModelMetadata.Aggregate[
     allAggregates,
     /** ルート集約を探して返す */
     getRoot,
+    /** 対象の集約の子孫集約を列挙する */
+    enumerateDescendants,
     /** 外部参照先テーブルを探して返す */
     getRefTo,
   }

@@ -139,6 +139,13 @@ internal class MetadataForDataPreview : IMultiAggregateSourceFile {
                         public required bool IsNullable { get; set; }
 
                         /// <summary>
+                        /// 外部参照先とこの集約の関係性の名前。
+                        /// テーブルAからBへ複数の参照経路がある場合にそれらの識別に用いる。
+                        /// このメンバーがref-keyでない場合はnull。
+                        /// </summary>
+                        [JsonPropertyName("refToRelationName")]
+                        public required string? RefToRelationName { get; set; }
+                        /// <summary>
                         /// 外部参照先テーブルのルート集約からのパス（スラッシュ区切り）。
                         /// このメンバーがref-keyでない場合はnull。
                         /// </summary>
@@ -204,15 +211,19 @@ internal class MetadataForDataPreview : IMultiAggregateSourceFile {
                     ? $"\"{staticEnumMember.Definition.TsTypeName.Replace("\"", "\\\"")}\""
                     : "null";
 
+                string? refToRelationName = null;
                 string? refToAggregatePath = null;
                 string? refToColumnName = null;
                 if (column is EFCoreEntity.RefKeyMember refKeyMember && !refKeyMember.IsParentKey) {
+                    refToRelationName = $"\"{refKeyMember.RefEntry.DisplayName.Replace("\"", "\\\"")}\"";
+
                     refToAggregatePath = $"\"{refKeyMember.RefEntry.RefTo.EnumerateThisAndAncestors().Select(a => a.PhysicalName).Join("/")}\"";
 
                     var mappingKey = column.Member.ToMappingKey();
                     var refToColumns = new EFCoreEntity(refKeyMember.RefEntry.RefTo).GetColumns();
                     refToColumnName = $"\"{refToColumns.First(c => c.Member.ToMappingKey() == mappingKey).DbName}\"";
                 } else {
+                    refToRelationName = "null";
                     refToAggregatePath = "null";
                     refToColumnName = "null";
                 }
@@ -228,6 +239,7 @@ internal class MetadataForDataPreview : IMultiAggregateSourceFile {
                         EnumType = {{enumType}},
                         IsPrimaryKey = {{(column.IsKey ? "true" : "false")}},
                         IsNullable = {{(!column.IsKey && !column.Member.IsRequired ? "true" : "false")}},
+                        RefToRelationName = {{refToRelationName}},
                         RefToAggregatePath = {{refToAggregatePath}},
                         RefToColumnName = {{refToColumnName}},
                     }
@@ -297,6 +309,12 @@ internal class MetadataForDataPreview : IMultiAggregateSourceFile {
                     enumType: string | null
                     isPrimaryKey: boolean
                     isNullable: boolean
+                    /**
+                     * 外部参照先とこの集約の関係性の名前。
+                     * テーブルAからBへ複数の参照経路がある場合にそれらの識別に用いる。
+                     * このメンバーがref-keyでない場合はnull。
+                     */
+                    refToRelationName: string | null
                     /**
                      * 外部参照先テーブルのルート集約からのパス（スラッシュ区切り）。
                      * このメンバーがref-keyでない場合はnull。

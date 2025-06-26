@@ -219,6 +219,7 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
     const rootAggregate = tableMetadata.getRoot(editTableMetadata)
     setDbTableSingleItemSelectorDialogProps({
       tableMetadata: rootAggregate,
+      tableMetadataHelper: tableMetadata,
       onSelect: (keys: string[]) => {
         append(createNewQueryEditorItem("dbTableSingleEditor", newTableName, keys))
         setDbTableSingleItemSelectorDialogProps(null)
@@ -283,13 +284,15 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
       )
     } else {
       const itemIndex = fields.findIndex(f => f.id === item.id)
+      const refIndex = itemIndex >= 0 ? itemIndex : 0
       return (
         <DbTableSingleEditView
+          ref={dbTableEditorsRef.current[refIndex]}
           itemIndex={itemIndex}
           value={item}
           onChangeDefinition={handleUpdateDiagramItem}
           onDeleteDefinition={handleRemoveDiagramItem}
-          tableMetadata={tableMetadata}
+          tableMetadataHelper={tableMetadata}
           trigger={trigger}
           zoom={zoom}
           handleMouseDown={handleMouseDown}
@@ -341,7 +344,7 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
               className="flex-1 bg-white border border-gray-500"
             >
               {tableMetadata.allAggregates().map(table => (
-                <option key={table.tableName} value={table.tableName}>{table.tableName}</option>
+                <option key={table.tableName} value={table.tableName}>{table.displayName}({table.tableName})</option>
               ))}
             </select>
             <Input.IconButton onClick={handleAddMultiItemEditor} fill>
