@@ -90,7 +90,7 @@ export default function DiagramView<T extends DiagramItem>({
 
   return (
     <div
-      className={`relative flex flex-col overflow-hidden resize outline-none ${className ?? ""}`}
+      className={`relative flex flex-col overflow-hidden outline-none ${className ?? ""}`}
       tabIndex={0} // キーボード操作を可能にする
     >
       {/* スクロールエリア */}
