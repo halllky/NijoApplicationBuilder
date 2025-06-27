@@ -6,7 +6,7 @@ import * as Layout from "../../layout"
 import { DebugProcessState, SchemaDefinitionOutletContextType } from "../スキーマ定義編集/types"
 import { SERVER_DOMAIN } from "../../routes"
 import useEvent from "react-use-event-hook"
-import { ToTopPageButton } from "../ToTopPageButton"
+import { PageFrame } from "../PageFrame"
 import useQueryEditorServerApi from "../データプレビュー/useQueryEditorServerApi"
 import { BACKEND_URL } from "../データプレビュー/IndexAsNijoUiPage"
 
@@ -191,116 +191,115 @@ export const NijoUiDebugMenu = () => {
     && !isNaN(debugState.estimatedPidOfAspNetCore)
 
   return (
-    <div className="p-2 h-full overflow-y-auto flex flex-col">
-      <h2 className="flex items-center gap-2">
-        <ToTopPageButton />
-        <Icon.ChevronRightIcon className="w-4 h-4" />
-        <span className="font-semibold">
-          デバッグメニュー
-        </span>
-        <Input.IconButton icon={Icon.ArrowPathIcon} onClick={fetchDebugState} loading={anyCommandProcessing} mini>
-          再読み込み
-        </Input.IconButton>
-        <div className="basis-4" />
-        <Input.IconButton icon={Icon.ArrowPathIcon} onClick={regenerateCode} loading={anyCommandProcessing} fill mini>
-          ソースコード自動生成かけなおし
-        </Input.IconButton>
-      </h2>
-
-      <hr className="border-gray-300 my-2" />
-
-      {debugState?.errorSummary && (
-        <div className="text-rose-500 text-sm mt-3 p-1">
-          {debugState.errorSummary}
-        </div>
+    <PageFrame
+      title="デバッグメニュー"
+      headerComponent={(
+        <>
+          <Input.IconButton icon={Icon.ArrowPathIcon} onClick={fetchDebugState} loading={anyCommandProcessing} mini>
+            再読み込み
+          </Input.IconButton>
+          <div className="basis-4" />
+          <Input.IconButton icon={Icon.ArrowPathIcon} onClick={regenerateCode} loading={anyCommandProcessing} fill mini>
+            ソースコード自動生成かけなおし
+          </Input.IconButton>
+        </>
       )}
+    >
+      <div className="p-2 h-full overflow-y-auto flex flex-col">
 
-      {error && (
-        <pre className="text-rose-500 mt-3 p-3 text-sm whitespace-pre-wrap">
-          エラーが発生しました: {error}
-        </pre>
-      )}
+        {debugState?.errorSummary && (
+          <div className="text-rose-500 text-sm mt-3 p-1">
+            {debugState.errorSummary}
+          </div>
+        )}
 
-      {!debugState && !error && (
-        <Layout.NowLoading />
-      )}
-
-      {debugState && !error && (
-        <div className="flex-1 overflow-hidden flex flex-col gap-2 text-sm mt-2">
-
-          <table className="table-fixed border-collapse border border-gray-300">
-            <thead>
-              <tr className="border-b border-gray-300 bg-gray-200">
-                <th className="w-40 text-left"></th>
-                <th className="w-36 text-left">操作</th>
-                <th className="w-56 text-left">URL</th>
-                <th className="text-left">状態</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td className=" py-1">Node.js プロセス</td>
-                <td>
-                  <div className="flex gap-1">
-                    <Input.IconButton icon={Icon.StopIcon} onClick={stopNpmDebugging} loading={anyCommandProcessing} outline mini>
-                      停止
-                    </Input.IconButton>
-                    <Input.IconButton icon={Icon.PlayIcon} onClick={startNpmDebugging} loading={anyCommandProcessing} outline mini>
-                      開始
-                    </Input.IconButton>
-                  </div>
-                </td>
-                <td className="">
-                  <LinkText url={debugState.nodeJsDebugUrl}>
-                    {debugState.nodeJsDebugUrl}
-                  </LinkText>
-                </td>
-                <td className="">
-                  <ProcessInfoText
-                    pid={debugState.estimatedPidOfNodeJs}
-                    processName={debugState.nodeJsProcessName}
-                  />
-                </td>
-              </tr>
-              <tr>
-                <td className="py-1">ASP.NET Core プロセス</td>
-                <td>
-                  <div className="flex gap-1">
-                    <Input.IconButton icon={Icon.StopIcon} onClick={stopDotnetDebugging} loading={anyCommandProcessing} outline mini>
-                      停止
-                    </Input.IconButton>
-                    <Input.IconButton icon={Icon.PlayIcon} onClick={startDotnetDebugging} loading={anyCommandProcessing} outline mini>
-                      開始
-                    </Input.IconButton>
-                  </div>
-                </td>
-                <td className="">
-                  <LinkText url={debugState.aspNetCoreDebugUrl}>
-                    {debugState.aspNetCoreDebugUrl}
-                  </LinkText>
-                </td>
-                <td className="">
-                  <ProcessInfoText
-                    pid={debugState.estimatedPidOfAspNetCore}
-                    processName={debugState.aspNetCoreProcessName}
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          <span className="text-xs cursor-pointer text-gray-600">
-            ログ
-          </span>
-
-          <pre ref={logRef} className="flex-1 overflow-y-auto text-xs bg-gray-800 text-white p-2">
-            {debugState.consoleOut}
+        {error && (
+          <pre className="text-rose-500 mt-3 p-3 text-sm whitespace-pre-wrap">
+            エラーが発生しました: {error}
           </pre>
+        )}
 
-          <ResetDatabase anyCommandProcessing={anyCommandProcessing} />
-        </div>
-      )}
-    </div>
+        {!debugState && !error && (
+          <Layout.NowLoading />
+        )}
+
+        {debugState && !error && (
+          <div className="flex-1 overflow-hidden flex flex-col gap-2 text-sm mt-2">
+
+            <table className="table-fixed border-collapse border border-gray-300">
+              <thead>
+                <tr className="border-b border-gray-300 bg-gray-200">
+                  <th className="w-40 text-left"></th>
+                  <th className="w-36 text-left">操作</th>
+                  <th className="w-56 text-left">URL</th>
+                  <th className="text-left">状態</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className=" py-1">Node.js プロセス</td>
+                  <td>
+                    <div className="flex gap-1">
+                      <Input.IconButton icon={Icon.StopIcon} onClick={stopNpmDebugging} loading={anyCommandProcessing} outline mini>
+                        停止
+                      </Input.IconButton>
+                      <Input.IconButton icon={Icon.PlayIcon} onClick={startNpmDebugging} loading={anyCommandProcessing} outline mini>
+                        開始
+                      </Input.IconButton>
+                    </div>
+                  </td>
+                  <td className="">
+                    <LinkText url={debugState.nodeJsDebugUrl}>
+                      {debugState.nodeJsDebugUrl}
+                    </LinkText>
+                  </td>
+                  <td className="">
+                    <ProcessInfoText
+                      pid={debugState.estimatedPidOfNodeJs}
+                      processName={debugState.nodeJsProcessName}
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-1">ASP.NET Core プロセス</td>
+                  <td>
+                    <div className="flex gap-1">
+                      <Input.IconButton icon={Icon.StopIcon} onClick={stopDotnetDebugging} loading={anyCommandProcessing} outline mini>
+                        停止
+                      </Input.IconButton>
+                      <Input.IconButton icon={Icon.PlayIcon} onClick={startDotnetDebugging} loading={anyCommandProcessing} outline mini>
+                        開始
+                      </Input.IconButton>
+                    </div>
+                  </td>
+                  <td className="">
+                    <LinkText url={debugState.aspNetCoreDebugUrl}>
+                      {debugState.aspNetCoreDebugUrl}
+                    </LinkText>
+                  </td>
+                  <td className="">
+                    <ProcessInfoText
+                      pid={debugState.estimatedPidOfAspNetCore}
+                      processName={debugState.aspNetCoreProcessName}
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <span className="text-xs cursor-pointer text-gray-600">
+              ログ
+            </span>
+
+            <pre ref={logRef} className="flex-1 overflow-y-auto text-xs bg-gray-800 text-white p-2">
+              {debugState.consoleOut}
+            </pre>
+
+            <ResetDatabase anyCommandProcessing={anyCommandProcessing} />
+          </div>
+        )}
+      </div>
+    </PageFrame>
   )
 }
 

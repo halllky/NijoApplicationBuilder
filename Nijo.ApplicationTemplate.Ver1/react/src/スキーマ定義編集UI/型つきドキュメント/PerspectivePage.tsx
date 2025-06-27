@@ -15,7 +15,7 @@ import { EntityTypePage, EntityTypePageRef } from './PerspectivePage.Grid';
 import { EntityDetailPane } from './PerspectivePage.Details';
 import { EntityTypeEditDialog, EntityTypeSettingsDialogProps } from './PerspectivePage.Settings';
 import { Entity, Perspective, PerspectivePageData } from './types';
-import { ToTopPageButton } from '../ToTopPageButton';
+import { PageFrame } from '../PageFrame';
 
 export const PerspectivePage = () => {
   const { [NIJOUI_CLIENT_ROUTE_PARAMS.PERSPECTIVE_ID]: perspectiveId } = ReactRouter.useParams();
@@ -265,20 +265,10 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
   const [detailPanelCollapsed, setDetailPanelCollapsed] = React.useState(false);
 
   return (
-    <ReactHookForm.FormProvider {...formMethods}>
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        onKeyDown={handleKeyDown}
-        tabIndex={0} // keydownイベントを拾うため
-        className="h-full flex flex-col gap-1 outline-none"
-      >
-        <div className="flex flex-wrap gap-1 items-center p-1">
-          <ToTopPageButton />
-          <Icon.ChevronRightIcon className="w-4 h-4" />
-          <h1>
-            {getValues('perspective.name')}
-          </h1>
-
+    <PageFrame
+      title={getValues('perspective.name')}
+      headerComponent={(
+        <>
           <div className="basis-1"></div>
           <Input.IconButton onClick={handleOpenEntityTypeEditDialog} icon={Icon.PencilSquareIcon}>設定</Input.IconButton>
           <div className="flex-1"></div>
@@ -291,50 +281,59 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
               {showSaveSuccessText ? '保存しました。' : '保存(Ctrl + S)'}
             </Input.IconButton>
           </div>
-        </div>
-
-        <VerticalOrHorizontalLayout
-          graphViewPosition={graphViewPosition}
-          panelStorage={panelStorage}
-          graphPanelCollapsed={graphPanelCollapsed}
-          detailPanelCollapsed={detailPanelCollapsed}
-          onGraphPanelCollapsedChanged={setGraphPanelCollapsed}
-          onDetailPanelCollapsedChanged={setDetailPanelCollapsed}
-          grid={className => (
-            <EntityTypePage
-              ref={gridRef}
-              useFieldArrayReturn={useFieldArrayReturn}
-              perspective={perspective}
-              onChangeRow={handleChangeRow}
-              onSelectedRowChanged={setSelectedEntityIndex}
-              reset={reset}
-              className={className}
-            />
-          )}
-          graph={className => (
-            <PerspectivePageGraph
-              formMethods={formMethods}
-              onNodeDoubleClick={handleNodeDoubleClick}
-              className={className}
-            />
-          )}
-          detail={() => selectedEntityIndex !== undefined && fields[selectedEntityIndex] && (
-            <EntityDetailPane
-              key={fields[selectedEntityIndex].entityId}
-              entity={fields[selectedEntityIndex]}
-              onEntityChanged={handleEntityChangedInDetailPage}
-              perspective={perspective}
-              entityIndex={selectedEntityIndex}
-            />
-          )}
-        />
-
-      </form>
-
-      {entityTypeSettingsDialogProps && (
-        <EntityTypeEditDialog {...entityTypeSettingsDialogProps} />
+        </>
       )}
-    </ReactHookForm.FormProvider>
+    >
+      <ReactHookForm.FormProvider {...formMethods}>
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          onKeyDown={handleKeyDown}
+          tabIndex={0} // keydownイベントを拾うため
+          className="h-full flex flex-col gap-1 outline-none"
+        >
+          <VerticalOrHorizontalLayout
+            graphViewPosition={graphViewPosition}
+            panelStorage={panelStorage}
+            graphPanelCollapsed={graphPanelCollapsed}
+            detailPanelCollapsed={detailPanelCollapsed}
+            onGraphPanelCollapsedChanged={setGraphPanelCollapsed}
+            onDetailPanelCollapsedChanged={setDetailPanelCollapsed}
+            grid={className => (
+              <EntityTypePage
+                ref={gridRef}
+                useFieldArrayReturn={useFieldArrayReturn}
+                perspective={perspective}
+                onChangeRow={handleChangeRow}
+                onSelectedRowChanged={setSelectedEntityIndex}
+                reset={reset}
+                className={className}
+              />
+            )}
+            graph={className => (
+              <PerspectivePageGraph
+                formMethods={formMethods}
+                onNodeDoubleClick={handleNodeDoubleClick}
+                className={className}
+              />
+            )}
+            detail={() => selectedEntityIndex !== undefined && fields[selectedEntityIndex] && (
+              <EntityDetailPane
+                key={fields[selectedEntityIndex].entityId}
+                entity={fields[selectedEntityIndex]}
+                onEntityChanged={handleEntityChangedInDetailPage}
+                perspective={perspective}
+                entityIndex={selectedEntityIndex}
+              />
+            )}
+          />
+
+        </form>
+
+        {entityTypeSettingsDialogProps && (
+          <EntityTypeEditDialog {...entityTypeSettingsDialogProps} />
+        )}
+      </ReactHookForm.FormProvider>
+    </PageFrame>
   );
 });
 

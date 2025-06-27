@@ -14,9 +14,7 @@ import { useTypedDocumentContextProvider } from "./型つきドキュメント/T
  * nijo.xmlをUIで編集できる画面の試作。
  * 最終的には、独立した WebView2 アプリケーションとして分離する予定。
  */
-export const NijoUi = ({ className }: {
-  className?: string
-}) => {
+export const NijoUi = () => {
 
   // 画面初期表示時、サーバーからスキーマ情報を読み込む
   const [schema, setSchema] = React.useState<ApplicationState>()
@@ -86,24 +84,22 @@ export const NijoUi = ({ className }: {
       <AfterLoaded
         defaultValues={schemaDefinitionPart} // SchemaDefinitionGlobalStateを渡す
         onSave={handleSave}                   // handleSaveはSchemaDefinitionGlobalStateを期待
-        className={className}
       />
     )
   }
 
   // 上記以外は読み込みエラーとみなす
   return (
-    <div className={className}>
+    <div>
       読み込みでエラーが発生しました: {loadError}
     </div>
   )
 }
 
 /** 画面初期表示時の読み込み完了後 */
-const AfterLoaded = ({ defaultValues, onSave, className }: {
+const AfterLoaded = ({ defaultValues, onSave }: {
   defaultValues: SchemaDefinitionGlobalState
   onSave: (applicationState: SchemaDefinitionGlobalState) => void
-  className?: string
 }) => {
 
   const form = ReactHookForm.useForm<SchemaDefinitionGlobalState>({ defaultValues })

@@ -17,7 +17,7 @@ import { useLayoutSaving } from './NijoUiAggregateDiagram.StateSaving';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import { PageRootAggregate } from "./RootAggregatePage"
 import { UUID } from "uuidjs"
-import { ToTopPageButton } from "../ToTopPageButton"
+import { PageFrame } from "../PageFrame"
 
 export const NijoUiAggregateDiagram = () => {
   // ノード状態の保存と復元
@@ -264,49 +264,46 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, defaultValues }: {
   })
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex flex-wrap items-center p-1 gap-1">
+    <PageFrame
+      title="ソースコード自動生成設定"
+      headerComponent={(
+        <>
+          <div className="basis-4"></div>
 
-        <ToTopPageButton />
-        <Icon.ChevronRightIcon className="w-4 h-4" />
-        <h1 className="select-none">
-          ソースコード自動生成設定
-        </h1>
-
-        <div className="basis-4"></div>
-
-        <Input.IconButton onClick={handleAutoLayout} outline>
-          整列
-        </Input.IconButton>
-        <select className="border text-sm" value={layoutLogic} onChange={(e) => setLayoutLogic(e.target.value as AutoLayout.LayoutLogicName)}>
-          {Object.entries(AutoLayout.OPTION_LIST).map(([key, value]) => (
-            <option key={key} value={key}>ロジック: {value.name}</option>
-          ))}
-        </select>
-        <div className="basis-4"></div>
-        <label>
-          <input type="checkbox" checked={onlyRoot} onChange={(e) => setOnlyRoot(e.target.checked)} />
-          ルート集約のみ表示
-        </label>
-        <div className="basis-4"></div>
-        <div className="flex">
-          <Input.IconButton fill={editableGridPosition === "horizontal"} outline onClick={() => setEditableGridPosition("horizontal")}>横</Input.IconButton>
-          <Input.IconButton fill={editableGridPosition === "vertical"} outline onClick={() => setEditableGridPosition("vertical")}>縦</Input.IconButton>
-        </div>
-        <div className="flex-1"></div>
-        <Input.IconButton icon={Icon.PlusIcon} outline onClick={handleNewRootAggregate}>新規作成</Input.IconButton>
-        <Input.IconButton
-          icon={Icon.TrashIcon}
-          outline
-          onClick={handleDeleteRootAggregate}
-          disabled={selectedRootAggregateIndex === undefined}
-        >
-          削除
-        </Input.IconButton>
-        <Input.IconButton outline onClick={() => alert('区分定義は未実装です。通常の単語型として定義してください。')}>区分定義</Input.IconButton>
-        <div className="basis-4"></div>
-        <Input.IconButton fill onClick={executeSave}>保存</Input.IconButton>
-      </div>
+          <Input.IconButton onClick={handleAutoLayout} outline>
+            整列
+          </Input.IconButton>
+          <select className="border text-sm" value={layoutLogic} onChange={(e) => setLayoutLogic(e.target.value as AutoLayout.LayoutLogicName)}>
+            {Object.entries(AutoLayout.OPTION_LIST).map(([key, value]) => (
+              <option key={key} value={key}>ロジック: {value.name}</option>
+            ))}
+          </select>
+          <div className="basis-4"></div>
+          <label>
+            <input type="checkbox" checked={onlyRoot} onChange={(e) => setOnlyRoot(e.target.checked)} />
+            ルート集約のみ表示
+          </label>
+          <div className="basis-4"></div>
+          <div className="flex">
+            <Input.IconButton fill={editableGridPosition === "horizontal"} outline onClick={() => setEditableGridPosition("horizontal")}>横</Input.IconButton>
+            <Input.IconButton fill={editableGridPosition === "vertical"} outline onClick={() => setEditableGridPosition("vertical")}>縦</Input.IconButton>
+          </div>
+          <div className="flex-1"></div>
+          <Input.IconButton icon={Icon.PlusIcon} outline onClick={handleNewRootAggregate}>新規作成</Input.IconButton>
+          <Input.IconButton
+            icon={Icon.TrashIcon}
+            outline
+            onClick={handleDeleteRootAggregate}
+            disabled={selectedRootAggregateIndex === undefined}
+          >
+            削除
+          </Input.IconButton>
+          <Input.IconButton outline onClick={() => alert('区分定義は未実装です。通常の単語型として定義してください。')}>区分定義</Input.IconButton>
+          <div className="basis-4"></div>
+          <Input.IconButton fill onClick={executeSave}>保存</Input.IconButton>
+        </>
+      )}
+    >
       <PanelGroup className="flex-1" direction={editableGridPosition}>
         <Panel className="border border-gray-300">
           <GraphView
@@ -335,7 +332,7 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, defaultValues }: {
           )}
         </Panel>
       </PanelGroup>
-    </div >
+    </PageFrame>
   )
 }
 

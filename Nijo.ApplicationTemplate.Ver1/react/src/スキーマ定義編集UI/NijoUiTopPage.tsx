@@ -10,6 +10,7 @@ import * as Icon from "@heroicons/react/24/solid"
 import { getNavigationUrl } from "../routes";
 import { AppSettingsEditDialog, AppSettingsEditDialogProps } from "./型つきドキュメント/AppSettingsEditDialog";
 import { PersonalSettingsEditDialog } from "./型つきドキュメント/PersonalSettings";
+import { PageFrame } from "./PageFrame";
 
 export const NijoUiTopPage = () => {
 
@@ -91,60 +92,62 @@ export const NijoUiTopPage = () => {
   })
 
   return (
-    <div className="h-full w-full flex justify-center items-center">
-      <div className="flex flex-col items-start px-4 py-2">
+    <PageFrame>
+      <div className="h-full w-full flex justify-center items-center">
+        <div className="flex flex-col items-start px-4 py-2">
 
-        <div className="flex justify-between items-center">
-          <h1 className="text-xl font-bold whitespace-nowrap">
-            {appSettings.applicationName}
-          </h1>
-          <div className="min-w-16"></div>
-          <Input.IconButton icon={Icon.PencilSquareIcon} mini onClick={handleClickSettings}>
-            編集
-          </Input.IconButton>
+          <div className="flex justify-between items-center">
+            <h1 className="text-xl font-bold whitespace-nowrap">
+              {appSettings.applicationName}
+            </h1>
+            <div className="min-w-16"></div>
+            <Input.IconButton icon={Icon.PencilSquareIcon} mini onClick={handleClickSettings}>
+              編集
+            </Input.IconButton>
+          </div>
+
+          <div className="basis-4"></div>
+
+          {appSettings.entityTypeList.map(entityType => (
+            <MenuItem
+              key={entityType.entityTypeId}
+              icon={Icon.TableCellsIcon}
+              link={getNavigationUrl({ page: 'typed-document-perspective', perspectiveId: entityType.entityTypeId })}
+            >
+              {entityType.entityTypeName}
+            </MenuItem>
+          ))}
+
+          <hr className="self-stretch border-t border-gray-300 mt-4 mb-2" />
+
+          <MenuItem icon={Icon.ShareIcon} link={getNavigationUrl({ page: 'schema' })}>
+            ソースコード自動生成設定
+          </MenuItem>
+
+          <MenuItem icon={Icon.PlayCircleIcon} link={getNavigationUrl({ page: 'debug-menu' })}>
+            デバッグメニュー
+          </MenuItem>
+
+          <MenuItem icon={Icon.ChartBarIcon} link={getNavigationUrl({ page: 'data-preview' })}>
+            データプレビュー
+          </MenuItem>
+
+          <MenuItem icon={Icon.Cog6ToothIcon} onClick={handleClickPersonalSettings}>
+            個人設定
+          </MenuItem>
         </div>
 
-        <div className="basis-4"></div>
+        {/* アプリケーション設定編集ダイアログ */}
+        {appSettingsDialogProps && (
+          <AppSettingsEditDialog {...appSettingsDialogProps} />
+        )}
 
-        {appSettings.entityTypeList.map(entityType => (
-          <MenuItem
-            key={entityType.entityTypeId}
-            icon={Icon.TableCellsIcon}
-            link={getNavigationUrl({ page: 'typed-document-perspective', perspectiveId: entityType.entityTypeId })}
-          >
-            {entityType.entityTypeName}
-          </MenuItem>
-        ))}
-
-        <hr className="self-stretch border-t border-gray-300 mt-4 mb-2" />
-
-        <MenuItem icon={Icon.ShareIcon} link={getNavigationUrl({ page: 'schema' })}>
-          ソースコード自動生成設定
-        </MenuItem>
-
-        <MenuItem icon={Icon.PlayCircleIcon} link={getNavigationUrl({ page: 'debug-menu' })}>
-          デバッグメニュー
-        </MenuItem>
-
-        <MenuItem icon={Icon.ChartBarIcon} link={getNavigationUrl({ page: 'data-preview' })}>
-          データプレビュー
-        </MenuItem>
-
-        <MenuItem icon={Icon.Cog6ToothIcon} onClick={handleClickPersonalSettings}>
-          個人設定
-        </MenuItem>
+        {/* 個人設定ダイアログ */}
+        {openPersonalSettingsDialog && (
+          <PersonalSettingsEditDialog onClose={handleClosePersonalSettingsDialog} />
+        )}
       </div>
-
-      {/* アプリケーション設定編集ダイアログ */}
-      {appSettingsDialogProps && (
-        <AppSettingsEditDialog {...appSettingsDialogProps} />
-      )}
-
-      {/* 個人設定ダイアログ */}
-      {openPersonalSettingsDialog && (
-        <PersonalSettingsEditDialog onClose={handleClosePersonalSettingsDialog} />
-      )}
-    </div>
+    </PageFrame>
   )
 }
 

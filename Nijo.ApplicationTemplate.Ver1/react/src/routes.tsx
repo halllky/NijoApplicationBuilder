@@ -60,7 +60,7 @@ export const getRouterForNijoUi = (): RouteObjectWithSideMenuSetting[] => {
     path: '/nijo-ui',
     element: (
       <ContextProviders>
-        <NijoUi className="w-full h-full border border-gray-500" />
+        <NijoUi />
       </ContextProviders>
     ),
     children: [{
