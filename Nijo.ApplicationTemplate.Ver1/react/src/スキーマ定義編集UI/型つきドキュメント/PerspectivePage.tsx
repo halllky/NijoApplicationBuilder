@@ -5,17 +5,17 @@ import * as Icon from '@heroicons/react/24/solid';
 import useEvent from 'react-use-event-hook';
 import { UUID } from 'uuidjs';
 
-import * as Input from '../input';
-import * as Layout from '../layout';
-import { NIJOUI_CLIENT_ROUTE_PARAMS } from '../routes';
-import { NijoUiOutletContextType } from '../スキーマ定義編集UI/types';
+import * as Input from '../../input';
+import * as Layout from '../../layout';
+import { NIJOUI_CLIENT_ROUTE_PARAMS } from '../../routes';
+import { NijoUiOutletContextType } from '../types';
 import { Panel, PanelGroup, PanelGroupProps, PanelGroupStorage, PanelResizeHandle } from 'react-resizable-panels';
 import { PerspectivePageGraph } from './PerspectivePage.Graph';
 import { EntityTypePage, EntityTypePageRef } from './PerspectivePage.Grid';
 import { EntityDetailPane } from './PerspectivePage.Details';
 import { EntityTypeEditDialog, EntityTypeSettingsDialogProps } from './PerspectivePage.Settings';
 import { Entity, Perspective, PerspectivePageData } from './types';
-import { ToTopPageButton } from '../スキーマ定義編集UI/ToTopPageButton';
+import { ToTopPageButton } from '../ToTopPageButton';
 
 export const PerspectivePage = () => {
   const { [NIJOUI_CLIENT_ROUTE_PARAMS.PERSPECTIVE_ID]: perspectiveId } = ReactRouter.useParams();

@@ -1,6 +1,6 @@
 import * as Icon from "@heroicons/react/24/outline"
 import DataPreview from "."
-import { ToTopPageButton } from "../スキーマ定義編集UI/ToTopPageButton"
+import { ToTopPageButton } from "../ToTopPageButton"
 
 /** 自動生成されたあとのアプリケーションのwebapiのURL。とりあえず決め打ち */
 export const BACKEND_URL = "https://localhost:7098"

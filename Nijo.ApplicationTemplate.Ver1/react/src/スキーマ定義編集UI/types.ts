@@ -1,5 +1,5 @@
 import { SchemaDefinitionGlobalState as InternalSchemaDefinitionGlobalState, SchemaDefinitionOutletContextType } from "./スキーマ定義編集/types"
-import { TypedDocumentContextType } from "../型つきドキュメント/types";
+import { TypedDocumentContextType } from "./型つきドキュメント/types";
 
 // 再エクスポート
 export type SchemaDefinitionGlobalState = InternalSchemaDefinitionGlobalState;

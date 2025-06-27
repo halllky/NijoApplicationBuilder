@@ -1,7 +1,7 @@
 import * as React from "react"
 import useEvent from "react-use-event-hook"
 import { Perspective, TypedDocumentContextType, AppSettingsForDisplay, AppSettingsForSave } from "./types"
-import { SERVER_DOMAIN } from "../routes"
+import { SERVER_DOMAIN } from "../../routes"
 
 /** 型つきドキュメントのコンテキスト。各画面から利用する関数群 */
 export const TypedDocumentContext = React.createContext<TypedDocumentContextType>({

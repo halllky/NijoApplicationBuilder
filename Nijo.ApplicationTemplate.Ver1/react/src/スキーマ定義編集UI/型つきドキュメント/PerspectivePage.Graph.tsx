@@ -4,12 +4,12 @@ import * as ReactHookForm from 'react-hook-form';
 import * as Icon from '@heroicons/react/24/solid';
 import useEvent from 'react-use-event-hook';
 
-import * as Input from '../input';
-import * as Layout from '../layout';
+import * as Input from '../../input';
+import * as Layout from '../../layout';
 import { applyFormatCondition, PerspectiveNode, PerspectivePageData } from './types';
 import cytoscape from 'cytoscape'; // cytoscapeの型情報をインポート
-import { ViewState } from '../layout/GraphView/Cy';
-import ExpandCollapseFunctions from '../layout/GraphView/Cy.ExpandCollapse';
+import { ViewState } from '../../layout/GraphView/Cy';
+import ExpandCollapseFunctions from '../../layout/GraphView/Cy.ExpandCollapse';
 import { MentionUtil } from './MentionTextarea';
 
 export const PerspectivePageGraph = ({

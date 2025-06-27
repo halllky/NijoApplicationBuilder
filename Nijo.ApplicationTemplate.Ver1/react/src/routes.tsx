@@ -8,11 +8,11 @@ import { getExamplePagesRoutes } from "./examples"
 import { NijoUi } from "./スキーマ定義編集UI/NijoUi"
 import { NijoUiDebugMenu } from "./スキーマ定義編集UI/デバッグメニュー/DebugMenu"
 import { ContextProviders } from "./App"
-import { PerspectivePage } from "./型つきドキュメント/PerspectivePage"
+import { PerspectivePage } from "./スキーマ定義編集UI/型つきドキュメント/PerspectivePage"
 import * as Util from "./util"
 import { NijoUiAggregateDiagram } from "./スキーマ定義編集UI/スキーマ定義編集/NijoUiAggregateDiagram"
 import { NijoUiTopPage } from "./スキーマ定義編集UI/NijoUiTopPage"
-import { DataPreviewAsNijoUiPage } from "./データプレビュー/IndexAsNijoUiPage"
+import { DataPreviewAsNijoUiPage } from "./スキーマ定義編集UI/データプレビュー/IndexAsNijoUiPage"
 
 /** RouteObject に sideMenuLabel を追加した型 */
 export type RouteObjectWithSideMenuSetting = ReactRouter.RouteObject & {

@@ -1,5 +1,5 @@
 import * as ReactResizablePanels from "react-resizable-panels"
-import * as CytoscapeWrapper from "../layout/GraphView/Cy"
+import * as CytoscapeWrapper from "../../layout/GraphView/Cy"
 import { MentionUtil } from "./MentionTextarea"
 
 /** アプリケーション全体の設定 */

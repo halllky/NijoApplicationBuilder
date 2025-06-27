@@ -7,8 +7,8 @@ import { DebugProcessState, SchemaDefinitionOutletContextType } from "../スキ�
 import { SERVER_DOMAIN } from "../../routes"
 import useEvent from "react-use-event-hook"
 import { ToTopPageButton } from "../ToTopPageButton"
-import useQueryEditorServerApi from "../../データプレビュー/useQueryEditorServerApi"
-import { BACKEND_URL } from "../../データプレビュー/IndexAsNijoUiPage"
+import useQueryEditorServerApi from "../データプレビュー/useQueryEditorServerApi"
+import { BACKEND_URL } from "../データプレビュー/IndexAsNijoUiPage"
 
 export const NijoUiDebugMenu = () => {
   const { formMethods, validationContext: { trigger } } = ReactRouter.useOutletContext<SchemaDefinitionOutletContextType>()

@@ -1,10 +1,10 @@
 import * as React from 'react';
 import * as ReactRouter from 'react-router';
 import * as ReactMention from 'react-mentions';
-import { NijoUiOutletContextType } from '../スキーマ定義編集UI/types';
+import { NijoUiOutletContextType } from '../types';
 import { Entity, EntityAttribute, Perspective } from './types';
 import useEvent from 'react-use-event-hook';
-import { getNavigationUrl } from '../routes';
+import { getNavigationUrl } from '../../routes';
 import LinkifyJs from 'linkifyjs';
 import Linkify from 'linkify-react';
 

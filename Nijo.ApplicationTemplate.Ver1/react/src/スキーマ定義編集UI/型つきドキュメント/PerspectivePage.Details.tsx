@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as ReactHookForm from 'react-hook-form';
 import { Entity, EntityAttribute, EntityAttributeValues, Perspective, PerspectivePageData, TypedDocumentComment } from './types'; // 型をインポート
-import * as Input from '../input'; // Inputコンポーネントをインポート
+import * as Input from '../../input'; // Inputコンポーネントをインポート
 import * as Icon from '@heroicons/react/24/solid'; // アイコンをインポート
 import { UUID } from 'uuidjs'; // UUID生成のため
 import useEvent from 'react-use-event-hook';

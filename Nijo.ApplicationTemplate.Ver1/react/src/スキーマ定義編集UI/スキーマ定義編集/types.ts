@@ -1,6 +1,6 @@
 import * as ReactHookForm from "react-hook-form"
 import { ValidationContextType } from "./ValidationContext"
-import { TypedDocumentContextType } from "../../型つきドキュメント/types"
+import { TypedDocumentContextType } from "../型つきドキュメント/types"
 
 /** スキーマ定義編集におけるアプリケーション全体の状態 */
 export type SchemaDefinitionGlobalState = {

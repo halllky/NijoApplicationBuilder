@@ -5,8 +5,8 @@ import * as Icon from '@heroicons/react/24/solid';
 import useEvent from 'react-use-event-hook';
 import { UUID } from 'uuidjs';
 
-import * as Input from '../input';
-import * as Layout from '../layout';
+import * as Input from '../../input';
+import * as Layout from '../../layout';
 import { Perspective, EntityAttribute, FormatCondition, AVAILABLEFORMAT } from './types';
 
 export type EntityTypeSettingsDialogProps = {

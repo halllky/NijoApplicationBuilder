@@ -8,7 +8,7 @@ import { ApplicationState, NijoUiOutletContextType, SchemaDefinitionGlobalState 
 import { AttrDefsProvider } from "./スキーマ定義編集/AttrDefContext"
 import { SERVER_DOMAIN } from "../routes"
 import { useValidationContextProvider, ValidationContext } from "./スキーマ定義編集/ValidationContext"
-import { useTypedDocumentContextProvider } from "../型つきドキュメント/TypedDocumentContext"
+import { useTypedDocumentContextProvider } from "./型つきドキュメント/TypedDocumentContext"
 
 /**
  * nijo.xmlをUIで編集できる画面の試作。
