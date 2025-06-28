@@ -29,6 +29,7 @@ export const NijoUiTopPage = () => {
   const [appSettings, setAppSettings] = React.useState<AppSettingsForDisplay>({
     applicationName: "",
     entityTypeList: [],
+    dataPreviewList: [],
   })
 
   React.useEffect(() => {
@@ -129,9 +130,12 @@ export const NijoUiTopPage = () => {
             デバッグメニュー
           </MenuItem>
 
-          <MenuItem icon={Icon.ChartBarIcon} link={getNavigationUrl({ page: 'data-preview' })}>
-            データプレビュー
-          </MenuItem>
+          {/* データプレビュー */}
+          {appSettings.dataPreviewList.map(dataPreview => (
+            <MenuItem key={dataPreview.id} icon={Icon.ChartBarIcon} link={getNavigationUrl({ page: 'data-preview', dataPreviewId: dataPreview.id })}>
+              {dataPreview.title}
+            </MenuItem>
+          ))}
 
           <MenuItem icon={Icon.Cog6ToothIcon} onClick={handleClickPersonalSettings}>
             個人設定

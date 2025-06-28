@@ -3,6 +3,8 @@ import useEvent from "react-use-event-hook"
 import { Perspective, TypedDocumentContextType } from "./types"
 import { AppSettingsForDisplay, AppSettingsForSave } from "../types"
 import { SERVER_DOMAIN } from "../../routes"
+import { QueryEditor } from "../データプレビュー/types"
+import { DATA_PREVIEW_LOCALSTORAGE_KEY, GET_DEFAULT_DATA } from "../データプレビュー"
 
 /** 型つきドキュメントのコンテキスト。各画面から利用する関数群 */
 export const TypedDocumentContext = React.createContext<TypedDocumentContextType>({
@@ -15,15 +17,17 @@ export const TypedDocumentContext = React.createContext<TypedDocumentContextType
 } as TypedDocumentContextType)
 
 /** C#側と合わせる必要あり */
-const SERVER_URL_SUBDIRECTORY = {
+export const SERVER_URL_SUBDIRECTORY = {
   LOAD_SETTINGS: `/typed-document/load-settings`,
   SAVE_SETTINGS: `/typed-document/save-settings`,
-  LOAD_DATA: `/typed-document/load`,
-  SAVE_DATA: `/typed-document/save`,
+  LOAD_TYPED_DOCUMENT: `/typed-document/load`,
+  SAVE_TYPED_DOCUMENT: `/typed-document/save`,
+  LOAD_DATA_PREVIEW: `/data-preview/load`,
+  SAVE_DATA_PREVIEW: `/data-preview/save`,
 } as const
 
 /** C#側と合わせる必要あり */
-type SERVER_API_TYPE_INFO = {
+export type SERVER_API_TYPE_INFO = {
   [SERVER_URL_SUBDIRECTORY.LOAD_SETTINGS]: {
     body: undefined,
     query: undefined,
@@ -34,13 +38,23 @@ type SERVER_API_TYPE_INFO = {
     query: undefined,
     response: void
   }
-  [SERVER_URL_SUBDIRECTORY.LOAD_DATA]: {
+  [SERVER_URL_SUBDIRECTORY.LOAD_TYPED_DOCUMENT]: {
     body: undefined,
     query: { typeId: string },
     response: Perspective
   }
-  [SERVER_URL_SUBDIRECTORY.SAVE_DATA]: {
+  [SERVER_URL_SUBDIRECTORY.SAVE_TYPED_DOCUMENT]: {
     body: Perspective,
+    query: undefined,
+    response: void
+  }
+  [SERVER_URL_SUBDIRECTORY.LOAD_DATA_PREVIEW]: {
+    body: undefined,
+    query: { dataPreviewId: string },
+    response: QueryEditor
+  }
+  [SERVER_URL_SUBDIRECTORY.SAVE_DATA_PREVIEW]: {
+    body: QueryEditor,
     query: undefined,
     response: void
   }
@@ -62,15 +76,40 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
         return {
           applicationName: "",
           entityTypeList: [],
+          dataPreviewList: [],
         }
       }
       const data: SERVER_API_TYPE_INFO[typeof SERVER_URL_SUBDIRECTORY.LOAD_SETTINGS]["response"] = await response.json()
+
+      // 後方互換性（データプレビューをローカルストレージに保存していたときからの移行）
+      if (data.dataPreviewList.length === 0) {
+        const localStorageItem = localStorage.getItem(DATA_PREVIEW_LOCALSTORAGE_KEY)
+        if (localStorageItem) {
+          const dataPreivew: QueryEditor = JSON.parse(localStorageItem)
+          data.dataPreviewList = [{
+            id: dataPreivew.id,
+            title: dataPreivew.title,
+          }]
+          await fetch(`${SERVER_DOMAIN}${SERVER_URL_SUBDIRECTORY.SAVE_DATA_PREVIEW}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: localStorageItem,
+          })
+        } else {
+          // データプレビューが1件も無い場合は新規作成
+          data.dataPreviewList = [GET_DEFAULT_DATA()]
+        }
+      }
+
       return data
     } catch (error) {
       alert(`一覧を取得できませんでした。(${error})`)
       return {
         applicationName: "",
         entityTypeList: [],
+        dataPreviewList: [],
       }
     }
   }, [])
@@ -99,8 +138,8 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
 
   const createPerspective: TypedDocumentContextType["createPerspective"] = useEvent(async newPerspective => {
     try {
-      const body: SERVER_API_TYPE_INFO[typeof SERVER_URL_SUBDIRECTORY.SAVE_DATA]["body"] = newPerspective
-      const response = await fetch(`${SERVER_DOMAIN}${SERVER_URL_SUBDIRECTORY.SAVE_DATA}`, {
+      const body: SERVER_API_TYPE_INFO[typeof SERVER_URL_SUBDIRECTORY.SAVE_TYPED_DOCUMENT]["body"] = newPerspective
+      const response = await fetch(`${SERVER_DOMAIN}${SERVER_URL_SUBDIRECTORY.SAVE_TYPED_DOCUMENT}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -120,15 +159,15 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
 
   const loadPerspectivePageData: TypedDocumentContextType["loadPerspectivePageData"] = useEvent(async perspectiveId => {
     try {
-      const QUERY_KEY = "typeId" satisfies keyof SERVER_API_TYPE_INFO[typeof SERVER_URL_SUBDIRECTORY.LOAD_DATA]["query"]
-      const response = await fetch(`${SERVER_DOMAIN}${SERVER_URL_SUBDIRECTORY.LOAD_DATA}?${QUERY_KEY}=${perspectiveId}`, {
+      const QUERY_KEY = "typeId" satisfies keyof SERVER_API_TYPE_INFO[typeof SERVER_URL_SUBDIRECTORY.LOAD_TYPED_DOCUMENT]["query"]
+      const response = await fetch(`${SERVER_DOMAIN}${SERVER_URL_SUBDIRECTORY.LOAD_TYPED_DOCUMENT}?${QUERY_KEY}=${perspectiveId}`, {
         method: 'GET',
       })
       if (!response.ok) {
         alert(`読み込めませんでした。(${response.status} ${response.statusText})`)
         return undefined
       }
-      const data: SERVER_API_TYPE_INFO[typeof SERVER_URL_SUBDIRECTORY.LOAD_DATA]["response"] = await response.json()
+      const data: SERVER_API_TYPE_INFO[typeof SERVER_URL_SUBDIRECTORY.LOAD_TYPED_DOCUMENT]["response"] = await response.json()
       return {
         perspective: data,
       }
@@ -140,8 +179,8 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
 
   const savePerspective: TypedDocumentContextType["savePerspective"] = useEvent(async data => {
     try {
-      const body: SERVER_API_TYPE_INFO[typeof SERVER_URL_SUBDIRECTORY.SAVE_DATA]["body"] = data.perspective
-      const response = await fetch(`${SERVER_DOMAIN}${SERVER_URL_SUBDIRECTORY.SAVE_DATA}`, {
+      const body: SERVER_API_TYPE_INFO[typeof SERVER_URL_SUBDIRECTORY.SAVE_TYPED_DOCUMENT]["body"] = data.perspective
+      const response = await fetch(`${SERVER_DOMAIN}${SERVER_URL_SUBDIRECTORY.SAVE_TYPED_DOCUMENT}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -77,7 +77,7 @@ export const getRouterForNijoUi = (): RouteObjectWithSideMenuSetting[] => {
       path: `typed-doc/perspective/:${NIJOUI_CLIENT_ROUTE_PARAMS.PERSPECTIVE_ID}`,
       element: <PerspectivePage />,
     }, {
-      path: 'data-preview',
+      path: 'data-preview/:dataPreviewId',
       element: <DataPreviewAsNijoUiPage />,
     }, {
       path: '*',
@@ -106,7 +106,7 @@ export const getNavigationUrl = (arg?:
   { aggregateId?: never, page: 'typed-document-entity', entityTypeId: string } |
   { aggregateId?: never, page: 'typed-document-perspective', perspectiveId: string, focusEntityId?: string } |
   { aggregateId?: never, page: 'schema' } |
-  { aggregateId?: never, page: 'data-preview' }
+  { aggregateId?: never, page: 'data-preview', dataPreviewId: string }
 ): string => {
   if (arg?.page === 'top-page') {
     return '/nijo-ui'
@@ -123,7 +123,7 @@ export const getNavigationUrl = (arg?:
   } else if (arg?.page === 'schema') {
     return `/nijo-ui/schema/`
   } else if (arg?.page === 'data-preview') {
-    return '/nijo-ui/data-preview'
+    return `/nijo-ui/data-preview/${arg.dataPreviewId}`
   } else {
     return `/nijo-ui/schema/${arg?.aggregateId ?? ''}`
   }

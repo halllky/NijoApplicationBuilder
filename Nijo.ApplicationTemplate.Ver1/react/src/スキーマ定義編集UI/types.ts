@@ -19,10 +19,15 @@ export type NijoUiOutletContextType = {
 export type AppSettingsForDisplay = {
   /** アプリケーション名 */
   applicationName: string
-  /** エンティティ型の定義 */
+  /** 型つきドキュメントの定義 */
   entityTypeList: {
     entityTypeId: string
     entityTypeName: string
+  }[]
+  /** データプレビューの定義 */
+  dataPreviewList: {
+    id: string
+    title: string
   }[]
 }
 

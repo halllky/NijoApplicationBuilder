@@ -1,4 +1,5 @@
 import React from "react"
+import * as ReactRouter from "react-router"
 import { EditableDbRecord, QueryEditor, QueryEditorItem, QueryEditorDiagramItem, TableMetadataHelper } from "./types"
 import * as ReactHookForm from "react-hook-form"
 import * as Input from "../../input"
@@ -13,6 +14,8 @@ import { UUID } from "uuidjs"
 import { CommentView } from "./CommentView"
 import { DiagramItemLayout } from "../../layout/DiagramView/types"
 import { DbTableSingleEditView, DbTableSingleItemSelectorDialog, DbTableSingleItemSelectorDialogProps } from "./DbTableSingleEditView"
+import { SERVER_DOMAIN } from "../../routes"
+import { SERVER_API_TYPE_INFO, SERVER_URL_SUBDIRECTORY } from "../型つきドキュメント/TypedDocumentContext"
 
 export type QueryEditorProps = {
   /** データ操作対象のバックエンドのURL */
@@ -25,6 +28,7 @@ export type QueryEditorProps = {
  * 複数のテーブルや、SQLとその結果を表示するUIです。
  */
 export default function ({ backendUrl, className }: QueryEditorProps) {
+  const { dataPreviewId } = ReactRouter.useParams()
   const { getTableMetadata } = useQueryEditorServerApi(backendUrl)
   const [loadError, setLoadError] = React.useState<string>()
   const [tableMetadata, setTableMetadata] = React.useState<TableMetadataHelper>()
@@ -33,33 +37,43 @@ export default function ({ backendUrl, className }: QueryEditorProps) {
   React.useEffect(() => {
     setLoadError(undefined);
 
-    // テーブル名一覧を取得
     (async () => {
+      // テーブル名一覧を取得
       const res = await getTableMetadata()
-      if (res.ok) {
-        setTableMetadata(res.data)
-      } else {
+      if (!res.ok) {
         setLoadError(res.error)
+        return
       }
-    })()
+      setTableMetadata(res.data)
 
-    // ローカルストレージからデータを読み込む
-    try {
-      const item = localStorage.getItem(LOCALSTORAGE_KEY)
-      if (item !== null) {
-        const queryEditor: QueryEditor = JSON.parse(item)
-        setDefaultValues(queryEditor)
-      } else {
+      // サーバーからデータを読み込む
+      const QUERY_KEY = "dataPreviewId" satisfies keyof SERVER_API_TYPE_INFO[typeof SERVER_URL_SUBDIRECTORY.LOAD_DATA_PREVIEW]["query"]
+      const response = await fetch(`${SERVER_DOMAIN}${SERVER_URL_SUBDIRECTORY.LOAD_DATA_PREVIEW}?${QUERY_KEY}=${dataPreviewId}`, {
+        method: 'GET',
+      })
+      if (!response.ok) {
         setDefaultValues(GET_DEFAULT_DATA())
+        setLoadError(response.statusText)
+        return
       }
-    } catch {
-      setDefaultValues(GET_DEFAULT_DATA())
-    }
+      const data: SERVER_API_TYPE_INFO[typeof SERVER_URL_SUBDIRECTORY.LOAD_DATA_PREVIEW]["response"] = await response.json()
+      setDefaultValues(data)
+    })();
   }, [getTableMetadata])
 
-  // ローカルストレージに保存
-  const handleSave = useEvent((data: QueryEditor) => {
-    localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(data))
+  // サーバーに保存
+  const [saveError, setSaveError] = React.useState<string>()
+  const handleSave = useEvent(async (data: QueryEditor) => {
+    const response = await fetch(`${SERVER_DOMAIN}${SERVER_URL_SUBDIRECTORY.SAVE_DATA_PREVIEW}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    })
+    if (!response.ok) {
+      setSaveError(response.statusText)
+    }
   })
 
   if (loadError) {
@@ -80,6 +94,11 @@ export default function ({ backendUrl, className }: QueryEditorProps) {
 
   return (
     <QueryEditorServerApiContext.Provider value={backendUrl}>
+      {saveError && (
+        <div className="text-rose-500 text-sm">
+          {saveError}
+        </div>
+      )}
       <AfterReady
         tableMetadata={tableMetadata}
         defaultValues={defaultValues}
@@ -371,9 +390,9 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
   )
 }
 
-const LOCALSTORAGE_KEY = ":query-editor:"
+export const DATA_PREVIEW_LOCALSTORAGE_KEY = ":query-editor:"
 
-const GET_DEFAULT_DATA = (): QueryEditor => ({
+export const GET_DEFAULT_DATA = (): QueryEditor => ({
   id: UUID.generate(),
   title: "クエリエディタ",
   items: [],
