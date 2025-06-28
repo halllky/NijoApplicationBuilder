@@ -309,6 +309,11 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, onI
     })
   })
 
+  const handleAddNewRecord = useEvent(() => {
+    append(createNewQueryEditorItem("dbTableSingleEditor(new)", newTableName))
+    setDbTableSingleItemSelectorDialogProps(null)
+  })
+
   // ---------------------------------
   // DiagramView用のrenderItem関数
   const renderDiagramItem = React.useCallback((item: QueryEditorDiagramItem, index: number, { zoom, handleMouseDown }: {
@@ -445,7 +450,12 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, onI
       </DiagramView>
 
       {dbTableSingleItemSelectorDialogProps && (
-        <DbTableSingleItemSelectorDialog {...dbTableSingleItemSelectorDialogProps} />
+        <DbTableSingleItemSelectorDialog {...dbTableSingleItemSelectorDialogProps}>
+          <Input.IconButton icon={Icon.PlusIcon} outline onClick={handleAddNewRecord}>
+            新しいデータを作成する
+          </Input.IconButton>
+          <div className="basis-6"></div>
+        </DbTableSingleItemSelectorDialog>
       )}
     </div>
   )
@@ -460,7 +470,7 @@ export const GET_DEFAULT_DATA = (): QueryEditor => ({
   comments: [],
 })
 
-const createNewQueryEditorItem = (type: "sqlAndResult" | "dbTableEditor" | "dbTableSingleEditor", queryTitleOrTableName: string, keys?: string[]): QueryEditorItem => {
+const createNewQueryEditorItem = (type: "sqlAndResult" | "dbTableEditor" | "dbTableSingleEditor" | "dbTableSingleEditor(new)", queryTitleOrTableName: string, keys?: string[]): QueryEditorItem => {
   if (type === "sqlAndResult") {
     return {
       id: UUID.generate(),
@@ -491,14 +501,15 @@ const createNewQueryEditorItem = (type: "sqlAndResult" | "dbTableEditor" | "dbTa
       },
     }
   } else {
-    if (!keys) throw new Error("keys is required")
+    if (type === "dbTableSingleEditor" && !keys) throw new Error("keys is required")
+    if (type === "dbTableSingleEditor(new)" && keys) throw new Error("keys is not allowed")
 
     return {
       id: UUID.generate(),
       title: queryTitleOrTableName,
-      type,
+      type: "dbTableSingleEditor",
       rootTableName: queryTitleOrTableName,
-      rootItemKey: keys,
+      rootItemKeys: type === "dbTableSingleEditor" ? keys! : null,
       isSettingCollapsed: false,
       layout: {
         x: 0,

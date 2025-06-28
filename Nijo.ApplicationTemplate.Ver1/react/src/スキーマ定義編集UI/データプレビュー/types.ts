@@ -37,7 +37,8 @@ export type DbTableSingleItemEditor = DiagramItem & {
   title: string
   type: "dbTableSingleEditor"
   rootTableName: string
-  rootItemKey: string[]
+  /** nullの場合は新規作成モード */
+  rootItemKeys: string[] | null
   isSettingCollapsed: boolean
 }
 
@@ -82,6 +83,7 @@ export type GetDbRecordsReturn = {
 }
 
 export type EditableDbRecord = {
+  uniqueId: string
   tableName: string
   values: Record<string, string | null>
   existsInDb: boolean
@@ -122,6 +124,13 @@ export const tableMetadataHelper = (rootAggregates: DataModelMetadata.Aggregate[
     return rootAggregate
   }
 
+  /** 対象の集約の親集約を探して返す */
+  const getParent = (aggregate: DataModelMetadata.Aggregate) => {
+    const parentPath = aggregate.path.split("/").slice(0, -1).join("/")
+    const parentAggregate = allAggregates().find(m => m.path === parentPath)
+    return parentAggregate
+  }
+
   /** 対象の集約の子孫集約を列挙する */
   const enumerateDescendants = (aggregate: DataModelMetadata.Aggregate) => {
     const result: DataModelMetadata.Aggregate[] = []
@@ -152,6 +161,8 @@ export const tableMetadataHelper = (rootAggregates: DataModelMetadata.Aggregate[
     allAggregates,
     /** ルート集約を探して返す */
     getRoot,
+    /** 対象の集約の親集約を探して返す */
+    getParent,
     /** 対象の集約の子孫集約を列挙する */
     enumerateDescendants,
     /** 外部参照先テーブルを探して返す */

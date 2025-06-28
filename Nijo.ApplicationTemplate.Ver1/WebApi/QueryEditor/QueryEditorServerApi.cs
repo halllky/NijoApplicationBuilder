@@ -111,6 +111,7 @@ public class QueryEditorServerApi : ControllerBase {
             var records = new List<EditableDbRecord>();
             while (await reader.ReadAsync()) {
                 var record = new EditableDbRecord();
+                record.UniqueId = Guid.NewGuid().ToString();
                 record.TableName = query.TableName;
                 record.ExistsInDb = true;
 
@@ -305,6 +306,11 @@ public class GetDbRecordsReturn {
 /// 更新対象レコード
 /// </summary>
 public class EditableDbRecord {
+    /// <summary>
+    /// UI上での一意性を担保するID
+    /// </summary>
+    [JsonPropertyName("uniqueId")]
+    public string UniqueId { get; set; } = "";
     [JsonPropertyName("tableName")]
     public string TableName { get; set; } = "";
     [JsonPropertyName("values")]
