@@ -1,8 +1,8 @@
 import React from "react"
 import { Link, useOutletContext } from "react-router-dom"
-import { SchemaDefinitionOutletContextType } from "./スキーマ定義編集/types"
+import { NijoUiOutletContextType } from "./types"
 import useEvent from "react-use-event-hook";
-import { AppSettingsForDisplay, AppSettingsForSave } from "./types";
+import { AppSettingsForSave } from "./types";
 import { Perspective } from "./型つきドキュメント/types";
 import { UUID } from "uuidjs";
 import * as Input from "../input"
@@ -23,7 +23,7 @@ export const NijoUiTopPage = () => {
       savePerspective,
       loadPerspectivePageData,
     },
-  } = useOutletContext<SchemaDefinitionOutletContextType>()
+  } = useOutletContext<NijoUiOutletContextType>()
 
   // アプリケーション設定編集
   const [appSettingsDialogProps, setAppSettingsDialogProps] = React.useState<AppSettingsEditDialogProps | undefined>(undefined);

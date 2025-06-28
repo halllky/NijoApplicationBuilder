@@ -3,7 +3,7 @@ import * as ReactHookForm from "react-hook-form"
 import * as ReactRouter from "react-router-dom"
 import * as Layout from "../layout"
 import * as Input from "../input"
-import { NijoUiOutletContextType, SchemaDefinitionGlobalState } from "./types"
+import { NijoUiOutletContextType } from "./types"
 import { useTypedDocumentContextProvider } from "./型つきドキュメント/TypedDocumentContext"
 
 /**

@@ -1,6 +1,3 @@
-import * as ReactHookForm from "react-hook-form"
-import { ValidationContextType } from "./ValidationContext"
-import { TypedDocumentContextType } from "../型つきドキュメント/types"
 
 /** スキーマ定義編集におけるアプリケーション全体の状態 */
 export type SchemaDefinitionGlobalState = {
@@ -10,11 +7,6 @@ export type SchemaDefinitionGlobalState = {
   attributeDefs: XmlElementAttribute[]
   /** 値メンバーの種類定義。 */
   valueMemberTypes: ValueMemberType[]
-}
-
-/** スキーマ定義編集におけるReact router のOutletのコンテキスト */
-export type SchemaDefinitionOutletContextType = {
-  typedDoc: TypedDocumentContextType
 }
 
 /** Model定義画面のデータ型定義 */
