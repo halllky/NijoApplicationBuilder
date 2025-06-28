@@ -24,6 +24,8 @@ export type DbTableMultiEditorViewProps = {
 
 export type DbTableEditorViewRef = {
   getCurrentRecords: () => EditableDbRecord[]
+  /** SingleViewの場合のみ、このウィンドウで新規作成されたデータの主キーを取得する */
+  getCurrentRootItemKeys: (() => string[]) | undefined
 }
 
 /**
@@ -80,6 +82,7 @@ export const DbTableMultiEditorView = React.forwardRef(({
 
   React.useImperativeHandle(ref, () => ({
     getCurrentRecords: () => getValues("records"),
+    getCurrentRootItemKeys: undefined,
   }), [getValues])
 
   // 読み込み

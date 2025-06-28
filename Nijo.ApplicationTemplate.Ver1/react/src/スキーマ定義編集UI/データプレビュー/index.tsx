@@ -214,12 +214,29 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, onI
       }
     }
 
+    // データ再読み込みをトリガー
     setSaveError(undefined)
-    setTrigger(trigger * -1) // データ再読み込みをトリガー
+    setTrigger(trigger * -1)
 
-    const currentValues = getValues()
-    onSave(currentValues) // レイアウトとSQL定義を保存
+    // -------------------------------
+    // レイアウトとSQL定義を保存
+    const currentValues = window.structuredClone(getValues())
 
+    // 新規作成SingleViewウィンドウの主キー項目を設定
+    for (const item of currentValues.items) {
+      if (item.type !== "dbTableSingleEditor") continue
+      if (item.rootItemKeys) continue
+      const itemIndex = fields.findIndex(f => f.id === item.id)
+      if (itemIndex === -1) continue
+      const editorRef = dbTableEditorsRef.current[itemIndex]
+      if (!editorRef.current || !editorRef.current.getCurrentRootItemKeys) continue
+
+      item.rootItemKeys = editorRef.current.getCurrentRootItemKeys()
+    }
+
+    onSave(currentValues)
+
+    // -------------------------------
     // 保存完了メッセージを表示
     setSaveButtonText('保存しました。')
     window.setTimeout(() => {

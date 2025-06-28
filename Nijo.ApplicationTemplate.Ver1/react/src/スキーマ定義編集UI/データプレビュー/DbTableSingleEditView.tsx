@@ -365,6 +365,17 @@ const DbTableSingleEditViewAfterLoaded = React.forwardRef((props: DbTableSingleE
       }
       return result
     },
+    getCurrentRootItemKeys: () => {
+      const rootRecord = formMethods.getValues()[rootAggregate.path][0]
+      const keys: string[] = []
+      for (const member of rootAggregate.members) {
+        if (member.type !== "own-column" && member.type !== "ref-key" && member.type !== "parent-key") continue
+        if (!member.isPrimaryKey) continue
+        const value = rootRecord.values[member.columnName]
+        keys.push(value ?? '')
+      }
+      return keys
+    },
   }))
 
   return (
@@ -439,24 +450,6 @@ const AggregateFormView = (props: {
 
   const handleChangeRecord = useEvent((record: EditableDbRecord) => {
     update(itemIndexInDbRecordArray, { ...record, changed: true })
-
-    // 次回以降の表示時にこのウィンドウが新規モードではなく編集モードになるようにするため、
-    // ウィンドウ定義の主キーを更新する
-    if (aggregate.type === "root" && !record.existsInDb) {
-      onChangeDefinition?.(prev => {
-        const newKeys: string[] = []
-        for (const member of aggregate.members) {
-          if (member.type !== "own-column" && member.type !== "ref-key" && member.type !== "parent-key") continue
-          if (!member.isPrimaryKey) continue
-          const value = record.values[member.columnName]
-          newKeys.push(value ?? '')
-        }
-        return {
-          ...prev,
-          rootItemKeys: newKeys,
-        }
-      })
-    }
   })
 
   return (
