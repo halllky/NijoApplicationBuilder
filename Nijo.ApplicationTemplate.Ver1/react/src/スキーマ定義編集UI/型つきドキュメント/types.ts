@@ -51,7 +51,6 @@ export type Perspective = {
   /** 型名 */
   name: string
   nodes: PerspectiveNode[]
-  edges: PerspectiveEdge[]
   /** この種類のデータそれぞれに指定できる属性の定義 */
   attributes: EntityAttribute[]
   /** 書式条件。先頭のものがより優先度が高い。 */

@@ -59,7 +59,6 @@ export const AppSettingsEditDialog = ({ defaultValues, entityTypeList, onSave, o
       perspectiveId: UUID.generate(),
       name: '',
       nodes: [],
-      edges: [],
       attributes: [],
     };
     setNewPerspectives(prev => [...prev, newPerspective])
