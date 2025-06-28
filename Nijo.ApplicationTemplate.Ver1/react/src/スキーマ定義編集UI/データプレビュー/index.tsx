@@ -32,7 +32,11 @@ export const DataPreview = () => {
   const [loadError, setLoadError] = React.useState<string>()
   const [tableMetadata, setTableMetadata] = React.useState<TableMetadataHelper>()
   const [defaultValues, setDefaultValues] = React.useState<QueryEditor>()
-  const afterLoadedRef = React.useRef<{ isDirty: boolean } | null>(null)
+  const afterLoadedRef = React.useRef<{ isDirty: boolean, triggerSave: () => void } | null>(null)
+
+  // 保存ボタンの状態
+  const [saveButtonText, setSaveButtonText] = React.useState('保存(Ctrl + S)')
+  const [nowSaving, setNowSaving] = React.useState(false)
 
   React.useEffect(() => {
     setLoadError(undefined);
@@ -81,10 +85,21 @@ export const DataPreview = () => {
       title="データプレビュー"
       shouldBlock={afterLoadedRef.current?.isDirty ?? false}
       headerComponent={(
-        <span className="flex-1 text-xs text-gray-500">
-          ※ 自動生成後のアプリケーションのwebapiを用いて動作しています。
-          起動しない場合は、デバッグメニューからdotnetのデバッグ用サーバーを起動してください。
-        </span>
+        <>
+          <span className="flex-1 text-xs text-gray-500">
+            ※ 自動生成後のアプリケーションのwebapiを用いて動作しています。
+            起動しない場合は、デバッグメニューからdotnetのデバッグ用サーバーを起動してください。
+          </span>
+          <div className="basis-36 flex justify-end">
+            <Input.IconButton
+              fill
+              onClick={afterLoadedRef.current?.triggerSave}
+              loading={nowSaving}
+            >
+              {saveButtonText}
+            </Input.IconButton>
+          </div>
+        </>
       )}
     >
       {loadError && (
@@ -111,6 +126,8 @@ export const DataPreview = () => {
             tableMetadata={tableMetadata}
             defaultValues={defaultValues}
             onSave={handleSave}
+            setSaveButtonText={setSaveButtonText}
+            setNowSaving={setNowSaving}
             className="h-full border-t border-gray-300"
           />
         </QueryEditorServerApiContext.Provider>
@@ -119,21 +136,19 @@ export const DataPreview = () => {
   )
 }
 
-const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, className }: {
+const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, setSaveButtonText, setNowSaving, className }: {
   tableMetadata: TableMetadataHelper
   defaultValues: QueryEditor
   onSave: (data: QueryEditor) => void
+  setSaveButtonText: (text: string) => void
+  setNowSaving: (saving: boolean) => void
   className?: string
-}, ref: React.ForwardedRef<{ isDirty: boolean }>) => {
+}, ref: React.ForwardedRef<{ isDirty: boolean, triggerSave: () => void }>) => {
 
   // ---------------------------------
   // 定義編集
   const { control, getValues, formState: { isDirty } } = ReactHookForm.useForm<QueryEditor>({ defaultValues })
   const { fields, append, remove, update } = ReactHookForm.useFieldArray({ name: 'items', control, keyName: 'use-field-array-id' })
-
-  React.useImperativeHandle(ref, () => ({
-    isDirty,
-  }), [isDirty])
 
   // DiagramView用にitemsとcommentsを統合
   const commentFields = ReactHookForm.useFieldArray({ name: 'comments', control, keyName: 'use-field-array-id' })
@@ -161,6 +176,9 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, cla
 
   // Ctrl+S でSQL再読み込みを実行
   const handleSaveAndReload = useEvent(async () => {
+    setSaveError(undefined)
+    setNowSaving(true)
+
     // データベースのレコードの更新。
     // どれか1件でもエラーがあればロールバックされる
     const recordsToSave: EditableDbRecord[] = []
@@ -175,6 +193,7 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, cla
       const result = await batchUpdate(recordsToSave)
       if (!result.ok) {
         setSaveError(result.error)
+        setNowSaving(false)
         return
       }
     }
@@ -182,9 +201,21 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, cla
     setSaveError(undefined)
     setTrigger(trigger * -1) // データ再読み込みをトリガー
     onSave(getValues()) // レイアウトとSQL定義を保存
+
+    // 保存完了メッセージを表示
+    setSaveButtonText('保存しました。')
+    window.setTimeout(() => {
+      setSaveButtonText('保存(Ctrl + S)')
+    }, 2000)
+    setNowSaving(false)
   })
 
   Util.useCtrlS(handleSaveAndReload)
+
+  React.useImperativeHandle(ref, () => ({
+    isDirty,
+    triggerSave: handleSaveAndReload,
+  }), [isDirty, handleSaveAndReload])
 
   // ---------------------------------
   // DiagramView用のハンドラー
