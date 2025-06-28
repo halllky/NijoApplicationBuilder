@@ -40,7 +40,7 @@ export const NijoUi = () => {
   }, [load])
 
   // 保存処理
-  const handleSave = useEvent(async (valuesToSave: SchemaDefinitionGlobalState) => {
+  const handleSave = useEvent(async (valuesToSave: SchemaDefinitionGlobalState): Promise<{ ok: boolean, error?: string }> => {
     try {
       const response = await fetch(`${SERVER_DOMAIN}/save`, {
         method: 'POST',
@@ -52,17 +52,16 @@ export const NijoUi = () => {
         try {
           const bodyJson = JSON.parse(bodyText) as string[]
           console.error(bodyJson)
-          window.alert(`保存に失敗しました:\n${bodyJson.join('\n')}`)
+          return { ok: false, error: `保存に失敗しました:\n${bodyJson.join('\n')}` }
         } catch {
           console.error(bodyText)
-          window.alert(`保存に失敗しました (サーバーからの応答が不正です):\n${bodyText}`)
+          return { ok: false, error: `保存に失敗しました (サーバーからの応答が不正です):\n${bodyText}` }
         }
-        return
       }
-      window.alert('保存に成功しました')
+      return { ok: true }
     } catch (error) {
       console.error(error)
-      window.alert(`保存に失敗しました: ${error instanceof Error ? error.message : `不明なエラー(${error})`}`)
+      return { ok: false, error: error instanceof Error ? error.message : `不明なエラー(${error})` }
     }
   })
 
@@ -98,7 +97,7 @@ export const NijoUi = () => {
 /** 画面初期表示時の読み込み完了後 */
 const AfterLoaded = ({ defaultValues, onSave }: {
   defaultValues: SchemaDefinitionGlobalState
-  onSave: (applicationState: SchemaDefinitionGlobalState) => void
+  onSave: (applicationState: SchemaDefinitionGlobalState) => Promise<{ ok: boolean, error?: string }>
 }) => {
 
   const form = ReactHookForm.useForm<SchemaDefinitionGlobalState>({ defaultValues })
@@ -109,7 +108,7 @@ const AfterLoaded = ({ defaultValues, onSave }: {
 
   // 保存処理
   const executeSave = React.useCallback(() => {
-    onSave(form.getValues())
+    return onSave(form.getValues())
   }, [form, onSave])
 
   // Outletコンテキストの値

@@ -2,6 +2,7 @@ import React from "react"
 import useEvent from "react-use-event-hook"
 import * as ReactHookForm from "react-hook-form"
 import * as Input from "../../input"
+import * as Util from "../../util"
 import * as Icon from "@heroicons/react/24/solid"
 import { GraphView, GraphViewRef } from "../../layout/GraphView"
 import * as ReactRouter from "react-router-dom"
@@ -46,7 +47,7 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, defaultValues }: {
   }
 }) => {
   const { executeSave, formMethods } = ReactRouter.useOutletContext<SchemaDefinitionOutletContextType>()
-  const { getValues, control } = formMethods
+  const { getValues, control, formState: { isDirty } } = formMethods
   const xmlElementTrees = getValues("xmlElementTrees")
   const graphViewRef = React.useRef<GraphViewRef>(null)
   const navigate = ReactRouter.useNavigate()
@@ -263,9 +264,31 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, defaultValues }: {
     }
   })
 
+  // 保存
+  const [saveButtonText, setSaveButtonText] = React.useState('保存(Ctrl + S)')
+  const [nowSaving, setNowSaving] = React.useState(false)
+  const [saveError, setSaveError] = React.useState<string>()
+  const handleSave = useEvent(async () => {
+    if (nowSaving) return;
+    setSaveError(undefined)
+    setNowSaving(true)
+    const result = await executeSave()
+    if (result.ok) {
+      setSaveButtonText('保存しました。')
+      window.setTimeout(() => {
+        setSaveButtonText('保存(Ctrl + S)')
+      }, 2000)
+    } else {
+      setSaveError(result.error)
+    }
+    setNowSaving(false)
+  })
+  Util.useCtrlS(handleSave)
+
   return (
     <PageFrame
       title="ソースコード自動生成設定"
+      shouldBlock={isDirty}
       headerComponent={(
         <>
           <div className="basis-4"></div>
@@ -299,11 +322,17 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, defaultValues }: {
             削除
           </Input.IconButton>
           <Input.IconButton outline onClick={() => alert('区分定義は未実装です。通常の単語型として定義してください。')}>区分定義</Input.IconButton>
-          <div className="basis-4"></div>
-          <Input.IconButton fill onClick={executeSave}>保存</Input.IconButton>
+          <div className="basis-36 flex justify-end">
+            <Input.IconButton fill onClick={handleSave} loading={nowSaving}>{saveButtonText}</Input.IconButton>
+          </div>
         </>
       )}
     >
+      {saveError && (
+        <div className="text-rose-500 text-sm">
+          {saveError}
+        </div>
+      )}
       <PanelGroup className="flex-1" direction={editableGridPosition}>
         <Panel className="border border-gray-300">
           <GraphView

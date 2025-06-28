@@ -1,13 +1,19 @@
 import * as React from "react"
+import * as ReactRouter from "react-router-dom"
 import * as Icon from "@heroicons/react/24/solid"
 import { Link, useOutletContext } from "react-router-dom"
 import { getNavigationUrl } from "../routes"
 import { NijoUiOutletContextType } from "./types"
 
 /** 画面の枠 */
-export const PageFrame = ({ title, headerComponent, children }: {
+export const PageFrame = ({ shouldBlock, title, headerComponent, children }: {
+  /** 何かを保存せずに画面を離脱しようとしているかどうかの条件。離脱時の確認ダイアログを表示するかどうかに影響する。 */
+  shouldBlock: boolean
+  /** 画面のヘッダ部に表示されるタイトル */
   title?: string
+  /** 画面のヘッダ部に表示されるコンポーネント */
   headerComponent?: React.ReactNode
+  /** 画面のメインコンテンツ。基本的に height: 100% を指定すること。 */
   children?: React.ReactNode
 }) => {
 
@@ -17,6 +23,29 @@ export const PageFrame = ({ title, headerComponent, children }: {
   React.useEffect(() => {
     setApplicationName(appSettings.applicationName)
   }, [appSettings])
+
+  // 離脱時の確認ダイアログ
+  // ページの再読み込み前に確認ダイアログを表示する
+  ReactRouter.useBeforeUnload(e => {
+    if (shouldBlock) {
+      e.preventDefault();
+    }
+  });
+
+  // 別のページへの遷移をブロックする
+  const blocker = ReactRouter.useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      shouldBlock && currentLocation.pathname !== nextLocation.pathname
+  );
+  React.useEffect(() => {
+    if (blocker && blocker.state === "blocked") {
+      if (window.confirm("編集中の内容がありますが、ページを離れてもよろしいですか？")) {
+        blocker.proceed();
+      } else {
+        blocker.reset();
+      }
+    }
+  }, [blocker]);
 
   return (
     <div className="flex flex-col h-full">

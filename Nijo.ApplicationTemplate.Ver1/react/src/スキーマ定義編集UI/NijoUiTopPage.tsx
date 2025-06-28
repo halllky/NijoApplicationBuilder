@@ -79,7 +79,7 @@ export const NijoUiTopPage = () => {
   })
 
   return (
-    <PageFrame>
+    <PageFrame shouldBlock={false}>
       <div className="h-full w-full flex justify-center items-center">
         <div className="flex flex-col items-start px-4 py-2">
 

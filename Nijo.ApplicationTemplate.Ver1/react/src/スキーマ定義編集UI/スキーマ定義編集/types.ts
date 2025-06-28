@@ -14,7 +14,7 @@ export type SchemaDefinitionGlobalState = {
 
 /** スキーマ定義編集におけるReact router のOutletのコンテキスト */
 export type SchemaDefinitionOutletContextType = {
-  executeSave: () => void
+  executeSave: () => Promise<{ ok: boolean, error?: string }>
   formMethods: ReactHookForm.UseFormReturn<SchemaDefinitionGlobalState>
   validationContext: ValidationContextType
   typedDoc: TypedDocumentContextType

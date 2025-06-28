@@ -7,6 +7,7 @@ import { UUID } from 'uuidjs';
 
 import * as Input from '../../input';
 import * as Layout from '../../layout';
+import * as Util from '../../util';
 import { NIJOUI_CLIENT_ROUTE_PARAMS } from '../../routes';
 import { NijoUiOutletContextType } from '../types';
 import { Panel, PanelGroup, PanelGroupProps, PanelGroupStorage, PanelResizeHandle } from 'react-resizable-panels';
@@ -181,42 +182,16 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
   });
 
   // ---------------------------------------
-  // キーボードイベント
-  const handleKeyDown = useEvent(async (e: React.KeyboardEvent<HTMLFormElement>) => {
-    // 保存
-    if (e.ctrlKey && e.key === 's') {
-      e.preventDefault();
+  // Ctrl+S保存処理
+  const handleSave = useEvent(async () => {
+    const currentValues = getValues();
+    const success = await onSubmit(currentValues);
 
-      const currentValues = getValues();
-      const success = await onSubmit(currentValues);
-
-      // 画面離脱時の確認ダイアログが表示されないようにするためreset
-      if (success) formMethods.reset(currentValues);
-    }
+    // 画面離脱時の確認ダイアログが表示されないようにするためreset
+    if (success) formMethods.reset(currentValues);
   });
 
-  // ---------------------------------------
-  // ページの再読み込み前に確認ダイアログを表示する
-  ReactRouter.useBeforeUnload(e => {
-    if (isDirty) {
-      e.preventDefault();
-    }
-  });
-
-  // 別のページへの遷移をブロックする
-  const blocker = ReactRouter.useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      isDirty && currentLocation.pathname !== nextLocation.pathname
-  );
-  React.useEffect(() => {
-    if (blocker && blocker.state === "blocked") {
-      if (window.confirm("編集中の内容がありますが、ページを離れてもよろしいですか？")) {
-        blocker.proceed();
-      } else {
-        blocker.reset();
-      }
-    }
-  }, [blocker]);
+  Util.useCtrlS(handleSave);
 
   // ---------------------------------------
   // フォーカス
@@ -266,6 +241,7 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
 
   return (
     <PageFrame
+      shouldBlock={isDirty}
       title={getValues('perspective.name')}
       headerComponent={(
         <>
@@ -287,8 +263,6 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
       <ReactHookForm.FormProvider {...formMethods}>
         <form
           onSubmit={handleSubmit(onSubmit)}
-          onKeyDown={handleKeyDown}
-          tabIndex={0} // keydownイベントを拾うため
           className="h-full flex flex-col gap-1 outline-none"
         >
           <VerticalOrHorizontalLayout

@@ -5,6 +5,7 @@ import * as ReactHookForm from "react-hook-form"
 import * as Input from "../../input"
 import * as Icon from "@heroicons/react/24/outline"
 import * as Layout from "../../layout"
+import * as Util from "../../util"
 import { DiagramView } from "../../layout/DiagramView"
 import { DbTableMultiEditorView, DbTableEditorViewRef } from "./DbTableMultiEditorView"
 import SqlAndResultView from "./SqlAndResultView"
@@ -31,6 +32,7 @@ export const DataPreview = () => {
   const [loadError, setLoadError] = React.useState<string>()
   const [tableMetadata, setTableMetadata] = React.useState<TableMetadataHelper>()
   const [defaultValues, setDefaultValues] = React.useState<QueryEditor>()
+  const afterLoadedRef = React.useRef<{ isDirty: boolean } | null>(null)
 
   React.useEffect(() => {
     setLoadError(undefined);
@@ -57,7 +59,7 @@ export const DataPreview = () => {
       const data: SERVER_API_TYPE_INFO[typeof SERVER_URL_SUBDIRECTORY.LOAD_DATA_PREVIEW]["response"] = await response.json()
       setDefaultValues(data)
     })();
-  }, [getTableMetadata])
+  }, [])
 
   // サーバーに保存
   const [saveError, setSaveError] = React.useState<string>()
@@ -77,6 +79,7 @@ export const DataPreview = () => {
   return (
     <PageFrame
       title="データプレビュー"
+      shouldBlock={afterLoadedRef.current?.isDirty ?? false}
       headerComponent={(
         <span className="flex-1 text-xs text-gray-500">
           ※ 自動生成後のアプリケーションのwebapiを用いて動作しています。
@@ -104,6 +107,7 @@ export const DataPreview = () => {
             </div>
           )}
           <AfterReady
+            ref={afterLoadedRef}
             tableMetadata={tableMetadata}
             defaultValues={defaultValues}
             onSave={handleSave}
@@ -115,17 +119,21 @@ export const DataPreview = () => {
   )
 }
 
-const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
+const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, className }: {
   tableMetadata: TableMetadataHelper
   defaultValues: QueryEditor
   onSave: (data: QueryEditor) => void
   className?: string
-}) => {
+}, ref: React.ForwardedRef<{ isDirty: boolean }>) => {
 
   // ---------------------------------
   // 定義編集
-  const { control, getValues } = ReactHookForm.useForm<QueryEditor>({ defaultValues })
+  const { control, getValues, formState: { isDirty } } = ReactHookForm.useForm<QueryEditor>({ defaultValues })
   const { fields, append, remove, update } = ReactHookForm.useFieldArray({ name: 'items', control, keyName: 'use-field-array-id' })
+
+  React.useImperativeHandle(ref, () => ({
+    isDirty,
+  }), [isDirty])
 
   // DiagramView用にitemsとcommentsを統合
   const commentFields = ReactHookForm.useFieldArray({ name: 'comments', control, keyName: 'use-field-array-id' })
@@ -151,34 +159,32 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
     dbTableEditorsRef.current[i] = React.createRef()
   }
 
-  const handleKeyDown = useEvent(async (e: React.KeyboardEvent<HTMLDivElement>) => {
-    // Ctrl + S でSQL再読み込みを実行
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-      e.preventDefault()
-
-      // データベースのレコードの更新。
-      // どれか1件でもエラーがあればロールバックされる
-      const recordsToSave: EditableDbRecord[] = []
-      for (const editorRef of dbTableEditorsRef.current) {
-        if (editorRef.current) {
-          const records = editorRef.current.getCurrentRecords()
-          recordsToSave.push(...records)
-        }
+  // Ctrl+S でSQL再読み込みを実行
+  const handleSaveAndReload = useEvent(async () => {
+    // データベースのレコードの更新。
+    // どれか1件でもエラーがあればロールバックされる
+    const recordsToSave: EditableDbRecord[] = []
+    for (const editorRef of dbTableEditorsRef.current) {
+      if (editorRef.current) {
+        const records = editorRef.current.getCurrentRecords()
+        recordsToSave.push(...records)
       }
-
-      if (recordsToSave.length > 0) {
-        const result = await batchUpdate(recordsToSave)
-        if (!result.ok) {
-          setSaveError(result.error)
-          return
-        }
-      }
-
-      setSaveError(undefined)
-      setTrigger(trigger * -1) // データ再読み込みをトリガー
-      onSave(getValues()) // レイアウトとSQL定義を保存
     }
+
+    if (recordsToSave.length > 0) {
+      const result = await batchUpdate(recordsToSave)
+      if (!result.ok) {
+        setSaveError(result.error)
+        return
+      }
+    }
+
+    setSaveError(undefined)
+    setTrigger(trigger * -1) // データ再読み込みをトリガー
+    onSave(getValues()) // レイアウトとSQL定義を保存
   })
+
+  Util.useCtrlS(handleSaveAndReload)
 
   // ---------------------------------
   // DiagramView用のハンドラー
@@ -343,8 +349,6 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
   return (
     <div
       className={`relative flex flex-col overflow-hidden outline-none ${className ?? ""}`}
-      tabIndex={0} // キーボード操作を可能にする
-      onKeyDown={handleKeyDown}
     >
       {saveError && (
         <div className="text-red-500 text-sm">
@@ -394,7 +398,7 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
       )}
     </div>
   )
-}
+})
 
 export const DATA_PREVIEW_LOCALSTORAGE_KEY = ":query-editor:"
 

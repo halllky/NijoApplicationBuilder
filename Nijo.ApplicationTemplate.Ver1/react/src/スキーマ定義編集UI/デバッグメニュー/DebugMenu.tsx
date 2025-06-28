@@ -184,15 +184,10 @@ export const NijoUiDebugMenu = () => {
     || stopDotnetDebuggingProcessing
     || regenerateProcessing
 
-  const debugProcessIsRunning
-    = debugState?.estimatedPidOfNodeJs !== undefined
-    && debugState?.estimatedPidOfAspNetCore !== undefined
-    && !isNaN(debugState.estimatedPidOfNodeJs)
-    && !isNaN(debugState.estimatedPidOfAspNetCore)
-
   return (
     <PageFrame
       title="デバッグメニュー"
+      shouldBlock={false}
       headerComponent={(
         <>
           <Input.IconButton icon={Icon.ArrowPathIcon} onClick={fetchDebugState} loading={anyCommandProcessing} mini>
