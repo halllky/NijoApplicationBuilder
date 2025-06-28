@@ -75,7 +75,6 @@ export const NijoUi = () => {
   if (schema !== undefined) {
     // NijoUiSideMenu に渡す SchemaDefinitionGlobalState 部分を抽出
     const schemaDefinitionPart: SchemaDefinitionGlobalState = {
-      applicationName: schema.applicationName,
       xmlElementTrees: schema.xmlElementTrees,
       attributeDefs: schema.attributeDefs,
       valueMemberTypes: schema.valueMemberTypes,
