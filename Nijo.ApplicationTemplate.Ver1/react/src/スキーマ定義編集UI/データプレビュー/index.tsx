@@ -32,7 +32,8 @@ export const DataPreview = () => {
   const [loadError, setLoadError] = React.useState<string>()
   const [tableMetadata, setTableMetadata] = React.useState<TableMetadataHelper>()
   const [defaultValues, setDefaultValues] = React.useState<QueryEditor>()
-  const afterLoadedRef = React.useRef<{ isDirty: boolean, triggerSave: () => void } | null>(null)
+  const [isDirty, setIsDirty] = React.useState(false)
+  const afterLoadedRef = React.useRef<{ triggerSave: () => void } | null>(null)
 
   // 保存ボタンの状態
   const [saveButtonText, setSaveButtonText] = React.useState('保存(Ctrl + S)')
@@ -83,7 +84,7 @@ export const DataPreview = () => {
   return (
     <PageFrame
       title="データプレビュー"
-      shouldBlock={afterLoadedRef.current?.isDirty ?? false}
+      shouldBlock={isDirty}
       headerComponent={(
         <>
           <span className="flex-1 text-xs text-gray-500">
@@ -126,6 +127,7 @@ export const DataPreview = () => {
             tableMetadata={tableMetadata}
             defaultValues={defaultValues}
             onSave={handleSave}
+            onIsDirtyChange={setIsDirty}
             setSaveButtonText={setSaveButtonText}
             setNowSaving={setNowSaving}
             className="h-full border-t border-gray-300"
@@ -136,19 +138,33 @@ export const DataPreview = () => {
   )
 }
 
-const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, setSaveButtonText, setNowSaving, className }: {
+const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, onIsDirtyChange, setSaveButtonText, setNowSaving, className }: {
   tableMetadata: TableMetadataHelper
   defaultValues: QueryEditor
   onSave: (data: QueryEditor) => void
+  onIsDirtyChange: (isDirty: boolean) => void
   setSaveButtonText: (text: string) => void
   setNowSaving: (saving: boolean) => void
   className?: string
-}, ref: React.ForwardedRef<{ isDirty: boolean, triggerSave: () => void }>) => {
+}, ref: React.ForwardedRef<{ triggerSave: () => void }>) => {
 
   // ---------------------------------
   // 定義編集
-  const { control, getValues, formState: { isDirty } } = ReactHookForm.useForm<QueryEditor>({ defaultValues })
+  const { control, getValues, formState: { isDirty }, reset } = ReactHookForm.useForm<QueryEditor>({ defaultValues })
   const { fields, append, remove, update } = ReactHookForm.useFieldArray({ name: 'items', control, keyName: 'use-field-array-id' })
+
+  // 画面離脱時のメッセージ表示用の状態
+  const [dirtyItems, setDirtyItems] = React.useState<number[]>([]) // レコード編集ウィンドウはそれぞれ独自のuseFormを持っているため
+  React.useEffect(() => {
+    onIsDirtyChange(isDirty || dirtyItems.length > 0)
+  }, [isDirty, dirtyItems])
+  const handleIsDirtyChange = React.useCallback((index: number, isDirty: boolean) => {
+    if (isDirty) {
+      setDirtyItems(prev => [...prev, index])
+    } else {
+      setDirtyItems(prev => prev.filter(i => i !== index))
+    }
+  }, [])
 
   // DiagramView用にitemsとcommentsを統合
   const commentFields = ReactHookForm.useFieldArray({ name: 'comments', control, keyName: 'use-field-array-id' })
@@ -200,7 +216,9 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, set
 
     setSaveError(undefined)
     setTrigger(trigger * -1) // データ再読み込みをトリガー
-    onSave(getValues()) // レイアウトとSQL定義を保存
+
+    const currentValues = getValues()
+    onSave(currentValues) // レイアウトとSQL定義を保存
 
     // 保存完了メッセージを表示
     setSaveButtonText('保存しました。')
@@ -208,14 +226,14 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, set
       setSaveButtonText('保存(Ctrl + S)')
     }, 2000)
     setNowSaving(false)
+    reset(currentValues)
   })
 
   Util.useCtrlS(handleSaveAndReload)
 
   React.useImperativeHandle(ref, () => ({
-    isDirty,
     triggerSave: handleSaveAndReload,
-  }), [isDirty, handleSaveAndReload])
+  }), [handleSaveAndReload])
 
   // ---------------------------------
   // DiagramView用のハンドラー
@@ -320,8 +338,8 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, set
         <SqlAndResultView
           itemIndex={itemIndex}
           value={item}
-          onChangeDefinition={(idx, updatedItem) => handleUpdateDiagramItem(index, updatedItem)}
-          onDeleteDefinition={() => handleRemoveDiagramItem(index)}
+          onChangeDefinition={handleUpdateDiagramItem}
+          onDeleteDefinition={handleRemoveDiagramItem}
           trigger={trigger}
           zoom={zoom}
           handleMouseDown={handleMouseDown}
@@ -337,6 +355,7 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, set
           value={item}
           onChangeDefinition={handleUpdateDiagramItem}
           onDeleteDefinition={handleRemoveDiagramItem}
+          onIsDirtyChange={handleIsDirtyChange}
           tableMetadataHelper={tableMetadata}
           trigger={trigger}
           zoom={zoom}
@@ -353,6 +372,7 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, set
           value={item}
           onChangeDefinition={handleUpdateDiagramItem}
           onDeleteDefinition={handleRemoveDiagramItem}
+          onIsDirtyChange={handleIsDirtyChange}
           tableMetadataHelper={tableMetadata}
           trigger={trigger}
           zoom={zoom}

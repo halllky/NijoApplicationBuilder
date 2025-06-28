@@ -14,6 +14,7 @@ export type DbTableMultiEditorViewProps = {
   value: DbTableMultiItemEditor
   onChangeDefinition: (index: number, value: DbTableMultiItemEditor) => void
   onDeleteDefinition: (index: number) => void
+  onIsDirtyChange: (index: number, isDirty: boolean) => void
   tableMetadataHelper: TableMetadataHelper
   trigger: ReloadTrigger
   zoom: number
@@ -32,6 +33,7 @@ export const DbTableMultiEditorView = React.forwardRef(({
   value,
   onChangeDefinition,
   onDeleteDefinition,
+  onIsDirtyChange,
   tableMetadataHelper,
   trigger,
   zoom,
@@ -67,9 +69,13 @@ export const DbTableMultiEditorView = React.forwardRef(({
   // レコード編集
   const { getDbRecords } = useQueryEditorServerApi()
   const [error, setError] = React.useState<string | null>(null)
-  const { getValues, control, reset, formState: { defaultValues } } = ReactHookForm.useForm<GetDbRecordsReturn>()
+  const { getValues, control, reset, formState: { defaultValues, isDirty } } = ReactHookForm.useForm<GetDbRecordsReturn>()
   const { fields, append, remove, update } = ReactHookForm.useFieldArray({ name: "records", control })
   const gridRef = React.useRef<Layout.EditableGridRef<EditableDbRecord>>(null)
+
+  React.useEffect(() => {
+    onIsDirtyChange(itemIndex, isDirty)
+  }, [isDirty])
 
   React.useImperativeHandle(ref, () => ({
     getCurrentRecords: () => getValues("records"),

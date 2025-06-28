@@ -15,12 +15,18 @@ export default function DraggableWindow({
 
   // ResizeObserverを使用してリサイズを検知
   const resizeObserverRef = React.useRef<ResizeObserver | null>(null)
+  const [isInitialized, setIsInitialized] = React.useState(false) // 初期化により react hook form の isDirty が true になるのを防ぐ
   const observerCallback = useEvent((entries: ResizeObserverEntry[]) => {
     if (!onResize) return
     for (const entry of entries) {
       const borderBoxSize = entry.borderBoxSize[0]
       if (!borderBoxSize) continue
-      onResize(borderBoxSize.inlineSize, borderBoxSize.blockSize)
+
+      if (isInitialized) {
+        onResize(borderBoxSize.inlineSize, borderBoxSize.blockSize)
+      } else {
+        setIsInitialized(true)
+      }
     }
   })
   const divRefCallback = React.useCallback((div: HTMLDivElement | null) => {

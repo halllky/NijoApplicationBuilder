@@ -133,6 +133,7 @@ type DbTableSingleEditViewProps = {
   value: DbTableSingleItemEditor
   onChangeDefinition: (index: number, value: DbTableSingleItemEditor) => void
   onDeleteDefinition: (index: number) => void
+  onIsDirtyChange: (index: number, isDirty: boolean) => void
   tableMetadataHelper: TableMetadataHelper
   trigger: ReloadTrigger
   zoom: number
@@ -165,6 +166,7 @@ export const DbTableSingleEditView = React.forwardRef((props: DbTableSingleEditV
     value: propsValue,
     onChangeDefinition,
     onDeleteDefinition,
+    onIsDirtyChange,
     tableMetadataHelper,
     trigger,
     zoom,
@@ -281,6 +283,7 @@ const DbTableSingleEditViewAfterLoaded = React.forwardRef((props: DbTableSingleE
     value,
     onChangeDefinition,
     onDeleteDefinition,
+    onIsDirtyChange,
     tableMetadataHelper,
     handleMouseDown,
     rootAggregate,
@@ -290,6 +293,11 @@ const DbTableSingleEditViewAfterLoaded = React.forwardRef((props: DbTableSingleE
   const formMethods = ReactHookForm.useForm<SingleViewFormType>({
     defaultValues,
   })
+
+  React.useEffect(() => {
+    onIsDirtyChange(itemIndex, formMethods.formState.isDirty)
+  }, [formMethods.formState.isDirty])
+
   const singleViewContext: SingleViewContextType = React.useMemo(() => ({
     rootItemKeys: value.rootItemKey,
     formMethods,
