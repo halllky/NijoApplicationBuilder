@@ -254,11 +254,6 @@ export const DbTableSingleEditView = React.forwardRef((props: DbTableSingleEditV
 
       } finally {
         setIsLoaded(true)
-
-        // ボディのスクロール位置を先頭に
-        window.setTimeout(() => {
-          bodyRef.current?.scrollTo({ top: 0, behavior: "instant" })
-        }, 10)
       }
     })()
   }, [trigger, triggerOnlyThisWindow])

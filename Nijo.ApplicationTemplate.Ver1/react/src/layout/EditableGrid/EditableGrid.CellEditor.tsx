@@ -89,7 +89,7 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
     }
   }, [caretCell, api, containerRef, getPixel])
   React.useEffect(() => {
-    if (caretCellEditingInfo) editorTextareaRef.current?.focus()
+    if (caretCellEditingInfo) editorTextareaRef.current?.focus({ preventScroll: true })
   }, [caretCellEditingInfo])
 
   /** 編集開始 */

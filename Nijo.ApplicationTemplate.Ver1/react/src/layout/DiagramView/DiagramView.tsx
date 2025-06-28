@@ -108,7 +108,7 @@ export default function DiagramView<T extends DiagramItem>({
         {/* キャンバス領域 */}
         <div
           ref={canvasRef}
-          className="relative w-[150vw] h-[150vh] min-w-[150vw] min-h-[150vh]"
+          className="relative w-[99999px] h-[99999px] min-w-[99999px] min-h-[99999px]"
           style={{
             transform: `translate(${panOffset.x}px, ${panOffset.y}px)`,
           }}
