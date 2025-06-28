@@ -4,7 +4,7 @@ import * as ReactRouter from "react-router-dom"
 import * as Layout from "../layout"
 import * as Input from "../input"
 import useEvent from "react-use-event-hook"
-import { ApplicationState, NijoUiOutletContextType, SchemaDefinitionGlobalState } from "./types"
+import { NijoUiOutletContextType, SchemaDefinitionGlobalState } from "./types"
 import { AttrDefsProvider } from "./スキーマ定義編集/AttrDefContext"
 import { SERVER_DOMAIN } from "../routes"
 import { useValidationContextProvider, ValidationContext } from "./スキーマ定義編集/ValidationContext"
@@ -17,7 +17,7 @@ import { useTypedDocumentContextProvider } from "./型つきドキュメント/T
 export const NijoUi = () => {
 
   // 画面初期表示時、サーバーからスキーマ情報を読み込む
-  const [schema, setSchema] = React.useState<ApplicationState>()
+  const [schema, setSchema] = React.useState<SchemaDefinitionGlobalState>()
   const [loadError, setLoadError] = React.useState<string>()
   const load = useEvent(async () => {
     try {
