@@ -201,7 +201,7 @@ export const NijoUiDebugMenu = () => {
         </>
       )}
     >
-      <div className="p-2 h-full overflow-y-auto flex flex-col">
+      <div className="p-2 h-full overflow-y-auto flex flex-col relative">
 
         {debugState?.errorSummary && (
           <div className="text-rose-500 text-sm mt-3 p-1">
