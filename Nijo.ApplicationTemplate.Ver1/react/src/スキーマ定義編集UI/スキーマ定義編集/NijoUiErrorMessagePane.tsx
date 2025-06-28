@@ -1,21 +1,18 @@
 import React from "react"
 import * as ReactHookForm from "react-hook-form"
 import { SchemaDefinitionGlobalState, asTree } from "./types"
-import { useNavigate } from "react-router-dom"
-import { getNavigationUrl } from "../../routes"
 import { ValidationResult } from "./ValidationContext"
 
 /**
  * エラーメッセージ表示欄。
  * すべての要素のエラーメッセージを羅列する。
  */
-export default function ({ getValues, validationResult, className }: {
+export default function ({ getValues, validationResult, selectRootAggregate, className }: {
   getValues: ReactHookForm.UseFormGetValues<SchemaDefinitionGlobalState>
   validationResult: ValidationResult | undefined
+  selectRootAggregate: (aggregateId: string) => void
   className?: string
 }) {
-  const navigate = useNavigate()
-
   // エラーメッセージをプレーンな配列に変換する。
   const errorInfos = React.useMemo(() => {
     const xmlElementTrees = getValues(`xmlElementTrees`) ?? []
@@ -70,7 +67,7 @@ export default function ({ getValues, validationResult, className }: {
         const treeUtils = asTree(tree.xmlElements)
         const rootElement = treeUtils.getRoot(targetElement)
         const aggregateId = rootElement.uniqueId
-        navigate(getNavigationUrl({ aggregateId }))
+        selectRootAggregate(aggregateId)
         return
       }
     }

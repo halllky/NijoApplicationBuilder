@@ -6,6 +6,7 @@ import { SERVER_DOMAIN } from "../../routes"
 
 /** 入力検証のコンテキストのデフォルト値。 */
 export const DEFAULT_VALIDATION_CONTEXT_VALUE: ValidationContextType = {
+  isInContext: false,
   getValidationResult: () => ({ _own: [] }),
   trigger: () => {
     return Promise.resolve()
@@ -22,7 +23,7 @@ export const useValidationContextProvider = (
 ) => {
   // 短時間で繰り返し実行するとサーバーに負担がかかるため、
   // 最後にリクエストした時間から一定時間以内はリクエストをしないようにする。
-  const [lastRequestTime, setLastRequestTime] = React.useState<number>(0)
+  const [isRequestPrevented, setIsRequestPrevented] = React.useState(false)
 
   // サーバーから返ってくる検証結果。
   // 独特な形をしているのでReact Hook Formのエラーとは別に管理する。
@@ -31,9 +32,11 @@ export const useValidationContextProvider = (
   // 入力検証を実行する。
   const trigger = useEvent(async () => {
     // 最後にリクエストした時間から一定時間以内はリクエストをしない
-    const now = Date.now()
-    if (now - lastRequestTime < 1000) return
-    setLastRequestTime(now)
+    if (isRequestPrevented) return;
+    setIsRequestPrevented(true)
+    window.setTimeout(() => {
+      setIsRequestPrevented(false)
+    }, 1000)
 
     // サーバーに問い合わせ。ステータスコード202ならエラーあり。200ならエラーなしなのでエラーをクリアする。
     const result = await fetch(`${SERVER_DOMAIN}/validate`, {
@@ -57,6 +60,7 @@ export const useValidationContextProvider = (
   }, [validationResult])
 
   const contextValue: ValidationContextType = React.useMemo(() => ({
+    isInContext: true,
     validationResult,
     getValidationResult,
     trigger,
@@ -67,6 +71,8 @@ export const useValidationContextProvider = (
 
 /** 入力検証のコンテキスト。 */
 export type ValidationContextType = {
+  /** このコンテキストが有効かどうか。 */
+  isInContext: boolean
   /** 検証を実行する */
   trigger: () => Promise<void>
   /** 検証結果を取得する */

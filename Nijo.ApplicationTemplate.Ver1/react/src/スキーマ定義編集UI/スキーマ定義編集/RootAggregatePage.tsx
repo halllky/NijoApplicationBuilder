@@ -12,13 +12,15 @@ import { useAttrDefs } from "./AttrDefContext"
 import { TYPE_COLUMN_DEF } from "./getAttrTypeColumnDef"
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import NijoUiErrorMessagePane from "./NijoUiErrorMessagePane"
+import { ValidationContext, ValidationContextType } from "./ValidationContext"
 
 /**
  * Data, Query, Command のルート集約1件を表示・編集するページ。
  */
-export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }: {
+export const PageRootAggregate = ({ rootAggregateIndex, formMethods, selectRootAggregate, className }: {
   rootAggregateIndex: number
   formMethods: ReactHookForm.UseFormReturn<SchemaDefinitionGlobalState>
+  selectRootAggregate: (aggregateId: string) => void
   className?: string
 }) => {
   const gridRef = React.useRef<Layout.EditableGridRef<GridRowType>>(null)
@@ -26,12 +28,9 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
   const { fields, insert, remove, update } = ReactHookForm.useFieldArray({ control, name: `xmlElementTrees.${rootAggregateIndex}.xmlElements` })
   const attributeDefs = useAttrDefs()
   const {
-    validationContext: {
-      getValidationResult,
-      trigger,
-      validationResult,
-    },
-  } = ReactRouter.useOutletContext<SchemaDefinitionOutletContextType>()
+    getValidationResult,
+    trigger,
+  } = React.useContext(ValidationContext)
 
   // メンバーグリッドの列定義
   const getColumnDefs: Layout.GetColumnDefsFunction<GridRowType> = React.useCallback(cellType => {
@@ -141,38 +140,26 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, className }
   })
 
   return (
-    <PanelGroup className={`h-full ${className ?? ''}`} direction="vertical">
-      <Panel className="flex flex-col gap-1">
-        <div className="flex flex-wrap gap-1 items-center">
-          <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRow}>行挿入</Input.IconButton>
-          <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRowBelow}>下挿入</Input.IconButton>
-          <Input.IconButton outline mini icon={Icon.TrashIcon} onClick={handleDeleteRow}>行削除</Input.IconButton>
-          <div className="basis-2"></div>
-          <Input.IconButton outline mini icon={Icon.ChevronDoubleLeftIcon} onClick={handleIndentDown}>インデント下げ</Input.IconButton>
-          <Input.IconButton outline mini icon={Icon.ChevronDoubleRightIcon} onClick={handleIndentUp}>インデント上げ</Input.IconButton>
-          <div className="flex-1"></div>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          <Layout.EditableGrid
-            ref={gridRef}
-            rows={fields}
-            getColumnDefs={getColumnDefs}
-            onChangeRow={handleChangeRow}
-            className="h-full border-y border-l border-gray-300"
-          />
-        </div>
-      </Panel>
-
-      <PanelResizeHandle className="h-1" />
-
-      <Panel defaultSize={20} minSize={8} collapsible>
-        <NijoUiErrorMessagePane
-          getValues={formMethods.getValues}
-          validationResult={validationResult}
-          className="h-full"
+    <div className={`flex flex-col ${className ?? ''}`}>
+      <div className="flex flex-wrap gap-1 items-center">
+        <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRow}>行挿入</Input.IconButton>
+        <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRowBelow}>下挿入</Input.IconButton>
+        <Input.IconButton outline mini icon={Icon.TrashIcon} onClick={handleDeleteRow}>行削除</Input.IconButton>
+        <div className="basis-2"></div>
+        <Input.IconButton outline mini icon={Icon.ChevronDoubleLeftIcon} onClick={handleIndentDown}>インデント下げ</Input.IconButton>
+        <Input.IconButton outline mini icon={Icon.ChevronDoubleRightIcon} onClick={handleIndentUp}>インデント上げ</Input.IconButton>
+        <div className="flex-1"></div>
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        <Layout.EditableGrid
+          ref={gridRef}
+          rows={fields}
+          getColumnDefs={getColumnDefs}
+          onChangeRow={handleChangeRow}
+          className="h-full border-y border-l border-gray-300"
         />
-      </Panel>
-    </PanelGroup>
+      </div>
+    </div>
   )
 }
 
@@ -186,7 +173,7 @@ type GridRowType = ReactHookForm.FieldArrayWithId<SchemaDefinitionGlobalState, `
 /** LocalName のセルのレイアウト */
 const createLocalNameCell = (
   cellType: Layout.ColumnDefFactories<GridRowType>,
-  getValidationResult: SchemaDefinitionOutletContextType['validationContext']['getValidationResult']
+  getValidationResult: ValidationContextType['getValidationResult']
 ) => {
   return cellType.text('localName', '', {
     defaultWidth: 220,
@@ -229,7 +216,7 @@ const createLocalNameCell = (
 const createAttributeCell = (
   attrDef: XmlElementAttribute,
   cellType: Layout.ColumnDefFactories<GridRowType>,
-  getValidationResult: SchemaDefinitionOutletContextType['validationContext']['getValidationResult']
+  getValidationResult: ValidationContextType['getValidationResult']
 ) => {
   return cellType.other(attrDef.displayName, {
     defaultWidth: 120,

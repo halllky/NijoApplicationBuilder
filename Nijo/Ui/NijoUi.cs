@@ -167,37 +167,13 @@ public class NijoUi {
         // コード自動生成
         app.MapPost("/generate", async context => {
             try {
-                // クライアントからデータを受け取り、XDocumentに変換・保存 (save相当)
-                var originalXDocumentBeforeSave = XDocument.Load(_project.SchemaXmlPath);
-                var applicationState = await context.Request.ReadFromJsonAsync<ApplicationState>()
-                    ?? throw new Exception("applicationState is null");
-                var saveErrors = new List<string>();
-                if (!applicationState.TryConvertToXDocument(originalXDocumentBeforeSave, saveErrors, out var xDocumentToSave, out var uuidToXmlElementForSave)) {
-                    context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-                    context.Response.ContentType = "application/json";
-                    await context.Response.WriteAsJsonAsync(saveErrors);
-                    return;
-                }
-                SortXmlAttributes(xDocumentToSave);
-                using (var writer = XmlWriter.Create(_project.SchemaXmlPath, new() {
-                    Indent = true,
-                    Encoding = new UTF8Encoding(false, false),
-                    NewLineChars = "\n",
-                })) {
-                    xDocumentToSave.Save(writer);
-                }
-
-                // nijo.xml のフルパスを取得
-                var nijoXmlFullPath = Path.GetFullPath(_project.SchemaXmlPath);
-                var logger = context.RequestServices.GetRequiredService<ILogger<NijoUi>>();
-                var rule = SchemaParseRule.Default();
-
                 // バリデーション (validate相当)
+                var xDocumentToSave = XDocument.Load(_project.SchemaXmlPath);
+                var rule = SchemaParseRule.Default();
                 var validationParseContext = new SchemaParseContext(xDocumentToSave, rule);
                 if (!validationParseContext.TryBuildSchema(validationParseContext.Document, out var _, out var xmlErrors)) {
                     // エラーをReactで使うエラー形式に変換する
-                    // uuidToXmlElementForSave を使う（保存時のマッピング情報）
-                    var reactErrorObject = ToReactErrorObject(xmlErrors, uuidToXmlElementForSave!);
+                    var reactErrorObject = ToReactErrorObject(xmlErrors, new Dictionary<XElement, string>());
 
                     context.Response.StatusCode = (int)HttpStatusCode.Accepted;
                     context.Response.ContentType = "application/json";
@@ -210,6 +186,7 @@ public class NijoUi {
                 var renderingOptions = new CodeRenderingOptions { AllowNotImplemented = false };
 
                 // コード生成処理を実行
+                var logger = context.RequestServices.GetRequiredService<ILogger<NijoUi>>();
                 if (_project.GenerateCode(generationParseContext, renderingOptions, logger)) {
                     // 成功応答
                     context.Response.StatusCode = (int)HttpStatusCode.OK;
@@ -269,7 +246,11 @@ public class NijoUi {
 
         var result = new JsonObject();
         foreach (var error in errors) {
-            var id = mapping[error.XElement];
+            var id = mapping.TryGetValue(error.XElement, out var found)
+                ? found
+                // 表示先が分からない場合はルートに表示する。
+                // generate時の場合は保存されたxmlファイルを元に生成を行うのでクライアント側のIDが存在しない
+                : "root";
 
             var thisXmlErrors = new JsonObject();
             result[id] = thisXmlErrors;

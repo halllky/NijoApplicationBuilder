@@ -11,7 +11,6 @@ import useQueryEditorServerApi from "../データプレビュー/useQueryEditorS
 import { BACKEND_URL } from "../データプレビュー"
 
 export const NijoUiDebugMenu = () => {
-  const { formMethods, validationContext: { trigger } } = ReactRouter.useOutletContext<SchemaDefinitionOutletContextType>()
   const [debugState, setDebugState] = useState<DebugProcessState>()
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>()
@@ -20,6 +19,7 @@ export const NijoUiDebugMenu = () => {
     if (loading) return
     setLoading(true)
     setError(undefined)
+    setRegenerateError(undefined)
     setDebugState(undefined)
     try {
       const response = await fetch(`${SERVER_DOMAIN}/debug-state`)
@@ -120,20 +120,16 @@ export const NijoUiDebugMenu = () => {
   })
 
   const [regenerateProcessing, setRegenerateProcessing] = useState(false)
+  const [regenerateError, setRegenerateError] = useState<string>()
   const regenerateCode = useEvent(async () => {
     if (anyCommandProcessing) return
     setDebugState(state => ({ ...state, consoleOut: '' }))
     setRegenerateProcessing(true)
-    setError(undefined)
-    const applicationState = formMethods.getValues()
+    setRegenerateError(undefined)
 
     try {
       const response = await fetch(`${SERVER_DOMAIN}/generate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(applicationState),
       })
       if (!response.ok) {
         let errorText = `HTTP error! status: ${response.status}`
@@ -151,18 +147,18 @@ export const NijoUiDebugMenu = () => {
         }
         throw new Error(errorText)
       }
-      // 204なら入力検証エラー
-      if (response.status === 204) {
-        trigger()
+      // Not Accepted なら入力検証エラー
+      if (response.status === 202) {
+        setRegenerateError('スキーマ定義にエラーがあります。エラーがある状態でソースコード自動生成を行うことはできません。')
         return
       }
-      // 204以外の成功は再読み込み
+      // 202以外の成功は再読み込み
       await fetchDebugState()
     } catch (err) {
       if (err instanceof Error) {
-        setError(err.message)
+        setRegenerateError(err.message)
       } else {
-        setError('An unknown error occurred during regeneration.')
+        setRegenerateError('An unknown error occurred during regeneration.')
       }
     } finally {
       setRegenerateProcessing(false)
@@ -194,9 +190,14 @@ export const NijoUiDebugMenu = () => {
             再読み込み
           </Input.IconButton>
           <div className="basis-4" />
-          <Input.IconButton icon={Icon.ArrowPathIcon} onClick={regenerateCode} loading={anyCommandProcessing} fill mini>
-            ソースコード自動生成かけなおし
-          </Input.IconButton>
+          <div>
+            <Input.IconButton icon={Icon.ArrowPathIcon} onClick={regenerateCode} loading={anyCommandProcessing} fill mini>
+              ソースコード自動生成かけなおし
+            </Input.IconButton>
+            {regenerateError && (
+              <p className="text-rose-500 text-sm">{regenerateError}</p>
+            )}
+          </div>
         </>
       )}
     >
