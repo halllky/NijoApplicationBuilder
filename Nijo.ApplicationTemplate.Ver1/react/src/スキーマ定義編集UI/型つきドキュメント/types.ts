@@ -200,8 +200,8 @@ export type TypedDocumentContextType = {
   /** コンテキストが準備できているかどうか */
   isReady: boolean
 
-  /** アプリケーション全体の設定を取得する */
-  loadAppSettings: () => Promise<AppSettingsForDisplay>
+  /** アプリケーション全体の設定 */
+  appSettings: AppSettingsForDisplay
 
   /** アプリケーション全体の設定を保存する */
   saveAppSettings: (settings: AppSettingsForSave) => Promise<boolean>

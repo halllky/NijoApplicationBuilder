@@ -9,7 +9,11 @@ import { DATA_PREVIEW_LOCALSTORAGE_KEY, GET_DEFAULT_DATA } from "../データプ
 /** 型つきドキュメントのコンテキスト。各画面から利用する関数群 */
 export const TypedDocumentContext = React.createContext<TypedDocumentContextType>({
   isReady: false,
-  loadAppSettings: () => { throw new Error("Not implemented") },
+  appSettings: {
+    applicationName: "",
+    entityTypeList: [],
+    dataPreviewList: [],
+  },
   saveAppSettings: () => { throw new Error("Not implemented") },
   createPerspective: () => { throw new Error("Not implemented") },
   loadPerspectivePageData: () => { throw new Error("Not implemented") },
@@ -66,7 +70,25 @@ export type SERVER_API_TYPE_INFO = {
  */
 export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
 
-  const loadAppSettings: TypedDocumentContextType["loadAppSettings"] = React.useCallback(async () => {
+  const [isReady, setIsReady] = React.useState(false)
+  const [appSettings, setAppSettings] = React.useState<AppSettingsForDisplay>({
+    applicationName: "",
+    entityTypeList: [],
+    dataPreviewList: [],
+  })
+
+  React.useEffect(() => {
+    (async () => {
+      setIsReady(false)
+      try {
+        setAppSettings(await loadAppSettings())
+      } finally {
+        setIsReady(true)
+      }
+    })();
+  }, [])
+
+  const loadAppSettings = React.useCallback(async () => {
     try {
       const response = await fetch(`${SERVER_DOMAIN}${SERVER_URL_SUBDIRECTORY.LOAD_SETTINGS}`, {
         method: 'GET',
@@ -128,7 +150,11 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
         alert(`保存できませんでした。(${response.status} ${response.statusText})`)
         return false
       }
-      await loadAppSettings()
+
+      // 再読み込み。JSON保存のタイムラグがあるので0.5秒待つ
+      await new Promise(resolve => setTimeout(resolve, 500))
+      setAppSettings(await loadAppSettings())
+
       return true
     } catch (error) {
       alert(`保存できませんでした。(${error})`)
@@ -199,8 +225,8 @@ export const useTypedDocumentContextProvider = (): TypedDocumentContextType => {
   })
 
   return {
-    isReady: true,
-    loadAppSettings,
+    isReady,
+    appSettings,
     saveAppSettings,
     createPerspective,
     loadPerspectivePageData,

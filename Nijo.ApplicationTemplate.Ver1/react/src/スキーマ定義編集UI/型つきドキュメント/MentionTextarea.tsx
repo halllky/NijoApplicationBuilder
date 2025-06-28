@@ -23,12 +23,11 @@ export type MentionTextareaProps = {
 export const MentionTextarea = React.forwardRef((props: MentionTextareaProps, ref: React.Ref<HTMLTextAreaElement>) => {
 
   // データソース
-  const { typedDoc } = ReactRouter.useOutletContext<NijoUiOutletContextType>()
+  const { typedDoc: { appSettings, loadPerspectivePageData } } = ReactRouter.useOutletContext<NijoUiOutletContextType>()
   const getSuggestions: ReactMention.DataFunc = React.useCallback(async (query, callback) => {
-    const sideMenuItems = await typedDoc.loadAppSettings()
     const entities: Entity[] = []
-    for (const sideMenuItem of sideMenuItems.entityTypeList) {
-      const perspective = await typedDoc.loadPerspectivePageData(sideMenuItem.entityTypeId)
+    for (const sideMenuItem of appSettings.entityTypeList) {
+      const perspective = await loadPerspectivePageData(sideMenuItem.entityTypeId)
       if (!perspective) continue;
 
       const filtered = perspective.perspective.nodes.filter(e => e.entityName.includes(query))
@@ -39,7 +38,7 @@ export const MentionTextarea = React.forwardRef((props: MentionTextareaProps, re
       display: e.entityName,
     }))
     callback(suggestions)
-  }, [])
+  }, [appSettings, loadPerspectivePageData])
 
   const handleCommentChanged2: ReactMention.OnChangeHandlerFunc = useEvent(e => {
     props.onChange?.(e.target.value);
@@ -55,10 +54,8 @@ export const MentionTextarea = React.forwardRef((props: MentionTextareaProps, re
 
     // typedDoc の中からリンク先エンティティのIDを含むページを探し
     // navigationでそこへ遷移する。
-    const sideMenuItems = await typedDoc.loadAppSettings()
-
-    for (const sideMenuItem of sideMenuItems.entityTypeList) {
-      const perspective = await typedDoc.loadPerspectivePageData(sideMenuItem.entityTypeId)
+    for (const sideMenuItem of appSettings.entityTypeList) {
+      const perspective = await loadPerspectivePageData(sideMenuItem.entityTypeId)
       if (!perspective) continue;
 
       const filtered = perspective.perspective.nodes.filter(e => e.entityId === part.targetId)

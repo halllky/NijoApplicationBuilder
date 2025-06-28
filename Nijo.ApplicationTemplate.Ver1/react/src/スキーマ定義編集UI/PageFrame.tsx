@@ -12,11 +12,11 @@ export const PageFrame = ({ title, headerComponent, children }: {
 }) => {
 
   // アプリケーション名
-  const { typedDoc: { loadAppSettings } } = useOutletContext<NijoUiOutletContextType>()
+  const { typedDoc: { appSettings } } = useOutletContext<NijoUiOutletContextType>()
   const [applicationName, setApplicationName] = React.useState<string>()
   React.useEffect(() => {
-    loadAppSettings().then(settings => setApplicationName(settings.applicationName))
-  }, [loadAppSettings])
+    setApplicationName(appSettings.applicationName)
+  }, [appSettings])
 
   return (
     <div className="flex flex-col h-full">

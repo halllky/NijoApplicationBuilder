@@ -17,24 +17,13 @@ export const NijoUiTopPage = () => {
 
   const {
     typedDoc: {
+      appSettings,
       createPerspective,
-      loadAppSettings,
       saveAppSettings,
       savePerspective,
       loadPerspectivePageData,
     },
   } = useOutletContext<SchemaDefinitionOutletContextType>()
-
-  // アプリケーション全体の設定
-  const [appSettings, setAppSettings] = React.useState<AppSettingsForDisplay>({
-    applicationName: "",
-    entityTypeList: [],
-    dataPreviewList: [],
-  })
-
-  React.useEffect(() => {
-    loadAppSettings().then(setAppSettings)
-  }, [loadAppSettings])
 
   // アプリケーション設定編集
   const [appSettingsDialogProps, setAppSettingsDialogProps] = React.useState<AppSettingsEditDialogProps | undefined>(undefined);
@@ -68,17 +57,13 @@ export const NijoUiTopPage = () => {
           await createPerspective(perspective)
         }
 
-        // settings.json を更新
+        // settings.json を更新。
+        // 再読み込みはsaveAppSettingsの中で行われる
         const success = await saveAppSettings(values)
         if (!success) {
           alert('アプリケーション設定を保存できませんでした。')
           return // 処理中断
         }
-
-        // 再読み込み。JSON保存のタイムラグがあるので0.5秒待つ
-        await new Promise(resolve => setTimeout(resolve, 500))
-        const appSettings = await loadAppSettings()
-        setAppSettings(appSettings)
       },
       onCancel: () => setAppSettingsDialogProps(undefined),
     })
