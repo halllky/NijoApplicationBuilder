@@ -28,7 +28,9 @@ function App() {
 export const ContextProviders = ({ children }: { children: React.ReactNode }) => {
   return (
     <Util.IMEProvider>
-      {children}
+      <Util.CtrlSProvider>
+        {children}
+      </Util.CtrlSProvider>
     </Util.IMEProvider>
   )
 }

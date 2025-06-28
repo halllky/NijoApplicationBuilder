@@ -156,7 +156,7 @@ const AfterReady = ({ tableMetadata, defaultValues, onSave, className }: {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault()
 
-      // 編集中のテーブルエディタの値を保存する。
+      // データベースのレコードの更新。
       // どれか1件でもエラーがあればロールバックされる
       const recordsToSave: EditableDbRecord[] = []
       for (const editorRef of dbTableEditorsRef.current) {
