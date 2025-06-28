@@ -1,12 +1,20 @@
 import React from "react"
 import useEvent from "react-use-event-hook"
 
+export interface PanAndZoomState {
+  zoom: number
+  panOffset: { x: number; y: number }
+}
+
 /**
  * パンとズーム機能を提供するカスタムフック
  */
-export function usePanAndZoom() {
+export function usePanAndZoom(
+  initialState: PanAndZoomState | undefined,
+  onStateChangePropValue: ((state: PanAndZoomState) => void) | undefined
+) {
   // ズーム（0.1 ～ 1.0）
-  const [zoom, setZoom] = React.useState(1)
+  const [zoom, setZoom] = React.useState(initialState?.zoom ?? 1)
   const handleZoomOut = useEvent(() => {
     setZoom(prev => Math.max(0.1, prev - 0.1))
   })
@@ -18,7 +26,7 @@ export function usePanAndZoom() {
   })
 
   // パン操作（背景ドラッグでの移動）
-  const [panOffset, setPanOffset] = React.useState({ x: 0, y: 0 })
+  const [panOffset, setPanOffset] = React.useState(initialState?.panOffset ?? { x: 0, y: 0 })
   const [isDragging, setIsDragging] = React.useState(false)
   const [dragStart, setDragStart] = React.useState({ x: 0, y: 0 })
   const [dragStartOffset, setDragStartOffset] = React.useState({ x: 0, y: 0 })
@@ -66,6 +74,20 @@ export function usePanAndZoom() {
   const handleResetPan = useEvent(() => {
     setPanOffset({ x: 0, y: 0 })
   })
+
+  // パンとズーム状態が変更されたときにコールバックを呼び出す
+  const [currentStateInitialized, setCurrentStateInitialized] = React.useState(false)
+  React.useEffect(() => {
+    // 最初の1回は初期化による発火なので無視
+    if (!currentStateInitialized) {
+      setCurrentStateInitialized(true)
+      return
+    }
+    onStateChangePropValue?.({
+      zoom,
+      panOffset: { ...panOffset },
+    })
+  }, [zoom, panOffset.x, panOffset.y]) // onStateChangePropValue, currentStateInitialized は意図的に依存配列に入れていない
 
   return {
     // ズーム関連

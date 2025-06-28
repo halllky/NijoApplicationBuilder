@@ -1,4 +1,5 @@
 import React from "react"
+import { PanAndZoomState } from "./usePanAndZoom"
 
 /** ダイアグラム内のアイテムのレイアウト情報 */
 export interface DiagramItemLayout {
@@ -52,4 +53,8 @@ export interface DiagramViewProps<T extends DiagramItem> {
   }) => React.ReactNode
   className?: string
   children?: React.ReactNode
+  /** パンとズームの初期状態 */
+  initialViewState?: PanAndZoomState
+  /** パンとズーム状態が変更されたときのコールバック */
+  onViewStateChange?: (state: PanAndZoomState) => void
 }

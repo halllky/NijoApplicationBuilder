@@ -17,6 +17,8 @@ export default function DiagramView<T extends DiagramItem>({
   renderItem,
   className,
   children,
+  initialViewState,
+  onViewStateChange,
 }: DiagramViewProps<T>) {
   const {
     zoom,
@@ -29,7 +31,7 @@ export default function DiagramView<T extends DiagramItem>({
     scrollRef,
     canvasRef,
     handleMouseDown,
-  } = usePanAndZoom()
+  } = usePanAndZoom(initialViewState, onViewStateChange)
 
   // ドラッグ開始時のオフセットを保存するためのRef
   const dragOffsetRef = React.useRef<{ x: number; y: number } | null>(null)

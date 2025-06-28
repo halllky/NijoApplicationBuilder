@@ -1,6 +1,6 @@
 import React from "react"
 import * as ReactRouter from "react-router"
-import { EditableDbRecord, QueryEditor, QueryEditorItem, QueryEditorDiagramItem, TableMetadataHelper } from "./types"
+import { EditableDbRecord, QueryEditor, QueryEditorItem, QueryEditorDiagramItem, TableMetadataHelper, DiagramViewState } from "./types"
 import * as ReactHookForm from "react-hook-form"
 import * as Input from "../../input"
 import * as Icon from "@heroicons/react/24/outline"
@@ -155,6 +155,10 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, onI
   const [editorDesignIsDirty, setEditorDesignIsDirty] = React.useState(false)
 
   // ---------------------------------
+  // パンとズーム状態の管理
+  const [currentViewState, setCurrentViewState] = React.useState<DiagramViewState | undefined>(defaultValues.viewState)
+
+  // ---------------------------------
   // 定義編集
   const { control, getValues, formState: { isDirty }, reset } = ReactHookForm.useForm<QueryEditor>({ defaultValues })
   const { fields, append, remove, update } = ReactHookForm.useFieldArray({ name: 'items', control, keyName: 'use-field-array-id' })
@@ -244,7 +248,15 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, onI
     // 表示設定はuseFormとは別の状態で管理している
     currentValues.design = editorDesignRef.current?.getUpdated()
 
+    // パンとズーム状態を保存
+    currentValues.viewState = currentViewState
+
     onSave(currentValues)
+
+    // -------------------------------
+    // 各種状態リセット
+    reset(currentValues)
+    setEditorDesignIsDirty(false)
 
     // -------------------------------
     // 保存完了メッセージを表示
@@ -253,7 +265,6 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, onI
       setSaveButtonText('保存(Ctrl + S)')
     }, 2000)
     setNowSaving(false)
-    reset(currentValues)
   })
 
   Util.useCtrlS(handleSaveAndReload)
@@ -438,9 +449,7 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, onI
       onIsDirtyChange={setEditorDesignIsDirty}
       trigger={trigger}
     >
-      <div
-        className={`relative flex flex-col overflow-hidden outline-none ${className ?? ""}`}
-      >
+      <div className={`relative flex flex-col overflow-hidden outline-none ${className ?? ""}`}>
         {saveError && (
           <div className="text-red-500 text-sm">
             {saveError}
@@ -453,6 +462,8 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, onI
           onRemoveItem={handleRemoveDiagramItem}
           renderItem={renderDiagramItem}
           className="flex-1"
+          initialViewState={currentViewState}
+          onViewStateChange={setCurrentViewState}
         >
           {/* ウィンドウの追加削除 */}
           <div className="absolute top-4 right-4 flex flex-col gap-1 items-end">
@@ -504,6 +515,10 @@ export const GET_DEFAULT_DATA = (): QueryEditor => ({
   title: "クエリエディタ",
   items: [],
   comments: [],
+  viewState: {
+    zoom: 1,
+    panOffset: { x: 0, y: 0 },
+  },
 })
 
 const createNewQueryEditorItem = (type: "sqlAndResult" | "dbTableEditor" | "dbTableSingleEditor" | "dbTableSingleEditor(new)", queryTitleOrTableName: string, keys?: string[]): QueryEditorItem => {
