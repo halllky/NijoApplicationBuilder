@@ -7,7 +7,7 @@ import * as Layout from '../../layout';
 import { applyFormatCondition, Entity, FormatCondition, Perspective, PerspectivePageData } from './types';
 import { MentionTextarea, MentionUtil } from './MentionTextarea';
 import { UUID } from 'uuidjs';
-import { usePersonalSettings } from './PersonalSettings';
+import { usePersonalSettings } from '../PersonalSettings';
 
 export interface EntityTypePageProps {
   perspective: Perspective | undefined;

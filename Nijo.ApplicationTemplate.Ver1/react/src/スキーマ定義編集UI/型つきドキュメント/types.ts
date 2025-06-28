@@ -1,32 +1,7 @@
 import * as ReactResizablePanels from "react-resizable-panels"
 import * as CytoscapeWrapper from "../../layout/GraphView/Cy"
 import { MentionUtil } from "./MentionTextarea"
-
-/** アプリケーション全体の設定 */
-export type AppSettingsForDisplay = {
-  /** アプリケーション名 */
-  applicationName: string
-  /** エンティティ型の定義 */
-  entityTypeList: {
-    entityTypeId: string
-    entityTypeName: string
-  }[]
-}
-
-/** アプリケーション全体の設定。保存時にサーバー側に送られる */
-export type AppSettingsForSave = {
-  /** アプリケーション名 */
-  applicationName: string
-  /** トップページでのエンティティ型の表示順 */
-  entityTypeOrder: string[]
-}
-
-/** ユーザー自身にだけ適用される設定 */
-export type PersonalSettings = {
-  /** グリッドの操作説明ボタンを非表示にする */
-  hideGridButtons?: boolean
-}
-
+import { AppSettingsForDisplay, AppSettingsForSave } from "../types"
 
 // -----------------------------------
 

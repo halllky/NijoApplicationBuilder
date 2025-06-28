@@ -2,14 +2,15 @@ import React from "react"
 import { Link, useOutletContext } from "react-router-dom"
 import { SchemaDefinitionOutletContextType } from "./スキーマ定義編集/types"
 import useEvent from "react-use-event-hook";
-import { AppSettingsForDisplay, AppSettingsForSave, Perspective } from "./型つきドキュメント/types";
+import { AppSettingsForDisplay, AppSettingsForSave } from "./types";
+import { Perspective } from "./型つきドキュメント/types";
 import { UUID } from "uuidjs";
 import * as Input from "../input"
 import * as Layout from "../layout"
 import * as Icon from "@heroicons/react/24/solid"
 import { getNavigationUrl } from "../routes";
-import { AppSettingsEditDialog, AppSettingsEditDialogProps } from "./型つきドキュメント/AppSettingsEditDialog";
-import { PersonalSettingsEditDialog } from "./型つきドキュメント/PersonalSettings";
+import { AppSettingsEditDialog, AppSettingsEditDialogProps } from "./AppSettingsEditDialog";
+import { PersonalSettingsEditDialog } from "./PersonalSettings";
 import { PageFrame } from "./PageFrame";
 
 export const NijoUiTopPage = () => {
