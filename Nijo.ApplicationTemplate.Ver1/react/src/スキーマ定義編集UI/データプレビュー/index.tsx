@@ -16,20 +16,18 @@ import { DiagramItemLayout } from "../../layout/DiagramView/types"
 import { DbTableSingleEditView, DbTableSingleItemSelectorDialog, DbTableSingleItemSelectorDialogProps } from "./DbTableSingleEditView"
 import { SERVER_DOMAIN } from "../../routes"
 import { SERVER_API_TYPE_INFO, SERVER_URL_SUBDIRECTORY } from "../型つきドキュメント/TypedDocumentContext"
+import { PageFrame } from "../PageFrame"
 
-export type QueryEditorProps = {
-  /** データ操作対象のバックエンドのURL */
-  backendUrl: string
-  className?: string
-}
+/** 自動生成されたあとのアプリケーションのwebapiのURL。とりあえず決め打ち */
+export const BACKEND_URL = "https://localhost:7098"
 
 /**
  * アプリケーション全体のデータの動きを確認してデータ構造の仕様の精度を上げるための、
  * 複数のテーブルや、SQLとその結果を表示するUIです。
  */
-export default function ({ backendUrl, className }: QueryEditorProps) {
+export const DataPreview = () => {
   const { dataPreviewId } = ReactRouter.useParams()
-  const { getTableMetadata } = useQueryEditorServerApi(backendUrl)
+  const { getTableMetadata } = useQueryEditorServerApi(BACKEND_URL)
   const [loadError, setLoadError] = React.useState<string>()
   const [tableMetadata, setTableMetadata] = React.useState<TableMetadataHelper>()
   const [defaultValues, setDefaultValues] = React.useState<QueryEditor>()
@@ -76,36 +74,44 @@ export default function ({ backendUrl, className }: QueryEditorProps) {
     }
   })
 
-  if (loadError) {
-    return (
-      <div className={`relative ${className ?? ""}`}>
-        <div className="text-red-500 text-sm whitespace-pre-wrap">{loadError}</div>
-      </div>
-    )
-  }
-
-  if (!tableMetadata || !defaultValues) {
-    return (
-      <div className={`relative ${className ?? ""}`}>
-        <Layout.NowLoading />
-      </div>
-    )
-  }
-
   return (
-    <QueryEditorServerApiContext.Provider value={backendUrl}>
-      {saveError && (
-        <div className="text-rose-500 text-sm">
-          {saveError}
+    <PageFrame
+      title="データプレビュー"
+      headerComponent={(
+        <span className="flex-1 text-xs text-gray-500">
+          ※ 自動生成後のアプリケーションのwebapiを用いて動作しています。
+          起動しない場合は、デバッグメニューからdotnetのデバッグ用サーバーを起動してください。
+        </span>
+      )}
+    >
+      {loadError && (
+        <div className={`relative h-full border-t border-gray-300`}>
+          <div className="text-red-500 text-sm whitespace-pre-wrap">{loadError}</div>
         </div>
       )}
-      <AfterReady
-        tableMetadata={tableMetadata}
-        defaultValues={defaultValues}
-        onSave={handleSave}
-        className={className}
-      />
-    </QueryEditorServerApiContext.Provider>
+
+      {(!tableMetadata || !defaultValues) && (
+        <div className={`relative h-full border-t border-gray-300`}>
+          <Layout.NowLoading />
+        </div>
+      )}
+
+      {!loadError && tableMetadata && defaultValues && (
+        <QueryEditorServerApiContext.Provider value={BACKEND_URL}>
+          {saveError && (
+            <div className="text-rose-500 text-sm">
+              {saveError}
+            </div>
+          )}
+          <AfterReady
+            tableMetadata={tableMetadata}
+            defaultValues={defaultValues}
+            onSave={handleSave}
+            className="h-full border-t border-gray-300"
+          />
+        </QueryEditorServerApiContext.Provider>
+      )}
+    </PageFrame>
   )
 }
 

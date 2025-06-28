@@ -8,7 +8,7 @@ import { SERVER_DOMAIN } from "../../routes"
 import useEvent from "react-use-event-hook"
 import { PageFrame } from "../PageFrame"
 import useQueryEditorServerApi from "../データプレビュー/useQueryEditorServerApi"
-import { BACKEND_URL } from "../データプレビュー/IndexAsNijoUiPage"
+import { BACKEND_URL } from "../データプレビュー"
 
 export const NijoUiDebugMenu = () => {
   const { formMethods, validationContext: { trigger } } = ReactRouter.useOutletContext<SchemaDefinitionOutletContextType>()

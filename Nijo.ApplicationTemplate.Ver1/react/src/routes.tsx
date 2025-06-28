@@ -12,7 +12,7 @@ import { PerspectivePage } from "./スキーマ定義編集UI/型つきドキュ
 import * as Util from "./util"
 import { NijoUiAggregateDiagram } from "./スキーマ定義編集UI/スキーマ定義編集/NijoUiAggregateDiagram"
 import { NijoUiTopPage } from "./スキーマ定義編集UI/NijoUiTopPage"
-import { DataPreviewAsNijoUiPage } from "./スキーマ定義編集UI/データプレビュー/IndexAsNijoUiPage"
+import { DataPreview } from "./スキーマ定義編集UI/データプレビュー"
 
 /** RouteObject に sideMenuLabel を追加した型 */
 export type RouteObjectWithSideMenuSetting = ReactRouter.RouteObject & {
@@ -78,7 +78,7 @@ export const getRouterForNijoUi = (): RouteObjectWithSideMenuSetting[] => {
       element: <PerspectivePage />,
     }, {
       path: 'data-preview/:dataPreviewId',
-      element: <DataPreviewAsNijoUiPage />,
+      element: <DataPreview />,
     }, {
       path: '*',
       element: <div>Not Found</div>,
