@@ -7,6 +7,7 @@ export type QueryEditor = {
   title: string
   items: QueryEditorItem[]
   comments: Comment[]
+  design?: EditorDesign
 }
 
 /** クエリエディタのアイテム */
@@ -21,6 +22,9 @@ export type SqlAndResult = DiagramItem & {
   type: "sqlAndResult"
   sql: string
   isSettingCollapsed: boolean
+  windowLayout?: {
+    gridState?: string
+  }
 }
 
 /** データベースのテーブルを一括編集するアイテム */
@@ -49,6 +53,21 @@ export type ReloadTrigger = unknown
 /** コメント */
 export type Comment = DiagramItem & {
   content: string
+}
+
+// ------------------------------------
+/** データプレビュー単位で保存される表示設定 */
+export type EditorDesign = {
+  /** 集約単位での表示設定 */
+  [aggregatePath: string]: EditorDesignByAgggregate
+}
+
+/** 集約単位での表示設定 */
+export type EditorDesignByAgggregate = {
+  /** SingleViewにおける列幅などのグリッドの状態 */
+  singleViewGridLayout?: string
+  /** MultiViewにおける列幅などのグリッドの状態 */
+  multiViewGridLayout?: string
 }
 
 // ------------------------------------

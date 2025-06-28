@@ -11,6 +11,7 @@ import { DbTableEditorViewRef } from "./DbTableMultiEditorView"
 import { useDbRecordGridColumnDef } from "./useDbRecordGridColumnDef"
 import { UUID } from "uuidjs"
 import { RecordStatusText } from "./RecordStatusText"
+import { useEditorDesign } from "./useEditorDesign"
 
 export type DbTableSingleItemSelectorDialogProps = {
   tableMetadata: DataModelMetadata.Aggregate
@@ -723,6 +724,17 @@ const AggregateGridView = (props: {
     update,
   )
 
+  // グリッドの列幅の自動保存
+  const { savedDesign, updateDesign } = useEditorDesign()
+  const gridColumnStorage: Layout.EditableGridAutoSaveStorage = React.useMemo(() => ({
+    loadState: () => {
+      return savedDesign[childrenMetadata.path]?.singleViewGridLayout ?? null
+    },
+    saveState: (gridState) => {
+      updateDesign(childrenMetadata.path, 'singleViewGridLayout', gridState)
+    },
+  }), [savedDesign, updateDesign, childrenMetadata.path])
+
   const handleAddRow = useEvent(() => {
     const uniqueId = UUID.generate()
     append({
@@ -775,6 +787,7 @@ const AggregateGridView = (props: {
         rows={fields}
         getColumnDefs={getColumnDefs as unknown as Layout.GetColumnDefsFunction<ReactHookForm.FieldArrayWithId<SingleViewFormType, string, "id">>}
         onChangeRow={handleChangeRow}
+        storage={gridColumnStorage}
         className="flex-1 border border-gray-400"
       />
       {ForeignKeyReferenceDialog}

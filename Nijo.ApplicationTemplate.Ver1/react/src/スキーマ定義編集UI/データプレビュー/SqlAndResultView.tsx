@@ -64,6 +64,22 @@ export default function SqlAndResultView({ itemIndex, value, onChangeDefinition,
     }))
   }, [queryResult])
 
+  // グリッドの列幅の自動保存
+  const gridColumnStorage: Layout.EditableGridAutoSaveStorage = React.useMemo(() => ({
+    loadState: () => {
+      return value.windowLayout?.gridState ?? null
+    },
+    saveState: (gridState) => {
+      onChangeDefinition(itemIndex, {
+        ...value,
+        windowLayout: {
+          ...value.windowLayout,
+          gridState,
+        },
+      })
+    },
+  }), [value.windowLayout?.gridState, onChangeDefinition, itemIndex])
+
   // ---------------------------------
   // ウィンドウの削除
   const handleDeleteWindow = useEvent(() => {
@@ -125,6 +141,7 @@ export default function SqlAndResultView({ itemIndex, value, onChangeDefinition,
           <Layout.EditableGrid
             rows={queryResult.rows}
             getColumnDefs={getColumnDefs}
+            storage={gridColumnStorage}
             className="flex-1 border-t border-gray-300"
           />
         )}

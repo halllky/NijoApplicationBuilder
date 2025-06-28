@@ -51,19 +51,23 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   } = props;
 
   // 保存された状態の読み込み。コンポーネント初期化時のみ読み込む。
+  const [storageIsInitialized, setStorageIsInitialized] = useState(false)
+  const [initialStorageState, setInitialStorageState] = useState<string | null>(null)
   React.useEffect(() => {
-    if (props.storage) {
-      try {
-        const json = props.storage.loadState()
-        if (json) {
-          const obj: EditableGridAutoSaveStoragedValueInternal = JSON.parse(json)
-          if (typeof obj === 'object' && (obj["column-sizing"] === undefined || typeof obj["column-sizing"] === 'object')) {
-            setColumnSizing(obj["column-sizing"] ?? { [ROW_HEADER_COLUMN_ID]: ROW_HEADER_WIDTH })
-          }
+    if (!props.storage) return
+    try {
+      const json = props.storage.loadState()
+      setInitialStorageState(json)
+      if (json) {
+        const obj: EditableGridAutoSaveStoragedValueInternal = JSON.parse(json)
+        if (typeof obj === 'object' && (obj["column-sizing"] === undefined || typeof obj["column-sizing"] === 'object')) {
+          setColumnSizing(obj["column-sizing"] ?? { [ROW_HEADER_COLUMN_ID]: ROW_HEADER_WIDTH })
         }
-      } catch {
-        // 無視
       }
+    } catch {
+      // 無視
+    } finally {
+      setStorageIsInitialized(true)
     }
   }, [])
 
@@ -86,7 +90,12 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     [ROW_HEADER_COLUMN_ID]: ROW_HEADER_WIDTH
   }));
   React.useEffect(() => {
-    props.storage?.saveState(JSON.stringify({ 'column-sizing': columnSizing }))
+    if (props.storage && storageIsInitialized) {
+      const serialized = JSON.stringify({ 'column-sizing': columnSizing })
+      if (serialized !== initialStorageState) {
+        props.storage.saveState(serialized)
+      }
+    }
   }, [columnSizing])
 
   // チェックボックス表示判定

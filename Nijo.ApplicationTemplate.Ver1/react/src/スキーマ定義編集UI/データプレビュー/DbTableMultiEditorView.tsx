@@ -9,6 +9,7 @@ import useQueryEditorServerApi from "./useQueryEditorServerApi"
 import { SqlTextarea } from "./SqlTextarea"
 import { useDbRecordGridColumnDef } from "./useDbRecordGridColumnDef"
 import { UUID } from "uuidjs"
+import { useEditorDesign } from "./useEditorDesign"
 
 export type DbTableMultiEditorViewProps = {
   itemIndex: number
@@ -113,6 +114,17 @@ export const DbTableMultiEditorView = React.forwardRef(({
     tableMetadataHelper,
     update,
   )
+
+  // グリッドの列幅の自動保存
+  const { savedDesign, updateDesign } = useEditorDesign()
+  const gridColumnStorage: Layout.EditableGridAutoSaveStorage = React.useMemo(() => ({
+    loadState: () => {
+      return savedDesign[aggregate.path]?.multiViewGridLayout ?? null
+    },
+    saveState: (gridState) => {
+      updateDesign(aggregate.path, 'multiViewGridLayout', gridState)
+    },
+  }), [savedDesign, updateDesign, aggregate.path])
 
   // ---------------------------------
   // レコード変更
@@ -251,6 +263,7 @@ export const DbTableMultiEditorView = React.forwardRef(({
             rows={fields}
             getColumnDefs={getColumnDefs}
             onChangeRow={handleChangeRecords}
+            storage={gridColumnStorage}
             className="flex-1 border-t border-gray-300"
           />
         )}

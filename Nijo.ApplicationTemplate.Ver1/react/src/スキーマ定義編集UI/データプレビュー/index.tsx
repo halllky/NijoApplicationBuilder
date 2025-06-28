@@ -18,6 +18,7 @@ import { DbTableSingleEditView, DbTableSingleItemSelectorDialog, DbTableSingleIt
 import { SERVER_DOMAIN } from "../../routes"
 import { SERVER_API_TYPE_INFO, SERVER_URL_SUBDIRECTORY } from "../型つきドキュメント/TypedDocumentContext"
 import { PageFrame } from "../PageFrame"
+import { EditorDesignContextProvider, EditorDesignContextProviderRef } from "./useEditorDesign"
 
 /** 自動生成されたあとのアプリケーションのwebapiのURL。とりあえず決め打ち */
 export const BACKEND_URL = "https://localhost:7098"
@@ -149,6 +150,11 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, onI
 }, ref: React.ForwardedRef<{ triggerSave: () => void }>) => {
 
   // ---------------------------------
+  // 集約単位の表示設定
+  const editorDesignRef = React.useRef<EditorDesignContextProviderRef>(null)
+  const [editorDesignIsDirty, setEditorDesignIsDirty] = React.useState(false)
+
+  // ---------------------------------
   // 定義編集
   const { control, getValues, formState: { isDirty }, reset } = ReactHookForm.useForm<QueryEditor>({ defaultValues })
   const { fields, append, remove, update } = ReactHookForm.useFieldArray({ name: 'items', control, keyName: 'use-field-array-id' })
@@ -156,8 +162,9 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, onI
   // 画面離脱時のメッセージ表示用の状態
   const [dirtyItems, setDirtyItems] = React.useState<number[]>([]) // レコード編集ウィンドウはそれぞれ独自のuseFormを持っているため
   React.useEffect(() => {
-    onIsDirtyChange(isDirty || dirtyItems.length > 0)
-  }, [isDirty, dirtyItems])
+    onIsDirtyChange(isDirty || dirtyItems.length > 0 || editorDesignIsDirty)
+  }, [isDirty, dirtyItems, editorDesignIsDirty])
+
   const handleIsDirtyChange = React.useCallback((index: number, isDirty: boolean) => {
     if (isDirty) {
       setDirtyItems(prev => [...prev, index])
@@ -233,6 +240,9 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, onI
 
       item.rootItemKeys = editorRef.current.getCurrentRootItemKeys()
     }
+
+    // 表示設定はuseFormとは別の状態で管理している
+    currentValues.design = editorDesignRef.current?.getUpdated()
 
     onSave(currentValues)
 
@@ -419,62 +429,71 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, onI
     })
   })
 
+  const editorDesign = ReactHookForm.useWatch({ control, name: 'design' })
+
   return (
-    <div
-      className={`relative flex flex-col overflow-hidden outline-none ${className ?? ""}`}
+    <EditorDesignContextProvider
+      ref={editorDesignRef}
+      editorDesign={editorDesign}
+      onIsDirtyChange={setEditorDesignIsDirty}
+      trigger={trigger}
     >
-      {saveError && (
-        <div className="text-red-500 text-sm">
-          {saveError}
-        </div>
-      )}
-
-      <DiagramView
-        items={diagramItems}
-        onUpdateItem={handleUpdateDiagramItem}
-        onRemoveItem={handleRemoveDiagramItem}
-        renderItem={renderDiagramItem}
-        className="flex-1"
+      <div
+        className={`relative flex flex-col overflow-hidden outline-none ${className ?? ""}`}
       >
-        {/* ウィンドウの追加削除 */}
-        <div className="absolute top-4 right-4 flex flex-col gap-1 items-end">
-          <div className="flex gap-1">
-            <select
-              value={newTableName}
-              onChange={handleChangeNewTableName}
-              className="flex-1 bg-white border border-gray-500"
-            >
-              {tableMetadata.allAggregates().map(table => (
-                <option key={table.tableName} value={table.tableName}>{table.displayName}({table.tableName})</option>
-              ))}
-            </select>
-            <Input.IconButton onClick={handleAddMultiItemEditor} fill>
-              一括編集
-            </Input.IconButton>
-            <Input.IconButton onClick={handleOpenSingleItemSelector} fill>
-              詳細編集
-            </Input.IconButton>
+        {saveError && (
+          <div className="text-red-500 text-sm">
+            {saveError}
           </div>
-          <div className="flex gap-1">
-            <Input.IconButton icon={Icon.PlusIcon} onClick={handleAddQuery} fill>
-              クエリ追加
-            </Input.IconButton>
-            <Input.IconButton icon={Icon.PlusIcon} onClick={handleAddComment} fill>
-              コメント追加
-            </Input.IconButton>
-          </div>
-        </div>
-      </DiagramView>
+        )}
 
-      {dbTableSingleItemSelectorDialogProps && (
-        <DbTableSingleItemSelectorDialog {...dbTableSingleItemSelectorDialogProps}>
-          <Input.IconButton icon={Icon.PlusIcon} outline onClick={handleAddNewRecord}>
-            新しいデータを作成する
-          </Input.IconButton>
-          <div className="basis-6"></div>
-        </DbTableSingleItemSelectorDialog>
-      )}
-    </div>
+        <DiagramView
+          items={diagramItems}
+          onUpdateItem={handleUpdateDiagramItem}
+          onRemoveItem={handleRemoveDiagramItem}
+          renderItem={renderDiagramItem}
+          className="flex-1"
+        >
+          {/* ウィンドウの追加削除 */}
+          <div className="absolute top-4 right-4 flex flex-col gap-1 items-end">
+            <div className="flex gap-1">
+              <select
+                value={newTableName}
+                onChange={handleChangeNewTableName}
+                className="flex-1 bg-white border border-gray-500"
+              >
+                {tableMetadata.allAggregates().map(table => (
+                  <option key={table.tableName} value={table.tableName}>{table.displayName}({table.tableName})</option>
+                ))}
+              </select>
+              <Input.IconButton onClick={handleAddMultiItemEditor} fill>
+                一括編集
+              </Input.IconButton>
+              <Input.IconButton onClick={handleOpenSingleItemSelector} fill>
+                詳細編集
+              </Input.IconButton>
+            </div>
+            <div className="flex gap-1">
+              <Input.IconButton icon={Icon.PlusIcon} onClick={handleAddQuery} fill>
+                クエリ追加
+              </Input.IconButton>
+              <Input.IconButton icon={Icon.PlusIcon} onClick={handleAddComment} fill>
+                コメント追加
+              </Input.IconButton>
+            </div>
+          </div>
+        </DiagramView>
+
+        {dbTableSingleItemSelectorDialogProps && (
+          <DbTableSingleItemSelectorDialog {...dbTableSingleItemSelectorDialogProps}>
+            <Input.IconButton icon={Icon.PlusIcon} outline onClick={handleAddNewRecord}>
+              新しいデータを作成する
+            </Input.IconButton>
+            <div className="basis-6"></div>
+          </DbTableSingleItemSelectorDialog>
+        )}
+      </div>
+    </EditorDesignContextProvider>
   )
 })
 
