@@ -142,7 +142,7 @@ export default function SqlAndResultView({ itemIndex, value, onChangeDefinition,
             rows={queryResult.rows}
             getColumnDefs={getColumnDefs}
             storage={gridColumnStorage}
-            className="flex-1 border-t border-gray-300"
+            className="flex-1 border-t border-gray-300 overflow-scroll"
           />
         )}
       </div>

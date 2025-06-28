@@ -22,7 +22,7 @@ export const useDbRecordGridColumnDef = (
       isFixed: true,
       isReadOnly: () => true,
       renderCell: cell => (
-        <div className="w-full">
+        <div className="w-full h-full bg-gray-200">
           <RecordStatusText record={cell.row.original} className="text-sm" />
         </div>
       ),

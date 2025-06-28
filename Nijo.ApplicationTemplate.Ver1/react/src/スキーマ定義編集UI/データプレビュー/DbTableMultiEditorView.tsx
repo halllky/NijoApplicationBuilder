@@ -264,7 +264,7 @@ export const DbTableMultiEditorView = React.forwardRef(({
             getColumnDefs={getColumnDefs}
             onChangeRow={handleChangeRecords}
             storage={gridColumnStorage}
-            className="flex-1 border-t border-gray-300"
+            className="flex-1 border-t border-gray-300 overflow-scroll"
           />
         )}
       </div>

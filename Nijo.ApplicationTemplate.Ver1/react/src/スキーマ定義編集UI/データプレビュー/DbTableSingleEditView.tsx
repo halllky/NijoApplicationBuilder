@@ -303,7 +303,7 @@ export const DbTableSingleEditView = React.forwardRef((props: DbTableSingleEditV
       </div>
 
       {/* ボディ */}
-      <div ref={bodyRef} className="flex-1 overflow-y-auto relative bg-gray-200">
+      <div ref={bodyRef} className="flex-1 overflow-scroll relative bg-gray-200">
         {error && (
           <div className="flex flex-col items-start gap-1 p-1">
             <div className="text-rose-500">{error}</div>
