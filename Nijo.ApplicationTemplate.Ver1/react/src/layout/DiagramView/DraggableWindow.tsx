@@ -40,11 +40,6 @@ export default function DraggableWindow({
     if (div) resizeObserverRef.current.observe(div)
   }, [resizeObserverRef, observerCallback])
 
-  const handleMouseDown: React.MouseEventHandler<HTMLDivElement> = useEvent(e => {
-    // スクロールエリアのパン操作が発生しないようにする
-    e.stopPropagation()
-  })
-
   const handleMouseDownInContents = useEvent((e: React.MouseEvent<SVGSVGElement>) => {
     e.preventDefault()
     e.stopPropagation()
@@ -64,7 +59,6 @@ export default function DraggableWindow({
         width: layout.width,
         height: layout.height,
       }}
-      onMouseDown={handleMouseDown}
     >
       {children({
         handleMouseDown: handleMouseDownInContents,
