@@ -279,7 +279,7 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, onI
     } else {
       const itemIndex = fields.findIndex(f => f.id === item.id)
       if (itemIndex >= 0) {
-        if (!window.confirm(`${item.title}を削除しますか？`)) return
+        if (!window.confirm(`${item.title}を閉じますか？`)) return
         remove(itemIndex)
       }
     }

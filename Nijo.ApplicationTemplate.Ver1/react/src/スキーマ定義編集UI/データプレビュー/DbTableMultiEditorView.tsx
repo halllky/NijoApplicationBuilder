@@ -156,8 +156,8 @@ export const DbTableMultiEditorView = React.forwardRef(({
   })
 
   // ---------------------------------
-  // ウィンドウの削除
-  const handleDeleteWindow = useEvent(() => {
+  // ウィンドウを閉じる
+  const handleCloseWindow = useEvent(() => {
     onDeleteDefinition(itemIndex)
   })
 
@@ -205,8 +205,8 @@ export const DbTableMultiEditorView = React.forwardRef(({
         >
           折りたたみ
         </Input.IconButton>
-        <Input.IconButton icon={Icon.XMarkIcon} hideText onClick={handleDeleteWindow}>
-          削除
+        <Input.IconButton icon={Icon.XMarkIcon} hideText onClick={handleCloseWindow}>
+          ウィンドウを閉じる
         </Input.IconButton>
       </div>
       <div className="flex-1 flex flex-col min-h-0">

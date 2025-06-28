@@ -9,21 +9,21 @@ export const RecordStatusText = ({ record, className }: {
   }
   if (!record.existsInDb) {
     return (
-      <span className={`text-green-500 ${className ?? ""}`}>
+      <span className={`text-green-500 whitespace-nowrap ${className ?? ""}`}>
         新規
       </span>
     )
   }
   if (record.deleted) {
     return (
-      <span className={`text-red-500 ${className ?? ""}`}>
+      <span className={`text-red-500 whitespace-nowrap ${className ?? ""}`}>
         削除
       </span>
     )
   }
   if (record.changed) {
     return (
-      <span className={`text-blue-500 ${className ?? ""}`}>
+      <span className={`text-blue-500 whitespace-nowrap ${className ?? ""}`}>
         更新
       </span>
     )

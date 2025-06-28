@@ -187,6 +187,9 @@ export const DbTableSingleEditView = React.forwardRef((props: DbTableSingleEditV
   const { getDbRecords } = useQueryEditorServerApi()
   const [defaultValues, setDefaultValues] = React.useState<SingleViewFormType>()
   const [rootAggregate, setRootAggregate] = React.useState<DataModelMetadata.Aggregate | null>(null)
+  const [rootRecord, setRootRecord] = React.useState<EditableDbRecord | null>(null)
+  const [triggerOnlyThisWindow, setTriggerOnlyThisWindow] = React.useState(-1)
+  const bodyRef = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
     (async () => {
@@ -237,7 +240,7 @@ export const DbTableSingleEditView = React.forwardRef((props: DbTableSingleEditV
             if (res.ok) {
               // ルート集約が見つからなかったら終わり
               if (aggregate.path === rootAggregate.path && res.data.records.length === 0) {
-                setError("対象レコードが見つかりません")
+                setError(`対象レコードが見つかりません（${propsValue.rootItemKeys.join(", ")}）`)
                 return
               }
               result[aggregate.path] = res.data.records
@@ -250,53 +253,80 @@ export const DbTableSingleEditView = React.forwardRef((props: DbTableSingleEditV
 
       } finally {
         setIsLoaded(true)
+
+        // ボディのスクロール位置を先頭に
+        window.setTimeout(() => {
+          bodyRef.current?.scrollTo({ top: 0, behavior: "instant" })
+        }, 10)
       }
     })()
-  }, [trigger])
+  }, [trigger, triggerOnlyThisWindow])
 
-  const handleDeleteWindow = useEvent(() => {
+  const handleCloseWindow = useEvent(() => {
     onDeleteDefinition(itemIndex)
+  })
+
+  const rootRecordAccessorRef = React.useRef<RootRecordAccessorRef | null>(null)
+  const handleDeleteTreeRecords = useEvent(() => {
+    rootRecordAccessorRef.current?.updateRootRecord(prev => ({ ...prev, deleted: true }))
   })
 
   const handleClickReset = useEvent(() => {
     if (!window.confirm('データの変更を取り消しますか？')) return
-    setDefaultValues(defaultValues)
+    rootRecordAccessorRef.current?.resetForm()
     setError(null)
+  })
+
+  const handleReload = useEvent(() => {
+    setTriggerOnlyThisWindow(prev => prev * -1)
   })
 
   return (
     <div className="bg-gray-200 border border-gray-300 h-full flex flex-col">
       {/* ヘッダ */}
-      <div className="flex gap-1 p-1 bg-gray-100 border-b border-gray-300 cursor-grab">
-        <span onMouseDown={handleMouseDown} className="flex-1 select-none">
+      <div className="flex items-center gap-1 p-1 bg-gray-100 border-b border-gray-300 cursor-grab">
+        <span onMouseDown={handleMouseDown} className="truncate select-none">
           {rootAggregate?.displayName}
-          （{propsValue.rootItemKeys ? propsValue.rootItemKeys.join(", ") : "新規作成"}）
         </span>
+        <RecordStatusText record={rootRecord} className="text-sm" />
+        <div className="flex-1 self-stretch" onMouseDown={handleMouseDown}></div>
 
-        {defaultValues && (
+        {propsValue.rootItemKeys !== null && defaultValues && (<>
+          {!rootRecord?.deleted && (
+            <Input.IconButton icon={Icon.TrashIcon} mini onClick={handleDeleteTreeRecords}>
+              削除
+            </Input.IconButton>
+          )}
           <Input.IconButton icon={Icon.ArrowUturnLeftIcon} mini onClick={handleClickReset}>
             リセット
           </Input.IconButton>
-        )}
-        <Input.IconButton icon={Icon.XMarkIcon} hideText onClick={handleDeleteWindow}>
-          削除
+        </>)}
+        <Input.IconButton icon={Icon.XMarkIcon} hideText onClick={handleCloseWindow}>
+          ウィンドウを閉じる
         </Input.IconButton>
       </div>
 
       {/* ボディ */}
-      <div className="flex-1 overflow-y-auto relative">
+      <div ref={bodyRef} className="flex-1 overflow-y-auto relative bg-gray-200">
         {error && (
-          <div className="text-red-500">{error}</div>
+          <div className="flex flex-col items-start gap-1 p-1">
+            <div className="text-rose-500">{error}</div>
+            <Input.IconButton icon={Icon.ArrowUturnLeftIcon} outline onClick={handleReload}>
+              再読み込み
+            </Input.IconButton>
+          </div>
         )}
-        {(!isLoaded || !rootAggregate || !defaultValues) && (
+        {(!error && (!isLoaded || !rootAggregate || !defaultValues)) && (
           <Layout.NowLoading />
         )}
-        {isLoaded && rootAggregate && defaultValues && (
+        {!error && isLoaded && rootAggregate && defaultValues && (
           <DbTableSingleEditViewAfterLoaded
             {...props}
             ref={ref}
             rootAggregate={rootAggregate}
+            rootRecordAccessorRef={rootRecordAccessorRef}
             defaultValues={defaultValues}
+            onRootRecordChange={setRootRecord}
           />
         )}
       </div>
@@ -304,9 +334,17 @@ export const DbTableSingleEditView = React.forwardRef((props: DbTableSingleEditV
   )
 })
 
+// ----------------------------------
+type RootRecordAccessorRef = {
+  resetForm: () => void
+  updateRootRecord: (dispatch: (prev: EditableDbRecord) => EditableDbRecord) => void
+}
+
 const DbTableSingleEditViewAfterLoaded = React.forwardRef((props: DbTableSingleEditViewProps & {
   rootAggregate: DataModelMetadata.Aggregate
+  rootRecordAccessorRef: React.RefObject<RootRecordAccessorRef | null>
   defaultValues: SingleViewFormType
+  onRootRecordChange: (record: EditableDbRecord) => void
 }, ref: React.ForwardedRef<DbTableEditorViewRef>) => {
   const {
     itemIndex,
@@ -317,7 +355,9 @@ const DbTableSingleEditViewAfterLoaded = React.forwardRef((props: DbTableSingleE
     tableMetadataHelper,
     handleMouseDown,
     rootAggregate,
+    rootRecordAccessorRef,
     defaultValues,
+    onRootRecordChange,
   } = props
 
   const formMethods = ReactHookForm.useForm<SingleViewFormType>({
@@ -377,6 +417,21 @@ const DbTableSingleEditViewAfterLoaded = React.forwardRef((props: DbTableSingleE
       return keys
     },
   }))
+
+  // 親コンポーネントにルートレコードへのアクセサを提供する
+  const { update } = ReactHookForm.useFieldArray({ name: rootAggregate.path, control: formMethods.control })
+  const rootRecord = ReactHookForm.useWatch({ name: `${rootAggregate.path}.0`, control: formMethods.control })
+  React.useImperativeHandle(rootRecordAccessorRef, () => ({
+    resetForm: () => {
+      formMethods.reset(defaultValues)
+    },
+    updateRootRecord: (dispatch: (prev: EditableDbRecord) => EditableDbRecord) => {
+      update(0, dispatch(rootRecord))
+    },
+  }), [rootRecord, update])
+  React.useEffect(() => {
+    onRootRecordChange(rootRecord)
+  }, [rootRecord])
 
   return (
     <SingleViewContext.Provider value={singleViewContext}>
