@@ -87,10 +87,12 @@ export type EditorDesignByAggregateMember = {
    * 相手方テーブルの親などのカラムは指定不可。
    */
   singleViewRefDisplayColumnNames?: string[]
+  /**
+   * このメンナーが外部参照の場合の、MultiViewにおける表示設定。
    * 相手方テーブルのうち外部キー以外に表示対象に含める相手方テーブルのカラム名。
    * 相手方テーブルの親などのカラムは指定不可。
    */
-  refDisplayColumnNames?: string[]
+  multiViewRefDisplayColumnNames?: string[]
 }
 
 // ------------------------------------
