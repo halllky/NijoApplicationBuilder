@@ -10,6 +10,8 @@ import { SqlTextarea } from "./SqlTextarea"
 import { useDbRecordGridColumnDef } from "./useDbRecordGridColumnDef"
 import { UUID } from "uuidjs"
 import { useEditorDesign } from "./useEditorDesign"
+import { EditorDesignByAgggregate } from "./types"
+import { DbTableMultiEditViewSettings, DbTableMultiEditViewSettingsProps } from "./MultiView.Settings"
 
 export type DbTableMultiEditorViewProps = {
   itemIndex: number
@@ -76,6 +78,7 @@ export const DbTableMultiEditorView = React.forwardRef(({
   const { getValues, control, reset, formState: { defaultValues, isDirty } } = ReactHookForm.useForm<GetDbRecordsReturn>()
   const { fields, append, remove, update } = ReactHookForm.useFieldArray({ name: "records", control })
   const gridRef = React.useRef<Layout.EditableGridRef<EditableDbRecord>>(null)
+  const [settingsDialogProps, setSettingsDialogProps] = React.useState<DbTableMultiEditViewSettingsProps | null>(null)
 
   React.useEffect(() => {
     onIsDirtyChange(itemIndex, isDirty)
@@ -182,6 +185,25 @@ export const DbTableMultiEditorView = React.forwardRef(({
     })
   })
 
+  // 設定ダイアログ
+  const handleOpenSettings = useEvent(() => {
+    const currentSettings = savedDesign[aggregate.path] ?? {}
+    setSettingsDialogProps({
+      aggregate,
+      tableMetadataHelper,
+      initialSettings: currentSettings,
+      onApply: (updatedSettings) => {
+        Object.entries(updatedSettings).forEach(([key, value]) => {
+          updateDesign(aggregate.path, key as keyof EditorDesignByAgggregate, value)
+        })
+        setSettingsDialogProps(null)
+      },
+      onCancel: () => {
+        setSettingsDialogProps(null)
+      },
+    })
+  })
+
   const handleMouseDownButtons = useEvent((e: React.MouseEvent<Element>) => {
     e.stopPropagation()
   })
@@ -210,6 +232,9 @@ export const DbTableMultiEditorView = React.forwardRef(({
             </Input.IconButton>
           </>
         )}
+        <Input.IconButton icon={Icon.Cog6ToothIcon} mini hideText onClick={handleOpenSettings}>
+          設定
+        </Input.IconButton>
         <Input.IconButton
           icon={value.isSettingCollapsed ? Icon.ChevronUpIcon : Icon.ChevronDownIcon}
           hideText
@@ -272,5 +297,10 @@ export const DbTableMultiEditorView = React.forwardRef(({
 
     {/* 外部参照テーブルのレコード選択ダイアログ */}
     {ForeignKeyReferenceDialog}
+
+    {/* 設定ダイアログ */}
+    {settingsDialogProps && (
+      <DbTableMultiEditViewSettings {...settingsDialogProps} />
+    )}
   </>)
 })
