@@ -82,7 +82,11 @@ export type EditorDesignByAgggregate = {
 /** 集約メンバー単位での表示設定 */
 export type EditorDesignByAggregateMember = {
   /**
-   * このメンバーが外部参照の場合の、
+   * このメンバーが外部参照の場合の、SingleViewにおける表示設定。
+   * 相手方テーブルのうち外部キー以外に表示対象に含める相手方テーブルのカラム名。
+   * 相手方テーブルの親などのカラムは指定不可。
+   */
+  singleViewRefDisplayColumnNames?: string[]
    * 相手方テーブルのうち外部キー以外に表示対象に含める相手方テーブルのカラム名。
    * 相手方テーブルの親などのカラムは指定不可。
    */

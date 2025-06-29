@@ -102,7 +102,7 @@ export const DbTableSingleEditViewSettings = ({
         displayName: member.type === 'own-column'
           ? `${member.columnName} (${aggregate.displayName})`
           : `${member.refToRelationName || member.physicalName} (${aggregate.displayName})`,
-        refDisplayColumnNames: existingSettings?.refDisplayColumnNames || [],
+        refDisplayColumnNames: existingSettings?.singleViewRefDisplayColumnNames || [],
       }
     }
 
@@ -130,7 +130,7 @@ export const DbTableSingleEditViewSettings = ({
     for (const [memberKey, memberSetting] of Object.entries(formData.memberSettings)) {
       if (memberSetting.type === 'ref-key' && memberSetting.refDisplayColumnNames && memberSetting.refDisplayColumnNames.length > 0) {
         membersDesign[memberKey] = {
-          refDisplayColumnNames: memberSetting.refDisplayColumnNames,
+          singleViewRefDisplayColumnNames: memberSetting.refDisplayColumnNames,
         }
       }
     }

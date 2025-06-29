@@ -160,6 +160,7 @@ type SingleViewContextType = {
   /** この画面で新規作成され、まだDBに登録されていないデータの親子関係を管理するマップ。キーが子、値が親 */
   newItemsParentMap: Map<string, string>
   setNewItemsParentMap: React.Dispatch<React.SetStateAction<Map<string, string>>>
+  trigger: ReloadTrigger
 }
 const SingleViewContext = React.createContext<SingleViewContextType>({
   rootItemKeys: null,
@@ -167,6 +168,7 @@ const SingleViewContext = React.createContext<SingleViewContextType>({
   tableMetadataHelper: {} as TableMetadataHelper,
   newItemsParentMap: new Map(),
   setNewItemsParentMap: () => { },
+  trigger: 1,
 })
 
 /**
@@ -377,6 +379,7 @@ const DbTableSingleEditViewAfterLoaded = React.forwardRef((props: DbTableSingleE
     rootRecordAccessorRef,
     defaultValues,
     onRootRecordChange,
+    trigger,
   } = props
 
   const formMethods = ReactHookForm.useForm<SingleViewFormType>({
@@ -397,7 +400,8 @@ const DbTableSingleEditViewAfterLoaded = React.forwardRef((props: DbTableSingleE
     tableMetadataHelper,
     newItemsParentMap,
     setNewItemsParentMap,
-  }), [value.rootItemKeys, formMethods, tableMetadataHelper, newItemsParentMap, setNewItemsParentMap])
+    trigger,
+  }), [value.rootItemKeys, formMethods, tableMetadataHelper, newItemsParentMap, setNewItemsParentMap, trigger])
 
   const handleChangeDefinition = useEvent((dispatch: (prev: DbTableSingleItemEditor) => DbTableSingleItemEditor) => {
     onChangeDefinition(itemIndex, dispatch(value))
@@ -593,12 +597,13 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
   } = React.useContext(SingleViewContext)
 
   const { savedDesign } = useEditorDesign()
+  const { getDbRecords } = useQueryEditorServerApi()
 
   // ラベル列の横幅
   const labelCssProperties: React.CSSProperties = React.useMemo(() => {
     const rootPath = tableMetadataHelper.getRoot(owner).path
     const labelWidth = savedDesign[rootPath]?.singleViewLabelWidth ?? '10em'
-    return { flexBasis: labelWidth }
+    return { flexBasis: labelWidth, minWidth: labelWidth }
   }, [savedDesign, owner, tableMetadataHelper])
 
   // 読み取り専用判定
@@ -695,6 +700,21 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
             <DbTableSingleItemSelectorDialog {...refKeySearchDialogProps} />
           )}
         </div>
+
+        {/* 参照先テーブルの主キー以外の属性 */}
+        {member.type === "ref-key" && (
+          <div className="flex gap-1 items-center">
+            <div style={labelCssProperties}></div>
+            <RefKeyAdditionalColumns
+              member={member}
+              record={record}
+              owner={owner}
+              tableMetadataHelper={tableMetadataHelper}
+              savedDesign={savedDesign}
+              getDbRecords={getDbRecords}
+            />
+          </div>
+        )}
       </>
     )
   }
@@ -731,6 +751,98 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
   return (
     <div>
       未実装: {member.type}
+    </div>
+  )
+}
+
+/**
+ * ref-key の参照先テーブルの追加カラムを表示するコンポーネント
+ */
+const RefKeyAdditionalColumns = ({
+  member,
+  record,
+  owner,
+  tableMetadataHelper,
+  savedDesign,
+  getDbRecords
+}: {
+  member: DataModelMetadata.AggregateMember
+  record: EditableDbRecord | undefined
+  owner: DataModelMetadata.Aggregate
+  tableMetadataHelper: TableMetadataHelper
+  savedDesign: ReturnType<typeof useEditorDesign>['savedDesign']
+  getDbRecords: ReturnType<typeof useQueryEditorServerApi>['getDbRecords']
+}) => {
+  const [refData, setRefData] = React.useState<EditableDbRecord | null>(null)
+  const [isLoading, setIsLoading] = React.useState(false)
+
+  // 設定から refDisplayColumnNames を取得
+  const rootPath = tableMetadataHelper.getRoot(owner).path
+  const refDisplayColumnNames = React.useMemo(() => {
+    if (!member.refToRelationName) return []
+    return savedDesign[rootPath]?.membersDesign?.[member.refToRelationName]?.singleViewRefDisplayColumnNames || []
+  }, [savedDesign, rootPath, member.refToRelationName])
+
+  // 参照先テーブルの情報を取得
+  const refToAggregate = React.useMemo(() => {
+    if (!member.refToAggregatePath) return null
+    return tableMetadataHelper.allAggregates().find(a => a.path === member.refToAggregatePath)
+  }, [member.refToAggregatePath, tableMetadataHelper])
+
+  // 参照先テーブルのキー値が変更されたタイミングでデータを取得
+  const refKeyValue = record?.values[member.columnName]
+  const { trigger } = React.useContext(SingleViewContext)
+  React.useEffect(() => {
+
+    if (!refKeyValue || !refToAggregate || refDisplayColumnNames.length === 0) {
+      setRefData(null)
+      return
+    }
+
+    setIsLoading(true)
+
+    // 参照先テーブルから該当レコードを取得
+    const primaryKeyColumns = refToAggregate.members
+      .filter((m): m is DataModelMetadata.AggregateMember =>
+        m.type === 'own-column' && m.isPrimaryKey
+      )
+      .map(m => m.columnName)
+
+    if (primaryKeyColumns.length === 0) return
+
+    const whereClause = `${primaryKeyColumns[0]} = '${refKeyValue.replace(/'/g, "''")}'`
+
+    getDbRecords({
+      tableName: refToAggregate.tableName,
+      whereClause,
+    }).then(res => {
+      if (res.ok && res.data.records.length > 0) {
+        setRefData(res.data.records[0])
+      } else {
+        setRefData(null)
+      }
+    }).finally(() => {
+      setIsLoading(false)
+    })
+
+  }, [refKeyValue, refToAggregate, refDisplayColumnNames, getDbRecords, trigger])
+
+  // 表示するカラムがない場合は何も表示しない
+  if (!refDisplayColumnNames.length || !refToAggregate) {
+    return null
+  }
+
+  return (
+    <div className="flex-1 pt-px pb-2 flex gap-px flex-wrap">
+      {refDisplayColumnNames.map(columnName => (
+        <div key={columnName} className="flex gap-x-2 flex-wrap items-center">
+          <span className="text-xs text-gray-500">{columnName}:</span>
+          <span className="select-text text-gray-800">
+            {isLoading ? '…' : refData?.values[columnName]}
+            &nbsp;
+          </span>
+        </div>
+      ))}
     </div>
   )
 }
