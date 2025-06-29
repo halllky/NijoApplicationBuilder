@@ -25,20 +25,18 @@ export const AggregateMemberFormView = ({ record, onChangeRecord, member, owner,
   ownerIsReadOnly: boolean
 }) => {
 
-  const {
-    formMethods,
-    tableMetadataHelper,
-  } = React.useContext(SingleViewContext)
+  const { tableMetadataHelper } = React.useContext(SingleViewContext)
 
-  const { getValues: getDataPreviewValues } = React.useContext(DataPreviewGlobalContext)
   const { getDbRecords } = useQueryEditorServerApi()
 
   // ラベル列の横幅
+  const { control: dataPreviewControl } = React.useContext(DataPreviewGlobalContext)
+  const rootPath = tableMetadataHelper.getRoot(owner).path
+  const singleViewLabelWidth = ReactHookForm.useWatch({ control: dataPreviewControl, name: `design.${rootPath}.singleViewLabelWidth` })
   const labelCssProperties: React.CSSProperties = React.useMemo(() => {
-    const rootPath = tableMetadataHelper.getRoot(owner).path
-    const labelWidth = getDataPreviewValues(`design.${rootPath}.singleViewLabelWidth`) || '10em'
+    const labelWidth = singleViewLabelWidth || '10em'
     return { flexBasis: labelWidth, minWidth: labelWidth }
-  }, [getDataPreviewValues, owner, tableMetadataHelper])
+  }, [singleViewLabelWidth])
 
   // 読み取り専用判定
   const isReadOnly = React.useMemo(() => {

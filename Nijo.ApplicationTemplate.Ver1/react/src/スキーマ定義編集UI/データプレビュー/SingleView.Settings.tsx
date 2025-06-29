@@ -9,7 +9,7 @@ import useEvent from "react-use-event-hook"
 import { EditorDesignByAgggregate, EditorDesignByAggregateMember } from "./types"
 
 export type DbTableSingleEditViewSettingsProps = {
-  aggregate: DataModelMetadata.Aggregate
+  rootAggregate: DataModelMetadata.Aggregate
   tableMetadataHelper: TableMetadataHelper
   initialSettings: SingleViewSettingFormData
   onApply: (updatedSettings: SingleViewSettingFormData) => void
@@ -28,7 +28,7 @@ export type SingleViewSettingFormData = {
  * SinlgeViewの表示設定を編集するダイアログ
  */
 export const DbTableSingleEditViewSettings = ({
-  aggregate,
+  rootAggregate,
   tableMetadataHelper,
   initialSettings,
   onApply,
@@ -71,14 +71,14 @@ export const DbTableSingleEditViewSettings = ({
       }
     }
 
-    collectMembers(aggregate)
-    const descendants = tableMetadataHelper.enumerateDescendants(aggregate)
+    collectMembers(rootAggregate)
+    const descendants = tableMetadataHelper.enumerateDescendants(rootAggregate)
     for (const desc of descendants) {
       collectMembers(desc)
     }
 
     return result
-  }, [aggregate, tableMetadataHelper])
+  }, [rootAggregate, tableMetadataHelper])
 
   const formMethods = ReactHookForm.useForm<SingleViewSettingFormData>({
     defaultValues: initialSettings,
@@ -100,7 +100,7 @@ export const DbTableSingleEditViewSettings = ({
         <form onSubmit={handleSubmit(onApply)} className="flex flex-col h-full">
 
           <h1 className="font-bold select-none text-gray-700 px-4 py-2 border-b border-gray-200">
-            表示設定 - {aggregate.displayName}
+            表示設定 - {rootAggregate.displayName}
           </h1>
 
           <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
@@ -111,7 +111,7 @@ export const DbTableSingleEditViewSettings = ({
                 <label className="w-48 text-sm text-gray-500">ラベルの横幅</label>
                 <input
                   type="text"
-                  {...register('singleViewLabelWidth')}
+                  {...register(`${rootAggregate.path}.singleViewLabelWidth`)}
                   className="basis-24 w-24 px-2 py-1 border border-gray-400"
                   placeholder="10em"
                 />

@@ -170,7 +170,7 @@ export const SingleView = React.forwardRef((props: SingleViewProps, ref: React.F
     }
 
     setSettingsDialogProps({
-      aggregate: rootAggregate,
+      rootAggregate: rootAggregate,
       tableMetadataHelper,
       initialSettings,
       onApply: (updatedSettings) => {
