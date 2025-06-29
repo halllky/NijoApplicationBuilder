@@ -12,7 +12,7 @@ import { UUID } from "uuidjs"
 import { RecordStatusText } from "./RecordStatusText"
 import { DataPreviewGlobalContext } from "./DataPreviewGlobalContext"
 import { EditorDesignByAgggregate } from "./types"
-import { DbTableSingleEditViewSettings, DbTableSingleEditViewSettingsProps } from "./SingleView.Settings"
+import { DbTableSingleEditViewSettings, DbTableSingleEditViewSettingsProps, SingleViewSettingFormData } from "./SingleView.Settings"
 import { AggregateFormView } from "./SingleView.AggregateFormView"
 
 
@@ -162,12 +162,22 @@ export const SingleView = React.forwardRef((props: SingleViewProps, ref: React.F
   const handleOpenSettings = useEvent(() => {
     if (!rootAggregate) return
 
+    // 集約ツリー全部の設定値を設定画面の初期値として取得
+    const initialSettings: SingleViewSettingFormData = {}
+    const tree = [rootAggregate, ...tableMetadataHelper.enumerateDescendants(rootAggregate)]
+    for (const aggregate of tree) {
+      initialSettings[aggregate.path] = getDataPreviewValues(`design.${aggregate.path}`) ?? {}
+    }
+
     setSettingsDialogProps({
       aggregate: rootAggregate,
       tableMetadataHelper,
-      initialSettings: getDataPreviewValues(`design.${rootAggregate.path}`) ?? {},
+      initialSettings,
       onApply: (updatedSettings) => {
-        setDataPreviewValues(`design.${rootAggregate.path}`, updatedSettings)
+        // 集約ツリー全部の設定値をsetValueする
+        for (const aggregate of tree) {
+          setDataPreviewValues(`design.${aggregate.path}`, updatedSettings[aggregate.path], { shouldDirty: true })
+        }
         setSettingsDialogProps(null)
       },
       onCancel: () => {

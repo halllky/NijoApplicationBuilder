@@ -11,21 +11,17 @@ import { EditorDesignByAgggregate, EditorDesignByAggregateMember } from "./types
 export type DbTableSingleEditViewSettingsProps = {
   aggregate: DataModelMetadata.Aggregate
   tableMetadataHelper: TableMetadataHelper
-  initialSettings: EditorDesignByAgggregate
-  onApply: (updatedSettings: EditorDesignByAgggregate) => void
+  initialSettings: SingleViewSettingFormData
+  onApply: (updatedSettings: SingleViewSettingFormData) => void
   onCancel: () => void
 }
 
-// フォーム用の型定義
-type FormData = EditorDesignByAgggregate & {
-  // メンバー設定を展開したフォーム用の型
-  memberSettings: {
-    [memberKey: string]: {
-      type: 'own-column' | 'ref-key'
-      displayName: string
-      refDisplayColumnNames?: string[]
-    }
-  }
+/**
+ * フォーム用の型定義。
+ * SingleViewの場合は一度にその集約ツリーのすべての集約が編集対象になる。
+ */
+export type SingleViewSettingFormData = {
+  [aggregatePath: string]: EditorDesignByAgggregate
 }
 
 /**
@@ -84,59 +80,14 @@ export const DbTableSingleEditViewSettings = ({
     return result
   }, [aggregate, tableMetadataHelper])
 
-  // フォームの初期値を作成
-  const defaultValues = React.useMemo((): FormData => {
-    const memberSettings: FormData['memberSettings'] = {}
-
-    for (const { member, aggregate, memberKey } of allMembers) {
-      const existingSettings = initialSettings.membersDesign?.[memberKey]
-
-      memberSettings[memberKey] = {
-        type: member.type as 'own-column' | 'ref-key',
-        displayName: member.type === 'own-column'
-          ? `${member.columnName} (${aggregate.displayName})`
-          : `${member.refToRelationName || member.physicalName} (${aggregate.displayName})`,
-        refDisplayColumnNames: existingSettings?.singleViewRefDisplayColumnNames || [],
-      }
-    }
-
-    return {
-      ...initialSettings,
-      memberSettings,
-    }
-  }, [initialSettings, allMembers])
-
-  const formMethods = ReactHookForm.useForm<FormData>({
-    defaultValues,
+  const formMethods = ReactHookForm.useForm<SingleViewSettingFormData>({
+    defaultValues: initialSettings,
   })
-  const { register, handleSubmit, watch, setValue } = formMethods
+  const { register, handleSubmit, control, setValue } = formMethods
 
   // キャンセル
   const handleCancel = useEvent(() => {
     onCancel()
-  })
-
-  // 適用
-  const handleApply = useEvent((formData: FormData) => {
-    // memberSettingsを元の形式に変換
-    const membersDesign: { [key: string]: EditorDesignByAggregateMember } = {}
-
-    for (const [memberKey, memberSetting] of Object.entries(formData.memberSettings)) {
-      if (memberSetting.type === 'ref-key' && memberSetting.refDisplayColumnNames && memberSetting.refDisplayColumnNames.length > 0) {
-        membersDesign[memberKey] = {
-          singleViewRefDisplayColumnNames: memberSetting.refDisplayColumnNames,
-        }
-      }
-    }
-
-    const result: EditorDesignByAgggregate = {
-      singleViewLabelWidth: formData.singleViewLabelWidth,
-      singleViewGridLayout: formData.singleViewGridLayout,
-      multiViewGridLayout: formData.multiViewGridLayout,
-      membersDesign: Object.keys(membersDesign).length > 0 ? membersDesign : undefined,
-    }
-
-    onApply(result)
   })
 
   return (
@@ -146,7 +97,7 @@ export const DbTableSingleEditViewSettings = ({
       onOutsideClick={handleCancel}
     >
       <ReactHookForm.FormProvider {...formMethods}>
-        <form onSubmit={handleSubmit(handleApply)} className="flex flex-col h-full">
+        <form onSubmit={handleSubmit(onApply)} className="flex flex-col h-full">
 
           <h1 className="font-bold select-none text-gray-700 px-4 py-2 border-b border-gray-200">
             表示設定 - {aggregate.displayName}
@@ -175,14 +126,15 @@ export const DbTableSingleEditViewSettings = ({
               <div className="space-y-4">
                 <h2 className="text-lg font-medium text-gray-700">メンバー設定</h2>
                 <div className="space-y-3">
-                  {allMembers.map(({ memberKey, member }, index) => (
+                  {allMembers.map(({ memberKey, member, aggregate: owner }, index) => (
                     <MemberSettingRow
                       key={index}
+                      aggregatePath={owner.path}
                       memberKey={memberKey}
                       member={member}
                       tableMetadataHelper={tableMetadataHelper}
                       register={register}
-                      watch={watch}
+                      control={control}
                       setValue={setValue}
                     />
                   ))}
@@ -205,21 +157,23 @@ export const DbTableSingleEditViewSettings = ({
  * 各メンバーの設定行
  */
 const MemberSettingRow = ({
+  aggregatePath,
   memberKey,
   member,
   tableMetadataHelper,
   register,
-  watch,
+  control,
   setValue,
 }: {
+  aggregatePath: string
   memberKey: string
   member: DataModelMetadata.AggregateMember
   tableMetadataHelper: TableMetadataHelper
-  register: ReactHookForm.UseFormRegister<FormData>
-  watch: ReactHookForm.UseFormWatch<FormData>
-  setValue: ReactHookForm.UseFormSetValue<FormData>
+  register: ReactHookForm.UseFormRegister<SingleViewSettingFormData>
+  control: ReactHookForm.Control<SingleViewSettingFormData>
+  setValue: ReactHookForm.UseFormSetValue<SingleViewSettingFormData>
 }) => {
-  const memberSetting = watch(`memberSettings.${memberKey}`)
+  const memberSetting = ReactHookForm.useWatch({ control, name: `${aggregatePath}.membersDesign.${memberKey}` })
 
   // 参照先テーブルの情報を取得
   const refToAggregate = React.useMemo(() => {
@@ -241,18 +195,18 @@ const MemberSettingRow = ({
   }, [refToAggregate])
 
   const handleCheckboxChange = useEvent((columnName: string, checked: boolean) => {
-    const currentColumns = memberSetting?.refDisplayColumnNames || []
+    const currentColumns = memberSetting?.singleViewRefDisplayColumnNames || []
     const newColumns = checked
       ? [...currentColumns, columnName]
       : currentColumns.filter(c => c !== columnName)
 
-    setValue(`memberSettings.${memberKey}.refDisplayColumnNames`, newColumns)
+    setValue(`${aggregatePath}.membersDesign.${memberKey}.singleViewRefDisplayColumnNames`, newColumns)
   })
 
   return (
     <div className="border border-gray-300 rounded p-1 space-y-2">
       <div className="flex items-center gap-2">
-        <span className="font-medium text-sm">{memberSetting?.displayName}</span>
+        <span className="font-medium text-sm">{aggregatePath}/{member.displayName}</span>
         <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
           {member.type}
         </span>
@@ -279,7 +233,7 @@ const MemberSettingRow = ({
                 <label key={col.columnName} className="flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"
-                    checked={memberSetting?.refDisplayColumnNames?.includes(col.columnName) || false}
+                    checked={memberSetting?.singleViewRefDisplayColumnNames?.includes(col.columnName) || false}
                     onChange={(e) => handleCheckboxChange(col.columnName, e.target.checked)}
                     className="rounded"
                   />

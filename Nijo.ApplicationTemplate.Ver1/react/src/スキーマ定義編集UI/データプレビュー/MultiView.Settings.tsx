@@ -16,17 +16,6 @@ export type DbTableMultiEditViewSettingsProps = {
   onCancel: () => void
 }
 
-// フォーム用の型定義
-type FormData = {
-  memberSettings: {
-    [memberKey: string]: {
-      type: 'own-column' | 'ref-key'
-      displayName: string
-      refDisplayColumnNames?: string[]
-    }
-  }
-}
-
 /**
  * MultiView（一括編集画面）の表示設定を編集するダイアログ
  */
@@ -69,56 +58,14 @@ export const DbTableMultiEditViewSettings = ({
     return result
   }, [aggregate])
 
-  // フォームの初期値を作成
-  const defaultValues = React.useMemo((): FormData => {
-    const memberSettings: FormData['memberSettings'] = {}
-
-    for (const { member, memberKey } of allMembers) {
-      const existingSettings = initialSettings.membersDesign?.[memberKey]
-
-      memberSettings[memberKey] = {
-        type: member.type as 'own-column' | 'ref-key',
-        displayName: member.type === 'own-column'
-          ? `${member.columnName} (${aggregate.displayName})`
-          : `${member.refToRelationName || member.physicalName} (${aggregate.displayName})`,
-        refDisplayColumnNames: existingSettings?.multiViewRefDisplayColumnNames || [],
-      }
-    }
-
-    return {
-      memberSettings,
-    }
-  }, [initialSettings, allMembers, aggregate.displayName])
-
-  const formMethods = ReactHookForm.useForm<FormData>({
-    defaultValues,
+  const formMethods = ReactHookForm.useForm<EditorDesignByAgggregate>({
+    defaultValues: initialSettings,
   })
-  const { register, handleSubmit, watch, setValue } = formMethods
+  const { register, handleSubmit, control, setValue } = formMethods
 
   // キャンセル
   const handleCancel = useEvent(() => {
     onCancel()
-  })
-
-  // 適用
-  const handleApply = useEvent((formData: FormData) => {
-    // memberSettingsを元の形式に変換
-    const membersDesign: { [key: string]: EditorDesignByAggregateMember } = {}
-
-    for (const [memberKey, memberSetting] of Object.entries(formData.memberSettings)) {
-      if (memberSetting.type === 'ref-key' && memberSetting.refDisplayColumnNames && memberSetting.refDisplayColumnNames.length > 0) {
-        membersDesign[memberKey] = {
-          multiViewRefDisplayColumnNames: memberSetting.refDisplayColumnNames,
-        }
-      }
-    }
-
-    const result: EditorDesignByAgggregate = {
-      ...initialSettings,
-      membersDesign: Object.keys(membersDesign).length > 0 ? membersDesign : undefined,
-    }
-
-    onApply(result)
   })
 
   return (
@@ -128,7 +75,7 @@ export const DbTableMultiEditViewSettings = ({
       onOutsideClick={handleCancel}
     >
       <ReactHookForm.FormProvider {...formMethods}>
-        <form onSubmit={handleSubmit(handleApply)} className="flex flex-col h-full">
+        <form onSubmit={handleSubmit(onApply)} className="flex flex-col h-full">
 
           <h1 className="font-bold select-none text-gray-700 px-4 py-2 border-b border-gray-200">
             表示設定 - {aggregate.displayName}
@@ -147,7 +94,7 @@ export const DbTableMultiEditViewSettings = ({
                       member={member}
                       tableMetadataHelper={tableMetadataHelper}
                       register={register}
-                      watch={watch}
+                      control={control}
                       setValue={setValue}
                     />
                   ))}
@@ -174,17 +121,17 @@ const MemberSettingRow = ({
   member,
   tableMetadataHelper,
   register,
-  watch,
+  control,
   setValue,
 }: {
   memberKey: string
   member: DataModelMetadata.AggregateMember
   tableMetadataHelper: TableMetadataHelper
-  register: ReactHookForm.UseFormRegister<FormData>
-  watch: ReactHookForm.UseFormWatch<FormData>
-  setValue: ReactHookForm.UseFormSetValue<FormData>
+  register: ReactHookForm.UseFormRegister<EditorDesignByAgggregate>
+  control: ReactHookForm.Control<EditorDesignByAgggregate>
+  setValue: ReactHookForm.UseFormSetValue<EditorDesignByAgggregate>
 }) => {
-  const memberSetting = watch(`memberSettings.${memberKey}`)
+  const memberSetting = ReactHookForm.useWatch({ control, name: `membersDesign.${memberKey}` })
 
   // 参照先テーブルの情報を取得
   const refToAggregate = React.useMemo(() => {
@@ -206,18 +153,18 @@ const MemberSettingRow = ({
   }, [refToAggregate])
 
   const handleCheckboxChange = useEvent((columnName: string, checked: boolean) => {
-    const currentColumns = memberSetting?.refDisplayColumnNames || []
+    const currentColumns = memberSetting?.multiViewRefDisplayColumnNames || []
     const newColumns = checked
       ? [...currentColumns, columnName]
       : currentColumns.filter(c => c !== columnName)
 
-    setValue(`memberSettings.${memberKey}.refDisplayColumnNames`, newColumns)
+    setValue(`membersDesign.${memberKey}.multiViewRefDisplayColumnNames`, newColumns)
   })
 
   return (
     <div className="border border-gray-300 rounded p-1 space-y-2">
       <div className="flex items-center gap-2">
-        <span className="font-medium text-sm">{memberSetting?.displayName}</span>
+        <span className="font-medium text-sm">{member.displayName}</span>
         <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
           {member.type}
         </span>
@@ -244,7 +191,7 @@ const MemberSettingRow = ({
                 <label key={col.columnName} className="flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"
-                    checked={memberSetting?.refDisplayColumnNames?.includes(col.columnName) || false}
+                    checked={memberSetting?.multiViewRefDisplayColumnNames?.includes(col.columnName) || false}
                     onChange={(e) => handleCheckboxChange(col.columnName, e.target.checked)}
                     className="rounded"
                   />
