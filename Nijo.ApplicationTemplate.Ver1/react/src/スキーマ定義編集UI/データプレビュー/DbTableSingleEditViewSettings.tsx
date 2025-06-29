@@ -12,13 +12,26 @@ import { useDbRecordGridColumnDef } from "./useDbRecordGridColumnDef"
 import { UUID } from "uuidjs"
 import { RecordStatusText } from "./RecordStatusText"
 import { useEditorDesign } from "./useEditorDesign"
-import { EditorDesignByAgggregate } from "./types"
+import { EditorDesignByAgggregate, EditorDesignByAggregateMember } from "./types"
 
 export type DbTableSingleEditViewSettingsProps = {
   aggregate: DataModelMetadata.Aggregate
+  tableMetadataHelper: TableMetadataHelper
   initialSettings: EditorDesignByAgggregate
   onApply: (updatedSettings: EditorDesignByAgggregate) => void
   onCancel: () => void
+}
+
+// フォーム用の型定義
+type FormData = EditorDesignByAgggregate & {
+  // メンバー設定を展開したフォーム用の型
+  memberSettings: {
+    [memberKey: string]: {
+      type: 'own-column' | 'ref-key'
+      displayName: string
+      refDisplayColumnNames?: string[]
+    }
+  }
 }
 
 /**
@@ -26,14 +39,83 @@ export type DbTableSingleEditViewSettingsProps = {
  */
 export const DbTableSingleEditViewSettings = ({
   aggregate,
+  tableMetadataHelper,
   initialSettings,
   onApply,
   onCancel,
 }: DbTableSingleEditViewSettingsProps) => {
-  const formMethods = ReactHookForm.useForm<EditorDesignByAgggregate>({
-    defaultValues: initialSettings,
+
+  // 集約ツリーの全メンバーを取得
+  const allMembers = React.useMemo(() => {
+    const result: Array<{
+      member: DataModelMetadata.AggregateMember
+      aggregate: DataModelMetadata.Aggregate
+      memberKey: string
+    }> = []
+
+    const collectMembers = (agg: DataModelMetadata.Aggregate) => {
+      for (const member of agg.members) {
+        if (member.type === 'own-column') {
+          result.push({
+            member,
+            aggregate: agg,
+            memberKey: member.physicalName,
+          })
+        } else if (member.type === 'ref-key') {
+          if (!member.refToRelationName) continue;
+
+          const sameKey = result.find(m => m.memberKey === member.refToRelationName)
+          if (sameKey) {
+            continue
+          } else {
+            result.push({
+              member,
+              aggregate: agg,
+              memberKey: member.refToRelationName,
+            })
+          }
+
+        } else if (member.type === 'child' || member.type === 'children') {
+          collectMembers(member as DataModelMetadata.Aggregate)
+        }
+      }
+    }
+
+    collectMembers(aggregate)
+    const descendants = tableMetadataHelper.enumerateDescendants(aggregate)
+    for (const desc of descendants) {
+      collectMembers(desc)
+    }
+
+    return result
+  }, [aggregate, tableMetadataHelper])
+
+  // フォームの初期値を作成
+  const defaultValues = React.useMemo((): FormData => {
+    const memberSettings: FormData['memberSettings'] = {}
+
+    for (const { member, aggregate, memberKey } of allMembers) {
+      const existingSettings = initialSettings.membersDesign?.[memberKey]
+
+      memberSettings[memberKey] = {
+        type: member.type as 'own-column' | 'ref-key',
+        displayName: member.type === 'own-column'
+          ? `${member.columnName} (${aggregate.displayName})`
+          : `${member.refToRelationName || member.physicalName} (${aggregate.displayName})`,
+        refDisplayColumnNames: existingSettings?.refDisplayColumnNames || [],
+      }
+    }
+
+    return {
+      ...initialSettings,
+      memberSettings,
+    }
+  }, [initialSettings, allMembers])
+
+  const formMethods = ReactHookForm.useForm<FormData>({
+    defaultValues,
   })
-  const { register, handleSubmit } = formMethods
+  const { register, handleSubmit, watch, setValue } = formMethods
 
   // キャンセル
   const handleCancel = useEvent(() => {
@@ -41,42 +123,183 @@ export const DbTableSingleEditViewSettings = ({
   })
 
   // 適用
-  const handleApply = useEvent((formData: EditorDesignByAgggregate) => {
-    onApply(formData)
+  const handleApply = useEvent((formData: FormData) => {
+    // memberSettingsを元の形式に変換
+    const membersDesign: { [key: string]: EditorDesignByAggregateMember } = {}
+
+    for (const [memberKey, memberSetting] of Object.entries(formData.memberSettings)) {
+      if (memberSetting.type === 'ref-key' && memberSetting.refDisplayColumnNames && memberSetting.refDisplayColumnNames.length > 0) {
+        membersDesign[memberKey] = {
+          refDisplayColumnNames: memberSetting.refDisplayColumnNames,
+        }
+      }
+    }
+
+    const result: EditorDesignByAgggregate = {
+      singleViewLabelWidth: formData.singleViewLabelWidth,
+      singleViewGridLayout: formData.singleViewGridLayout,
+      multiViewGridLayout: formData.multiViewGridLayout,
+      membersDesign: Object.keys(membersDesign).length > 0 ? membersDesign : undefined,
+    }
+
+    onApply(result)
   })
 
   return (
     <Layout.ModalDialog
       open
-      className="relative w-[60vw] max-w-md h-auto bg-white flex flex-col gap-1 relative border border-gray-400"
+      className="relative w-[90vw] max-w-4xl h-[90vh] bg-white flex flex-col gap-1 relative border border-gray-400"
       onOutsideClick={handleCancel}
     >
       <ReactHookForm.FormProvider {...formMethods}>
-        <form onSubmit={handleSubmit(handleApply)} className="flex flex-col">
+        <form onSubmit={handleSubmit(handleApply)} className="flex flex-col h-full">
 
           <h1 className="font-bold select-none text-gray-700 px-4 py-2 border-b border-gray-200">
             表示設定 - {aggregate.displayName}
           </h1>
 
-          <div className="px-4 py-4 space-y-4">
-            <div className="flex items-center gap-2">
-              <label className="w-48 text-sm text-gray-500">ラベルの横幅</label>
-              <input
-                type="text"
-                {...register('singleViewLabelWidth')}
-                className="flex-1 px-2 py-1 border border-gray-400 text-sm"
-                placeholder="10em"
-              />
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
+            {/* 基本設定 */}
+            <div className="space-y-4">
+              <h2 className="text-lg font-medium text-gray-700">基本設定</h2>
+              <div className="flex items-center gap-2">
+                <label className="w-48 text-sm text-gray-500">ラベルの横幅</label>
+                <input
+                  type="text"
+                  {...register('singleViewLabelWidth')}
+                  className="basis-24 w-24 px-2 py-1 border border-gray-400"
+                  placeholder="10em"
+                />
+                <span className="flex-1 text-xs text-gray-500">
+                  ※「10rem」などCSSの属性値で定義してください。
+                </span>
+              </div>
             </div>
+
+            {/* メンバー設定 */}
+            {allMembers.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-lg font-medium text-gray-700">メンバー設定</h2>
+                <div className="space-y-3">
+                  {allMembers.map(({ memberKey, member }, index) => (
+                    <MemberSettingRow
+                      key={index}
+                      memberKey={memberKey}
+                      member={member}
+                      tableMetadataHelper={tableMetadataHelper}
+                      register={register}
+                      watch={watch}
+                      setValue={setValue}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end items-center gap-2 py-2 px-4 border-t border-gray-200">
+            <span className="inline-block text-sm text-gray-500">
+              【注意】適用後に Ctrl + S を押さないと変更が反映されません。
+            </span>
             <Input.IconButton onClick={handleCancel}>キャンセル</Input.IconButton>
             <Input.IconButton submit fill>適用</Input.IconButton>
           </div>
         </form>
       </ReactHookForm.FormProvider>
     </Layout.ModalDialog>
+  )
+}
+
+/**
+ * 各メンバーの設定行
+ */
+const MemberSettingRow = ({
+  memberKey,
+  member,
+  tableMetadataHelper,
+  register,
+  watch,
+  setValue,
+}: {
+  memberKey: string
+  member: DataModelMetadata.AggregateMember
+  tableMetadataHelper: TableMetadataHelper
+  register: ReactHookForm.UseFormRegister<FormData>
+  watch: ReactHookForm.UseFormWatch<FormData>
+  setValue: ReactHookForm.UseFormSetValue<FormData>
+}) => {
+  const memberSetting = watch(`memberSettings.${memberKey}`)
+
+  // ref-keyの場合、参照先テーブルの情報を取得
+  const refToAggregate = React.useMemo(() => {
+    if (member.type !== 'ref-key' || !member.refToAggregatePath) return null
+    return tableMetadataHelper.allAggregates().find(a => a.path === member.refToAggregatePath)
+  }, [member, tableMetadataHelper])
+
+  // 参照先テーブルのカラム一覧（外部キー以外）
+  const refToColumns = React.useMemo(() => {
+    if (!refToAggregate) return []
+    return refToAggregate.members
+      .filter((m): m is DataModelMetadata.AggregateMember =>
+        m.type === 'own-column' && !m.isPrimaryKey
+      )
+      .map(m => ({
+        columnName: m.columnName,
+        displayName: m.displayName,
+      }))
+  }, [refToAggregate])
+
+  const handleCheckboxChange = useEvent((columnName: string, checked: boolean) => {
+    const currentColumns = memberSetting?.refDisplayColumnNames || []
+    const newColumns = checked
+      ? [...currentColumns, columnName]
+      : currentColumns.filter(c => c !== columnName)
+
+    setValue(`memberSettings.${memberKey}.refDisplayColumnNames`, newColumns)
+  })
+
+  return (
+    <div className="border border-gray-300 rounded p-1 space-y-2">
+      <div className="flex items-center gap-2">
+        <span className="font-medium text-sm">{memberSetting?.displayName}</span>
+        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+          {member.type}
+        </span>
+      </div>
+
+      {member.type === 'own-column' && (
+        <div className="text-sm text-gray-500 pl-4">
+          設定項目はありません
+        </div>
+      )}
+
+      {member.type === 'ref-key' && (
+        <div className="pl-4 space-y-2">
+          <div className="text-sm font-medium text-gray-700">
+            参照先テーブルの表示カラム
+          </div>
+          {refToColumns.length === 0 ? (
+            <div className="text-sm text-gray-500">
+              参照先テーブルに表示可能なカラムがありません
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              {refToColumns.map(col => (
+                <label key={col.columnName} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={memberSetting?.refDisplayColumnNames?.includes(col.columnName) || false}
+                    onChange={(e) => handleCheckboxChange(col.columnName, e.target.checked)}
+                    className="rounded"
+                  />
+                  <span className="truncate">{col.displayName}</span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 

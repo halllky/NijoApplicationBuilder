@@ -67,12 +67,26 @@ export type EditorDesign = {
 
 /** 集約単位での表示設定 */
 export type EditorDesignByAgggregate = {
-/** SingleViewにおけるラベルの幅。CSSの値で指定。 */
+  /** SingleViewにおけるラベルの幅。CSSの値で指定。 */
   singleViewLabelWidth?: string
   /** SingleViewにおける列幅などのグリッドの状態 */
   singleViewGridLayout?: string
   /** MultiViewにおける列幅などのグリッドの状態 */
   multiViewGridLayout?: string
+  /** 集約メンバー単位での表示設定 */
+  membersDesign?: {
+    [ownColumnPhysicalNameOrRefRelationName: string]: EditorDesignByAggregateMember
+  }
+}
+
+/** 集約メンバー単位での表示設定 */
+export type EditorDesignByAggregateMember = {
+  /**
+   * このメンバーが外部参照の場合の、
+   * 相手方テーブルのうち外部キー以外に表示対象に含める相手方テーブルのカラム名。
+   * 相手方テーブルの親などのカラムは指定不可。
+   */
+  refDisplayColumnNames?: string[]
 }
 
 // ------------------------------------

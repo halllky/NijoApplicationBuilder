@@ -280,6 +280,7 @@ export const DbTableSingleEditView = React.forwardRef((props: DbTableSingleEditV
     const currentSettings = savedDesign[rootAggregate.path] ?? {}
     setSettingsDialogProps({
       aggregate: rootAggregate,
+      tableMetadataHelper,
       initialSettings: currentSettings,
       onApply: (updatedSettings) => {
         Object.entries(updatedSettings).forEach(([key, value]) => {
@@ -595,9 +596,10 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
 
   // ラベル列の横幅
   const labelCssProperties: React.CSSProperties = React.useMemo(() => {
-    const labelWidth = savedDesign[owner.path]?.singleViewLabelWidth ?? '10em'
+    const rootPath = tableMetadataHelper.getRoot(owner).path
+    const labelWidth = savedDesign[rootPath]?.singleViewLabelWidth ?? '10em'
     return { flexBasis: labelWidth }
-  }, [savedDesign, owner.path])
+  }, [savedDesign, owner, tableMetadataHelper])
 
   // 読み取り専用判定
   const isReadOnly = React.useMemo(() => {
