@@ -36,7 +36,7 @@ export const AggregateMemberFormView = ({ record, onChangeRecord, member, owner,
   // ラベル列の横幅
   const labelCssProperties: React.CSSProperties = React.useMemo(() => {
     const rootPath = tableMetadataHelper.getRoot(owner).path
-    const labelWidth = savedDesign[rootPath]?.singleViewLabelWidth ?? '10em'
+    const labelWidth = savedDesign[rootPath]?.singleViewLabelWidth || '10em'
     return { flexBasis: labelWidth, minWidth: labelWidth }
   }, [savedDesign, owner, tableMetadataHelper])
 
