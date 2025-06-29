@@ -109,7 +109,7 @@ internal class MetadataForDataPreview : IMultiAggregateSourceFile {
                     /// </summary>
                     public class ValueMember : IAggregateMember {
                         /// <summary>
-                        /// "own-column", "parent-key", "ref-key" のいずれか。
+                        /// "own-column", "parent-key", "ref-key", "ref-parent-key" のいずれか。
                         /// </summary>
                         [JsonPropertyName("type")]
                         public required string Type { get; set; }
@@ -200,9 +200,7 @@ internal class MetadataForDataPreview : IMultiAggregateSourceFile {
                     EFCoreEntity.OwnColumnMember => "own-column",
                     EFCoreEntity.ParentKeyMember => "parent-key",
                     EFCoreEntity.RefKeyMember refTo => refTo.IsParentKey
-                        ? "parent-key" // 親かつ外部参照のキーのとき、ソースコード自動生成ではそれを
-                                       // 外部参照のキーとした方が都合がよいのでRefKeyMemberになっているが、
-                                       // メタデータとしては親キーとして扱う。
+                        ? "ref-parent-key"
                         : "ref-key",
                     _ => throw new InvalidOperationException(),
                 };
@@ -214,7 +212,7 @@ internal class MetadataForDataPreview : IMultiAggregateSourceFile {
                 string? refToRelationName = null;
                 string? refToAggregatePath = null;
                 string? refToColumnName = null;
-                if (column is EFCoreEntity.RefKeyMember refKeyMember && !refKeyMember.IsParentKey) {
+                if (column is EFCoreEntity.RefKeyMember refKeyMember) {
                     refToRelationName = $"\"{refKeyMember.RefEntry.DisplayName.Replace("\"", "\\\"")}\"";
 
                     refToAggregatePath = $"\"{refKeyMember.RefEntry.RefTo.EnumerateThisAndAncestors().Select(a => a.PhysicalName).Join("/")}\"";
@@ -289,11 +287,21 @@ internal class MetadataForDataPreview : IMultiAggregateSourceFile {
                     tableName: string
                     description: string
                     members: (AggregateMember | Aggregate)[]
+
+                    // 以下はAggregateMemberにしか無いメンバー
+                    columnName?: never
+                    typeName?: never
+                    enumType?: never
+                    isPrimaryKey?: never
+                    isNullable?: never
+                    refToRelationName?: never
+                    refToAggregatePath?: never
+                    refToColumnName?: never
                   }
 
                   /** 集約のメンバー */
                   export type AggregateMember = {
-                    type: "own-column" | "parent-key" | "ref-key"
+                    type: "own-column" | "parent-key" | "ref-key" | "ref-parent-key"
                     physicalName: string
                     displayName: string
                     columnName: string
@@ -325,6 +333,12 @@ internal class MetadataForDataPreview : IMultiAggregateSourceFile {
                      * このメンバーがref-keyでない場合はnull。
                      */
                     refToColumnName: string | null
+
+                    // 以下はAggregateにしか無いメンバー
+                    path?: never
+                    parentAggregatePath?: never
+                    tableName?: never
+                    members?: never
                   }
                 }
                 """,

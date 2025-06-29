@@ -192,7 +192,7 @@ export const tableMetadataHelper = (rootAggregates: DataModelMetadata.Aggregate[
 
   /** 外部参照先テーブルを探して返す */
   const getRefTo = (column: DataModelMetadata.AggregateMember) => {
-    if (column.type !== "ref-key") {
+    if (column.type !== "ref-key" && column.type !== "ref-parent-key") {
       return undefined
     }
     return allAggregates().find(m => m.path === column.refToAggregatePath)

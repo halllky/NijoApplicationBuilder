@@ -27,7 +27,7 @@ export const DbTableMultiEditViewSettings = ({
   onCancel,
 }: DbTableMultiEditViewSettingsProps) => {
 
-  // 集約のメンバーを取得（own-columnとref-key）
+  // 集約のメンバーを取得（own-columnとref-keyとref-parent-key）
   const allMembers = React.useMemo(() => {
     const result: Array<{
       member: DataModelMetadata.AggregateMember
@@ -40,7 +40,7 @@ export const DbTableMultiEditViewSettings = ({
           member,
           memberKey: member.physicalName,
         })
-      } else if (member.type === 'ref-key') {
+      } else if (member.type === 'ref-key' || member.type === 'ref-parent-key') {
         if (!member.refToRelationName) continue;
 
         const sameKey = result.find(m => m.memberKey === member.refToRelationName)
@@ -135,7 +135,7 @@ const MemberSettingRow = ({
 
   // 参照先テーブルの情報を取得
   const refToAggregate = React.useMemo(() => {
-    if (member.type !== 'ref-key' || !member.refToAggregatePath) return null
+    if (member.type !== 'ref-key' && member.type !== 'ref-parent-key' || !member.refToAggregatePath) return null
     return tableMetadataHelper.allAggregates().find(a => a.path === member.refToAggregatePath)
   }, [member, tableMetadataHelper])
 
@@ -176,7 +176,7 @@ const MemberSettingRow = ({
         </div>
       )}
 
-      {member.type === 'ref-key' && (
+      {(member.type === 'ref-key' || member.type === 'ref-parent-key') && (
         <div className="pl-4 space-y-2">
           <div className="text-sm font-medium text-gray-700">
             参照先テーブルのカラムのうちこの画面に表示するもの

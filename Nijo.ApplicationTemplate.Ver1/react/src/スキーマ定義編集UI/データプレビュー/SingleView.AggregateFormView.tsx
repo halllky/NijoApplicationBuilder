@@ -32,6 +32,7 @@ export const AggregateFormView = (props: {
     onChangeDefinition,
   } = props
 
+  // ルート集約と子孫集約でルールが違う箇所が多いのでその判別用
   const thisIsChild = owner !== null
 
   const { setNewItemsParentMap, formMethods } = React.useContext(SingleViewContext)
@@ -106,13 +107,14 @@ export const AggregateFormView = (props: {
           )}
         </div>
       )}
-      {(!thisIsChild || record) && aggregate.members.map(member => (
+      {(!thisIsChild || record) && aggregate.members.map((member, index) => (
         <AggregateMemberFormView
           key={member.physicalName}
           record={record}
           onChangeRecord={handleChangeRecord}
           owner={aggregate}
           member={member}
+          nextMember={aggregate.members[index + 1]}
           ownerName={`${aggregate.path}.${itemIndexInDbRecordArray}`}
           ownerIsReadOnly={ownerIsReadOnly || record?.deleted === true}
         />

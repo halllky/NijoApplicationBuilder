@@ -39,14 +39,16 @@ export const useDbRecordGridColumnDef = (
     const thisTableMetadata = tableMetadataHelper.allAggregates().find(table => table.tableName === tableMetadata.tableName)
     const valueColumns: Layout.EditableGridColumnDef<EditableDbRecord>[] = []
 
-    for (const column of thisTableMetadata?.members ?? []) {
+    for (let index = 0; index < (thisTableMetadata?.members ?? []).length; index++) {
+      const column = thisTableMetadata!.members[index]
+
       if (column.type === "root" || column.type === "child" || column.type === "children") {
         // 子テーブルは表示しない
         continue
 
       }
 
-      if (column.type === "ref-key" || column.type === "own-column" || column.type === "parent-key") {
+      if (column.type === "ref-key" || column.type === "own-column" || column.type === "parent-key" || column.type === "ref-parent-key") {
 
         // SingleViewの子テーブルの場合は親キーの列は表示しない
         if (mode === 'single-view-children' && column.refToRelationName == null && column.type === "parent-key") {
@@ -82,7 +84,7 @@ export const useDbRecordGridColumnDef = (
                   // 複合キーの考慮のため、その相手方を参照するキーの値を全部代入する
                   const clone = window.structuredClone(cell.row.original)
                   for (const m of thisTableMetadata?.members ?? []) {
-                    if (m.type !== "ref-key" || m.refToRelationName !== column.refToRelationName) continue;
+                    if (m.type !== "ref-key" && m.type !== "ref-parent-key" || m.refToRelationName !== column.refToRelationName) continue;
                     if (!m.refToColumnName) throw new Error(`${m.columnName}の参照先カラムが見つかりません。`) // ありえないが念のため
                     const value = selectedRecord.values[m.refToColumnName]
                     clone.values[m.columnName] = value === '' ? null : value
@@ -102,7 +104,7 @@ export const useDbRecordGridColumnDef = (
               <div className="w-full flex overflow-hidden px-1">
 
                 {/* 検索ダイアログ展開ボタン */}
-                {column.type === "ref-key" && !isReadOnly && (
+                {(column.type === "ref-key" || column.type === "ref-parent-key") && !isReadOnly && (
                   <Input.IconButton icon={Icon.MagnifyingGlassIcon} hideText mini onClick={handleClick}>
                     検索
                   </Input.IconButton>
@@ -117,37 +119,35 @@ export const useDbRecordGridColumnDef = (
         }))
 
         // 外部参照の場合、設定に応じて参照先テーブルの追加カラムを表示
-        if (column.type === "ref-key" && column.refToRelationName && designMode) {
-          const refSettings = aggregateSettings?.membersDesign?.[column.refToRelationName]
+        const nextColumn = thisTableMetadata?.members[index + 1]
+        const isLastOfSameRefToRelationName = column.refToRelationName
+          && (nextColumn === undefined || nextColumn.refToRelationName !== column.refToRelationName)
+        if (isLastOfSameRefToRelationName) {
+          const refSettings = aggregateSettings?.membersDesign?.[column.refToRelationName!]
           const additionalColumnNames = designMode === 'singleView'
             ? refSettings?.singleViewRefDisplayColumnNames
             : refSettings?.multiViewRefDisplayColumnNames
+          const refToAggregate = tableMetadataHelper.getRefTo(column)
+          if (!refToAggregate) throw new Error(`外部参照先テーブルが見つかりません: ${column.refToAggregatePath}`)
 
-          if (additionalColumnNames && additionalColumnNames.length > 0) {
-            const refToAggregate = tableMetadataHelper.getRefTo(column)
-            if (refToAggregate) {
-              for (const additionalColumnName of additionalColumnNames) {
-                const refColumn = refToAggregate.members.find(m =>
-                  m.type === 'own-column' && m.columnName === additionalColumnName
-                ) as DataModelMetadata.AggregateMember | undefined
+          for (const additionalColumnName of additionalColumnNames ?? []) {
+            const refColumn = refToAggregate.members.find(m => m.columnName === additionalColumnName) as DataModelMetadata.AggregateMember | undefined
+            if (!refColumn) throw new Error(`外部参照先テーブルのカラムが見つかりません: ${refToAggregate.tableName} ${additionalColumnName}`)
 
-                if (refColumn) {
-                  valueColumns.push(cellType.other(refColumn.columnName, {
-                    isReadOnly: () => true, // 常に読み取り専用
-                    renderCell: cell => {
-                      return (
-                        <RefColumnCellRenderer
-                          record={cell.row.original}
-                          foreignKeyColumn={column}
-                          refColumn={refColumn}
-                          refToAggregate={refToAggregate}
-                        />
-                      )
-                    },
-                  }))
-                }
-              }
-            }
+            valueColumns.push(cellType.other(refColumn.columnName, {
+              isReadOnly: () => true, // 常に読み取り専用
+              renderCell: cell => {
+                return (
+                  <RefColumnCellRenderer
+                    record={cell.row.original}
+                    foreignKeyColumn={column}
+                    refColumn={refColumn}
+                    refToAggregate={refToAggregate}
+                    ownerTableMetadata={tableMetadata}
+                  />
+                )
+              },
+            }))
           }
         }
       } else {
@@ -232,7 +232,7 @@ export const ForeignKeyReferenceDialog = ({
       if (column.type === "root" || column.type === "child" || column.type === "children") {
         // 子テーブルは別のウィンドウ
         continue
-      } else if (column.type === "own-column" || column.type === "parent-key" || column.type === "ref-key") {
+      } else if (column.type === "own-column" || column.type === "parent-key" || column.type === "ref-key" || column.type === "ref-parent-key") {
         valueColumns.push(cellType.text(
           `values.${column.columnName}` as ReactHookForm.FieldPathByValue<EditableDbRecord, string | undefined>,
           column.columnName ?? '',
@@ -294,11 +294,13 @@ const RefColumnCellRenderer = ({
   foreignKeyColumn,
   refColumn,
   refToAggregate,
+  ownerTableMetadata,
 }: {
   record: EditableDbRecord
   foreignKeyColumn: DataModelMetadata.AggregateMember
   refColumn: DataModelMetadata.AggregateMember
   refToAggregate: DataModelMetadata.Aggregate
+  ownerTableMetadata: DataModelMetadata.Aggregate
 }) => {
   const { getDbRecords } = useQueryEditorServerApi()
   const [refData, setRefData] = React.useState<string | null>(null)
@@ -319,18 +321,24 @@ const RefColumnCellRenderer = ({
       setError(null)
 
       try {
-        // 主キーを使って参照先データを検索
-        const primaryKeyColumns = refToAggregate.members
-          .filter(m => m.type === 'own-column' && m.isPrimaryKey)
-          .map(m => (m as DataModelMetadata.AggregateMember).columnName)
+        // 複合キーに対応した検索条件を作成
+        // 外部キーの関係名を使って関連する全ての外部キーカラムを取得
+        const whereClause = ownerTableMetadata.members
+          .filter((m): m is DataModelMetadata.AggregateMember =>
+            (m.type === "ref-key" || m.type === "ref-parent-key") &&
+            (m as DataModelMetadata.AggregateMember).refToRelationName === foreignKeyColumn.refToRelationName
+          )
+          .map((m) => ({ mine: m.columnName!, their: m.refToColumnName! }))
+          .map(({ mine, their }) => {
+            const value = record.values[mine] ?? ''
+            return `${their} = '${value.replace(/'/g, "''")}'`
+          })
+          .join(" AND ")
 
-        if (primaryKeyColumns.length === 0) {
-          setError('主キーが見つかりません')
+        if (!whereClause) {
+          setError('検索条件が作成できません')
           return
         }
-
-        // 単一主キーの場合の検索条件を作成
-        const whereClause = `${primaryKeyColumns[0]} = '${String(foreignKeyValue).replace(/'/g, "''")}'`
 
         const result = await getDbRecords({
           tableName: refToAggregate.tableName,
@@ -352,7 +360,7 @@ const RefColumnCellRenderer = ({
     }
 
     fetchRefData()
-  }, [foreignKeyValue, refToAggregate.tableName, refColumn.columnName, getDbRecords])
+  }, [record, foreignKeyColumn.refToRelationName, refToAggregate.tableName, refColumn.columnName, getDbRecords])
 
   if (!foreignKeyValue) {
     return <span className="text-gray-300">NULL</span>

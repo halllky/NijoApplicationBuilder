@@ -14,12 +14,14 @@ import { AggregateFormView } from "./SingleView.AggregateFormView"
 import { AggregateGridView } from "./SingleView.AggregateGridView"
 
 /**
- * 集約のメンバー1個分を編集するコンポーネント
+ * フォーム表示における集約のメンバー1個分を編集するコンポーネント
  */
-export const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerName, ownerIsReadOnly }: {
+export const AggregateMemberFormView = ({ record, onChangeRecord, member, nextMember, owner, ownerName, ownerIsReadOnly }: {
   record: EditableDbRecord | undefined,
   onChangeRecord: (value: EditableDbRecord) => void,
   member: DataModelMetadata.AggregateMember | DataModelMetadata.Aggregate
+  /** memberの1つ次 */
+  nextMember: DataModelMetadata.AggregateMember | DataModelMetadata.Aggregate | undefined
   owner: DataModelMetadata.Aggregate
   ownerName: string
   ownerIsReadOnly: boolean
@@ -50,12 +52,13 @@ export const AggregateMemberFormView = ({ record, onChangeRecord, member, owner,
     if (member.type === "parent-key") return undefined
     if (member.type === "own-column") return member.isPrimaryKey && record?.existsInDb
     if (member.type === "ref-key") return member.isPrimaryKey && record?.existsInDb
+    if (member.type === "ref-parent-key") return member.isPrimaryKey && record?.existsInDb
   }, [member, record?.existsInDb, ownerIsReadOnly])
 
   // テキストボックスの値変更時
   const handleChangeText: React.ChangeEventHandler<HTMLInputElement> = useEvent(e => {
     if (!record) return;
-    if (member.type !== "own-column" && member.type !== "ref-key") return;
+    if (member.type !== "own-column" && member.type !== "ref-key" && member.type !== "ref-parent-key") return;
     const clone = window.structuredClone(record)
     clone.values[member.columnName] = e.target.value === '' ? null : e.target.value
     onChangeRecord(clone)
@@ -64,7 +67,7 @@ export const AggregateMemberFormView = ({ record, onChangeRecord, member, owner,
   // 参照キーの検索
   const [refKeySearchDialogProps, setRefKeySearchDialogProps] = React.useState<DbRecordSelectorDialogProps | null>(null)
   const handleSearch = useEvent(() => {
-    if (member.type !== "ref-key") return;
+    if (member.type !== "ref-key" && member.type !== "ref-parent-key") return;
     const refToTableMetadata = tableMetadataHelper.getRefTo(member)
     if (!refToTableMetadata) return;
     setRefKeySearchDialogProps({
@@ -77,7 +80,7 @@ export const AggregateMemberFormView = ({ record, onChangeRecord, member, owner,
         const clone = window.structuredClone(record)
         let index = 0
         for (const m of owner.members) {
-          if (m.type !== "ref-key" || m.refToRelationName !== member.refToRelationName) continue;
+          if (m.type !== "ref-key" && m.type !== "ref-parent-key" || m.refToRelationName !== member.refToRelationName) continue;
           const value = keys[index] as string
           clone.values[m.columnName] = value === '' ? null : value
           index++
@@ -102,7 +105,11 @@ export const AggregateMemberFormView = ({ record, onChangeRecord, member, owner,
   }
 
   // テーブル自身の属性のカラム、または外部参照のキー項目
-  if (member.type === "own-column" || member.type === "ref-key") {
+  if (member.type === "own-column" || member.type === "ref-key" || member.type === "ref-parent-key") {
+
+    // 参照先が切り替わるタイミングで当該参照先の名称などの追加項目を表示する
+    const showRefToAdditionalColumns = member.refToAggregatePath && (nextMember === undefined || nextMember.refToAggregatePath !== member.refToAggregatePath)
+
     return (
       <>
         <div className="flex gap-1 items-center">
@@ -113,7 +120,7 @@ export const AggregateMemberFormView = ({ record, onChangeRecord, member, owner,
             {member.columnName}
           </div>
           <div className={`flex-1 flex border ${isReadOnly ? 'border-transparent' : 'bg-white border-gray-500'}`}>
-            {member.type === "ref-key" && !isReadOnly && (
+            {(member.type === "ref-key" || member.type === "ref-parent-key") && !isReadOnly && (
               <Input.IconButton icon={Icon.MagnifyingGlassIcon} hideText mini onClick={handleSearch}>
                 検索
               </Input.IconButton>
@@ -134,7 +141,7 @@ export const AggregateMemberFormView = ({ record, onChangeRecord, member, owner,
         </div>
 
         {/* 参照先テーブルの主キー以外の属性 */}
-        {member.type === "ref-key" && (
+        {showRefToAdditionalColumns && (
           <div className="flex gap-1 items-center">
             <div style={labelCssProperties}></div>
             <RefKeyAdditionalColumns
@@ -187,7 +194,7 @@ export const AggregateMemberFormView = ({ record, onChangeRecord, member, owner,
 }
 
 /**
- * ref-key の参照先テーブルの追加カラムを表示するコンポーネント
+ * ref-key と ref-parent-key の参照先テーブルの追加カラムを表示するコンポーネント
  */
 const RefKeyAdditionalColumns = ({
   member,
@@ -217,11 +224,10 @@ const RefKeyAdditionalColumns = ({
   }, [member.refToAggregatePath, tableMetadataHelper])
 
   // 参照先テーブルのキー値が変更されたタイミングでデータを取得
-  const refKeyValue = record?.values[member.columnName]
   const { trigger } = React.useContext(SingleViewContext)
   React.useEffect(() => {
 
-    if (!refKeyValue || !refToAggregate || !refDisplayColumnNames || refDisplayColumnNames.length === 0) {
+    if (!record || !refToAggregate || !refDisplayColumnNames || refDisplayColumnNames.length === 0) {
       setRefData(null)
       return
     }
@@ -229,15 +235,14 @@ const RefKeyAdditionalColumns = ({
     setIsLoading(true)
 
     // 参照先テーブルから該当レコードを取得
-    const primaryKeyColumns = refToAggregate.members
-      .filter((m): m is DataModelMetadata.AggregateMember =>
-        m.type === 'own-column' && m.isPrimaryKey
-      )
-      .map(m => m.columnName)
-
-    if (primaryKeyColumns.length === 0) return
-
-    const whereClause = `${primaryKeyColumns[0]} = '${refKeyValue.replace(/'/g, "''")}'`
+    const whereClause = owner.members
+      .filter(m => m.refToRelationName === member.refToRelationName)
+      .map(m => ({ mine: m.columnName!, their: m.refToColumnName! }))
+      .map(({ mine, their }) => {
+        const value = record.values[mine] ?? ''
+        return `${their} = '${value.replace(/'/g, "''")}'`
+      })
+      .join(" AND ")
 
     getDbRecords({
       tableName: refToAggregate.tableName,
@@ -252,7 +257,7 @@ const RefKeyAdditionalColumns = ({
       setIsLoading(false)
     })
 
-  }, [refKeyValue, refToAggregate, refDisplayColumnNames, getDbRecords, trigger])
+  }, [record, owner, refToAggregate, refDisplayColumnNames, getDbRecords, trigger])
 
   // 表示するカラムがない場合は何も表示しない
   if (!refDisplayColumnNames || refDisplayColumnNames.length === 0 || !refToAggregate) {

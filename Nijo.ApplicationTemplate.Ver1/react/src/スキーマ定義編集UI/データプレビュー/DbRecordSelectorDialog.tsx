@@ -52,7 +52,7 @@ export const DbRecordSelectorDialog = ({
 
         const handleClick = () => {
           const primaryKeyColumns = tableMetadata.members
-            .filter(c => (c.type === "own-column" || c.type === "parent-key" || c.type === "ref-key") && c.isPrimaryKey)
+            .filter(c => (c.type === "own-column" || c.type === "parent-key" || c.type === "ref-key" || c.type === "ref-parent-key") && c.isPrimaryKey)
             .map(c => (c as DataModelMetadata.AggregateMember).columnName)
           const primaryKeyValues = primaryKeyColumns.map(c => cell.row.original.values[c] ?? '')
           onSelect(primaryKeyValues)
@@ -71,7 +71,8 @@ export const DbRecordSelectorDialog = ({
       if (column.type === "root" || column.type === "child" || column.type === "children") {
         // 子テーブルは別のウィンドウ
         continue
-      } else if (column.type === "own-column" || column.type === "parent-key" || column.type === "ref-key") {
+
+      } else if (column.type === "own-column" || column.type === "parent-key" || column.type === "ref-key" || column.type === "ref-parent-key") {
         valueColumns.push(cellType.text(
           `values.${column.columnName}` as ReactHookForm.FieldPathByValue<EditableDbRecord, string | undefined>,
           column.columnName ?? '',

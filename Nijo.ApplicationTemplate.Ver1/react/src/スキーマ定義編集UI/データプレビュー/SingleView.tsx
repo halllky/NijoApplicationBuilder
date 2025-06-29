@@ -116,7 +116,7 @@ export const SingleView = React.forwardRef((props: SingleViewProps, ref: React.F
         // ルート集約のテーブルの主キーで検索をかける。
         for (const aggregate of tree) {
           const primaryKeyColumnNames = aggregate.members
-            .filter(c => (c.type === "own-column" || c.type === "parent-key" || c.type === "ref-key") && c.isPrimaryKey)
+            .filter(c => (c.type === "own-column" || c.type === "parent-key" || c.type === "ref-key" || c.type === "ref-parent-key") && c.isPrimaryKey)
             .map(c => (c as DataModelMetadata.AggregateMember).columnName)
           const whereClause = propsValue.rootItemKeys.map((pk, index) => `${primaryKeyColumnNames[index]} = '${pk.replace(/'/g, "''")}'`).join(" AND ")
           const res = await getDbRecords({
@@ -325,7 +325,7 @@ const SingleViewAfterLoaded = React.forwardRef((props: SingleViewProps & {
       const rootRecord = formMethods.getValues()[rootAggregate.path][0]
       const keys: string[] = []
       for (const member of rootAggregate.members) {
-        if (member.type !== "own-column" && member.type !== "ref-key" && member.type !== "parent-key") continue
+        if (member.type !== "own-column" && member.type !== "ref-key" && member.type !== "parent-key" && member.type !== "ref-parent-key") continue
         if (!member.isPrimaryKey) continue
         const value = rootRecord.values[member.columnName]
         keys.push(value ?? '')
