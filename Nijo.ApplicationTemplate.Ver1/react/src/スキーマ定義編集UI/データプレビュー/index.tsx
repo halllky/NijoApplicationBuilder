@@ -14,7 +14,7 @@ import useEvent from "react-use-event-hook"
 import { UUID } from "uuidjs"
 import { CommentView } from "./CommentView"
 import { DiagramItemLayout } from "../../layout/DiagramView/types"
-import { DbTableSingleEditView } from "./SingleView"
+import { SingleView } from "./SingleView"
 import { DbRecordSelectorDialog, DbRecordSelectorDialogProps } from "./DbRecordSelectorDialog"
 import { SERVER_DOMAIN } from "../../routes"
 import { SERVER_API_TYPE_INFO, SERVER_URL_SUBDIRECTORY } from "../型つきドキュメント/TypedDocumentContext"
@@ -412,7 +412,7 @@ const AfterReady = React.forwardRef(({ tableMetadataHelper, defaultValues, onSav
       const itemIndex = fields.findIndex(f => f.id === item.id)
       const refIndex = itemIndex >= 0 ? itemIndex : 0
       return (
-        <DbTableSingleEditView
+        <SingleView
           ref={dbTableEditorsRef.current[refIndex]}
           itemIndex={itemIndex}
           value={item}
