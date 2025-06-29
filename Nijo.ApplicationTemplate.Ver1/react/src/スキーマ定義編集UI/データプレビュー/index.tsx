@@ -31,7 +31,7 @@ export const DataPreview = () => {
   const { dataPreviewId } = ReactRouter.useParams()
   const { getTableMetadata } = useQueryEditorServerApi(BACKEND_URL)
   const [loadError, setLoadError] = React.useState<string>()
-  const [tableMetadata, setTableMetadata] = React.useState<TableMetadataHelper>()
+  const [tableMetadataHelper, setTableMetadataHelper] = React.useState<TableMetadataHelper>()
   const [defaultValues, setDefaultValues] = React.useState<QueryEditor>()
   const [isDirty, setIsDirty] = React.useState(false)
   const afterLoadedRef = React.useRef<{ triggerSave: () => void } | null>(null)
@@ -50,7 +50,7 @@ export const DataPreview = () => {
         setLoadError(res.error)
         return
       }
-      setTableMetadata(res.data)
+      setTableMetadataHelper(res.data)
 
       // サーバーからデータを読み込む
       const QUERY_KEY = "dataPreviewId" satisfies keyof SERVER_API_TYPE_INFO[typeof SERVER_URL_SUBDIRECTORY.LOAD_DATA_PREVIEW]["query"]
@@ -110,13 +110,13 @@ export const DataPreview = () => {
         </div>
       )}
 
-      {(!tableMetadata || !defaultValues) && (
+      {(!tableMetadataHelper || !defaultValues) && (
         <div className={`relative h-full border-t border-gray-300`}>
           <Layout.NowLoading />
         </div>
       )}
 
-      {!loadError && tableMetadata && defaultValues && (
+      {!loadError && tableMetadataHelper && defaultValues && (
         <QueryEditorServerApiContext.Provider value={BACKEND_URL}>
           {saveError && (
             <div className="text-rose-500 text-sm">
@@ -125,7 +125,7 @@ export const DataPreview = () => {
           )}
           <AfterReady
             ref={afterLoadedRef}
-            tableMetadata={tableMetadata}
+            tableMetadataHelper={tableMetadataHelper}
             defaultValues={defaultValues}
             onSave={handleSave}
             onIsDirtyChange={setIsDirty}
@@ -139,8 +139,8 @@ export const DataPreview = () => {
   )
 }
 
-const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, onIsDirtyChange, setSaveButtonText, setNowSaving, className }: {
-  tableMetadata: TableMetadataHelper
+const AfterReady = React.forwardRef(({ tableMetadataHelper, defaultValues, onSave, onIsDirtyChange, setSaveButtonText, setNowSaving, className }: {
+  tableMetadataHelper: TableMetadataHelper
   defaultValues: QueryEditor
   onSave: (data: QueryEditor) => void
   onIsDirtyChange: (isDirty: boolean) => void
@@ -315,7 +315,7 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, onI
   })
 
   // ウィンドウの追加（テーブル一括編集）
-  const [newTableName, setNewTableName] = React.useState(tableMetadata.rootAggregates()[0]?.tableName ?? "")
+  const [newTableName, setNewTableName] = React.useState(tableMetadataHelper.rootAggregates()[0]?.tableName ?? "")
   const handleChangeNewTableName = useEvent((e: React.ChangeEvent<HTMLSelectElement>) => {
     setNewTableName(e.target.value)
   })
@@ -326,14 +326,14 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, onI
   // ウィンドウの追加（テーブル詳細編集）
   const [dbTableSingleItemSelectorDialogProps, setDbTableSingleItemSelectorDialogProps] = React.useState<DbTableSingleItemSelectorDialogProps | null>(null)
   const handleOpenSingleItemSelector = useEvent(() => {
-    const editTableMetadata = tableMetadata.allAggregates().find(t => t.tableName === newTableName)
+    const editTableMetadata = tableMetadataHelper.allAggregates().find(t => t.tableName === newTableName)
     if (!editTableMetadata) throw new Error(`テーブルが見つかりません: ${newTableName}`)
 
     // 詳細編集は必ずルート集約単位なので、selectで子孫集約が選択された場合はルート集約を選択したものとして扱う
-    const rootAggregate = tableMetadata.getRoot(editTableMetadata)
+    const rootAggregate = tableMetadataHelper.getRoot(editTableMetadata)
     setDbTableSingleItemSelectorDialogProps({
       tableMetadata: rootAggregate,
-      tableMetadataHelper: tableMetadata,
+      tableMetadataHelper: tableMetadataHelper,
       onSelect: (keys: string[]) => {
         append(createNewQueryEditorItem("dbTableSingleEditor", rootAggregate.tableName, keys))
         setDbTableSingleItemSelectorDialogProps(null)
@@ -345,11 +345,11 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, onI
   })
 
   const handleAddNewRecord = useEvent(() => {
-    const editTableMetadata = tableMetadata.allAggregates().find(t => t.tableName === newTableName)
+    const editTableMetadata = tableMetadataHelper.allAggregates().find(t => t.tableName === newTableName)
     if (!editTableMetadata) throw new Error(`テーブルが見つかりません: ${newTableName}`)
 
     // 詳細編集は必ずルート集約単位なので、selectで子孫集約が選択された場合はルート集約を選択したものとして扱う
-    const rootAggregate = tableMetadata.getRoot(editTableMetadata)
+    const rootAggregate = tableMetadataHelper.getRoot(editTableMetadata)
     append(createNewQueryEditorItem("dbTableSingleEditor(new)", rootAggregate.tableName))
     setDbTableSingleItemSelectorDialogProps(null)
   })
@@ -401,7 +401,7 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, onI
           onChangeDefinition={handleUpdateDiagramItem}
           onDeleteDefinition={handleRemoveDiagramItem}
           onIsDirtyChange={handleIsDirtyChange}
-          tableMetadataHelper={tableMetadata}
+          tableMetadataHelper={tableMetadataHelper}
           trigger={trigger}
           zoom={zoom}
           handleMouseDown={handleMouseDown}
@@ -418,14 +418,14 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, onI
           onChangeDefinition={handleUpdateDiagramItem}
           onDeleteDefinition={handleRemoveDiagramItem}
           onIsDirtyChange={handleIsDirtyChange}
-          tableMetadataHelper={tableMetadata}
+          tableMetadataHelper={tableMetadataHelper}
           trigger={trigger}
           zoom={zoom}
           handleMouseDown={handleMouseDown}
         />
       )
     }
-  }, [fields, commentFields.fields, tableMetadata, trigger, handleUpdateDiagramItem, handleRemoveDiagramItem, dbTableEditorsRef])
+  }, [fields, commentFields.fields, tableMetadataHelper, trigger, handleUpdateDiagramItem, handleRemoveDiagramItem, dbTableEditorsRef])
 
   // ---------------------------------
   // コメント
@@ -475,7 +475,7 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, onI
                 onChange={handleChangeNewTableName}
                 className="flex-1 bg-white border border-gray-500"
               >
-                {tableMetadata.allAggregates().map(table => (
+                {tableMetadataHelper.allAggregates().map(table => (
                   <option key={table.tableName} value={table.tableName}>{table.displayName}({table.tableName})</option>
                 ))}
               </select>
