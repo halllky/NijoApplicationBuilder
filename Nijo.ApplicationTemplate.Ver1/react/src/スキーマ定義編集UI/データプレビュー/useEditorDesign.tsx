@@ -3,7 +3,7 @@ import * as ReactHookForm from "react-hook-form"
 import { EditorDesign, EditorDesignByAgggregate, ReloadTrigger } from "./types"
 
 export type EditorDesignContextProviderProps = {
-  editorDesign: EditorDesign | undefined
+  value: EditorDesign | undefined
   trigger: ReloadTrigger
   onIsDirtyChange?: (isDirty: boolean) => void
   children?: React.ReactNode
@@ -25,7 +25,7 @@ const EditorDesignContextInternal = React.createContext<EditorDesignContextInter
   setIsDirty: () => { },
 })
 
-export const EditorDesignContextProvider = React.forwardRef<EditorDesignContextProviderRef, EditorDesignContextProviderProps>(({ children, onIsDirtyChange, editorDesign, trigger }, ref) => {
+export const EditorDesignContextProvider = React.forwardRef<EditorDesignContextProviderRef, EditorDesignContextProviderProps>(({ children, onIsDirtyChange, value: editorDesign, trigger }, ref) => {
   const [updated, setUpdated] = React.useState<EditorDesign>({})
   const [isDirty, setIsDirty] = React.useState(false)
 

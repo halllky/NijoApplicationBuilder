@@ -447,7 +447,7 @@ const AfterReady = React.forwardRef(({ tableMetadataHelper, defaultValues, onSav
   return (
     <EditorDesignContextProvider
       ref={editorDesignRef}
-      editorDesign={editorDesign}
+      value={editorDesign}
       onIsDirtyChange={setEditorDesignIsDirty}
       trigger={trigger}
     >

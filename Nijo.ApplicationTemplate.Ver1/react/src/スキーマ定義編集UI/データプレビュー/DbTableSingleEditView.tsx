@@ -12,6 +12,8 @@ import { useDbRecordGridColumnDef } from "./useDbRecordGridColumnDef"
 import { UUID } from "uuidjs"
 import { RecordStatusText } from "./RecordStatusText"
 import { useEditorDesign } from "./useEditorDesign"
+import { EditorDesignByAgggregate } from "./types"
+import { DbTableSingleEditViewSettings, DbTableSingleEditViewSettingsProps } from "./DbTableSingleEditViewSettings"
 
 export type DbTableSingleItemSelectorDialogProps = {
   tableMetadata: DataModelMetadata.Aggregate
@@ -190,6 +192,8 @@ export const DbTableSingleEditView = React.forwardRef((props: DbTableSingleEditV
   const [rootRecord, setRootRecord] = React.useState<EditableDbRecord | null>(null)
   const [triggerOnlyThisWindow, setTriggerOnlyThisWindow] = React.useState(-1)
   const bodyRef = React.useRef<HTMLDivElement>(null)
+  const [settingsDialogProps, setSettingsDialogProps] = React.useState<DbTableSingleEditViewSettingsProps | null>(null)
+  const { savedDesign, updateDesign } = useEditorDesign()
 
   React.useEffect(() => {
     (async () => {
@@ -270,6 +274,25 @@ export const DbTableSingleEditView = React.forwardRef((props: DbTableSingleEditV
     setTriggerOnlyThisWindow(prev => prev * -1)
   })
 
+  const handleOpenSettings = useEvent(() => {
+    if (!rootAggregate) return
+
+    const currentSettings = savedDesign[rootAggregate.path] ?? {}
+    setSettingsDialogProps({
+      aggregate: rootAggregate,
+      initialSettings: currentSettings,
+      onApply: (updatedSettings) => {
+        Object.entries(updatedSettings).forEach(([key, value]) => {
+          updateDesign(rootAggregate.path, key as keyof EditorDesignByAgggregate, value)
+        })
+        setSettingsDialogProps(null)
+      },
+      onCancel: () => {
+        setSettingsDialogProps(null)
+      },
+    })
+  })
+
   return (
     <div className="bg-gray-200 border border-gray-300 h-full flex flex-col">
       {/* ヘッダ */}
@@ -290,6 +313,9 @@ export const DbTableSingleEditView = React.forwardRef((props: DbTableSingleEditV
             リセット
           </Input.IconButton>
         </>)}
+        <Input.IconButton icon={Icon.Cog6ToothIcon} mini hideText onClick={handleOpenSettings}>
+          設定
+        </Input.IconButton>
         <Input.IconButton icon={Icon.XMarkIcon} hideText onClick={handleCloseWindow}>
           ウィンドウを閉じる
         </Input.IconButton>
@@ -316,6 +342,10 @@ export const DbTableSingleEditView = React.forwardRef((props: DbTableSingleEditV
           />
         )}
       </div>
+
+      {settingsDialogProps && (
+        <DbTableSingleEditViewSettings {...settingsDialogProps} />
+      )}
     </div>
   )
 })
@@ -561,6 +591,14 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
     tableMetadataHelper,
   } = React.useContext(SingleViewContext)
 
+  const { savedDesign } = useEditorDesign()
+
+  // ラベル列の横幅
+  const labelCssProperties: React.CSSProperties = React.useMemo(() => {
+    const labelWidth = savedDesign[owner.path]?.singleViewLabelWidth ?? '10em'
+    return { flexBasis: labelWidth }
+  }, [savedDesign, owner.path])
+
   // 読み取り専用判定
   const isReadOnly = React.useMemo(() => {
     // 親が読み取り専用の場合は、子も読み取り専用
@@ -627,30 +665,35 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
   // テーブル自身の属性のカラム、または外部参照のキー項目
   if (member.type === "own-column" || member.type === "ref-key") {
     return (
-      <div className="flex gap-1 items-center">
-        <div className="basis-40 text-sm break-all select-none text-gray-600">
-          {member.columnName}
-        </div>
-        <div className={`flex-1 flex border ${isReadOnly ? 'border-transparent' : 'bg-white border-gray-500'}`}>
-          {member.type === "ref-key" && !isReadOnly && (
-            <Input.IconButton icon={Icon.MagnifyingGlassIcon} hideText mini onClick={handleSearch}>
-              検索
-            </Input.IconButton>
+      <>
+        <div className="flex gap-1 items-center">
+          <div
+            className="text-sm break-all select-none text-gray-600"
+            style={labelCssProperties}
+          >
+            {member.columnName}
+          </div>
+          <div className={`flex-1 flex border ${isReadOnly ? 'border-transparent' : 'bg-white border-gray-500'}`}>
+            {member.type === "ref-key" && !isReadOnly && (
+              <Input.IconButton icon={Icon.MagnifyingGlassIcon} hideText mini onClick={handleSearch}>
+                検索
+              </Input.IconButton>
+            )}
+            <input
+              type="text"
+              value={record?.values[member.columnName] ?? ''}
+              onChange={handleChangeText}
+              spellCheck={false}
+              placeholder="NULL"
+              className="flex-1 px-1 outline-none placeholder:text-gray-300"
+              readOnly={isReadOnly}
+            />
+          </div>
+          {refKeySearchDialogProps && (
+            <DbTableSingleItemSelectorDialog {...refKeySearchDialogProps} />
           )}
-          <input
-            type="text"
-            value={record?.values[member.columnName] ?? ''}
-            onChange={handleChangeText}
-            spellCheck={false}
-            placeholder="NULL"
-            className="flex-1 px-1 outline-none placeholder:text-gray-300"
-            readOnly={isReadOnly}
-          />
         </div>
-        {refKeySearchDialogProps && (
-          <DbTableSingleItemSelectorDialog {...refKeySearchDialogProps} />
-        )}
-      </div>
+      </>
     )
   }
 

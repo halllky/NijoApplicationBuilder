@@ -67,6 +67,8 @@ export type EditorDesign = {
 
 /** 集約単位での表示設定 */
 export type EditorDesignByAgggregate = {
+/** SingleViewにおけるラベルの幅。CSSの値で指定。 */
+  singleViewLabelWidth?: string
   /** SingleViewにおける列幅などのグリッドの状態 */
   singleViewGridLayout?: string
   /** MultiViewにおける列幅などのグリッドの状態 */
