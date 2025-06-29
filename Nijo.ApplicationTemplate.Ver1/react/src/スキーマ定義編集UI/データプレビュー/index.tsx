@@ -429,14 +429,18 @@ const AfterReady = React.forwardRef(({ tableMetadataHelper, defaultValues, onSav
         return { x: 0, y: 0 }
       }
 
-      // 現在の表示領域の左上座標を計算
-      const viewportX = -currentViewState.panOffset.x / currentViewState.zoom
-      const viewportY = -currentViewState.panOffset.y / currentViewState.zoom
+      // 現在の表示領域の左上座標を計算（ズーム適用前の座標系）
+      const viewportX = -currentViewState.panOffset.x
+      const viewportY = -currentViewState.panOffset.y
 
-      // 少し余白を取って配置
+      // ズーム率を考慮した適切な余白
+      // ズーム率が小さい（縮小表示）ほど、物理的に大きな余白が必要
+      const margin = 50 / currentViewState.zoom
+
+      // 表示領域内の左上に適切な余白を取って配置
       return {
-        x: viewportX + 50,
-        y: viewportY + 50,
+        x: viewportX + margin,
+        y: viewportY + margin,
       }
     }
 
@@ -535,14 +539,18 @@ const createNewQueryEditorItem = (type: "sqlAndResult" | "dbTableEditor" | "dbTa
       return { x: 0, y: 0 }
     }
 
-    // 現在の表示領域の左上座標を計算
-    const viewportX = -viewState.panOffset.x / viewState.zoom
-    const viewportY = -viewState.panOffset.y / viewState.zoom
+    // 現在の表示領域の左上座標を計算（ズーム適用前の座標系）
+    const viewportX = -viewState.panOffset.x
+    const viewportY = -viewState.panOffset.y
 
-    // 少し余白を取って配置
+    // ズーム率を考慮した適切な余白
+    // ズーム率が小さい（縮小表示）ほど、物理的に大きな余白が必要
+    const margin = 50 / viewState.zoom
+
+    // 表示領域内の左上に適切な余白を取って配置
     return {
-      x: viewportX + 50,
-      y: viewportY + 50,
+      x: viewportX + margin,
+      y: viewportY + margin,
     }
   }
 
