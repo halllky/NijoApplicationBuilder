@@ -20,7 +20,7 @@ export const AggregateGridView = (props: {
   ownerMetadata: DataModelMetadata.Aggregate
   childrenMetadata: DataModelMetadata.Aggregate
   ownerName: string
-  ownerIsReadOnly?: boolean
+  ownerIsReadOnly: boolean
 }) => {
 
   const {
@@ -52,6 +52,7 @@ export const AggregateGridView = (props: {
     tableMetadataHelper,
     update,
     'singleView',
+    props.ownerIsReadOnly,
   )
 
   // グリッドの列幅の自動保存

@@ -14,7 +14,8 @@ export const useDbRecordGridColumnDef = (
   tableMetadata: DataModelMetadata.Aggregate,
   tableMetadataHelper: TableMetadataHelper,
   useFieldArrayUpdate: (index: number, value: EditableDbRecord) => void,
-  designMode?: 'singleView' | 'multiView',
+  designMode: 'singleView' | 'multiView',
+  ownerIsReadOnly: boolean,
 ) => {
   const [foreignKeyReferenceDialog, setForeignKeyReferenceDialog] = React.useState<ForeignKeyReferenceDialogProps | null>(null)
   const { savedDesign } = useEditorDesign()
@@ -63,7 +64,7 @@ export const useDbRecordGridColumnDef = (
           },
 
           renderCell: cell => {
-            const isReadOnly = cell.row.original.existsInDb && column.isPrimaryKey
+            const isReadOnly = ownerIsReadOnly || cell.row.original.existsInDb && column.isPrimaryKey
 
             // 外部キーの列の場合は検索ダイアログから選択できるようにする
             const handleClick = () => {
@@ -155,7 +156,7 @@ export const useDbRecordGridColumnDef = (
       status,
       ...valueColumns,
     ]
-  }, [tableMetadataHelper, savedDesign, designMode])
+  }, [tableMetadataHelper, savedDesign, designMode, ownerIsReadOnly])
 
   return {
     /** 列定義 */

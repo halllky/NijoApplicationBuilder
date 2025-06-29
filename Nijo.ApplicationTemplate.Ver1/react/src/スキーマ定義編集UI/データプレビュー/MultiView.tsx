@@ -117,6 +117,7 @@ export const DbTableMultiEditorView = React.forwardRef(({
     tableMetadataHelper,
     update,
     'multiView',
+    false,
   )
 
   // グリッドの列幅の自動保存
