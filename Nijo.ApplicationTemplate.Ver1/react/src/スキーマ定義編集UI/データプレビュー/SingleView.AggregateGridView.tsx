@@ -51,6 +51,7 @@ export const AggregateGridView = (props: {
     childrenMetadata,
     tableMetadataHelper,
     update,
+    'singleView',
   )
 
   // グリッドの列幅の自動保存
