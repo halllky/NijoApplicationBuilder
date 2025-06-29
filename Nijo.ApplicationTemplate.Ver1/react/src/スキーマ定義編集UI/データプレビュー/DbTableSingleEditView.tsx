@@ -430,6 +430,7 @@ const DbTableSingleEditViewAfterLoaded = React.forwardRef((props: DbTableSingleE
         itemIndexInDbRecordArray={0} // ルート集約は1つしかないので0
         aggregate={rootAggregate}
         owner={null}
+        ownerIsReadOnly={rootRecord?.deleted === true}
         onChangeDefinition={handleChangeDefinition}
       />
     </SingleViewContext.Provider>
@@ -444,6 +445,8 @@ const AggregateFormView = (props: {
   aggregate: DataModelMetadata.Aggregate
   /** 表示対象のレコードではなくその親 */
   owner: EditableDbRecord | null
+  /** 親が読み取り専用の場合、子孫も読み取り専用にする */
+  ownerIsReadOnly: boolean
   onChangeDefinition: ((dispatch: (prev: DbTableSingleItemEditor) => DbTableSingleItemEditor) => void) | undefined
 }) => {
 
@@ -451,6 +454,7 @@ const AggregateFormView = (props: {
     itemIndexInDbRecordArray,
     aggregate,
     owner,
+    ownerIsReadOnly,
     onChangeDefinition,
   } = props
 
@@ -504,25 +508,25 @@ const AggregateFormView = (props: {
   return (
     <div className={`flex flex-col gap-px ${aggregate.type === "root" ? "p-1" : ""} ${aggregate.type === "child" ? "my-4" : ""}`}>
       {aggregate.type !== "root" && (
-        <div className="flex gap-1 items-center">
+        <div className="flex gap-1 items-center h-6">
           <span className="text-sm select-none text-gray-500">
             {aggregate.displayName}
           </span>
           <div className="basis-1"></div>
           <RecordStatusText record={record} className="text-sm" />
           <div className="flex-1"></div>
-          {!record && (
-            <Input.IconButton icon={Icon.PlusIcon} mini outline onClick={handleCreateRecord} className="self-start">
-              新規作成
+          {!ownerIsReadOnly && !record && (
+            <Input.IconButton icon={Icon.PlusIcon} mini outline onClick={handleCreateRecord}>
+              作成
             </Input.IconButton>
           )}
-          {record && !record.deleted && (
-            <Input.IconButton icon={Icon.XMarkIcon} mini outline onClick={handleDeleteRecord} className="self-start">
+          {!ownerIsReadOnly && record && !record.deleted && (
+            <Input.IconButton icon={Icon.TrashIcon} mini outline onClick={handleDeleteRecord}>
               削除
             </Input.IconButton>
           )}
-          {record && record.deleted && (
-            <Input.IconButton icon={Icon.ArrowUturnLeftIcon} mini outline onClick={handleRestoreRecord} className="self-start">
+          {!ownerIsReadOnly && record && record.deleted && (
+            <Input.IconButton icon={Icon.ArrowUturnLeftIcon} mini outline onClick={handleRestoreRecord}>
               復元
             </Input.IconButton>
           )}
@@ -536,18 +540,20 @@ const AggregateFormView = (props: {
           owner={aggregate}
           member={member}
           ownerName={`${aggregate.path}.${itemIndexInDbRecordArray}`}
+          ownerIsReadOnly={ownerIsReadOnly || record?.deleted === true}
         />
       ))}
     </div>
   )
 }
 
-const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerName }: {
+const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerName, ownerIsReadOnly }: {
   record: EditableDbRecord | undefined,
   onChangeRecord: (value: EditableDbRecord) => void,
   member: DataModelMetadata.AggregateMember | DataModelMetadata.Aggregate
   owner: DataModelMetadata.Aggregate
   ownerName: string
+  ownerIsReadOnly: boolean
 }) => {
 
   const {
@@ -557,6 +563,9 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
 
   // 読み取り専用判定
   const isReadOnly = React.useMemo(() => {
+    // 親が読み取り専用の場合は、子も読み取り専用
+    if (ownerIsReadOnly) return true
+
     // 表示されないので未定義
     if (member.type === "root") return undefined
     if (member.type === "child") return undefined
@@ -564,7 +573,7 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
     if (member.type === "parent-key") return undefined
     if (member.type === "own-column") return member.isPrimaryKey && record?.existsInDb
     if (member.type === "ref-key") return member.isPrimaryKey && record?.existsInDb
-  }, [member, record?.existsInDb])
+  }, [member, record?.existsInDb, ownerIsReadOnly])
 
   // テキストボックスの値変更時
   const handleChangeText: React.ChangeEventHandler<HTMLInputElement> = useEvent(e => {
@@ -622,7 +631,7 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
         <div className="basis-40 text-sm break-all select-none text-gray-600">
           {member.columnName}
         </div>
-        <div className={`flex-1 flex ${isReadOnly ? '' : 'bg-white border border-gray-500'}`}>
+        <div className={`flex-1 flex border ${isReadOnly ? 'border-transparent' : 'bg-white border-gray-500'}`}>
           {member.type === "ref-key" && !isReadOnly && (
             <Input.IconButton icon={Icon.MagnifyingGlassIcon} hideText mini onClick={handleSearch}>
               検索
@@ -655,6 +664,7 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
         itemIndexInDbRecordArray={0}
         aggregate={childAggregate}
         owner={record ?? null}
+        ownerIsReadOnly={ownerIsReadOnly}
         onChangeDefinition={undefined}
       />
     )
@@ -668,6 +678,7 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
         ownerMetadata={owner}
         childrenMetadata={member}
         ownerName={ownerName}
+        ownerIsReadOnly={ownerIsReadOnly}
       />
     )
   }
@@ -685,9 +696,10 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
 const AggregateGridView = (props: {
   itemIndexInForm: number
   owner: EditableDbRecord | null
-  childrenMetadata: DataModelMetadata.Aggregate
   ownerMetadata: DataModelMetadata.Aggregate
+  childrenMetadata: DataModelMetadata.Aggregate
   ownerName: string
+  ownerIsReadOnly?: boolean
 }) => {
 
   const {
@@ -767,18 +779,20 @@ const AggregateGridView = (props: {
   })
 
   return (
-    <div className="h-56 w-full flex flex-col overflow-y-auto resize-y">
-      <div className="flex flex-wrap gap-1 py-px">
+    <div className="h-56 w-full flex flex-col gap-1 overflow-y-auto resize-y">
+      <div className="flex flex-wrap items-center gap-1 py-px h-6">
         <span className="text-sm select-none text-gray-500">
           {childrenMetadata.displayName}
         </span>
         <div className="basis-2"></div>
-        <Input.IconButton icon={Icon.PlusIcon} mini outline onClick={handleAddRow}>
-          追加
-        </Input.IconButton>
-        <Input.IconButton icon={Icon.MinusIcon} mini outline onClick={handleRemoveRow}>
-          削除
-        </Input.IconButton>
+        {!props.ownerIsReadOnly && (<>
+          <Input.IconButton icon={Icon.PlusIcon} mini outline onClick={handleAddRow}>
+            追加
+          </Input.IconButton>
+          <Input.IconButton icon={Icon.TrashIcon} mini outline onClick={handleRemoveRow}>
+            削除
+          </Input.IconButton>
+        </>)}
       </div>
       <Layout.EditableGrid
         ref={gridRef}
@@ -786,6 +800,7 @@ const AggregateGridView = (props: {
         getColumnDefs={getColumnDefs as unknown as Layout.GetColumnDefsFunction<ReactHookForm.FieldArrayWithId<SingleViewFormType, string, "id">>}
         onChangeRow={handleChangeRow}
         storage={gridColumnStorage}
+        isReadOnly={props.ownerIsReadOnly}
         className="flex-1 border border-gray-400"
       />
       {ForeignKeyReferenceDialog}

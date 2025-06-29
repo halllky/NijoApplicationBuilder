@@ -109,15 +109,16 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
     return false;
   }, [showCheckBox, tableRef]);
 
-  // 編集可否の判定
+  // 行単位の編集可否の判定
   const getIsReadOnly = useCallback((rowIndex: number): boolean => {
     if (isReadOnly === true) return true;
+    if (!onChangeRow) return false; // onChangeRowが未設定の場合は編集不可
     if (typeof isReadOnly === 'function' && rowIndex >= 0 && rowIndex < rows.length) {
       const row = tableRef.current?.getRow(rowIndex.toString())?.original
       if (row) return isReadOnly(row, rowIndex);
     }
     return false;
-  }, [isReadOnly, tableRef]);
+  }, [isReadOnly, tableRef, onChangeRow]);
 
   // 編集状態管理
   const [isEditing, setIsEditing] = useState(false);
@@ -521,6 +522,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
         onChangeEditing={handleChangeEditing}
         onChangeRow={props.onChangeRow}
         isFocused={isFocused}
+        getIsReadOnly={getIsReadOnly}
       />
 
     </div>
@@ -596,11 +598,11 @@ const MemorizedBodyCell = React.memo(<TRow extends ReactHookForm.FieldValues>({
   // データ列
   let dataColumnClassName = 'flex outline-none align-middle'
 
-  if (props.onChangeRow !== undefined
-    && (cellMeta?.originalColDef?.isReadOnly === undefined
-      || cellMeta?.originalColDef?.isReadOnly === false
-      || typeof cellMeta?.originalColDef?.isReadOnly === 'function'
-      && cellMeta.originalColDef.isReadOnly(cell.row.original, cell.row.index) === false)) {
+  const cellIsReadOnly = getIsReadOnly(rowIndex)
+    || cellMeta?.originalColDef?.isReadOnly === true
+    || (typeof cellMeta?.originalColDef?.isReadOnly === 'function'
+      && cellMeta.originalColDef.isReadOnly(cell.row.original, cell.row.index))
+  if (!cellIsReadOnly) {
     dataColumnClassName += ` bg-white`
   }
 

@@ -199,7 +199,7 @@ export const DbTableMultiEditorView = React.forwardRef(({
 
         {!error && (
           <>
-            <Input.IconButton icon={Icon.PlusCircleIcon} onClick={handleAddRecord}>
+            <Input.IconButton icon={Icon.PlusIcon} onClick={handleAddRecord}>
               追加
             </Input.IconButton>
             <Input.IconButton icon={Icon.TrashIcon} onClick={handleDeleteRecord}>

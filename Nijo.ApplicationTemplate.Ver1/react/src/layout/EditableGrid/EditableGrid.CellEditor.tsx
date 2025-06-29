@@ -15,6 +15,8 @@ export type CellEditorProps<T extends ReactHookForm.FieldValues> = {
   api: RT.Table<T>
   caretCell: CellPosition | undefined
   getPixel: GetPixelFunction
+  /** 行単位の編集可否の判定 */
+  getIsReadOnly: (rowIndex: number) => boolean
   onChangeEditing: (editing: boolean) => void
   onChangeRow: EditableGridProps<T>['onChangeRow']
   isFocused: boolean
@@ -41,6 +43,7 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
   api,
   caretCell,
   getPixel,
+  getIsReadOnly,
   onChangeEditing,
   onChangeRow,
   isFocused,
@@ -110,6 +113,7 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
     }
 
     // 編集不可のセル
+    if (getIsReadOnly(cell.row.index)) return // 行単位の編集可否の判定
     if (!columnDef?.onStartEditing) return
     if (columnDef?.isReadOnly === true) return
     if (typeof columnDef?.isReadOnly === 'function' && columnDef.isReadOnly(cell.row.original, cell.row.index)) return
