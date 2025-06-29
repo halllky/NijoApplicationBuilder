@@ -262,7 +262,7 @@ const RefKeyAdditionalColumns = ({
   }
 
   return (
-    <div className="flex-1 pt-px pb-2 flex gap-px flex-wrap">
+    <div className="flex-1 flex-col pt-px pb-2 flex gap-px">
       {refDisplayColumnNames.map(columnName => (
         <div key={columnName} className="flex gap-x-2 flex-wrap items-center">
           <span className="text-xs text-gray-500">{columnName}:</span>
