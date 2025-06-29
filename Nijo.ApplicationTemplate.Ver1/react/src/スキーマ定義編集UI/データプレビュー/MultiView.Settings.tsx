@@ -157,9 +157,6 @@ export const DbTableMultiEditViewSettings = ({
           </div>
 
           <div className="flex justify-end items-center gap-2 py-2 px-4 border-t border-gray-200">
-            <span className="inline-block text-sm text-gray-500">
-              【注意】適用ボタンを押した後に Ctrl + S を押さないと変更が反映されません。
-            </span>
             <Input.IconButton onClick={handleCancel}>キャンセル</Input.IconButton>
             <Input.IconButton submit fill>適用</Input.IconButton>
           </div>

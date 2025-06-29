@@ -10,7 +10,7 @@ import useEvent from "react-use-event-hook"
 import { DbTableEditorViewRef } from "./MultiView"
 import { UUID } from "uuidjs"
 import { RecordStatusText } from "./RecordStatusText"
-import { useEditorDesign } from "./useEditorDesign"
+import { DataPreviewGlobalContext } from "./DataPreviewGlobalContext"
 import { EditorDesignByAgggregate } from "./types"
 import { DbTableSingleEditViewSettings, DbTableSingleEditViewSettingsProps } from "./SingleView.Settings"
 import { AggregateFormView } from "./SingleView.AggregateFormView"
@@ -78,7 +78,7 @@ export const SingleView = React.forwardRef((props: SingleViewProps, ref: React.F
   const [triggerOnlyThisWindow, setTriggerOnlyThisWindow] = React.useState(-1)
   const bodyRef = React.useRef<HTMLDivElement>(null)
   const [settingsDialogProps, setSettingsDialogProps] = React.useState<DbTableSingleEditViewSettingsProps | null>(null)
-  const { savedDesign, updateDesign } = useEditorDesign()
+  const { getValues: getDataPreviewValues, setValue: setDataPreviewValues } = React.useContext(DataPreviewGlobalContext)
 
   React.useEffect(() => {
     (async () => {
@@ -162,15 +162,12 @@ export const SingleView = React.forwardRef((props: SingleViewProps, ref: React.F
   const handleOpenSettings = useEvent(() => {
     if (!rootAggregate) return
 
-    const currentSettings = savedDesign[rootAggregate.path] ?? {}
     setSettingsDialogProps({
       aggregate: rootAggregate,
       tableMetadataHelper,
-      initialSettings: currentSettings,
+      initialSettings: getDataPreviewValues(`design.${rootAggregate.path}`) ?? {},
       onApply: (updatedSettings) => {
-        Object.entries(updatedSettings).forEach(([key, value]) => {
-          updateDesign(rootAggregate.path, key as keyof EditorDesignByAgggregate, value)
-        })
+        setDataPreviewValues(`design.${rootAggregate.path}`, updatedSettings)
         setSettingsDialogProps(null)
       },
       onCancel: () => {

@@ -9,7 +9,7 @@ import useQueryEditorServerApi from "./useQueryEditorServerApi"
 import { SqlTextarea } from "./SqlTextarea"
 import { useDbRecordGridColumnDef } from "./useDbRecordGridColumnDef"
 import { UUID } from "uuidjs"
-import { useEditorDesign } from "./useEditorDesign"
+import { DataPreviewGlobalContext } from "./DataPreviewGlobalContext"
 import { EditorDesignByAgggregate } from "./types"
 import { DbTableMultiEditViewSettings, DbTableMultiEditViewSettingsProps } from "./MultiView.Settings"
 
@@ -121,15 +121,21 @@ export const DbTableMultiEditorView = React.forwardRef(({
   )
 
   // グリッドの列幅の自動保存
-  const { savedDesign, updateDesign } = useEditorDesign()
+  const {
+    formState: {
+      defaultValues: dataPreviewDefaultValues
+    },
+    getValues: getDataPreviewValues,
+    setValue: setDataPreviewValues,
+  } = React.useContext(DataPreviewGlobalContext)
   const gridColumnStorage: Layout.EditableGridAutoSaveStorage = React.useMemo(() => ({
     loadState: () => {
-      return savedDesign[aggregate.path]?.multiViewGridLayout ?? null
+      return dataPreviewDefaultValues?.design?.[aggregate.path]?.multiViewGridLayout ?? null
     },
     saveState: (gridState) => {
-      updateDesign(aggregate.path, 'multiViewGridLayout', gridState)
+      setDataPreviewValues(`design.${aggregate.path}.multiViewGridLayout`, gridState)
     },
-  }), [savedDesign, updateDesign, aggregate.path])
+  }), [dataPreviewDefaultValues, setDataPreviewValues, aggregate.path])
 
   // ---------------------------------
   // レコード変更
@@ -189,15 +195,12 @@ export const DbTableMultiEditorView = React.forwardRef(({
 
   // 設定ダイアログ
   const handleOpenSettings = useEvent(() => {
-    const currentSettings = savedDesign[aggregate.path] ?? {}
     setSettingsDialogProps({
       aggregate,
       tableMetadataHelper,
-      initialSettings: currentSettings,
+      initialSettings: getDataPreviewValues(`design.${aggregate.path}`) ?? {},
       onApply: (updatedSettings) => {
-        Object.entries(updatedSettings).forEach(([key, value]) => {
-          updateDesign(aggregate.path, key as keyof EditorDesignByAgggregate, value)
-        })
+        setDataPreviewValues(`design.${aggregate.path}`, updatedSettings)
         setSettingsDialogProps(null)
       },
       onCancel: () => {

@@ -19,7 +19,7 @@ import { DbRecordSelectorDialog, DbRecordSelectorDialogProps } from "./DbRecordS
 import { SERVER_DOMAIN } from "../../routes"
 import { SERVER_API_TYPE_INFO, SERVER_URL_SUBDIRECTORY } from "../型つきドキュメント/TypedDocumentContext"
 import { PageFrame } from "../PageFrame"
-import { EditorDesignContextProvider, EditorDesignContextProviderRef } from "./useEditorDesign"
+import { DataPreviewGlobalContext } from "./DataPreviewGlobalContext"
 
 /** 自動生成されたあとのアプリケーションのwebapiのURL。とりあえず決め打ち */
 export const BACKEND_URL = "https://localhost:7098"
@@ -151,24 +151,20 @@ const AfterReady = React.forwardRef(({ tableMetadataHelper, defaultValues, onSav
 }, ref: React.ForwardedRef<{ triggerSave: () => void }>) => {
 
   // ---------------------------------
-  // 集約単位の表示設定
-  const editorDesignRef = React.useRef<EditorDesignContextProviderRef>(null)
-  const [editorDesignIsDirty, setEditorDesignIsDirty] = React.useState(false)
-
-  // ---------------------------------
   // パンとズーム状態の管理
   const [currentViewState, setCurrentViewState] = React.useState<DiagramViewState | undefined>(defaultValues.viewState)
 
   // ---------------------------------
   // 定義編集
-  const { control, getValues, formState: { isDirty }, reset } = ReactHookForm.useForm<QueryEditor>({ defaultValues })
+  const formMethods = ReactHookForm.useForm<QueryEditor>({ defaultValues })
+  const { control, getValues, formState: { isDirty }, reset } = formMethods
   const { fields, append, remove, update } = ReactHookForm.useFieldArray({ name: 'items', control, keyName: 'use-field-array-id' })
 
   // 画面離脱時のメッセージ表示用の状態
   const [dirtyItems, setDirtyItems] = React.useState<number[]>([]) // レコード編集ウィンドウはそれぞれ独自のuseFormを持っているため
   React.useEffect(() => {
-    onIsDirtyChange(isDirty || dirtyItems.length > 0 || editorDesignIsDirty)
-  }, [isDirty, dirtyItems, editorDesignIsDirty])
+    onIsDirtyChange(isDirty || dirtyItems.length > 0)
+  }, [isDirty, dirtyItems])
 
   const handleIsDirtyChange = React.useCallback((index: number, isDirty: boolean) => {
     if (isDirty) {
@@ -246,9 +242,6 @@ const AfterReady = React.forwardRef(({ tableMetadataHelper, defaultValues, onSav
       item.rootItemKeys = editorRef.current.getCurrentRootItemKeys()
     }
 
-    // 表示設定はuseFormとは別の状態で管理している
-    currentValues.design = editorDesignRef.current?.getUpdated()
-
     // パンとズーム状態を保存
     currentValues.viewState = currentViewState
 
@@ -257,7 +250,6 @@ const AfterReady = React.forwardRef(({ tableMetadataHelper, defaultValues, onSav
     // -------------------------------
     // 各種状態リセット
     reset(currentValues)
-    setEditorDesignIsDirty(false)
 
     // -------------------------------
     // 保存完了メッセージを表示
@@ -443,15 +435,8 @@ const AfterReady = React.forwardRef(({ tableMetadataHelper, defaultValues, onSav
     })
   })
 
-  const editorDesign = ReactHookForm.useWatch({ control, name: 'design' })
-
   return (
-    <EditorDesignContextProvider
-      ref={editorDesignRef}
-      value={editorDesign}
-      onIsDirtyChange={setEditorDesignIsDirty}
-      trigger={trigger}
-    >
+    <DataPreviewGlobalContext.Provider value={formMethods}>
       <div className={`relative flex flex-col overflow-hidden outline-none ${className ?? ""}`}>
         {saveError && (
           <div className="text-red-500 text-sm">
@@ -507,7 +492,7 @@ const AfterReady = React.forwardRef(({ tableMetadataHelper, defaultValues, onSav
           </DbRecordSelectorDialog>
         )}
       </div>
-    </EditorDesignContextProvider>
+    </DataPreviewGlobalContext.Provider>
   )
 })
 
