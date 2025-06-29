@@ -79,8 +79,17 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
         const bottom = getPixel({ position: 'bottom', rowIndex: caretCell.rowIndex })
         containerRef.current.style.left = `${left}px`
         containerRef.current.style.top = `${top}px`
-        containerRef.current.style.minWidth = `${right - left}px`
         containerRef.current.style.minHeight = `${bottom - top}px`
+
+        // min-width で設定した場合、エディタの中の文字がオーバーフローしたときに横方向に延伸する。
+        // width で指定した場合は縦方向。
+        if (columnDef?.editorOverflow === 'vertical') {
+          containerRef.current.style.width = `${right - left}px`
+          containerRef.current.style.minWidth = ''
+        } else {
+          containerRef.current.style.width = ''
+          containerRef.current.style.minWidth = `${right - left}px`
+        }
       }
       // 前のセルで入力した値をクリアする
       // setUnComittedText('')

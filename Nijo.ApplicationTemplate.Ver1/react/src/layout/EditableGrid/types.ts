@@ -137,6 +137,8 @@ export type EditableGridColumnDefOptions<TRow extends ReactHookForm.FieldValues>
   onEndEditing?: EditableGridColumnDefOnEndEditing<TRow>
   /** 入力可能な値の候補を取得する関数 */
   getOptions?: (currentValue: string, row: TRow, rowIndex: number) => (SelectCellOption[] | Promise<SelectCellOption[]>)
+  /** セルエディタの中の値がオーバーフローしたときにエディタを右方向と下方向のどちらに伸ばすか。デフォルトは `horizontal` */
+  editorOverflow?: 'horizontal' | 'vertical'
 }
 
 export type SelectCellOption = {

@@ -85,6 +85,7 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
           cellType.other(attrDef.attributeName, {
             columnId: `col:${attrDef.attributeId}`,
             defaultWidth: 120,
+            editorOverflow: attrDef.attributeType === 'description' ? 'vertical' : undefined,
             onStartEditing: e => {
               e.setEditorInitialValue(e.row.attributeValues[attrDef.attributeId] ?? '');
             },
@@ -364,7 +365,7 @@ const CellEditorWithMention = React.forwardRef(({
         ref={textareaRef}
         value={value ?? ''}
         onChange={onChange}
-        className="flex-1 mx-[3px]"
+        className="flex-1 mx-[3px] my-[-1px]"
       />
       {showOptions && (
         <Icon.ChevronDownIcon className="w-4 cursor-pointer" />
