@@ -304,7 +304,7 @@ const AfterReady = React.forwardRef(({ tableMetadataHelper, defaultValues, onSav
   const handleAddQuery = useEvent(() => {
     const newQueryTitle = window.prompt("クエリのタイトルを入力してください")
     if (!newQueryTitle) return;
-    append(createNewQueryEditorItem("sqlAndResult", newQueryTitle))
+    append(createNewQueryEditorItem("sqlAndResult", newQueryTitle, undefined, currentViewState))
   })
 
   // ウィンドウの追加（テーブル一括編集）
@@ -313,7 +313,7 @@ const AfterReady = React.forwardRef(({ tableMetadataHelper, defaultValues, onSav
     setNewTableName(e.target.value)
   })
   const handleAddMultiItemEditor = useEvent(() => {
-    append(createNewQueryEditorItem("dbTableEditor", newTableName))
+    append(createNewQueryEditorItem("dbTableEditor", newTableName, undefined, currentViewState))
   })
 
   // ウィンドウの追加（テーブル詳細編集）
@@ -328,7 +328,7 @@ const AfterReady = React.forwardRef(({ tableMetadataHelper, defaultValues, onSav
       tableMetadata: rootAggregate,
       tableMetadataHelper: tableMetadataHelper,
       onSelect: (keys: string[]) => {
-        append(createNewQueryEditorItem("dbTableSingleEditor", rootAggregate.tableName, keys))
+        append(createNewQueryEditorItem("dbTableSingleEditor", rootAggregate.tableName, keys, currentViewState))
         setDbTableSingleItemSelectorDialogProps(null)
       },
       onCancel: () => {
@@ -343,7 +343,7 @@ const AfterReady = React.forwardRef(({ tableMetadataHelper, defaultValues, onSav
 
     // 詳細編集は必ずルート集約単位なので、selectで子孫集約が選択された場合はルート集約を選択したものとして扱う
     const rootAggregate = tableMetadataHelper.getRoot(editTableMetadata)
-    append(createNewQueryEditorItem("dbTableSingleEditor(new)", rootAggregate.tableName))
+    append(createNewQueryEditorItem("dbTableSingleEditor(new)", rootAggregate.tableName, undefined, currentViewState))
     setDbTableSingleItemSelectorDialogProps(null)
   })
 
@@ -423,12 +423,31 @@ const AfterReady = React.forwardRef(({ tableMetadataHelper, defaultValues, onSav
   // ---------------------------------
   // コメント
   const handleAddComment = useEvent(() => {
+    // 現在の表示領域内に配置するための座標を計算
+    const calculatePosition = () => {
+      if (!currentViewState) {
+        return { x: 0, y: 0 }
+      }
+
+      // 現在の表示領域の左上座標を計算
+      const viewportX = -currentViewState.panOffset.x / currentViewState.zoom
+      const viewportY = -currentViewState.panOffset.y / currentViewState.zoom
+
+      // 少し余白を取って配置
+      return {
+        x: viewportX + 50,
+        y: viewportY + 50,
+      }
+    }
+
+    const position = calculatePosition()
+
     commentFields.append({
       id: UUID.generate(),
       content: "",
       layout: {
-        x: 0,
-        y: 0,
+        x: position.x,
+        y: position.y,
         width: 320,
         height: 200,
       },
@@ -509,7 +528,26 @@ export const GET_DEFAULT_DATA = (): QueryEditor => ({
   },
 })
 
-const createNewQueryEditorItem = (type: "sqlAndResult" | "dbTableEditor" | "dbTableSingleEditor" | "dbTableSingleEditor(new)", queryTitleOrTableName: string, keys?: string[]): QueryEditorItem => {
+const createNewQueryEditorItem = (type: "sqlAndResult" | "dbTableEditor" | "dbTableSingleEditor" | "dbTableSingleEditor(new)", queryTitleOrTableName: string, keys?: string[], viewState?: DiagramViewState): QueryEditorItem => {
+  // 現在の表示領域内に配置するための座標を計算
+  const calculatePosition = () => {
+    if (!viewState) {
+      return { x: 0, y: 0 }
+    }
+
+    // 現在の表示領域の左上座標を計算
+    const viewportX = -viewState.panOffset.x / viewState.zoom
+    const viewportY = -viewState.panOffset.y / viewState.zoom
+
+    // 少し余白を取って配置
+    return {
+      x: viewportX + 50,
+      y: viewportY + 50,
+    }
+  }
+
+  const position = calculatePosition()
+
   if (type === "sqlAndResult") {
     return {
       id: UUID.generate(),
@@ -518,8 +556,8 @@ const createNewQueryEditorItem = (type: "sqlAndResult" | "dbTableEditor" | "dbTa
       sql: "SELECT 1",
       isSettingCollapsed: false,
       layout: {
-        x: 0,
-        y: 0,
+        x: position.x,
+        y: position.y,
         width: 640,
         height: 200,
       },
@@ -533,8 +571,8 @@ const createNewQueryEditorItem = (type: "sqlAndResult" | "dbTableEditor" | "dbTa
       whereClause: "",
       isSettingCollapsed: false,
       layout: {
-        x: 0,
-        y: 0,
+        x: position.x,
+        y: position.y,
         width: 640,
         height: 200,
       },
@@ -551,8 +589,8 @@ const createNewQueryEditorItem = (type: "sqlAndResult" | "dbTableEditor" | "dbTa
       rootItemKeys: type === "dbTableSingleEditor" ? keys! : null,
       isSettingCollapsed: false,
       layout: {
-        x: 0,
-        y: 0,
+        x: position.x,
+        y: position.y,
         width: 640,
         height: 200,
       },
