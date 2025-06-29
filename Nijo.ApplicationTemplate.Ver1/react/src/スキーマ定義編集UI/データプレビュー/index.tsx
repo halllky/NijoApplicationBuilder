@@ -327,10 +327,7 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, onI
   const [dbTableSingleItemSelectorDialogProps, setDbTableSingleItemSelectorDialogProps] = React.useState<DbTableSingleItemSelectorDialogProps | null>(null)
   const handleOpenSingleItemSelector = useEvent(() => {
     const editTableMetadata = tableMetadata.allAggregates().find(t => t.tableName === newTableName)
-    if (!editTableMetadata) {
-      console.log("テーブルが見つかりません", newTableName)
-      return
-    }
+    if (!editTableMetadata) throw new Error(`テーブルが見つかりません: ${newTableName}`)
 
     // 詳細編集は必ずルート集約単位なので、selectで子孫集約が選択された場合はルート集約を選択したものとして扱う
     const rootAggregate = tableMetadata.getRoot(editTableMetadata)
@@ -338,7 +335,7 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, onI
       tableMetadata: rootAggregate,
       tableMetadataHelper: tableMetadata,
       onSelect: (keys: string[]) => {
-        append(createNewQueryEditorItem("dbTableSingleEditor", newTableName, keys))
+        append(createNewQueryEditorItem("dbTableSingleEditor", rootAggregate.tableName, keys))
         setDbTableSingleItemSelectorDialogProps(null)
       },
       onCancel: () => {
@@ -348,7 +345,12 @@ const AfterReady = React.forwardRef(({ tableMetadata, defaultValues, onSave, onI
   })
 
   const handleAddNewRecord = useEvent(() => {
-    append(createNewQueryEditorItem("dbTableSingleEditor(new)", newTableName))
+    const editTableMetadata = tableMetadata.allAggregates().find(t => t.tableName === newTableName)
+    if (!editTableMetadata) throw new Error(`テーブルが見つかりません: ${newTableName}`)
+
+    // 詳細編集は必ずルート集約単位なので、selectで子孫集約が選択された場合はルート集約を選択したものとして扱う
+    const rootAggregate = tableMetadata.getRoot(editTableMetadata)
+    append(createNewQueryEditorItem("dbTableSingleEditor(new)", rootAggregate.tableName))
     setDbTableSingleItemSelectorDialogProps(null)
   })
 
