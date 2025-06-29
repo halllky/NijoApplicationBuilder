@@ -112,7 +112,7 @@ export const EditableGrid = React.forwardRef(<TRow extends ReactHookForm.FieldVa
   // 行単位の編集可否の判定
   const getIsReadOnly = useCallback((rowIndex: number): boolean => {
     if (isReadOnly === true) return true;
-    if (!onChangeRow) return false; // onChangeRowが未設定の場合は編集不可
+    if (!onChangeRow) return true; // onChangeRowが未設定の場合は編集不可
     if (typeof isReadOnly === 'function' && rowIndex >= 0 && rowIndex < rows.length) {
       const row = tableRef.current?.getRow(rowIndex.toString())?.original
       if (row) return isReadOnly(row, rowIndex);
