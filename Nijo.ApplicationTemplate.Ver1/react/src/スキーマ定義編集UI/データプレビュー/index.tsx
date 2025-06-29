@@ -14,7 +14,8 @@ import useEvent from "react-use-event-hook"
 import { UUID } from "uuidjs"
 import { CommentView } from "./CommentView"
 import { DiagramItemLayout } from "../../layout/DiagramView/types"
-import { DbTableSingleEditView, DbTableSingleItemSelectorDialog, DbTableSingleItemSelectorDialogProps } from "./SingleView"
+import { DbTableSingleEditView } from "./SingleView"
+import { DbRecordSelectorDialog, DbRecordSelectorDialogProps } from "./DbRecordSelectorDialog"
 import { SERVER_DOMAIN } from "../../routes"
 import { SERVER_API_TYPE_INFO, SERVER_URL_SUBDIRECTORY } from "../型つきドキュメント/TypedDocumentContext"
 import { PageFrame } from "../PageFrame"
@@ -324,7 +325,7 @@ const AfterReady = React.forwardRef(({ tableMetadataHelper, defaultValues, onSav
   })
 
   // ウィンドウの追加（テーブル詳細編集）
-  const [dbTableSingleItemSelectorDialogProps, setDbTableSingleItemSelectorDialogProps] = React.useState<DbTableSingleItemSelectorDialogProps | null>(null)
+  const [dbTableSingleItemSelectorDialogProps, setDbTableSingleItemSelectorDialogProps] = React.useState<DbRecordSelectorDialogProps | null>(null)
   const handleOpenSingleItemSelector = useEvent(() => {
     const editTableMetadata = tableMetadataHelper.allAggregates().find(t => t.tableName === newTableName)
     if (!editTableMetadata) throw new Error(`テーブルが見つかりません: ${newTableName}`)
@@ -498,12 +499,12 @@ const AfterReady = React.forwardRef(({ tableMetadataHelper, defaultValues, onSav
         </DiagramView>
 
         {dbTableSingleItemSelectorDialogProps && (
-          <DbTableSingleItemSelectorDialog {...dbTableSingleItemSelectorDialogProps}>
+          <DbRecordSelectorDialog {...dbTableSingleItemSelectorDialogProps}>
             <Input.IconButton icon={Icon.PlusIcon} outline onClick={handleAddNewRecord}>
               新しいデータを作成する
             </Input.IconButton>
             <div className="basis-6"></div>
-          </DbTableSingleItemSelectorDialog>
+          </DbRecordSelectorDialog>
         )}
       </div>
     </EditorDesignContextProvider>

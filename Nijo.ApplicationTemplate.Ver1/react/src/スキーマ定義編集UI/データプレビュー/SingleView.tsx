@@ -14,127 +14,8 @@ import { RecordStatusText } from "./RecordStatusText"
 import { useEditorDesign } from "./useEditorDesign"
 import { EditorDesignByAgggregate } from "./types"
 import { DbTableSingleEditViewSettings, DbTableSingleEditViewSettingsProps } from "./SingleView.Settings"
+import { DbRecordSelectorDialog, DbRecordSelectorDialogProps } from "./DbRecordSelectorDialog"
 
-export type DbTableSingleItemSelectorDialogProps = {
-  tableMetadata: DataModelMetadata.Aggregate
-  tableMetadataHelper: TableMetadataHelper
-  onSelect: (keys: string[]) => void
-  onCancel: () => void
-  children?: React.ReactNode
-}
-
-/**
- * どのコードを編集するかを選択するダイアログ
- */
-export const DbTableSingleItemSelectorDialog = ({
-  tableMetadata,
-  tableMetadataHelper,
-  onSelect,
-  onCancel,
-  children,
-}: DbTableSingleItemSelectorDialogProps) => {
-  const { getDbRecords } = useQueryEditorServerApi()
-  const [records, setRecords] = React.useState<EditableDbRecord[]>()
-  const [error, setError] = React.useState<string | null>(null)
-
-  React.useEffect(() => {
-    (async () => {
-      const res = await getDbRecords({
-        tableName: tableMetadata.tableName,
-        whereClause: "",
-      })
-      if (res.ok) {
-        setRecords(res.data.records)
-      } else {
-        setError(res.error)
-      }
-    })()
-  }, [])
-
-  const columnDefs: Layout.GetColumnDefsFunction<EditableDbRecord> = React.useCallback(cellType => {
-    // 選択
-    const selectColumn = cellType.other('', {
-      defaultWidth: 60,
-      isFixed: true,
-      renderCell: cell => {
-
-        const handleClick = () => {
-          const primaryKeyColumns = tableMetadata.members
-            .filter(c => (c.type === "own-column" || c.type === "parent-key" || c.type === "ref-key") && c.isPrimaryKey)
-            .map(c => (c as DataModelMetadata.AggregateMember).columnName)
-          const primaryKeyValues = primaryKeyColumns.map(c => cell.row.original.values[c] ?? '')
-          onSelect(primaryKeyValues)
-        }
-
-        return (
-          <Input.IconButton underline mini onClick={handleClick}>
-            選択
-          </Input.IconButton>
-        )
-      },
-    })
-
-    const valueColumns: Layout.EditableGridColumnDef<EditableDbRecord>[] = []
-    for (const column of tableMetadata.members) {
-      if (column.type === "root" || column.type === "child" || column.type === "children") {
-        // 子テーブルは別のウィンドウ
-        continue
-      } else if (column.type === "own-column" || column.type === "parent-key" || column.type === "ref-key") {
-        valueColumns.push(cellType.text(
-          `values.${column.columnName}` as ReactHookForm.FieldPathByValue<EditableDbRecord, string | undefined>,
-          column.columnName ?? '',
-          {}))
-      } else {
-        throw new Error(`不明な列の種類: ${column.type}`)
-      }
-    }
-
-    return [
-      selectColumn,
-      ...valueColumns,
-    ]
-  }, [tableMetadata])
-
-  return (
-    <Layout.ModalDialog
-      open
-      className="relative w-[80vw] h-[80vh] bg-white flex flex-col gap-1 relative border border-gray-400"
-    >
-      <div className="h-full w-full flex flex-col p-1 gap-1">
-
-        <div className="flex gap-1 p-1">
-          <span className="font-bold">
-            編集対象データを選択してください。
-          </span>
-          <div className="flex-1"></div>
-          {children}
-          <Input.IconButton outline mini onClick={onCancel}>
-            キャンセル
-          </Input.IconButton>
-        </div>
-
-        {error && (
-          <div className="text-red-500 flex-1">
-            {error}
-          </div>
-        )}
-        {records && (
-          <Layout.EditableGrid
-            rows={records}
-            getColumnDefs={columnDefs}
-            className="flex-1"
-          />
-        )}
-      </div>
-
-      {!error && !records && (
-        <Layout.NowLoading />
-      )}
-    </Layout.ModalDialog>
-  )
-}
-
-// ------------------------------------
 
 type DbTableSingleEditViewProps = {
   itemIndex: number
@@ -630,7 +511,7 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
   })
 
   // 参照キーの検索
-  const [refKeySearchDialogProps, setRefKeySearchDialogProps] = React.useState<DbTableSingleItemSelectorDialogProps | null>(null)
+  const [refKeySearchDialogProps, setRefKeySearchDialogProps] = React.useState<DbRecordSelectorDialogProps | null>(null)
   const handleSearch = useEvent(() => {
     if (member.type !== "ref-key") return;
     const refToTableMetadata = tableMetadataHelper.getRefTo(member)
@@ -697,7 +578,7 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
             />
           </div>
           {refKeySearchDialogProps && (
-            <DbTableSingleItemSelectorDialog {...refKeySearchDialogProps} />
+            <DbRecordSelectorDialog {...refKeySearchDialogProps} />
           )}
         </div>
 
