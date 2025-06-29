@@ -183,10 +183,9 @@ export const DbTableSingleEditView = React.forwardRef((props: DbTableSingleEditV
     zoom,
     handleMouseDown,
   } = props
-  const [isLoaded, setIsLoaded] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const { getDbRecords } = useQueryEditorServerApi()
-  const [defaultValues, setDefaultValues] = React.useState<SingleViewFormType>()
+  const [defaultValues, setDefaultValues] = React.useState<SingleViewFormType>({})
   const [rootAggregate, setRootAggregate] = React.useState<DataModelMetadata.Aggregate | null>(null)
   const [rootRecord, setRootRecord] = React.useState<EditableDbRecord | null>(null)
   const [triggerOnlyThisWindow, setTriggerOnlyThisWindow] = React.useState(-1)
@@ -194,67 +193,61 @@ export const DbTableSingleEditView = React.forwardRef((props: DbTableSingleEditV
 
   React.useEffect(() => {
     (async () => {
-      try {
-        setIsLoaded(false)
-        setError(null)
-        setDefaultValues(undefined)
+      setError(null)
 
-        const rootAggregate = tableMetadataHelper.rootAggregates().find(a => a.tableName === propsValue.rootTableName)
-        if (!rootAggregate) {
-          setError("ルート集約が見つかりません")
-          return
-        }
-        setRootAggregate(rootAggregate)
-
-        // defaultValuesの作成
-        const result: SingleViewFormType = {}
-        const tree = [rootAggregate, ...tableMetadataHelper.enumerateDescendants(rootAggregate)]
-        if (propsValue.rootItemKeys === null) {
-          // 新規作成モードの場合
-          for (const aggregate of tree) {
-            if (aggregate.type === "root") {
-              result[aggregate.path] = [{
-                uniqueId: UUID.generate(),
-                tableName: aggregate.tableName,
-                values: {},
-                existsInDb: false,
-                changed: false,
-                deleted: false,
-              }]
-            } else {
-              result[aggregate.path] = []
-            }
-          }
-        } else {
-          // 編集モードの場合、
-          // 対象のテーブルおよびその子孫テーブルそれぞれについて
-          // ルート集約のテーブルの主キーで検索をかける。
-          for (const aggregate of tree) {
-            const primaryKeyColumnNames = aggregate.members
-              .filter(c => (c.type === "own-column" || c.type === "parent-key" || c.type === "ref-key") && c.isPrimaryKey)
-              .map(c => (c as DataModelMetadata.AggregateMember).columnName)
-            const whereClause = propsValue.rootItemKeys.map((pk, index) => `${primaryKeyColumnNames[index]} = '${pk.replace(/'/g, "''")}'`).join(" AND ")
-            const res = await getDbRecords({
-              tableName: aggregate.tableName,
-              whereClause,
-            })
-            if (res.ok) {
-              // ルート集約が見つからなかったら終わり
-              if (aggregate.path === rootAggregate.path && res.data.records.length === 0) {
-                setError(`対象レコードが見つかりません（${propsValue.rootItemKeys.join(", ")}）`)
-                return
-              }
-              result[aggregate.path] = res.data.records
-            } else {
-              setError(res.error ?? "不明なエラーが発生しました")
-            }
-          }
-        }
-        setDefaultValues(result)
-
-      } finally {
-        setIsLoaded(true)
+      const rootAggregate = tableMetadataHelper.rootAggregates().find(a => a.tableName === propsValue.rootTableName)
+      if (!rootAggregate) {
+        setError("ルート集約が見つかりません")
+        return
       }
+      setRootAggregate(rootAggregate)
+
+      // defaultValuesの作成
+      const result: SingleViewFormType = {}
+      const tree = [rootAggregate, ...tableMetadataHelper.enumerateDescendants(rootAggregate)]
+      if (propsValue.rootItemKeys === null) {
+        // 新規作成モードの場合
+        for (const aggregate of tree) {
+          if (aggregate.type === "root") {
+            result[aggregate.path] = [{
+              uniqueId: UUID.generate(),
+              tableName: aggregate.tableName,
+              values: {},
+              existsInDb: false,
+              changed: false,
+              deleted: false,
+            }]
+          } else {
+            result[aggregate.path] = []
+          }
+        }
+      } else {
+        // 編集モードの場合、
+        // 対象のテーブルおよびその子孫テーブルそれぞれについて
+        // ルート集約のテーブルの主キーで検索をかける。
+        for (const aggregate of tree) {
+          const primaryKeyColumnNames = aggregate.members
+            .filter(c => (c.type === "own-column" || c.type === "parent-key" || c.type === "ref-key") && c.isPrimaryKey)
+            .map(c => (c as DataModelMetadata.AggregateMember).columnName)
+          const whereClause = propsValue.rootItemKeys.map((pk, index) => `${primaryKeyColumnNames[index]} = '${pk.replace(/'/g, "''")}'`).join(" AND ")
+          const res = await getDbRecords({
+            tableName: aggregate.tableName,
+            whereClause,
+          })
+          if (res.ok) {
+            // ルート集約が見つからなかったら終わり
+            if (aggregate.path === rootAggregate.path && res.data.records.length === 0) {
+              setError(`対象レコードが見つかりません（${propsValue.rootItemKeys.join(", ")}）`)
+              return
+            }
+            result[aggregate.path] = res.data.records
+          } else {
+            setError(res.error ?? "不明なエラーが発生しました")
+          }
+        }
+      }
+      setDefaultValues(result)
+
     })()
   }, [trigger, triggerOnlyThisWindow])
 
@@ -312,10 +305,7 @@ export const DbTableSingleEditView = React.forwardRef((props: DbTableSingleEditV
             </Input.IconButton>
           </div>
         )}
-        {(!error && (!isLoaded || !rootAggregate || !defaultValues)) && (
-          <Layout.NowLoading />
-        )}
-        {!error && isLoaded && rootAggregate && defaultValues && (
+        {!error && rootAggregate && (
           <DbTableSingleEditViewAfterLoaded
             {...props}
             ref={ref}
@@ -332,7 +322,9 @@ export const DbTableSingleEditView = React.forwardRef((props: DbTableSingleEditV
 
 // ----------------------------------
 type RootRecordAccessorRef = {
+  /** 現在表示中のデータが読み込まれた当時の状態にリセットする */
   resetForm: () => void
+  /** 親コンポーネントから子コンポーネントが持つルート集約のレコードを更新する */
   updateRootRecord: (dispatch: (prev: EditableDbRecord) => EditableDbRecord) => void
 }
 
@@ -359,6 +351,9 @@ const DbTableSingleEditViewAfterLoaded = React.forwardRef((props: DbTableSingleE
   const formMethods = ReactHookForm.useForm<SingleViewFormType>({
     defaultValues,
   })
+  React.useEffect(() => {
+    formMethods.reset(defaultValues)
+  }, [defaultValues])
 
   React.useEffect(() => {
     onIsDirtyChange(itemIndex, formMethods.formState.isDirty)
@@ -447,6 +442,7 @@ const DbTableSingleEditViewAfterLoaded = React.forwardRef((props: DbTableSingleE
 const AggregateFormView = (props: {
   itemIndexInDbRecordArray: number
   aggregate: DataModelMetadata.Aggregate
+  /** 表示対象のレコードではなくその親 */
   owner: EditableDbRecord | null
   onChangeDefinition: ((dispatch: (prev: DbTableSingleItemEditor) => DbTableSingleItemEditor) => void) | undefined
 }) => {
@@ -457,6 +453,8 @@ const AggregateFormView = (props: {
     owner,
     onChangeDefinition,
   } = props
+
+  const thisIsChild = owner !== null
 
   const { setNewItemsParentMap, formMethods } = React.useContext(SingleViewContext)
   const { fields, append, update, remove } = ReactHookForm.useFieldArray({ name: aggregate.path, control: formMethods.control })
@@ -473,7 +471,7 @@ const AggregateFormView = (props: {
       deleted: false,
     })
     // これが子集約の場合は親との対応関係を登録
-    if (owner) {
+    if (thisIsChild) {
       setNewItemsParentMap(prev => {
         prev.set(uniqueId, owner.uniqueId)
         return prev
@@ -530,7 +528,7 @@ const AggregateFormView = (props: {
           )}
         </div>
       )}
-      {record && aggregate.members.map(member => (
+      {(!thisIsChild || record) && aggregate.members.map(member => (
         <AggregateMemberFormView
           key={member.physicalName}
           record={record}
@@ -545,7 +543,7 @@ const AggregateFormView = (props: {
 }
 
 const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerName }: {
-  record: EditableDbRecord,
+  record: EditableDbRecord | undefined,
   onChangeRecord: (value: EditableDbRecord) => void,
   member: DataModelMetadata.AggregateMember | DataModelMetadata.Aggregate
   owner: DataModelMetadata.Aggregate
@@ -564,12 +562,13 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
     if (member.type === "child") return undefined
     if (member.type === "children") return undefined
     if (member.type === "parent-key") return undefined
-    if (member.type === "own-column") return member.isPrimaryKey && record.existsInDb
-    if (member.type === "ref-key") return member.isPrimaryKey && record.existsInDb
-  }, [member, record.existsInDb])
+    if (member.type === "own-column") return member.isPrimaryKey && record?.existsInDb
+    if (member.type === "ref-key") return member.isPrimaryKey && record?.existsInDb
+  }, [member, record?.existsInDb])
 
   // テキストボックスの値変更時
   const handleChangeText: React.ChangeEventHandler<HTMLInputElement> = useEvent(e => {
+    if (!record) return;
     if (member.type !== "own-column" && member.type !== "ref-key") return;
     const clone = window.structuredClone(record)
     clone.values[member.columnName] = e.target.value === '' ? null : e.target.value
@@ -586,6 +585,8 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
       tableMetadata: refToTableMetadata,
       tableMetadataHelper: tableMetadataHelper,
       onSelect: keys => {
+        if (!record) return;
+
         // 参照先テーブルが複合キーである可能性を考慮し、当該参照先の全キーに代入
         const clone = window.structuredClone(record)
         let index = 0
@@ -629,7 +630,7 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
           )}
           <input
             type="text"
-            value={record.values[member.columnName] ?? ''}
+            value={record?.values[member.columnName] ?? ''}
             onChange={handleChangeText}
             spellCheck={false}
             placeholder="NULL"
@@ -653,7 +654,7 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
       <AggregateFormView
         itemIndexInDbRecordArray={0}
         aggregate={childAggregate}
-        owner={record}
+        owner={record ?? null}
         onChangeDefinition={undefined}
       />
     )
@@ -663,7 +664,7 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
     return (
       <AggregateGridView
         itemIndexInForm={0}
-        owner={record}
+        owner={record ?? null}
         ownerMetadata={owner}
         childrenMetadata={member}
         ownerName={ownerName}
@@ -683,7 +684,7 @@ const AggregateMemberFormView = ({ record, onChangeRecord, member, owner, ownerN
  */
 const AggregateGridView = (props: {
   itemIndexInForm: number
-  owner: EditableDbRecord
+  owner: EditableDbRecord | null
   childrenMetadata: DataModelMetadata.Aggregate
   ownerMetadata: DataModelMetadata.Aggregate
   ownerName: string
@@ -740,10 +741,12 @@ const AggregateGridView = (props: {
       changed: false,
       deleted: false,
     })
-    setNewItemsParentMap(prev => {
-      prev.set(uniqueId, props.owner.uniqueId)
-      return prev
-    })
+    if (props.owner) {
+      setNewItemsParentMap(prev => {
+        prev.set(uniqueId, props.owner!.uniqueId)
+        return prev
+      })
+    }
   })
 
   const handleRemoveRow = useEvent(() => {

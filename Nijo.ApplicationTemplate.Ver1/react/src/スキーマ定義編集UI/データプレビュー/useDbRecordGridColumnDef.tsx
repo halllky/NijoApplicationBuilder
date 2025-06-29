@@ -88,6 +88,7 @@ export const useDbRecordGridColumnDef = (
             }
 
             const isNull = cell.row.original.values[column.columnName] === null
+              || cell.row.original.values[column.columnName] === undefined
 
             return (
               <div className="w-full flex overflow-hidden px-1">
