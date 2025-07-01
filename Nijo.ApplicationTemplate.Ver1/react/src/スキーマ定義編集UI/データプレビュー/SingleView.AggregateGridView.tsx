@@ -30,13 +30,12 @@ export const AggregateGridView = (props: {
     ownerName,
   } = props
 
+  const { control } = ReactHookForm.useFormContext<SingleViewFormType>()
   const {
-    formMethods,
     tableMetadataHelper,
     setNewItemsParentMap,
   } = React.useContext(SingleViewContext)
 
-  const { control } = formMethods
   const { fields, append, remove, update } = ReactHookForm.useFieldArray({ name: childrenMetadata.path, control })
   const gridRef = React.useRef<Layout.EditableGridRef<ReactHookForm.FieldArrayWithId<SingleViewFormType, string, "id">>>(null)
 

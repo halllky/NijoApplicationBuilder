@@ -36,7 +36,6 @@ export type SingleViewFormType = {
 /** SingleViewのウィンドウ1個の中で横断的に参照されるコンテキスト */
 export type SingleViewContextType = {
   rootItemKeys: string[] | null
-  formMethods: ReactHookForm.UseFormReturn<SingleViewFormType>
   tableMetadataHelper: TableMetadataHelper
   /** この画面で新規作成され、まだDBに登録されていないデータの親子関係を管理するマップ。キーが子、値が親 */
   newItemsParentMap: Map<string, string>
@@ -47,7 +46,6 @@ export type SingleViewContextType = {
 /** SingleViewのウィンドウ1個の中で横断的に参照されるコンテキスト */
 export const SingleViewContext = React.createContext<SingleViewContextType>({
   rootItemKeys: null,
-  formMethods: {} as ReactHookForm.UseFormReturn<SingleViewFormType>,
   tableMetadataHelper: {} as TableMetadataHelper,
   newItemsParentMap: new Map(),
   setNewItemsParentMap: () => { },
@@ -275,23 +273,23 @@ const SingleViewAfterLoaded = React.forwardRef((props: SingleViewProps & {
   const formMethods = ReactHookForm.useForm<SingleViewFormType>({
     defaultValues,
   })
+  const { control, reset, formState: { isDirty }, getValues } = formMethods
   React.useEffect(() => {
-    formMethods.reset(defaultValues)
+    reset(defaultValues)
   }, [defaultValues])
 
   React.useEffect(() => {
-    onIsDirtyChange(itemIndex, formMethods.formState.isDirty)
-  }, [formMethods.formState.isDirty])
+    onIsDirtyChange(itemIndex, isDirty)
+  }, [isDirty])
 
   const [newItemsParentMap, setNewItemsParentMap] = React.useState<Map<string, string>>(new Map())
   const singleViewContext: SingleViewContextType = React.useMemo(() => ({
     rootItemKeys: value.rootItemKeys,
-    formMethods,
     tableMetadataHelper,
     newItemsParentMap,
     setNewItemsParentMap,
     trigger,
-  }), [value.rootItemKeys, formMethods, tableMetadataHelper, newItemsParentMap, setNewItemsParentMap, trigger])
+  }), [value.rootItemKeys, tableMetadataHelper, newItemsParentMap, setNewItemsParentMap, trigger])
 
   const handleChangeDefinition = useEvent((dispatch: (prev: DbTableSingleItemEditor) => DbTableSingleItemEditor) => {
     onChangeDefinition(itemIndex, dispatch(value))
@@ -300,7 +298,7 @@ const SingleViewAfterLoaded = React.forwardRef((props: SingleViewProps & {
   React.useImperativeHandle(ref, () => ({
     getCurrentRecords: () => {
       const result: EditableDbRecord[] = []
-      const currentValues = formMethods.getValues()
+      const currentValues = getValues()
       for (const record of Object.values(currentValues).flatMap(r => r)) {
 
         // 親の主キーを設定
@@ -322,7 +320,7 @@ const SingleViewAfterLoaded = React.forwardRef((props: SingleViewProps & {
       return result
     },
     getCurrentRootItemKeys: () => {
-      const rootRecord = formMethods.getValues()[rootAggregate.path][0]
+      const rootRecord = getValues()[rootAggregate.path][0]
       const keys: string[] = []
       for (const member of rootAggregate.members) {
         if (member.type !== "own-column" && member.type !== "ref-key" && member.type !== "parent-key" && member.type !== "ref-parent-key") continue
@@ -335,29 +333,32 @@ const SingleViewAfterLoaded = React.forwardRef((props: SingleViewProps & {
   }))
 
   // 親コンポーネントにルートレコードへのアクセサを提供する
-  const { update } = ReactHookForm.useFieldArray({ name: rootAggregate.path, control: formMethods.control })
-  const rootRecord = ReactHookForm.useWatch({ name: `${rootAggregate.path}.0`, control: formMethods.control })
+  const { update } = ReactHookForm.useFieldArray({ name: rootAggregate.path, control })
+  const rootRecord = ReactHookForm.useWatch({ name: `${rootAggregate.path}.0`, control })
   React.useImperativeHandle(rootRecordAccessorRef, () => ({
     resetForm: () => {
-      formMethods.reset(defaultValues)
+      reset(defaultValues)
     },
     updateRootRecord: (dispatch: (prev: EditableDbRecord) => EditableDbRecord) => {
       update(0, dispatch(rootRecord))
     },
-  }), [rootRecord, update])
+  }), [rootRecord, update, reset])
+
   React.useEffect(() => {
     onRootRecordChange(rootRecord)
   }, [rootRecord])
 
   return (
     <SingleViewContext.Provider value={singleViewContext}>
-      <AggregateFormView
-        itemIndexInDbRecordArray={0} // ルート集約は1つしかないので0
-        aggregate={rootAggregate}
-        owner={null}
-        ownerIsReadOnly={rootRecord?.deleted === true}
-        onChangeDefinition={handleChangeDefinition}
-      />
+      <ReactHookForm.FormProvider {...formMethods}>
+        <AggregateFormView
+          itemIndexInDbRecordArray={0} // ルート集約は1つしかないので0
+          aggregate={rootAggregate}
+          owner={null}
+          ownerIsReadOnly={rootRecord?.deleted === true}
+          onChangeDefinition={handleChangeDefinition}
+        />
+      </ReactHookForm.FormProvider>
     </SingleViewContext.Provider>
   )
 })
