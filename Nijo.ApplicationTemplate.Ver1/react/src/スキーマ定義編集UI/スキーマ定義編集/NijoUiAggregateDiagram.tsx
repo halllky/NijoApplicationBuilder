@@ -20,7 +20,6 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import { PageRootAggregate } from "./RootAggregatePage"
 import { UUID } from "uuidjs"
 import { PageFrame } from "../PageFrame"
-import { AttrDefsProvider } from "./AttrDefContext"
 import { useValidation } from "./ValidationContext"
 import NijoUiErrorMessagePane from "./NijoUiErrorMessagePane"
 
@@ -126,6 +125,12 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, onlyRootDefaultValue
   const { getValues, control, formState: { isDirty } } = formMethods
   const xmlElementTrees = getValues("xmlElementTrees")
   const graphViewRef = React.useRef<GraphViewRef>(null)
+
+  // 属性定義
+  const watchedAttributeDefs = ReactHookForm.useWatch({ name: 'attributeDefs', control })
+  const attributeDefsMap = React.useMemo(() => {
+    return new Map(watchedAttributeDefs.map(attrDef => [attrDef.attributeName, attrDef]))
+  }, [watchedAttributeDefs])
 
   // 入力検証
   const { getValidationResult, trigger, validationResultList } = useValidation(getValues)
@@ -351,102 +356,101 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, onlyRootDefaultValue
   Util.useCtrlS(handleSave)
 
   return (
-    <AttrDefsProvider control={formMethods.control}>
-      <PageFrame
-        title="ソースコード自動生成設定"
-        shouldBlock={isDirty}
-        headerComponent={(
-          <>
-            <div className="basis-4"></div>
+    <PageFrame
+      title="ソースコード自動生成設定"
+      shouldBlock={isDirty}
+      headerComponent={(
+        <>
+          <div className="basis-4"></div>
 
-            <Input.IconButton onClick={handleAutoLayout} outline>
-              整列
-            </Input.IconButton>
-            <select className="border text-sm" value={layoutLogic} onChange={(e) => setLayoutLogic(e.target.value as AutoLayout.LayoutLogicName)}>
-              {Object.entries(AutoLayout.OPTION_LIST).map(([key, value]) => (
-                <option key={key} value={key}>ロジック: {value.name}</option>
-              ))}
-            </select>
-            <div className="basis-4"></div>
-            <label>
-              <input type="checkbox" checked={onlyRoot} onChange={(e) => setOnlyRoot(e.target.checked)} />
-              ルート集約のみ表示
-            </label>
-            <div className="basis-4"></div>
-            <div className="flex">
-              <Input.IconButton fill={editableGridPosition === "horizontal"} outline onClick={() => setEditableGridPosition("horizontal")}>横</Input.IconButton>
-              <Input.IconButton fill={editableGridPosition === "vertical"} outline onClick={() => setEditableGridPosition("vertical")}>縦</Input.IconButton>
-            </div>
-            <div className="flex-1"></div>
-            <Input.IconButton icon={Icon.PlusIcon} outline onClick={handleNewRootAggregate}>新規作成</Input.IconButton>
-            <Input.IconButton
-              icon={Icon.TrashIcon}
-              outline
-              onClick={handleDeleteRootAggregate}
-              disabled={selectedRootAggregateIndex === undefined}
-            >
-              削除
-            </Input.IconButton>
-            <Input.IconButton outline onClick={() => alert('区分定義は未実装です。通常の単語型として定義してください。')}>区分定義</Input.IconButton>
-            <div className="basis-36 flex justify-end">
-              <Input.IconButton fill onClick={handleSave} loading={nowSaving}>{saveButtonText}</Input.IconButton>
-            </div>
-          </>
-        )}
-      >
-        {saveError && (
-          <div className="text-rose-500 text-sm">
-            {saveError}
+          <Input.IconButton onClick={handleAutoLayout} outline>
+            整列
+          </Input.IconButton>
+          <select className="border text-sm" value={layoutLogic} onChange={(e) => setLayoutLogic(e.target.value as AutoLayout.LayoutLogicName)}>
+            {Object.entries(AutoLayout.OPTION_LIST).map(([key, value]) => (
+              <option key={key} value={key}>ロジック: {value.name}</option>
+            ))}
+          </select>
+          <div className="basis-4"></div>
+          <label>
+            <input type="checkbox" checked={onlyRoot} onChange={(e) => setOnlyRoot(e.target.checked)} />
+            ルート集約のみ表示
+          </label>
+          <div className="basis-4"></div>
+          <div className="flex">
+            <Input.IconButton fill={editableGridPosition === "horizontal"} outline onClick={() => setEditableGridPosition("horizontal")}>横</Input.IconButton>
+            <Input.IconButton fill={editableGridPosition === "vertical"} outline onClick={() => setEditableGridPosition("vertical")}>縦</Input.IconButton>
           </div>
-        )}
-        <PanelGroup className="flex-1" direction={editableGridPosition}>
-          <Panel className="border border-gray-300">
-            <GraphView
-              key={onlyRoot ? 'onlyRoot' : 'all'} // このフラグが切り替わったタイミングで全部洗い替え
-              ref={graphViewRef}
-              nodes={Object.values(dataSet.nodes)} // dataSet.nodesの値を配列として渡す
-              edges={dataSet.edges} // dataSet.edgesをそのまま渡す
-              parentMap={Object.fromEntries(Object.entries(dataSet.nodes).filter(([, node]) => node.parent).map(([id, node]) => [id, node.parent!]))} // dataSet.nodesからparentMapを生成
-              onReady={handleReadyGraph}
-              layoutLogic={layoutLogic}
-              onLayoutChange={handleLayoutChange}
-              onSelectionChange={handleSelectionChange}
-            />
-          </Panel>
+          <div className="flex-1"></div>
+          <Input.IconButton icon={Icon.PlusIcon} outline onClick={handleNewRootAggregate}>新規作成</Input.IconButton>
+          <Input.IconButton
+            icon={Icon.TrashIcon}
+            outline
+            onClick={handleDeleteRootAggregate}
+            disabled={selectedRootAggregateIndex === undefined}
+          >
+            削除
+          </Input.IconButton>
+          <Input.IconButton outline onClick={() => alert('区分定義は未実装です。通常の単語型として定義してください。')}>区分定義</Input.IconButton>
+          <div className="basis-36 flex justify-end">
+            <Input.IconButton fill onClick={handleSave} loading={nowSaving}>{saveButtonText}</Input.IconButton>
+          </div>
+        </>
+      )}
+    >
+      {saveError && (
+        <div className="text-rose-500 text-sm">
+          {saveError}
+        </div>
+      )}
+      <PanelGroup className="flex-1" direction={editableGridPosition}>
+        <Panel className="border border-gray-300">
+          <GraphView
+            key={onlyRoot ? 'onlyRoot' : 'all'} // このフラグが切り替わったタイミングで全部洗い替え
+            ref={graphViewRef}
+            nodes={Object.values(dataSet.nodes)} // dataSet.nodesの値を配列として渡す
+            edges={dataSet.edges} // dataSet.edgesをそのまま渡す
+            parentMap={Object.fromEntries(Object.entries(dataSet.nodes).filter(([, node]) => node.parent).map(([id, node]) => [id, node.parent!]))} // dataSet.nodesからparentMapを生成
+            onReady={handleReadyGraph}
+            layoutLogic={layoutLogic}
+            onLayoutChange={handleLayoutChange}
+            onSelectionChange={handleSelectionChange}
+          />
+        </Panel>
 
-          <PanelResizeHandle className={editableGridPosition === "horizontal" ? "w-1" : "h-1"} />
+        <PanelResizeHandle className={editableGridPosition === "horizontal" ? "w-1" : "h-1"} />
 
-          <Panel collapsible minSize={10}>
-            <PanelGroup className="h-full" direction="vertical">
-              <Panel>
-                {selectedRootAggregateIndex !== undefined && (
-                  <PageRootAggregate
-                    key={selectedRootAggregateIndex} // 選択中のルート集約が変更されたタイミングで再描画
-                    rootAggregateIndex={selectedRootAggregateIndex}
-                    selectRootAggregate={selectRootAggregate}
-                    formMethods={formMethods}
-                    getValidationResult={getValidationResult}
-                    trigger={trigger}
-                    className="h-full"
-                  />
-                )}
-              </Panel>
-
-              <PanelResizeHandle className="h-1" />
-
-              <Panel defaultSize={20} minSize={8} collapsible>
-                <NijoUiErrorMessagePane
-                  getValues={getValues}
-                  validationResultList={validationResultList}
+        <Panel collapsible minSize={10}>
+          <PanelGroup className="h-full" direction="vertical">
+            <Panel>
+              {selectedRootAggregateIndex !== undefined && (
+                <PageRootAggregate
+                  key={selectedRootAggregateIndex} // 選択中のルート集約が変更されたタイミングで再描画
+                  rootAggregateIndex={selectedRootAggregateIndex}
                   selectRootAggregate={selectRootAggregate}
+                  formMethods={formMethods}
+                  getValidationResult={getValidationResult}
+                  trigger={trigger}
+                  attributeDefs={attributeDefsMap}
                   className="h-full"
                 />
-              </Panel>
-            </PanelGroup>
-          </Panel>
-        </PanelGroup>
-      </PageFrame>
-    </AttrDefsProvider>
+              )}
+            </Panel>
+
+            <PanelResizeHandle className="h-1" />
+
+            <Panel defaultSize={20} minSize={8} collapsible>
+              <NijoUiErrorMessagePane
+                getValues={getValues}
+                validationResultList={validationResultList}
+                selectRootAggregate={selectRootAggregate}
+                className="h-full"
+              />
+            </Panel>
+          </PanelGroup>
+        </Panel>
+      </PanelGroup>
+    </PageFrame>
   )
 }
 

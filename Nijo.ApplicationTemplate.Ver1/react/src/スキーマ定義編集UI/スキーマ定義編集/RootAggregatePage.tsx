@@ -8,25 +8,24 @@ import * as Layout from "../../layout"
 import { SchemaDefinitionGlobalState, ATTR_TYPE, XmlElementAttribute, XmlElementItem } from "./types"
 import useEvent from "react-use-event-hook"
 import { UUID } from "uuidjs"
-import { useAttrDefs } from "./AttrDefContext"
 import { TYPE_COLUMN_DEF } from "./getAttrTypeColumnDef"
 import { GetValidationResultFunction, ValidationTriggerFunction } from "./ValidationContext"
 
 /**
  * Data, Query, Command のルート集約1件を表示・編集するページ。
  */
-export const PageRootAggregate = ({ rootAggregateIndex, formMethods, selectRootAggregate, getValidationResult, trigger, className }: {
+export const PageRootAggregate = ({ rootAggregateIndex, formMethods, selectRootAggregate, getValidationResult, trigger, attributeDefs, className }: {
   rootAggregateIndex: number
   formMethods: ReactHookForm.UseFormReturn<SchemaDefinitionGlobalState>
   selectRootAggregate: (aggregateId: string) => void
   getValidationResult: GetValidationResultFunction
   trigger: ValidationTriggerFunction
+  attributeDefs: Map<string, XmlElementAttribute>
   className?: string
 }) => {
   const gridRef = React.useRef<Layout.EditableGridRef<GridRowType>>(null)
   const { control } = formMethods
   const { fields, insert, remove, update } = ReactHookForm.useFieldArray({ control, name: `xmlElementTrees.${rootAggregateIndex}.xmlElements` })
-  const attributeDefs = useAttrDefs()
 
   // メンバーグリッドの列定義
   const getColumnDefs: Layout.GetColumnDefsFunction<GridRowType> = React.useCallback(cellType => {
