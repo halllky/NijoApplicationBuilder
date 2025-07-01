@@ -11,17 +11,17 @@ import { XmlElementItem, ATTR_TYPE, TYPE_DATA_MODEL, TYPE_COMMAND_MODEL, TYPE_QU
 import { CytoscapeDataSet, ViewState } from "../../layout/GraphView/Cy"
 import { Node as CyNode, Edge as CyEdge } from "../../layout/GraphView/DataSource"
 import * as AutoLayout from "../../layout/GraphView/Cy.AutoLayout"
-import { findRefToTarget } from "./refResolver"
+import { findRefToTarget } from "./findRefToTarget"
 import { asTree } from "./types"
 import { getNavigationUrl, SERVER_DOMAIN } from "../../routes"
 import cytoscape from 'cytoscape'; // cytoscapeの型情報をインポート
-import { useLayoutSaving } from './NijoUiAggregateDiagram.StateSaving';
+import { useLayoutSaving } from './useLayoutSaving';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
-import { PageRootAggregate } from "./RootAggregatePage"
+import { PageRootAggregate } from "./index.Grid"
 import { UUID } from "uuidjs"
 import { PageFrame } from "../PageFrame"
-import { useValidation } from "./ValidationContext"
-import NijoUiErrorMessagePane from "./NijoUiErrorMessagePane"
+import { useValidation } from "./useValidation"
+import NijoUiErrorMessagePane from "./index.ErrorMessage"
 
 export const NijoUiAggregateDiagram = () => {
 

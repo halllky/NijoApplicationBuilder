@@ -9,7 +9,7 @@ import { SchemaDefinitionGlobalState, ATTR_TYPE, XmlElementAttribute, XmlElement
 import useEvent from "react-use-event-hook"
 import { UUID } from "uuidjs"
 import { TYPE_COLUMN_DEF } from "./getAttrTypeColumnDef"
-import { GetValidationResultFunction, ValidationTriggerFunction } from "./ValidationContext"
+import { GetValidationResultFunction, ValidationTriggerFunction } from "./useValidation"
 
 /**
  * Data, Query, Command のルート集約1件を表示・編集するページ。

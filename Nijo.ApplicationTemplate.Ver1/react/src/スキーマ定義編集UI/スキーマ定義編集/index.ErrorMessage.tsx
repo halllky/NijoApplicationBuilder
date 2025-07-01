@@ -1,7 +1,7 @@
 import React from "react"
 import * as ReactHookForm from "react-hook-form"
 import { SchemaDefinitionGlobalState, asTree } from "./types"
-import { ValidationResultListItem } from "./ValidationContext"
+import { ValidationResultListItem } from "./useValidation"
 
 /**
  * エラーメッセージ表示欄。
