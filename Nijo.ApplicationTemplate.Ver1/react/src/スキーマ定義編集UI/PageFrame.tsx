@@ -50,18 +50,14 @@ export const PageFrame = ({ shouldBlock, title, headerComponent, children }: {
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center flex-wrap gap-1 p-1 min-h-10">
-        {title ? (
+        <Link to={getNavigationUrl({ page: 'top-page' })} className="font-bold underline">
+          {applicationName ?? 'ホーム'}
+        </Link>
+        {title && (
           <>
-            <Link to={getNavigationUrl({ page: 'top-page' })} className="font-bold underline">
-              {applicationName ?? 'ホーム'}
-            </Link>
             <Icon.ChevronRightIcon className="w-4 h-4" />
             <h1 className="select-none font-bold">{title}</h1>
           </>
-        ) : (
-          <span className="font-bold select-none">
-            {applicationName ?? 'ホーム'}
-          </span>
         )}
         {headerComponent}
       </div>
