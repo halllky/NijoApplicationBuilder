@@ -27,7 +27,7 @@ export const DbTableMultiEditViewSettings = ({
   onCancel,
 }: DbTableMultiEditViewSettingsProps) => {
 
-  // 集約のメンバーを取得（own-columnとref-keyとref-parent-key）
+  // 集約のメンバーを取得
   const allMembers = React.useMemo(() => {
     const result: Array<{
       member: DataModelMetadata.AggregateMember
@@ -35,7 +35,7 @@ export const DbTableMultiEditViewSettings = ({
     }> = []
 
     for (const member of aggregate.members) {
-      if (member.type === 'own-column') {
+      if (member.type === 'own-column' || member.type === 'parent-key') {
         result.push({
           member,
           memberKey: member.physicalName,
@@ -170,7 +170,7 @@ const MemberSettingRow = ({
         </span>
       </div>
 
-      {member.type === 'own-column' && (
+      {(member.type === 'own-column' || member.type === 'parent-key') && (
         <div className="text-sm text-gray-500 pl-4">
           設定項目はありません
         </div>
