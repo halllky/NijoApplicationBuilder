@@ -81,6 +81,13 @@ export type EditorDesignByAgggregate = {
 
 /** 集約メンバー単位での表示設定 */
 export type EditorDesignByAggregateMember = {
+
+  /**
+   * このメンバーの表示名。
+   * `own-column` または `parent-key` の場合のみ指定可能。
+   */
+  displayName?: string
+
   /**
    * このメンバーが外部参照の場合の、SingleViewにおける表示設定。
    * 相手方テーブルのうち外部キー以外に表示対象に含める相手方テーブルのカラム名。
@@ -88,11 +95,26 @@ export type EditorDesignByAggregateMember = {
    */
   singleViewRefDisplayColumnNames?: string[]
   /**
-   * このメンナーが外部参照の場合の、MultiViewにおける表示設定。
+   * このメンバーが外部参照の場合の、MultiViewにおける表示設定。
    * 相手方テーブルのうち外部キー以外に表示対象に含める相手方テーブルのカラム名。
    * 相手方テーブルの親などのカラムは指定不可。
    */
   multiViewRefDisplayColumnNames?: string[]
+
+  /**
+   * このメンバーが外部参照の場合の、SingleViewにおける表示設定のカラム名の表示名。
+   * `singleViewRefDisplayColumnNames` で指定されていない列はここに指定しても無視される。
+   */
+  singleViewRefDisplayColumnNamesDisplayNames?: {
+    [refColumnName: string]: string
+  }
+  /**
+   * このメンバーが外部参照の場合の、MultiViewにおける表示設定のカラム名の表示名。
+   * `multiViewRefDisplayColumnNames` で指定されていない列はここに指定しても無視される。
+   */
+  multiViewRefDisplayColumnNamesDisplayNames?: {
+    [refColumnName: string]: string
+  }
 }
 
 // ------------------------------------

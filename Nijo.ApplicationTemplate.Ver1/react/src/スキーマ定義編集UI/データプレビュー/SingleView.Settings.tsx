@@ -59,7 +59,7 @@ export const DbTableSingleEditViewSettings = ({
         if (member.type === 'own-column') {
           resultMembers.push({
             member,
-            memberKey: member.physicalName,
+            memberKey: member.columnName,
           })
         } else if (member.type === 'ref-key' || member.type === 'ref-parent-key') {
           if (!member.refToRelationName) continue;
@@ -137,7 +137,7 @@ export const DbTableSingleEditViewSettings = ({
               <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2">
                 {allMembers.map(({ members, aggregate: owner }, index) => (
                   <React.Fragment key={index}>
-                    <h2 className="col-span-2 text-lg font-medium text-gray-700 mt-4">
+                    <h2 className="col-span-2 font-bold text-gray-700 mt-4">
                       {owner.path}
                     </h2>
                     {members.map(({ member, memberKey }, memberIndex) => (
@@ -148,7 +148,6 @@ export const DbTableSingleEditViewSettings = ({
                           memberKey={memberKey}
                           member={member}
                           tableMetadataHelper={tableMetadataHelper}
-                          register={register}
                           control={control}
                           setValue={setValue}
                         />
@@ -178,7 +177,6 @@ const MemberSettingRow = ({
   memberKey,
   member,
   tableMetadataHelper,
-  register,
   control,
   setValue,
 }: {
@@ -186,7 +184,6 @@ const MemberSettingRow = ({
   memberKey: string
   member: DataModelMetadata.AggregateMember
   tableMetadataHelper: TableMetadataHelper
-  register: ReactHookForm.UseFormRegister<SingleViewSettingFormData>
   control: ReactHookForm.Control<SingleViewSettingFormData>
   setValue: ReactHookForm.UseFormSetValue<SingleViewSettingFormData>
 }) => {
@@ -212,7 +209,7 @@ const MemberSettingRow = ({
       ? [...currentColumns, columnName]
       : currentColumns.filter(c => c !== columnName)
 
-    setValue(`${aggregatePath}.membersDesign.${memberKey}.singleViewRefDisplayColumnNames`, newColumns)
+    setValue(`${aggregatePath}.membersDesign.${memberKey}.singleViewRefDisplayColumnNames`, newColumns, { shouldDirty: true })
   })
 
   return (
@@ -228,44 +225,71 @@ const MemberSettingRow = ({
         </span>
       </div>
 
-      {member.type === 'own-column' && (
-        <div className="text-sm text-gray-500">
-          設定項目はありません
+      {(member.type === 'own-column' || member.type === 'parent-key') && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-500">表示名</label>
+            <input
+              type="text"
+              value={memberSetting?.displayName ?? ''}
+              onChange={e => {
+                setValue(`${aggregatePath}.membersDesign.${memberKey}.displayName`, e.target.value, { shouldDirty: true })
+              }}
+              className="w-48 px-1 py-px border border-gray-400"
+              placeholder={member.columnName}
+            />
+          </div>
         </div>
       )}
 
       {(member.type === 'ref-key' || member.type === 'ref-parent-key') && (
-        <table className="table-fixed justify-self-start text-sm border-spacing-y-1 border-separate">
-          <thead>
-            <tr>
-              <th className="text-left font-normal border-b border-gray-300"></th>
-              <th className="text-left font-normal border-b border-gray-300 pr-2">表示</th>
-            </tr>
-          </thead>
-          <tbody>
-            {refToColumns.map(col => (
-              <tr key={col.columnName}>
-                <td>
-                  <div className="flex items-center gap-1 pl-px pr-4">
-                    {col.columnName}
-                    {col.isPrimaryKey && (
-                      <span className="text-xs text-gray-500 bg-gray-100 px-1 py-px rounded">PK</span>
-                    )}
-                  </div>
-                </td>
-                <td>
-                  <input
-                    type="checkbox"
-                    checked={col.isPrimaryKey || memberSetting?.singleViewRefDisplayColumnNames?.includes(col.columnName) || false}
-                    onChange={(e) => handleCheckboxChange(col.columnName, e.target.checked)}
-                    disabled={col.isPrimaryKey}
-                    className="rounded"
-                  />
-                </td>
+        <div className="space-y-4">
+          <table className="table-fixed justify-self-start text-sm border-spacing-y-1 border-separate">
+            <thead>
+              <tr>
+                <th className="text-left font-normal border-b border-gray-300"></th>
+                <th className="text-left font-normal border-b border-gray-300 pr-2">表示する</th>
+                <th className="text-left font-normal border-b border-gray-300 pr-2">表示名</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {refToColumns.map(col => (
+                <tr key={col.columnName}>
+                  <td>
+                    <div className="flex items-center gap-1 pl-px pr-4">
+                      {col.columnName}
+                      {col.isPrimaryKey && (
+                        <span className="text-xs text-gray-500 bg-gray-100 px-1 py-px rounded">PK</span>
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={col.isPrimaryKey || memberSetting?.singleViewRefDisplayColumnNames?.includes(col.columnName) || false}
+                      onChange={(e) => handleCheckboxChange(col.columnName, e.target.checked)}
+                      disabled={col.isPrimaryKey}
+                      className="rounded"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={memberSetting?.singleViewRefDisplayColumnNamesDisplayNames?.[col.columnName] ?? ''}
+                      onChange={e => {
+                        const newDisplayNames = { ...memberSetting?.singleViewRefDisplayColumnNamesDisplayNames }
+                        newDisplayNames[col.columnName] = e.target.value
+                        setValue(`${aggregatePath}.membersDesign.${memberKey}.singleViewRefDisplayColumnNamesDisplayNames`, newDisplayNames, { shouldDirty: true })
+                      }}
+                      className="w-48 px-1 py-px border border-gray-400"
+                      placeholder={col.columnName}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </>
   )

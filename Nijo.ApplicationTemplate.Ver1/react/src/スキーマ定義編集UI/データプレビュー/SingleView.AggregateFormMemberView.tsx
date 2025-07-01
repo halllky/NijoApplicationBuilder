@@ -64,6 +64,18 @@ export const AggregateMemberFormView = ({ record, onChangeRecord, member, nextMe
     onChangeRecord(clone)
   })
 
+  // メンバーの表示名を取得
+  const memberSettings = ReactHookForm.useWatch({
+    control: dataPreviewControl,
+    name: `design.${rootPath}.membersDesign.${member.physicalName}`
+  })
+  const memberDisplayName = React.useMemo(() => {
+    if (member.type === "own-column" || member.type === "parent-key") {
+      return memberSettings?.displayName || member.columnName
+    }
+    return member.columnName
+  }, [member, memberSettings])
+
   // 参照キーの検索
   const [refKeySearchDialogProps, setRefKeySearchDialogProps] = React.useState<DbRecordSelectorDialogProps | null>(null)
   const handleSearch = useEvent(() => {
@@ -117,7 +129,7 @@ export const AggregateMemberFormView = ({ record, onChangeRecord, member, nextMe
             className="text-sm break-all select-none text-gray-600"
             style={labelCssProperties}
           >
-            {member.columnName}
+            {memberDisplayName}
           </div>
           <div className={`flex-1 flex border ${isReadOnly ? 'border-transparent' : 'bg-white border-gray-500'}`}>
             {(member.type === "ref-key" || member.type === "ref-parent-key") && !isReadOnly && (
@@ -217,6 +229,9 @@ const RefKeyAdditionalColumns = ({
   const rootPath = tableMetadataHelper.getRoot(owner).path
   const refDisplayColumnNames = ReactHookForm.useWatch({ control, name: `design.${rootPath}.membersDesign.${member.refToRelationName}.singleViewRefDisplayColumnNames` })
 
+  // 設定から refDisplayColumnNamesDisplayNames を取得
+  const refDisplayColumnNamesDisplayNames = ReactHookForm.useWatch({ control, name: `design.${rootPath}.membersDesign.${member.refToRelationName}.singleViewRefDisplayColumnNamesDisplayNames` })
+
   // 参照先テーブルの情報を取得
   const refToAggregate = React.useMemo(() => {
     if (!member.refToAggregatePath) return null
@@ -266,15 +281,18 @@ const RefKeyAdditionalColumns = ({
 
   return (
     <div className="flex-1 flex-col pt-px pb-2 flex gap-px">
-      {refDisplayColumnNames.map(columnName => (
-        <div key={columnName} className="flex gap-x-2 flex-wrap items-center">
-          <span className="text-xs text-gray-500">{columnName}:</span>
-          <span className="select-text text-gray-800">
-            {isLoading ? '…' : refData?.values[columnName]}
-            &nbsp;
-          </span>
-        </div>
-      ))}
+      {refDisplayColumnNames.map(columnName => {
+        const displayName = refDisplayColumnNamesDisplayNames?.[columnName] || columnName
+        return (
+          <div key={columnName} className="flex gap-x-2 flex-wrap items-center">
+            <span className="text-xs text-gray-500">{displayName}:</span>
+            <span className="select-text text-gray-800">
+              {isLoading ? '…' : refData?.values[columnName]}
+              &nbsp;
+            </span>
+          </div>
+        )
+      })}
     </div>
   )
 }

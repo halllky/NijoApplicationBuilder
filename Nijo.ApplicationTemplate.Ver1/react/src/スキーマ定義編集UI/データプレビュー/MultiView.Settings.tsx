@@ -38,7 +38,7 @@ export const DbTableMultiEditViewSettings = ({
       if (member.type === 'own-column' || member.type === 'parent-key') {
         result.push({
           member,
-          memberKey: member.physicalName,
+          memberKey: member.columnName,
         })
       } else if (member.type === 'ref-key' || member.type === 'ref-parent-key') {
         if (!member.refToRelationName) continue;
@@ -92,7 +92,6 @@ export const DbTableMultiEditViewSettings = ({
                       memberKey={memberKey}
                       member={member}
                       tableMetadataHelper={tableMetadataHelper}
-                      register={register}
                       control={control}
                       setValue={setValue}
                     />
@@ -119,14 +118,12 @@ const MemberSettingRow = ({
   memberKey,
   member,
   tableMetadataHelper,
-  register,
   control,
   setValue,
 }: {
   memberKey: string
   member: DataModelMetadata.AggregateMember
   tableMetadataHelper: TableMetadataHelper
-  register: ReactHookForm.UseFormRegister<EditorDesignByAgggregate>
   control: ReactHookForm.Control<EditorDesignByAgggregate>
   setValue: ReactHookForm.UseFormSetValue<EditorDesignByAgggregate>
 }) => {
@@ -170,51 +167,70 @@ const MemberSettingRow = ({
       </div>
 
       {(member.type === 'own-column' || member.type === 'parent-key') && (
-        <div className="text-sm text-gray-500">
-          設定項目はありません
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-500">表示名</label>
+            <input
+              type="text"
+              value={memberSetting?.displayName ?? ''}
+              onChange={e => {
+                setValue(`membersDesign.${memberKey}.displayName`, e.target.value, { shouldDirty: true })
+              }}
+              className="w-48 px-1 py-px border border-gray-400"
+              placeholder={member.columnName}
+            />
+          </div>
         </div>
       )}
 
       {(member.type === 'ref-key' || member.type === 'ref-parent-key') && (
-        <>
-          {refToColumns.length === 0 ? (
-            <div className="text-sm text-gray-500">
-              参照先テーブルに表示可能なカラムがありません
-            </div>
-          ) : (
-            <table className="table-fixed justify-self-start text-sm border-spacing-y-1 border-separate">
-              <thead>
-                <tr>
-                  <th className="text-left font-normal border-b border-gray-300"></th>
-                  <th className="text-left font-normal border-b border-gray-300 pr-2">表示</th>
+        <div className="space-y-4">
+          <table className="table-fixed justify-self-start text-sm border-spacing-y-1 border-separate">
+            <thead>
+              <tr>
+                <th className="text-left font-normal border-b border-gray-300"></th>
+                <th className="text-left font-normal border-b border-gray-300 pr-2">表示する</th>
+                <th className="text-left font-normal border-b border-gray-300 pr-2">表示名</th>
+              </tr>
+            </thead>
+            <tbody>
+              {refToColumns.map(col => (
+                <tr key={col.columnName}>
+                  <td>
+                    <div className="flex items-center gap-1 pl-px pr-4">
+                      {col.columnName}
+                      {col.isPrimaryKey && (
+                        <span className="text-xs text-gray-500 bg-gray-100 px-1 py-px rounded">PK</span>
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={col.isPrimaryKey || memberSetting?.multiViewRefDisplayColumnNames?.includes(col.columnName) || false}
+                      onChange={(e) => handleCheckboxChange(col.columnName, e.target.checked)}
+                      disabled={col.isPrimaryKey}
+                      className="rounded"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={memberSetting?.multiViewRefDisplayColumnNamesDisplayNames?.[col.columnName] ?? ''}
+                      onChange={e => {
+                        const newDisplayNames = { ...memberSetting?.multiViewRefDisplayColumnNamesDisplayNames }
+                        newDisplayNames[col.columnName] = e.target.value
+                        setValue(`membersDesign.${memberKey}.multiViewRefDisplayColumnNamesDisplayNames`, newDisplayNames, { shouldDirty: true })
+                      }}
+                      className="w-48 px-1 py-px border border-gray-400"
+                      placeholder={col.columnName}
+                    />
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {refToColumns.map(col => (
-                  <tr key={col.columnName}>
-                    <td>
-                      <div className="flex items-center gap-1 pl-px pr-4">
-                        {col.columnName}
-                        {col.isPrimaryKey && (
-                          <span className="text-xs text-gray-500 bg-gray-100 px-1 py-px rounded">PK</span>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <input
-                        type="checkbox"
-                        checked={col.isPrimaryKey || memberSetting?.multiViewRefDisplayColumnNames?.includes(col.columnName) || false}
-                        onChange={(e) => handleCheckboxChange(col.columnName, e.target.checked)}
-                        disabled={col.isPrimaryKey}
-                        className="rounded"
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </>
   )

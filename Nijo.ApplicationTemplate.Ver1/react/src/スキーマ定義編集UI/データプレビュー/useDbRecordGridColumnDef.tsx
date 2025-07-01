@@ -55,7 +55,14 @@ export const useDbRecordGridColumnDef = (
           continue
         }
 
-        valueColumns.push(cellType.other(column.columnName ?? '', {
+        // 表示名の設定を取得
+        const displayName = (column.type === "own-column" || column.type === "parent-key")
+          ? (aggregateSettings?.membersDesign?.[column.columnName]?.displayName || column.columnName)
+          : (mode === 'single-view-children'
+            ? (aggregateSettings?.membersDesign?.[column.refToRelationName ?? '']?.singleViewRefDisplayColumnNamesDisplayNames?.[column.refToColumnName ?? ''] ?? column.columnName)
+            : (aggregateSettings?.membersDesign?.[column.refToRelationName ?? '']?.multiViewRefDisplayColumnNamesDisplayNames?.[column.refToColumnName ?? ''] ?? column.columnName))
+
+        valueColumns.push(cellType.other(displayName, {
           // DBに存在する主キーの列は編集不可。
           isReadOnly: row => row.existsInDb && column.isPrimaryKey,
 
@@ -134,7 +141,13 @@ export const useDbRecordGridColumnDef = (
             const refColumn = refToAggregate.members.find(m => m.columnName === additionalColumnName) as DataModelMetadata.AggregateMember | undefined
             if (!refColumn) throw new Error(`外部参照先テーブルのカラムが見つかりません: ${refToAggregate.tableName} ${additionalColumnName}`)
 
-            valueColumns.push(cellType.other(refColumn.columnName, {
+            // 表示名の設定を取得
+            const displayNamesSettings = designMode === 'singleView'
+              ? refSettings?.singleViewRefDisplayColumnNamesDisplayNames
+              : refSettings?.multiViewRefDisplayColumnNamesDisplayNames
+            const displayName = displayNamesSettings?.[additionalColumnName] || additionalColumnName
+
+            valueColumns.push(cellType.other(displayName, {
               isReadOnly: () => true, // 常に読み取り専用
               renderCell: cell => {
                 return (
