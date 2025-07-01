@@ -10,25 +10,23 @@ import useEvent from "react-use-event-hook"
 import { UUID } from "uuidjs"
 import { useAttrDefs } from "./AttrDefContext"
 import { TYPE_COLUMN_DEF } from "./getAttrTypeColumnDef"
-import { ValidationContext, ValidationContextType } from "./ValidationContext"
+import { GetValidationResultFunction, ValidationTriggerFunction } from "./ValidationContext"
 
 /**
  * Data, Query, Command のルート集約1件を表示・編集するページ。
  */
-export const PageRootAggregate = ({ rootAggregateIndex, formMethods, selectRootAggregate, className }: {
+export const PageRootAggregate = ({ rootAggregateIndex, formMethods, selectRootAggregate, getValidationResult, trigger, className }: {
   rootAggregateIndex: number
   formMethods: ReactHookForm.UseFormReturn<SchemaDefinitionGlobalState>
   selectRootAggregate: (aggregateId: string) => void
+  getValidationResult: GetValidationResultFunction
+  trigger: ValidationTriggerFunction
   className?: string
 }) => {
   const gridRef = React.useRef<Layout.EditableGridRef<GridRowType>>(null)
   const { control } = formMethods
   const { fields, insert, remove, update } = ReactHookForm.useFieldArray({ control, name: `xmlElementTrees.${rootAggregateIndex}.xmlElements` })
   const attributeDefs = useAttrDefs()
-  const {
-    getValidationResult,
-    trigger,
-  } = React.useContext(ValidationContext)
 
   // メンバーグリッドの列定義
   const getColumnDefs: Layout.GetColumnDefsFunction<GridRowType> = React.useCallback(cellType => {
@@ -171,7 +169,7 @@ type GridRowType = ReactHookForm.FieldArrayWithId<SchemaDefinitionGlobalState, `
 /** LocalName のセルのレイアウト */
 const createLocalNameCell = (
   cellType: Layout.ColumnDefFactories<GridRowType>,
-  getValidationResult: ValidationContextType['getValidationResult']
+  getValidationResult: GetValidationResultFunction
 ) => {
   return cellType.text('localName', '', {
     defaultWidth: 220,
@@ -214,7 +212,7 @@ const createLocalNameCell = (
 const createAttributeCell = (
   attrDef: XmlElementAttribute,
   cellType: Layout.ColumnDefFactories<GridRowType>,
-  getValidationResult: ValidationContextType['getValidationResult']
+  getValidationResult: GetValidationResultFunction
 ) => {
   return cellType.other(attrDef.displayName, {
     defaultWidth: 120,

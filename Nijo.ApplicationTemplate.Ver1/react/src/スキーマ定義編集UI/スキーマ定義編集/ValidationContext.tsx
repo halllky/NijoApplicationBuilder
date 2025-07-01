@@ -1,24 +1,11 @@
 import React from "react"
 import useEvent from "react-use-event-hook"
 import * as ReactHookForm from "react-hook-form"
-import { SchemaDefinitionGlobalState } from "./types"
+import { asTree, SchemaDefinitionGlobalState } from "./types"
 import { SERVER_DOMAIN } from "../../routes"
 
-/** 入力検証のコンテキストのデフォルト値。 */
-export const DEFAULT_VALIDATION_CONTEXT_VALUE: ValidationContextType = {
-  isInContext: false,
-  getValidationResult: () => ({ _own: [] }),
-  trigger: () => {
-    return Promise.resolve()
-  },
-  validationResult: {},
-}
-
-/** 入力検証のコンテキスト。 */
-export const ValidationContext = React.createContext<ValidationContextType>(DEFAULT_VALIDATION_CONTEXT_VALUE)
-
-/** 入力検証のコンテキストを提供する。 */
-export const useValidationContextProvider = (
+/** スキーマ定義のバリデーション機能 */
+export const useValidation = (
   getValues: ReactHookForm.UseFormGetValues<SchemaDefinitionGlobalState>
 ) => {
   // 短時間で繰り返し実行するとサーバーに負担がかかるため、
@@ -30,7 +17,7 @@ export const useValidationContextProvider = (
   const [validationResult, setValidationResult] = React.useState<ValidationResult>({})
 
   // 入力検証を実行する。
-  const trigger = useEvent(async () => {
+  const trigger: ValidationTriggerFunction = useEvent(async () => {
     // 最後にリクエストした時間から一定時間以内はリクエストをしない
     if (isRequestPrevented) return;
     setIsRequestPrevented(true)
@@ -55,30 +42,56 @@ export const useValidationContextProvider = (
   })
 
   // 特定のXML要素に対する検証結果を取得する処理
-  const getValidationResult = React.useCallback((id: string): ValidationResultToElement => {
+  const getValidationResult: GetValidationResultFunction = React.useCallback(id => {
     return validationResult?.[id] ?? { _own: [] }
   }, [validationResult])
 
-  const contextValue: ValidationContextType = React.useMemo(() => ({
-    isInContext: true,
-    validationResult,
+  // 検証結果を表形式で表示するときのためのデータを生成する。
+  const validationResultList = React.useMemo(() => {
+    const xmlElementTrees = getValues(`xmlElementTrees`) ?? []
+    if (!xmlElementTrees.length) return []
+
+    // IDから当該要素の情報を引き当てるための辞書
+    const elementMap = new Map(xmlElementTrees.flatMap(tree => tree.xmlElements).map(el => [el.uniqueId, el]))
+    const treeUtilsMap = new Map(xmlElementTrees.map(tree => [tree, asTree(tree.xmlElements)]))
+
+    const infos: ValidationResultListItem[] = []
+
+    for (const [id, obj] of Object.entries(validationResult ?? {})) {
+      const element = elementMap.get(id)
+      if (!element) continue
+
+      const tree = xmlElementTrees.find(t => t.xmlElements.some(el => el.uniqueId === id))
+      if (!tree) continue
+
+      const treeUtils = treeUtilsMap.get(tree)
+      if (!treeUtils) continue
+
+      const rootElement = treeUtils.getRoot(element)
+      const rootAggregateName = rootElement.localName
+
+      for (const [objKey, attrMessages] of Object.entries(obj)) {
+        const attributeName = objKey === '_own' ? '' : objKey
+        infos.push(...attrMessages.map(x => ({
+          id,
+          rootAggregateName: rootAggregateName ?? '',
+          elementName: element.localName ?? '',
+          attributeName,
+          message: x,
+        })))
+      }
+    }
+    return infos
+  }, [getValues, validationResult])
+
+  return {
+    /** 検証結果を表形式で表示するときのためのデータ */
+    validationResultList,
+    /** 特定のXML要素に対する検証結果を取得する関数 */
     getValidationResult,
+    /** 検証を実行する */
     trigger,
-  }), [validationResult, getValidationResult, trigger])
-
-  return contextValue
-}
-
-/** 入力検証のコンテキスト。 */
-export type ValidationContextType = {
-  /** このコンテキストが有効かどうか。 */
-  isInContext: boolean
-  /** 検証を実行する */
-  trigger: () => Promise<void>
-  /** 検証結果を取得する */
-  validationResult: ValidationResult
-  /** 特定のXML要素に対する検証結果を取得する */
-  getValidationResult: (id: string) => ValidationResultToElement
+  }
 }
 
 /**
@@ -88,6 +101,29 @@ export type ValidationContextType = {
 export type ValidationResult = {
   [uniqueId: string]: ValidationResultToElement
 }
+
+/**
+ * 特定のXML要素に対する検証結果を取得する関数。
+ * @param id 対象のXML要素のID
+ */
+export type GetValidationResultFunction = (id: string) => ValidationResultToElement
+
+/**
+ * 検証を実行する関数。
+ */
+export type ValidationTriggerFunction = () => Promise<void>
+
+/**
+ * 検証結果を表形式で表示するときのための1行分のデータ。
+ */
+export type ValidationResultListItem = {
+  id: string
+  rootAggregateName: string
+  elementName: string
+  attributeName: string
+  message: string
+}
+
 /**
  * サーバーから返ってくる検証結果のうち特定のXML要素に対するもの。
  */
