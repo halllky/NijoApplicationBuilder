@@ -33,7 +33,7 @@ export const AggregateMemberFormView = ({ record, onChangeRecord, member, nextMe
 
   // ラベル列の横幅
   const { control: dataPreviewControl } = React.useContext(DataPreviewGlobalContext)
-  const rootPath = tableMetadataHelper.getRoot(owner).path
+  const rootPath = tableMetadataHelper?.getRoot(owner).path ?? ''
   const singleViewLabelWidth = ReactHookForm.useWatch({ control: dataPreviewControl, name: `design.${rootPath}.singleViewLabelWidth` })
   const labelCssProperties: React.CSSProperties = React.useMemo(() => {
     const labelWidth = singleViewLabelWidth || '10em'
@@ -80,6 +80,7 @@ export const AggregateMemberFormView = ({ record, onChangeRecord, member, nextMe
   const [refKeySearchDialogProps, setRefKeySearchDialogProps] = React.useState<DbRecordSelectorDialogProps | null>(null)
   const handleSearch = useEvent(() => {
     if (member.type !== "ref-key" && member.type !== "ref-parent-key") return;
+    if (!tableMetadataHelper) return;
     const refToTableMetadata = tableMetadataHelper.getRefTo(member)
     if (!refToTableMetadata) return;
     setRefKeySearchDialogProps({
@@ -153,7 +154,7 @@ export const AggregateMemberFormView = ({ record, onChangeRecord, member, nextMe
         </div>
 
         {/* 参照先テーブルの主キー以外の属性 */}
-        {showRefToAdditionalColumns && (
+        {showRefToAdditionalColumns && tableMetadataHelper && (
           <div className="flex gap-1 items-center">
             <div style={labelCssProperties}></div>
             <RefKeyAdditionalColumns
@@ -170,7 +171,7 @@ export const AggregateMemberFormView = ({ record, onChangeRecord, member, nextMe
   }
 
   if (member.type === "child") {
-    const childAggregate = tableMetadataHelper.allAggregates().find(a => a.tableName === member.tableName)
+    const childAggregate = tableMetadataHelper?.allAggregates().find(a => a.tableName === member.tableName)
     if (!childAggregate) {
       throw new Error("子集約が見つかりません")
     }

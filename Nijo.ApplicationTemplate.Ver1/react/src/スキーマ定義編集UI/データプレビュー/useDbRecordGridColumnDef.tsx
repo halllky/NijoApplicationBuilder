@@ -12,7 +12,7 @@ import { DataPreviewGlobalContext } from "./DataPreviewGlobalContext"
 export const useDbRecordGridColumnDef = (
   mode: 'single-view-children' | 'multi-record-editor',
   tableMetadata: DataModelMetadata.Aggregate,
-  tableMetadataHelper: TableMetadataHelper,
+  tableMetadataHelper: TableMetadataHelper | undefined,
   useFieldArrayUpdate: (index: number, value: EditableDbRecord) => void,
   designMode: 'singleView' | 'multiView',
   ownerIsReadOnly: boolean,
@@ -36,7 +36,7 @@ export const useDbRecordGridColumnDef = (
       ),
     })
 
-    const thisTableMetadata = tableMetadataHelper.allAggregates().find(table => table.tableName === tableMetadata.tableName)
+    const thisTableMetadata = tableMetadataHelper?.allAggregates().find(table => table.tableName === tableMetadata.tableName)
     const valueColumns: Layout.EditableGridColumnDef<EditableDbRecord>[] = []
 
     for (let index = 0; index < (thisTableMetadata?.members ?? []).length; index++) {
@@ -81,7 +81,7 @@ export const useDbRecordGridColumnDef = (
 
             // 外部キーの列の場合は検索ダイアログから選択できるようにする
             const handleClick = () => {
-              const refToAggregate = tableMetadataHelper.getRefTo(column)
+              const refToAggregate = tableMetadataHelper?.getRefTo(column)
               if (!refToAggregate) {
                 throw new Error(`外部参照先テーブルが見つかりません: ${column.refToAggregatePath}`)
               }
@@ -134,7 +134,7 @@ export const useDbRecordGridColumnDef = (
           const additionalColumnNames = designMode === 'singleView'
             ? refSettings?.singleViewRefDisplayColumnNames
             : refSettings?.multiViewRefDisplayColumnNames
-          const refToAggregate = tableMetadataHelper.getRefTo(column)
+          const refToAggregate = tableMetadataHelper?.getRefTo(column)
           if (!refToAggregate) throw new Error(`外部参照先テーブルが見つかりません: ${column.refToAggregatePath}`)
 
           for (const additionalColumnName of additionalColumnNames ?? []) {

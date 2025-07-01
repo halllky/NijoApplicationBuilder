@@ -36,7 +36,7 @@ export type SingleViewFormType = {
 /** SingleViewのウィンドウ1個の中で横断的に参照されるコンテキスト */
 export type SingleViewContextType = {
   rootItemKeys: string[] | null
-  tableMetadataHelper: TableMetadataHelper
+  tableMetadataHelper: TableMetadataHelper | undefined
   /** この画面で新規作成され、まだDBに登録されていないデータの親子関係を管理するマップ。キーが子、値が親 */
   newItemsParentMap: Map<string, string>
   setNewItemsParentMap: React.Dispatch<React.SetStateAction<Map<string, string>>>
@@ -46,7 +46,7 @@ export type SingleViewContextType = {
 /** SingleViewのウィンドウ1個の中で横断的に参照されるコンテキスト */
 export const SingleViewContext = React.createContext<SingleViewContextType>({
   rootItemKeys: null,
-  tableMetadataHelper: {} as TableMetadataHelper,
+  tableMetadataHelper: undefined,
   newItemsParentMap: new Map(),
   setNewItemsParentMap: () => { },
   trigger: 1,
