@@ -67,14 +67,13 @@ export const AggregateMemberFormView = ({ record, onChangeRecord, member, nextMe
   // メンバーの表示名を取得
   const memberSettings = ReactHookForm.useWatch({
     control: dataPreviewControl,
-    name: `design.${rootPath}.membersDesign.${member.physicalName}`
+    name: `design.${rootPath}.membersDesign.${member.refToRelationName || member.columnName}`
   })
-  const memberDisplayName = React.useMemo(() => {
-    if (member.type === "own-column" || member.type === "parent-key") {
-      return memberSettings?.displayName || member.columnName
-    }
-    return member.columnName
-  }, [member, memberSettings])
+  const displayName = (member.type === "own-column" || member.type === "parent-key")
+    ? (memberSettings?.displayName || member.columnName)
+    : (member.type === "ref-key" || member.type === "ref-parent-key"
+      ? (memberSettings?.singleViewRefDisplayColumnNamesDisplayNames?.[member.refToColumnName ?? ''] ?? member.columnName)
+      : (memberSettings?.multiViewRefDisplayColumnNamesDisplayNames?.[member.refToColumnName ?? ''] ?? member.columnName))
 
   // 参照キーの検索
   const [refKeySearchDialogProps, setRefKeySearchDialogProps] = React.useState<DbRecordSelectorDialogProps | null>(null)
@@ -130,7 +129,7 @@ export const AggregateMemberFormView = ({ record, onChangeRecord, member, nextMe
             className="text-sm break-all select-none text-gray-600"
             style={labelCssProperties}
           >
-            {memberDisplayName}
+            {displayName}
           </div>
           <div className={`flex-1 flex border ${isReadOnly ? 'border-transparent' : 'bg-white border-gray-500'}`}>
             {(member.type === "ref-key" || member.type === "ref-parent-key") && !isReadOnly && (
