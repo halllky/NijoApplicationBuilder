@@ -29,7 +29,6 @@ import { useDragSelection } from "./EditableGrid.useDragSelection";
 import { useCopyPaste } from "./EditableGrid.useCopyPaste";
 
 // CSS
-import "./EditableGrid.css";
 import { CellEditor, CellEditorRef, DefaultEditor, useGetPixel } from "./EditableGrid.CellEditor";
 import { ActiveCell } from "./EditableGrid.ActiveCell";
 
