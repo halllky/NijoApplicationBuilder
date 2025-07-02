@@ -59,8 +59,8 @@ export const useDbRecordGridColumnDef = (
         const displayName = (column.type === "own-column" || column.type === "parent-key")
           ? (aggregateSettings?.membersDesign?.[column.columnName]?.displayName || column.columnName)
           : (mode === 'single-view-children'
-            ? (aggregateSettings?.membersDesign?.[column.refToRelationName ?? '']?.singleViewRefDisplayColumnNamesDisplayNames?.[column.refToColumnName ?? ''] ?? column.columnName)
-            : (aggregateSettings?.membersDesign?.[column.refToRelationName ?? '']?.multiViewRefDisplayColumnNamesDisplayNames?.[column.refToColumnName ?? ''] ?? column.columnName))
+            ? (aggregateSettings?.membersDesign?.[column.refToRelationName ?? '']?.singleViewRefDisplayColumnNamesDisplayNames?.[column.refToColumnName ?? ''] || column.columnName)
+            : (aggregateSettings?.membersDesign?.[column.refToRelationName ?? '']?.multiViewRefDisplayColumnNamesDisplayNames?.[column.refToColumnName ?? ''] || column.columnName))
 
         valueColumns.push(cellType.other(displayName, {
           // DBに存在する主キーの列は編集不可。

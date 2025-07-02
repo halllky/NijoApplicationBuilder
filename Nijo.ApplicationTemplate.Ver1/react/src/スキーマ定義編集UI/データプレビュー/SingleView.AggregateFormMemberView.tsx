@@ -72,8 +72,8 @@ export const AggregateMemberFormView = ({ record, onChangeRecord, member, nextMe
   const displayName = (member.type === "own-column" || member.type === "parent-key")
     ? (memberSettings?.displayName || member.columnName)
     : (member.type === "ref-key" || member.type === "ref-parent-key"
-      ? (memberSettings?.singleViewRefDisplayColumnNamesDisplayNames?.[member.refToColumnName ?? ''] ?? member.columnName)
-      : (memberSettings?.multiViewRefDisplayColumnNamesDisplayNames?.[member.refToColumnName ?? ''] ?? member.columnName))
+      ? (memberSettings?.singleViewRefDisplayColumnNamesDisplayNames?.[member.refToColumnName ?? ''] || member.columnName)
+      : (memberSettings?.multiViewRefDisplayColumnNamesDisplayNames?.[member.refToColumnName ?? ''] || member.columnName))
 
   // 参照キーの検索
   const [refKeySearchDialogProps, setRefKeySearchDialogProps] = React.useState<DbRecordSelectorDialogProps | null>(null)
