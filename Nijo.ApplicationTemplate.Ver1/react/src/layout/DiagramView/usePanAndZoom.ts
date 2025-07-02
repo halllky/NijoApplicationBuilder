@@ -49,11 +49,11 @@ export function usePanAndZoom(
     if (!isDragging) return
 
     const handleGlobalMouseMove = (e: MouseEvent) => {
-      const deltaX = (e.clientX - dragStart.x) / zoom
-      const deltaY = (e.clientY - dragStart.y) / zoom
+      const deltaX = Math.round((e.clientX - dragStart.x) / zoom)
+      const deltaY = Math.round((e.clientY - dragStart.y) / zoom)
       setPanOffset({
-        x: dragStartOffset.x + deltaX,
-        y: dragStartOffset.y + deltaY,
+        x: Math.round(dragStartOffset.x + deltaX),
+        y: Math.round(dragStartOffset.y + deltaY),
       })
     }
 
