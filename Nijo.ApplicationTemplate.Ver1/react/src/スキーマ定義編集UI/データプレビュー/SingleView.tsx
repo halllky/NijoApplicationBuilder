@@ -185,10 +185,10 @@ export const SingleView = React.forwardRef((props: SingleViewProps, ref: React.F
   })
 
   return (
-    <div className="bg-gray-200 border border-gray-300 h-full flex flex-col">
+    <div className="bg-gray-200 border-2 border-white h-full flex flex-col">
       {/* ヘッダ */}
-      <div className="flex items-center gap-1 p-1 bg-gray-100 border-b border-gray-300 cursor-grab">
-        <span onMouseDown={handleMouseDown} className="truncate select-none">
+      <div className="flex items-center gap-1 p-1 bg-gray-200 cursor-grab">
+        <span onMouseDown={handleMouseDown} className="truncate select-none text-gray-500 font-bold">
           {rootAggregate?.displayName}
         </span>
         <RecordStatusText record={rootRecord} className="text-sm" />

@@ -172,7 +172,7 @@ export const AggregateMemberFormView = ({ record, onChangeRecord, member, nextMe
   if (member.type === "child") {
     const childAggregate = tableMetadataHelper?.allAggregates().find(a => a.tableName === member.tableName)
     if (!childAggregate) {
-      throw new Error("子集約が見つかりません")
+      return null // 画面初期化前の場合
     }
     return (
       <AggregateFormView

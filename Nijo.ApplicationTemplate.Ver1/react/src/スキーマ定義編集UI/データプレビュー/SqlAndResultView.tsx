@@ -104,9 +104,9 @@ export default function SqlAndResultView({ itemIndex, value, onChangeDefinition,
   })
 
   return (<>
-    <div className="bg-gray-200 border border-gray-300 h-full flex flex-col">
-      <div className="flex gap-1 pl-1 py-[2px] items-center bg-gray-100">
-        <span onMouseDown={handleMouseDown} className="select-none cursor-grab">
+    <div className="bg-gray-200 border-2 border-white h-full flex flex-col">
+      <div className="flex gap-1 pl-1 py-[2px] items-center">
+        <span onMouseDown={handleMouseDown} className="select-none text-gray-500 font-bold cursor-grab">
           {value.title}
         </span>
         <div onMouseDown={handleMouseDown} className="flex-1 self-stretch cursor-grab"></div>
@@ -121,7 +121,7 @@ export default function SqlAndResultView({ itemIndex, value, onChangeDefinition,
       <div className="flex-1 flex flex-col min-h-0">
         {/* 結果 */}
         {error ? (
-          <div className="text-red-500 flex-1 border-t border-gray-300">
+          <div className="text-red-500 flex-1">
             {error}
           </div>
         ) : (
@@ -129,7 +129,7 @@ export default function SqlAndResultView({ itemIndex, value, onChangeDefinition,
             rows={queryResult.rows}
             getColumnDefs={getColumnDefs}
             storage={gridColumnStorage}
-            className="flex-1 border-t border-gray-300 overflow-scroll"
+            className="flex-1 overflow-scroll"
           />
         )}
       </div>

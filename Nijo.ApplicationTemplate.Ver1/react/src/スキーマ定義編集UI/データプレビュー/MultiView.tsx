@@ -214,9 +214,9 @@ export const DbTableMultiEditorView = React.forwardRef(({
   })
 
   return (<>
-    <div className="bg-gray-200 border border-gray-300 h-full flex flex-col">
-      <div className="flex gap-1 pl-1 items-center bg-gray-100">
-        <span onMouseDown={handleMouseDown} className="select-none cursor-grab">
+    <div className="bg-gray-200 border-2 border-white h-full flex flex-col">
+      <div className="flex gap-1 pl-1 items-center">
+        <span onMouseDown={handleMouseDown} className="select-none text-gray-500 font-bold cursor-grab">
           {value.tableName}
         </span>
         <Input.IconButton icon={Icon.PencilIcon} hideText onClick={handleChangeTitle} onMouseDown={handleMouseDownButtons}>
@@ -284,7 +284,7 @@ export const DbTableMultiEditorView = React.forwardRef(({
 
         {/* レコード */}
         {error ? (
-          <div className="flex-1 text-red-500 border-t border-gray-300">
+          <div className="flex-1 text-red-500">
             {error}
           </div>
         ) : (
@@ -294,7 +294,7 @@ export const DbTableMultiEditorView = React.forwardRef(({
             getColumnDefs={getColumnDefs}
             onChangeRow={handleChangeRecords}
             storage={gridColumnStorage}
-            className="flex-1 border-t border-gray-300 overflow-scroll"
+            className="flex-1 overflow-scroll"
           />
         )}
       </div>
