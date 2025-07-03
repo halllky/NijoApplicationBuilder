@@ -8,10 +8,9 @@ import React from "react"
 import useQueryEditorServerApi from "../useQueryEditorServerApi"
 import { SqlTextarea } from "../parts/SqlTextarea"
 import { useDbRecordGridColumnDef } from "../parts/useDbRecordGridColumnDef"
-import { UUID } from "uuidjs"
 import { DataPreviewGlobalContext } from "../DataPreviewGlobalContext"
-import { EditorDesignByAgggregate } from "../types"
 import { DbTableMultiEditViewSettings, DbTableMultiEditViewSettingsProps } from "./MultiView.Settings"
+import { createNewInstance } from "../parts/createNewInstance"
 
 export type DbTableMultiEditorViewProps = {
   itemIndex: number
@@ -147,14 +146,7 @@ export const DbTableMultiEditorView = React.forwardRef(({
 
   // レコード追加
   const handleAddRecord = useEvent(() => {
-    append({
-      uniqueId: UUID.generate(),
-      tableName: value.tableName,
-      values: {},
-      existsInDb: false,
-      changed: false,
-      deleted: false,
-    })
+    append(createNewInstance(value.tableName))
   })
 
   // レコード削除
