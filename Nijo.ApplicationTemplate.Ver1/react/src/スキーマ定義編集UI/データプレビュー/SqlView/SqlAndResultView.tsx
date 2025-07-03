@@ -5,7 +5,7 @@ import * as Layout from "../../../layout"
 import * as Icon from "@heroicons/react/24/outline"
 import useQueryEditorServerApi from "../useQueryEditorServerApi"
 import useEvent from "react-use-event-hook"
-import { SqlTextarea } from "../UI/SqlTextarea"
+import { SqlTextarea } from "../parts/SqlTextarea"
 import { SqlAndResultViewSettings, SqlAndResultViewSettingsProps } from "./SqlAndResultView.Settings"
 /**
  * GUI上でSQLを入力して、結果を表示するコンポーネント。

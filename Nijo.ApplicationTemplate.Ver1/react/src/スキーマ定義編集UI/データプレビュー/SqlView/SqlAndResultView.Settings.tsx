@@ -4,7 +4,7 @@ import * as Input from "../../../input"
 import * as Layout from "../../../layout"
 import * as Icon from "@heroicons/react/24/outline"
 import useEvent from "react-use-event-hook"
-import { SqlTextarea } from "../UI/SqlTextarea"
+import { SqlTextarea } from "../parts/SqlTextarea"
 
 export type SqlAndResultViewSettingsFormData = {
   title: string
