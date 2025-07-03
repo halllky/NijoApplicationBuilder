@@ -221,7 +221,8 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
   }, [uncomittedText, editingCellInfo, caretCellEditingInfo])
 
   const handleOptionClick: React.MouseEventHandler<HTMLLIElement> = useEvent((e) => {
-    const option = e.currentTarget.textContent
+    if (highlightedOptionIndex === undefined) return;
+    const option = currentOptions?.[highlightedOptionIndex]?.value
     if (option === null) return
     commitEditing(option)
     e.stopPropagation()
