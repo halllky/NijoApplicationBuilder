@@ -22,6 +22,7 @@ import { UUID } from "uuidjs"
 import { PageFrame } from "../PageFrame"
 import { useValidation } from "./useValidation"
 import NijoUiErrorMessagePane from "./index.ErrorMessage"
+import { MentionUtil } from '../型つきドキュメント/MentionTextarea'
 
 export const NijoUiAggregateDiagram = () => {
 
@@ -156,6 +157,35 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, onlyRootDefaultValue
     const nodes: Record<string, CyNode> = {}
     const edges: { source: string, target: string, label: string, sourceModel: string }[] = []
 
+    // メンション情報からターゲットIDを取得する関数
+    const getMentionTargets = (element: XmlElementItem): string[] => {
+      const targets: string[] = []
+
+      // commentからメンション情報を解析
+      if (element.comment) {
+        const parts = MentionUtil.parseAsMentionText(element.comment)
+        for (const part of parts) {
+          if (part.isMention) {
+            targets.push(part.targetId)
+          }
+        }
+      }
+
+      return targets
+    }
+
+    // 全要素のIDマップを作成（メンション解決用）
+    const elementIdMap = new Map<string, { element: XmlElementItem, rootElement: XmlElementItem }>()
+    for (const rootAggregateGroup of xmlElementTrees) {
+      if (!rootAggregateGroup || !rootAggregateGroup.xmlElements || rootAggregateGroup.xmlElements.length === 0) continue;
+      const rootElement = rootAggregateGroup.xmlElements[0];
+      if (!rootElement) continue;
+
+      for (const element of rootAggregateGroup.xmlElements) {
+        elementIdMap.set(element.uniqueId, { element, rootElement })
+      }
+    }
+
     for (const rootAggregateGroup of xmlElementTrees) {
       if (!rootAggregateGroup || !rootAggregateGroup.xmlElements || rootAggregateGroup.xmlElements.length === 0) continue;
       const rootElement = rootAggregateGroup.xmlElements[0];
@@ -216,6 +246,27 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, onlyRootDefaultValue
               label: member.localName ?? '',
               sourceModel: model,
             })
+          }
+
+          // メンション情報に基づくエッジの作成
+          const mentionTargets = getMentionTargets(member)
+          for (const mentionTargetId of mentionTargets) {
+            const mentionTarget = elementIdMap.get(mentionTargetId)
+            if (mentionTarget) {
+              const mentionTargetUniqueId = onlyRoot
+                ? mentionTarget.rootElement.uniqueId
+                : mentionTarget.element.uniqueId
+
+              // メンションエッジを追加（自分自身への参照は除く）
+              if (owner.uniqueId !== mentionTargetUniqueId) {
+                edges.push({
+                  source: owner.uniqueId,
+                  target: mentionTargetUniqueId,
+                  label: `@${member.localName ?? ''}`,
+                  sourceModel: model,
+                })
+              }
+            }
           }
 
           // 再帰的に子孫要素を処理 (XML構造上の子)
