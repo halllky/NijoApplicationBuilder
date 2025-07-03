@@ -25,7 +25,7 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, selectRootA
 }) => {
   const gridRef = React.useRef<Layout.EditableGridRef<GridRowType>>(null)
   const { control } = formMethods
-  const { fields, insert, remove, update } = ReactHookForm.useFieldArray({ control, name: `xmlElementTrees.${rootAggregateIndex}.xmlElements` })
+  const { fields, insert, remove, update, move } = ReactHookForm.useFieldArray({ control, name: `xmlElementTrees.${rootAggregateIndex}.xmlElements` })
 
   // メンバーグリッドの列定義
   const getColumnDefs: Layout.GetColumnDefsFunction<GridRowType> = React.useCallback(cellType => {
@@ -107,6 +107,38 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, selectRootA
     remove(removedIndexes)
   })
 
+  // 選択行を上に移動
+  const handleMoveUp = useEvent(() => {
+    const selectedRows = gridRef.current?.getSelectedRows()
+    if (!selectedRows) return
+    if (selectedRows.some(x => x.rowIndex === 0)) return; // ルート集約は移動不可
+
+    const startRow = selectedRows[0].rowIndex
+    const endRow = startRow + selectedRows.length - 1
+    if (startRow <= 1) return // ルート集約より上には移動できない
+
+    // 選択範囲の外側（1つ上）の行を選択範囲の下に移動させる
+    move(startRow - 1, endRow)
+    // 行選択
+    gridRef.current?.selectRow(startRow - 1, endRow - 1)
+  })
+
+  // 選択行を下に移動
+  const handleMoveDown = useEvent(() => {
+    const selectedRows = gridRef.current?.getSelectedRows()
+    if (!selectedRows) return
+    if (selectedRows.some(x => x.rowIndex === 0)) return; // ルート集約は移動不可
+
+    const startRow = selectedRows[0].rowIndex
+    const endRow = startRow + selectedRows.length - 1
+    if (endRow >= fields.length - 1) return
+
+    // 選択範囲の外側（1つ下）の行を選択範囲の上に移動させる
+    move(endRow + 1, startRow)
+    // 行選択
+    gridRef.current?.selectRow(startRow + 1, endRow + 1)
+  })
+
   // インデント下げ。選択範囲に含まれる行のインデントを1ずつ減らす。ただしルート集約は0固定、それ以外の要素の最小インデントは1。
   const handleIndentDown = useEvent(() => {
     const selectedRows = gridRef.current?.getSelectedRows()
@@ -134,6 +166,39 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, selectRootA
     trigger()
   })
 
+  // グリッドのキーボード操作
+  const handleKeyDown: Layout.EditableGridKeyboardEventHandler = useEvent((e, isEditing) => {
+    // 編集中の処理の制御はCellEditorに任せる
+    if (isEditing) return { handled: false }
+
+    if (!e.ctrlKey && e.key === 'Enter') {
+      // 行挿入(Enter)
+      handleInsertRow()
+    } else if (e.ctrlKey && e.key === 'Enter') {
+      // 下挿入(Ctrl + Enter)
+      handleInsertRowBelow()
+    } else if (e.shiftKey && e.key === 'Delete') {
+      // 行削除(Shift + Delete)
+      handleDeleteRow()
+    } else if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      // 上下に移動(Alt + ↑↓)
+      if (e.key === 'ArrowUp') {
+        handleMoveUp()
+      } else if (e.key === 'ArrowDown') {
+        handleMoveDown()
+      }
+    } else if (e.shiftKey && e.key === 'Tab') {
+      // インデント下げ(Shift + Tab)
+      handleIndentDown()
+    } else if (e.key === 'Tab') {
+      // インデント上げ(Tab)
+      handleIndentUp()
+    } else {
+      return { handled: false }
+    }
+    return { handled: true }
+  })
+
   return (
     <div className={`flex flex-col ${className ?? ''}`}>
       <div className="flex flex-wrap gap-1 items-center">
@@ -143,6 +208,8 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, selectRootA
         <div className="basis-2"></div>
         <Input.IconButton outline mini icon={Icon.ChevronDoubleLeftIcon} onClick={handleIndentDown}>インデント下げ</Input.IconButton>
         <Input.IconButton outline mini icon={Icon.ChevronDoubleRightIcon} onClick={handleIndentUp}>インデント上げ</Input.IconButton>
+        <Input.IconButton outline mini icon={Icon.ChevronUpIcon} onClick={handleMoveUp}>上に移動</Input.IconButton>
+        <Input.IconButton outline mini icon={Icon.ChevronDownIcon} onClick={handleMoveDown}>下に移動</Input.IconButton>
         <div className="flex-1"></div>
       </div>
       <div className="flex-1 overflow-y-auto">
@@ -151,6 +218,7 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, selectRootA
           rows={fields}
           getColumnDefs={getColumnDefs}
           onChangeRow={handleChangeRow}
+          onKeyDown={handleKeyDown}
           className="h-full border-y border-l border-gray-300"
         />
       </div>
