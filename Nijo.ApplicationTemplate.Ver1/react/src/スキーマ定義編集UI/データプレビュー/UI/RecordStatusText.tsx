@@ -1,4 +1,4 @@
-import { EditableDbRecord } from "./types"
+import { EditableDbRecord } from "../types"
 
 export const RecordStatusText = ({ record, className }: {
   record: EditableDbRecord | null | undefined

@@ -1,11 +1,11 @@
 import React from "react"
-import { SqlAndResult, ReloadTrigger, ExecuteQueryReturn } from "./types"
-import * as Input from "../../input"
-import * as Layout from "../../layout"
+import { SqlAndResult, ReloadTrigger, ExecuteQueryReturn } from "../types"
+import * as Input from "../../../input"
+import * as Layout from "../../../layout"
 import * as Icon from "@heroicons/react/24/outline"
-import useQueryEditorServerApi from "./useQueryEditorServerApi"
+import useQueryEditorServerApi from "../useQueryEditorServerApi"
 import useEvent from "react-use-event-hook"
-import { SqlTextarea } from "./SqlTextarea"
+import { SqlTextarea } from "../UI/SqlTextarea"
 import { SqlAndResultViewSettings, SqlAndResultViewSettingsProps } from "./SqlAndResultView.Settings"
 /**
  * GUI上でSQLを入力して、結果を表示するコンポーネント。
