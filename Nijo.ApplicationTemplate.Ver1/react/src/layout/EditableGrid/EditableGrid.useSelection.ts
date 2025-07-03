@@ -108,6 +108,78 @@ export function useSelection(
     }
   }, []);
 
+  // データ範囲の変更に応じて選択状態を調整
+  useEffect(() => {
+    const maxRowIndex = Math.max(0, totalRows - 1);
+    const maxColIndex = Math.max(0, totalColumns - 1);
+
+    // データが空になった場合は選択状態をクリア
+    if (totalRows === 0 || totalColumns === 0) {
+      setActiveCell_useState(null);
+      setSelectedRange(null);
+      setSelectedRows(new Set());
+      setAllRowsSelected(false);
+      activeCellRef.current = null;
+      anchorCellRef.current = null;
+      return;
+    }
+
+    // アクティブセルが範囲外の場合は調整
+    if (activeCellRef.current) {
+      const currentActive = activeCellRef.current;
+      if (currentActive.rowIndex > maxRowIndex || currentActive.colIndex > maxColIndex) {
+        const adjustedActiveCell = {
+          rowIndex: Math.min(currentActive.rowIndex, maxRowIndex),
+          colIndex: Math.min(currentActive.colIndex, maxColIndex)
+        };
+        activeCellRef.current = adjustedActiveCell;
+        setActiveCell_useState(adjustedActiveCell);
+        onActiveCellChanged(adjustedActiveCell);
+      }
+    }
+
+    // アンカーセルが範囲外の場合は調整
+    if (anchorCellRef.current) {
+      const currentAnchor = anchorCellRef.current;
+      if (currentAnchor.rowIndex > maxRowIndex || currentAnchor.colIndex > maxColIndex) {
+        anchorCellRef.current = {
+          rowIndex: Math.min(currentAnchor.rowIndex, maxRowIndex),
+          colIndex: Math.min(currentAnchor.colIndex, maxColIndex)
+        };
+      }
+    }
+
+    // 選択範囲が範囲外の場合は調整
+    setSelectedRange(prevRange => {
+      if (!prevRange) return null;
+
+      const adjustedRange = {
+        startRow: Math.min(prevRange.startRow, maxRowIndex),
+        startCol: Math.min(prevRange.startCol, maxColIndex),
+        endRow: Math.min(prevRange.endRow, maxRowIndex),
+        endCol: Math.min(prevRange.endCol, maxColIndex)
+      };
+
+      if (adjustedRange.startRow !== prevRange.startRow ||
+        adjustedRange.startCol !== prevRange.startCol ||
+        adjustedRange.endRow !== prevRange.endRow ||
+        adjustedRange.endCol !== prevRange.endCol) {
+        return adjustedRange;
+      }
+      return prevRange;
+    });
+
+    // チェック済み行が範囲外の場合は調整
+    setSelectedRows(prevSelected => {
+      const filtered = new Set(Array.from(prevSelected).filter(rowIndex => rowIndex < totalRows));
+      if (filtered.size !== prevSelected.size) {
+        setAllRowsSelected(filtered.size === totalRows);
+        return filtered;
+      }
+      return prevSelected;
+    });
+  }, [totalRows, totalColumns, onActiveCellChanged]);
+
   const setActiveCell = useCallback((cell: CellPosition | null) => {
     activeCellRef.current = cell;
     setActiveCell_useState(cell);
