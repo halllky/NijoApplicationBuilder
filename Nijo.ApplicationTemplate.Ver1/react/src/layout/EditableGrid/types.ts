@@ -203,6 +203,7 @@ export type CellEditorTextareaProps = {
   value: string | null | undefined
   onChange: (value: string) => void
   showOptions: boolean
+  columnDef: EditableGridColumnDef<any> | undefined
 }
 
 /** テキストエリアのref */

@@ -1,15 +1,22 @@
 import React from "react"
 import * as ReactHookForm from "react-hook-form"
-import * as ReactRouter from "react-router-dom"
 import * as ReactTable from "@tanstack/react-table"
 import * as Icon from "@heroicons/react/24/solid"
 import * as Input from "../../input"
 import * as Layout from "../../layout"
 import { SchemaDefinitionGlobalState, ATTR_TYPE, XmlElementAttribute, XmlElementItem, ATTR_IS_KEY, TYPE_DATA_MODEL } from "./types"
+import { MentionUtil } from '../型つきドキュメント/MentionTextarea'
 import useEvent from "react-use-event-hook"
 import { UUID } from "uuidjs"
 import { TYPE_COLUMN_DEF } from "./getAttrTypeColumnDef"
 import { GetValidationResultFunction, ValidationTriggerFunction } from "./useValidation"
+import { CellEditorWithMention } from "./CellEditorWithMention"
+
+// スキーマ定義データを提供するContext
+export const SchemaDefinitionContext = React.createContext<SchemaDefinitionGlobalState | null>(null)
+
+/** コメント列のID */
+export const COLUMN_ID_COMMENT = ':comment:'
 
 /**
  * Data, Query, Command のルート集約1件を表示・編集するページ。
@@ -25,8 +32,11 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, getValidati
   className?: string
 }) => {
   const gridRef = React.useRef<Layout.EditableGridRef<GridRowType>>(null)
-  const { control } = formMethods
+  const { control, watch } = formMethods
   const { fields, insert, remove, update, move } = ReactHookForm.useFieldArray({ control, name: `xmlElementTrees.${rootAggregateIndex}.xmlElements` })
+
+  // スキーマ定義全体のデータを取得（メンション機能で使用）
+  const schemaDefinitionData = watch()
 
   // メンバーグリッドの列定義
   const getColumnDefs: Layout.GetColumnDefsFunction<GridRowType> = React.useCallback(cellType => {
@@ -55,7 +65,20 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, getValidati
     }
 
     // コメント
-    columns.push(cellType.text('comment', 'コメント', { defaultWidth: 400 }))
+    columns.push(cellType.text('comment', 'コメント', {
+      columnId: COLUMN_ID_COMMENT,
+      defaultWidth: 400,
+      renderCell: context => {
+        const value = context.cell.getValue() as string
+        return (
+          <div className="flex-1 inline-flex text-left truncate">
+            <span className="flex-1 truncate">
+              {MentionUtil.toPlainText(value)}
+            </span>
+          </div>
+        )
+      }
+    }))
 
     return columns
   }, [attributeDefs, fields, getValidationResult, showLessColumns])
@@ -207,29 +230,32 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, getValidati
   })
 
   return (
-    <div className={`flex flex-col gap-1 ${className ?? ''}`}>
-      <div className="flex flex-wrap gap-1 items-center">
-        <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRow}>行挿入</Input.IconButton>
-        <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRowBelow}>下挿入</Input.IconButton>
-        <Input.IconButton outline mini icon={Icon.TrashIcon} onClick={handleDeleteRow}>行削除</Input.IconButton>
-        <div className="basis-2"></div>
-        <Input.IconButton outline mini icon={Icon.ChevronDoubleLeftIcon} onClick={handleIndentDown}>インデント下げ</Input.IconButton>
-        <Input.IconButton outline mini icon={Icon.ChevronDoubleRightIcon} onClick={handleIndentUp}>インデント上げ</Input.IconButton>
-        <Input.IconButton outline mini icon={Icon.ChevronUpIcon} onClick={handleMoveUp}>上に移動</Input.IconButton>
-        <Input.IconButton outline mini icon={Icon.ChevronDownIcon} onClick={handleMoveDown}>下に移動</Input.IconButton>
-        <div className="flex-1"></div>
+    <SchemaDefinitionContext.Provider value={schemaDefinitionData}>
+      <div className={`flex flex-col gap-1 ${className ?? ''}`}>
+        <div className="flex flex-wrap gap-1 items-center">
+          <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRow}>行挿入</Input.IconButton>
+          <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRowBelow}>下挿入</Input.IconButton>
+          <Input.IconButton outline mini icon={Icon.TrashIcon} onClick={handleDeleteRow}>行削除</Input.IconButton>
+          <div className="basis-2"></div>
+          <Input.IconButton outline mini icon={Icon.ChevronDoubleLeftIcon} onClick={handleIndentDown}>インデント下げ</Input.IconButton>
+          <Input.IconButton outline mini icon={Icon.ChevronDoubleRightIcon} onClick={handleIndentUp}>インデント上げ</Input.IconButton>
+          <Input.IconButton outline mini icon={Icon.ChevronUpIcon} onClick={handleMoveUp}>上に移動</Input.IconButton>
+          <Input.IconButton outline mini icon={Icon.ChevronDownIcon} onClick={handleMoveDown}>下に移動</Input.IconButton>
+          <div className="flex-1"></div>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          <Layout.EditableGrid
+            ref={gridRef}
+            rows={fields}
+            getColumnDefs={getColumnDefs}
+            editorComponent={CellEditorWithMention}
+            onChangeRow={handleChangeRow}
+            onKeyDown={handleKeyDown}
+            className="h-full border-y border-l border-gray-300"
+          />
+        </div>
       </div>
-      <div className="flex-1 overflow-y-auto">
-        <Layout.EditableGrid
-          ref={gridRef}
-          rows={fields}
-          getColumnDefs={getColumnDefs}
-          onChangeRow={handleChangeRow}
-          onKeyDown={handleKeyDown}
-          className="h-full border-y border-l border-gray-300"
-        />
-      </div>
-    </div>
+    </SchemaDefinitionContext.Provider>
   )
 }
 
@@ -274,7 +300,7 @@ const createLocalNameCell = (
           ))}
 
           <span className={`flex-1 truncate ${bold}`}>
-            {context.cell.getValue() as string}
+            {MentionUtil.toPlainText(context.cell.getValue() as string)}
           </span>
         </div>
       )
@@ -313,7 +339,7 @@ const createAttributeCell = (
 
       return (
         <PlainCell className={hasError ? 'bg-amber-300/50' : ''}>
-          {value}
+          {MentionUtil.toPlainText(value)}
         </PlainCell>
       )
     },

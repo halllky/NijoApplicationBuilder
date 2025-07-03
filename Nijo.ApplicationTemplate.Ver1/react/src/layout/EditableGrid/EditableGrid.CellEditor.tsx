@@ -318,6 +318,7 @@ export const CellEditor = React.forwardRef(<T extends ReactHookForm.FieldValues>
         value: uncomittedText,
         onChange: setUnComittedText,
         showOptions: caretCellEditingInfo?.getOptions !== undefined,
+        columnDef: caretCellEditingInfo ?? undefined,
         ref: editorTextareaRef,
       })}
 
