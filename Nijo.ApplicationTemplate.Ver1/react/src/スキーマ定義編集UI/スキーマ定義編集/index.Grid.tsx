@@ -5,7 +5,7 @@ import * as ReactTable from "@tanstack/react-table"
 import * as Icon from "@heroicons/react/24/solid"
 import * as Input from "../../input"
 import * as Layout from "../../layout"
-import { SchemaDefinitionGlobalState, ATTR_TYPE, XmlElementAttribute, XmlElementItem } from "./types"
+import { SchemaDefinitionGlobalState, ATTR_TYPE, XmlElementAttribute, XmlElementItem, ATTR_IS_KEY, TYPE_DATA_MODEL } from "./types"
 import useEvent from "react-use-event-hook"
 import { UUID } from "uuidjs"
 import { TYPE_COLUMN_DEF } from "./getAttrTypeColumnDef"
@@ -14,13 +14,14 @@ import { GetValidationResultFunction, ValidationTriggerFunction } from "./useVal
 /**
  * Data, Query, Command のルート集約1件を表示・編集するページ。
  */
-export const PageRootAggregate = ({ rootAggregateIndex, formMethods, selectRootAggregate, getValidationResult, trigger, attributeDefs, className }: {
+export const PageRootAggregate = ({ rootAggregateIndex, formMethods, getValidationResult, trigger, attributeDefs, showLessColumns, className }: {
   rootAggregateIndex: number
   formMethods: ReactHookForm.UseFormReturn<SchemaDefinitionGlobalState>
-  selectRootAggregate: (aggregateId: string) => void
   getValidationResult: GetValidationResultFunction
   trigger: ValidationTriggerFunction
   attributeDefs: Map<string, XmlElementAttribute>
+  /** 名前、Type、キー、コメントのみを表示する */
+  showLessColumns: boolean
   className?: string
 }) => {
   const gridRef = React.useRef<Layout.EditableGridRef<GridRowType>>(null)
@@ -41,17 +42,23 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, selectRootA
     // ルート集約のモデルタイプを取得（最初の行のType属性）
     const rootModelType = fields[0]?.attributes[ATTR_TYPE]
 
-    // rootModelTypeに対応する属性のみをフィルタリング
-    columns.push(...Array.from(attributeDefs.values())
-      .filter(attrDef => attrDef.attributeName !== ATTR_TYPE)
-      .filter(attrDef => rootModelType && attrDef.availableModels.includes(rootModelType))
-      .map(attrDef => createAttributeCell(attrDef, cellType, getValidationResult)))
+    for (const attrDef of Array.from(attributeDefs.values())) {
+      if (attrDef.attributeName === ATTR_TYPE) continue;
+
+      // rootModelTypeに対応する属性のみをフィルタリング
+      if (!rootModelType || !attrDef.availableModels.includes(rootModelType)) continue;
+
+      // 主要な列のみ表示の場合、DataModelのキー以外の属性は表示しない
+      if (showLessColumns && (rootModelType !== TYPE_DATA_MODEL || attrDef.attributeName !== ATTR_IS_KEY)) continue;
+
+      columns.push(createAttributeCell(attrDef, cellType, getValidationResult))
+    }
 
     // コメント
     columns.push(cellType.text('comment', 'コメント', { defaultWidth: 400 }))
 
     return columns
-  }, [attributeDefs, fields, getValidationResult])
+  }, [attributeDefs, fields, getValidationResult, showLessColumns])
 
   // 行挿入
   const handleInsertRow = useEvent(() => {
@@ -200,7 +207,7 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, selectRootA
   })
 
   return (
-    <div className={`flex flex-col ${className ?? ''}`}>
+    <div className={`flex flex-col gap-1 ${className ?? ''}`}>
       <div className="flex flex-wrap gap-1 items-center">
         <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRow}>行挿入</Input.IconButton>
         <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRowBelow}>下挿入</Input.IconButton>

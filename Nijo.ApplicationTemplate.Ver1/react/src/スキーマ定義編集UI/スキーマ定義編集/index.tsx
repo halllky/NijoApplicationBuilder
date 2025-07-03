@@ -13,7 +13,7 @@ import { Node as CyNode, Edge as CyEdge } from "../../layout/GraphView/DataSourc
 import * as AutoLayout from "../../layout/GraphView/Cy.AutoLayout"
 import { findRefToTarget } from "./findRefToTarget"
 import { asTree } from "./types"
-import { getNavigationUrl, SERVER_DOMAIN } from "../../routes"
+import { SERVER_DOMAIN } from "../../routes"
 import cytoscape from 'cytoscape'; // cytoscapeの型情報をインポート
 import { useLayoutSaving } from './useLayoutSaving';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
@@ -140,6 +140,15 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, onlyRootDefaultValue
 
   // ルート集約のみ表示の状態
   const [onlyRoot, setOnlyRoot] = React.useState(onlyRootDefaultValue)
+  const handleOnlyRootChange = useEvent((e: React.ChangeEvent<HTMLInputElement>) => {
+    setOnlyRoot(e.target.checked)
+  })
+
+  // 主要な列のみ表示
+  const [showLessColumns, setShowLessColumns] = React.useState(false)
+  const handleShowLessColumnsChange = useEvent((e: React.ChangeEvent<HTMLInputElement>) => {
+    setShowLessColumns(e.target.checked)
+  })
 
   const dataSet: CytoscapeDataSet = React.useMemo(() => {
     if (!xmlElementTrees) return { nodes: {}, edges: [] }
@@ -373,8 +382,12 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, onlyRootDefaultValue
           </select>
           <div className="basis-4"></div>
           <label>
-            <input type="checkbox" checked={onlyRoot} onChange={(e) => setOnlyRoot(e.target.checked)} />
+            <input type="checkbox" checked={onlyRoot} onChange={handleOnlyRootChange} />
             ルート集約のみ表示
+          </label>
+          <label>
+            <input type="checkbox" checked={showLessColumns} onChange={handleShowLessColumnsChange} />
+            主要な列のみ表示
           </label>
           <div className="basis-4"></div>
           <div className="flex">
@@ -427,11 +440,11 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, onlyRootDefaultValue
                 <PageRootAggregate
                   key={selectedRootAggregateIndex} // 選択中のルート集約が変更されたタイミングで再描画
                   rootAggregateIndex={selectedRootAggregateIndex}
-                  selectRootAggregate={selectRootAggregate}
                   formMethods={formMethods}
                   getValidationResult={getValidationResult}
                   trigger={trigger}
                   attributeDefs={attributeDefsMap}
+                  showLessColumns={showLessColumns}
                   className="h-full"
                 />
               )}
