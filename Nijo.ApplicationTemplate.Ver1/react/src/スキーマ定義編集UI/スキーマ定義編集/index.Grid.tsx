@@ -11,6 +11,7 @@ import { UUID } from "uuidjs"
 import { TYPE_COLUMN_DEF } from "./getAttrTypeColumnDef"
 import { GetValidationResultFunction, ValidationTriggerFunction } from "./useValidation"
 import { CellEditorWithMention } from "./CellEditorWithMention"
+import { usePersonalSettings } from "../PersonalSettings"
 
 // スキーマ定義データを提供するContext
 export const SchemaDefinitionContext = React.createContext<SchemaDefinitionGlobalState | null>(null)
@@ -229,20 +230,24 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, getValidati
     return { handled: true }
   })
 
+  const { personalSettings } = usePersonalSettings()
+
   return (
     <SchemaDefinitionContext.Provider value={schemaDefinitionData}>
       <div className={`flex flex-col gap-1 ${className ?? ''}`}>
-        <div className="flex flex-wrap gap-1 items-center">
-          <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRow}>行挿入</Input.IconButton>
-          <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRowBelow}>下挿入</Input.IconButton>
-          <Input.IconButton outline mini icon={Icon.TrashIcon} onClick={handleDeleteRow}>行削除</Input.IconButton>
-          <div className="basis-2"></div>
-          <Input.IconButton outline mini icon={Icon.ChevronDoubleLeftIcon} onClick={handleIndentDown}>インデント下げ</Input.IconButton>
-          <Input.IconButton outline mini icon={Icon.ChevronDoubleRightIcon} onClick={handleIndentUp}>インデント上げ</Input.IconButton>
-          <Input.IconButton outline mini icon={Icon.ChevronUpIcon} onClick={handleMoveUp}>上に移動</Input.IconButton>
-          <Input.IconButton outline mini icon={Icon.ChevronDownIcon} onClick={handleMoveDown}>下に移動</Input.IconButton>
-          <div className="flex-1"></div>
-        </div>
+        {!personalSettings.hideGridButtons && (
+          <div className="flex flex-wrap gap-1 items-center">
+            <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRow}>行挿入(Enter)</Input.IconButton>
+            <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={handleInsertRowBelow}>下挿入(Ctrl + Enter)</Input.IconButton>
+            <Input.IconButton outline mini icon={Icon.TrashIcon} onClick={handleDeleteRow}>行削除(Shift + Delete)</Input.IconButton>
+            <div className="basis-2"></div>
+            <Input.IconButton outline mini icon={Icon.ChevronDoubleLeftIcon} onClick={handleIndentDown}>インデント下げ(Shift + Tab)</Input.IconButton>
+            <Input.IconButton outline mini icon={Icon.ChevronDoubleRightIcon} onClick={handleIndentUp}>インデント上げ(Tab)</Input.IconButton>
+            <Input.IconButton outline mini icon={Icon.ChevronUpIcon} onClick={handleMoveUp}>上に移動(Alt + ↑)</Input.IconButton>
+            <Input.IconButton outline mini icon={Icon.ChevronDownIcon} onClick={handleMoveDown}>下に移動(Alt + ↓)</Input.IconButton>
+            <div className="flex-1"></div>
+          </div>
+        )}
         <div className="flex-1 overflow-y-auto">
           <Layout.EditableGrid
             ref={gridRef}
