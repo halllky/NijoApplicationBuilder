@@ -63,7 +63,7 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
                 <React.Fragment key={i}>
                   <div className="basis-[20px] min-w-[20px] relative leading-none">
                     {i >= 1 && (
-                      <div className="absolute top-[-1px] bottom-[-1px] left-0 border-l border-gray-400 border-dotted leading-none"></div>
+                      <div className="absolute top-[-1px] bottom-[-1px] left-0 border-l border-gray-300 border-dotted leading-none"></div>
                     )}
                   </div>
                 </React.Fragment>
