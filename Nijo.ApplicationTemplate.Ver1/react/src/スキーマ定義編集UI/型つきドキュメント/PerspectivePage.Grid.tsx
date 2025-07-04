@@ -5,7 +5,8 @@ import * as Icon from '@heroicons/react/24/outline';
 import * as Input from '../../input';
 import * as Layout from '../../layout';
 import { applyFormatCondition, Entity, FormatCondition, Perspective, PerspectivePageData } from './types';
-import { MentionTextarea, MentionUtil } from './MentionTextarea';
+import { MentionTextarea } from './MentionTextarea';
+import { MentionUtil } from '../UI';
 import { UUID } from 'uuidjs';
 import { usePersonalSettings } from '../PersonalSettings';
 

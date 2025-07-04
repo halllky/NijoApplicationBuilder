@@ -1,6 +1,6 @@
 import * as ReactResizablePanels from "react-resizable-panels"
 import * as CytoscapeWrapper from "../../layout/GraphView/Cy"
-import { MentionUtil } from "./MentionTextarea"
+import { MentionUtil } from "../UI"
 import { AppSettingsForDisplay, AppSettingsForSave } from "../types"
 
 // -----------------------------------

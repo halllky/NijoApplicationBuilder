@@ -10,7 +10,7 @@ import { applyFormatCondition, PerspectiveNode, PerspectivePageData } from './ty
 import cytoscape from 'cytoscape'; // cytoscapeの型情報をインポート
 import { ViewState } from '../../layout/GraphView/Cy';
 import ExpandCollapseFunctions from '../../layout/GraphView/Cy.ExpandCollapse';
-import { MentionUtil } from './MentionTextarea';
+import { MentionUtil } from '../UI';
 
 export const PerspectivePageGraph = ({
   formMethods,

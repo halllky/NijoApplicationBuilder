@@ -5,7 +5,7 @@ import * as Layout from "../../layout"
 import { XmlElementItem } from "./types"
 import useEvent from "react-use-event-hook"
 import { SchemaDefinitionContext, COLUMN_ID_COMMENT } from "./index.Grid"
-import { MentionUtil } from "../型つきドキュメント/MentionTextarea"
+import { MentionInputWrapper } from "../UI/MentionInputWrapper"
 
 /**
  * メンションを含むセル編集エディタ（スキーマ定義編集用）。
@@ -101,38 +101,14 @@ const SchemaDefinitionMentionTextarea = React.forwardRef(({
     callback(suggestions)
   }, [schemaDefinitionData])
 
-  const handleChanged: ReactMention.OnChangeHandlerFunc = useEvent(e => {
-    onChange?.(e.target.value);
-  })
-
   return (
-    <ReactMention.MentionsInput
-      inputRef={ref}
-      value={value ?? ''}
-      onChange={handleChanged}
-      spellCheck={false}
+    <MentionInputWrapper
+      ref={ref}
+      value={value}
+      onChange={onChange}
       placeholder={placeholder}
-      className={`[&_textarea]:outline-none break-all resize-none field-sizing-content ${className ?? ''}`}
-      style={MentionUtil.STYLE_MENTION_SUGGESTIONS}
-      suggestionsPortalHost={document.body}
-      allowSuggestionsAboveCursor
-    >
-      <ReactMention.Mention
-        trigger="@"
-        markup="@[__display__](__id__)"
-        data={getSuggestions}
-        displayTransform={(id, display) => `@${display}`}
-        className="bg-sky-100 rounded-sm"
-        renderSuggestion={(item, search, highlightedDisplay, index, focused) => (
-          <span
-            className={`inline-block w-full truncate text-sm select-none px-1 text-gray-800 ${focused ? 'bg-gray-200' : ''}`}
-            title={item.display}
-          >
-            {item.display}
-            &nbsp;
-          </span>
-        )}
-      />
-    </ReactMention.MentionsInput>
+      className={className}
+      getSuggestions={getSuggestions}
+    />
   )
 })

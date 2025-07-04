@@ -22,7 +22,7 @@ import { UUID } from "uuidjs"
 import { PageFrame } from "../PageFrame"
 import { useValidation } from "./useValidation"
 import NijoUiErrorMessagePane from "./index.ErrorMessage"
-import { MentionUtil } from '../型つきドキュメント/MentionTextarea'
+import { MentionUtil } from '../UI'
 
 export const NijoUiAggregateDiagram = () => {
 
