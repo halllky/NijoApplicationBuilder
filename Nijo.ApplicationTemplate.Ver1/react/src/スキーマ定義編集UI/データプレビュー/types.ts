@@ -183,11 +183,7 @@ export const tableMetadataHelper = (rootAggregates: DataModelMetadata.Aggregate[
   const getRoot = (aggregate: DataModelMetadata.Aggregate) => {
     // パスの先頭がルート集約の物理名
     const rootPath = aggregate.path.split("/")[0]
-    const rootAggregate = rootAggregates.find(m => m.physicalName === rootPath)
-    if (!rootAggregate) {
-      throw new Error(`ルート集約が見つかりません: ${rootPath}`)
-    }
-    return rootAggregate
+    return rootAggregates.find(m => m.physicalName === rootPath)
   }
 
   /** 対象の集約の親集約を探して返す */

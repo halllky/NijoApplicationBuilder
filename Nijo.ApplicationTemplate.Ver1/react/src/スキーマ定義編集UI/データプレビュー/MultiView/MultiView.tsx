@@ -88,8 +88,17 @@ export const DbTableMultiEditorView = React.forwardRef(({
     getCurrentRootItemKeys: undefined,
   }), [getValues])
 
+  const aggregate = React.useMemo(() => {
+    return tableMetadataHelper.allAggregates().find(table => table.tableName === value.tableName)
+  }, [tableMetadataHelper, value.tableName])
+
   // 読み込み
   React.useEffect(() => {
+    if (!aggregate) {
+      setError(`テーブルが見つかりません: ${value.tableName}`)
+      reset({ records: [] })
+      return
+    }
     (async () => {
       const res = await getDbRecords(value)
       if (res.ok) {
@@ -102,15 +111,10 @@ export const DbTableMultiEditorView = React.forwardRef(({
         setError(res.error)
       }
     })()
-  }, [trigger])
+  }, [trigger, aggregate])
 
   // 列定義
-  const aggregate = React.useMemo(() => {
-    const result = tableMetadataHelper.allAggregates().find(table => table.tableName === value.tableName)
-    if (!result) throw new Error(`テーブルが見つかりません: ${value.tableName}`)
-    return result
-  }, [tableMetadataHelper, value.tableName])
-  const { getColumnDefs, ForeignKeyReferenceDialog } = useDbRecordGridColumnDef(
+  const { getColumnDefs, ForeignKeyReferenceDialog, error: columnDefError } = useDbRecordGridColumnDef(
     'multi-record-editor',
     aggregate,
     tableMetadataHelper,
@@ -129,12 +133,14 @@ export const DbTableMultiEditorView = React.forwardRef(({
   } = React.useContext(DataPreviewGlobalContext)
   const gridColumnStorage: Layout.EditableGridAutoSaveStorage = React.useMemo(() => ({
     loadState: () => {
+      if (!aggregate) return null
       return dataPreviewDefaultValues?.design?.[aggregate.path]?.multiViewGridLayout ?? null
     },
     saveState: (gridState) => {
+      if (!aggregate) return
       setDataPreviewValues(`design.${aggregate.path}.multiViewGridLayout`, gridState)
     },
-  }), [dataPreviewDefaultValues, setDataPreviewValues, aggregate.path])
+  }), [dataPreviewDefaultValues, setDataPreviewValues, aggregate])
 
   // ---------------------------------
   // レコード変更
@@ -187,6 +193,7 @@ export const DbTableMultiEditorView = React.forwardRef(({
 
   // 設定ダイアログ
   const handleOpenSettings = useEvent(() => {
+    if (!aggregate) return;
     setSettingsDialogProps({
       aggregate,
       tableMetadataHelper,
@@ -275,9 +282,9 @@ export const DbTableMultiEditorView = React.forwardRef(({
         </div>
 
         {/* レコード */}
-        {error ? (
+        {(error || columnDefError) ? (
           <div className="flex-1 text-red-500">
-            {error}
+            {error}{columnDefError}
           </div>
         ) : (
           <Layout.EditableGrid

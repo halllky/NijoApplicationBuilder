@@ -12,19 +12,25 @@ import { useForeignKeyLookup } from "./useForeignKeyLookup"
 
 export const useDbRecordGridColumnDef = (
   mode: 'single-view-children' | 'multi-record-editor',
-  tableMetadata: DataModelMetadata.Aggregate,
+  tableMetadata: DataModelMetadata.Aggregate | undefined,
   tableMetadataHelper: TableMetadataHelper | undefined,
   useFieldArrayUpdate: (index: number, value: EditableDbRecord) => void,
   designMode: 'singleView' | 'multiView',
   ownerIsReadOnly: boolean,
 ) => {
+  const [error, setError] = React.useState<string | null>(null)
   const [foreignKeyReferenceDialog, setForeignKeyReferenceDialog] = React.useState<ForeignKeyReferenceDialogProps | null>(null)
 
   // 参照先のカラム名
   const { control } = React.useContext(DataPreviewGlobalContext)
-  const aggregateSettings = ReactHookForm.useWatch({ control, name: `design.${tableMetadata.path}` })
+  const aggregateSettings = ReactHookForm.useWatch({ control, name: `design.${tableMetadata?.path ?? ''}` })
 
   const getColumnDefs: Layout.GetColumnDefsFunction<EditableDbRecord> = React.useCallback(cellType => {
+    // テーブル定義がない場合は空の列定義を返す
+    if (!tableMetadataHelper || !tableMetadata) {
+      return []
+    }
+
     const status = cellType.other('', {
       defaultWidth: 40,
       enableResizing: false,
@@ -37,11 +43,15 @@ export const useDbRecordGridColumnDef = (
       ),
     })
 
-    const thisTableMetadata = tableMetadataHelper?.allAggregates().find(table => table.tableName === tableMetadata.tableName)
+    const thisTableMetadata = tableMetadataHelper.allAggregates().find(table => table.tableName === tableMetadata.tableName)
+    if (!thisTableMetadata) {
+      return []
+    }
+
     const valueColumns: Layout.EditableGridColumnDef<EditableDbRecord>[] = []
 
-    for (let index = 0; index < (thisTableMetadata?.members ?? []).length; index++) {
-      const column = thisTableMetadata!.members[index]
+    for (let index = 0; index < (thisTableMetadata.members ?? []).length; index++) {
+      const column = thisTableMetadata.members[index]
 
       if (column.type === "root" || column.type === "child" || column.type === "children") {
         // 子テーブルは表示しない
@@ -82,18 +92,22 @@ export const useDbRecordGridColumnDef = (
 
             // 外部キーの列の場合は検索ダイアログから選択できるようにする
             const handleClick = () => {
-              const refToAggregate = tableMetadataHelper?.getRefTo(column)
+              const refToAggregate = tableMetadataHelper.getRefTo(column)
               if (!refToAggregate) {
-                throw new Error(`外部参照先テーブルが見つかりません: ${column.refToAggregatePath}`)
+                setError(`外部参照先テーブルが見つかりません: ${column.refToAggregatePath}`)
+                return
               }
               setForeignKeyReferenceDialog({
                 tableMetadata: refToAggregate,
                 onSelect: selectedRecord => {
                   // 複合キーの考慮のため、その相手方を参照するキーの値を全部代入する
                   const clone = window.structuredClone(cell.row.original)
-                  for (const m of thisTableMetadata?.members ?? []) {
+                  for (const m of thisTableMetadata.members) {
                     if (m.type !== "ref-key" && m.type !== "ref-parent-key" || m.refToRelationName !== column.refToRelationName) continue;
-                    if (!m.refToColumnName) throw new Error(`${m.columnName}の参照先カラムが見つかりません。`) // ありえないが念のため
+                    if (!m.refToColumnName) {
+                      setError(`${m.columnName}の参照先カラムが見つかりません。`)
+                      continue
+                    }
                     const value = selectedRecord.values[m.refToColumnName]
                     clone.values[m.columnName] = value === '' ? null : value
                   }
@@ -127,7 +141,7 @@ export const useDbRecordGridColumnDef = (
         }))
 
         // 外部参照の場合、設定に応じて参照先テーブルの追加カラムを表示
-        const nextColumn = thisTableMetadata?.members[index + 1]
+        const nextColumn = thisTableMetadata.members[index + 1]
         const isLastOfSameRefToRelationName = column.refToRelationName
           && (nextColumn === undefined || nextColumn.refToRelationName !== column.refToRelationName)
         if (isLastOfSameRefToRelationName) {
@@ -135,12 +149,18 @@ export const useDbRecordGridColumnDef = (
           const additionalColumnNames = designMode === 'singleView'
             ? refSettings?.singleViewRefDisplayColumnNames
             : refSettings?.multiViewRefDisplayColumnNames
-          const refToAggregate = tableMetadataHelper?.getRefTo(column)
-          if (!refToAggregate) throw new Error(`外部参照先テーブルが見つかりません: ${column.refToAggregatePath}`)
+          const refToAggregate = tableMetadataHelper.getRefTo(column)
+          if (!refToAggregate) {
+            setError(`外部参照先テーブルが見つかりません: ${column.refToAggregatePath}`)
+            continue
+          }
 
           for (const additionalColumnName of additionalColumnNames ?? []) {
             const refColumn = refToAggregate.members.find(m => m.columnName === additionalColumnName) as DataModelMetadata.AggregateMember | undefined
-            if (!refColumn) throw new Error(`外部参照先テーブルのカラムが見つかりません: ${refToAggregate.tableName} ${additionalColumnName}`)
+            if (!refColumn) {
+              setError(`外部参照先テーブルのカラムが見つかりません: ${refToAggregate.tableName} ${additionalColumnName}`)
+              continue
+            }
 
             // 表示名の設定を取得
             const displayNamesSettings = designMode === 'singleView'
@@ -165,7 +185,8 @@ export const useDbRecordGridColumnDef = (
           }
         }
       } else {
-        throw new Error(`不明な列の種類: ${column.type}`)
+        console.error(`不明な列の種類: ${column.type}`)
+        continue
       }
     }
 
@@ -173,7 +194,7 @@ export const useDbRecordGridColumnDef = (
       status,
       ...valueColumns,
     ]
-  }, [tableMetadataHelper, aggregateSettings, designMode, ownerIsReadOnly])
+  }, [tableMetadataHelper, aggregateSettings, designMode, ownerIsReadOnly, tableMetadata])
 
   return {
     /** 列定義 */
@@ -189,6 +210,9 @@ export const useDbRecordGridColumnDef = (
         />
       ) : null
     ),
+
+    /** エラーメッセージ */
+    error,
   }
 }
 
@@ -252,7 +276,8 @@ export const ForeignKeyReferenceDialog = ({
           column.columnName ?? '',
           {}))
       } else {
-        throw new Error(`不明な列の種類: ${column.type}`)
+        console.error(`不明な列の種類: ${column.type}`)
+        continue
       }
     }
 

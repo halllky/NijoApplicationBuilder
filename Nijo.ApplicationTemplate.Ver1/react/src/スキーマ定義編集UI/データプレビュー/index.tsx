@@ -321,10 +321,17 @@ const AfterReady = React.forwardRef(({ tableMetadataHelper, defaultValues, onSav
   const [dbTableSingleItemSelectorDialogProps, setDbTableSingleItemSelectorDialogProps] = React.useState<DbRecordSelectorDialogProps | null>(null)
   const handleOpenSingleItemSelector = useEvent(() => {
     const editTableMetadata = tableMetadataHelper.allAggregates().find(t => t.tableName === newTableName)
-    if (!editTableMetadata) throw new Error(`テーブルが見つかりません: ${newTableName}`)
+    if (!editTableMetadata) {
+      console.error(`テーブルが見つかりません: ${newTableName}`)
+      return
+    }
 
     // 詳細編集は必ずルート集約単位なので、selectで子孫集約が選択された場合はルート集約を選択したものとして扱う
     const rootAggregate = tableMetadataHelper.getRoot(editTableMetadata)
+    if (!rootAggregate) {
+      console.error(`ルート集約が見つかりません: ${editTableMetadata.tableName}`)
+      return
+    }
     setDbTableSingleItemSelectorDialogProps({
       tableMetadata: rootAggregate,
       tableMetadataHelper: tableMetadataHelper,
@@ -340,10 +347,17 @@ const AfterReady = React.forwardRef(({ tableMetadataHelper, defaultValues, onSav
 
   const handleAddNewRecord = useEvent(() => {
     const editTableMetadata = tableMetadataHelper.allAggregates().find(t => t.tableName === newTableName)
-    if (!editTableMetadata) throw new Error(`テーブルが見つかりません: ${newTableName}`)
+    if (!editTableMetadata) {
+      console.error(`テーブルが見つかりません: ${newTableName}`)
+      return
+    }
 
     // 詳細編集は必ずルート集約単位なので、selectで子孫集約が選択された場合はルート集約を選択したものとして扱う
     const rootAggregate = tableMetadataHelper.getRoot(editTableMetadata)
+    if (!rootAggregate) {
+      console.error(`ルート集約が見つかりません: ${editTableMetadata.tableName}`)
+      return
+    }
     append(createNewQueryEditorItem("dbTableSingleEditor(new)", rootAggregate.tableName, undefined, currentViewState))
     setDbTableSingleItemSelectorDialogProps(null)
   })

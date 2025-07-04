@@ -34,7 +34,7 @@ export const AggregateMemberFormView = ({ record, onChangeRecord, member, nextMe
 
   // ラベル列の横幅
   const { control: dataPreviewControl } = React.useContext(DataPreviewGlobalContext)
-  const rootPath = tableMetadataHelper?.getRoot(owner).path ?? ''
+  const rootPath = tableMetadataHelper?.getRoot(owner)?.path ?? ''
   const singleViewLabelWidth = ReactHookForm.useWatch({ control: dataPreviewControl, name: `design.${rootPath}.singleViewLabelWidth` })
   const labelCssProperties: React.CSSProperties = React.useMemo(() => {
     const labelWidth = singleViewLabelWidth || '10em'
@@ -109,7 +109,8 @@ export const AggregateMemberFormView = ({ record, onChangeRecord, member, nextMe
 
   // ルート集約はAggregateViewで処理する。ここには来ない
   if (member.type === "root") {
-    throw new Error("ルート集約はAggregateViewで処理する")
+    console.error(`ルート集約はAggregateViewで処理する。ここには来ない: ${member.columnName}`)
+    return null
   }
 
   // 親の主キー（非表示）
@@ -224,7 +225,7 @@ const RefKeyAdditionalColumns = ({
 }) => {
   // 設定から refDisplayColumnNames を取得
   const { control } = React.useContext(DataPreviewGlobalContext)
-  const rootPath = tableMetadataHelper.getRoot(owner).path
+  const rootPath = tableMetadataHelper.getRoot(owner)?.path ?? ''
   const refDisplayColumnNames = ReactHookForm.useWatch({ control, name: `design.${rootPath}.membersDesign.${member.refToRelationName}.singleViewRefDisplayColumnNames` })
 
   // 設定から refDisplayColumnNamesDisplayNames を取得

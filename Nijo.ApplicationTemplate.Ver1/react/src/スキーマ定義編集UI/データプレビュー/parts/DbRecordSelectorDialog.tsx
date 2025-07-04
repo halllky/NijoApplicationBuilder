@@ -78,7 +78,8 @@ export const DbRecordSelectorDialog = ({
           column.columnName ?? '',
           {}))
       } else {
-        throw new Error(`不明な列の種類: ${column.type}`)
+        console.error(`不明な列の種類: ${column.type}`)
+        continue
       }
     }
 
