@@ -25,8 +25,8 @@ export const CellEditorWithMention = React.forwardRef(({
     value: value ?? '',
   }), [value, onChange])
 
-  // コメント列かどうかを判断 ※なぜか機能しないので固定値
-  const isCommentColumn = true // columnDef?.columnId === COLUMN_ID_COMMENT
+  // コメント列かどうかを判断
+  const isCommentColumn = columnDef?.columnId === COLUMN_ID_COMMENT
 
   return (
     <>
