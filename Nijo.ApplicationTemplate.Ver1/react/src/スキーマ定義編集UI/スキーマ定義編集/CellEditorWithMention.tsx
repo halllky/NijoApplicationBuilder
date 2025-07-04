@@ -5,6 +5,7 @@ import * as Layout from "../../layout"
 import { XmlElementItem } from "./types"
 import useEvent from "react-use-event-hook"
 import { SchemaDefinitionContext, COLUMN_ID_COMMENT } from "./index.Grid"
+import { MentionUtil } from "../型つきドキュメント/MentionTextarea"
 
 /**
  * メンションを含むセル編集エディタ（スキーマ定義編集用）。
@@ -112,13 +113,9 @@ const SchemaDefinitionMentionTextarea = React.forwardRef(({
       spellCheck={false}
       placeholder={placeholder}
       className={`[&_textarea]:outline-none break-all resize-none field-sizing-content ${className ?? ''}`}
+      style={MentionUtil.STYLE_MENTION_SUGGESTIONS}
       suggestionsPortalHost={document.body}
       allowSuggestionsAboveCursor
-      customSuggestionsContainer={children => (
-        <div className="max-w-96 max-h-96 overflow-y-auto bg-white border">
-          {children}
-        </div>
-      )}
     >
       <ReactMention.Mention
         trigger="@"
@@ -132,6 +129,7 @@ const SchemaDefinitionMentionTextarea = React.forwardRef(({
             title={item.display}
           >
             {item.display}
+            &nbsp;
           </span>
         )}
       />

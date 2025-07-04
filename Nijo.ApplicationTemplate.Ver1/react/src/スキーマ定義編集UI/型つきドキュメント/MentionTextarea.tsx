@@ -111,11 +111,7 @@ export const MentionTextarea = React.forwardRef((props: MentionTextareaProps, re
       className={`[&_textarea]:outline-none break-all resize-none field-sizing-content ${props.className ?? ''}`}
       suggestionsPortalHost={document.body}
       allowSuggestionsAboveCursor
-      customSuggestionsContainer={children => (
-        <div className="max-w-96 max-h-96 overflow-y-auto bg-white border">
-          {children}
-        </div>
-      )}
+      style={MentionUtil.STYLE_MENTION_SUGGESTIONS}
     >
       <ReactMention.Mention
         trigger="@"
@@ -129,6 +125,7 @@ export const MentionTextarea = React.forwardRef((props: MentionTextareaProps, re
             title={item.display}
           >
             {item.display}
+            &nbsp;
           </span>
         )}
       />
@@ -142,6 +139,17 @@ const LINKIFY_OPTIONS: LinkifyJs.Opts = {
 }
 
 export namespace MentionUtil {
+
+  export const STYLE_MENTION_SUGGESTIONS: ReactMention.MentionsInputProps['style'] = {
+    suggestions: {
+      list: {
+        backgroundColor: 'white',
+        maxHeight: '200px',
+        overflowY: 'auto',
+        border: '1px solid rgba(0,0,0)',
+      },
+    },
+  }
 
   /**
    * メンション情報が含まれうる文字列を表示用の文字列に変換する。
