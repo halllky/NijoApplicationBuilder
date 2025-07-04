@@ -66,7 +66,7 @@ export default function ExampleUsage() {
   }
 
   const renderItem = (item: ExampleItem, index: number, { onRemove, zoom, handleMouseDown }: {
-    onUpdateLayout: (layout: any) => void
+    onUpdateLayout: (layout: DiagramItem['layout']) => void
     onRemove: () => void
     zoom: number
     handleMouseDown: React.MouseEventHandler<Element>
