@@ -224,6 +224,27 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, onlyRootDefaultValue
           "border-color": borderColor,
         } satisfies CyNode;
 
+        // owner要素自身のメンション処理
+        const ownerMentionTargets = getMentionTargets(owner)
+        for (const mentionTargetId of ownerMentionTargets) {
+          const mentionTarget = elementIdMap.get(mentionTargetId)
+          if (mentionTarget) {
+            const mentionTargetUniqueId = onlyRoot
+              ? mentionTarget.rootElement.uniqueId
+              : mentionTarget.element.uniqueId
+
+            // メンションエッジを追加（自分自身への参照は除く）
+            if (owner.uniqueId !== mentionTargetUniqueId) {
+              edges.push({
+                source: owner.uniqueId,
+                target: mentionTargetUniqueId,
+                label: `@${owner.localName ?? ''}`,
+                sourceModel: model,
+              })
+            }
+          }
+        }
+
         // 子要素を再帰的に処理し、ref-toエッジを収集。
         // ルート集約のみ表示の場合は、直近の子のみならず、孫要素のref-toも収集する
         const members = onlyRoot

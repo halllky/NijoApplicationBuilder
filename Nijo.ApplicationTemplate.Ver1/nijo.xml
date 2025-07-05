@@ -182,11 +182,12 @@
       <平均客単価 Type="int" UniqueId="5dad6b1c-3ece-461d-8e8f-15f455a7452c" />
     </時間帯別売上>
   </売上分析>
-  <!-- シンプルなCommandModelの構造 -->
+  <!-- シンプルなCommandModelの構造。 @[注文履歴](696c1fb8-79e6-4150-bf7a-0d7ac70a49aa) への登録を行う。-->
   <簡易注文 LatinName="Simple Order" Type="command-model" UniqueId="4d167764-687c-4db8-9f3f-13fe7d287b73">
     <簡易注文Parameter Type="child" UniqueId="d34cea5d-f605-4b35-afa6-f8c67ddc9ffc">
       <顧客ID IsRequired="True" Type="word" UniqueId="034870c8-6f85-44ea-8a65-72e127cadfc3" />
       <商品一覧 Type="children" UniqueId="88d6b47c-bf37-4210-8bb6-8514b62527e0">
+        <!--@[商品マスタ](8d569c4e-e43a-45be-b1f2-e2ce0ea98dcc)と対応する。-->
         <商品ID Type="word" UniqueId="319c869c-00e5-4fcf-9672-24ae63b504ac" />
         <数量 IsRequired="True" Type="int" UniqueId="c0112f71-6b22-481c-9e3d-c729cf4c0d15" />
       </商品一覧>
