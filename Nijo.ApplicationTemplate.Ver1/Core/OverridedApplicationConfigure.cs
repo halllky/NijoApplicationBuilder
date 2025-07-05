@@ -79,47 +79,47 @@ public class OverridedApplicationConfigure : DefaultConfiguration {
     /// モデルのカスタマイズ
     /// </summary>
     public override void OnModelCreating(ModelBuilder modelBuilder) {
-        // 売上分析SearchResult
-        var 売上分析Entity = modelBuilder.Entity<売上分析SearchResult>();
-        売上分析Entity.ToView("V_売上分析");
-        売上分析Entity.HasKey(e => new { e.年月, e.店舗_店舗ID });
+        // 診療収益分析SearchResult
+        var 診療収益分析Entity = modelBuilder.Entity<診療収益分析SearchResult>();
+        診療収益分析Entity.ToView("V_診療収益分析");
+        診療収益分析Entity.HasKey(e => new { e.年月, e.診療科_診療科ID });
 
-        // カテゴリ別売上SearchResult
-        var カテゴリ別売上Entity = modelBuilder.Entity<カテゴリ別売上SearchResult>();
-        カテゴリ別売上Entity.ToView("V_カテゴリ別売上");
-        カテゴリ別売上Entity.HasKey(e => new { e.売上分析_年月, e.売上分析_店舗_店舗ID, e.カテゴリ_カテゴリID });
+        // 機器分類別収益SearchResult
+        var 機器分類別収益Entity = modelBuilder.Entity<機器分類別収益SearchResult>();
+        機器分類別収益Entity.ToView("V_機器分類別収益");
+        機器分類別収益Entity.HasKey(e => new { e.診療収益分析_年月, e.診療収益分析_診療科_診療科ID, e.機器分類_機器分類ID });
 
-        // 商品別売上SearchResult
-        var 商品別売上Entity = modelBuilder.Entity<商品別売上SearchResult>();
-        商品別売上Entity.ToView("V_商品別売上");
-        商品別売上Entity.HasKey(e => new { e.カテゴリ別売上_売上分析_年月, e.カテゴリ別売上_売上分析_店舗_店舗ID, e.カテゴリ別売上_カテゴリ_カテゴリID, e.商品_ID });
+        // 機器別収益SearchResult
+        var 機器別収益Entity = modelBuilder.Entity<機器別収益SearchResult>();
+        機器別収益Entity.ToView("V_機器別収益");
+        機器別収益Entity.HasKey(e => new { e.機器分類別収益_診療収益分析_年月, e.機器分類別収益_診療収益分析_診療科_診療科ID, e.機器分類別収益_機器分類_機器分類ID, e.医療機器_機器ID });
 
-        // 時間帯別売上SearchResult
-        var 時間帯別売上Entity = modelBuilder.Entity<時間帯別売上SearchResult>();
-        時間帯別売上Entity.ToView("V_時間帯別売上");
-        時間帯別売上Entity.HasKey(e => new { e.売上分析_年月, e.売上分析_店舗_店舗ID, e.時間帯 });
+        // 時間帯別収益SearchResult
+        var 時間帯別収益Entity = modelBuilder.Entity<時間帯別収益SearchResult>();
+        時間帯別収益Entity.ToView("V_時間帯別収益");
+        時間帯別収益Entity.HasKey(e => new { e.診療収益分析_年月, e.診療収益分析_診療科_診療科ID, e.時間帯 });
 
         // リレーションシップの設定
-        売上分析Entity.HasMany(e => e.カテゴリ別売上)
-            .WithOne(e => e.売上分析)
+        診療収益分析Entity.HasMany(e => e.機器分類別収益)
+            .WithOne(e => e.診療収益分析)
             .HasForeignKey(e => new {
-                e.売上分析_年月,
-                e.売上分析_店舗_店舗ID,
+                e.診療収益分析_年月,
+                e.診療収益分析_診療科_診療科ID,
             });
 
-        カテゴリ別売上Entity.HasMany(e => e.商品別売上)
-            .WithOne(e => e.カテゴリ別売上)
+        機器分類別収益Entity.HasMany(e => e.機器別収益)
+            .WithOne(e => e.機器分類別収益)
             .HasForeignKey(e => new {
-                e.カテゴリ別売上_売上分析_年月,
-                e.カテゴリ別売上_売上分析_店舗_店舗ID,
-                e.カテゴリ別売上_カテゴリ_カテゴリID,
+                e.機器分類別収益_診療収益分析_年月,
+                e.機器分類別収益_診療収益分析_診療科_診療科ID,
+                e.機器分類別収益_機器分類_機器分類ID,
             });
 
-        売上分析Entity.HasMany(e => e.時間帯別売上)
-            .WithOne(e => e.売上分析)
+        診療収益分析Entity.HasMany(e => e.時間帯別収益)
+            .WithOne(e => e.診療収益分析)
             .HasForeignKey(e => new {
-                e.売上分析_年月,
-                e.売上分析_店舗_店舗ID,
+                e.診療収益分析_年月,
+                e.診療収益分析_診療科_診療科ID,
             });
     }
     #endregion DB
