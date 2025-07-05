@@ -155,7 +155,7 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, onlyRootDefaultValue
     if (!xmlElementTrees) return { nodes: {}, edges: [] }
 
     const nodes: Record<string, CyNode> = {}
-    const edges: { source: string, target: string, label: string, sourceModel: string }[] = []
+    const edges: { source: string, target: string, label: string, sourceModel: string, isMention?: boolean }[] = []
 
     // メンション情報からターゲットIDを取得する関数
     const getMentionTargets = (element: XmlElementItem): string[] => {
@@ -238,8 +238,9 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, onlyRootDefaultValue
               edges.push({
                 source: owner.uniqueId,
                 target: mentionTargetUniqueId,
-                label: `@${owner.localName ?? ''}`,
+                label: ``,
                 sourceModel: model,
+                isMention: true,
               })
             }
           }
@@ -283,8 +284,9 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, onlyRootDefaultValue
                 edges.push({
                   source: owner.uniqueId,
                   target: mentionTargetUniqueId,
-                  label: `@${member.localName ?? ''}`,
+                  label: '',
                   sourceModel: model,
+                  isMention: true,
                 })
               }
             }
@@ -298,15 +300,16 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, onlyRootDefaultValue
     }
 
     // 重複するエッジのグルーピング
-    const groupedEdges = edges.reduce((acc, { source, target, label, sourceModel }) => {
+    const groupedEdges = edges.reduce((acc, { source, target, label, sourceModel, isMention }) => {
       const existingEdge = acc.find(e => e.source === source && e.target === target)
       if (existingEdge) {
         existingEdge.labels.push(label)
+        if (isMention) existingEdge.isMention = true
       } else {
-        acc.push({ source, target, labels: [label], sourceModel })
+        acc.push({ source, target, labels: [label], sourceModel, isMention })
       }
       return acc
-    }, [] as { source: string, target: string, labels: string[], sourceModel: string }[])
+    }, [] as { source: string, target: string, labels: string[], sourceModel: string, isMention?: boolean }[])
     const cyEdges: CyEdge[] = groupedEdges.map(group => {
       const label = group.labels.length === 1 ? group.labels[0] : `${group.labels[0]}など${group.labels.length}件の参照`
 
@@ -324,6 +327,7 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, onlyRootDefaultValue
         target: group.target,
         label,
         'line-color': lineColor,
+        'line-style': group.isMention ? 'dashed' : 'solid',
       } satisfies CyEdge)
     })
 

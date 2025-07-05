@@ -31,6 +31,7 @@ export type Edge = {
   target: string
   label?: string
   'line-color'?: string
+  'line-style'?: 'solid' | 'dashed' | 'dotted'
 }
 
 export const createEmptyDataSet = (): DataSet => ({

@@ -2,7 +2,7 @@ import React from "react"
 import * as ReactMention from 'react-mentions'
 import * as Icon from "@heroicons/react/24/solid"
 import * as Layout from "../../layout"
-import { XmlElementItem } from "./types"
+import { XmlElementItem, ATTR_TYPE, TYPE_DATA_MODEL, TYPE_COMMAND_MODEL, TYPE_QUERY_MODEL, TYPE_CHILD, TYPE_CHILDREN } from "./types"
 import useEvent from "react-use-event-hook"
 import { SchemaDefinitionContext, COLUMN_ID_COMMENT } from "./index.Grid"
 import { MentionInputWrapper } from "../UI/MentionInputWrapper"
@@ -86,8 +86,21 @@ const SchemaDefinitionMentionTextarea = React.forwardRef(({
       allElements.push(...tree.xmlElements)
     }
 
+    // ルート集約、child、childrenのみに制限
+    const targetElements = allElements.filter(el => {
+      const type = el.attributes[ATTR_TYPE]
+
+      // ルート集約（インデント0かつTypeがdata-model、query-model、command-modelのいずれか）
+      if (el.indent === 0 && (type === TYPE_DATA_MODEL || type === TYPE_QUERY_MODEL || type === TYPE_COMMAND_MODEL)) return true
+
+      // child または children
+      if (type === TYPE_CHILD || type === TYPE_CHILDREN) return true
+
+      return false
+    })
+
     // クエリに基づいてフィルタリング
-    const filtered = allElements.filter(el => {
+    const filtered = targetElements.filter(el => {
       const localName = el.localName || ''
       return localName.toLowerCase().includes(query.toLowerCase())
     })

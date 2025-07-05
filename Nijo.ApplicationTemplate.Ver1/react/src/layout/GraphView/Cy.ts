@@ -333,6 +333,7 @@ const STYLESHEET: cytoscape.CytoscapeOptions['style'] = [{
     'label': 'data(label)',
     'color': '#707070',
     'line-color': edge => edge.data('line-color') ?? '#707070',
+    'line-style': edge => edge.data('line-style') ?? 'solid',
     'target-arrow-color': edge => edge.data('line-color') ?? '#707070',
     'line-opacity': .5,
     'font-size': '10px',
