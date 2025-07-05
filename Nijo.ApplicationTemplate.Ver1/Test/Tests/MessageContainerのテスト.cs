@@ -17,12 +17,12 @@ internal class MessageContainerのテスト {
     [Test]
     public void ToJsonObjectのテスト() {
         // パスを意味のある値で初期化
-        var container = new 商品マスタSaveCommandMessages(new List<string> { "商品マスタ" });
+        var container = new 医療機器マスタSaveCommandMessages(new List<string> { "医療機器マスタ" });
 
         // ---------------------
         // Arrange
         // 子オブジェクトの、さらに子配列の要素のプロパティにエラーを追加
-        container.商品詳細.付属品[3].付属品名.AddError("付属品名が記載されていません。");
+        container.機器詳細.付属品[3].付属品名.AddError("付属品名が記載されていません。");
         container.AddError("ルートのエラー");
 
         // ---------------------
@@ -61,7 +61,7 @@ internal class MessageContainerのテスト {
     public void メッセージがないときのJSONは空になること() {
         // ---------------------
         // Arrange
-        var container = new 商品マスタSaveCommandMessages(new List<string> { "商品マスタ" });
+        var container = new 医療機器マスタSaveCommandMessages(new List<string> { "医療機器マスタ" });
         // メッセージを追加しない
 
         // ---------------------
@@ -77,13 +77,13 @@ internal class MessageContainerのテスト {
     public void HasErrorで子孫のエラーが検出できること() {
         // ---------------------
         // Arrange
-        var container = new 商品マスタSaveCommandMessages(new List<string> { "商品マスタ" });
+        var container = new 医療機器マスタSaveCommandMessages(new List<string> { "医療機器マスタ" });
 
         // 直接コンテナにエラーを追加
         container.AddError("直接のエラー");
 
         // 深いネストの子要素にエラーを追加
-        container.商品詳細.付属品[3].付属品名.AddError("付属品名が記載されていません。");
+        container.機器詳細.付属品[3].付属品名.AddError("付属品名が記載されていません。");
 
         // ---------------------
         // Act & Assert
@@ -94,11 +94,11 @@ internal class MessageContainerのテスト {
     public void 異なる添字の配列要素にメッセージがある場合() {
         // ---------------------
         // Arrange
-        var container = new 商品マスタSaveCommandMessages(new List<string> { "商品マスタ" });
+        var container = new 医療機器マスタSaveCommandMessages(new List<string> { "医療機器マスタ" });
 
         // 不連続なインデックスにメッセージを追加
-        container.商品詳細.付属品[1].数量.AddError("数量1のエラー");
-        container.商品詳細.付属品[5].数量.AddError("数量5のエラー");
+        container.機器詳細.付属品[1].数量.AddError("数量1のエラー");
+        container.機器詳細.付属品[5].数量.AddError("数量5のエラー");
 
         // ---------------------
         // Act
@@ -107,12 +107,12 @@ internal class MessageContainerのテスト {
 
         // ---------------------
         // Assert
-        // 商品詳細が存在することを確認
-        Assert.That(json.ContainsKey("商品詳細"), Is.True, "商品詳細キーが存在しません");
-        var 商品詳細Json = json["商品詳細"]!.AsObject();
+        // 機器詳細が存在することを確認
+        Assert.That(json.ContainsKey("機器詳細"), Is.True, "機器詳細キーが存在しません");
+        var 機器詳細Json = json["機器詳細"]!.AsObject();
         // 付属品が存在することを確認
-        Assert.That(商品詳細Json.ContainsKey("付属品"), Is.True, "付属品キーが存在しません");
-        var 付属品Json = 商品詳細Json["付属品"]!.AsObject();
+        Assert.That(機器詳細Json.ContainsKey("付属品"), Is.True, "付属品キーが存在しません");
+        var 付属品Json = 機器詳細Json["付属品"]!.AsObject();
 
         // インデックス1が存在することを確認
         Assert.That(付属品Json.ContainsKey("1"), Is.True, "付属品[1]が存在しません");
@@ -138,12 +138,12 @@ internal class MessageContainerのテスト {
     public void 複数種類のメッセージをひとつのプロパティに追加できること() {
         // ---------------------
         // Arrange
-        var container = new 商品マスタSaveCommandMessages(new List<string> { "商品マスタ" });
+        var container = new 医療機器マスタSaveCommandMessages(new List<string> { "医療機器マスタ" });
 
         // エラー・警告・情報の3種類すべてをひとつのプロパティに追加
-        container.商品名.AddError("商品名がNULLです。");
-        container.商品名.AddWarn("商品名が予約語と競合しています。");
-        container.商品名.AddInfo("以前の商品名は「旧商品名」でした。");
+        container.機器名.AddError("機器名がNULLです。");
+        container.機器名.AddWarn("機器名が予約語と競合しています。");
+        container.機器名.AddInfo("以前の機器名は「旧機器名」でした。");
 
         // ---------------------
         // Act
@@ -152,32 +152,32 @@ internal class MessageContainerのテスト {
 
         // ---------------------
         // Assert
-        Assert.That(json.ContainsKey("商品名"), Is.True, "商品名キーが存在しません");
-        var 商品名Json = json["商品名"]!.AsObject();
+        Assert.That(json.ContainsKey("機器名"), Is.True, "機器名キーが存在しません");
+        var 機器名Json = json["機器名"]!.AsObject();
 
         // errorメッセージの確認
-        Assert.That(商品名Json.ContainsKey("error"), Is.True, "errorメッセージが存在しません");
-        Assert.That((string)商品名Json["error"]![0]!, Is.EqualTo("商品名がNULLです。"));
+        Assert.That(機器名Json.ContainsKey("error"), Is.True, "errorメッセージが存在しません");
+        Assert.That((string)機器名Json["error"]![0]!, Is.EqualTo("機器名がNULLです。"));
 
         // warnメッセージの確認
-        Assert.That(商品名Json.ContainsKey("warn"), Is.True, "warnメッセージが存在しません");
-        Assert.That((string)商品名Json["warn"]![0]!, Is.EqualTo("商品名が予約語と競合しています。"));
+        Assert.That(機器名Json.ContainsKey("warn"), Is.True, "warnメッセージが存在しません");
+        Assert.That((string)機器名Json["warn"]![0]!, Is.EqualTo("機器名が予約語と競合しています。"));
 
         // infoメッセージの確認
-        Assert.That(商品名Json.ContainsKey("info"), Is.True, "infoメッセージが存在しません");
-        Assert.That((string)商品名Json["info"]![0]!, Is.EqualTo("以前の商品名は「旧商品名」でした。"));
+        Assert.That(機器名Json.ContainsKey("info"), Is.True, "infoメッセージが存在しません");
+        Assert.That((string)機器名Json["info"]![0]!, Is.EqualTo("以前の機器名は「旧機器名」でした。"));
     }
 
     [Test]
     public void 複数のエラーメッセージを同じプロパティに追加できること() {
         // ---------------------
         // Arrange
-        var container = new 商品マスタSaveCommandMessages(new List<string> { "商品マスタ" });
+        var container = new 医療機器マスタSaveCommandMessages(new List<string> { "医療機器マスタ" });
 
         // 複数のエラーメッセージを同じプロパティに追加
-        container.価格.AddError("価格が未入力です。");
-        container.価格.AddError("価格が0以下です。");
-        container.価格.AddError("価格の上限を超えています。");
+        container.単価.AddError("単価が未入力です。");
+        container.単価.AddError("単価が0以下です。");
+        container.単価.AddError("単価の上限を超えています。");
 
         // ---------------------
         // Act
@@ -186,37 +186,37 @@ internal class MessageContainerのテスト {
 
         // ---------------------
         // Assert
-        Assert.That(json.ContainsKey("価格"), Is.True, "価格キーが存在しません");
-        var 価格Json = json["価格"]!.AsObject();
+        Assert.That(json.ContainsKey("単価"), Is.True, "単価キーが存在しません");
+        var 単価Json = json["単価"]!.AsObject();
 
         // errorメッセージの確認
-        Assert.That(価格Json.ContainsKey("error"), Is.True, "errorメッセージが存在しません");
-        var エラー配列 = 価格Json["error"]!.AsArray();
+        Assert.That(単価Json.ContainsKey("error"), Is.True, "errorメッセージが存在しません");
+        var エラー配列 = 単価Json["error"]!.AsArray();
 
         // 3つのエラーメッセージがあることを確認
         Assert.That(エラー配列.Count, Is.EqualTo(3), "エラーメッセージ数が一致しません");
-        Assert.That((string)エラー配列[0]!, Is.EqualTo("価格が未入力です。"));
-        Assert.That((string)エラー配列[1]!, Is.EqualTo("価格が0以下です。"));
-        Assert.That((string)エラー配列[2]!, Is.EqualTo("価格の上限を超えています。"));
+        Assert.That((string)エラー配列[0]!, Is.EqualTo("単価が未入力です。"));
+        Assert.That((string)エラー配列[1]!, Is.EqualTo("単価が0以下です。"));
+        Assert.That((string)エラー配列[2]!, Is.EqualTo("単価の上限を超えています。"));
     }
 
     [Test]
     public void 様々な階層のオブジェクトにメッセージを追加できること() {
         // ---------------------
         // Arrange
-        var container = new 商品マスタSaveCommandMessages(new List<string> { "商品マスタ" });
+        var container = new 医療機器マスタSaveCommandMessages(new List<string> { "医療機器マスタ" });
 
         // ルートオブジェクトにメッセージ追加
         container.AddError("全体的なエラーです。");
 
         // 直接の子要素にメッセージ追加
-        container.商品名.AddError("商品名の値が異常です。");
+        container.機器名.AddError("機器名の値が異常です。");
 
         // 子の配列要素にメッセージ追加
-        container.商品詳細.付属品[2].付属品名.AddError("付属品名が未入力です。");
+        container.機器詳細.付属品[2].付属品名.AddError("付属品名が未入力です。");
 
         // さらに別の添字の配列要素にメッセージ追加
-        container.商品詳細.付属品[7].数量.AddWarn("数量が標準的ではありません。");
+        container.機器詳細.付属品[7].数量.AddWarn("数量が標準的ではありません。");
 
         // ---------------------
         // Act
@@ -230,14 +230,14 @@ internal class MessageContainerのテスト {
         Assert.That((string)json["error"]![0]!, Is.EqualTo("全体的なエラーです。"));
 
         // 直接の子要素のエラー確認
-        Assert.That(json.ContainsKey("商品名"), Is.True, "商品名キーが存在しません");
-        Assert.That((string)json["商品名"]!["error"]![0]!, Is.EqualTo("商品名の値が異常です。"));
+        Assert.That(json.ContainsKey("機器名"), Is.True, "機器名キーが存在しません");
+        Assert.That((string)json["機器名"]!["error"]![0]!, Is.EqualTo("機器名の値が異常です。"));
 
         // 配列要素のエラー確認
-        Assert.That(json.ContainsKey("商品詳細"), Is.True, "商品詳細キーが存在しません");
-        var 商品詳細Json = json["商品詳細"]!.AsObject();
-        Assert.That(商品詳細Json.ContainsKey("付属品"), Is.True, "付属品キーが存在しません");
-        var 付属品Json = 商品詳細Json["付属品"]!.AsObject();
+        Assert.That(json.ContainsKey("機器詳細"), Is.True, "機器詳細キーが存在しません");
+        var 機器詳細Json = json["機器詳細"]!.AsObject();
+        Assert.That(機器詳細Json.ContainsKey("付属品"), Is.True, "付属品キーが存在しません");
+        var 付属品Json = 機器詳細Json["付属品"]!.AsObject();
 
         // インデックス2の要素確認
         Assert.That(付属品Json.ContainsKey("2"), Is.True, "付属品[2]が存在しません");

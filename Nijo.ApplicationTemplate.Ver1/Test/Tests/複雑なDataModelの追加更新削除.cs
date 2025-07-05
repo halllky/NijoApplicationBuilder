@@ -17,7 +17,7 @@ partial class DB接続あり_更新あり {
     /// </summary>
     [Test]
     public async Task Childの追加更新削除が正常に動作するか確認() {
-        var scope = TestUtilImpl.Instance.CreateScope<商品マスタSaveCommandMessages>(
+        var scope = TestUtilImpl.Instance.CreateScope<医療機器マスタSaveCommandMessages>(
             nameof(Childの追加更新削除が正常に動作するか確認),
             options: new PresentationContextOptions { IgnoreConfirm = true });
 
@@ -27,30 +27,30 @@ partial class DB接続あり_更新あり {
         await generator.GenerateAsync(dbDescriptor);
 
         // 不要な部分を削除
-        await scope.App.DbContext.アクション結果DbSet.ExecuteDeleteAsync();
-        await scope.App.DbContext.在庫調査報告DbSet.ExecuteDeleteAsync();
-        await scope.App.DbContext.シフトDbSet.ExecuteDeleteAsync();
-        await scope.App.DbContext.注文履歴DbSet.ExecuteDeleteAsync();
-        await scope.App.DbContext.店舗マスタDbSet.ExecuteDeleteAsync();
-        await scope.App.DbContext.商品マスタDbSet.ExecuteDeleteAsync();
+        await scope.App.DbContext.措置結果DbSet.ExecuteDeleteAsync();
+        await scope.App.DbContext.機器点検報告DbSet.ExecuteDeleteAsync();
+        await scope.App.DbContext.勤務スケジュールDbSet.ExecuteDeleteAsync();
+        await scope.App.DbContext.診療履歴DbSet.ExecuteDeleteAsync();
+        await scope.App.DbContext.診療科マスタDbSet.ExecuteDeleteAsync();
+        await scope.App.DbContext.医療機器マスタDbSet.ExecuteDeleteAsync();
 
         // --------------------------
-        // 商品マスタ、その直下のChild、さらにその直下のChildに登録
+        // 医療機器マスタ、その直下のChild、さらにその直下のChildに登録
         using (var tran = await scope.App.DbContext.Database.BeginTransactionAsync()) {
-            var category1 = scope.App.DbContext.カテゴリマスタDbSet.OrderBy(x => x.カテゴリID).First();
-            var supplier1 = scope.App.DbContext.仕入先マスタDbSet.OrderBy(x => x.仕入先ID).First();
-            var warehouse1 = scope.App.DbContext.倉庫マスタDbSet.OrderBy(x => x.ID).First();
-            var employee1 = scope.App.DbContext.従業員マスタDbSet.OrderBy(x => x.従業員ID).First();
+            var category1 = scope.App.DbContext.機器分類マスタDbSet.OrderBy(x => x.機器分類ID).First();
+            var supplier1 = scope.App.DbContext.供給業者マスタDbSet.OrderBy(x => x.供給業者ID).First();
+            var warehouse1 = scope.App.DbContext.保管庫マスタDbSet.OrderBy(x => x.保管庫ID).First();
+            var employee1 = scope.App.DbContext.医療従事者マスタDbSet.OrderBy(x => x.医療従事者ID).First();
 
-            await scope.App.Create商品マスタAsync(new() {
-                ID = "PROD001",
-                商品名 = "テスト商品1",
-                価格 = 1000,
-                カテゴリ = new() { カテゴリID = category1.カテゴリID },
-                仕入先 = new() { 仕入先ID = supplier1.仕入先ID },
-                商品詳細 = new() {
-                    説明文 = "テスト商品の説明文",
-                    商品仕様 = new() {
+            await scope.App.Create医療機器マスタAsync(new() {
+                機器ID = "MED001",
+                機器名 = "テスト医療機器1",
+                単価 = 1000,
+                機器分類 = new() { 機器分類ID = category1.機器分類ID },
+                供給業者 = new() { 供給業者ID = supplier1.供給業者ID },
+                機器詳細 = new() {
+                    機器説明 = "テスト医療機器の説明文",
+                    機器仕様 = new() {
                         重量 = 500,
                         サイズ = new() {
                             幅 = 10,
@@ -59,16 +59,16 @@ partial class DB接続あり_更新あり {
                         }
                     },
                     付属品 = new List<付属品CreateCommand> {
-                    new() {
-                        付属品ID = "ACC001",
-                        付属品名 = "取扱説明書",
-                        数量 = 1
+                        new() {
+                            付属品ID = "ACC001",
+                            付属品名 = "取扱説明書",
+                            数量 = 1
+                        }
                     }
-                }
                 },
                 在庫情報 = new List<在庫情報CreateCommand> {
                     new() {
-                        倉庫 = new() { ID = warehouse1.ID },
+                        保管庫 = new() { 保管庫ID = warehouse1.保管庫ID },
                         在庫数 = 100,
                         棚卸日時 = DateTime.Now,
                         在庫状況履歴 = new List<在庫状況履歴CreateCommand> {
@@ -77,7 +77,7 @@ partial class DB接続あり_更新あり {
                                 変更日時 = DateTime.Now.AddDays(-1),
                                 変更前在庫数 = 0,
                                 変更後在庫数 = 100,
-                                担当者 = new() { 従業員ID = (従業員ID型?)employee1.従業員ID }
+                                担当者 = new() { 医療従事者ID = (医療従事者ID型?)employee1.医療従事者ID }
                             }
                         }
                     }
@@ -91,9 +91,9 @@ partial class DB接続あり_更新あり {
             Assert.That(scope.PresentationContext.Messages.HasError(), Is.False);
 
             // 3テーブルともに登録されていることを確認
-            Assert.That(scope.App.DbContext.商品マスタDbSet.Count(), Is.EqualTo(1));
-            Assert.That(scope.App.DbContext.商品詳細DbSet.Count(), Is.EqualTo(1));
-            Assert.That(scope.App.DbContext.商品仕様DbSet.Count(), Is.EqualTo(1));
+            Assert.That(scope.App.DbContext.医療機器マスタDbSet.Count(), Is.EqualTo(1));
+            Assert.That(scope.App.DbContext.機器詳細DbSet.Count(), Is.EqualTo(1));
+            Assert.That(scope.App.DbContext.機器仕様DbSet.Count(), Is.EqualTo(1));
             Assert.That(scope.App.DbContext.サイズDbSet.Count(), Is.EqualTo(1));
             Assert.That(scope.App.DbContext.付属品DbSet.Count(), Is.EqualTo(1));
             Assert.That(scope.App.DbContext.在庫情報DbSet.Count(), Is.EqualTo(1));
@@ -103,20 +103,20 @@ partial class DB接続あり_更新あり {
         // --------------------------
         // 3テーブルすべてUPDATE
         using (var tran = await scope.App.DbContext.Database.BeginTransactionAsync()) {
-            var category1 = scope.App.DbContext.カテゴリマスタDbSet.OrderBy(x => x.カテゴリID).First();
-            var supplier1 = scope.App.DbContext.仕入先マスタDbSet.OrderBy(x => x.仕入先ID).First();
-            var warehouse1 = scope.App.DbContext.倉庫マスタDbSet.OrderBy(x => x.ID).First();
-            var employee1 = scope.App.DbContext.従業員マスタDbSet.OrderBy(x => x.従業員ID).First();
+            var category1 = scope.App.DbContext.機器分類マスタDbSet.OrderBy(x => x.機器分類ID).First();
+            var supplier1 = scope.App.DbContext.供給業者マスタDbSet.OrderBy(x => x.供給業者ID).First();
+            var warehouse1 = scope.App.DbContext.保管庫マスタDbSet.OrderBy(x => x.保管庫ID).First();
+            var employee1 = scope.App.DbContext.医療従事者マスタDbSet.OrderBy(x => x.医療従事者ID).First();
 
-            await scope.App.Update商品マスタAsync(new() {
-                ID = "PROD001",
-                商品名 = "テスト商品1-更新",
-                価格 = 1500,
-                カテゴリ = new() { カテゴリID = category1.カテゴリID },
-                仕入先 = new() { 仕入先ID = supplier1.仕入先ID },
-                商品詳細 = new() {
-                    説明文 = "テスト商品の説明文-更新",
-                    商品仕様 = new() {
+            await scope.App.Update医療機器マスタAsync(new() {
+                機器ID = "MED001",
+                機器名 = "テスト医療機器1-更新",
+                単価 = 1500,
+                機器分類 = new() { 機器分類ID = category1.機器分類ID },
+                供給業者 = new() { 供給業者ID = supplier1.供給業者ID },
+                機器詳細 = new() {
+                    機器説明 = "テスト医療機器の説明文-更新",
+                    機器仕様 = new() {
                         重量 = 600,
                         サイズ = new() {
                             幅 = 15,
@@ -134,7 +134,7 @@ partial class DB接続あり_更新あり {
                 },
                 在庫情報 = new List<在庫情報UpdateCommand> {
                     new() {
-                        倉庫 = new() { ID = warehouse1.ID },
+                        保管庫 = new() { 保管庫ID = warehouse1.保管庫ID },
                         在庫数 = 150,
                         棚卸日時 = DateTime.Now,
                         在庫状況履歴 = new List<在庫状況履歴UpdateCommand> {
@@ -143,14 +143,14 @@ partial class DB接続あり_更新あり {
                                 変更日時 = DateTime.Now.AddDays(-1),
                                 変更前在庫数 = 0,
                                 変更後在庫数 = 100,
-                                担当者 = new() { 従業員ID = (従業員ID型?)employee1.従業員ID }
+                                担当者 = new() { 医療従事者ID = (医療従事者ID型?)employee1.医療従事者ID }
                             },
                             new() {
                                 履歴ID = "HIST002",
                                 変更日時 = DateTime.Now,
                                 変更前在庫数 = 100,
                                 変更後在庫数 = 150,
-                                担当者 = new() { 従業員ID = (従業員ID型?)employee1.従業員ID }
+                                担当者 = new() { 医療従事者ID = (医療従事者ID型?)employee1.医療従事者ID }
                             }
                         }
                     }
@@ -165,16 +165,16 @@ partial class DB接続あり_更新あり {
             Assert.That(scope.PresentationContext.Messages.HasError(), Is.False);
 
             // 3テーブルともに新しい値に更新されていることを確認
-            Assert.That(scope.App.DbContext.商品マスタDbSet.Count(), Is.EqualTo(1));
-            var 商品マスタ = scope.App.DbContext.商品マスタDbSet.First();
-            Assert.That(商品マスタ.商品名, Is.EqualTo("テスト商品1-更新"));
-            Assert.That(商品マスタ.価格, Is.EqualTo(1500));
+            Assert.That(scope.App.DbContext.医療機器マスタDbSet.Count(), Is.EqualTo(1));
+            var 医療機器マスタ = scope.App.DbContext.医療機器マスタDbSet.First();
+            Assert.That(医療機器マスタ.機器名, Is.EqualTo("テスト医療機器1-更新"));
+            Assert.That(医療機器マスタ.単価, Is.EqualTo(1500));
 
-            var 商品詳細 = scope.App.DbContext.商品詳細DbSet.First();
-            Assert.That(商品詳細.説明文, Is.EqualTo("テスト商品の説明文-更新"));
+            var 機器詳細 = scope.App.DbContext.機器詳細DbSet.First();
+            Assert.That(機器詳細.機器説明, Is.EqualTo("テスト医療機器の説明文-更新"));
 
-            var 商品仕様 = scope.App.DbContext.商品仕様DbSet.First();
-            Assert.That(商品仕様.重量, Is.EqualTo(600));
+            var 機器仕様 = scope.App.DbContext.機器仕様DbSet.First();
+            Assert.That(機器仕様.重量, Is.EqualTo(600));
 
             var サイズ = scope.App.DbContext.サイズDbSet.First();
             Assert.That(サイズ.幅, Is.EqualTo(15));
@@ -187,19 +187,19 @@ partial class DB接続あり_更新あり {
         // --------------------------
         // 孫テーブルだけをDELETEし、ルートと子は変更なし
         using (var tran = await scope.App.DbContext.Database.BeginTransactionAsync()) {
-            var category1 = scope.App.DbContext.カテゴリマスタDbSet.OrderBy(x => x.カテゴリID).First();
-            var supplier1 = scope.App.DbContext.仕入先マスタDbSet.OrderBy(x => x.仕入先ID).First();
-            var warehouse1 = scope.App.DbContext.倉庫マスタDbSet.OrderBy(x => x.ID).First();
+            var category1 = scope.App.DbContext.機器分類マスタDbSet.OrderBy(x => x.機器分類ID).First();
+            var supplier1 = scope.App.DbContext.供給業者マスタDbSet.OrderBy(x => x.供給業者ID).First();
+            var warehouse1 = scope.App.DbContext.保管庫マスタDbSet.OrderBy(x => x.保管庫ID).First();
 
-            await scope.App.Update商品マスタAsync(new() {
-                ID = "PROD001",
-                商品名 = "テスト商品1-更新",
-                価格 = 1500,
-                カテゴリ = new() { カテゴリID = category1.カテゴリID },
-                仕入先 = new() { 仕入先ID = supplier1.仕入先ID },
-                商品詳細 = new() {
-                    説明文 = "テスト商品の説明文-更新",
-                    商品仕様 = new() {
+            await scope.App.Update医療機器マスタAsync(new() {
+                機器ID = "MED001",
+                機器名 = "テスト医療機器1-更新",
+                単価 = 1500,
+                機器分類 = new() { 機器分類ID = category1.機器分類ID },
+                供給業者 = new() { 供給業者ID = supplier1.供給業者ID },
+                機器詳細 = new() {
+                    機器説明 = "テスト医療機器の説明文-更新",
+                    機器仕様 = new() {
                         重量 = 600,
                         サイズ = null // サイズを削除
                     },
@@ -213,7 +213,7 @@ partial class DB接続あり_更新あり {
                 },
                 在庫情報 = new List<在庫情報UpdateCommand> {
                     new() {
-                        倉庫 = new() { ID = warehouse1.ID },
+                        保管庫 = new() { 保管庫ID = warehouse1.保管庫ID },
                         在庫数 = 150,
                         棚卸日時 = DateTime.Now,
                         在庫状況履歴 = new List<在庫状況履歴UpdateCommand>() // 履歴を空にして削除
@@ -229,9 +229,9 @@ partial class DB接続あり_更新あり {
             Assert.That(scope.PresentationContext.Messages.HasError(), Is.False);
 
             // ルートと子が影響なし、孫が消えていることを確認
-            Assert.That(scope.App.DbContext.商品マスタDbSet.Count(), Is.EqualTo(1));
-            Assert.That(scope.App.DbContext.商品詳細DbSet.Count(), Is.EqualTo(1));
-            Assert.That(scope.App.DbContext.商品仕様DbSet.Count(), Is.EqualTo(1));
+            Assert.That(scope.App.DbContext.医療機器マスタDbSet.Count(), Is.EqualTo(1));
+            Assert.That(scope.App.DbContext.機器詳細DbSet.Count(), Is.EqualTo(1));
+            Assert.That(scope.App.DbContext.機器仕様DbSet.Count(), Is.EqualTo(1));
             Assert.That(scope.App.DbContext.サイズDbSet.Count(), Is.EqualTo(0)); // サイズが削除されたことを確認
             Assert.That(scope.App.DbContext.付属品DbSet.Count(), Is.EqualTo(1)); // 付属品は残っていることを確認
             Assert.That(scope.App.DbContext.在庫情報DbSet.Count(), Is.EqualTo(1));
@@ -241,20 +241,20 @@ partial class DB接続あり_更新あり {
         // --------------------------
         // 孫テーブルをCREATEし、ルートと子は変更なし
         using (var tran = await scope.App.DbContext.Database.BeginTransactionAsync()) {
-            var category1 = scope.App.DbContext.カテゴリマスタDbSet.OrderBy(x => x.カテゴリID).First();
-            var supplier1 = scope.App.DbContext.仕入先マスタDbSet.OrderBy(x => x.仕入先ID).First();
-            var warehouse1 = scope.App.DbContext.倉庫マスタDbSet.OrderBy(x => x.ID).First();
-            var employee1 = scope.App.DbContext.従業員マスタDbSet.OrderBy(x => x.従業員ID).First();
+            var category1 = scope.App.DbContext.機器分類マスタDbSet.OrderBy(x => x.機器分類ID).First();
+            var supplier1 = scope.App.DbContext.供給業者マスタDbSet.OrderBy(x => x.供給業者ID).First();
+            var warehouse1 = scope.App.DbContext.保管庫マスタDbSet.OrderBy(x => x.保管庫ID).First();
+            var employee1 = scope.App.DbContext.医療従事者マスタDbSet.OrderBy(x => x.医療従事者ID).First();
 
-            await scope.App.Update商品マスタAsync(new() {
-                ID = "PROD001",
-                商品名 = "テスト商品1-更新",
-                価格 = 1500,
-                カテゴリ = new() { カテゴリID = category1.カテゴリID },
-                仕入先 = new() { 仕入先ID = supplier1.仕入先ID },
-                商品詳細 = new() {
-                    説明文 = "テスト商品の説明文-更新",
-                    商品仕様 = new() {
+            await scope.App.Update医療機器マスタAsync(new() {
+                機器ID = "MED001",
+                機器名 = "テスト医療機器1-更新",
+                単価 = 1500,
+                機器分類 = new() { 機器分類ID = category1.機器分類ID },
+                供給業者 = new() { 供給業者ID = supplier1.供給業者ID },
+                機器詳細 = new() {
+                    機器説明 = "テスト医療機器の説明文-更新",
+                    機器仕様 = new() {
                         重量 = 600,
                         サイズ = new() { // サイズを再追加
                             幅 = 20,
@@ -272,7 +272,7 @@ partial class DB接続あり_更新あり {
                 },
                 在庫情報 = new List<在庫情報UpdateCommand> {
                     new() {
-                        倉庫 = new() { ID = warehouse1.ID },
+                        保管庫 = new() { 保管庫ID = warehouse1.保管庫ID },
                         在庫数 = 150,
                         棚卸日時 = DateTime.Now,
                         在庫状況履歴 = new List<在庫状況履歴UpdateCommand> { // 履歴を再追加
@@ -281,7 +281,7 @@ partial class DB接続あり_更新あり {
                                 変更日時 = DateTime.Now,
                                 変更前在庫数 = 150,
                                 変更後在庫数 = 150,
-                                担当者 = new() { 従業員ID = (従業員ID型?)employee1.従業員ID }
+                                担当者 = new() { 医療従事者ID = (医療従事者ID型?)employee1.医療従事者ID }
                             },
                         },
                     },
@@ -296,9 +296,9 @@ partial class DB接続あり_更新あり {
             Assert.That(scope.PresentationContext.Messages.HasError(), Is.False);
 
             // 3テーブルすべてデータがあることを確認
-            Assert.That(scope.App.DbContext.商品マスタDbSet.Count(), Is.EqualTo(1));
-            Assert.That(scope.App.DbContext.商品詳細DbSet.Count(), Is.EqualTo(1));
-            Assert.That(scope.App.DbContext.商品仕様DbSet.Count(), Is.EqualTo(1));
+            Assert.That(scope.App.DbContext.医療機器マスタDbSet.Count(), Is.EqualTo(1));
+            Assert.That(scope.App.DbContext.機器詳細DbSet.Count(), Is.EqualTo(1));
+            Assert.That(scope.App.DbContext.機器仕様DbSet.Count(), Is.EqualTo(1));
             Assert.That(scope.App.DbContext.サイズDbSet.Count(), Is.EqualTo(1)); // サイズが再追加されたことを確認
             Assert.That(scope.App.DbContext.付属品DbSet.Count(), Is.EqualTo(1));
             Assert.That(scope.App.DbContext.在庫情報DbSet.Count(), Is.EqualTo(1));
@@ -313,16 +313,16 @@ partial class DB接続あり_更新あり {
         // --------------------------
         // 子をDELETE
         using (var tran = await scope.App.DbContext.Database.BeginTransactionAsync()) {
-            var category1 = scope.App.DbContext.カテゴリマスタDbSet.OrderBy(x => x.カテゴリID).First();
-            var supplier1 = scope.App.DbContext.仕入先マスタDbSet.OrderBy(x => x.仕入先ID).First();
+            var category1 = scope.App.DbContext.機器分類マスタDbSet.OrderBy(x => x.機器分類ID).First();
+            var supplier1 = scope.App.DbContext.供給業者マスタDbSet.OrderBy(x => x.供給業者ID).First();
 
-            await scope.App.Update商品マスタAsync(new() {
-                ID = "PROD001",
-                商品名 = "テスト商品1-更新",
-                価格 = 1500,
-                カテゴリ = new() { カテゴリID = category1.カテゴリID },
-                仕入先 = new() { 仕入先ID = supplier1.仕入先ID },
-                商品詳細 = null, // 商品詳細を削除
+            await scope.App.Update医療機器マスタAsync(new() {
+                機器ID = "MED001",
+                機器名 = "テスト医療機器1-更新",
+                単価 = 1500,
+                機器分類 = new() { 機器分類ID = category1.機器分類ID },
+                供給業者 = new() { 供給業者ID = supplier1.供給業者ID },
+                機器詳細 = null, // 機器詳細を削除
                 在庫情報 = new List<在庫情報UpdateCommand>(), // 在庫情報を空にして削除
                 Version = 3
             }, scope.PresentationContext.Messages, scope.PresentationContext);
@@ -334,9 +334,9 @@ partial class DB接続あり_更新あり {
             Assert.That(scope.PresentationContext.Messages.HasError(), Is.False);
 
             // ルートだけデータが残っていることを確認
-            Assert.That(scope.App.DbContext.商品マスタDbSet.Count(), Is.EqualTo(1));
-            Assert.That(scope.App.DbContext.商品詳細DbSet.Count(), Is.EqualTo(0)); // 商品詳細が削除されたことを確認
-            Assert.That(scope.App.DbContext.商品仕様DbSet.Count(), Is.EqualTo(0)); // 商品仕様も削除されたことを確認
+            Assert.That(scope.App.DbContext.医療機器マスタDbSet.Count(), Is.EqualTo(1));
+            Assert.That(scope.App.DbContext.機器詳細DbSet.Count(), Is.EqualTo(0)); // 機器詳細が削除されたことを確認
+            Assert.That(scope.App.DbContext.機器仕様DbSet.Count(), Is.EqualTo(0)); // 機器仕様も削除されたことを確認
             Assert.That(scope.App.DbContext.サイズDbSet.Count(), Is.EqualTo(0));
             Assert.That(scope.App.DbContext.付属品DbSet.Count(), Is.EqualTo(0));
             Assert.That(scope.App.DbContext.在庫情報DbSet.Count(), Is.EqualTo(0)); // 在庫情報が削除されたことを確認
