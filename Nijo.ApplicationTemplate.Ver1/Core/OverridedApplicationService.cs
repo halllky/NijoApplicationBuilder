@@ -24,7 +24,7 @@ partial class OverridedApplicationService {
             住所_番地建物名 = e.患者マスタの住所!.番地建物名,
             患者情報_初診日 = e.患者情報!.初診日,
             患者情報_最終受診日 = e.患者情報!.最終受診日,
-            患者情報_診療履歴 = e.患者情報!.診療履歴.Select(hist => new 診療履歴SearchResult {
+            患者情報_診療履歴 = e.患者情報!.患者情報の診療履歴.Select(hist => new 患者情報の診療履歴SearchResult {
                 履歴ID = hist.履歴ID,
                 日付 = hist.日付,
                 診療点数 = hist.診療点数,

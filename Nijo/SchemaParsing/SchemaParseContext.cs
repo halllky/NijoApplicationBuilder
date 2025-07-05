@@ -61,10 +61,8 @@ public class SchemaParseContext {
             var duplicates = Document
                 // まずXML要素の名前がxElementのXML要素の名前と衝突している要素を絞り込む
                 .XPathSelectElements($"//{xElement.Name.LocalName}")
-                // そのうちChild型またはChildren型であるものを絞り込む
-                .Where(x => x != xElement
-                         && (x.Attribute(ATTR_NODE_TYPE)?.Value == NODE_TYPE_CHILD
-                         || x.Attribute(ATTR_NODE_TYPE)?.Value == NODE_TYPE_CHILDREN))
+                // 自分以外の要素で同じ名前のものがあるかチェック
+                .Where(x => x != xElement)
                 .Any();
             if (duplicates) {
                 // 「（直近の親のPhysicalName）の（LocalName）」
