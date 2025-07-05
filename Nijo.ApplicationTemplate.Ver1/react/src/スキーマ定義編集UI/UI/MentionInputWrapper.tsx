@@ -3,6 +3,7 @@ import * as ReactMention from 'react-mentions';
 import useEvent from 'react-use-event-hook';
 import LinkifyJs from 'linkifyjs';
 import { Entity, EntityAttribute } from '../型つきドキュメント/types';
+import Linkify from 'linkify-react';
 
 export type MentionInputWrapperProps = {
   value?: string
@@ -97,7 +98,54 @@ export const MentionInputWrapper = React.forwardRef<HTMLTextAreaElement, Mention
   )
 })
 
-export const LINKIFY_OPTIONS: LinkifyJs.Opts = {
+/**
+ * メンション機能付きテキストエリアの読み取り専用表示。
+ * メンションをクリックすると、メンションのターゲットに移動する。
+ */
+export const ReadOnlyMentionText = ({
+  children,
+  className,
+  onClickMention,
+}: {
+  children?: string
+  className?: string
+  /** 未指定の場合はメンションをクリックしても何もしない */
+  onClickMention?: (part: MentionUtil.StringPart) => void
+}) => {
+
+  const parsed = React.useMemo(() => {
+    return MentionUtil.parseAsMentionText(children)
+  }, [children])
+
+  const handleClickMention = useEvent((part: MentionUtil.StringPart) => {
+    onClickMention?.(part)
+  })
+
+  return (
+    <div className={className}>
+      <Linkify options={LINKIFY_OPTIONS}>
+        {parsed.map((part, index) => (
+          <React.Fragment key={index}>
+            {part.isMention ? (
+              <span
+                className={onClickMention
+                  ? `text-sky-600 hover:bg-sky-100 underline underline-offset-2 cursor-pointer`
+                  : `text-sky-700`}
+                onClick={() => handleClickMention(part)}
+              >
+                @{part.text}
+              </span>
+            ) : (
+              <span>{part.text}</span>
+            )}
+          </React.Fragment>
+        ))}
+      </Linkify>
+    </div>
+  )
+}
+
+const LINKIFY_OPTIONS: LinkifyJs.Opts = {
   target: '_blank',
   className: 'text-sky-600 cursor-pointer underline underline-offset-2 hover:bg-sky-100',
 }

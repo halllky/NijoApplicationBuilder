@@ -6,7 +6,7 @@ import * as Input from '../../input';
 import * as Layout from '../../layout';
 import { applyFormatCondition, Entity, FormatCondition, Perspective, PerspectivePageData } from './types';
 import { MentionTextarea } from './MentionTextarea';
-import { MentionUtil } from '../UI';
+import * as UI from '../UI';
 import { UUID } from 'uuidjs';
 import { usePersonalSettings } from '../PersonalSettings';
 
@@ -69,9 +69,9 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
                   </div>
                 </React.Fragment>
               ))}
-              <span className={`flex-1 ${perspective?.wrapEntityName ? 'whitespace-pre-wrap break-all' : 'truncate'}`}>
-                {MentionUtil.toPlainText(text || '-')}
-              </span>
+              <UI.ReadOnlyMentionText className={`flex-1 ${perspective?.wrapEntityName ? 'whitespace-pre-wrap break-all' : 'truncate'}`}>
+                {text || '-'}
+              </UI.ReadOnlyMentionText>
             </div>
           );
         },
@@ -109,9 +109,9 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
               const value = context.row.original.attributeValues[attrDef.attributeId];
               return (
                 <div className={`w-full px-1 text-left `}>
-                  <span className={`block w-full ${attrDef.attributeType === 'description' ? 'whitespace-pre-wrap break-all' : 'truncate'}`}>
-                    {MentionUtil.toPlainText(value)}
-                  </span>
+                  <UI.ReadOnlyMentionText className={`block w-full ${attrDef.attributeType === 'description' ? 'whitespace-pre-wrap break-all' : 'truncate'}`}>
+                    {value}
+                  </UI.ReadOnlyMentionText>
                 </div>
               )
             },

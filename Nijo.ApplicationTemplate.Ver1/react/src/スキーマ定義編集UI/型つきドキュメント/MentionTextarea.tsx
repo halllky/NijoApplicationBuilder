@@ -5,8 +5,7 @@ import { NijoUiOutletContextType } from '../types';
 import { Entity, EntityAttribute, Perspective } from './types';
 import useEvent from 'react-use-event-hook';
 import { getNavigationUrl } from '../../routes';
-import Linkify from 'linkify-react';
-import { LINKIFY_OPTIONS, MentionInputWrapper, MentionUtil } from '../UI';
+import { MentionInputWrapper, ReadOnlyMentionText, MentionUtil } from '../UI';
 
 export type MentionTextareaProps = {
   value?: string
@@ -24,8 +23,8 @@ const MentionReadOnlyRenderer: React.FC<{ value?: string; className?: string }> 
   const { typedDoc: { appSettings, loadPerspectivePageData } } = ReactRouter.useOutletContext<NijoUiOutletContextType>()
   const navigate = ReactRouter.useNavigate()
 
-  // メンション部分をダブルクリックしたときの処理
-  const handleDoubleClickMention = useEvent(async (part: MentionUtil.StringPart) => {
+  // メンション部分をクリックしたときの処理
+  const handleClickMention = useEvent(async (part: MentionUtil.StringPart) => {
     if (!part.isMention) return;
 
     // typedDoc の中からリンク先エンティティのIDを含むページを探し
@@ -47,27 +46,9 @@ const MentionReadOnlyRenderer: React.FC<{ value?: string; className?: string }> 
   })
 
   return (
-    <div className={`whitespace-pre-wrap break-all pb-[2px] ${className ?? ''}`}>
-      <Linkify options={LINKIFY_OPTIONS}>
-        {MentionUtil.parseAsMentionText(value).map((part, index) => (
-          <React.Fragment key={index}>
-            {part.isMention ? (
-              <span
-                className="text-sky-600 cursor-pointer underline underline-offset-2 hover:bg-sky-100"
-                onClick={() => handleDoubleClickMention(part)}
-              >
-                @{part.text}
-              </span>
-            ) : (
-              <span>
-                {part.text}
-              </span>
-            )}
-          </React.Fragment>
-        ))}
-        &nbsp;
-      </Linkify>
-    </div>
+    <ReadOnlyMentionText className={`whitespace-pre-wrap break-all pb-[2px] ${className ?? ''}`} onClickMention={handleClickMention}>
+      {value}
+    </ReadOnlyMentionText>
   )
 }
 

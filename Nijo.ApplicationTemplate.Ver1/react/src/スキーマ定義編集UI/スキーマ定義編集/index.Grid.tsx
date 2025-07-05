@@ -5,7 +5,7 @@ import * as Icon from "@heroicons/react/24/solid"
 import * as Input from "../../input"
 import * as Layout from "../../layout"
 import { SchemaDefinitionGlobalState, ATTR_TYPE, XmlElementAttribute, XmlElementItem, ATTR_IS_KEY, TYPE_DATA_MODEL } from "./types"
-import { MentionUtil } from '../UI'
+import * as UI from '../UI'
 import useEvent from "react-use-event-hook"
 import { UUID } from "uuidjs"
 import { TYPE_COLUMN_DEF } from "./getAttrTypeColumnDef"
@@ -73,9 +73,9 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, getValidati
         const value = context.cell.getValue() as string
         return (
           <div className="flex-1 inline-flex text-left truncate">
-            <span className="flex-1 truncate">
-              {MentionUtil.toPlainText(value)}
-            </span>
+            <UI.ReadOnlyMentionText className="flex-1 truncate">
+              {value}
+            </UI.ReadOnlyMentionText>
           </div>
         )
       }
@@ -305,7 +305,7 @@ const createLocalNameCell = (
           ))}
 
           <span className={`flex-1 truncate ${bold}`}>
-            {MentionUtil.toPlainText(context.cell.getValue() as string)}
+            {context.cell.getValue() as string}
           </span>
         </div>
       )
@@ -344,7 +344,7 @@ const createAttributeCell = (
 
       return (
         <PlainCell className={hasError ? 'bg-amber-300/50' : ''}>
-          {MentionUtil.toPlainText(value)}
+          {value}
         </PlainCell>
       )
     },
