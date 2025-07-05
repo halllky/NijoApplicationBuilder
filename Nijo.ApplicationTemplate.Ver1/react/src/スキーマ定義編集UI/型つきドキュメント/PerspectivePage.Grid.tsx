@@ -57,21 +57,23 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
         isFixed: true,
         renderCell: context => {
           const indent = context.row.original.indent;
-          const text = context.cell.getValue() as string
           return (
             <div className="w-full flex-1 inline-flex text-left px-1">
               {Array.from({ length: indent }).map((_, i) => (
                 <React.Fragment key={i}>
-                  <div className="basis-[20px] min-w-[20px] relative leading-none">
+                  <div className="basis-[28px] min-w-[28px] relative leading-none">
                     {i >= 1 && (
                       <div className="absolute top-[-1px] bottom-[-1px] left-0 border-l border-gray-300 border-dotted leading-none"></div>
                     )}
                   </div>
                 </React.Fragment>
               ))}
-              <UI.ReadOnlyMentionText className={`flex-1 ${perspective?.wrapEntityName ? 'whitespace-pre-wrap break-all' : 'truncate'}`}>
-                {text || '-'}
+              <UI.ReadOnlyMentionText className={`flex-1 ${perspective?.wrapEntityName ? 'whitespace-pre-wrap break-all' : 'truncate'} ${context.row.original.entityName ? '' : 'text-gray-400'}`}>
+                {context.row.original.entityName || '-'}
               </UI.ReadOnlyMentionText>
+              {context.row.original.comments.length >= 1 && (
+                <Icon.ChatBubbleOvalLeftEllipsisIcon className="w-5 text-gray-500" />
+              )}
             </div>
           );
         },
