@@ -8,6 +8,7 @@ import { UUID } from 'uuidjs';
 import * as Input from '../../input';
 import * as Layout from '../../layout';
 import { Perspective, EntityAttribute, FormatCondition, AVAILABLEFORMAT } from './types';
+import * as UI from '../UI';
 
 export type EntityTypeSettingsDialogProps = {
   initialEntityType: Perspective;
@@ -149,12 +150,6 @@ export const EntityTypeEditDialog = ({
     })
   })
 
-  // キャンセル
-  const handleCancel = useEvent(() => {
-    if (isDirty && !window.confirm('キャンセルしますか？')) return;
-    onCancel()
-  })
-
   // 適用
   const handleApply = useEvent((formData: Perspective & { attributesGrid: AttributeRowForEdit[] }) => {
     const { attributesGrid, ...restOfEntityType } = formData;
@@ -168,14 +163,15 @@ export const EntityTypeEditDialog = ({
   });
 
   return (
-    <Layout.ModalDialog open className="relative w-[90vw] h-[90vh] bg-white flex flex-col gap-1 relative border border-gray-400" onOutsideClick={handleCancel}>
+    <UI.SettingDialog
+      isDirty={isDirty}
+      onApply={handleSubmit(handleApply)}
+      onCancel={onCancel}
+      title="ドキュメント詳細設定"
+      className="w-[90vw] h-[90vh]"
+    >
       <ReactHookForm.FormProvider {...formMethods}>
         <form onSubmit={handleSubmit(handleApply)} className="h-full flex flex-col">
-
-          <h1 className="font-bold select-none text-gray-700 px-8 py-1 border-b border-gray-200">
-            ドキュメント詳細設定
-          </h1>
-
           <div className="flex-1 overflow-y-auto px-8 pt-2 pb-32">
             <div className="flex items-center gap-1">
               <label className="basis-52 text-sm text-gray-500">ドキュメント名</label>
@@ -198,39 +194,39 @@ export const EntityTypeEditDialog = ({
             <div className="flex flex-col mt-4 h-80 resize-y overflow-y-auto">
               <div className="flex items-center gap-1">
                 <div className="text-sm text-gray-500">属性定義</div>
-                <Input.IconButton icon={Icon.PlusCircleIcon} onClick={handleAddAttributeRow}>追加</Input.IconButton>
+                <Input.IconButton icon={Icon.PlusIcon} mini onClick={handleAddAttributeRow}>
+                  追加
+                </Input.IconButton>
               </div>
+
               <Layout.EditableGrid
                 ref={attributeGridRef}
                 rows={attributeFields}
                 getColumnDefs={getAttributeColumnDefs}
                 onChangeRow={handleChangeAttributeRow}
-                className="flex-1 border border-gray-400"
+                className="flex-1 border border-gray-300 mt-1"
               />
             </div>
 
-            <FormatConditionGrid
-              formMethods={formMethods}
-              className="mt-4 h-56 resize-y overflow-y-auto"
-            />
-          </div>
+            <div className="flex flex-col mt-4 h-80 resize-y overflow-y-auto">
+              <div className="text-sm text-gray-500">表示書式</div>
+              <FormatConditionGrid formMethods={formMethods} className="flex-1 border border-gray-300 mt-1" />
+            </div>
 
-          <div className="flex justify-end items-center gap-4 py-2 px-8 border-t border-gray-200">
-            <Input.IconButton onClick={handleCancel}>キャンセル</Input.IconButton>
-            <Input.IconButton submit fill>適用</Input.IconButton>
           </div>
         </form>
       </ReactHookForm.FormProvider>
 
-      {editingSelectOptions && (
+      {/* 選択肢編集モーダル */}
+      {editingSelectOptionsAttributeIndex !== undefined && (
         <SelectOptionsEditor
           attributeName={editingSelectOptionsAttributeName}
-          defaultValues={editingSelectOptions}
+          defaultValues={editingSelectOptions ?? []}
           onApply={handleApplyEditingSelectOptions}
           onCancel={handleCancelEditingSelectOptions}
         />
       )}
-    </Layout.ModalDialog>
+    </UI.SettingDialog>
   );
 };
 

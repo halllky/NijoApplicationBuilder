@@ -10,7 +10,7 @@ import useEvent from "react-use-event-hook"
 import { DbTableEditorViewRef } from "../MultiView/MultiView"
 import { RecordStatusText } from "../parts/RecordStatusText"
 import { DataPreviewGlobalContext } from "../DataPreviewGlobalContext"
-import { DbTableSingleEditViewSettings, DbTableSingleEditViewSettingsProps, SingleViewSettingFormData } from "./SettingDialog"
+import { DbTableSingleEditViewSettings, DbTableSingleEditViewSettingsProps, SingleViewSettingFormData } from "./SingleViewSettingDialog"
 import { AggregateFormView } from "./Form"
 import { createNewInstance } from "../parts/createNewInstance"
 

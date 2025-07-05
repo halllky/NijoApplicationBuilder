@@ -7,6 +7,7 @@ import * as Input from "../input"
 import * as Layout from "../layout"
 import * as Icon from "@heroicons/react/24/solid"
 import { useForm, UseFormSetValue, useWatch } from "react-hook-form";
+import * as UI from "./UI";
 
 export type AppSettingsEditDialogProps = {
   defaultValues: AppSettingsForSave,
@@ -96,14 +97,6 @@ export const AppSettingsEditDialog = ({ defaultValues, entityTypeList, onSave, o
     }))
   })
 
-  const handleCancel = useEvent(() => {
-    // 画面離脱前確認
-    const isDirtyEx = isDirty || newPerspectives.length > 0 || Object.keys(editedEntityNames).length > 0
-    if (isDirtyEx && !window.confirm('キャンセルしますか？')) return;
-
-    onCancel()
-  })
-
   // 保存
   const [isSaving, setIsSaving] = React.useState(false)
   const handleSave = useEvent(async () => {
@@ -113,10 +106,18 @@ export const AppSettingsEditDialog = ({ defaultValues, entityTypeList, onSave, o
     onCancel()
   })
 
+  // 画面離脱前確認のためのisDirtyを拡張
+  const isDirtyEx = isDirty || newPerspectives.length > 0 || Object.keys(editedEntityNames).length > 0
+
   return (
-    <Layout.ModalDialog open className="relative w-lg h-[80vh] bg-white flex flex-col gap-1 relative border border-gray-400" onOutsideClick={handleCancel}>
-      <div className="flex flex-col gap-px px-8 py-1 border-b border-gray-300">
-        <h1 className="text-lg font-bold">アプリケーション設定</h1>
+    <UI.SettingDialog
+      isDirty={isDirtyEx}
+      onApply={handleSave}
+      onCancel={onCancel}
+      title="アプリケーション設定"
+      className="w-lg h-[80vh]"
+    >
+      <div className="flex flex-col gap-px px-8 py-1">
         <p className="text-sm text-gray-500">
           この設定はチーム全員に適用されます。
         </p>
@@ -147,19 +148,10 @@ export const AppSettingsEditDialog = ({ defaultValues, entityTypeList, onSave, o
 
       </div>
 
-      <div className="flex justify-between gap-2 px-8 py-1 border-t border-gray-300">
-        <Input.IconButton icon={Icon.XMarkIcon} outline mini onClick={handleCancel}>
-          キャンセル
-        </Input.IconButton>
-        <Input.IconButton icon={Icon.CheckIcon} fill onClick={handleSave} loading={isSaving}>
-          保存
-        </Input.IconButton>
-      </div>
-
       {isSaving && (
         <Layout.NowLoading className="z-10" />
       )}
-    </Layout.ModalDialog>
+    </UI.SettingDialog>
   )
 }
 
