@@ -13,7 +13,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Nijo.Util.DotnetEx;
-using Nijo.Parts.Document;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 using System.Reflection;
@@ -245,9 +244,6 @@ namespace Nijo {
                 } catch (Exception ex) {
                     throw new InvalidOperationException($"{rootAggregate}のレンダリングで例外が発生", ex);
                 }
-
-                // 自動生成ドキュメント
-                ctx.Use<MarkdownDocument>().AddToIndexReadme(rootAggregate);
             });
 
             // ルート集約1個と対応しない、モデル固有のコードを生成
