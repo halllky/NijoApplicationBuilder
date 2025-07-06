@@ -1,36 +1,36 @@
-CREATE VIEW V_売上分析 AS
+CREATE VIEW V_診療収益分析 AS
 SELECT
     CAST(STRFTIME('%Y%m', T1.ORDER_DATE) AS INTEGER) AS 年月,
-    T1."店舗_STORE_ID" AS 店舗_店舗ID,
-    T3.STORE_NAME AS 店舗_店舗名,
-    T3.PHONE AS 店舗_電話番号,
-    SA.POSTAL_CODE AS 店舗_住所_郵便番号,
-    SA.PREFECTURE AS 店舗_住所_都道府県,
-    SA.CITY AS 店舗_住所_市区町村,
-    SA.ADDRESS_LINE AS 店舗_住所_番地建物名,
-    BH.OPENING_TIME AS 店舗_営業時間_開店時間,
-    BH.CLOSING_TIME AS 店舗_営業時間_閉店時間,
-    E.ID AS 店舗_店長_従業員ID,
-    E.NAME AS 店舗_店長_氏名,
-    E.NAME_KANA AS 店舗_店長_氏名カナ,
-    E.TAISHOKU AS 店舗_店長_退職日,
-    SUM(T2.SUBTOTAL) AS 売上合計,
-    COUNT(DISTINCT T1."顧客_CUSTOMER_ID") AS 客数,
-    CASE WHEN COUNT(DISTINCT T1."顧客_CUSTOMER_ID") = 0 THEN 0 ELSE SUM(T2.SUBTOTAL) * 1.0 / COUNT(DISTINCT T1."顧客_CUSTOMER_ID") END AS 客単価,
+    T1."診療科_STORE_ID" AS 診療科_診療科ID,
+    T3.STORE_NAME AS 診療科_診療科名,
+    T3.PHONE AS 診療科_電話番号,
+    SA.POSTAL_CODE AS 診療科_住所_郵便番号,
+    SA.PREFECTURE AS 診療科_住所_都道府県,
+    SA.CITY AS 診療科_住所_市区町村,
+    SA.ADDRESS_LINE AS 診療科_住所_番地建物名,
+    BH.OPENING_TIME AS 診療科_診療時間_開始時間,
+    BH.CLOSING_TIME AS 診療科_診療時間_終了時間,
+    E.ID AS 診療科_責任者_医療従事者ID,
+    E.NAME AS 診療科_責任者_氏名,
+    E.NAME_KANA AS 診療科_責任者_氏名カナ,
+    E.TAISHOKU AS 診療科_責任者_退職日,
+    SUM(T2.SUBTOTAL) AS 収益合計,
+    COUNT(DISTINCT T1."患者_CUSTOMER_ID") AS 患者数,
+    CASE WHEN COUNT(DISTINCT T1."患者_CUSTOMER_ID") = 0 THEN 0 ELSE SUM(T2.SUBTOTAL) * 1.0 / COUNT(DISTINCT T1."患者_CUSTOMER_ID") END AS 診療単価,
     1 AS Version
 FROM
-    注文履歴 AS T1
+    診療記録 AS T1
     INNER JOIN ORDER_DETAILS AS T2 ON T1.ORDER_ID = T2.Parent_ORDER_ID
-    LEFT JOIN 店舗マスタ AS T3 ON T1."店舗_STORE_ID" = T3.STORE_ID
+    LEFT JOIN 診療科マスタ AS T3 ON T1."診療科_STORE_ID" = T3.STORE_ID
     LEFT JOIN STORE_ADDRESS AS SA ON T3.STORE_ID = SA.Parent_STORE_ID
     LEFT JOIN BUSINESS_HOURS AS BH ON T3.STORE_ID = BH.Parent_STORE_ID
-    LEFT JOIN EMPLOYEE AS E ON T3."店長_ID" = E.ID
+    LEFT JOIN EMPLOYEE AS E ON T3."責任者_ID" = E.ID
     LEFT JOIN SHOZOKU AS SZ ON E.ID = SZ.Parent_ID
     LEFT JOIN BUSHO AS B ON SZ."部署_BUSHO_CD" = B.BUSHO_CD
     LEFT JOIN AUTHORITY AS A ON E.ID = A.Parent_ID
 GROUP BY
     CAST(STRFTIME('%Y%m', T1.ORDER_DATE) AS INTEGER),
-    T1."店舗_STORE_ID",
+    T1."診療科_STORE_ID",
     T3.STORE_NAME,
     T3.PHONE,
     SA.POSTAL_CODE,

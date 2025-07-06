@@ -1,24 +1,24 @@
-CREATE VIEW V_カテゴリ別売上 AS
+CREATE VIEW V_機器分類別収益 AS
 SELECT
-    CAST(STRFTIME('%Y%m', T1.ORDER_DATE) AS INTEGER) AS 売上分析_年月,
-    T1."店舗_STORE_ID" AS 売上分析_店舗_店舗ID,
-    T3."カテゴリ_CATEGORY_ID" AS カテゴリ_カテゴリID,
-    T4.CATEGORY_NAME AS カテゴリ_カテゴリ名, -- カテゴリマスタから取得
-    SUM(T2.SUBTOTAL) AS 売上金額,
+    CAST(STRFTIME('%Y%m', T1.ORDER_DATE) AS INTEGER) AS 診療収益分析_年月,
+    T1."診療科_STORE_ID" AS 診療収益分析_診療科_診療科ID,
+    T3."機器分類_CATEGORY_ID" AS 機器分類_機器分類ID,
+    T4.CATEGORY_NAME AS 機器分類_機器分類名, -- 機器分類マスタから取得
+    SUM(T2.SUBTOTAL) AS 収益金額,
     CAST(SUM(T2.SUBTOTAL) AS REAL) / NULLIF((
         SELECT SUM(OD_INNER.SUBTOTAL)
         FROM ORDER_DETAILS AS OD_INNER
-        INNER JOIN 注文履歴 AS OH_INNER ON OD_INNER.Parent_ORDER_ID = OH_INNER.ORDER_ID
+        INNER JOIN 診療記録 AS OH_INNER ON OD_INNER.Parent_ORDER_ID = OH_INNER.ORDER_ID
         WHERE CAST(STRFTIME('%Y%m', OH_INNER.ORDER_DATE) AS INTEGER) = CAST(STRFTIME('%Y%m', T1.ORDER_DATE) AS INTEGER)
-          AND OH_INNER."店舗_STORE_ID" = T1."店舗_STORE_ID"
-    ), 0) AS 売上構成比
+          AND OH_INNER."診療科_STORE_ID" = T1."診療科_STORE_ID"
+    ), 0) AS 収益構成比
 FROM
-    注文履歴 AS T1
+    診療記録 AS T1
     INNER JOIN ORDER_DETAILS AS T2 ON T1.ORDER_ID = T2.Parent_ORDER_ID
-    INNER JOIN 商品マスタ AS T3 ON T2."商品_PRODUCT_ID" = T3.PRODUCT_ID
-    LEFT JOIN カテゴリマスタ AS T4 ON T3."カテゴリ_CATEGORY_ID" = T4.CATEGORY_ID
+    INNER JOIN 医療機器マスタ AS T3 ON T2."医療機器_PRODUCT_ID" = T3.PRODUCT_ID
+    LEFT JOIN 機器分類マスタ AS T4 ON T3."機器分類_CATEGORY_ID" = T4.CATEGORY_ID
 GROUP BY
     CAST(STRFTIME('%Y%m', T1.ORDER_DATE) AS INTEGER),
-    T1."店舗_STORE_ID",
-    T3."カテゴリ_CATEGORY_ID",
+    T1."診療科_STORE_ID",
+    T3."機器分類_CATEGORY_ID",
     T4.CATEGORY_NAME; 
