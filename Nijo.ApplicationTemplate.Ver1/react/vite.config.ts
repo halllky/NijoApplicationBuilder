@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig, PluginOption } from 'vite'
 import { viteSingleFile } from 'vite-plugin-singlefile'
 import react from '@vitejs/plugin-react-swc'
@@ -27,6 +28,12 @@ export default ({ mode }: { mode: string }) => {
     server: {
       port: 5173,
       strictPort: true,
+    },
+    test: {
+      globals: true,
+      environment: 'jsdom',
+      setupFiles: ['./src/__tests__/setup.ts'],
+      css: true,
     }
   })
 }
