@@ -98,11 +98,11 @@ export const TYPE_CHILDREN = 'children'
 // ---------------------------------
 
 /** 内部の状態はフラットなツリーとして保持されているが、それをツリー構造として扱うためのユーティリティ。 */
-export const asTree = (flat: XmlElementItem[]) => {
+export const asTree = <TFlatItem extends { indent: number }>(flat: TFlatItem[]) => {
   return {
 
     /** 指定された要素のルートを取得する。 */
-    getRoot: (el: XmlElementItem): XmlElementItem => {
+    getRoot: (el: TFlatItem): TFlatItem => {
       // 引数のエレメント以前の位置にある、インデント0の要素のうち直近のものがルート
       const previousElementsAndThis = flat.slice(0, flat.indexOf(el) + 1)
       const root = previousElementsAndThis.reverse().find(x => x.indent === 0)
@@ -111,7 +111,7 @@ export const asTree = (flat: XmlElementItem[]) => {
     },
 
     /** 指定された要素の親を取得する。 */
-    getParent: (el: XmlElementItem): XmlElementItem | undefined => {
+    getParent: (el: TFlatItem): TFlatItem | undefined => {
       // 引数のエレメントより前の位置にあり、
       // インデントが引数のエレメントより小さいもののうち、直近にあるのが親。
       // インデントは必ずしも1小さいとは限らない。
@@ -121,7 +121,7 @@ export const asTree = (flat: XmlElementItem[]) => {
     },
 
     /** 指定された要素の子を取得する。 */
-    getChildren: (el: XmlElementItem): XmlElementItem[] => {
+    getChildren: (el: TFlatItem): TFlatItem[] => {
       // 引数のエレメントより後ろの位置にあり、
       // インデントが引数のエレメントより大きいもののうち、
       // そのエレメントと引数のエレメントの間にインデントが挟まるものがないものが子。
@@ -140,8 +140,8 @@ export const asTree = (flat: XmlElementItem[]) => {
         return [];
       }
 
-      const children: XmlElementItem[] = []
-      const stack: XmlElementItem[] = []
+      const children: TFlatItem[] = []
+      const stack: TFlatItem[] = []
 
       // el の次の要素から走査を開始
       for (let i = elIndex + 1; i < flat.length; i++) {
@@ -180,13 +180,13 @@ export const asTree = (flat: XmlElementItem[]) => {
     },
 
     /** 指定された要素の祖先を取得する。よりルート集約に近いほうが先。 */
-    getAncestors: (el: XmlElementItem): XmlElementItem[] => {
+    getAncestors: (el: TFlatItem): TFlatItem[] => {
       // 引数のエレメントより前の方向に辿っていき、
       // インデントが現在のエレメントより小さいものを集める。
       // よりルート集約に近いほうが先なので、最後に配列を逆転させてreturnする。
       const previousElements = flat.slice(0, flat.indexOf(el))
       let currentIndent = el.indent
-      const ancestors: XmlElementItem[] = []
+      const ancestors: TFlatItem[] = []
       for (const y of previousElements) {
         if (y.indent < currentIndent) {
           ancestors.push(y)
@@ -201,10 +201,10 @@ export const asTree = (flat: XmlElementItem[]) => {
     },
 
     /** 指定された要素の子孫を取得する。 */
-    getDescendants: (el: XmlElementItem): XmlElementItem[] => {
+    getDescendants: (el: TFlatItem): TFlatItem[] => {
       // getChildrenのロジックのうち「直下の子」という条件を外したものが子孫。
       const belowElements = flat.slice(flat.indexOf(el) + 1)
-      const descendants: XmlElementItem[] = []
+      const descendants: TFlatItem[] = []
       for (const y of belowElements) {
         // 引数のエレメントより浅いインデントの要素が登場したら探索を打ち切る
         if (y.indent < el.indent) {

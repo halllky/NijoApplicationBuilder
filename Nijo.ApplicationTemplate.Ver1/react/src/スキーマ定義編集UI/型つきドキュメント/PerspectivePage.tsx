@@ -17,6 +17,7 @@ import { EntityDetailPane } from './PerspectivePage.Details';
 import { EntityTypeEditDialog, EntityTypeSettingsDialogProps } from './PerspectivePage.Settings';
 import { Entity, Perspective, PerspectivePageData } from './types';
 import { PageFrame } from '../PageFrame';
+import { asTree } from '../スキーマ定義編集/types';
 
 export const PerspectivePage = () => {
   const { [NIJOUI_CLIENT_ROUTE_PARAMS.PERSPECTIVE_ID]: perspectiveId } = ReactRouter.useParams();
@@ -239,6 +240,37 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
   const [graphPanelCollapsed, setGraphPanelCollapsed] = React.useState(false);
   const [detailPanelCollapsed, setDetailPanelCollapsed] = React.useState(false);
 
+  // ---------------------------------------
+  // (試験的機能)選択範囲をJSONでconsole.log
+  // ※グリッドの内容をプレーンなテキストに貼り付けるのに使用
+  const handleLogSelectedRows = useEvent(() => {
+    const selectedRows = gridRef.current?.editableGrid.current?.getSelectedRows().map(r => r.row);
+    if (!selectedRows) return;
+
+    // indentによるフラットな配列をツリー構造に変換
+    const treeHelper = asTree(selectedRows);
+    const attrDefs = getValues('perspective.attributes');
+    const tree: Record<string, unknown>[] = [];
+    const toTreeObject = (row: GridRowType): Record<string, unknown> => {
+      const treeObject: Record<string, unknown> = {}
+      treeObject.label = row.entityName;
+
+      // attributeValues のキーは属性のUUIDなので、それを属性名に変換する
+      for (const [attrId, attrValue] of Object.entries(row.attributeValues)) {
+        const attrName = attrDefs.find(a => a.attributeId === attrId)?.attributeName;
+        if (attrName) treeObject[attrName] = attrValue as string;
+      }
+
+      treeObject.members = treeHelper.getChildren(row).map(toTreeObject);
+      return treeObject;
+    }
+    for (const root of selectedRows.filter(r => r.indent === 0)) {
+      tree.push(toTreeObject(root));
+    }
+
+    console.log(JSON.stringify(tree, undefined, 2));
+  });
+
   return (
     <PageFrame
       shouldBlock={isDirty}
@@ -248,6 +280,9 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
           <div className="basis-1"></div>
           <Input.IconButton onClick={handleOpenEntityTypeEditDialog} icon={Icon.PencilSquareIcon}>設定</Input.IconButton>
           <div className="flex-1"></div>
+          <Input.IconButton onClick={handleLogSelectedRows}>
+            (試験的機能)選択範囲をJSONでconsole.log
+          </Input.IconButton>
           <div className="flex items-center">
             <Input.IconButton onClick={handleClickGraphHorizontal} icon={Icon.Bars2Icon} hideText outline={graphViewPosition === 'horizontal'} className="p-1">グラフをグリッドの横に表示</Input.IconButton>
             <Input.IconButton onClick={handleClickGraphVertical} icon={Icon.PauseIcon} hideText outline={graphViewPosition !== 'horizontal'} className="p-1">グラフをグリッドの下に表示</Input.IconButton>

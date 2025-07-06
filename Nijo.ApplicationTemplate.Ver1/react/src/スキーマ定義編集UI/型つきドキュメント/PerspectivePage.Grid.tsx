@@ -22,6 +22,7 @@ export interface EntityTypePageProps {
 export type EntityTypePageRef = {
   /** 行選択 */
   selectRow: (startRowIndex: number, endRowIndex: number) => void;
+  editableGrid: React.RefObject<Layout.EditableGridRef<GridRowType> | null>;
 }
 
 // グリッドの行の型
@@ -299,6 +300,7 @@ export const EntityTypePage = React.forwardRef<EntityTypePageRef, EntityTypePage
     selectRow: (startRowIndex: number, endRowIndex: number) => {
       gridRef.current?.selectRow(startRowIndex, endRowIndex);
     },
+    editableGrid: gridRef,
   }));
 
   const { personalSettings } = usePersonalSettings()
