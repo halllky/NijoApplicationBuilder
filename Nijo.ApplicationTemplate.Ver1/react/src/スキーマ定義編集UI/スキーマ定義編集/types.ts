@@ -97,6 +97,8 @@ export const TYPE_CHILDREN = 'children'
 
 // ---------------------------------
 
+export type TreeHelper<TFlatItem extends { indent: number }> = ReturnType<typeof asTree<TFlatItem>>
+
 /** 内部の状態はフラットなツリーとして保持されているが、それをツリー構造として扱うためのユーティリティ。 */
 export const asTree = <TFlatItem extends { indent: number }>(flat: TFlatItem[]) => {
   return {
