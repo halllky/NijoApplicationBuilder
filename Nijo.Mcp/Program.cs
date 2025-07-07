@@ -357,12 +357,12 @@ namespace Nijo.Mcp {
         #endregion スキーマ情報取得
 
 
-        #region 全テーブル名取得
+        #region 全テーブル・ビュー情報取得
         private const string TOOL_GET_SQLITE_ALL_TABLE_NAMES = "get_sqlite_all_table_names";
         [McpServerTool(Name = TOOL_GET_SQLITE_ALL_TABLE_NAMES), Description(
-            "指定されたSQLiteデータベースファイル内のすべてのテーブル名の一覧を取得します。")]
+            "指定されたSQLiteデータベースファイル内のすべてのテーブル・ビューの詳細情報を取得します。")]
         public static string GetSQLiteAllTableNames(
-            [Description("テーブル名一覧を取得するSQLiteデータベースファイルの絶対パス。")] string sqliteDbFilePath) {
+            [Description("テーブル・ビュー情報を取得するSQLiteデータベースファイルの絶対パス。")] string sqliteDbFilePath) {
             try {
                 if (string.IsNullOrEmpty(sqliteDbFilePath)) {
                     return "SQLiteデータベースファイルのパスを指定してください。";
@@ -371,9 +371,10 @@ namespace Nijo.Mcp {
                     return $"指定されたSQLiteデータベースファイルが見つかりません: {sqliteDbFilePath}";
                 }
 
+                // まずテーブル・ビューの一覧を取得
                 var startInfo = new ProcessStartInfo {
                     FileName = SQLITE_EXE_PATH,
-                    Arguments = $"\"{sqliteDbFilePath}\" \".tables\" -list", // .tables コマンドの方がシンプルで確実性が高い
+                    Arguments = $"-header -csv \"{sqliteDbFilePath}\" \"SELECT name, type FROM sqlite_master WHERE type IN ('table', 'view') AND name NOT LIKE 'sqlite_%' ORDER BY type, name;\"",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
@@ -401,7 +402,7 @@ namespace Nijo.Mcp {
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
 
-                if (!process.WaitForExit(1000 * 10)) { // 10秒のタイムアウト
+                if (!process.WaitForExit(1000 * 15)) { // 15秒のタイムアウト
                     try {
                         process.Kill(true);
                     } catch { /* 無視 */ }
@@ -412,28 +413,145 @@ namespace Nijo.Mcp {
                     return $"sqlite3.exe の実行に失敗しました。ExitCode: {process.ExitCode}{Environment.NewLine}Error: {error.ToString().Trim()}{Environment.NewLine}Output: {output.ToString().Trim()}";
                 }
 
-                var rawOutput = output.ToString().Trim();
-                if (string.IsNullOrWhiteSpace(rawOutput) && !string.IsNullOrWhiteSpace(error.ToString().Trim())) {
-                    return $"sqlite3.exe の実行中にエラーが発生しました: {error.ToString().Trim()}";
+                var csvOutput = output.ToString().Trim();
+                if (string.IsNullOrWhiteSpace(csvOutput)) {
+                    return "データベースにテーブルまたはビューが存在しません。";
                 }
 
-                // .tables の出力はスペース区切りでテーブル名が並ぶことが多いので、適切にSplitする
-                // -list をつけてもsqlite3のバージョンや環境によって挙動が変わる可能性があるため、柔軟に対応
-                var tableNames = rawOutput.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                                          .Select(name => name.Trim())
-                                          .Where(name => !string.IsNullOrEmpty(name) && !name.StartsWith("sqlite_")) // sqlite_ 内部テーブルを除外
-                                          .ToList();
-
-                if (!tableNames.Any() && string.IsNullOrWhiteSpace(rawOutput) && process.ExitCode == 0 && string.IsNullOrWhiteSpace(error.ToString().Trim())) {
-                    // 正常終了、出力なし、エラーなしなら空のリスト
+                var lines = csvOutput.Split(new[] { Environment.NewLine, "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                if (lines.Length < 2) {
+                    return $"テーブル・ビュー一覧の取得に失敗しました: {csvOutput}";
                 }
 
-                return JsonSerializer.Serialize(tableNames, new JsonSerializerOptions { WriteIndented = true });
+                var result = new {
+                    tables = new List<object>(),
+                    views = new List<object>(),
+                    summary = new Dictionary<string, object>()
+                };
+
+                // ヘッダー行をスキップして処理
+                for (int i = 1; i < lines.Length; i++) {
+                    var values = lines[i].Split(',');
+                    if (values.Length < 2) continue;
+
+                    var name = values[0].Trim();
+                    var type = values[1].Trim();
+
+                    if (type == "table") {
+                        // テーブルの場合、スキーマ情報も取得
+                        var schema = GetTableSchema(sqliteDbFilePath, name);
+                        var tableInfo = new {
+                            name = name,
+                            type = type,
+                            columns = schema
+                        };
+                        result.tables.Add(tableInfo);
+                    } else if (type == "view") {
+                        // ビューの場合、ビュー定義とスキーマ情報を取得
+                        var schema = GetTableSchema(sqliteDbFilePath, name);
+                        var viewInfo = new {
+                            name = name,
+                            type = type,
+                            columns = schema
+                        };
+                        result.views.Add(viewInfo);
+                    }
+                }
+
+                result.summary["total_tables"] = result.tables.Count;
+                result.summary["total_views"] = result.views.Count;
+                result.summary["table_names"] = result.tables.Cast<dynamic>().Select(t => t.name).ToArray();
+                result.summary["view_names"] = result.views.Cast<dynamic>().Select(v => v.name).ToArray();
+
+                return JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
 
             } catch (Exception ex) {
                 return ex.ToString();
             }
         }
-        #endregion 全テーブル名取得
+
+        private static List<Dictionary<string, object?>> GetTableSchema(string sqliteDbFilePath, string tableName) {
+            try {
+                var sqlSafeTableName = tableName.Replace("'", "''");
+
+                var startInfo = new ProcessStartInfo {
+                    FileName = SQLITE_EXE_PATH,
+                    Arguments = $"-header -csv \"{sqliteDbFilePath}\" \"PRAGMA table_info('{sqlSafeTableName}');\"",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    StandardOutputEncoding = Encoding.UTF8,
+                    StandardErrorEncoding = Encoding.UTF8,
+                };
+
+                using var process = new Process { StartInfo = startInfo };
+                var output = new StringBuilder();
+
+                process.OutputDataReceived += (sender, args) => {
+                    if (args.Data != null) {
+                        output.AppendLine(args.Data);
+                    }
+                };
+
+                process.Start();
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+
+                if (!process.WaitForExit(1000 * 5)) {
+                    try {
+                        process.Kill(true);
+                    } catch { /* 無視 */ }
+                    return new List<Dictionary<string, object?>>();
+                }
+
+                if (process.ExitCode != 0) {
+                    return new List<Dictionary<string, object?>>();
+                }
+
+                var csvOutput = output.ToString().Trim();
+                if (string.IsNullOrWhiteSpace(csvOutput)) {
+                    return new List<Dictionary<string, object?>>();
+                }
+
+                var lines = csvOutput.Split(new[] { Environment.NewLine, "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                if (lines.Length < 2) {
+                    return new List<Dictionary<string, object?>>();
+                }
+
+                var headers = lines[0].Split(',');
+                var resultList = new List<Dictionary<string, object?>>();
+
+                for (int i = 1; i < lines.Length; i++) {
+                    var values = lines[i].Split(',');
+                    if (values.Length != headers.Length) continue;
+
+                    var entry = new Dictionary<string, object?>();
+                    for (int j = 0; j < headers.Length; j++) {
+                        var key = headers[j].Trim();
+                        var value = values[j].Trim();
+
+                        if (key == "cid" || key == "notnull" || key == "pk") {
+                            if (int.TryParse(value, out int intValue)) {
+                                entry[key] = intValue;
+                            } else {
+                                entry[key] = value;
+                            }
+                        } else if (string.Equals(value, "NULL", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(value)) {
+                            entry[key] = null;
+                        } else {
+                            entry[key] = value;
+                        }
+                    }
+                    resultList.Add(entry);
+                }
+
+                return resultList;
+
+            } catch (Exception) {
+                return new List<Dictionary<string, object?>>();
+            }
+        }
+        #endregion 全テーブル・ビュー情報取得
     }
 }

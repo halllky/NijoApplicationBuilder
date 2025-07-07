@@ -38,12 +38,12 @@ internal class MessageContainerのテスト {
         Assert.That((string)json["error"]![0]!, Is.EqualTo("ルートのエラー"));
 
         // 子オブジェクトのキーが存在することを確認
-        Assert.That(json.ContainsKey("商品詳細"), Is.True, "商品詳細キーが存在しません");
-        var 商品詳細Json = json["商品詳細"]!.AsObject();
+        Assert.That(json.ContainsKey("機器詳細"), Is.True, "機器詳細キーが存在しません");
+        var 機器詳細Json = json["機器詳細"]!.AsObject();
 
         // 子配列のキーが存在することを確認
-        Assert.That(商品詳細Json.ContainsKey("付属品"), Is.True, "付属品キーが存在しません");
-        var 付属品Json = 商品詳細Json["付属品"]!.AsObject(); // 配列もJsonObjectとして扱われる
+        Assert.That(機器詳細Json.ContainsKey("付属品"), Is.True, "付属品キーが存在しません");
+        var 付属品Json = 機器詳細Json["付属品"]!.AsObject(); // 配列もJsonObjectとして扱われる
 
         Assert.That(付属品Json.ContainsKey("3"), Is.True, "付属品[3]が存在しません");
         var 付属品3Json = 付属品Json["3"]!.AsObject();
