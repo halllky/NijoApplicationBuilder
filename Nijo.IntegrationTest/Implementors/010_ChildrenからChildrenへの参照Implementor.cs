@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using Nijo.CodeGenerating.Helpers;
+using Nijo.CodeGenerating;
 using NUnit.Framework;
 
 namespace Nijo.IntegrationTest.Implementors;

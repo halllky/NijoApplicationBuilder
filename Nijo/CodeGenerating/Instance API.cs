@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nijo.CodeGenerating.Helpers;
+namespace Nijo.CodeGenerating;
 
 // ------------------------------------------
 // メタデータの抽象度の世界（EFCoreEntityやDisplayDataはこのレベル）

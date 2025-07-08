@@ -6,7 +6,6 @@ using Nijo.ValueMemberTypes;
 using Nijo.Parts.Common;
 using System;
 using System.Linq;
-using Nijo.CodeGenerating.Helpers;
 
 namespace Nijo.Models.DataModelModules {
     /// <summary>

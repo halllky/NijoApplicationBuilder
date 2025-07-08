@@ -1,5 +1,4 @@
 using Nijo.CodeGenerating;
-using Nijo.CodeGenerating.Helpers;
 // using Nijo.Core.Definition; // 不要なため削除
 using NUnit.Framework;
 using System.Xml.Linq;

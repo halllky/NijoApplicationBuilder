@@ -12,7 +12,6 @@ using Nijo.CodeGenerating;
 using Nijo.ImmutableSchema;
 using Nijo.Models.DataModelModules;
 using Nijo.Models.QueryModelModules;
-using Nijo.CodeGenerating.Helpers;
 using Nijo.Models;
 
 namespace Nijo.IntegrationTest;

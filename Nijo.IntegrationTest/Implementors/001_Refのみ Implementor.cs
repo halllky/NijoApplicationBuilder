@@ -1,4 +1,4 @@
-using Nijo.CodeGenerating.Helpers;
+using Nijo.CodeGenerating;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;

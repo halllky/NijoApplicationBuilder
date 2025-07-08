@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Nijo.CodeGenerating;
-using Nijo.CodeGenerating.Helpers;
 using Nijo.ImmutableSchema;
 using Nijo.Parts.CSharp;
 using Nijo.Util.DotnetEx;

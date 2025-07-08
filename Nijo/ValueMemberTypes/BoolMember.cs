@@ -4,7 +4,6 @@ using Nijo.Models.QueryModelModules;
 using Nijo.Parts.CSharp;
 using Nijo.SchemaParsing;
 using Nijo.Util.DotnetEx;
-using Nijo.CodeGenerating.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;

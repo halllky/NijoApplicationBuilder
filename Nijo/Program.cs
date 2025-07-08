@@ -18,7 +18,6 @@ using System.Runtime.InteropServices;
 using System.Security.Policy;
 using Nijo.SchemaParsing;
 using System.Xml.Linq;
-using Nijo.CodeGenerating.Helpers;
 using Nijo.Models.DataModelModules;
 using Nijo.Models.QueryModelModules;
 using Nijo.ImmutableSchema;

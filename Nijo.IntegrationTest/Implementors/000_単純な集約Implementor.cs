@@ -1,5 +1,4 @@
 using Nijo.CodeGenerating;
-using Nijo.CodeGenerating.Helpers;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;

@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace Nijo.CodeGenerating.Helpers;
+namespace Nijo.CodeGenerating;
 
 /// <summary>
 /// マッピング処理の文脈で値メンバーを一意に識別する。

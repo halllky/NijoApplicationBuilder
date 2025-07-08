@@ -1,5 +1,4 @@
 using Nijo.CodeGenerating;
-using Nijo.CodeGenerating.Helpers;
 using Nijo.Models.QueryModelModules;
 using Nijo.SchemaParsing;
 using System;

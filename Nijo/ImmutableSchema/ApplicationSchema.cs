@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using Nijo.Models.DataModelModules;
 using Nijo.Models.QueryModelModules;
-using Nijo.CodeGenerating.Helpers;
 using Nijo.Util.DotnetEx;
 using Nijo.Models;
 using Nijo.Models.CommandModelModules;
