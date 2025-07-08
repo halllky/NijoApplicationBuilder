@@ -49,102 +49,7 @@ Visual Studio からビルドしたり、 `dotnet build -c Debug` でビルド�
 
 #### メソッド名
 `Render` から始まるメソッド名を持ちます。
-
-#### 分岐処理の記法
-何らかの条件に基づいて特定のソースをレンダリングするか否かが分かれる場合は [TemplateTextHelper](./CodeGenerating/TemplateTextHelper.cs) で定義されている `If()` , `.ElseIf()` , `.Else()` を使用してください。
-また、それらのソースは、C#のテンプレートリテラルの構文の末尾の `"""` の位置とインデントを合わせて下さい。
-
-OK
-
-```cs
-string RenderXXX() {
-    return $$"""
-        // ここに何らかのソースをレンダリングする
-        {{If(/* 条件A */, () => $$"""
-            // 条件Aを満たした場合のみレンダリングされるソース
-        """).ElseIf(/* 条件B */, () => $$"""
-            // 条件Bを満たした場合のみレンダリングされるソース
-        """).Else(() => $$"""
-            // 条件A, B いずれも満たさない場合のみレンダリングされるソース
-        """)}}
-        """;
-}
-```
-
-NG
-
-```cs
-string RenderXXX() {
-    return $$"""
-        // ここに何らかのソースをレンダリングする
-            {{If(/* 条件A */, () => $$"""
-            // 条件Aを満たした場合のみレンダリングされるソース
-            """).ElseIf(/* 条件B */, () => $$"""
-            // 条件Bを満たした場合のみレンダリングされるソース
-            """).Else(() => $$"""
-            // 条件A, B いずれも満たさない場合のみレンダリングされるソース
-            """)}}
-        """;
-}
-```
-
-#### 反復処理の記法
-何らかの条件に基づいて特定のソースを反復処理する場合は `.SelectTextTemplate` メソッドを使ってください。
-また、それらのソースは、C#のテンプレートリテラルの構文の末尾の `"""` の位置とインデントを合わせて下さい。
-
-OK
-
-```cs
-string RenderXXX() {
-    var array = Enumerable.Range(0, 4).Select(_ => "あ");
-    return $$"""
-        // ここに何らかのソースをレンダリングする
-        {{array.SelectTextTemplate((_, i) => $$"""
-            // {{i + 1}}番目の要素です。
-        """)}}
-        """;
-}
-```
-
-NG
-
-```cs
-string RenderXXX() {
-    var array = Enumerable.Range(0, 4).Select(_ => "あ");
-    return $$"""
-        // ここに何らかのソースをレンダリングする
-            {{array.SelectTextTemplate((_, i) => $$"""
-                // {{i + 1}}番目の要素です。
-            """)}}
-        """;
-}
-```
-
-#### ソースコードレンダリング処理の入れ子の記法
-ソースコードレンダリング処理の中で他のソースコードレンダリング処理を呼び出す際は、呼び出す側で `WithIndent` を用いてインデントを合わせます。
-`WithIndent` の第2引数には、その行のインデントのサイズと等しい数の半角スペースを渡してください。
-
-OK
-
-```cs
-string RenderXXX(object root) {
-    return $$"""
-        {{GetSomeChildren(root).SelectTextTemplate((x, i) => $$"""
-          {{WithIndent(RenderTypeScriptObjectTypeRecursively(x), "  ")}}
-        """)}}
-        """;
-
-    string RenderTypeScriptObjectTypeRecursively(object obj) {
-        return $$"""
-            {
-            {{GetSomeChildren(obj).SelectTextTemplate(x => $$"""
-              {{WithIndent(RenderTypeScriptObjectTypeRecursively(x), "  ")}}
-            """)}}
-            }
-            """;
-    }
-}
-```
+[こちら](./CodeGenerating/README.md) を参照。
 
 ### クラス・インターフェース・メンバー命名規則
 - クラス名およびインターフェース名はパスカルケース（例: `DisplayDataValueMember`）で記述します
@@ -157,3 +62,12 @@ string RenderXXX(object root) {
 ### エラー処理指針
 - スキーマ解析の処理中では、不正なスキーマ定義の存在がありうるため、例外が発生しないようにします。
 - コード生成の処理中では、不正なスキーマ定義は全て排除されていることを前提としてよいため、オブジェクトが想定外の状態をとる場合は積極的に例外を送出してください。
+
+## README記載方針
+* OK
+  * その機能の目的や背景を説明している。
+  * その機能の責務、責任範囲を説明している。
+  * ほかの箇所への機能追加や不具合修正の際、その機能を使うべきか、使うとしたらどう使うべきかの判断に資する内容である。
+  * 必ずしもその機能を構成する全てのソースコードを説明しなければならないわけではない。主要なソースのみREADMEに記載し、補助的なソースは記載しない形でよい。
+* NG
+  * 実装に踏み込みすぎている。単にソースの内容を自然言語で説明しているだけになっている。
