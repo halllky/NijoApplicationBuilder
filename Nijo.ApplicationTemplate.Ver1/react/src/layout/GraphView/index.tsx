@@ -31,6 +31,7 @@ export interface GraphViewProps {
   onLayoutChange?: (event: cytoscape.EventObject) => void;
   /** ナビゲーターを表示するかどうか */
   showNavigator?: boolean;
+  className?: string;
 }
 
 /** 有向グラフを表示するコンポーネント。 */
@@ -209,7 +210,7 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>((props, ref) =
     <>
       <div
         ref={containerRef}
-        className="overflow-hidden [&>div>canvas]:left-0 h-full w-full outline-none"
+        className={`overflow-hidden [&>div>canvas]:left-0 h-full w-full outline-none ${props.className ?? ''}`}
         tabIndex={0}
         onKeyDown={props.handleKeyDown}
       ></div>
