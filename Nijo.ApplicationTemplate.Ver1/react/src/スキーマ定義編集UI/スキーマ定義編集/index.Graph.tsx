@@ -8,7 +8,7 @@ import { MentionUtil } from "../UI"
 import { findRefToTarget } from "./findRefToTarget"
 import * as AutoLayout from "../../layout/GraphView/Cy.AutoLayout"
 import * as Input from "../../input"
-import { useLayoutSaving } from './index.Grid.useLayoutSaving'
+import { useLayoutSaving } from './index.Graph.useLayoutSaving'
 
 export const AppSchemaDefinitionGraph = ({
   xmlElementTrees,
