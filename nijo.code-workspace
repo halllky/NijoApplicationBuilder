@@ -136,6 +136,15 @@
         "options": {
           "cwd": "${workspaceFolder:NijoApplicationBuilder}/Document"
         },
+      },
+      {
+        "label": "Nijo: ドキュメントのビルド",
+        "command": ".\\RELEASE_DOCUMENT.bat",
+        "type": "shell",
+        "problemMatcher": [],
+        "options": {
+          "cwd": "${workspaceFolder:NijoApplicationBuilder}/Document"
+        },
       }
     ]
   }

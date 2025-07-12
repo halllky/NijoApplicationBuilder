@@ -4,6 +4,14 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "Nijo Application Builder",
   description: "スキーマ駆動型アプリケーション生成フレームワーク",
+
+  // GitHub Pages用の設定
+  base: '/NijoApplicationBuilder/',
+  outDir: '../../docs',
+
+  // 静的ファイルの設定
+  cleanUrls: true,
+
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
