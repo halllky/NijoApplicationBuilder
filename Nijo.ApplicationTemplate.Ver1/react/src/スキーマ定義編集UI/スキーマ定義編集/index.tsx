@@ -12,7 +12,7 @@ import { ViewState } from "../../layout/GraphView/Cy"
 import { asTree } from "./types"
 import { SERVER_DOMAIN } from "../../routes"
 import cytoscape from 'cytoscape'; // cytoscapeの型情報をインポート
-import { useLayoutSaving } from './useLayoutSaving';
+import { useLayoutSaving } from './index.Grid.useLayoutSaving';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import { PageRootAggregate } from "./index.Grid"
 import { UUID } from "uuidjs"
