@@ -12,7 +12,6 @@ import { ViewState } from "../../layout/GraphView/Cy"
 import { asTree } from "./types"
 import { SERVER_DOMAIN } from "../../routes"
 import cytoscape from 'cytoscape'; // cytoscapeの型情報をインポート
-import { useLayoutSaving } from './index.Grid.useLayoutSaving';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import { PageRootAggregate } from "./index.Grid"
 import { UUID } from "uuidjs"
@@ -72,14 +71,6 @@ export const NijoUiAggregateDiagram = () => {
     }
   })
 
-  // ノード状態の保存と復元
-  const saveLoad = useLayoutSaving();
-
-  const defaultValues = React.useMemo(() => ({
-    onlyRoot: saveLoad.savedOnlyRoot ?? false,
-    savedViewState: saveLoad.savedViewState ?? {},
-  }), [saveLoad.savedOnlyRoot, saveLoad.savedViewState])
-
   // 読み込みエラー
   if (loadError) {
     return (
@@ -99,21 +90,13 @@ export const NijoUiAggregateDiagram = () => {
 
   return (
     <AfterLoaded
-      triggerSaveLayout={saveLoad.triggerSaveLayout}
-      clearSavedLayout={saveLoad.clearSavedLayout}
-      onlyRootDefaultValue={defaultValues.onlyRoot}
-      savedViewStateDefaultValue={defaultValues.savedViewState}
       formDefaultValues={schema}
       executeSave={handleSave}
     />
   )
 }
 
-const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, onlyRootDefaultValue, savedViewStateDefaultValue, formDefaultValues, executeSave }: {
-  triggerSaveLayout: ReturnType<typeof useLayoutSaving>["triggerSaveLayout"]
-  clearSavedLayout: ReturnType<typeof useLayoutSaving>["clearSavedLayout"]
-  onlyRootDefaultValue: boolean
-  savedViewStateDefaultValue: Partial<ViewState>
+const AfterLoaded = ({ formDefaultValues, executeSave }: {
   formDefaultValues: SchemaDefinitionGlobalState
   executeSave: (values: SchemaDefinitionGlobalState) => Promise<{ ok: boolean, error?: string }>
 }) => {
@@ -141,16 +124,6 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, onlyRootDefaultValue
   const handleShowLessColumnsChange = useEvent((e: React.ChangeEvent<HTMLInputElement>) => {
     setShowLessColumns(e.target.checked)
   })
-
-  // グラフの準備ができたときに呼ばれる
-  const handleReadyGraph = useEvent(() => {
-    if (savedViewStateDefaultValue && savedViewStateDefaultValue.nodePositions && Object.keys(savedViewStateDefaultValue.nodePositions).length > 0) {
-      graphViewRef.current?.applyViewState(savedViewStateDefaultValue);
-    } else {
-      // 保存されたViewStateがない場合や、あってもノード位置情報がない場合は、初期レイアウトを実行
-      graphViewRef.current?.resetLayout();
-    }
-  });
 
   // EditableGrid表示位置
   const [editableGridPosition, setEditableGridPosition] = React.useState<"vertical" | "horizontal">("horizontal");
@@ -266,13 +239,9 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, onlyRootDefaultValue
       <PanelGroup className="flex-1" direction={editableGridPosition}>
         <Panel className="border border-gray-300">
           <AppSchemaDefinitionGraph
-            onlyRootDefaultValue={onlyRootDefaultValue}
-            graphViewRef={graphViewRef}
             xmlElementTrees={xmlElementTrees}
-            handleReadyGraph={handleReadyGraph}
+            graphViewRef={graphViewRef}
             handleSelectionChange={handleSelectionChange}
-            triggerSaveLayout={triggerSaveLayout}
-            clearSavedLayout={clearSavedLayout}
           />
         </Panel>
 

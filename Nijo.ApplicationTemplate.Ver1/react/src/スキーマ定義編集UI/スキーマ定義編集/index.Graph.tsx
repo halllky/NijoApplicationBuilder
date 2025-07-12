@@ -8,24 +8,20 @@ import { MentionUtil } from "../UI"
 import { findRefToTarget } from "./findRefToTarget"
 import * as AutoLayout from "../../layout/GraphView/Cy.AutoLayout"
 import * as Input from "../../input"
+import { useLayoutSaving } from './index.Grid.useLayoutSaving'
 
 export const AppSchemaDefinitionGraph = ({
   xmlElementTrees,
-  onlyRootDefaultValue,
   graphViewRef,
-  handleReadyGraph,
   handleSelectionChange,
-  triggerSaveLayout,
-  clearSavedLayout,
 }: {
   xmlElementTrees: ModelPageForm[]
-  onlyRootDefaultValue: boolean
   graphViewRef: React.RefObject<GraphViewRef | null>
-  handleReadyGraph: () => void
   handleSelectionChange: (event: cytoscape.EventObject) => void
-  triggerSaveLayout: (event: cytoscape.EventObject | undefined, onlyRoot: boolean) => void
-  clearSavedLayout: () => void
 }) => {
+
+  // レイアウト保存機能
+  const { triggerSaveLayout, clearSavedLayout, savedOnlyRoot, savedViewState } = useLayoutSaving()
 
   // 表示モードの状態
   const [displayMode, setDisplayMode] = React.useState<DisplayMode>('schema')
@@ -34,7 +30,7 @@ export const AppSchemaDefinitionGraph = ({
   })
 
   // ルート集約のみ表示の状態
-  const [onlyRoot, setOnlyRoot] = React.useState(onlyRootDefaultValue)
+  const [onlyRoot, setOnlyRoot] = React.useState(savedOnlyRoot ?? false)
   const handleOnlyRootChange = useEvent((e: React.ChangeEvent<HTMLInputElement>) => {
     setOnlyRoot(e.target.checked)
   })
@@ -62,6 +58,16 @@ export const AppSchemaDefinitionGraph = ({
     // ノード位置は localStorage 内の既存のものが維持される（NijoUiAggregateDiagram.StateSaving.ts の実装による）。
     triggerSaveLayout(undefined, onlyRoot);
   }, [onlyRoot, triggerSaveLayout]); // onlyRoot または triggerSaveLayout (の参照) が変更されたときに実行
+
+  // グラフの準備ができたときに呼ばれる処理を拡張
+  const handleReadyGraph = useEvent(() => {
+    if (savedViewState && savedViewState.nodePositions && Object.keys(savedViewState.nodePositions).length > 0) {
+      graphViewRef.current?.applyViewState(savedViewState);
+    } else {
+      // 保存されたViewStateがない場合や、あってもノード位置情報がない場合は、初期レイアウトを実行
+      graphViewRef.current?.resetLayout();
+    }
+  });
 
 
   const dataSet: CytoscapeDataSet = React.useMemo(() => {
