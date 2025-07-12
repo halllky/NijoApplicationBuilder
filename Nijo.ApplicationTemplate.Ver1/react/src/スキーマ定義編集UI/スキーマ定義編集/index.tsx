@@ -9,7 +9,6 @@ import { GraphViewRef } from "../../layout/GraphView"
 import * as ReactRouter from "react-router-dom"
 import { SchemaDefinitionGlobalState } from "./types"
 import { ViewState } from "../../layout/GraphView/Cy"
-import * as AutoLayout from "../../layout/GraphView/Cy.AutoLayout"
 import { asTree } from "./types"
 import { SERVER_DOMAIN } from "../../routes"
 import cytoscape from 'cytoscape'; // cytoscapeの型情報をインポート
