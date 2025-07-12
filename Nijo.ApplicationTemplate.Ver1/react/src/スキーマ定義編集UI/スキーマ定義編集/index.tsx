@@ -5,13 +5,11 @@ import * as Input from "../../input"
 import * as Layout from "../../layout"
 import * as Util from "../../util"
 import * as Icon from "@heroicons/react/24/solid"
-import { GraphView, GraphViewRef } from "../../layout/GraphView"
+import { GraphViewRef } from "../../layout/GraphView"
 import * as ReactRouter from "react-router-dom"
-import { XmlElementItem, ATTR_TYPE, TYPE_DATA_MODEL, TYPE_COMMAND_MODEL, TYPE_QUERY_MODEL, TYPE_CHILD, TYPE_CHILDREN, ATTR_GENERATE_DEFAULT_QUERY_MODEL, TYPE_STATIC_ENUM_MODEL, TYPE_VALUE_OBJECT_MODEL, SchemaDefinitionGlobalState } from "./types"
-import { CytoscapeDataSet, ViewState } from "../../layout/GraphView/Cy"
-import { Node as CyNode, Edge as CyEdge } from "../../layout/GraphView/DataSource"
+import { SchemaDefinitionGlobalState } from "./types"
+import { ViewState } from "../../layout/GraphView/Cy"
 import * as AutoLayout from "../../layout/GraphView/Cy.AutoLayout"
-import { findRefToTarget } from "./findRefToTarget"
 import { asTree } from "./types"
 import { SERVER_DOMAIN } from "../../routes"
 import cytoscape from 'cytoscape'; // cytoscapeの型情報をインポート
@@ -22,7 +20,7 @@ import { UUID } from "uuidjs"
 import { PageFrame } from "../PageFrame"
 import { useValidation } from "./useValidation"
 import NijoUiErrorMessagePane from "./index.ErrorMessage"
-import { MentionUtil } from '../UI'
+import { AppSchemaDefinitionGraph } from "./index.Graph"
 
 export const NijoUiAggregateDiagram = () => {
 
@@ -150,192 +148,6 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, onlyRootDefaultValue
   const handleShowLessColumnsChange = useEvent((e: React.ChangeEvent<HTMLInputElement>) => {
     setShowLessColumns(e.target.checked)
   })
-
-  const dataSet: CytoscapeDataSet = React.useMemo(() => {
-    if (!xmlElementTrees) return { nodes: {}, edges: [] }
-
-    const nodes: Record<string, CyNode> = {}
-    const edges: { source: string, target: string, label: string, sourceModel: string, isMention?: boolean }[] = []
-
-    // メンション情報からターゲットIDを取得する関数
-    const getMentionTargets = (element: XmlElementItem): string[] => {
-      const targets: string[] = []
-
-      // commentからメンション情報を解析
-      if (element.comment) {
-        const parts = MentionUtil.parseAsMentionText(element.comment)
-        for (const part of parts) {
-          if (part.isMention) {
-            targets.push(part.targetId)
-          }
-        }
-      }
-
-      return targets
-    }
-
-    // 全要素のIDマップを作成（メンション解決用）
-    const elementIdMap = new Map<string, { element: XmlElementItem, rootElement: XmlElementItem }>()
-    for (const rootAggregateGroup of xmlElementTrees) {
-      if (!rootAggregateGroup || !rootAggregateGroup.xmlElements || rootAggregateGroup.xmlElements.length === 0) continue;
-      const rootElement = rootAggregateGroup.xmlElements[0];
-      if (!rootElement) continue;
-
-      for (const element of rootAggregateGroup.xmlElements) {
-        elementIdMap.set(element.uniqueId, { element, rootElement })
-      }
-    }
-
-    for (const rootAggregateGroup of xmlElementTrees) {
-      if (!rootAggregateGroup || !rootAggregateGroup.xmlElements || rootAggregateGroup.xmlElements.length === 0) continue;
-      const rootElement = rootAggregateGroup.xmlElements[0];
-      if (!rootElement) continue;
-
-      // enum, valueObject を除いて表示
-      const model = rootElement.attributes[ATTR_TYPE]
-      if (model === TYPE_STATIC_ENUM_MODEL || model === TYPE_VALUE_OBJECT_MODEL) continue;
-
-      const treeHelper = asTree(rootAggregateGroup.xmlElements); // ツリーヘルパーを初期化
-
-      const addMembersRecursively = (owner: XmlElementItem, parentId: string | undefined) => {
-        // ルート要素（ルート集約以外も表示する場合は Child, Children含む）のみ表示
-        const type = owner.attributes[ATTR_TYPE];
-        if (onlyRoot) {
-          if (owner.indent !== 0) return;
-        } else {
-          if (owner.indent !== 0 && type !== TYPE_CHILD && type !== TYPE_CHILDREN) return;
-        }
-
-        // ダイアグラムノードを追加
-        let bgColor: string | undefined = undefined
-        let borderColor: string | undefined = undefined
-        if (model === TYPE_DATA_MODEL) {
-          bgColor = borderColor = '#ea580c' // orange-600
-        } else if (model === TYPE_COMMAND_MODEL) {
-          bgColor = borderColor = '#0284c7' // sky-600
-        } else if (model === TYPE_QUERY_MODEL) {
-          bgColor = borderColor = '#059669' // emerald-600
-        }
-        nodes[owner.uniqueId] = {
-          id: owner.uniqueId,
-          label: owner.localName ?? '',
-          parent: parentId,
-          "background-color": bgColor,
-          "border-color": borderColor,
-        } satisfies CyNode;
-
-        // owner要素自身のメンション処理
-        const ownerMentionTargets = getMentionTargets(owner)
-        for (const mentionTargetId of ownerMentionTargets) {
-          const mentionTarget = elementIdMap.get(mentionTargetId)
-          if (mentionTarget) {
-            const mentionTargetUniqueId = onlyRoot
-              ? mentionTarget.rootElement.uniqueId
-              : mentionTarget.element.uniqueId
-
-            // メンションエッジを追加（自分自身への参照は除く）
-            if (owner.uniqueId !== mentionTargetUniqueId) {
-              edges.push({
-                source: owner.uniqueId,
-                target: mentionTargetUniqueId,
-                label: ``,
-                sourceModel: model,
-                isMention: true,
-              })
-            }
-          }
-        }
-
-        // 子要素を再帰的に処理し、ref-toエッジを収集。
-        // ルート集約のみ表示の場合は、直近の子のみならず、孫要素のref-toも収集する
-        const members = onlyRoot
-          ? treeHelper.getDescendants(owner)
-          : treeHelper.getChildren(owner)
-
-        for (const member of members) {
-          // 外部参照でない場合はここでundefinedになる
-          const target = findRefToTarget(member, xmlElementTrees)
-          const targetUniqueId = onlyRoot
-            ? target?.refToRoot?.uniqueId
-            : target?.refTo?.uniqueId
-
-          // ダイアグラムエッジを追加。
-          // 重複するエッジは最後にまとめてグルーピングする
-          if (targetUniqueId && owner.uniqueId !== targetUniqueId) {
-            edges.push({
-              source: owner.uniqueId,
-              target: targetUniqueId,
-              label: member.localName ?? '',
-              sourceModel: model,
-            })
-          }
-
-          // メンション情報に基づくエッジの作成
-          const mentionTargets = getMentionTargets(member)
-          for (const mentionTargetId of mentionTargets) {
-            const mentionTarget = elementIdMap.get(mentionTargetId)
-            if (mentionTarget) {
-              const mentionTargetUniqueId = onlyRoot
-                ? mentionTarget.rootElement.uniqueId
-                : mentionTarget.element.uniqueId
-
-              // メンションエッジを追加（自分自身への参照は除く）
-              if (owner.uniqueId !== mentionTargetUniqueId) {
-                edges.push({
-                  source: owner.uniqueId,
-                  target: mentionTargetUniqueId,
-                  label: '',
-                  sourceModel: model,
-                  isMention: true,
-                })
-              }
-            }
-          }
-
-          // 再帰的に子孫要素を処理 (XML構造上の子)
-          if (!onlyRoot) addMembersRecursively(member, owner.uniqueId)
-        }
-      };
-      addMembersRecursively(rootElement, undefined);
-    }
-
-    // 重複するエッジのグルーピング
-    const groupedEdges = edges.reduce((acc, { source, target, label, sourceModel, isMention }) => {
-      const existingEdge = acc.find(e => e.source === source && e.target === target)
-      if (existingEdge) {
-        existingEdge.labels.push(label)
-        if (isMention) existingEdge.isMention = true
-      } else {
-        acc.push({ source, target, labels: [label], sourceModel, isMention })
-      }
-      return acc
-    }, [] as { source: string, target: string, labels: string[], sourceModel: string, isMention?: boolean }[])
-    const cyEdges: CyEdge[] = groupedEdges.map(group => {
-      const label = group.labels.length === 1 ? group.labels[0] : `${group.labels[0]}など${group.labels.length}件の参照`
-
-      let lineColor: string | undefined = undefined
-      if (group.sourceModel === TYPE_DATA_MODEL) {
-        lineColor = '#ea580c' // orange-600
-      } else if (group.sourceModel === TYPE_COMMAND_MODEL) {
-        lineColor = '#0284c7' // sky-600
-      } else if (group.sourceModel === TYPE_QUERY_MODEL) {
-        lineColor = '#059669' // emerald-600
-      }
-
-      return ({
-        source: group.source,
-        target: group.target,
-        label,
-        'line-color': lineColor,
-        'line-style': group.isMention ? 'dashed' : 'solid',
-      } satisfies CyEdge)
-    })
-
-    return {
-      nodes: nodes,
-      edges: cyEdges,
-    }
-  }, [xmlElementTrees, onlyRoot])
 
   // 「ルート集約のみ表示」の状態がユーザー操作または上記の復元処理で変更されたときに実行
   React.useEffect(() => {
@@ -494,16 +306,14 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, onlyRootDefaultValue
       )}
       <PanelGroup className="flex-1" direction={editableGridPosition}>
         <Panel className="border border-gray-300">
-          <GraphView
-            key={onlyRoot ? 'onlyRoot' : 'all'} // このフラグが切り替わったタイミングで全部洗い替え
-            ref={graphViewRef}
-            nodes={Object.values(dataSet.nodes)} // dataSet.nodesの値を配列として渡す
-            edges={dataSet.edges} // dataSet.edgesをそのまま渡す
-            parentMap={Object.fromEntries(Object.entries(dataSet.nodes).filter(([, node]) => node.parent).map(([id, node]) => [id, node.parent!]))} // dataSet.nodesからparentMapを生成
-            onReady={handleReadyGraph}
+          <AppSchemaDefinitionGraph
+            onlyRoot={onlyRoot}
+            graphViewRef={graphViewRef}
+            xmlElementTrees={xmlElementTrees}
+            handleReadyGraph={handleReadyGraph}
             layoutLogic={layoutLogic}
-            onLayoutChange={handleLayoutChange}
-            onSelectionChange={handleSelectionChange}
+            handleLayoutChange={handleLayoutChange}
+            handleSelectionChange={handleSelectionChange}
           />
         </Panel>
 
