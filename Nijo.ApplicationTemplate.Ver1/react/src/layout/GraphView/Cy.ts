@@ -233,6 +233,15 @@ export const useCytoscape = (props: GraphViewProps): CytoscapeHookType => {
         fit: false,
         animate: false,
         // 他のレイアウトアルゴリズムに固有で、かつ fit や animate と同様の挙動を制御するオプションがあればここに追加
+
+        // 親ノードに付随して位置が定まるノードをレイアウト対象外にする
+        eles: cy.nodes().filter(node => {
+          // isMember, isTag, parent（親ノード）がある場合は除外
+          if (node.data('isMember') !== undefined) return false;
+          if (node.data('isTag') !== undefined) return false;
+          if (node.data('parentNodeId') !== undefined) return false;
+          return true;
+        }),
       };
       cy.layout(layoutOptionsWithDefaults).run();
     }
