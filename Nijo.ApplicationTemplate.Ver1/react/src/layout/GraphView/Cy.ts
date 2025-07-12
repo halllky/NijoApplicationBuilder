@@ -74,6 +74,7 @@ export const useCytoscape = (props: GraphViewProps): CytoscapeHookType => {
       });
       cyInstance.on('drag', 'node', event => {
         updateTagPositions(cyInstance)
+        updateMemberPositions(cyInstance)
       });
       cyInstance.on('dragfree', 'node', event => {
         propsRef.current.onLayoutChange?.(event)
@@ -94,6 +95,7 @@ export const useCytoscape = (props: GraphViewProps): CytoscapeHookType => {
       // レイアウト完了後にタグの位置を更新
       cyInstance.on('layoutstop', () => {
         updateTagPositions(cyInstance)
+        updateMemberPositions(cyInstance)
       });
 
       setCy(cyInstance)
@@ -178,6 +180,21 @@ export const useCytoscape = (props: GraphViewProps): CytoscapeHookType => {
             cy.add({ data: tagNodeData })
           })
         }
+
+        // メンバーがある場合はメンバー専用の子ノードを作成
+        if (node.members && node.members.length > 0) {
+          node.members.forEach((member, index) => {
+            const memberId = `${id}_member_${index}`
+            const memberNodeData = {
+              id: memberId,
+              label: member,
+              isMember: true,
+              memberIndex: index,
+              parentNodeId: id,
+            }
+            cy.add({ data: memberNodeData })
+          })
+        }
       }
       for (const edge of dataSet.edges) {
         ensureNodeExists(edge.source)
@@ -195,6 +212,8 @@ export const useCytoscape = (props: GraphViewProps): CytoscapeHookType => {
 
       // タグノードの位置を親ノードの右上に配置
       updateTagPositions(cy)
+      // メンバーノードの位置を親ノードの直下に配置
+      updateMemberPositions(cy)
 
     } finally {
       cy.endBatch()
@@ -273,13 +292,73 @@ export const updateTagPositions = (cyInstance: cytoscape.Core) => {
   }
 }
 
+/** メンバーノードの位置を親ノードの内部に配置する */
+export const updateMemberPositions = (cyInstance: cytoscape.Core) => {
+  // 保有者ID単位で処理するために、保有者IDとメンバーノードの配列をマップに格納
+  const ownerIdAndMembers = new Map<string, cytoscape.NodeSingular[]>()
+  cyInstance.nodes('[isMember]').forEach((memberNode) => {
+    const parentId = memberNode.data('parentNodeId')
+    if (ownerIdAndMembers.has(parentId)) {
+      ownerIdAndMembers.get(parentId)?.push(memberNode)
+    } else {
+      ownerIdAndMembers.set(parentId, [memberNode])
+    }
+  })
+
+  for (const [ownerId, memberNodes] of ownerIdAndMembers) {
+    const ownerNode = cyInstance.getElementById(ownerId)
+    if (ownerNode.length === 0) continue
+
+    const ownerBB = ownerNode[0].boundingBox({
+      includeOverlays: false, // ドラッグ中のノードを囲うように表示されるオーバーレイのサイズを除外
+    })
+
+    // memberIndexが小さい順に上から下に向かって配置
+    const memberNodesSortedByIndex = memberNodes.sort((a, b) => (a.data('memberIndex') ?? 0) - (b.data('memberIndex') ?? 0))
+
+    // 親ノードの上辺を基準として開始位置を調整
+    const ownerCenter = ownerNode[0].position()
+    const ownerTop = ownerCenter.y - (ownerBB.h / 2)
+    const startY = ownerTop + (MEMBER_HEIGHT / 2)
+
+    let offsetYTotal = 0
+    for (const memberNode of memberNodesSortedByIndex) {
+      memberNode.position({
+        x: ownerCenter.x,
+        y: startY + offsetYTotal + MEMBER_HEIGHT / 2,
+      })
+      offsetYTotal += MEMBER_HEIGHT
+    }
+  }
+}
+/** members の各要素の高さ */
+const MEMBER_HEIGHT = 20
+
 /** スタイルシート */
 const STYLESHEET: cytoscape.CytoscapeOptions['style'] = [{
   selector: 'node',
   css: {
     'shape': 'rectangle',
-    'width': (node: cytoscape.NodeSingular) => Math.max(32, (node.data('label') as string)?.length * 20),
-    'text-valign': 'center',
+    'width': (node: cytoscape.NodeSingular) => {
+      const members = node.data('members') as string[] | undefined
+      const maxTextLength = members && members.length > 0
+        ? Math.max(...members.map(m => m.length))
+        : (node.data('label') as string)?.length ?? 0
+      return Math.max(32, maxTextLength * 20)
+    },
+    'height': (node: cytoscape.NodeSingular) => {
+      const members = node.data('members') as string[] | undefined
+      if (members && members.length > 0) {
+        // メンバーがある場合は高さを調整
+        return members.length * MEMBER_HEIGHT
+      }
+      return 32
+    },
+    'text-valign': (node: cytoscape.NodeSingular) => {
+      // メンバーがある場合は上寄せ、ない場合は中央寄せ
+      const members = node.data('members') as string[] | undefined
+      return members && members.length > 0 ? 'top' : 'center'
+    },
     'text-halign': 'center',
     'color': (node: cytoscape.NodeSingular) => (node.data('color') as string) ?? '#000000',
     'border-width': '1px',
@@ -306,6 +385,32 @@ const STYLESHEET: cytoscape.CytoscapeOptions['style'] = [{
     'text-outline-width': 0,
     'z-index': 10,
     'events': 'no',
+  },
+}, {
+  selector: 'node[isMember]',
+  css: {
+    'shape': 'rectangle',
+    'width': (node: cytoscape.NodeSingular) => {
+      const parentNodeId = node.data('parentNodeId')
+      if (parentNodeId) {
+        // 親ノードと同じ幅にする
+        const parentNode = node.cy().getElementById(parentNodeId)
+        if (parentNode.length > 0) {
+          return parentNode.width()
+        }
+      }
+      return Math.max(80, (node.data('label') as string)?.length * 8 + 20)
+    },
+    'height': MEMBER_HEIGHT,
+    'text-valign': 'center',
+    'text-halign': 'center',
+    'font-size': '12px',
+    'border-width': '1px',
+    'border-color': node => (node.data('border-color') as string) ?? '#909090',
+    'background-opacity': 0,
+    'label': 'data(label)',
+    'z-index': 5,
+    'events': 'no', // メンバーはドラッグできないようにする
   },
 }, {
   selector: 'node[tags]',

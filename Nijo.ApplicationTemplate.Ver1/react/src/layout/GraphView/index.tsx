@@ -1,6 +1,6 @@
 import React, { useImperativeHandle, forwardRef, useEffect, useState } from 'react';
 import Navigator from './Cy.Navigator';
-import { useCytoscape, CytoscapeHookType, LayoutSelectorComponentType, ViewState, updateTagPositions } from './Cy';
+import { useCytoscape, CytoscapeHookType, LayoutSelectorComponentType, ViewState, updateTagPositions, updateMemberPositions } from './Cy';
 import cytoscape from 'cytoscape';
 import { LayoutLogicName } from './Cy.AutoLayout';
 import { Node as CyNode, Edge as CyEdge } from './DataSource';
@@ -88,8 +88,8 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>((props, ref) =
 
       // 不要になったノードを削除
       for (const [id, cyNode] of existingCyNodesMap) {
-        if (!newNodesMap.has(id) && !cyNode.data('isTag')) {
-          // 通常のノードを削除する際は、関連するタグノードも削除
+        if (!newNodesMap.has(id) && !cyNode.data('isTag') && !cyNode.data('isMember')) {
+          // 通常のノードを削除する際は、関連するタグノードとメンバーノードも削除
           cy.nodes(`[parentNodeId="${id}"]`).remove();
           cy.remove(cyNode);
         }
@@ -102,13 +102,13 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>((props, ref) =
           parent: newParentMap[newNode.id],
         };
         const existingNode = existingCyNodesMap.get(newNode.id);
-        if (existingNode && !existingNode.data('isTag')) {
+        if (existingNode && !existingNode.data('isTag') && !existingNode.data('isMember')) {
           // 既存ノードのデータを更新
           const oldParent = existingNode.parent();
           const oldParentId = oldParent.length > 0 ? oldParent[0].id() : undefined;
           existingNode.data(nodeDataForCy);
 
-          // 既存のタグノードを削除
+          // 既存のタグノードとメンバーノードを削除
           cy.nodes(`[parentNodeId="${newNode.id}"]`).remove();
 
           // 親が実際に変更された場合、move API を使って明示的に移動
@@ -135,6 +135,22 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>((props, ref) =
               'border-color': tag['background-color'] || '#FF6B35',
             }
             cy.add({ data: tagNodeData })
+          })
+        }
+
+        // メンバーがある場合はメンバー専用のノードを作成
+        if (newNode.members && newNode.members.length > 0) {
+          newNode.members.forEach((member, index) => {
+            const memberId = `${newNode.id}_member_${index}`
+            const memberNodeData = {
+              id: memberId,
+              label: member,
+              isMember: true,
+              memberIndex: index,
+              parentNodeId: newNode.id,
+              'border-color': newNode['border-color'],
+            }
+            cy.add({ data: memberNodeData })
           })
         }
       }
@@ -176,9 +192,10 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>((props, ref) =
       cy.endBatch();
     }
 
-    // タグノードの位置を更新
+    // タグノードとメンバーノードの位置を更新
     cy.ready(() => {
       updateTagPositions(cy)
+      updateMemberPositions(cy)
     })
 
     if (!isReadyCalled && cy.elements().length > 0) {

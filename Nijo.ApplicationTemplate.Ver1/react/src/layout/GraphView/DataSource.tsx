@@ -16,6 +16,7 @@ export type Node = {
   'border-color:selected'?: string
   'color:container'?: string
   tags?: NodeTag[]
+  members?: string[]
 }
 
 /** ノードの右肩に表示するタグ */
