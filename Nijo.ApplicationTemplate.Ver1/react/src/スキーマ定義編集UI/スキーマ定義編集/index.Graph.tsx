@@ -1,29 +1,61 @@
 import React from "react"
+import useEvent from "react-use-event-hook"
 import { GraphView, GraphViewRef, } from "../../layout"
 import { Node as CyNode, Edge as CyEdge } from "../../layout/GraphView/DataSource"
-import { LayoutLogicName } from "../../layout/GraphView/Cy.AutoLayout"
 import { CytoscapeDataSet } from "../../layout/GraphView/Cy"
 import { asTree, ATTR_TYPE, ModelPageForm, TYPE_CHILD, TYPE_CHILDREN, TYPE_COMMAND_MODEL, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, TYPE_STATIC_ENUM_MODEL, TYPE_VALUE_OBJECT_MODEL, XmlElementItem } from "./types"
 import { MentionUtil } from "../UI"
 import { findRefToTarget } from "./findRefToTarget"
+import * as AutoLayout from "../../layout/GraphView/Cy.AutoLayout"
+import * as Input from "../../input"
 
 export const AppSchemaDefinitionGraph = ({
   xmlElementTrees,
-  onlyRoot,
+  onlyRootDefaultValue,
   graphViewRef,
   handleReadyGraph,
-  layoutLogic,
-  handleLayoutChange,
   handleSelectionChange,
+  triggerSaveLayout,
+  clearSavedLayout,
 }: {
   xmlElementTrees: ModelPageForm[]
-  onlyRoot: boolean
+  onlyRootDefaultValue: boolean
   graphViewRef: React.RefObject<GraphViewRef | null>
   handleReadyGraph: () => void
-  layoutLogic: LayoutLogicName
-  handleLayoutChange: (event: cytoscape.EventObject) => void
   handleSelectionChange: (event: cytoscape.EventObject) => void
+  triggerSaveLayout: (event: cytoscape.EventObject | undefined, onlyRoot: boolean) => void
+  clearSavedLayout: () => void
 }) => {
+
+  // ルート集約のみ表示の状態
+  const [onlyRoot, setOnlyRoot] = React.useState(onlyRootDefaultValue)
+  const handleOnlyRootChange = useEvent((e: React.ChangeEvent<HTMLInputElement>) => {
+    setOnlyRoot(e.target.checked)
+  })
+
+  // 整列ロジックの状態
+  const [layoutLogic, setLayoutLogic] = React.useState<AutoLayout.LayoutLogicName>('klay');
+  const handleAutoLayout = useEvent(() => {
+    // clearSavedLayout は localStorage からすべてのレイアウト情報を削除する。
+    clearSavedLayout();
+    // その後、現在の layoutLogic でグラフを整列する。
+    // resetLayout 内部で viewStateApplied フラグもクリアされる。
+    graphViewRef.current?.resetLayout();
+  });
+
+  // レイアウト変更時の処理
+  const handleLayoutChange = useEvent((event: cytoscape.EventObject) => {
+    // ドラッグ、パン、ズーム操作完了時に呼ばれる。
+    // この event には最新のノード位置、ズーム、パン情報が含まれる。
+    triggerSaveLayout(event, onlyRoot);
+  });
+
+  // 「ルート集約のみ表示」の状態がユーザー操作または上記の復元処理で変更されたときに実行
+  React.useEffect(() => {
+    // triggerSaveLayout は現在の onlyRoot の値を localStorage に保存する。
+    // ノード位置は localStorage 内の既存のものが維持される（NijoUiAggregateDiagram.StateSaving.ts の実装による）。
+    triggerSaveLayout(undefined, onlyRoot);
+  }, [onlyRoot, triggerSaveLayout]); // onlyRoot または triggerSaveLayout (の参照) が変更されたときに実行
 
 
   const dataSet: CytoscapeDataSet = React.useMemo(() => {
@@ -213,16 +245,35 @@ export const AppSchemaDefinitionGraph = ({
   }, [xmlElementTrees, onlyRoot])
 
   return (
-    <GraphView
-      key={onlyRoot ? 'onlyRoot' : 'all'} // このフラグが切り替わったタイミングで全部洗い替え
-      ref={graphViewRef}
-      nodes={Object.values(dataSet.nodes)} // dataSet.nodesの値を配列として渡す
-      edges={dataSet.edges} // dataSet.edgesをそのまま渡す
-      parentMap={Object.fromEntries(Object.entries(dataSet.nodes).filter(([, node]) => node.parent).map(([id, node]) => [id, node.parent!]))} // dataSet.nodesからparentMapを生成
-      onReady={handleReadyGraph}
-      layoutLogic={layoutLogic}
-      onLayoutChange={handleLayoutChange}
-      onSelectionChange={handleSelectionChange}
-    />
+    <div className="h-full relative">
+      <GraphView
+        key={onlyRoot ? 'onlyRoot' : 'all'} // このフラグが切り替わったタイミングで全部洗い替え
+        ref={graphViewRef}
+        nodes={Object.values(dataSet.nodes)} // dataSet.nodesの値を配列として渡す
+        edges={dataSet.edges} // dataSet.edgesをそのまま渡す
+        parentMap={Object.fromEntries(Object.entries(dataSet.nodes).filter(([, node]) => node.parent).map(([id, node]) => [id, node.parent!]))} // dataSet.nodesからparentMapを生成
+        onReady={handleReadyGraph}
+        layoutLogic={layoutLogic}
+        onLayoutChange={handleLayoutChange}
+        onSelectionChange={handleSelectionChange}
+        className="h-full"
+      />
+      <div className="flex flex-col items-start gap-2 p-1 absolute top-0 left-0">
+        <label className="flex items-center gap-1">
+          <input type="checkbox" checked={onlyRoot} onChange={handleOnlyRootChange} />
+          ルート集約のみ表示
+        </label>
+        <div className="flex items-center gap-2">
+          <Input.IconButton onClick={handleAutoLayout} outline mini className="bg-white">
+            整列
+          </Input.IconButton>
+          <select className="border text-sm bg-white" value={layoutLogic} onChange={(e) => setLayoutLogic(e.target.value as AutoLayout.LayoutLogicName)}>
+            {Object.entries(AutoLayout.OPTION_LIST).map(([key, value]) => (
+              <option key={key} value={key}>ロジック: {value.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+    </div>
   )
 }

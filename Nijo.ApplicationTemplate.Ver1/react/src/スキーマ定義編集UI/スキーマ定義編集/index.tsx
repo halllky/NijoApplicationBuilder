@@ -137,39 +137,11 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, onlyRootDefaultValue
     trigger() // 画面表示時に入力検証を実行
   }, [])
 
-  // ルート集約のみ表示の状態
-  const [onlyRoot, setOnlyRoot] = React.useState(onlyRootDefaultValue)
-  const handleOnlyRootChange = useEvent((e: React.ChangeEvent<HTMLInputElement>) => {
-    setOnlyRoot(e.target.checked)
-  })
-
   // 主要な列のみ表示
   const [showLessColumns, setShowLessColumns] = React.useState(false)
   const handleShowLessColumnsChange = useEvent((e: React.ChangeEvent<HTMLInputElement>) => {
     setShowLessColumns(e.target.checked)
   })
-
-  // 「ルート集約のみ表示」の状態がユーザー操作または上記の復元処理で変更されたときに実行
-  React.useEffect(() => {
-    // triggerSaveLayout は現在の onlyRoot の値を localStorage に保存する。
-    // ノード位置は localStorage 内の既存のものが維持される（NijoUiAggregateDiagram.StateSaving.ts の実装による）。
-    triggerSaveLayout(undefined, onlyRoot);
-  }, [onlyRoot, triggerSaveLayout]); // onlyRoot または triggerSaveLayout (の参照) が変更されたときに実行
-
-  const handleLayoutChange = useEvent((event: cytoscape.EventObject) => {
-    // ドラッグ、パン、ズーム操作完了時に呼ばれる。
-    // この event には最新のノード位置、ズーム、パン情報が含まれる。
-    triggerSaveLayout(event, onlyRoot);
-  });
-
-  const [layoutLogic, setLayoutLogic] = React.useState<AutoLayout.LayoutLogicName>('klay');
-  const handleAutoLayout = useEvent(() => {
-    // clearSavedLayout は localStorage からすべてのレイアウト情報を削除する。
-    clearSavedLayout();
-    // その後、現在の layoutLogic でグラフを整列する。
-    // resetLayout 内部で viewStateApplied フラグもクリアされる。
-    graphViewRef.current?.resetLayout();
-  });
 
   // グラフの準備ができたときに呼ばれる
   const handleReadyGraph = useEvent(() => {
@@ -260,19 +232,7 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, onlyRootDefaultValue
         <>
           <div className="basis-4"></div>
 
-          <Input.IconButton onClick={handleAutoLayout} outline>
-            整列
-          </Input.IconButton>
-          <select className="border text-sm" value={layoutLogic} onChange={(e) => setLayoutLogic(e.target.value as AutoLayout.LayoutLogicName)}>
-            {Object.entries(AutoLayout.OPTION_LIST).map(([key, value]) => (
-              <option key={key} value={key}>ロジック: {value.name}</option>
-            ))}
-          </select>
           <div className="basis-4"></div>
-          <label>
-            <input type="checkbox" checked={onlyRoot} onChange={handleOnlyRootChange} />
-            ルート集約のみ表示
-          </label>
           <label>
             <input type="checkbox" checked={showLessColumns} onChange={handleShowLessColumnsChange} />
             主要な列のみ表示
@@ -307,13 +267,13 @@ const AfterLoaded = ({ triggerSaveLayout, clearSavedLayout, onlyRootDefaultValue
       <PanelGroup className="flex-1" direction={editableGridPosition}>
         <Panel className="border border-gray-300">
           <AppSchemaDefinitionGraph
-            onlyRoot={onlyRoot}
+            onlyRootDefaultValue={onlyRootDefaultValue}
             graphViewRef={graphViewRef}
             xmlElementTrees={xmlElementTrees}
             handleReadyGraph={handleReadyGraph}
-            layoutLogic={layoutLogic}
-            handleLayoutChange={handleLayoutChange}
             handleSelectionChange={handleSelectionChange}
+            triggerSaveLayout={triggerSaveLayout}
+            clearSavedLayout={clearSavedLayout}
           />
         </Panel>
 
