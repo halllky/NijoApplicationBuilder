@@ -8,7 +8,7 @@ import { MentionUtil } from "../UI"
 import { findRefToTarget } from "./findRefToTarget"
 import * as AutoLayout from "../../layout/GraphView/Cy.AutoLayout"
 import * as Input from "../../input"
-import { useLayoutSaving } from './index.Graph.useLayoutSaving'
+import { useLayoutSaving, DisplayMode, LOCAL_STORAGE_KEY_DISPLAY_MODE } from './index.Graph.useLayoutSaving'
 
 export const AppSchemaDefinitionGraph = ({
   xmlElementTrees,
@@ -20,13 +20,18 @@ export const AppSchemaDefinitionGraph = ({
   handleSelectionChange: (event: cytoscape.EventObject) => void
 }) => {
 
-  // レイアウト保存機能
-  const { triggerSaveLayout, clearSavedLayout, savedOnlyRoot, savedViewState } = useLayoutSaving()
+  // displayModeの初期値を保存された値から取得
+  const [displayMode, setDisplayMode] = React.useState<DisplayMode>(() => {
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEY_DISPLAY_MODE)
+    return saved === 'er' ? 'er' : 'schema' // デフォルトは'schema'
+  })
 
-  // 表示モードの状態
-  const [displayMode, setDisplayMode] = React.useState<DisplayMode>('schema')
+  // レイアウト保存機能（displayModeに応じて）
+  const { triggerSaveLayout, clearSavedLayout, savedOnlyRoot, savedViewState, saveDisplayMode } = useLayoutSaving(displayMode)
   const handleDisplayModeChange = useEvent((e: React.ChangeEvent<HTMLSelectElement>) => {
-    setDisplayMode(e.target.value as DisplayMode)
+    const newMode = e.target.value as DisplayMode
+    setDisplayMode(newMode)
+    saveDisplayMode(newMode)
   })
 
   // ルート集約のみ表示の状態
@@ -128,8 +133,6 @@ export const AppSchemaDefinitionGraph = ({
 }
 
 // ---------------------------------------------
-// 表示モードの定義
-type DisplayMode = 'schema' | 'er'
 
 //#region スキーマ定義
 
