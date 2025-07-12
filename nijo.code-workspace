@@ -127,6 +127,15 @@
         "options": {
           "cwd": "${workspaceFolder:NijoApplicationBuilder}"
         },
+      },
+      {
+        "label": "Nijo: ドキュメントのデバッグ",
+        "command": "npm run docs:dev",
+        "type": "shell",
+        "problemMatcher": [],
+        "options": {
+          "cwd": "${workspaceFolder:NijoApplicationBuilder}/Document"
+        },
       }
     ]
   }
