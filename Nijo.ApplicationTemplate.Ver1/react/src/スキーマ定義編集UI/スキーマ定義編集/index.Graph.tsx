@@ -356,6 +356,34 @@ const createERDiagramDataSet = (xmlElementTrees: ModelPageForm[]): CytoscapeData
     return targets
   }
 
+  // 全テーブルの主キーを収集
+  const primaryKeys: Map<XmlElementItem, XmlElementItem[]> = new Map()
+  for (const rootAggregateGroup of xmlElementTrees) {
+    if (!rootAggregateGroup || !rootAggregateGroup.xmlElements || rootAggregateGroup.xmlElements.length === 0) continue;
+    const rootElement = rootAggregateGroup.xmlElements[0];
+    if (!rootElement) continue;
+
+    // ツリーヘルパーを初期化
+    const treeHelper = getTreeFromRootElement(rootElement);
+    if (!treeHelper) continue;
+
+    for (const element of rootAggregateGroup.xmlElements) {
+      const pks: XmlElementItem[] = []
+      // 親のキー
+      const parent = treeHelper.getParent(element)
+      if (parent) {
+        const parentPks = primaryKeys.get(parent)
+        if (parentPks) pks.push(...parentPks)
+      }
+
+      // 自身のキー
+      const children = treeHelper.getChildren(element)
+      const ownPks = children.filter(child => child.attributes[ATTR_IS_KEY])
+      pks.push(...ownPks)
+      primaryKeys.set(element, pks)
+    }
+  }
+
   // 全要素のIDマップを作成（メンション解決用）
   const elementIdMap = new Map<string, { element: XmlElementItem, rootElement: XmlElementItem }>()
   for (const rootAggregateGroup of xmlElementTrees) {
@@ -389,21 +417,40 @@ const createERDiagramDataSet = (xmlElementTrees: ModelPageForm[]): CytoscapeData
       const columns: string[] = []
       const members = treeHelper.getChildren(owner)
 
+      // 子テーブルは親テーブルの主キーを継承する
+      const parent = treeHelper.getParent(owner)
+      if (parent) {
+        const pks = primaryKeys.get(parent)
+        if (pks) {
+          for (const pk of pks) {
+            columns.push(`Parent_${pk.localName ?? ''} (PK)`)
+          }
+        }
+      }
+
+      // 自身のメンバー。
+      // 値型の場合はそのままカラムとして認識する。
+      // 外部キーの場合は相手方の主キーをカラムとして追加する。
       for (const member of members) {
-        // 値型の場合はそのままカラムとして認識する。
-        // 外部キーの場合は相手方の主キーをカラムとして追加する。
         const target = findRefToTarget(member, xmlElementTrees)
         if (!target?.refTo) {
           // 値要素またはプリミティブ型の場合はそのままカラムとして認識する。
-          columns.push(member.localName ?? '')
+          const isPk = member.attributes[ATTR_IS_KEY]
+          columns.push(isPk
+            ? `${member.localName ?? ''} (PK)`
+            : member.localName ?? '')
 
         } else {
           // 外部キーの場合は相手方の主キーをカラムとして追加する。
           const refToTree = getTreeFromRootElement(target.refToRoot)
           if (!refToTree) continue;
-          for (const refToMember of refToTree.getChildren(target.refTo)) {
-            if (refToMember.attributes[ATTR_IS_KEY]) {
-              columns.push(`${member.localName ?? ''}_${refToMember.localName ?? ''}`)
+          const isPk = member.attributes[ATTR_IS_KEY]
+          const refToPks = primaryKeys.get(target.refTo)
+          if (refToPks) {
+            for (const refToPk of refToPks) {
+              columns.push(isPk
+                ? `${member.localName ?? ''}_${refToPk.localName ?? ''} (PK)`
+                : `${member.localName ?? ''}_${refToPk.localName ?? ''}`)
             }
           }
         }
@@ -438,6 +485,16 @@ const createERDiagramDataSet = (xmlElementTrees: ModelPageForm[]): CytoscapeData
             })
           }
         }
+      }
+
+      // 子から親へのエッジ
+      if (parent) {
+        edges.push({
+          source: owner.uniqueId,
+          target: parent.uniqueId,
+          label: `(Parent)`,
+          sourceModel: model,
+        })
       }
 
       // 外部キー関係のエッジを処理
