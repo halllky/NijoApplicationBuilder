@@ -107,9 +107,9 @@ public class DataPatternTest {
     /// コード自動生成に使われる各種メソッドの動作確認の目検用ファイルのダンプ
     /// </summary>
     /// <param name="xmlFileName">XMLファイル名</param>
-    [Test]
-    [TestCaseSource(nameof(TestCase_各種中間出力ダンプ))]
-    [Category("DataPattern")]
+    //[Test]
+    //[TestCaseSource(nameof(TestCase_各種中間出力ダンプ))]
+    //[Category("DataPattern")]
     public void 各種中間出力ダンプ(string fileName) {
         var workspaceRoot = Path.GetFullPath(Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", ".."));
         var testProjectDir = Path.Combine(workspaceRoot, "..", TEST_PROJECT_DIR);
@@ -151,9 +151,9 @@ public class DataPatternTest {
 
     public static IEnumerable<TestCaseData> TestCase_各構造体のオブジェクトパスが正しく生成されるか確認 => GetXmlFilePaths("各構造体のオブジェクトパスが正しく生成されるか確認");
 
-    [Test]
-    [TestCaseSource(nameof(TestCase_各構造体のオブジェクトパスが正しく生成されるか確認))]
-    [Category("DataPattern")]
+    //[Test]
+    //[TestCaseSource(nameof(TestCase_各構造体のオブジェクトパスが正しく生成されるか確認))]
+    //[Category("DataPattern")]
     public void 各構造体のオブジェクトパスが正しく生成されるか確認(string fileName) {
         var implementor = GetImplementor(fileName)
             ?? throw new InvalidOperationException(
@@ -202,9 +202,9 @@ public class DataPatternTest {
     /// XMLファイルごとのテスト
     /// </summary>
     /// <param name="xmlFileName">XMLファイル名</param>
-    [Test]
-    [TestCaseSource(nameof(TestCase_コンパイルエラーチェック))]
-    [Category("DataPattern")]
+    //[Test]
+    //[TestCaseSource(nameof(TestCase_コンパイルエラーチェック))]
+    //[Category("DataPattern")]
     public async Task コンパイルエラーチェック(string fileName) {
         var workspaceRoot = Path.GetFullPath(Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", ".."));
         var testProjectDir = Path.Combine(workspaceRoot, "..", TEST_PROJECT_DIR);

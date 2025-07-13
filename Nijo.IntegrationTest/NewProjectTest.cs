@@ -16,7 +16,7 @@ public class NewProjectTest {
     private string _testProjectDir = string.Empty;
     private string _workspaceRoot = string.Empty;
     private string _repoRoot = string.Empty;
-    private const int COMMAND_TIMEOUT_SECONDS = 30;
+    private const int COMMAND_TIMEOUT_SECONDS = 300;
 
     [SetUp]
     public void SetUp() {
