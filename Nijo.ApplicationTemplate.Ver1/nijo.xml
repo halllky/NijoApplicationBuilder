@@ -154,10 +154,9 @@
       <備考 DbName="REMARKS" MaxLength="200" Type="description" UniqueId="8218aa3c-8954-4850-a84d-15da6e0eba28" />
     </処方薬>
   </診察記録>
-  <!-- 複雑なデータ構造をもったクエリモデル -->
   <診療収益分析 LatinName="Medical Revenue Analysis" Type="query-model" UniqueId="9442b4d0-b48e-45b1-ab23-597ad74b1058">
+    <!--例: "2025/04"-->
     <年月 Type="yearmonth" UniqueId="5b240e6c-fdfa-4450-a313-3ed437d4584e" />
-    <!-- 例: "2023/10" -->
     <診療科 Type="ref-to:診療科マスタ" UniqueId="81b85306-d103-4404-957e-1394ddb12fb7" />
     <診療収益合計 Type="int" UniqueId="7ad3568d-04f9-4751-bbd6-b890f6cdd586" />
     <患者数 Type="int" UniqueId="e276f4f7-e4e9-4734-8d7c-23dac44f2914" />
@@ -174,8 +173,8 @@
       </機器別収益>
     </機器分類別収益>
     <時間帯別収益 Type="children" UniqueId="3440d2f6-d139-46f6-8e75-4c9b6020d05d">
-      <時間帯 Type="word" UniqueId="c65d18e5-3f0e-46a2-9faa-4d737b23dee0" />
       <!-- 例: "10:00-10:59" -->
+      <時間帯 Type="word" UniqueId="c65d18e5-3f0e-46a2-9faa-4d737b23dee0" />
       <診療収益 Type="int" UniqueId="ee940abd-2f3c-48fb-9cd8-ac8a5e226e9f" />
       <診療件数 Type="int" UniqueId="6b384442-8b6f-4b93-884b-4560ce033d06" />
       <!-- 診療件数 -->

@@ -59,8 +59,7 @@ export default defineConfig({
     ],
 
     footer: {
-      message: 'Diataxisフレームワークに基づいて構造化されたドキュメント',
-      copyright: 'Copyright © 2024 Nijo Application Builder'
+      copyright: 'Copyright © 2025 Nijo Application Builder'
     },
 
     search: {

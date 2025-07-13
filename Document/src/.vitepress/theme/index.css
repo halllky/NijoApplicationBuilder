@@ -1,0 +1,5 @@
+/* .vitepress/theme/my-fonts.css */
+:root {
+  --vp-font-family-base: "Noto Sans JP", sans-serif;
+  --vp-font-family-mono: "Noto Sans Mono", monospace;
+}
