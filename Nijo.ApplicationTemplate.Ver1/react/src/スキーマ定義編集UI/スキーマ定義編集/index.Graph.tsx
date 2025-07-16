@@ -9,6 +9,7 @@ import { findRefToTarget } from "./findRefToTarget"
 import * as AutoLayout from "../../layout/GraphView/Cy.AutoLayout"
 import * as Input from "../../input"
 import { useLayoutSaving, DisplayMode, LOCAL_STORAGE_KEY_DISPLAY_MODE } from './index.Graph.useLayoutSaving'
+import cytoscape from "cytoscape"
 
 export const AppSchemaDefinitionGraph = ({
   xmlElementTrees,
@@ -432,6 +433,11 @@ const createERDiagramDataSet = (xmlElementTrees: ModelPageForm[]): CytoscapeData
       // 値型の場合はそのままカラムとして認識する。
       // 外部キーの場合は相手方の主キーをカラムとして追加する。
       for (const member of members) {
+
+        // child, children は親のカラムではない
+        const type = member.attributes[ATTR_TYPE]
+        if (type === TYPE_CHILD || type === TYPE_CHILDREN) continue;
+
         const target = findRefToTarget(member, xmlElementTrees)
         if (!target?.refTo) {
           // 値要素またはプリミティブ型の場合はそのままカラムとして認識する。
