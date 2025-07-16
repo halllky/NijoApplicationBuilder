@@ -26,6 +26,7 @@
     "cytoscape-fcose": "^2.2.0",
     "cytoscape-klay": "^3.1.4",
     "cytoscape-navigator": "^2.0.2",
+    "cytoscape-node-html-label": "^1.2.2",
     "dayjs": "^1.11.13",
     "linkify-react": "^4.3.1",
     "linkifyjs": "^4.3.1",

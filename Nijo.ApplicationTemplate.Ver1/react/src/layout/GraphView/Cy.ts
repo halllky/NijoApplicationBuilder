@@ -1,6 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import cytoscape from 'cytoscape'
 import { UUID } from 'uuidjs'
+// @ts-ignore このライブラリは型定義を提供していない
+import nodeHtmlLabel from "cytoscape-node-html-label"
 import Navigator from './Cy.Navigator'
 import AutoLayout, { LayoutLogicName } from './Cy.AutoLayout'
 import ExpandCollapseFunctions from './Cy.ExpandCollapse'
@@ -11,6 +13,9 @@ import { GraphViewProps } from '.'
 
 AutoLayout.configure(cytoscape)
 Navigator.configure(cytoscape)
+
+// cytoscape-node-html-label拡張機能を登録
+nodeHtmlLabel(cytoscape)
 
 // DS.DataSet をエクスポート
 export type { DataSet as CytoscapeDataSet } from './DataSource'
@@ -57,6 +62,10 @@ export const useCytoscape = (props: GraphViewProps): CytoscapeHookType => {
         style: getStyleSheet(),
         layout: AutoLayout.DEFAULT,
       })
+
+      // HTMLラベルテンプレートを設定
+      setupHtmlLabels(cyInstance)
+
       if (propsRef.current.showNavigator) {
         setNavInstance(Navigator.setupCyInstance(cyInstance))
       }
@@ -327,7 +336,7 @@ export const updateMemberPositions = (cyInstance: cytoscape.Core) => {
 
     // 親ノードの上辺を基準として開始位置を調整
     const ownerCenter = ownerNode[0].position()
-    const ownerTop = ownerCenter.y - (ownerBB.h / 2)
+    const ownerTop = ownerCenter.y - (ownerBB.h / 2) - 8
     const startY = ownerTop + (MEMBER_HEIGHT / 2)
 
     let offsetYTotal = 0
@@ -342,6 +351,58 @@ export const updateMemberPositions = (cyInstance: cytoscape.Core) => {
 }
 /** members の各要素の高さ */
 const MEMBER_HEIGHT = 20
+/** 親ノードのラベルのパディング */
+const PARENT_NODE_PADDING = 20
+
+/** HTMLラベルテンプレートを設定する */
+const setupHtmlLabels = (cyInstance: cytoscape.Core) => {
+  (cyInstance as any).nodeHtmlLabel([
+    {
+      query: 'node', // 全てのノードに適用
+      valign: 'center',
+      halign: 'center',
+      tpl: (data: any) => {
+        const label = data.label || ''
+        // 改行文字（\n または \r\n）を<br>タグに変換
+        const htmlLabel = label.replace(/\r\n|\n/g, '<br>')
+        return `<div style="pointer-events: none;">${htmlLabel}</div>`
+      }
+    },
+    {
+      query: 'node[members]', // メンバーを持つノードに適用
+      valign: 'top',
+      valignBox: 'top',
+      halign: 'center',
+      tpl: (data: any) => {
+        const label = data.label || ''
+        // 改行文字（\n または \r\n）を<br>タグに変換
+        const htmlLabel = label.replace(/\r\n|\n/g, '<br>')
+        return `<div style="pointer-events: none;">${htmlLabel}</div>`
+      }
+    },
+    {
+      query: 'node:parent', // 親ノードに適用
+      valign: 'top',
+      valignBox: 'top',
+      halign: 'center',
+      tpl: (data: any) => {
+        const label = data.label || ''
+        // 改行文字（\n または \r\n）を<br>タグに変換
+        const htmlLabel = label.replace(/\r\n|\n/g, '<br>')
+        return `<div style="transform: translateY(-${PARENT_NODE_PADDING}px); text-align: center; pointer-events: none;">${htmlLabel}</div>`
+      }
+    },
+    {
+      query: 'node[isMember]', // メンバーノード用
+      valign: 'center',
+      halign: 'center',
+      tpl: (data: any) => {
+        const label = data.label || ''
+        return `<div style="pointer-events: none;">${label}</div>`
+      }
+    }
+  ])
+}
 
 /** スタイルシート */
 const getStyleSheet = (): cytoscape.CytoscapeOptions['style'] => {
@@ -370,21 +431,19 @@ const getStyleSheet = (): cytoscape.CytoscapeOptions['style'] => {
         if (members && members.length > 0) {
           // メンバーがある場合は高さを調整
           return members.length * MEMBER_HEIGHT
+        } else {
+          // ラベルの改行数に基づいて高さを計算
+          const label = (node.data('label') as string) || ''
+          const lines = label.split(/\r\n|\n/)
+          const lineHeight = 16 * 1.2 // フォントサイズ16px × line-height 1.2
+          return Math.max(32, lines.length * lineHeight + 8) // 最小32px、上下パディング8px
         }
-        return 32
       },
-      'text-valign': (node: cytoscape.NodeSingular) => {
-        // メンバーがある場合は上寄せ、ない場合は中央寄せ
-        const members = node.data('members') as string[] | undefined
-        return members && members.length > 0 ? 'top' : 'center'
-      },
-      'text-halign': 'center',
       'color': (node: cytoscape.NodeSingular) => (node.data('color') as string) ?? '#000000',
       'border-width': '1px',
       'border-color': node => (node.data('border-color') as string) ?? '#909090',
       'background-color': node => (node.data('background-color') as string) ?? '#666666',
       'background-opacity': .1,
-      'label': 'data(label)',
     },
   }, {
     selector: 'node[isTag]',
@@ -421,20 +480,17 @@ const getStyleSheet = (): cytoscape.CytoscapeOptions['style'] => {
         return Math.max(80, (node.data('label') as string)?.length * 8 + 20)
       },
       'height': MEMBER_HEIGHT,
-      'text-valign': 'center',
-      'text-halign': 'center',
       'font-size': '12px',
       'border-width': '1px',
       'border-color': node => (node.data('border-color') as string) ?? '#909090',
       'background-opacity': 0,
-      'label': 'data(label)',
       'z-index': 5,
       'events': 'no', // メンバーはドラッグできないようにする
     },
   }, {
     selector: 'node[tags]',
     css: {
-      'label': 'data(label)',
+      'label': '', // HTMLラベルを使用するため標準ラベルを無効化
       'compound-sizing-wrt-labels': 'exclude',
     },
   }, {
@@ -448,7 +504,7 @@ const getStyleSheet = (): cytoscape.CytoscapeOptions['style'] => {
     selector: 'node:parent', // 子要素をもつノードに適用される
     css: {
       'text-valign': 'top', // ラベルをノードの上部外側に配置
-      'padding': '20px', // parentが複数重なるとラベルが重なるので、ノードの上部分に余白を持たせる
+      'padding': `${PARENT_NODE_PADDING}px`, // parentが複数重なるとラベルが重なるので、ノードの上部分に余白を持たせる
       'color': (node: cytoscape.NodeSingular) => (node.data('color:container') as string) ?? '#707070',
     },
   }, {
