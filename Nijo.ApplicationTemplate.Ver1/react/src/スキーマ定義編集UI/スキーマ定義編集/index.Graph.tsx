@@ -124,7 +124,7 @@ export const AppSchemaDefinitionGraph = ({
           </Input.IconButton>
           <select className="border text-sm bg-white" value={layoutLogic} onChange={(e) => setLayoutLogic(e.target.value as AutoLayout.LayoutLogicName)}>
             {Object.entries(AutoLayout.OPTION_LIST).map(([key, value]) => (
-              <option key={key} value={key}>ロジック: {value.name}</option>
+              <option key={key} value={key}>ロジック: {value.options.name}</option>
             ))}
           </select>
         </div>
