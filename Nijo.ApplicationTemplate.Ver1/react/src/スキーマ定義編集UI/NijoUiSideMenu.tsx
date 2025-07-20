@@ -135,6 +135,8 @@ export const NijoUiSideMenu = ({ outletContext }: {
           </MenuItem>
         ))}
 
+        <SectionSeparator />
+
         <MenuItem icon={Icon.Cog6ToothIcon} onClick={handleClickPersonalSettings}>
           個人設定
         </MenuItem>
