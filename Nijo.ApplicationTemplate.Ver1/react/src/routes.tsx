@@ -9,6 +9,7 @@ import { PerspectivePage } from "./スキーマ定義編集UI/型つきドキュ
 import * as Util from "./util"
 import { NijoUiAggregateDiagram } from "./スキーマ定義編集UI/スキーマ定義編集"
 import { DataPreview } from "./スキーマ定義編集UI/データプレビュー"
+import { 区分定義 } from "./スキーマ定義編集UI/スキーマ定義編集/区分定義"
 
 /** RouteObject に sideMenuLabel を追加した型 */
 export type RouteObjectWithSideMenuSetting = ReactRouter.RouteObject & {
@@ -59,6 +60,9 @@ export const getRouterForNijoUi = (): RouteObjectWithSideMenuSetting[] => {
       path: `schema`,
       element: <NijoUiAggregateDiagram />,
     }, {
+      path: `enum-definition`,
+      element: <区分定義 />,
+    }, {
       path: 'debug-menu',
       element: <NijoUiDebugMenu />,
     }, {
@@ -94,6 +98,7 @@ export const getNavigationUrl = (arg?:
   { aggregateId?: never, page: 'typed-document-entity', entityTypeId: string } |
   { aggregateId?: never, page: 'typed-document-perspective', perspectiveId: string, focusEntityId?: string } |
   { aggregateId?: never, page: 'schema' } |
+  { aggregateId?: never, page: 'schema-enum-definition' } |
   { aggregateId?: never, page: 'data-preview', dataPreviewId: string }
 ): string => {
   if (arg?.page === 'top-page') {
@@ -110,6 +115,8 @@ export const getNavigationUrl = (arg?:
     return `/nijo-ui/typed-doc/perspective/${arg.perspectiveId}?${searchParams.toString()}`
   } else if (arg?.page === 'schema') {
     return `/nijo-ui/schema/`
+  } else if (arg?.page === 'schema-enum-definition') {
+    return `/nijo-ui/enum-definition`
   } else if (arg?.page === 'data-preview') {
     return `/nijo-ui/data-preview/${arg.dataPreviewId}`
   } else {

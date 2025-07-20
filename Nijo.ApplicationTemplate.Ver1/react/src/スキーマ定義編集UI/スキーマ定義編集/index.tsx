@@ -19,64 +19,23 @@ import { PageFrame } from "../PageFrame"
 import { useValidation } from "./useValidation"
 import NijoUiErrorMessagePane from "./index.ErrorMessage"
 import { AppSchemaDefinitionGraph } from "./index.Graph"
+import { useSaveLoad } from "./useSaveLoad"
 
 export const NijoUiAggregateDiagram = () => {
 
-  // 画面初期表示時、サーバーからスキーマ情報を読み込む
-  const [schema, setSchema] = React.useState<SchemaDefinitionGlobalState>()
-  const [loadError, setLoadError] = React.useState<string>()
-  const load = useEvent(async () => {
-    try {
-      const schemaResponse = await fetch(`${SERVER_DOMAIN}/load`)
-
-      if (!schemaResponse.ok) {
-        const body = await schemaResponse.text();
-        throw new Error(`Failed to load schema: ${schemaResponse.status} ${body}`);
-      }
-
-      const schemaData: SchemaDefinitionGlobalState = await schemaResponse.json()
-      setSchema(schemaData)
-    } catch (error) {
-      console.error(error)
-      setLoadError(error instanceof Error ? error.message : `不明なエラー(${error})`)
-    }
-  })
-  React.useEffect(() => {
-    load()
-  }, [load])
-
-  // 保存処理
-  const handleSave = useEvent(async (valuesToSave: SchemaDefinitionGlobalState): Promise<{ ok: boolean, error?: string }> => {
-    try {
-      const response = await fetch(`${SERVER_DOMAIN}/save`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(valuesToSave),
-      })
-      if (!response.ok) {
-        const bodyText = await response.text()
-        try {
-          const bodyJson = JSON.parse(bodyText) as string[]
-          console.error(bodyJson)
-          return { ok: false, error: `保存に失敗しました:\n${bodyJson.join('\n')}` }
-        } catch {
-          console.error(bodyText)
-          return { ok: false, error: `保存に失敗しました (サーバーからの応答が不正です):\n${bodyText}` }
-        }
-      }
-      return { ok: true }
-    } catch (error) {
-      console.error(error)
-      return { ok: false, error: error instanceof Error ? error.message : `不明なエラー(${error})` }
-    }
-  })
+  const {
+    schema,
+    loadError,
+    reloadSchema,
+    saveSchema,
+  } = useSaveLoad()
 
   // 読み込みエラー
   if (loadError) {
     return (
       <div>
         読み込みでエラーが発生しました: {loadError}
-        <Input.IconButton onClick={load}>
+        <Input.IconButton onClick={reloadSchema}>
           再読み込み
         </Input.IconButton>
       </div>
@@ -91,7 +50,7 @@ export const NijoUiAggregateDiagram = () => {
   return (
     <AfterLoaded
       formDefaultValues={schema}
-      executeSave={handleSave}
+      executeSave={saveSchema}
     />
   )
 }
@@ -224,7 +183,6 @@ const AfterLoaded = ({ formDefaultValues, executeSave }: {
           >
             削除
           </Input.IconButton>
-          <Input.IconButton outline onClick={() => alert('区分定義は未実装です。通常の単語型として定義してください。')}>区分定義</Input.IconButton>
           <div className="basis-36 flex justify-end">
             <Input.IconButton fill onClick={handleSave} loading={nowSaving}>{saveButtonText}</Input.IconButton>
           </div>

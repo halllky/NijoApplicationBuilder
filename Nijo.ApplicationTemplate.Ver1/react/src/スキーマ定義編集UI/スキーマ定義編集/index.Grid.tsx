@@ -54,6 +54,7 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, getValidati
     const rootModelType = fields[0]?.attributes[ATTR_TYPE]
 
     for (const attrDef of Array.from(attributeDefs.values())) {
+      // Typeは既に表示しているのでスキップ
       if (attrDef.attributeName === ATTR_TYPE) continue;
 
       // rootModelTypeに対応する属性のみをフィルタリング
@@ -267,12 +268,12 @@ export const PageRootAggregate = ({ rootAggregateIndex, formMethods, getValidati
 // --------------------------------------------
 
 /** メンバーグリッドの行の型 */
-type GridRowType = ReactHookForm.FieldArrayWithId<SchemaDefinitionGlobalState, `xmlElementTrees.${number}.xmlElements`>
+export type GridRowType = ReactHookForm.FieldArrayWithId<SchemaDefinitionGlobalState, `xmlElementTrees.${number}.xmlElements`>
 
 // --------------------------------------------
 
 /** LocalName のセルのレイアウト */
-const createLocalNameCell = (
+export const createLocalNameCell = (
   cellType: Layout.ColumnDefFactories<GridRowType>,
   getValidationResult: GetValidationResultFunction
 ) => {
@@ -314,7 +315,7 @@ const createLocalNameCell = (
 }
 
 /** 属性のセル */
-const createAttributeCell = (
+export const createAttributeCell = (
   attrDef: XmlElementAttribute,
   cellType: Layout.ColumnDefFactories<GridRowType>,
   getValidationResult: GetValidationResultFunction

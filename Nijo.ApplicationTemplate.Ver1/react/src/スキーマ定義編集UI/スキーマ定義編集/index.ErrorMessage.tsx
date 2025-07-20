@@ -1,5 +1,4 @@
 import React from "react"
-import * as ReactHookForm from "react-hook-form"
 import { SchemaDefinitionGlobalState, asTree } from "./types"
 import { ValidationResultListItem } from "./useValidation"
 
@@ -8,13 +7,15 @@ import { ValidationResultListItem } from "./useValidation"
  * すべての要素のエラーメッセージを羅列する。
  */
 export default function ({ getValues, validationResultList, selectRootAggregate, className }: {
-  getValues: ReactHookForm.UseFormGetValues<SchemaDefinitionGlobalState>
+  getValues: () => SchemaDefinitionGlobalState
   validationResultList: ValidationResultListItem[]
-  selectRootAggregate: (aggregateId: string) => void
+  selectRootAggregate: ((aggregateId: string) => void) | undefined
   className?: string
 }) {
   const handleClick = (elementId: string) => {
-    const xmlElementTrees = getValues('xmlElementTrees')
+    if (!selectRootAggregate) return;
+
+    const xmlElementTrees = getValues().xmlElementTrees
     if (!xmlElementTrees) return
 
     for (const tree of xmlElementTrees) {

@@ -114,6 +114,10 @@ export const NijoUiSideMenu = ({ outletContext }: {
           集約定義
         </MenuItem>
 
+        <MenuItem icon={Icon.ShareIcon} link={getNavigationUrl({ page: 'schema-enum-definition' })}>
+          区分定義
+        </MenuItem>
+
         <SectionSeparator />
 
         <SectionTitle>

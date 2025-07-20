@@ -1,12 +1,12 @@
 import React from "react"
 import useEvent from "react-use-event-hook"
-import * as ReactHookForm from "react-hook-form"
 import { asTree, SchemaDefinitionGlobalState } from "./types"
 import { SERVER_DOMAIN } from "../../routes"
 
 /** スキーマ定義のバリデーション機能 */
 export const useValidation = (
-  getValues: ReactHookForm.UseFormGetValues<SchemaDefinitionGlobalState>
+  /** 編集中の最新の値を取得する関数 */
+  getEditingValues: () => SchemaDefinitionGlobalState
 ) => {
   // 短時間で繰り返し実行するとサーバーに負担がかかるため、
   // 最後にリクエストした時間から一定時間以内はリクエストをしないようにする。
@@ -31,7 +31,7 @@ export const useValidation = (
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(getValues()),
+      body: JSON.stringify(getEditingValues()),
     })
     if (result.status === 202) {
       const errors: ValidationResult = await result.json()
@@ -48,7 +48,7 @@ export const useValidation = (
 
   // 検証結果を表形式で表示するときのためのデータを生成する。
   const validationResultList = React.useMemo(() => {
-    const xmlElementTrees = getValues(`xmlElementTrees`) ?? []
+    const xmlElementTrees = getEditingValues().xmlElementTrees ?? []
     if (!xmlElementTrees.length) return []
 
     // IDから当該要素の情報を引き当てるための辞書
@@ -82,7 +82,7 @@ export const useValidation = (
       }
     }
     return infos
-  }, [getValues, validationResult])
+  }, [getEditingValues, validationResult])
 
   return {
     /** 検証結果を表形式で表示するときのためのデータ */

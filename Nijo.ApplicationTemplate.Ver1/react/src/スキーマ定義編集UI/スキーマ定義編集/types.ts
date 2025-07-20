@@ -86,6 +86,8 @@ export const ATTR_TYPE = 'Type' as XmlElementAttributeName
 export const ATTR_GENERATE_DEFAULT_QUERY_MODEL = 'GenerateDefaultQueryModel' as XmlElementAttributeName
 export const ATTR_GENERATE_BATCH_UPDATE_COMMAND = 'GenerateBatchUpdateCommand' as XmlElementAttributeName
 export const ATTR_IS_KEY = 'IsKey' as XmlElementAttributeName
+export const ATTR_DISPLAY_NAME = 'DisplayName' as XmlElementAttributeName
+export const ATTR_STATIC_ENUM_VALUE = 'Key' as XmlElementAttributeName
 
 export const TYPE_DATA_MODEL = 'data-model'
 export const TYPE_QUERY_MODEL = 'query-model'
@@ -208,8 +210,8 @@ export const asTree = <TFlatItem extends { indent: number }>(flat: TFlatItem[]) 
       const belowElements = flat.slice(flat.indexOf(el) + 1)
       const descendants: TFlatItem[] = []
       for (const y of belowElements) {
-        // 引数のエレメントより浅いインデントの要素が登場したら探索を打ち切る
-        if (y.indent < el.indent) {
+        // 引数のエレメント以下のインデントの要素が登場したら探索を打ち切る
+        if (y.indent <= el.indent) {
           break
         } else {
           descendants.push(y)
