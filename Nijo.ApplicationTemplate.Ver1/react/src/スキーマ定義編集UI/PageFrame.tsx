@@ -1,9 +1,10 @@
 import * as React from "react"
 import * as ReactRouter from "react-router-dom"
 import * as Icon from "@heroicons/react/24/solid"
-import { Link, useOutletContext } from "react-router-dom"
-import { getNavigationUrl } from "../routes"
+import { useOutletContext } from "react-router-dom"
 import { NijoUiOutletContextType } from "./types"
+import * as Input from "../input"
+import useEvent from "react-use-event-hook"
 
 /** 画面の枠 */
 export const PageFrame = ({ shouldBlock, title, headerComponent, children }: {
@@ -17,12 +18,15 @@ export const PageFrame = ({ shouldBlock, title, headerComponent, children }: {
   children?: React.ReactNode
 }) => {
 
-  // アプリケーション名
-  const { typedDoc: { appSettings } } = useOutletContext<NijoUiOutletContextType>()
-  const [applicationName, setApplicationName] = React.useState<string>()
-  React.useEffect(() => {
-    setApplicationName(appSettings.applicationName)
-  }, [appSettings])
+  // サイドメニュー展開ボタン
+  const { sideMenuPanelRef } = useOutletContext<NijoUiOutletContextType>()
+  const handleClickBack = useEvent(() => {
+    if (sideMenuPanelRef.current?.isCollapsed()) {
+      sideMenuPanelRef.current?.expand()
+    } else {
+      sideMenuPanelRef.current?.collapse()
+    }
+  })
 
   // 離脱時の確認ダイアログ
   // ページの再読み込み前に確認ダイアログを表示する
@@ -50,18 +54,17 @@ export const PageFrame = ({ shouldBlock, title, headerComponent, children }: {
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center flex-wrap gap-1 p-1 min-h-10">
-        <Link to={getNavigationUrl({ page: 'top-page' })} className="font-bold underline">
-          {applicationName ?? 'ホーム'}
-        </Link>
-        {title && (
-          <>
-            <Icon.ChevronRightIcon className="w-4 h-4" />
-            <h1 className="select-none font-bold">{title}</h1>
-          </>
-        )}
+
+        {/* 画面名 */}
+        <Input.IconButton icon={Icon.Bars3Icon} mini hideText onClick={handleClickBack}>
+          サイドメニュー折り畳み
+        </Input.IconButton>
+        <h1 className="select-none font-bold">{title}</h1>
         <span className={`text-xs text-gray-700 bg-gray-700 text-white px-1 py-px rounded-sm select-none ${shouldBlock ? '' : 'invisible'}`}>
           未保存
         </span>
+
+        {/* 各画面で任意に指定するヘッダ項目 */}
         {headerComponent}
       </div>
       <div className="flex-1 overflow-auto">

@@ -5,6 +5,8 @@ import * as Layout from "../layout"
 import * as Input from "../input"
 import { NijoUiOutletContextType } from "./types"
 import { useTypedDocumentContextProvider } from "./型つきドキュメント/TypedDocumentContext"
+import { PanelGroup, Panel, PanelResizeHandle, ImperativePanelHandle } from "react-resizable-panels"
+import { NijoUiSideMenu } from "./NijoUiSideMenu"
 
 /**
  * nijo.xmlをUIで編集できる画面の試作。
@@ -14,13 +16,24 @@ export const NijoUi = () => {
 
   // 型つきドキュメントのコンテキスト
   const typedDoc = useTypedDocumentContextProvider()
+  // サイドメニューのパネル
+  const sideMenuPanelRef = React.useRef<ImperativePanelHandle>(null)
 
   // Outletコンテキストの値
   const outletContextValue: NijoUiOutletContextType = React.useMemo(() => ({
     typedDoc,
-  }), [typedDoc])
+    sideMenuPanelRef,
+  }), [typedDoc, sideMenuPanelRef])
 
   return (
-    <ReactRouter.Outlet context={outletContextValue} />
+    <PanelGroup direction="horizontal">
+      <Panel ref={sideMenuPanelRef} defaultSize={10} collapsible minSize={8}>
+        <NijoUiSideMenu outletContext={outletContextValue} />
+      </Panel>
+      <PanelResizeHandle className="w-1" />
+      <Panel className="relative">
+        <ReactRouter.Outlet context={outletContextValue} />
+      </Panel>
+    </PanelGroup>
   )
 }

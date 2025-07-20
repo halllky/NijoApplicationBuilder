@@ -1,5 +1,5 @@
 import React from "react"
-import { Link, useOutletContext } from "react-router-dom"
+import { Link } from "react-router-dom"
 import { NijoUiOutletContextType } from "./types"
 import useEvent from "react-use-event-hook";
 import { AppSettingsForSave } from "./types";
@@ -11,9 +11,10 @@ import * as Icon from "@heroicons/react/24/solid"
 import { getNavigationUrl } from "../routes";
 import { AppSettingsEditDialog, AppSettingsEditDialogProps } from "./AppSettingsEditDialog";
 import { PersonalSettingsEditDialog } from "./PersonalSettings";
-import { PageFrame } from "./PageFrame";
 
-export const NijoUiTopPage = () => {
+export const NijoUiSideMenu = ({ outletContext }: {
+  outletContext: NijoUiOutletContextType
+}) => {
 
   const {
     typedDoc: {
@@ -23,7 +24,7 @@ export const NijoUiTopPage = () => {
       savePerspective,
       loadPerspectivePageData,
     },
-  } = useOutletContext<NijoUiOutletContextType>()
+  } = outletContext
 
   // アプリケーション設定編集
   const [appSettingsDialogProps, setAppSettingsDialogProps] = React.useState<AppSettingsEditDialogProps | undefined>(undefined);
@@ -79,65 +80,62 @@ export const NijoUiTopPage = () => {
   })
 
   return (
-    <PageFrame shouldBlock={false}>
-      <div className="h-full w-full flex justify-center items-center">
-        <div className="flex flex-col items-start px-4 py-2">
+    <>
+      <div className="h-full flex flex-col p-2 bg-gray-100 overflow-y-auto">
 
-          <div className="flex justify-between items-center">
-            <h1 className="text-xl font-bold whitespace-nowrap">
-              {appSettings.applicationName}
-            </h1>
-            <div className="min-w-16"></div>
-            <Input.IconButton icon={Icon.PencilSquareIcon} mini onClick={handleClickSettings}>
-              編集
-            </Input.IconButton>
-          </div>
-
-          <div className="basis-4"></div>
-
-          {appSettings.entityTypeList.map(entityType => (
-            <MenuItem
-              key={entityType.entityTypeId}
-              icon={Icon.TableCellsIcon}
-              link={getNavigationUrl({ page: 'typed-document-perspective', perspectiveId: entityType.entityTypeId })}
-            >
-              {entityType.entityTypeName}
-            </MenuItem>
-          ))}
-
-          <hr className="self-stretch border-t border-gray-300 mt-4 mb-2" />
-
-          <MenuItem icon={Icon.ShareIcon} link={getNavigationUrl({ page: 'schema' })}>
-            ソースコード自動生成設定
-          </MenuItem>
-
-          <MenuItem icon={Icon.PlayCircleIcon} link={getNavigationUrl({ page: 'debug-menu' })}>
-            デバッグメニュー
-          </MenuItem>
-
-          {/* データプレビュー */}
-          {appSettings.dataPreviewList.map(dataPreview => (
-            <MenuItem key={dataPreview.id} icon={Icon.ChartBarIcon} link={getNavigationUrl({ page: 'data-preview', dataPreviewId: dataPreview.id })}>
-              {dataPreview.title}
-            </MenuItem>
-          ))}
-
-          <MenuItem icon={Icon.Cog6ToothIcon} onClick={handleClickPersonalSettings}>
-            個人設定
-          </MenuItem>
+        <div className="flex justify-between items-center">
+          <h1 className="font-bold truncate">
+            {appSettings.applicationName}
+          </h1>
+          <Input.IconButton icon={Icon.PencilSquareIcon} mini hideText onClick={handleClickSettings}>
+            編集
+          </Input.IconButton>
         </div>
 
-        {/* アプリケーション設定編集ダイアログ */}
-        {appSettingsDialogProps && (
-          <AppSettingsEditDialog {...appSettingsDialogProps} />
-        )}
+        <div className="basis-4 min-h-4"></div>
 
-        {/* 個人設定ダイアログ */}
-        {openPersonalSettingsDialog && (
-          <PersonalSettingsEditDialog onClose={handleClosePersonalSettingsDialog} />
-        )}
+        {appSettings.entityTypeList.map(entityType => (
+          <MenuItem
+            key={entityType.entityTypeId}
+            icon={Icon.TableCellsIcon}
+            link={getNavigationUrl({ page: 'typed-document-perspective', perspectiveId: entityType.entityTypeId })}
+          >
+            {entityType.entityTypeName}
+          </MenuItem>
+        ))}
+
+        <hr className="self-stretch border-t border-gray-300 mt-4 mb-2" />
+
+        <MenuItem icon={Icon.ShareIcon} link={getNavigationUrl({ page: 'schema' })}>
+          ソースコード自動生成設定
+        </MenuItem>
+
+        <MenuItem icon={Icon.PlayCircleIcon} link={getNavigationUrl({ page: 'debug-menu' })}>
+          デバッグメニュー
+        </MenuItem>
+
+        {/* データプレビュー */}
+        {appSettings.dataPreviewList.map(dataPreview => (
+          <MenuItem key={dataPreview.id} icon={Icon.ChartBarIcon} link={getNavigationUrl({ page: 'data-preview', dataPreviewId: dataPreview.id })}>
+            {dataPreview.title}
+          </MenuItem>
+        ))}
+
+        <MenuItem icon={Icon.Cog6ToothIcon} onClick={handleClickPersonalSettings}>
+          個人設定
+        </MenuItem>
       </div>
-    </PageFrame>
+
+      {/* アプリケーション設定編集ダイアログ */}
+      {appSettingsDialogProps && (
+        <AppSettingsEditDialog {...appSettingsDialogProps} />
+      )}
+
+      {/* 個人設定ダイアログ */}
+      {openPersonalSettingsDialog && (
+        <PersonalSettingsEditDialog onClose={handleClosePersonalSettingsDialog} />
+      )}
+    </>
   )
 }
 
@@ -150,13 +148,17 @@ const MenuItem = ({ icon, children, link, onClick }: {
 }) => {
   return link ? (
     <Link to={link} className="self-stretch flex items-center gap-2 hover:bg-gray-200 py-1">
-      {React.createElement(icon, { className: "w-4 h-4" })}
-      {children}
+      {React.createElement(icon, { className: "w-4 h-4 min-w-4" })}
+      <span className="truncate">
+        {children}
+      </span>
     </Link>
   ) : (
     <div className="self-stretch flex items-center gap-2 hover:bg-gray-200 py-1 cursor-pointer" onClick={onClick}>
-      {React.createElement(icon, { className: "w-4 h-4" })}
-      {children}
+      {React.createElement(icon, { className: "w-4 h-4 min-w-4" })}
+      <span className="truncate">
+        {children}
+      </span>
     </div>
   )
 }

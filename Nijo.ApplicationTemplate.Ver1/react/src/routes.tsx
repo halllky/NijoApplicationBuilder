@@ -8,7 +8,6 @@ import { ContextProviders } from "./App"
 import { PerspectivePage } from "./スキーマ定義編集UI/型つきドキュメント/PerspectivePage"
 import * as Util from "./util"
 import { NijoUiAggregateDiagram } from "./スキーマ定義編集UI/スキーマ定義編集"
-import { NijoUiTopPage } from "./スキーマ定義編集UI/NijoUiTopPage"
 import { DataPreview } from "./スキーマ定義編集UI/データプレビュー"
 
 /** RouteObject に sideMenuLabel を追加した型 */
@@ -55,7 +54,7 @@ export const getRouterForNijoUi = (): RouteObjectWithSideMenuSetting[] => {
     children: [{
       path: '',
       index: true,
-      element: <NijoUiTopPage />,
+      element: <div></div>,
     }, {
       path: `schema`,
       element: <NijoUiAggregateDiagram />,
