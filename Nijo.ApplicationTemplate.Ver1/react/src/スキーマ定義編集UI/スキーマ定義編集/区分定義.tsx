@@ -61,26 +61,46 @@ const AfterLoaded = ({ formDefaultValues, reloadSchema, executeSave }: {
   executeSave: (values: SchemaDefinitionGlobalState) => Promise<{ ok: boolean, error?: string }>
 }) => {
 
-  const formMethods = ReactHookForm.useForm<{ staticEnums: XmlElementItem[] }>()
+  const formMethods = ReactHookForm.useForm<{
+    staticEnums: XmlElementItem[]
+    valueObjects: XmlElementItem[]
+  }>()
   const { getValues, control, formState: { isDirty } } = formMethods
   const { fields, insert, remove, update, append, move } = ReactHookForm.useFieldArray({ name: 'staticEnums', control })
+  const {
+    fields: valueObjectFields,
+    insert: insertValueObject,
+    remove: removeValueObject,
+    update: updateValueObject,
+    append: appendValueObject,
+    move: moveValueObject
+  } = ReactHookForm.useFieldArray({ name: 'valueObjects', control })
 
   // defaultValues が変わるたび（初回表示時、保存時）にデフォルト値を更新する
   React.useEffect(() => {
-    const result: XmlElementItem[] = []
+    const staticEnumResult: XmlElementItem[] = []
+    const valueObjectResult: XmlElementItem[] = []
+
     for (const modelPageForm of formDefaultValues.xmlElementTrees) {
       const root = modelPageForm.xmlElements[0]
       const type = root?.attributes[ATTR_TYPE]
       if (type === TYPE_STATIC_ENUM_MODEL) {
-        result.push(...modelPageForm.xmlElements.map(el => ({
+        staticEnumResult.push(...modelPageForm.xmlElements.map(el => ({
+          ...el,
+          id: el.uniqueId,
+        })))
+      } else if (type === TYPE_VALUE_OBJECT_MODEL) {
+        valueObjectResult.push(...modelPageForm.xmlElements.map(el => ({
           ...el,
           id: el.uniqueId,
         })))
       }
     }
-    formMethods.reset({ staticEnums: result })
+    formMethods.reset({
+      staticEnums: staticEnumResult,
+      valueObjects: valueObjectResult
+    })
   }, [formDefaultValues])
-
 
   // 編集中の最新の値と defaultValues を結合し、スキーマ定義全体を取得する
   const getFullSchema = useGetFullSchema(formDefaultValues, getValues)
@@ -115,9 +135,36 @@ const AfterLoaded = ({ formDefaultValues, reloadSchema, executeSave }: {
     return columns
   }, [formDefaultValues, getValidationResult])
 
+  // 値オブジェクトのグリッドの列定義
+  const getValueObjectColumnDefs: Layout.GetColumnDefsFunction<GridRowType> = React.useCallback(cellType => {
+    const columns: Layout.EditableGridColumnDef<GridRowType>[] = []
+
+    // LocalName
+    columns.push(createLocalNameCell(cellType, getValidationResult))
+
+    // Attributes（Type以外）
+    for (const attrDef of Array.from(formDefaultValues.attributeDefs.values())) {
+      // Typeは既に表示しているのでスキップ
+      if (attrDef.attributeName === ATTR_TYPE) continue;
+
+      // 値オブジェクトで設定可能な属性のみをフィルタリング
+      if (!attrDef.availableModels.includes(TYPE_VALUE_OBJECT_MODEL)) continue;
+
+      columns.push(createAttributeCell(attrDef, cellType, getValidationResult))
+    }
+
+    return columns
+  }, [formDefaultValues, getValidationResult])
+
   const handleChangeRow: Layout.RowChangeEvent<GridRowType> = useEvent(e => {
     for (const { rowIndex, newRow } of e.changedRows) {
       update(rowIndex, newRow)
+    }
+  })
+
+  const handleChangeValueObjectRow: Layout.RowChangeEvent<GridRowType> = useEvent(e => {
+    for (const { rowIndex, newRow } of e.changedRows) {
+      updateValueObject(rowIndex, newRow)
     }
   })
 
@@ -146,6 +193,7 @@ const AfterLoaded = ({ formDefaultValues, reloadSchema, executeSave }: {
   Util.useCtrlS(handleSave)
 
   const staticEnumGridRef = React.useRef<Layout.EditableGridRef<GridRowType>>(null)
+  const valueObjectGridRef = React.useRef<Layout.EditableGridRef<GridRowType>>(null)
 
   // 区分値を挿入
   const handleInsertStaticEnumValue = useEvent(() => {
@@ -285,6 +333,77 @@ const AfterLoaded = ({ formDefaultValues, reloadSchema, executeSave }: {
     return { handled: false }
   })
 
+  // 値オブジェクトを作成
+  const handleCreateValueObject = useEvent(() => {
+    const newName = window.prompt('新しい値オブジェクトの名前を入力してください。')
+    if (!newName) return;
+
+    const newValueObject: XmlElementItem = {
+      uniqueId: UUID.generate(),
+      localName: newName,
+      indent: 0,
+      attributes: {
+        [ATTR_TYPE]: TYPE_VALUE_OBJECT_MODEL,
+      },
+    }
+    appendValueObject(newValueObject)
+  })
+
+  // 値オブジェクトを削除
+  const handleDeleteValueObject = useEvent(() => {
+    const selectedRow = valueObjectGridRef.current?.getSelectedRows()[0]
+    if (selectedRow === undefined) return;
+
+    if (!window.confirm(`「${selectedRow.row.localName}」を削除しますか？`)) return;
+
+    removeValueObject(selectedRow.rowIndex)
+  })
+
+  // 値オブジェクトを上移動
+  const handleMoveUpValueObject = useEvent(() => {
+    const selectedRows = valueObjectGridRef.current?.getSelectedRows()
+    if (selectedRows === undefined || selectedRows.length === 0) return;
+
+    const moveFrom = selectedRows[0].rowIndex - 1
+    const moveTo = selectedRows[selectedRows.length - 1].rowIndex
+
+    if (moveFrom < 0) return;
+
+    moveValueObject(moveFrom, moveTo)
+    valueObjectGridRef.current?.selectRow(moveFrom, moveTo - 1)
+  })
+
+  // 値オブジェクトを下移動
+  const handleMoveDownValueObject = useEvent(() => {
+    const selectedRows = valueObjectGridRef.current?.getSelectedRows()
+    if (selectedRows === undefined || selectedRows.length === 0) return;
+
+    const moveFrom = selectedRows[selectedRows.length - 1].rowIndex + 1
+    const moveTo = selectedRows[0].rowIndex
+
+    if (moveFrom >= valueObjectFields.length) return;
+
+    moveValueObject(moveFrom, moveTo)
+    valueObjectGridRef.current?.selectRow(moveTo + 1, moveFrom)
+  })
+
+  // 値オブジェクトのグリッドのキー操作
+  const handleValueObjectKeyDown: Layout.EditableGridKeyboardEventHandler = useEvent(e => {
+    if (e.key === 'Delete' && e.shiftKey) {
+      handleDeleteValueObject()
+      return { handled: true }
+    }
+    if (e.key === 'ArrowUp' && e.altKey) {
+      handleMoveUpValueObject()
+      return { handled: true }
+    }
+    if (e.key === 'ArrowDown' && e.altKey) {
+      handleMoveDownValueObject()
+      return { handled: true }
+    }
+    return { handled: false }
+  })
+
   const { personalSettings } = usePersonalSettings()
 
   return (
@@ -353,8 +472,40 @@ const AfterLoaded = ({ formDefaultValues, reloadSchema, executeSave }: {
 
         <PanelResizeHandle className="h-2" />
 
-        <Panel>
+        <Panel className="pt-4">
+          <div className="flex flex-col gap-1 h-full">
+            <div className="flex flex-wrap items-center gap-1">
+              <h2 className="text-sm select-none">値オブジェクト</h2>
+              {!personalSettings.hideGridButtons && (
+                <>
+                  <div className="basis-4"></div>
+                  <Input.IconButton outline mini onClick={handleMoveUpValueObject}>
+                    上移動(Alt + ↑)
+                  </Input.IconButton>
+                  <Input.IconButton outline mini onClick={handleMoveDownValueObject}>
+                    下移動(Alt + ↓)
+                  </Input.IconButton>
+                </>
+              )}
+              <div className="basis-4"></div>
+              <Input.IconButton outline mini onClick={handleCreateValueObject}>
+                新しい値オブジェクトを作成
+              </Input.IconButton>
+              <Input.IconButton outline mini onClick={handleDeleteValueObject}>
+                値オブジェクトを削除
+              </Input.IconButton>
+            </div>
 
+            {/* 値オブジェクト編集グリッド */}
+            <Layout.EditableGrid
+              ref={valueObjectGridRef}
+              rows={valueObjectFields}
+              getColumnDefs={getValueObjectColumnDefs}
+              onChangeRow={handleChangeValueObjectRow}
+              onKeyDown={handleValueObjectKeyDown}
+              className="border border-gray-300 flex-1"
+            />
+          </div>
         </Panel>
 
       </PanelGroup>
@@ -374,18 +525,22 @@ const AfterLoaded = ({ formDefaultValues, reloadSchema, executeSave }: {
 /** 編集中の最新の値と defaultValues を結合し、スキーマ定義全体を取得する */
 const useGetFullSchema = (
   formDefaultValues: SchemaDefinitionGlobalState,
-  getValues: ReactHookForm.UseFormGetValues<{ staticEnums: XmlElementItem[] }>
+  getValues: ReactHookForm.UseFormGetValues<{
+    staticEnums: XmlElementItem[]
+    valueObjects: XmlElementItem[]
+  }>
 ) => {
   return React.useCallback((): SchemaDefinitionGlobalState => {
     // defaultValues を処理しやすい形に変換
     const clone = window.structuredClone(formDefaultValues)
     const rootIdIndexMap = new Map(clone.xmlElementTrees.map((tree, index) => [tree.xmlElements[0]?.uniqueId ?? '', index]))
 
-    const latestValues = getValues('staticEnums') ?? []
-    const treeHelper = asTree(latestValues)
+    // 静的区分を処理
+    const latestStaticEnums = getValues('staticEnums') ?? []
+    const staticEnumTreeHelper = asTree(latestStaticEnums)
     const handledRootIds = new Set<string>()
 
-    for (const element of latestValues) {
+    for (const element of latestStaticEnums) {
       // 区分値は区分種類と一緒に処理されるのでスキップ
       if (element.indent > 0) continue;
 
@@ -397,22 +552,44 @@ const useGetFullSchema = (
       if (indexInDefaultValues !== undefined) {
         // defaultValues に存在する区分種類の場合は編集中の最新の値で置き換える
         clone.xmlElementTrees[indexInDefaultValues] = {
-          xmlElements: [root, ...treeHelper.getDescendants(root)]
+          xmlElements: [root, ...staticEnumTreeHelper.getDescendants(root)]
         }
 
       } else {
         // defaultValues に存在しない区分種類の場合はスキーマ定義の末尾に追加
         clone.xmlElementTrees.push({
-          xmlElements: [root, ...treeHelper.getDescendants(root)],
+          xmlElements: [root, ...staticEnumTreeHelper.getDescendants(root)],
         })
       }
     }
 
-    // defaultValues には在ったが編集中の最新の値に存在しない区分種類は削除
+    // 値オブジェクトを処理
+    const latestValueObjects = getValues('valueObjects') ?? []
+    for (const element of latestValueObjects) {
+      // 値オブジェクトは種類のみ（indent: 0）なので直接処理
+      handledRootIds.add(element.uniqueId)
+
+      const indexInDefaultValues = rootIdIndexMap.get(element.uniqueId)
+      if (indexInDefaultValues !== undefined) {
+        // defaultValues に存在する値オブジェクトの場合は編集中の最新の値で置き換える
+        clone.xmlElementTrees[indexInDefaultValues] = {
+          xmlElements: [element]
+        }
+      } else {
+        // defaultValues に存在しない値オブジェクトの場合はスキーマ定義の末尾に追加
+        clone.xmlElementTrees.push({
+          xmlElements: [element],
+        })
+      }
+    }
+
+    // defaultValues には在ったが編集中の最新の値に存在しない区分種類・値オブジェクトは削除
     clone.xmlElementTrees = clone.xmlElementTrees.filter(tree => {
       const type = tree.xmlElements[0]?.attributes[ATTR_TYPE]
-      if (type !== TYPE_STATIC_ENUM_MODEL) return true;
-      return handledRootIds.has(tree.xmlElements[0]?.uniqueId ?? '')
+      if (type === TYPE_STATIC_ENUM_MODEL || type === TYPE_VALUE_OBJECT_MODEL) {
+        return handledRootIds.has(tree.xmlElements[0]?.uniqueId ?? '')
+      }
+      return true;
     })
 
     return clone
