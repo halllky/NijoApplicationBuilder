@@ -59,6 +59,9 @@ export const PageFrame = ({ shouldBlock, title, headerComponent, children }: {
             <h1 className="select-none font-bold">{title}</h1>
           </>
         )}
+        <span className={`text-xs text-gray-700 bg-gray-700 text-white px-1 py-px rounded-sm select-none ${shouldBlock ? '' : 'invisible'}`}>
+          未保存
+        </span>
         {headerComponent}
       </div>
       <div className="flex-1 overflow-auto">
