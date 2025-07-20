@@ -104,11 +104,21 @@ export const NijoUiSideMenu = ({ outletContext }: {
           </MenuItem>
         ))}
 
-        <hr className="self-stretch border-t border-gray-300 mt-4 mb-2" />
+        <SectionSeparator />
+
+        <SectionTitle>
+          ソースコード自動生成設定
+        </SectionTitle>
 
         <MenuItem icon={Icon.ShareIcon} link={getNavigationUrl({ page: 'schema' })}>
-          ソースコード自動生成設定
+          集約定義
         </MenuItem>
+
+        <SectionSeparator />
+
+        <SectionTitle>
+          デバッグ
+        </SectionTitle>
 
         <MenuItem icon={Icon.PlayCircleIcon} link={getNavigationUrl({ page: 'debug-menu' })}>
           デバッグメニュー
@@ -136,6 +146,20 @@ export const NijoUiSideMenu = ({ outletContext }: {
         <PersonalSettingsEditDialog onClose={handleClosePersonalSettingsDialog} />
       )}
     </>
+  )
+}
+
+const SectionSeparator = () => {
+  return (
+    <div className="self-stretch border-t border-gray-300 mt-4 mb-2" />
+  )
+}
+
+const SectionTitle = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <span className="truncate text-xs text-gray-600 select-none mb-1">
+      {children}
+    </span>
   )
 }
 
