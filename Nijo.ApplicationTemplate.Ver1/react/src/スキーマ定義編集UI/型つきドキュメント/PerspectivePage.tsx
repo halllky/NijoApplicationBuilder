@@ -288,7 +288,7 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
             <Input.IconButton onClick={handleClickGraphVertical} icon={Icon.PauseIcon} hideText outline={graphViewPosition !== 'horizontal'} className="p-1">グラフをグリッドの下に表示</Input.IconButton>
           </div>
           <div className="basis-28 flex justify-end">
-            <Input.IconButton submit fill mini>
+            <Input.IconButton form="perspective-page-form" submit fill mini>
               {showSaveSuccessText ? '保存しました。' : '保存(Ctrl + S)'}
             </Input.IconButton>
           </div>
@@ -297,6 +297,7 @@ export const AfterLoaded = React.forwardRef<AfterLoadedRef, AfterLoadedProps>(({
     >
       <ReactHookForm.FormProvider {...formMethods}>
         <form
+          id="perspective-page-form"
           onSubmit={handleSubmit(onSubmit)}
           className="h-full flex flex-col gap-1 outline-none"
         >
