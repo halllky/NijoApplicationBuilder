@@ -27,7 +27,7 @@ export const NijoUi = () => {
 
   return (
     <PanelGroup direction="horizontal">
-      <Panel ref={sideMenuPanelRef} defaultSize={10} collapsible minSize={8}>
+      <Panel ref={sideMenuPanelRef} defaultSize={30} collapsible minSize={8}>
         <NijoUiSideMenu outletContext={outletContextValue} />
       </Panel>
       <PanelResizeHandle className="w-1" />
