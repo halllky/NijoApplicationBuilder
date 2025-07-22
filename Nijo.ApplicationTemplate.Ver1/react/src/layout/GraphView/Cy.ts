@@ -371,11 +371,11 @@ const setupHtmlLabels = (cyInstance: cytoscape.Core) => {
       query: 'node', // 全てのノードに適用
       valign: 'center',
       halign: 'center',
-      tpl: (data: any) => {
+      tpl: (data: { label: string | undefined }) => {
         const label = data.label || ''
         // 改行文字（\n または \r\n）を<br>タグに変換
         const htmlLabel = label.replace(/\r\n|\n/g, '<br>')
-        return `<div style="pointer-events: none;">${htmlLabel}</div>`
+        return `<div style="pointer-events: none; max-width: 320px;">${htmlLabel}</div>`
       }
     },
     {
@@ -383,7 +383,7 @@ const setupHtmlLabels = (cyInstance: cytoscape.Core) => {
       valign: 'top',
       valignBox: 'top',
       halign: 'center',
-      tpl: (data: any) => {
+      tpl: (data: { label: string | undefined }) => {
         const label = data.label || ''
         // 改行文字（\n または \r\n）を<br>タグに変換
         const htmlLabel = label.replace(/\r\n|\n/g, '<br>')
@@ -395,7 +395,7 @@ const setupHtmlLabels = (cyInstance: cytoscape.Core) => {
       valign: 'top',
       valignBox: 'top',
       halign: 'center',
-      tpl: (data: any) => {
+      tpl: (data: { label: string | undefined }) => {
         const label = data.label || ''
         // 改行文字（\n または \r\n）を<br>タグに変換
         const htmlLabel = label.replace(/\r\n|\n/g, '<br>')
@@ -406,7 +406,7 @@ const setupHtmlLabels = (cyInstance: cytoscape.Core) => {
       query: 'node[isMember]', // メンバーノード用
       valign: 'center',
       halign: 'center',
-      tpl: (data: any) => {
+      tpl: (data: { label: string | undefined }) => {
         const label = data.label || ''
         return `<div style="pointer-events: none;">${label}</div>`
       }
@@ -425,6 +425,46 @@ const getStyleSheet = (): cytoscape.CytoscapeOptions['style'] => {
     return canvasContext.measureText(text).width
   }
 
+  // max-widthを考慮してテキストが何行になるかを計算する関数
+  const calculateTextLines = (text: string, maxWidth: number = 320): number => {
+    if (!text) return 1
+
+    // まず明示的な改行文字で分割
+    const explicitLines = text.split(/\r\n|\n/)
+    let totalLines = 0
+
+    for (const line of explicitLines) {
+      if (!line.trim()) {
+        totalLines += 1
+        continue
+      }
+
+      const lineWidth = estimateTextWidth(line)
+      if (lineWidth <= maxWidth) {
+        totalLines += 1
+      } else {
+        // 長すぎる場合は単語単位で折り返し計算
+        const words = line.split(/\s+/)
+        let currentLineWidth = 0
+        let currentLineCount = 1
+
+        for (const word of words) {
+          const wordWidth = estimateTextWidth(word + ' ')
+
+          if (currentLineWidth + wordWidth > maxWidth) {
+            currentLineCount += 1
+            currentLineWidth = wordWidth
+          } else {
+            currentLineWidth += wordWidth
+          }
+        }
+        totalLines += currentLineCount
+      }
+    }
+
+    return Math.max(1, totalLines)
+  }
+
   return [{
     selector: 'node',
     css: {
@@ -434,7 +474,7 @@ const getStyleSheet = (): cytoscape.CytoscapeOptions['style'] => {
         const maxTextLength = members && members.length > 0
           ? Math.max(...members.map(m => estimateTextWidth(m)))
           : estimateTextWidth(node.data('label') as string)
-        return Math.max(32, maxTextLength + 8)
+        return Math.min(320, Math.max(32, maxTextLength + 8))
       },
       'height': (node: cytoscape.NodeSingular) => {
         const members = node.data('members') as string[] | undefined
@@ -442,11 +482,11 @@ const getStyleSheet = (): cytoscape.CytoscapeOptions['style'] => {
           // メンバーがある場合は高さを調整
           return members.length * MEMBER_HEIGHT
         } else {
-          // ラベルの改行数に基づいて高さを計算
+          // max-widthを考慮してテキストの実際の行数を計算
           const label = (node.data('label') as string) || ''
-          const lines = label.split(/\r\n|\n/)
+          const lines = calculateTextLines(label, 320) // HTMLラベルのmax-widthと同じ値
           const lineHeight = 16 * 1.2 // フォントサイズ16px × line-height 1.2
-          return Math.max(32, lines.length * lineHeight + 8) // 最小32px、上下パディング8px
+          return Math.max(32, lines * lineHeight + 8) // 最小32px、上下パディング8px
         }
       },
       'color': (node: cytoscape.NodeSingular) => (node.data('color') as string) ?? '#000000',
