@@ -11,6 +11,7 @@ import cytoscape from 'cytoscape'; // cytoscapeの型情報をインポート
 import { ViewState } from '../../layout/GraphView/Cy';
 import ExpandCollapseFunctions from '../../layout/GraphView/Cy.ExpandCollapse';
 import { MentionUtil } from '../UI';
+import * as AutoLayout from '../../layout/GraphView/Cy.AutoLayout';
 
 export const PerspectivePageGraph = ({
   formMethods,
@@ -26,6 +27,7 @@ export const PerspectivePageGraph = ({
   const graphViewRef = React.useRef<Layout.GraphViewRef>(null)
 
   // ノード、エッジ
+  const [graphKey, setGraphKey] = React.useState(-1) // 強制再レンダリング用のキー
   const [graphNodes, graphEdges] = React.useMemo((): [
     graphNodes: Layout.Node[],
     graphEdges: Layout.Edge[],
@@ -74,7 +76,7 @@ export const PerspectivePageGraph = ({
       }
     }
     return [Array.from(nodes.values()), edges]
-  }, [watchedNodes]);
+  }, [watchedNodes, graphKey]);
 
   // 親子関係
   const parentMap: { [nodeId: string]: string } | undefined = React.useMemo(() => {
@@ -147,20 +149,44 @@ export const PerspectivePageGraph = ({
       graphViewRef.current?.getCy()?.data('viewStateApplied', true);
 
       graphViewRef.current?.applyViewState(savedViewState);
+    } else {
+      // 保存されたViewStateがない場合は、初期レイアウトを実行
+      graphViewRef.current?.resetLayout();
     }
   });
 
+  // 整列
+  const [layoutLogic, setLayoutLogic] = React.useState<AutoLayout.LayoutLogicName>('klay');
+  const handleAutoLayout = useEvent(() => {
+    // 現在のViewStateをクリアして自動レイアウトを実行
+    formMethods.setValue('perspective.viewState', undefined, { shouldDirty: true })
+    graphViewRef.current?.resetLayout()
+    // 即時反映させるためにキーを反転させる
+    setGraphKey(prev => prev * -1)
+  });
+
   return (
-    <div className={className}>
+    <div className={`relative ${className ?? ''}`}>
       <Layout.GraphView
         ref={graphViewRef}
         nodes={graphNodes}
         parentMap={parentMap}
         edges={graphEdges}
+        layoutLogic={layoutLogic}
         onNodeDoubleClick={handleNodeClick}
         onLayoutChange={handleLayoutChange}
         onReady={handleReadyGraph}
       />
+      <div className="flex items-center gap-2 absolute top-0 left-0">
+        <Input.IconButton onClick={handleAutoLayout} outline mini className="bg-white">
+          整列
+        </Input.IconButton>
+        <select className="border text-sm bg-white" value={layoutLogic} onChange={(e) => setLayoutLogic(e.target.value as AutoLayout.LayoutLogicName)}>
+          {Object.entries(AutoLayout.OPTION_LIST).map(([key, value]) => (
+            <option key={key} value={key}>ロジック: {value.options.name}</option>
+          ))}
+        </select>
+      </div>
     </div>
   );
-}
+};
