@@ -466,7 +466,7 @@ const AfterLoaded = ({ formDefaultValues, reloadSchema, executeSave }: {
             getColumnDefs={getColumnDefs}
             onChangeRow={handleChangeRow}
             onKeyDown={handleKeyDown}
-            className="border border-gray-300"
+            className="border border-gray-300 flex-1"
           />
         </Panel>
 
