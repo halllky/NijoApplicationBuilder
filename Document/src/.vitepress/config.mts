@@ -64,11 +64,6 @@ export default defineConfig({
 
     search: {
       provider: 'local'
-    },
-
-    editLink: {
-      pattern: 'https://github.com/example/nijo/edit/main/Document/src/:path',
-      text: 'このページを編集'
     }
   }
 })
