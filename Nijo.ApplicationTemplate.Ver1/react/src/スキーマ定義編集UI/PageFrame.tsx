@@ -19,14 +19,7 @@ export const PageFrame = ({ shouldBlock, title, headerComponent, children }: {
 }) => {
 
   // サイドメニュー展開ボタン
-  const { sideMenuPanelRef } = useOutletContext<NijoUiOutletContextType>()
-  const handleClickBack = useEvent(() => {
-    if (sideMenuPanelRef.current?.isCollapsed()) {
-      sideMenuPanelRef.current?.expand()
-    } else {
-      sideMenuPanelRef.current?.collapse()
-    }
-  })
+  const { sideMenuPanel } = useOutletContext<NijoUiOutletContextType>()
 
   // 離脱時の確認ダイアログ
   // ページの再読み込み前に確認ダイアログを表示する
@@ -56,7 +49,7 @@ export const PageFrame = ({ shouldBlock, title, headerComponent, children }: {
       <div className="flex items-center flex-wrap gap-1 p-1 min-h-10">
 
         {/* 画面名 */}
-        <Input.IconButton icon={Icon.Bars3Icon} mini hideText onClick={handleClickBack}>
+        <Input.IconButton icon={Icon.Bars3Icon} mini hideText onClick={sideMenuPanel.toggleCollapsed}>
           サイドメニュー折り畳み
         </Input.IconButton>
         <h1 className="select-none font-bold">{title}</h1>

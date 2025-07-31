@@ -8,6 +8,9 @@ if (IS_EMBEDDED()) {
   import('./App.NijoUi.css')
 }
 
+// AllotmentのCSS
+import 'allotment/dist/style.css'
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

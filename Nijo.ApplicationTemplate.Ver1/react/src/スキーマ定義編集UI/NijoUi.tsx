@@ -5,7 +5,7 @@ import * as Layout from "../layout"
 import * as Input from "../input"
 import { NijoUiOutletContextType } from "./types"
 import { useTypedDocumentContextProvider } from "./型つきドキュメント/TypedDocumentContext"
-import { PanelGroup, Panel, PanelResizeHandle, ImperativePanelHandle } from "react-resizable-panels"
+import { Allotment, AllotmentHandle, LayoutPriority } from "allotment"
 import { NijoUiSideMenu } from "./NijoUiSideMenu"
 
 /**
@@ -17,23 +17,45 @@ export const NijoUi = () => {
   // 型つきドキュメントのコンテキスト
   const typedDoc = useTypedDocumentContextProvider()
   // サイドメニューのパネル
-  const sideMenuPanelRef = React.useRef<ImperativePanelHandle>(null)
+  const sideMenuPanelRef = React.useRef<AllotmentHandle>(null)
+  // サイドメニューの可視状態
+  const [sideMenuVisible, setSideMenuVisible] = React.useState(true)
 
   // Outletコンテキストの値
   const outletContextValue: NijoUiOutletContextType = React.useMemo(() => ({
     typedDoc,
-    sideMenuPanelRef,
-  }), [typedDoc, sideMenuPanelRef])
+    sideMenuPanel: {
+      toggleCollapsed: () => {
+        setSideMenuVisible(prev => !prev)
+      },
+    },
+  }), [typedDoc])
+
+  const handleVisibleChange = React.useCallback((paneIndex: number, visible: boolean) => {
+    if (paneIndex === 0) {
+      setSideMenuVisible(visible)
+    }
+  }, [])
 
   return (
-    <PanelGroup direction="horizontal">
-      <Panel ref={sideMenuPanelRef} defaultSize={30} collapsible minSize={8}>
+    <Allotment
+      ref={sideMenuPanelRef}
+      separator={false} // 区切り線非表示
+      proportionalLayout={false} // コンテナのサイズが変わったときに均等に伸縮しないようにする
+      onVisibleChange={handleVisibleChange}
+    >
+      <Allotment.Pane
+        priority={LayoutPriority.Low} // コンテナのサイズが変わったとき、この要素は伸縮しないようにする
+        preferredSize={240}
+        minSize={120}
+        snap // 折り畳みできるようにする
+        visible={sideMenuVisible} // 折り畳みできるようにする
+      >
         <NijoUiSideMenu outletContext={outletContextValue} />
-      </Panel>
-      <PanelResizeHandle className="w-1" />
-      <Panel className="relative">
+      </Allotment.Pane>
+      <Allotment.Pane className="pl-1">
         <ReactRouter.Outlet context={outletContextValue} />
-      </Panel>
-    </PanelGroup>
+      </Allotment.Pane>
+    </Allotment>
   )
 }

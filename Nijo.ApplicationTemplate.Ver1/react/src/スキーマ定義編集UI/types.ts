@@ -4,7 +4,9 @@ import { TypedDocumentContextType } from "./型つきドキュメント/types";
 /** アプリケーションの画面のコンテキスト */
 export type NijoUiOutletContextType = {
   typedDoc: TypedDocumentContextType
-  sideMenuPanelRef: React.RefObject<ImperativePanelHandle | null>
+  sideMenuPanel: {
+    toggleCollapsed: () => void
+  }
 }
 
 // -----------------------------------
