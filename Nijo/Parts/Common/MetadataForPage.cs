@@ -344,11 +344,6 @@ internal class MetadataForPage : IMultiAggregateSourceFile {
         internal const string TYPE_NAME = "ValueMetadata";
 
         internal static string RenderTypeScriptType(CodeRenderingContext ctx) {
-            var characterTypes = ctx.GetCharacterTypes().ToArray();
-            var charTypeLiteral = characterTypes.Length == 0
-                ? "never"
-                : characterTypes.Select(type => $"'{type.Replace("'", "\\'")}'").Join(" | ");
-
             var valueObjectTypes = ctx.SchemaParser.GetValueObjectMembers().Values.ToArray();
             var valueObjectLiteral = valueObjectTypes.Length == 0
                 ? "never"
@@ -657,21 +652,11 @@ internal class MetadataForPage : IMultiAggregateSourceFile {
 
         foreach (var option in nodeOptions) {
 
-            string tsType;
-            if (option.AttributeName == BasicNodeOptions.CharacterType.AttributeName) {
-                // CharacterTypeの場合は特別な型を生成
-                var characterTypes = ctx.GetCharacterTypes().ToArray();
-                tsType = characterTypes.Length == 0
-                    ? "never"
-                    : characterTypes.Select(type => $"'{type.Replace("'", "\\'")}'").Join(" | ");
-
-            } else {
-                tsType = option.Type switch {
-                    E_NodeOptionType.Boolean => "boolean",
-                    E_NodeOptionType.Integer => "number",
-                    _ => "string",
-                };
-            }
+            string tsType = option.Type switch {
+                E_NodeOptionType.Boolean => "boolean",
+                E_NodeOptionType.Integer => "number",
+                _ => "string",
+            };
 
             // DisplayName だけは必ずレンダリングされる
             var isOptional = option.AttributeName != BasicNodeOptions.DisplayName.AttributeName;

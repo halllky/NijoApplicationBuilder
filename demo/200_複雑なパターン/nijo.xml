@@ -969,7 +969,7 @@
         Type="child"
         UniqueId="4d8c711f-0a52-4ff9-a62c-3fa335741ccf">
         <郵便番号
-          CharacterType="半角数字および半角ハイフンのみ"
+          Custom-6cdcdbfc-28f8-46e3-95aa-7d2c71820d60="半角数字および半角ハイフンのみ"
           DbName="POSTAL_CODE"
           MaxLength="8"
           Type="word"
@@ -1020,7 +1020,7 @@
         Type="child"
         UniqueId="8abb1eba-e5d4-4155-b6ca-3fd440edb800">
         <郵便番号
-          CharacterType="半角数字および半角ハイフンのみ"
+          Custom-6cdcdbfc-28f8-46e3-95aa-7d2c71820d60="半角数字および半角ハイフンのみ"
           DbName="POSTAL_CODE"
           MaxLength="8"
           Type="word"
@@ -1930,4 +1930,14 @@
         UniqueId="const-json-template-001" />
     </SystemMessages>
   </Constants>
+  <CustomAttributes>
+    <Custom-6cdcdbfc-28f8-46e3-95aa-7d2c71820d60
+      AvailableModels="data-model,query-model,command-model,structure-model,enum,value-object"
+      DisplayName="利用可能文字"
+      IsValidation="True"
+      PhysicalName="AvailableCharacter"
+      Type="Enum">
+      <Option>半角数字および半角ハイフンのみ</Option>
+    </Custom-6cdcdbfc-28f8-46e3-95aa-7d2c71820d60>
+  </CustomAttributes>
 </NijoAppScaffold>

@@ -90,46 +90,6 @@ if (!string.IsNullOrEmpty(dbEntity.Name)
 
 ---
 
-### CharacterType — 文字種チェック
-
-文字列項目に付与します。どのような文字種のみを受け付けるかを **文字列**で指定します。
-バリデーションの具体的な判定ロジックは Application Service の抽象メソッドとして生成され、**開発者が実装**します。
-
-```xml
-<Product Type="data-model" DisplayName="商品">
-  <ProductCode IsKey="true"
-               CharacterType="半角英数字"
-               DisplayName="商品コード" />
-</Product>
-```
-
-**生成されるチェック:**
-```csharp
-if (!ValidateIf半角英数字(dbEntity.ProductCode)) {
-    messages.ProductCode.AddError(MSG.CharacterTypeError("半角英数字"));
-}
-```
-
-**開発者が実装する抽象メソッド（Application Service）:**
-```csharp
-// 自動生成されたスタブ
-public abstract bool ValidateIf半角英数字(string? value);
-
-// 開発者が実装
-public override bool ValidateIf半角英数字(string? value) {
-    if (string.IsNullOrEmpty(value)) return true;
-    return value.All(c => (c >= 'A' && c <= 'Z')
-                       || (c >= 'a' && c <= 'z')
-                       || (c >= '0' && c <= '9'));
-}
-```
-
-:::note CharacterType の文字列
-`CharacterType` に指定する値は任意の文字列です。同じ文字列を指定した項目は同じメソッドを共有します。
-:::
-
----
-
 ### TotalDigit / DecimalPlace — 桁数チェック
 
 数値型（int / long / decimal）の項目に付与します。

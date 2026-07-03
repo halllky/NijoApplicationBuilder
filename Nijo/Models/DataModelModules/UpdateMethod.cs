@@ -131,7 +131,6 @@ namespace Nijo.Models.DataModelModules {
                 {{DataModel.GetValidators(ctx).SelectTextTemplate(validator => $$"""
                     {{validator.RenderCaller(this, _rootAggregate, "afterDbEntity", "messages")}};
                 """)}}
-                    {{ValidateCharacterType.METHOD_NAME}}(afterDbEntity, messages);
                     {{OnBeforeMethodName}}(command, beforeDbEntity, messages, context);
 
                     // エラーがある場合は処理中断

@@ -318,7 +318,6 @@ namespace Nijo.Models {
             yield return new ValidateRequired();
             yield return new ValidateGenericLookupExists();
             yield return new ValidateMaxLength();
-            yield return new ValidateCharacterType();
             yield return new ValidateDigitsAndScales();
 
             var customValidationAttributes = NijoXmlCustomAttribute

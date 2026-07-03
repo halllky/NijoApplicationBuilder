@@ -51,8 +51,6 @@ namespace Nijo.ImmutableSchema {
         public bool IsNotNull => XElement.Attribute(BasicNodeOptions.IsNotNull.AttributeName) != null;
         /// <summary>汎用参照テーブルのハードコードされる主キーか否か</summary>
         public bool IsHardCodedPrimaryKey => XElement.Attribute(BasicNodeOptions.IsHardCodedPrimaryKey.AttributeName) != null;
-        /// <summary>文字種。半角、半角英数、など</summary>
-        public string? CharacterType => XElement.Attribute(BasicNodeOptions.CharacterType.AttributeName)?.Value;
         /// <summary>文字列系属性の最大長</summary>
         public int? MaxLength => int.TryParse(XElement.Attribute(BasicNodeOptions.MaxLength.AttributeName)?.Value, out var v) ? v : null;
         /// <summary>数値系属性の整数部桁数 + 小数部桁数</summary>

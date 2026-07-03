@@ -81,7 +81,6 @@ public class SchemaParseRule {
             BasicNodeOptions.ReturnValue,
             BasicNodeOptions.RefToObject,
             BasicNodeOptions.MaxLength,
-            BasicNodeOptions.CharacterType,
             BasicNodeOptions.TotalDigit,
             BasicNodeOptions.DecimalPlace,
             BasicNodeOptions.SequenceName,

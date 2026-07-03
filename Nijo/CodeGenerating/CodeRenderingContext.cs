@@ -257,27 +257,6 @@ namespace Nijo.CodeGenerating {
         #endregion ToOrderedByDataFlow
 
 
-        private readonly Lock _charTypeLock = new();
-        /// <summary>
-        /// 文字種を列挙
-        /// </summary>
-        internal IEnumerable<string> GetCharacterTypes() {
-            lock (_charTypeLock) {
-                return _characterTypes ??= Schema
-                    .GetRootAggregates()
-                    .Where(root => root.Model is Models.DataModel
-                                              or Models.QueryModel
-                                              or Models.CommandModel)
-                    .SelectMany(root => root.EnumerateThisAndDescendants())
-                    .SelectMany(agg => agg.GetMembers())
-                    .OfType<ValueMember>()
-                    .Where(vm => vm.CharacterType != null)
-                    .Select(vm => vm.CharacterType!)
-                    .Distinct()
-                    .ToArray();
-            }
-        }
-        private string[]? _characterTypes;
         void IDisposable.Dispose() {
         }
     }

@@ -720,24 +720,6 @@ internal static class BasicNodeOptions {
             }
         },
     };
-    internal static NodeOption CharacterType = new() {
-        AttributeName = "CharacterType",
-        DisplayName = "文字種",
-        Type = E_NodeOptionType.String,
-        HelpText = $$"""
-            文字種。半角英数のみ、JIS第1,2水準の文字のみ、全銀協フォーマットで使える文字のみ、など。
-            最終的に廃止予定（nijo.xml上でカスタムバリデータを定義できるようにする）
-            """,
-        IsAvailable = (model, nodeType) => {
-            return (model is DataModel
-                 || model is QueryModel
-                 || model is CommandModel)
-                 && nodeType == E_NodeType.ValueMember;
-        },
-        ValidateOthers = ctx => {
-            // 特に制約なし
-        },
-    };
     internal static NodeOption TotalDigit = new() {
         AttributeName = "TotalDigit",
         DisplayName = "総合桁数",
