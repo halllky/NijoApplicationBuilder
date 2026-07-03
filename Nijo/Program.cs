@@ -61,24 +61,14 @@ namespace Nijo {
                 Description = "カレントディレクトリから操作対象のnijoプロジェクトへの相対パス",
             };
 
-            // ビルドスキップ
-            var noBuild = new Option<bool>("--no-build", "-n") {
-                Description = "デバッグ開始時にコード自動生成をせず、アプリケーションの起動のみ行います。",
-            };
-
-            // デバッグ実行時、ブラウザを立ち上げない
+            // GUIブラウザを立ち上げない
             var noBrowser = new Option<bool>("--no-browser", "-b") {
-                Description = "デバッグ開始時にブラウザを立ち上げません。",
+                Description = "GUIブラウザを立ち上げません。",
             };
 
             // 未実装を許可
             var allowNotImplemented = new Option<bool>("--allow-not-implemented", "-a") {
                 Description = "QueryModelのデータ構造定義などの必ず実装しなければならないメソッドは通常abstractでレンダリングされるが、コンパイルエラーの確認などのためにあえてvirtualでレンダリングする。",
-            };
-
-            // デバッグ実行キャンセルファイル
-            var cancelFile = new Option<string?>("--cancel-file", "-c") {
-                Description = "デバッグ実行の終了のトリガーは、通常はユーザーからのキー入力ですが、これを指定したときはこのファイルが存在したら終了と判定します。",
             };
 
             // GUI用のサービスが実行されるURL
@@ -103,16 +93,6 @@ namespace Nijo {
             var generate = new Command("generate", "ソースコードの自動生成を実行します。") { path, allowNotImplemented };
             generate.SetAction(Generate(path, allowNotImplemented));
             rootCommand.Add(generate);
-
-            // デバッグ実行開始
-            var run = new Command("run", "プロジェクトのデバッグを開始します。") { path, noBuild, noBrowser, allowNotImplemented, cancelFile };
-            run.SetAction((parseResult, ct) => Run(
-                parseResult.GetValue(path),
-                parseResult.GetValue(noBuild),
-                parseResult.GetValue(noBrowser),
-                parseResult.GetValue(allowNotImplemented),
-                parseResult.GetValue(cancelFile)));
-            rootCommand.Add(run);
 
             // GUI用のサービスを展開する
             var serve = new Command("serve", "GUI用のサービスを展開します。") { path, url, noBrowser };
@@ -230,97 +210,6 @@ namespace Nijo {
             };
         }
 
-
-        /// <summary>
-        /// 対象プロジェクトのデバッグ実行を開始します。
-        /// </summary>
-        /// <param name="path">対象フォルダまでの相対パス</param>
-        /// <param name="noBuild">ソースコードの自動生成をスキップする場合はtrue</param>
-        /// <param name="noBrowser">デバッグ開始時にブラウザを立ち上げない</param>
-        /// <param name="allowNotImplemented">抽象メソッドをabstractでなくvirtualで生成</param>
-        /// <param name="cancelFile">デバッグ実行を終了するトリガー。このファイルが存在したら終了する。</param>
-        private static async Task Run(string? path, bool noBuild, bool noBrowser, bool allowNotImplemented, string? cancelFile) {
-            var projectRoot = path == null
-                ? Directory.GetCurrentDirectory()
-                : Path.Combine(Directory.GetCurrentDirectory(), path);
-            var cancelFileFullPath = cancelFile == null
-                ? null
-                : Path.GetFullPath(cancelFile);
-            var logger = ILoggerExtension.CreateConsoleLogger();
-
-            if (!GeneratedProject.TryOpen(projectRoot, out var project, out var error)) {
-                logger.LogError(error);
-                return;
-            }
-
-            var firstLaunch = true;
-            while (true) {
-                logger.LogInformation("-----------------------------------------------");
-                if (cancelFileFullPath == null) {
-                    logger.LogInformation("デバッグを開始します。キーボードのQで終了します。それ以外のキーでリビルドします。");
-                } else {
-                    logger.LogInformation("デバッグを開始します。右記パスにファイルが存在したら終了します: {cancelFile}", cancelFileFullPath);
-                }
-
-                var config = project.GetConfig();
-                using var launcher = new Runtime.GeneratedProjectLauncher(
-                    project.WebapiProjectRoot,
-                    Path.Combine(project.ReactProjectRoot, ".."),
-                    new Uri(config.DotnetDebuggingUrl),
-                    new Uri(config.ReactDebuggingUrl),
-                    logger);
-                try {
-                    if (!noBuild) {
-                        var rule = SchemaParseRule.Default();
-                        var xDocument = XDocument.Load(project.SchemaXmlPath);
-                        var parseContext = new SchemaParseContext(xDocument, rule, GeneratedProjectOptions.Parse(xDocument, true));
-                        var renderingOptions = new CodeRenderingOptions {
-                            AllowNotImplemented = allowNotImplemented,
-                        };
-
-                        project.GenerateCode(parseContext, renderingOptions, logger);
-                    }
-
-                    launcher.Launch();
-                    launcher.WaitForReady();
-
-                    // 初回ビルド時はブラウザ立ち上げ
-                    if (firstLaunch && !noBrowser) {
-                        try {
-                            var launchBrowser = new Process();
-                            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                                launchBrowser.StartInfo.FileName = "cmd";
-                                launchBrowser.StartInfo.Arguments = $"/c \"start {config.ReactDebuggingUrl}\"";
-                            } else {
-                                launchBrowser.StartInfo.FileName = "open";
-                                launchBrowser.StartInfo.Arguments = config.ReactDebuggingUrl;
-                            }
-                            launchBrowser.Start();
-                            launchBrowser.WaitForExit();
-                        } catch (Exception ex) {
-                            logger.LogError("Fail to launch browser: {msg}", ex.Message);
-                        }
-                        firstLaunch = false;
-                    }
-                } catch (Exception ex) {
-                    logger.LogError("{msg}", ex.ToString());
-                }
-
-                // 待機。breakで終了。continueでリビルド
-                if (cancelFileFullPath == null) {
-                    // キー入力待機
-                    var input = Console.ReadKey(true);
-                    if (input.Key == ConsoleKey.Q) break;
-
-                } else {
-                    // キャンセルファイル監視
-                    while (!File.Exists(cancelFileFullPath)) {
-                        await Task.Delay(500);
-                    }
-                    break;
-                }
-            }
-        }
 
         /// <summary>
         /// Nijo自体のドキュメント生成
