@@ -260,8 +260,6 @@ namespace Nijo.Models {
             aggregateFile.AddCSharpClass(DisplayData.RenderCSharpRecursively(rootAggregate, ctx), "Class_DisplayData");
             aggregateFile.AddTypeScriptTypeDef(DisplayData.RenderTypeScriptRecursively(rootAggregate, ctx));
             aggregateFile.AddTypeScriptFunction(EditablePresentationObject.RenderTsNewObjectFunctionRecursively(displayData, ctx));
-            aggregateFile.AddTypeScriptFunction(displayData.RenderExtractPrimaryKey());
-            aggregateFile.AddTypeScriptFunction(displayData.RenderAssignPrimaryKey());
             aggregateFile.AddTypeScriptFunction(new DeepEqualFunction(displayData).Render(ctx));
 
             // データ型: 画面表示用型メッセージ

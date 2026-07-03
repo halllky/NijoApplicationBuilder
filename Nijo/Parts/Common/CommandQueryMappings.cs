@@ -133,13 +133,10 @@ namespace Nijo.Parts.Common {
                 var modules = new List<string> {
                     searchCondition.TsTypeName,
                     searchCondition.TsNewObjectFunction,
-                    searchCondition.PkAssignFunctionName,
                     searchCondition.TypeScriptSortableMemberType,
                     searchCondition.GetTypeScriptSortableMemberType,
                     displayData.TsTypeName,
                     displayData.TsNewObjectFunction,
-                    displayData.PkExtractFunctionName,
-                    displayData.PkAssignFunctionName,
                     new DeepEqualFunction(displayData).FunctionName,
                 };
 
@@ -155,8 +152,6 @@ namespace Nijo.Parts.Common {
                     foreach (var entry in refEntries) {
                         modules.Add(entry.TsTypeName);
                         modules.Add(entry.TsNewObjectFunction);
-                        modules.Add(entry.PkExtractFunctionName);
-                        modules.Add(entry.PkAssignFunctionName);
                     }
                 }
 
@@ -302,18 +297,6 @@ namespace Nijo.Parts.Common {
                         '{{agg.EnumerateThisAndAncestors().Select(x => x.PhysicalName).Join("/")}}': {{new DisplayData(agg).TsNewObjectFunction}},
                     """)}}
                       }
-                      /** 主キーの抽出関数 */
-                      export const extractKeys: { [K in {{QUERY_MODEL_TYPE}}]: ((data: TypeMap[K]) => unknown[]) } = {
-                    {{queryModelsOrderByDataFlow.SelectTextTemplate(agg => $$"""
-                        '{{agg.PhysicalName}}': {{new DisplayData(agg).PkExtractFunctionName}},
-                    """)}}
-                      }
-                      /** 主キーの設定関数 */
-                      export const assignKeys: { [K in {{QUERY_MODEL_TYPE}}]: ((data: TypeMap[K], keys: unknown[]) => void) } = {
-                    {{queryModelsOrderByDataFlow.SelectTextTemplate(agg => $$"""
-                        '{{agg.PhysicalName}}': {{new DisplayData(agg).PkAssignFunctionName}} as (data: {{new DisplayData(agg).TsTypeName}}, keys: unknown[]) => void,
-                    """)}}
-                      }
                     }
                     //#endregion DisplayData
 
@@ -330,18 +313,6 @@ namespace Nijo.Parts.Common {
                       export const create: { [K in {{REFERED_QUERY_MODEL_TYPE}}]: (() => TypeMap[K]) } = {
                     {{referedRefEntires.Values.SelectMany(x => x).SelectTextTemplate(refEntry => $$"""
                         '{{refEntry.Aggregate.RefEntryName}}': {{refEntry.TsNewObjectFunction}},
-                    """)}}
-                      }
-                      /** 主キーの抽出関数 */
-                      export const extractKeys: { [K in {{REFERED_QUERY_MODEL_TYPE}}]: ((data: TypeMap[K]) => unknown[]) } = {
-                    {{referedRefEntires.Values.SelectMany(x => x).SelectTextTemplate(refEntry => $$"""
-                        '{{refEntry.Aggregate.RefEntryName}}': {{refEntry.PkExtractFunctionName}},
-                    """)}}
-                      }
-                      /** 主キーの設定関数 */
-                      export const assignKeys: { [K in {{REFERED_QUERY_MODEL_TYPE}}]: ((data: TypeMap[K], keys: unknown[]) => void) } = {
-                    {{referedRefEntires.Values.SelectMany(x => x).SelectTextTemplate(refEntry => $$"""
-                        '{{refEntry.Aggregate.RefEntryName}}': {{refEntry.PkAssignFunctionName}} as (data: {{refEntry.TsTypeName}}, keys: unknown[]) => void,
                     """)}}
                       }
                     }
@@ -361,12 +332,6 @@ namespace Nijo.Parts.Common {
                       export const create: { [K in {{QUERY_MODEL_TYPE}}]: (() => TypeMap[K]) } = {
                     {{queryModelsOrderByDataFlow.SelectTextTemplate(agg => $$"""
                         '{{agg.PhysicalName}}': {{new SearchCondition.Entry(agg).TsNewObjectFunction}},
-                    """)}}
-                      }
-                      /** 主キー項目設定関数 */
-                      export const assignKeys: { [K in {{QUERY_MODEL_TYPE}}]: ((data: TypeMap[K], keys: unknown[]) => void) } = {
-                    {{queryModelsOrderByDataFlow.SelectTextTemplate(agg => $$"""
-                        '{{agg.PhysicalName}}': {{new SearchCondition.Entry(agg).PkAssignFunctionName}} as (data: {{new SearchCondition.Entry(agg).TsTypeName}}, keys: unknown[]) => void,
                     """)}}
                       }
                       /** ソート可能メンバーの型（「昇順」「降順」抜き） */
