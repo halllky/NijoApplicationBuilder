@@ -1,5 +1,7 @@
 
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using System.Diagnostics;
 
 namespace MyApp.WebApi;
 
@@ -21,6 +23,18 @@ internal class WebLogScope : IAsyncActionFilter {
             [OverridedApplicationService.LOG_SCOPEPROP_SCOPE_ID] = Guid.NewGuid().ToString().ToUpper().Replace("-", ""),
         });
 
-        await next();
+        var stopwatch = Stopwatch.StartNew();
+        var executedContext = await next();
+        stopwatch.Stop();
+
+        // パフォーマンス障害の調査などに備えて処理時間をログ出力
+        if (appSrv.Log.IsEnabled(LogLevel.Debug)) {
+            var statusCode = (executedContext.Result as IStatusCodeActionResult)?.StatusCode
+                ?? context.HttpContext.Response.StatusCode;
+            appSrv.Log.LogDebug("{Method} 完了: {Elapsed}ms, Status: {StatusCode}",
+                context.HttpContext.Request.Method,
+                stopwatch.ElapsedMilliseconds,
+                statusCode);
+        }
     }
 }
