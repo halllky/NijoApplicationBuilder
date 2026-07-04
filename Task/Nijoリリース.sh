@@ -3,7 +3,8 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 NIJO_ROOT="$SCRIPT_DIR/../"
 APP_TEMPLATE_DIR="$NIJO_ROOT/Nijo.NewProjectTemplate"
-APP_TEMPLATE_ZIP="$NIJO_ROOT/temp_release/Nijo.NewProjectTemplate.zip"
+APP_TEMPLATE_ZIP="$NIJO_ROOT/temp_release/empty-template.zip"
+DEMO101_TEMPLATE_ZIP="$NIJO_ROOT/temp_release/demo101-template.zip"
 
 # GitHub配置用のzipまで作成するかどうかをコマンドライン引数から受け取る
 ARCHIVE_RELEASE_ZIP="$1"
@@ -83,6 +84,13 @@ if [ ! -f "$APP_TEMPLATE_ZIP" ]; then
   exit 1
 fi
 
+echo "デモ101テンプレートを圧縮します: $DEMO101_TEMPLATE_ZIP"
+bash "$SCRIPT_DIR/デモ101テンプレート作成.sh"
+if [ ! -f "$DEMO101_TEMPLATE_ZIP" ]; then
+  echo "デモ101テンプレートの圧縮に失敗しました。"
+  exit 1
+fi
+
 echo "フロントエンドのビルドを開始します。"
 pushd "$NIJO_ROOT/Nijo.GuiClient/package_schema-editor-v1" > /dev/null
 npm run build
@@ -131,7 +139,7 @@ zip -r "$NIJO_ROOT/temp_release/release-$RELEASE_VERSION-osx.zip" .
 popd > /dev/null
 
 # 掃除
-rm "$APP_TEMPLATE_ZIP"
+rm -f "$APP_TEMPLATE_ZIP" "$DEMO101_TEMPLATE_ZIP"
 
 echo "リリース $RELEASE_VERSION を作成しました。"
 echo "GitHubのReleaseページにアップロードしてください。"

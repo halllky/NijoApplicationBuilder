@@ -55,8 +55,11 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="..\temp_release\Nijo.NewProjectTemplate.zip" Condition="Exists('..\temp_release\Nijo.NewProjectTemplate.zip')">
-      <LogicalName>Nijo.NewProjectTemplate.zip</LogicalName>
+    <EmbeddedResource Include="..\temp_release\empty-template.zip" Condition="Exists('..\temp_release\empty-template.zip')">
+      <LogicalName>empty-template.zip</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\temp_release\demo101-template.zip" Condition="Exists('..\temp_release\demo101-template.zip')">
+      <LogicalName>demo101-template.zip</LogicalName>
     </EmbeddedResource>
 
     <EmbeddedResource LinkBase="GuiWebAppHtml" Include="$(ProjectDir)..\Nijo.GuiClient\package_schema-editor-v1\dist\index.html" Condition="Exists('$(ProjectDir)..\Nijo.GuiClient\package_schema-editor-v1\dist\index.html')" />

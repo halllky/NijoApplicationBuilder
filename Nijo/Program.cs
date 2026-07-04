@@ -76,12 +76,18 @@ namespace Nijo {
                 Description = "GUI用のサービスが実行されるURLを明示的に指定します。",
             };
 
+            // 新規プロジェクト作成時のテンプレート
+            var template = new Option<string?>("--template", "-t") {
+                Description = "新規プロジェクト作成時に使用するテンプレート名。"
+                    + $"指定可能な値: {string.Join(", ", GeneratedProject.Templates.Keys)}",
+            };
+
             // ---------------------------------------------------
             // ** コマンド **
 
             // 新規プロジェクト作成
-            var newProject = new Command("new", "新規プロジェクトを作成します。") { path };
-            newProject.SetAction(NewProject(path));
+            var newProject = new Command("new", "新規プロジェクトを作成します。") { path, template };
+            newProject.SetAction(NewProject(path, template));
             rootCommand.Add(newProject);
 
             // 検証
@@ -119,21 +125,31 @@ namespace Nijo {
         /// 新規プロジェクトを作成します。
         /// </summary>
         /// <param name="argPath">対象フォルダまでの相対パス</param>
-        private static Func<ParseResult, int> NewProject(Argument<string?> argPath) {
+        /// <param name="optTemplate">使用するテンプレート名</param>
+        private static Func<ParseResult, int> NewProject(Argument<string?> argPath, Option<string?> optTemplate) {
             return parseResult => {
                 var path = parseResult.GetValue(argPath);
+                var templateName = parseResult.GetValue(optTemplate);
+                var logger = ILoggerExtension.CreateConsoleLogger();
+
+                if (templateName == null) {
+                    logger.LogError("テンプレートが指定されていません。 --template オプションで以下のいずれかを指定してください。");
+                    foreach (var (name, (_, description)) in GeneratedProject.Templates) {
+                        logger.LogInformation("  * {name}: {description}", name, description);
+                    }
+                    return 1;
+                }
 
                 var projectRoot = path == null
                     ? Directory.GetCurrentDirectory()
                     : Path.Combine(Directory.GetCurrentDirectory(), path);
-                var logger = ILoggerExtension.CreateConsoleLogger();
 
                 if (Directory.Exists(projectRoot)) {
                     logger.LogError("既にプロジェクトが存在します: {projectRoot}", projectRoot);
                     return 1;
                 }
 
-                var (success, errorMessage) = GeneratedProject.CreatePhysicalProjectAndInstallDependenciesAsync(projectRoot, logger);
+                var (success, errorMessage) = GeneratedProject.CreatePhysicalProjectAndInstallDependenciesAsync(projectRoot, templateName, logger);
 
                 if (success) {
                     logger.LogInformation("プロジェクトの作成が完了しました: {projectRoot}", projectRoot);

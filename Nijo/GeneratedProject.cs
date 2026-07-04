@@ -26,25 +26,40 @@ namespace Nijo {
         private const string NIJO_XML = "nijo.xml";
 
         /// <summary>
-        /// 新規アプリのテンプレート。リリースビルド時にzip化されてこのexeのリソースとして埋め込まれる。
+        /// 新規プロジェクト作成時に選択可能なテンプレートの一覧。
+        /// キーはCLI上で指定するテンプレート名、値はこのexeに埋め込まれたリソース名（zip）と説明文。
+        /// リリースビルド時にそれぞれのzipがこのexeのリソースとして埋め込まれる。
         /// </summary>
-        private const string NEW_PROJECT_TEMPLATE_ZIP_NAME = "Nijo.NewProjectTemplate.zip";
+        public static readonly IReadOnlyDictionary<string, (string ResourceName, string Description)> Templates
+            = new Dictionary<string, (string, string)> {
+                ["empty-template"] = (
+                    "empty-template.zip",
+                    "独立してデバッグ可能な必要最低限の構成のみを含む空のテンプレート。"),
+                ["demo101"] = (
+                    "demo101-template.zip",
+                    "GUI・ログ出力・ログイン認証など基本的な機能があらかじめそろった状態のテンプレート（デモ101ベース）。"),
+            };
 
         /// <summary>
         /// 物理的なプロジェクトファイルを作成し、依存関係をインストールします。
         /// </summary>
         /// <param name="projectRoot">プロジェクトのルートディレクトリの絶対パス。</param>
+        /// <param name="templateName"><see cref="Templates"/> のキー。</param>
         /// <param name="logger">ロガー。</param>
         /// <returns>成功した場合は true、エラーメッセージ付きで失敗した場合は false。</returns>
-        public static (bool Success, string? ErrorMessage) CreatePhysicalProjectAndInstallDependenciesAsync(string projectRoot, ILogger logger) {
+        public static (bool Success, string? ErrorMessage) CreatePhysicalProjectAndInstallDependenciesAsync(string projectRoot, string templateName, ILogger logger) {
             try {
+                if (!Templates.TryGetValue(templateName, out var template)) {
+                    return (false, $"テンプレート '{templateName}' は存在しません。利用可能なテンプレート: {string.Join(", ", Templates.Keys)}");
+                }
+
                 Directory.CreateDirectory(projectRoot);
 
                 // git archive したアプリケーションテンプレートを展開する。
                 // アプリケーションテンプレートは埋め込みリソースになっている。
                 // Task/Nijoリリース.bat でビルドしたときのみ埋め込まれる。
                 var assembly = Assembly.GetExecutingAssembly();
-                using (var stream = assembly.GetManifestResourceStream(NEW_PROJECT_TEMPLATE_ZIP_NAME)) {
+                using (var stream = assembly.GetManifestResourceStream(template.ResourceName)) {
                     if (stream == null) {
                         return (false,
                             "アプリケーションテンプレートのリソースが見つかりません。" +
