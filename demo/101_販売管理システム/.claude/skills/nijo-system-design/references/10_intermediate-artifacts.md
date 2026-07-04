@@ -7,11 +7,14 @@ nijo.xml と同じフォルダ階層に置き、同じバージョン管理ラ�
 <プロジェクトフォルダ>/
 ├── nijo.xml
 └── design/
+    ├── wishes.md          # (存在すれば) nijo-requirement-elicitation の成果物。上書きしない
     ├── actors.md          # アクター定義
     ├── usecases.md        # ユースケース一覧・記述
     ├── business-flow.md   # 業務フロー図（mermaid）
     └── assumptions.md     # 置いた仮定・未確認事項
 ```
+
+`wishes.md` はこのフェーズの入力であり成果物ではない。内容を転記・要約するのではなく、そこから読み取れる要求を actors.md / usecases.md 等に構造化していく。
 
 ## 重複禁止マトリクス（最重要ルール）
 
@@ -26,6 +29,7 @@ nijo.xml と同じフォルダ階層に置き、同じバージョン管理ラ�
 | ユースケースのシナリオ（事前条件・フロー・事後条件） | design/usecases.md | ここが正 |
 | 業務全体の流れ・部門間の受け渡し | design/business-flow.md | ここが正 |
 | 仮定・未確認事項 | design/assumptions.md | ここが正 |
+| 要望・願望の原文（ユーザーの言葉のまま） | design/wishes.md（あれば） | 本フェーズ以降は読み取り専用。アクター・ユースケース等に構造化した後の正は上記各ファイル |
 
 ## 各ファイルのテンプレート
 
