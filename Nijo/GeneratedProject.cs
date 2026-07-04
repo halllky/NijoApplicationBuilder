@@ -31,49 +31,6 @@ namespace Nijo {
         private const string NEW_PROJECT_TEMPLATE_ZIP_NAME = "Nijo.NewProjectTemplate.zip";
 
         /// <summary>
-        /// 新しいNijoAppScaffoldプロジェクトを作成します。
-        /// </summary>
-        /// <param name="projectRoot">プロジェクトのルートディレクトリの絶対パス。</param>
-        /// <param name="project">作成されたプロジェクト。</param>
-        /// <param name="error">エラー情報。</param>
-        /// <returns>プロジェクトが作成された場合は true、作成できなかった場合は false。</returns>
-        public static bool TryCreateNewProject(string projectRoot, [NotNullWhen(true)] out GeneratedProject? project, [NotNullWhen(false)] out string? error) {
-            if (Directory.Exists(projectRoot)) {
-                project = null;
-                error = $"フォルダが存在します: {projectRoot}";
-                return false;
-            }
-
-            try {
-                Directory.CreateDirectory(projectRoot);
-
-                // git archive したアプリケーションテンプレートを展開する。
-                // アプリケーションテンプレートは埋め込みリソースになっている。
-                var assembly = Assembly.GetExecutingAssembly();
-                using (var stream = assembly.GetManifestResourceStream(NEW_PROJECT_TEMPLATE_ZIP_NAME)) {
-                    if (stream == null) {
-                        project = null;
-                        error = "アプリケーションテンプレートのリソースが見つかりません。" +
-                               "利用可能なリソースは以下です。\n" +
-                               string.Join("\n", assembly.GetManifestResourceNames());
-                        return false;
-                    }
-
-                    using var archive = new ZipArchive(stream);
-                    archive.ExtractToDirectory(projectRoot);
-                }
-
-                project = new GeneratedProject(Path.GetFullPath(projectRoot));
-                error = null;
-                return true;
-            } catch (Exception ex) {
-                project = null;
-                error = $"プロジェクト作成中にエラーが発生しました: {ex.Message}";
-                return false;
-            }
-        }
-
-        /// <summary>
         /// 物理的なプロジェクトファイルを作成し、依存関係をインストールします。
         /// </summary>
         /// <param name="projectRoot">プロジェクトのルートディレクトリの絶対パス。</param>
