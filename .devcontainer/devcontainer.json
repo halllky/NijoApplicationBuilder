@@ -24,7 +24,7 @@
 	// * デモのマイグレーション用ツール（dotnet-ef）をインストールする
 	// * Node.js 関連のライブラリをインストールする
 	// * nijo のコマンドラインツールを使用可能にしておく。（ビルド成果物は Nijo/bin/Debug 以下に配置される）
-	"postCreateCommand": "dotnet restore && dotnet tool install --global dotnet-ef --version 10.0.9 && npm ci && ./Task/Nijoリリース.sh 0",
+	"postCreateCommand": "dotnet restore && dotnet tool install --global dotnet-ef --version 10.0.9 && npm ci && ./Task/Nijoリリース.sh 0 && curl -L https://fly.io/install.sh | sh",
 	// Configure tool-specific properties.
 	"customizations": {
 		"vscode": {
@@ -51,7 +51,9 @@
 	],
 	"containerEnv": {
 		// Node.js のメモリ上限を 4GB に設定（Vite や Docusaurus のビルドでメモリ不足になる場合があるため）
-		"NODE_OPTIONS": "--max-old-space-size=4096"
+		"NODE_OPTIONS": "--max-old-space-size=4096",
+		// fly CLI (flyctl) のインストール先を PATH に追加（postCreateCommand の install.sh がここにインストールする）
+		"PATH": "${containerEnv:PATH}:/home/vscode/.fly/bin"
 	}
 	// 管理者権限が必要な場合は以下のコメントアウトを外す。現状不要。詳細: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
