@@ -9,8 +9,8 @@
  * ASP.NET Core が静的ファイルとしてそれを返す。
  * そのため JavaScript と C# が同じ環境で動作しているため、単に自身（/）を指定する。
  *
- * 共有デモサイトでは WebService のリバースプロキシ経由で /demo-api/ 配下にAPIが
- * 公開されるため、VITE_API_BASE_URL が設定されている場合はそちらを優先する。
+ * 共有デモサイトではWebServiceのリバースプロキシ経由で /demo-api/ 配下にAPIが
+ * 公開されるため、ビルド時に VITE_API_BASE_URL が設定されている場合はそちらを優先する。
  */
 const ASP_NET_CORE_BASE_URL = import.meta.env.VITE_API_BASE_URL
   ?? (import.meta.env.DEV ? 'http://localhost:5290/' : '/')

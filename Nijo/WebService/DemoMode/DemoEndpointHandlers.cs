@@ -50,12 +50,11 @@ public class DemoEndpointHandlers {
         _hub = hub;
         _logger = logger;
 
-        // チャットの結果nijo.xmlが実際に変更されたときだけ、コード生成し、
+        // チャットの結果nijo.xmlが実際に変更されたときだけ、フルリビルド
+        // (nijo generate + dotnet publish + npm run build。RELEASE_BUILD.sh参照)して
         // デモ101を再起動したうえで全員へ強制リロードを配信する。
         _claudeAgent.SchemaChanged += async () => {
-            if (SchemaGenerateHelper.TryGenerate(_options.WorkspaceRoot, _logger)) {
-                await _processManager.RestartAsync();
-            }
+            await _processManager.RebuildAndRestartAsync();
             await _hub.Clients.All.ForceReload("AIがスキーマを更新しました");
         };
     }
@@ -179,10 +178,11 @@ public class DemoEndpointHandlers {
                 _logger.LogError("リセット中の git clean が失敗しました (exit code = {code})。ワークスペースが復元されていない可能性があります。", cleanExitCode);
             }
 
-            SchemaGenerateHelper.TryGenerate(_options.WorkspaceRoot, _logger);
-
             _claudeAgent.ResetConversation();
 
+            // pristine状態(イメージビルド時のコミット)にはビルド済みのpublish成果物/wwwrootも
+            // 含めてコミットしてあるため、通常はgit checkoutで復元されておりそのまま起動できる
+            // (StartAsyncは成果物が無いときだけ自動的にフルビルドする)。
             await _processManager.StartAsync();
         } finally {
             await handle.DisposeAsync();

@@ -1,12 +1,12 @@
-#if DEBUG
-
 using Microsoft.EntityFrameworkCore;
 
 namespace MyApp;
 
 /// <summary>
-/// デバッグ用のダミーデータ生成。
+/// デモ用のダミーデータ生成。
 /// DbContext を直接使ってマスタデータを登録し、ApplicationService 経由でトランザクションデータを登録します。
+/// 共有デモサイトの初回起動時・リセット後の再起動時にProgram.csから呼び出されるため、
+/// (通常はデバッグ専用だが)Release構成でも含める。
 /// </summary>
 public class OverridedDummyDataGenerator {
 
@@ -268,5 +268,3 @@ public class OverridedDummyDataGenerator {
         return presentationContext.Messages;
     }
 }
-
-#endif

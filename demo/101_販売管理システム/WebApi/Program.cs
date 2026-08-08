@@ -1,6 +1,10 @@
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using MyApp;
 using MyApp.Core.Authorization;
+using MyApp.Debugging;
 using MyApp.WebApi.Authorization;
+using MyApp.WebApi.Base;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,6 +61,10 @@ if (app.Environment.IsDevelopment()) {
     // 開発時専用エラーページ
     app.UseDeveloperExceptionPage();
 
+    // CORSミドルウェアを追加(開発環境でのみAddCorsで登録されているため、ここでのみ有効化する。
+    // 本番/デモ環境ではclientも同一オリジンから配信されるためCORSは不要)
+    app.UseCors();
+
 } else {
     // セキュリティの設定が必要なら追加
     // app.UseHsts();
@@ -75,8 +83,29 @@ if (app.Environment.IsDevelopment()) {
     });
 }
 
-// CORSミドルウェアを追加
-app.UseCors();
+// DBファイルが存在しなければ作成し、ダミーデータを投入する。
+// 共有デモサイトでは環境リセット時にDBファイルごと削除されるため、
+// 次回起動時にここで自動的に復元される。
+using (var scope = app.Services.CreateScope()) {
+    var appService = scope.ServiceProvider.GetRequiredService<OverridedApplicationService>();
+    var connectionString = new SqliteConnectionStringBuilder(appService.DbContext.Database.GetConnectionString());
+    if (connectionString.DataSource != null && !File.Exists(connectionString.DataSource)) {
+        await appService.DbContext.EnsureCreatedAsyncEx(appService.Settings);
+
+        var generator = new OverridedDummyDataGenerator(messages => new PresentationContextInWebApi<MessageSetter> {
+            IgnoreConfirm = true,
+            Messages = messages.As<MessageSetter>(),
+            Confirms = [],
+        });
+        var result = await generator.GenerateAsync(appService);
+        if (result.HasError()) {
+            throw new InvalidOperationException(string.Join("\n", [
+                "初期データの生成に失敗しました。",
+                ..result.GetAllMessages(),
+            ]));
+        }
+    }
+}
 
 app.MapDefaultControllerRoute();
 

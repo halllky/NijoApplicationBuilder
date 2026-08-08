@@ -52,6 +52,10 @@ public class IdleResetService : BackgroundService {
     /// <summary>
     /// ワークスペースがpristine状態から変化しているか(git status --porcelain が空でないか)を確認する。
     /// 変化が無ければリセットしても意味が無いのでスキップする。
+    ///
+    /// DEBUG.sqlite3・WebApi.Log は実行時に必ず作られる untracked ファイル/ディレクトリのため
+    /// (Program.cs起動時シード等)、これらを含めると常に「変化あり」判定になってしまう。
+    /// pathspecで除外し、実際のソース変更(AIによるnijo.xml編集等)の有無だけを見る。
     /// </summary>
     private async Task<bool> IsWorkspaceDirtyAsync(CancellationToken ct) {
         var isDirty = false;
@@ -60,6 +64,10 @@ public class IdleResetService : BackgroundService {
                 psi.FileName = "git";
                 psi.ArgumentList.Add("status");
                 psi.ArgumentList.Add("--porcelain");
+                psi.ArgumentList.Add("--");
+                psi.ArgumentList.Add(".");
+                psi.ArgumentList.Add(":!DEBUG.sqlite3");
+                psi.ArgumentList.Add(":!WebApi.Log");
                 psi.WorkingDirectory = _options.WorkspaceRoot;
             }, (std, line) => {
                 if (std == ProcessExtension.E_STD.StdOut && !string.IsNullOrWhiteSpace(line)) {

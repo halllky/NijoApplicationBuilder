@@ -24,8 +24,11 @@ COPY --from=gui-build /src/Nijo.GuiClient/package_schema-editor-v1/dist ./Nijo.G
 RUN dotnet publish Nijo/Nijo.csproj -c Release -o /out
 
 # ---------------------------------------------------------------------------
-# stage3: 実行環境。dotnet watch(demo101 WebApi)とvite(demo101 client)を
-# 常駐実行するため、ランタイムではなくSDKイメージを使う。
+# stage3: 実行環境。
+# デモ101はpublish済みの単一プロセス(WebApiがAPIとSPAの両方を配信)として常駐実行するため
+# ランタイムイメージでも足りるが、AIチャットによるスキーマ変更時に
+# RELEASE_BUILD.sh(nijo generate + dotnet publish + npm run build)を都度実行するため、
+# 引き続きSDKイメージを使う。
 # ---------------------------------------------------------------------------
 FROM mcr.microsoft.com/dotnet/sdk:10.0
 
@@ -39,6 +42,12 @@ RUN apt-get update \
 RUN useradd --create-home --shell /bin/bash demo
 COPY --from=nijo-build --chown=demo:demo /out /opt/nijo
 COPY --chmod=755 docker/entrypoint.sh /entrypoint.sh
+
+# nijo CLIをシェルコマンドとして呼び出せるようにする(RELEASE_BUILD.sh が
+# $NIJO_CLI_PATH 経由で "nijo generate" を呼ぶため。Task/RELEASE_BUILD.sh 参照)。
+RUN printf '#!/bin/bash\nexec dotnet /opt/nijo/nijo.dll "$@"\n' > /usr/local/bin/nijo \
+    && chmod +x /usr/local/bin/nijo
+ENV NIJO_CLI_PATH=/usr/local/bin/nijo
 
 # ---------------------------------------------------------------------------
 # demo101 はモノレポ(ルート package.json の npm workspaces)の一員であり、
@@ -72,13 +81,16 @@ USER demo
 # ルートで npm ci(実依存の hoist + @nijo/ui-components の symlink 解決)
 RUN npm ci
 
-# demo101 の WebApi ビルドキャッシュの焼き込みと、リセットの基準となる pristine コミット。
+# demo101を本番モード単一プロセス用にビルドする(nijo generate + dotnet publish +
+# npm run build。Task/RELEASE_BUILD.sh参照)。publish成果物(WebApi/bin/Release/publish)と
+# SPA(WebApi/wwwroot)も含めて次のpristineコミットに含めることで、
+# 環境リセット時は git checkout だけで(再ビルド無しで)復元できるようにする
+# (AIによるスキーマ変更時のみ、その場でRELEASE_BUILD.shが再実行される)。
 # git repo は demo101 フォルダ自身(= WorkspaceRoot)。node_modules はその外側(モノレポ
 # ルート)にあるため、リセット時の git checkout/clean で消えない。
 WORKDIR "/app/monorepo/demo/101_販売管理システム"
-RUN cd WebApi && dotnet build \
-    && cd .. \
-    && git config --global user.email "demo@example.com" \
+RUN VITE_DEMO_BASE=/demo/ VITE_API_BASE_URL=/demo-api/ bash Task/RELEASE_BUILD.sh
+RUN git config --global user.email "demo@example.com" \
     && git config --global user.name "demo" \
     && git init \
     && git add -A \

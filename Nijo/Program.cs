@@ -83,6 +83,12 @@ namespace Nijo {
                     + "プロジェクトパスは常にこのコマンドで指定した path に固定されます(pjクエリパラメータは無視されます)。",
             };
 
+            // 起動時に強制的にフルビルドしなおす(--demo-modeとの併用のみ有効)
+            var rebuild = new Option<bool>("--rebuild") {
+                Description = "--demo-mode と併用した場合、起動時に既存のpublish済み成果物を使い回さず、"
+                    + "必ずフルビルドしなおしてから起動します。",
+            };
+
             // 新規プロジェクト作成時のテンプレート
             var template = new Option<string?>("--template", "-t") {
                 Description = "新規プロジェクト作成時に使用するテンプレート名。"
@@ -108,12 +114,13 @@ namespace Nijo {
             rootCommand.Add(generate);
 
             // GUI用のサービスを展開する
-            var serve = new Command("serve", "GUI用のサービスを展開します。") { path, url, noBrowser, demoMode };
+            var serve = new Command("serve", "GUI用のサービスを展開します。") { path, url, noBrowser, demoMode, rebuild };
             serve.SetAction((parseResult, ct) => Serve(
                 parseResult.GetValue(path),
                 parseResult.GetValue(url),
                 parseResult.GetValue(noBrowser),
-                parseResult.GetValue(demoMode)));
+                parseResult.GetValue(demoMode),
+                parseResult.GetValue(rebuild)));
             rootCommand.Add(serve);
 
             // リファレンスドキュメント生成
@@ -275,7 +282,7 @@ namespace Nijo {
         /// <summary>
         /// GUI用のサービスを展開する
         /// </summary>
-        private static async Task Serve(string? path, string? optUrl, bool noBrowser, bool demoMode) {
+        private static async Task Serve(string? path, string? optUrl, bool noBrowser, bool demoMode, bool rebuild) {
             var logger = ILoggerExtension.CreateConsoleLogger();
 
             WebService.DemoMode.DemoModeOptions? demoOptions = null;
@@ -288,6 +295,7 @@ namespace Nijo {
                 demoOptions = new WebService.DemoMode.DemoModeOptions {
                     WorkspaceRoot = workspaceRoot,
                     IdleResetMinutes = idleResetMinutes,
+                    ForceRebuildOnStart = rebuild,
                 };
                 logger.LogInformation("共有デモサイトモードで起動します。ワークスペース: {workspaceRoot}", workspaceRoot);
             }

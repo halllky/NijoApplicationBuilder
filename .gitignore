@@ -121,8 +121,8 @@ bld/
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
-# Uncomment if you have tasks that create the project's static files in wwwroot
-#wwwroot/
+# RELEASE_BUILD.sh(WebApiが単一プロセスでSPAを配信する構成)がここにclientのビルド成果物を生成する
+wwwroot/
 
 # Visual Studio 2017 auto generated files
 Generated\ Files/

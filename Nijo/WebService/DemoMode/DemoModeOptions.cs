@@ -18,12 +18,13 @@ public class DemoModeOptions {
     public int IdleResetMinutes { get; init; } = 30;
 
     /// <summary>
-    /// デモ101 の React クライアント(vite)が動くURL
-    /// </summary>
-    public string ViteUrl { get; init; } = "http://localhost:5173";
-
-    /// <summary>
-    /// デモ101 の WebApi が動くURL
+    /// デモ101 の WebApi が動くURL。
+    /// 単一プロセス構成のため、SPA(client)もこのWebApiが静的配信する。
     /// </summary>
     public string WebApiUrl { get; init; } = "http://localhost:5290";
+
+    /// <summary>
+    /// 起動時に既存のpublish済み成果物を使い回さず、必ずフルビルドしなおしてから起動する。
+    /// </summary>
+    public bool ForceRebuildOnStart { get; init; }
 }

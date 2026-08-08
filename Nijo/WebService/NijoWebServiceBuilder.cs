@@ -123,7 +123,10 @@ public class NijoWebServiceBuilder {
 
             // 起動時にデモ101(WebApi + client)を立ち上げる
             app.Lifetime.ApplicationStarted.Register(() => {
-                _ = app.Services.GetRequiredService<Demo101ProcessManager>().StartAsync();
+                var processManager = app.Services.GetRequiredService<Demo101ProcessManager>();
+                _ = demo.ForceRebuildOnStart
+                    ? processManager.RebuildAndRestartAsync()
+                    : processManager.StartAsync();
             });
             app.Lifetime.ApplicationStopping.Register(() => {
                 app.Services.GetRequiredService<Demo101ProcessManager>().Stop();
