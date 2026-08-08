@@ -3,8 +3,8 @@ import { Link } from "react-router-dom"
 import * as UIコンポーネントカタログ from "./UIコンポーネントカタログ"
 import * as ER図 from "./ER図"
 import { callAspNetCoreApiAsync } from "../example/callAspNetCoreApiAsync"
-import { Button } from "../input/Button"
-import { useLoginLogout } from "../util/useLoginLogout"
+import { Button } from "../ui/Button"
+import { useLoginLogout } from "../app/useLoginLogout"
 
 export default function デバッグメニュー() {
   // 開発環境でのみ表示

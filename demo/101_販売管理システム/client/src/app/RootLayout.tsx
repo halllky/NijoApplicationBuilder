@@ -1,18 +1,29 @@
 import React from "react"
 import { Outlet, Link, useNavigation } from "react-router-dom"
-import * as Icon from "@heroicons/react/24/solid"
-import * as P000 from "../pages/P000_トップページ"
-import * as P002 from "../pages/P002_ログアウト"
-import * as P100 from "../pages/P100_売上"
-import * as P200 from "../pages/P200_入荷"
-import * as P300 from "../pages/P300_商品"
-import * as P400 from "../pages/P400_従業員"
-import { NowLoading } from "./NowLoading"
+import { NowLoading } from "../ui/NowLoading"
+
+export type RootNavigationItem = {
+  to: string
+  label: string
+  icon?: React.ElementType
+}
+
+export type RootLayoutProps = {
+  /** アプリケーション名。ルートナビゲーション左端に表示され、トップページへのリンクを兼ねる */
+  appTitle: string
+  /** アプリケーション名クリック時の遷移先（トップページのURL） */
+  appTitleTo: string
+  /** ルートナビゲーションに並べる業務画面へのリンク */
+  navigationItems: RootNavigationItem[]
+  /** ルートナビゲーション右端に表示するログアウトリンク */
+  logoutItem: RootNavigationItem
+}
 
 /**
- * ログイン後のアプリケーション全体の枠
+ * ログイン後のアプリケーション全体の枠。
+ * どの業務画面をナビゲーションに表示するかは呼び出し元（routes.tsx）が決める。
  */
-export function RootLayout() {
+export function RootLayout({ appTitle, appTitleTo, navigationItems, logoutItem }: RootLayoutProps) {
   const navigation = useNavigation()
 
   return (
@@ -22,25 +33,18 @@ export function RootLayout() {
       <nav className="bg-gray-800 text-white px-8 py-2">
         <ul className="flex flex-wrap gap-x-8 items-center">
           <li className="shrink-0">
-            <RootNavigationLink to={P000.URL} className="text-lg font-bold mr-4">販売管理システム</RootNavigationLink>
+            <RootNavigationLink to={appTitleTo} className="text-lg font-bold mr-4">{appTitle}</RootNavigationLink>
           </li>
-          <li className="shrink-0">
-            <RootNavigationLink to={P100.URL} icon={Icon.CurrencyYenIcon}>売上</RootNavigationLink>
-          </li>
-          <li className="shrink-0">
-            <RootNavigationLink to={P200.URL} icon={Icon.TruckIcon}>入荷</RootNavigationLink>
-          </li>
-          <li className="shrink-0">
-            <RootNavigationLink to={P300.URL} icon={Icon.CubeIcon}>商品</RootNavigationLink>
-          </li>
-          <li className="shrink-0">
-            <RootNavigationLink to={P400.URL} icon={Icon.UserGroupIcon}>従業員</RootNavigationLink>
-          </li>
+          {navigationItems.map(item => (
+            <li key={item.to} className="shrink-0">
+              <RootNavigationLink to={item.to} icon={item.icon}>{item.label}</RootNavigationLink>
+            </li>
+          ))}
 
           <li className="flex-1"></li>
 
           <li className="shrink-0">
-            <RootNavigationLink to={P002.URL} icon={Icon.ArrowRightEndOnRectangleIcon}>ログアウト</RootNavigationLink>
+            <RootNavigationLink to={logoutItem.to} icon={logoutItem.icon}>{logoutItem.label}</RootNavigationLink>
           </li>
         </ul>
       </nav>

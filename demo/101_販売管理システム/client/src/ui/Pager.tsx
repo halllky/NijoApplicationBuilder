@@ -1,5 +1,5 @@
 import React from "react"
-import { Button } from "../input/Button"
+import { Button } from "./Button"
 
 type PagerProps = {
   pageIndex: number

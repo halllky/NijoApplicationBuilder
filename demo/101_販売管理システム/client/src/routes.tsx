@@ -1,20 +1,30 @@
 import { createBrowserRouter } from "react-router-dom"
-import { RootLayout } from "./layout/RootLayout"
-import * as DetailMessageContext from "./util/DetailMessageContext"
-import P000 from "./pages/P000_トップページ"
-import P002 from "./pages/P002_ログアウト"
-import P100 from "./pages/P100_売上"
-import P200 from "./pages/P200_入荷"
-import P300 from "./pages/P300_商品"
-import P400 from "./pages/P400_従業員"
+import * as Icon from "@heroicons/react/24/solid"
+import { RootLayout } from "./app/RootLayout"
+import * as DetailMessageContext from "./app/DetailMessageContext"
+import P000, * as P000Module from "./pages/P000_トップページ"
+import P002, * as P002Module from "./pages/P002_ログアウト"
+import P100, * as P100Module from "./pages/P100_売上"
+import P200, * as P200Module from "./pages/P200_入荷"
+import P300, * as P300Module from "./pages/P300_商品"
+import P400, * as P400Module from "./pages/P400_従業員"
 import P101 from "./pages/P101_売上詳細"
 import P201 from "./pages/P201_入荷詳細"
 import P301 from "./pages/P301_商品詳細"
 import UIComponentCatalog from "./debug-rooms/UIコンポーネントカタログ"
 import ER図 from "./debug-rooms/ER図"
 import { P001_ログイン } from "./pages/P001_ログイン"
-import { LoginUserProvider } from "./util/useLoginLogout"
-import { ErrorPage } from "./layout/ErrorPage"
+import { LoginUserProvider } from "./app/useLoginLogout"
+import { ErrorPage } from "./app/ErrorPage"
+
+// ルートナビゲーションに表示する業務画面の一覧。
+// どの画面をナビゲーションに載せるかは、このアプリ固有の構成なのでここで決める。
+const navigationItems = [
+  { to: P100Module.URL, label: "売上", icon: Icon.CurrencyYenIcon },
+  { to: P200Module.URL, label: "入荷", icon: Icon.TruckIcon },
+  { to: P300Module.URL, label: "商品", icon: Icon.CubeIcon },
+  { to: P400Module.URL, label: "従業員", icon: Icon.UserGroupIcon },
+]
 
 export const router = createBrowserRouter([
   {
@@ -22,7 +32,12 @@ export const router = createBrowserRouter([
       <DetailMessageContext.Provider>
         <LoginUserProvider>
           <P001_ログイン>
-            <RootLayout />
+            <RootLayout
+              appTitle="販売管理システム"
+              appTitleTo={P000Module.URL}
+              navigationItems={navigationItems}
+              logoutItem={{ to: P002Module.URL, label: "ログアウト", icon: Icon.ArrowRightEndOnRectangleIcon }}
+            />
           </P001_ログイン>
         </LoginUserProvider>
       </DetailMessageContext.Provider>

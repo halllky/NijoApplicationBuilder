@@ -1,6 +1,6 @@
 import { ReactNode, useEffect } from "react"
-import * as DetailMessage from "../util/DetailMessageContext"
-import { useUnsavedChangesBlocker } from "../util/useUnsavedChangesBlocker"
+import * as DetailMessage from "./DetailMessageContext"
+import { useUnsavedChangesBlocker } from "./useUnsavedChangesBlocker"
 
 export type PageBaseProps = {
   /** ページタイトル。ブラウザのタイトルバーに表示されます。 */

@@ -1,7 +1,7 @@
 import React from "react"
 import { useRouteError } from "react-router-dom"
 import { Link } from "react-router-dom"
-import * as DetailMessage from "../util/DetailMessageContext"
+import * as DetailMessage from "./DetailMessageContext"
 
 export function ErrorPage() {
   const error = useRouteError()

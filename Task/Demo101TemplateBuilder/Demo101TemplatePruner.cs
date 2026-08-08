@@ -60,7 +60,7 @@ public static class Demo101TemplatePruner {
     /// CustomAttributes直下の要素（タグ名 "Custom-&lt;UniqueId&gt;"）でこれに合致するものを削除する。
     /// "金額項目"(IsCurrency)・"数量"(IsQuantity) はどの項目にも使用されなくなるが、
     /// 汎用的な書式指定として今後利用者が自分の項目に付与できるように定義自体は残す
-    /// （削除すると client/src/util/fieldMetadata.ts が参照する生成後の型からプロパティが消え、コンパイルエラーになる）。
+    /// （削除すると client/src/app/fieldMetadata.ts が参照する生成後の型からプロパティが消え、コンパイルエラーになる）。
     /// </summary>
     private static readonly HashSet<string> REMOVE_CUSTOM_ATTRIBUTE_IDS = [
         "0f2d701d-f481-42d4-8dfb-5296c1b40246", // 0以上のみ
@@ -79,15 +79,15 @@ public static class Demo101TemplatePruner {
         "client/src/pages/P201_入荷詳細.tsx",
         "client/src/pages/P300_商品.tsx",
         "client/src/pages/P301_商品詳細.tsx",
-        "client/src/input/StockAdjustmentDialog.tsx",
+        "client/src/pages/shared/StockAdjustmentDialog.tsx",
         // ER図デバッグ画面は @nijo/ui-components （このモノレポ内でのみ解決できるパッケージ）に依存しており、
         // 単体で展開されるテンプレートではビルドできないため削除する。
         "client/src/debug-rooms/ER図.tsx",
         "WebApi/Debugging/ERDiagramController.cs",
         // テンプレートには列挙体を1つも含まないため、列挙体の存在を前提にしたこれらのコンポーネントは型エラーになる。
         // UIコンポーネントカタログでの参照も削除済みで他に利用箇所がないため削除する。
-        "client/src/input/EnumSelection.tsx",
-        "client/src/input/EnumSearchCondition.tsx",
+        "client/src/app/EnumSelection.tsx",
+        "client/src/app/EnumSearchCondition.tsx",
     ];
 
     /// <summary>
@@ -179,7 +179,6 @@ public static class Demo101TemplatePruner {
         EditCoreOverridedDbContext(workDir);
         ReplaceOverridedDummyDataGenerator(workDir);
         EditClientRoutes(workDir);
-        EditClientRootLayout(workDir);
         EditClientUiComponentCatalog(workDir);
         EditClientDebugMenu(workDir);
         ReplaceClientPackageJson(workDir);
@@ -427,12 +426,12 @@ public static class Demo101TemplatePruner {
         ReplaceExactlyOnce(
             path,
             """
-            import P000 from "./pages/P000_トップページ"
-            import P002 from "./pages/P002_ログアウト"
-            import P100 from "./pages/P100_売上"
-            import P200 from "./pages/P200_入荷"
-            import P300 from "./pages/P300_商品"
-            import P400 from "./pages/P400_従業員"
+            import P000, * as P000Module from "./pages/P000_トップページ"
+            import P002, * as P002Module from "./pages/P002_ログアウト"
+            import P100, * as P100Module from "./pages/P100_売上"
+            import P200, * as P200Module from "./pages/P200_入荷"
+            import P300, * as P300Module from "./pages/P300_商品"
+            import P400, * as P400Module from "./pages/P400_従業員"
             import P101 from "./pages/P101_売上詳細"
             import P201 from "./pages/P201_入荷詳細"
             import P301 from "./pages/P301_商品詳細"
@@ -440,10 +439,28 @@ public static class Demo101TemplatePruner {
             import ER図 from "./debug-rooms/ER図"
             """,
             """
-            import P000 from "./pages/P000_トップページ"
-            import P002 from "./pages/P002_ログアウト"
-            import P400 from "./pages/P400_従業員"
+            import P000, * as P000Module from "./pages/P000_トップページ"
+            import P002, * as P002Module from "./pages/P002_ログアウト"
+            import P400, * as P400Module from "./pages/P400_従業員"
             import UIComponentCatalog from "./debug-rooms/UIコンポーネントカタログ"
+            """);
+
+        // ルートナビゲーションに表示する業務画面は routes.tsx が合成する（RootLayout は props で受け取るだけ）。
+        // 売上・入荷・商品はテンプレートに含めないため、ナビゲーション項目からも除く。
+        ReplaceExactlyOnce(
+            path,
+            """
+            const navigationItems = [
+              { to: P100Module.URL, label: "売上", icon: Icon.CurrencyYenIcon },
+              { to: P200Module.URL, label: "入荷", icon: Icon.TruckIcon },
+              { to: P300Module.URL, label: "商品", icon: Icon.CubeIcon },
+              { to: P400Module.URL, label: "従業員", icon: Icon.UserGroupIcon },
+            ]
+            """,
+            """
+            const navigationItems = [
+              { to: P400Module.URL, label: "従業員", icon: Icon.UserGroupIcon },
+            ]
             """);
 
         ReplaceExactlyOnce(
@@ -480,67 +497,25 @@ public static class Demo101TemplatePruner {
             """);
     }
 
-    private static void EditClientRootLayout(string workDir) {
-        var path = Path.Combine(workDir, "client/src/layout/RootLayout.tsx");
-
-        ReplaceExactlyOnce(
-            path,
-            """
-            import * as P000 from "../pages/P000_トップページ"
-            import * as P002 from "../pages/P002_ログアウト"
-            import * as P100 from "../pages/P100_売上"
-            import * as P200 from "../pages/P200_入荷"
-            import * as P300 from "../pages/P300_商品"
-            import * as P400 from "../pages/P400_従業員"
-            """,
-            """
-            import * as P000 from "../pages/P000_トップページ"
-            import * as P002 from "../pages/P002_ログアウト"
-            import * as P400 from "../pages/P400_従業員"
-            """);
-
-        ReplaceExactlyOnce(
-            path,
-            """
-                      <li className="shrink-0">
-                        <RootNavigationLink to={P100.URL} icon={Icon.CurrencyYenIcon}>売上</RootNavigationLink>
-                      </li>
-                      <li className="shrink-0">
-                        <RootNavigationLink to={P200.URL} icon={Icon.TruckIcon}>入荷</RootNavigationLink>
-                      </li>
-                      <li className="shrink-0">
-                        <RootNavigationLink to={P300.URL} icon={Icon.CubeIcon}>商品</RootNavigationLink>
-                      </li>
-                      <li className="shrink-0">
-                        <RootNavigationLink to={P400.URL} icon={Icon.UserGroupIcon}>従業員</RootNavigationLink>
-                      </li>
-            """,
-            """
-                      <li className="shrink-0">
-                        <RootNavigationLink to={P400.URL} icon={Icon.UserGroupIcon}>従業員</RootNavigationLink>
-                      </li>
-            """);
-    }
-
     private static void EditClientUiComponentCatalog(string workDir) {
         var path = Path.Combine(workDir, "client/src/debug-rooms/UIコンポーネントカタログ.tsx");
 
         ReplaceExactlyOnce(
             path,
             """
-            import { EnumSelection } from "../input/EnumSelection"
-            import { EnumSearchCondition } from "../input/EnumSearchCondition"
-            import { NumericTextBox } from "../input/NumericTextBox"
-            import { WordTextBox } from "../input/WordTextBox"
-            import { Button } from "../input/Button"
-            import { NowLoading } from "../layout/NowLoading"
+            import { EnumSelection } from "../app/EnumSelection"
+            import { EnumSearchCondition } from "../app/EnumSearchCondition"
+            import { NumericTextBox } from "../ui/NumericTextBox"
+            import { WordTextBox } from "../ui/WordTextBox"
+            import { Button } from "../ui/Button"
+            import { NowLoading } from "../ui/NowLoading"
             import * as EnumDefs from "../__autoGenerated/enum-defs"
             """,
             """
-            import { NumericTextBox } from "../input/NumericTextBox"
-            import { WordTextBox } from "../input/WordTextBox"
-            import { Button } from "../input/Button"
-            import { NowLoading } from "../layout/NowLoading"
+            import { NumericTextBox } from "../ui/NumericTextBox"
+            import { WordTextBox } from "../ui/WordTextBox"
+            import { Button } from "../ui/Button"
+            import { NowLoading } from "../ui/NowLoading"
             """);
 
         ReplaceExactlyOnce(

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { assignDeep, removeEmptyValues, isEmptyObject, toQueryParamRecord, fromQueryParamRecord } from './SearchPageBase.useSearchParamsAsCondition'
+import { assignDeep, removeEmptyValues, isEmptyObject, toQueryParamRecord, fromQueryParamRecord } from './useSearchParamsAsCondition'
 
 describe('SearchPageBase で用いているURLと検索条件オブジェクトの相互変換処理のテスト', () => {
   describe('assignDeep', () => {
