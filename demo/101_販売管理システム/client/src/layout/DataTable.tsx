@@ -89,3 +89,17 @@ export function DataTable<TRow>(props: DataTableProps<TRow>) {
     </div>
   )
 }
+
+/** グリッドの数値セル。右寄せ・3桁カンマ区切りで表示する。 */
+export const NumericCell = ({ value, suffix }: { value: unknown, suffix?: string }) => {
+  let displayValue = value
+  const num = Number(value)
+  if (value !== null && value !== undefined && value !== '' && Number.isFinite(num)) {
+    displayValue = num.toLocaleString()
+  }
+  return (
+    <span className="block w-full py-px px-1 truncate text-right">
+      {displayValue as React.ReactNode}{suffix}
+    </span>
+  )
+}

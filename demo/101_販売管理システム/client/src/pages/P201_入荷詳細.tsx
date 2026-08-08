@@ -7,9 +7,13 @@ import { 入荷詳細DisplayData, createNew入荷詳細DisplayData, createNew入
 import { callComplexPostEndpointAsync } from "../example/callComplexPostEndpointAsync"
 import useEvent from "react-use-event-hook"
 import dayjs from "dayjs"
-import * as UI from "../input/Field"
+import { maxLengthOf, numericPropsOf } from "../util/fieldMetadata"
 import { FormLabel } from "../layout/FormLabel"
 import { WordTextBox } from "../input/WordTextBox"
+import { DateInput } from "../input/DateInput"
+import { DescriptionTextArea } from "../input/DescriptionTextArea"
+import { NumericTextBox } from "../input/NumericTextBox"
+import { EnumSelection } from "../input/EnumSelection"
 import { Button } from "../input/Button"
 import { AsyncComboBox } from "../input/AsyncComboBox"
 import { useLoginLogout } from "../util/useLoginLogout"
@@ -66,9 +70,6 @@ export default [
 function P201_入荷詳細(props: {
   mode: 'new' | 'edit'
 }) {
-
-  // この画面で編集するオブジェクトのメタデータ
-  const modelMetadata = UI.useFieldUiContextProvider("入荷詳細")
 
   const { revalidate } = useRevalidator()
   const navigate = ReactRouter.useNavigate()
@@ -181,8 +182,7 @@ function P201_入荷詳細(props: {
       isDirty={isDirty}
       className="gap-2 px-8 py-2"
       contents={(
-        <UI.FieldUiContext.Provider value={modelMetadata}>
-          <div className="max-h-full max-w-5xl flex flex-col gap-y-2">
+        <div className="max-h-full max-w-5xl flex flex-col gap-y-2">
 
             {/* ヘッダ */}
             <div className="flex items-start gap-1">
@@ -193,7 +193,7 @@ function P201_入荷詳細(props: {
 
                 <div className="flex gap-2 items-center">
                   <FormLabel className="basis-20 shrink-0 text-right">入荷日時</FormLabel>
-                  <UI.Field name="入荷日時" control={control} />
+                  <DateInput appearance="datetime" {...register("入荷日時")} />
                 </div>
 
                 <div className="flex gap-2 items-center">
@@ -210,11 +210,10 @@ function P201_入荷詳細(props: {
               </Button>
             </div>
 
-            <UI.Field
-              name="備考"
+            <DescriptionTextArea
+              {...register("備考")}
               placeholder="備考"
               className="min-h-16 max-h-28"
-              control={control}
             />
 
             <div className="flex justify-between font-bold">
@@ -239,10 +238,10 @@ function P201_入荷詳細(props: {
 
                         {/* 商品 */}
                         <td className="p-1 align-middle font-bold">
-                          <UI.Field
-                            name={`入荷商品一覧.${index}.商品.外部システム側ID`}
+                          <WordTextBox
+                            {...register(`入荷商品一覧.${index}.商品.外部システム側ID`)}
+                            maxLength={maxLengthOf("入荷詳細", `入荷商品一覧.${index}.商品.外部システム側ID`)}
                             className="w-32 shrink-0"
-                            control={control}
                           />
                         </td>
                         <td className="p-1 align-middle font-bold max-w-[16rem]">
@@ -256,37 +255,43 @@ function P201_入荷詳細(props: {
 
                         {/* 数量・単価 */}
                         <td className="p-1 align-middle">
-                          <UI.Field
-                            name={`入荷商品一覧.${index}.数量`}
+                          <NumericTextBox
+                            {...register(`入荷商品一覧.${index}.数量`)}
+                            {...numericPropsOf("入荷詳細", `入荷商品一覧.${index}.数量`)}
                             className="w-24 text-right"
-                            control={control}
                           />
                         </td>
                         <td className="p-1 align-middle text-center">
                           <span className="mx-2">@</span>
                         </td>
                         <td className="p-1 align-middle">
-                          <UI.Field
-                            name={`入荷商品一覧.${index}.仕入単価_税抜`}
+                          <NumericTextBox
+                            {...register(`入荷商品一覧.${index}.仕入単価_税抜`)}
+                            {...numericPropsOf("入荷詳細", `入荷商品一覧.${index}.仕入単価_税抜`)}
                             className="w-32 text-right"
-                            control={control}
                           />
                         </td>
                         <td className="p-1 align-middle">
-                          <UI.Field
+                          <ReactHookForm.Controller
                             name={`入荷商品一覧.${index}.消費税区分`}
-                            className="w-32"
                             control={control}
+                            render={({ field: { value, ...restField } }) => (
+                              <EnumSelection
+                                type="消費税区分"
+                                value={value}
+                                {...restField}
+                                className="w-32"
+                              />
+                            )}
                           />
                         </td>
 
                         {/* 備考 */}
                         <td className="p-1 align-middle">
-                          <UI.Field
-                            name={`入荷商品一覧.${index}.備考`}
+                          <DescriptionTextArea
+                            {...register(`入荷商品一覧.${index}.備考`)}
                             placeholder="備考"
                             className="w-64"
-                            control={control}
                           />
                         </td>
 
@@ -310,7 +315,6 @@ function P201_入荷詳細(props: {
             {/* 新規明細行追加欄 */}
             <NewItemArea formMethods={formMethods} onCreate={handleCreateNewItem} />
           </div>
-        </UI.FieldUiContext.Provider>
       )}
     />
   )

@@ -60,7 +60,7 @@ public static class Demo101TemplatePruner {
     /// CustomAttributes直下の要素（タグ名 "Custom-&lt;UniqueId&gt;"）でこれに合致するものを削除する。
     /// "金額項目"(IsCurrency)・"数量"(IsQuantity) はどの項目にも使用されなくなるが、
     /// 汎用的な書式指定として今後利用者が自分の項目に付与できるように定義自体は残す
-    /// （削除すると client/src/input/Field.tsx が参照する生成後の型からプロパティが消え、コンパイルエラーになる）。
+    /// （削除すると client/src/util/fieldMetadata.ts が参照する生成後の型からプロパティが消え、コンパイルエラーになる）。
     /// </summary>
     private static readonly HashSet<string> REMOVE_CUSTOM_ATTRIBUTE_IDS = [
         "0f2d701d-f481-42d4-8dfb-5296c1b40246", // 0以上のみ
@@ -182,7 +182,6 @@ public static class Demo101TemplatePruner {
         EditClientRootLayout(workDir);
         EditClientUiComponentCatalog(workDir);
         EditClientDebugMenu(workDir);
-        EditClientField(workDir);
         ReplaceClientPackageJson(workDir);
     }
 
@@ -648,24 +647,6 @@ public static class Demo101TemplatePruner {
                     <Link to={UIコンポーネントカタログ.URL} className="text-blue-600 underline">
                       UIコンポーネントカタログへ移動
                     </Link>
-            """);
-    }
-
-    /// <summary>
-    /// テンプレートには列挙体を1つも含まないため、EnumTypeMap/EnumValueMap が空になり、
-    /// Field.tsx の列挙体用レンダリング分岐が型エラーになる（実行時には到達しないコードだが型検査は通す必要がある）。
-    /// 列挙体を1つでも持つ既存のスキーマに対しては元通り動作するよう、キャストで型検査のみ回避する。
-    /// </summary>
-    private static void EditClientField(string workDir) {
-        var path = Path.Combine(workDir, "client/src/input/Field.tsx");
-
-        ReplaceExactlyOnce(
-            path,
-            """
-                const enumValues = EnumValueMap[fieldMetadata.enumType]()
-            """,
-            """
-                const enumValues = (EnumValueMap as Record<string, () => string[]>)[fieldMetadata.enumType]()
             """);
     }
 

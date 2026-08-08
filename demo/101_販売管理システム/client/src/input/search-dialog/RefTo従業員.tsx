@@ -2,7 +2,7 @@ import { createNew従業員RefSearchCondition, 従業員RefRefTarget, 従業員R
 import { defineSearchDialog } from "./SearchDialogBase"
 import { callComplexPostEndpointAsync } from "../../example/callComplexPostEndpointAsync"
 import { FormLabel } from "../../layout/FormLabel"
-import * as UI from "../Field"
+import { WordTextBox } from "../WordTextBox"
 
 export const [
   /**
@@ -24,7 +24,6 @@ export const [
   {}
 >({
   title: '従業員',
-  queryModelType: '従業員Ref',
 
   // ダイアログ内部でなくその呼び出し元で使用する情報
   codePathFromRefTarget: '従業員番号',
@@ -62,27 +61,23 @@ export const [
   },
 
   // 検索結果グリッドの列定義
-  getSearchResultGridColumns: columnFor => [
-    columnFor('従業員番号', { header: '従業員番号', widthPx: 120 }),
-    columnFor('氏名', { header: '氏名', widthPx: 200 }),
+  getSearchResultGridColumns: () => [
+    { header: '従業員番号', widthPx: 120, render: row => row.従業員番号 },
+    { header: '氏名', widthPx: 200, render: row => row.氏名 },
   ],
 
   // 検索条件欄のレンダリング
   SearchCondition: ({ formMethods }) => {
-    const contextValue = UI.useFieldUiContextProvider('従業員Ref', 'SearchCondition')
-
     return (
-      <UI.FieldUiContext.Provider value={contextValue}>
-        <div className="grid grid-cols-[10rem_1fr] gap-2">
+      <div className="grid grid-cols-[10rem_1fr] gap-2">
 
-          <FormLabel>従業員番号</FormLabel>
-          <UI.Field name="filter.従業員番号" control={formMethods.control} />
+        <FormLabel>従業員番号</FormLabel>
+        <WordTextBox {...formMethods.register("filter.従業員番号")} />
 
-          <FormLabel>氏名</FormLabel>
-          <UI.Field name="filter.氏名" control={formMethods.control} />
+        <FormLabel>氏名</FormLabel>
+        <WordTextBox {...formMethods.register("filter.氏名")} />
 
-        </div>
-      </UI.FieldUiContext.Provider>
+      </div>
     )
   },
 })
