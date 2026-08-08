@@ -14,6 +14,8 @@ public interface IDemoHubClient {
     Task ChatMessageAppended(DemoChatMessage message);
     Task ChatStreamChunk(string chunk);
     Task DemoAppStatusChanged(string status);
+    /// <summary>AIチャット処理の状態変化。statusは <see cref="ClaudeAgentService.ChatStatus"/> の値(idle | running | building)</summary>
+    Task ChatStatusChanged(string status);
 }
 
 /// <summary>

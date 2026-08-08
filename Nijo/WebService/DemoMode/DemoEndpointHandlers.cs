@@ -66,6 +66,9 @@ public class DemoEndpointHandlers {
         //  修復ループ中に他のユーザーの操作が割り込むことはない)
         _claudeAgent.SchemaChanged += async () => {
             for (var attempt = 0; ; attempt++) {
+                // チャット処理中である旨の表示を「ビルド中」に切り替える(claude実行中はRunClaudeAsyncが"running"に戻す)
+                await _claudeAgent.SetChatStatusAsync("building");
+
                 // スキーマが変わった場合、古いデータモデルのDBファイルを残すと画面が
                 // 実行時エラーになるため、DBも初期化する(起動時にダミーデータから再作成される)。
                 var built = await _processManager.RebuildAndRestartAsync(resetDatabase: true);
@@ -74,7 +77,7 @@ public class DemoEndpointHandlers {
                     return;
                 }
                 if (attempt >= MAX_BUILD_REPAIR_ATTEMPTS) {
-                    await _claudeAgent.NotifyServiceMessageAsync(
+                    await _claudeAgent.NotifyErrorMessageAsync(
                         "自動ビルドの修復を試みましたが失敗しました。デモアプリが停止している可能性があります。" +
                         "「環境をリセット」ボタンで初期状態に戻すことができます。");
                     return;
@@ -83,7 +86,8 @@ public class DemoEndpointHandlers {
                     $"自動ビルドが失敗しました。AIがエラー内容を確認して修正を試みます… ({attempt + 1}/{MAX_BUILD_REPAIR_ATTEMPTS + 1}回目のビルド)");
                 var completed = await _claudeAgent.RunBuildRepairAsync(_processManager.LastBuildLog);
                 if (!completed) {
-                    // ユーザーが中断した場合はループをやめる(環境はリセットボタンで復旧できる)
+                    // ユーザーが中断した・claudeの実行自体に失敗した場合はループをやめる
+                    // (エラーはチャット欄に通知済み。環境はリセットボタンで復旧できる)
                     return;
                 }
             }
@@ -102,6 +106,7 @@ public class DemoEndpointHandlers {
             lockInfo = _lockService.CurrentLock,
             demoUrl = "/demo/",
             demoAppStatus = _processManager.Status,
+            chatStatus = _claudeAgent.ChatStatus,
             lastActivityUtc = _activityTracker.LastActivityUtc,
             chatHistory = _claudeAgent.History,
         });
@@ -145,7 +150,14 @@ public class DemoEndpointHandlers {
             try {
                 await _claudeAgent.RunAsync(body.Message);
             } catch (Exception ex) {
+                // 想定外の例外の最終防波堤。ログにしか出ないとユーザーには沈黙にしか
+                // 見えないため、チャット欄にもエラーを表示する。
                 _logger.LogError(ex, "claude実行中にエラーが発生しました。");
+                try {
+                    await _claudeAgent.NotifyErrorMessageAsync("AIの処理中に予期しないエラーが発生しました。詳細は「ログ」タブまたはサーバーログを確認してください。");
+                } catch (Exception notifyEx) {
+                    _logger.LogError(notifyEx, "エラーのチャット欄への通知に失敗しました。");
+                }
             } finally {
                 await handle.DisposeAsync();
             }

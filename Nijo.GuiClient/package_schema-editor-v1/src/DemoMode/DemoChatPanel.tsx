@@ -6,18 +6,31 @@ import { useDemoMode } from "./DemoModeProvider"
  * 画面右下のトグルボタンで開閉する。isDemoMode=false のときは何も表示しない。
  */
 export const DemoChatPanel: React.FC = () => {
-  const { isDemoMode, chatMessages, streamingText, processLogs, isLockedByOther, sendChat, cancelChat } = useDemoMode()
+  const { isDemoMode, chatMessages, streamingText, chatStatus, processLogs, isLockedByOther, sendChat, cancelChat } = useDemoMode()
   const [open, setOpen] = React.useState(false)
   const [tab, setTab] = React.useState<"chat" | "logs">("chat")
   const [input, setInput] = React.useState("")
   const [sending, setSending] = React.useState(false)
   const [error, setError] = React.useState<string>()
 
+  // AI処理中(claude実行中 or 反映ビルド中)。処理の主が自分か他人かに関わらず、
+  // サーバーは1本しか処理できないため送信不可として扱う。
+  const busy = chatStatus !== "idle"
+
+  // メッセージ・処理状態が更新されたら最下部へ自動スクロールする。
+  // 進行中の表示(インジケーター・ストリーミング)が画面外に隠れて
+  // 「処理中かどうか分からない」状態になるのを防ぐ。
+  const messagesRef = React.useRef<HTMLDivElement>(null)
+  React.useEffect(() => {
+    const el = messagesRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [chatMessages, streamingText, chatStatus, tab, open])
+
   if (!isDemoMode) return null
 
   const handleSend = async () => {
     const message = input.trim()
-    if (!message || sending || isLockedByOther) return
+    if (!message || sending || isLockedByOther || busy) return
     setSending(true)
     setError(undefined)
     const result = await sendChat(message)
@@ -36,7 +49,9 @@ export const DemoChatPanel: React.FC = () => {
         onClick={() => setOpen(true)}
         className="fixed bottom-4 right-4 z-40 rounded-full bg-indigo-600 text-white w-14 h-14 shadow-lg hover:bg-indigo-700"
       >
-        AI
+        {/* パネルを閉じていてもAIが処理中であることが分かるようにする */}
+        {busy && <span className="absolute inset-0 rounded-full bg-indigo-400 animate-ping opacity-75" />}
+        <span className="relative">AI</span>
       </button>
     )
   }
@@ -65,17 +80,40 @@ export const DemoChatPanel: React.FC = () => {
 
       {tab === "chat" ? (
         <>
-          <div className="flex-1 overflow-y-auto p-2 space-y-2 text-sm">
+          <div ref={messagesRef} className="flex-1 overflow-y-auto p-2 space-y-2 text-sm">
             {chatMessages.map((m, i) => (
-              <div key={i} className={m.role === "user" ? "text-right" : "text-left"}>
-                <span className={`inline-block px-2 py-1 rounded ${m.role === "user" ? "bg-indigo-100" : "bg-gray-100"}`}>
-                  {m.content}
-                </span>
-              </div>
+              m.role === "system" ? (
+                // サーバーからの通知(ビルド修復の進捗など)。会話と区別して控えめに表示する
+                <div key={i} className="text-center text-xs text-gray-500 whitespace-pre-wrap">{m.content}</div>
+              ) : m.role === "error" ? (
+                // サーバー側で発生したエラー。気づけるように赤系で表示する
+                <div key={i} className="text-left">
+                  <span className="inline-block px-2 py-1 rounded bg-red-50 border border-red-300 text-red-700 whitespace-pre-wrap">{m.content}</span>
+                </div>
+              ) : (
+                <div key={i} className={m.role === "user" ? "text-right" : "text-left"}>
+                  <span className={`inline-block px-2 py-1 rounded whitespace-pre-wrap ${m.role === "user" ? "bg-indigo-100" : "bg-gray-100"}`}>
+                    {m.content}
+                  </span>
+                </div>
+              )
             ))}
             {streamingText && (
               <div className="text-left">
-                <span className="inline-block px-2 py-1 rounded bg-gray-100 text-gray-500">{streamingText}</span>
+                <span className="inline-block px-2 py-1 rounded bg-gray-100 text-gray-500 whitespace-pre-wrap">{streamingText}</span>
+              </div>
+            )}
+            {/* 処理中インジケーター。サーバー側で何が起きているかを常に表示する */}
+            {chatStatus === "running" && (
+              <div className="text-left">
+                <span className="inline-block px-2 py-1 rounded bg-gray-100 text-gray-500 animate-pulse">AIが処理しています…</span>
+              </div>
+            )}
+            {chatStatus === "building" && (
+              <div className="text-left">
+                <span className="inline-block px-2 py-1 rounded bg-gray-100 text-gray-500 animate-pulse">
+                  変更をデモアプリに反映しています(再ビルド)。数分かかることがあります…
+                </span>
               </div>
             )}
           </div>
@@ -88,23 +126,25 @@ export const DemoChatPanel: React.FC = () => {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter") handleSend() }}
-                disabled={isLockedByOther || sending}
+                disabled={isLockedByOther || sending || busy}
                 maxLength={4000}
-                placeholder="AIに指示を入力..."
+                placeholder={busy ? "AIが処理中です…" : "AIに指示を入力..."}
                 className="flex-1 border rounded px-2 py-1 text-sm disabled:bg-gray-100"
               />
               <button
                 type="button"
                 onClick={handleSend}
-                disabled={isLockedByOther || sending}
+                disabled={isLockedByOther || sending || busy}
                 className="px-2 py-1 text-sm rounded bg-indigo-600 text-white disabled:opacity-50"
               >
                 送信
               </button>
+              {/* 中断できるのはclaude実行中のみ(ビルド中はサーバー側に止める手段がない) */}
               <button
                 type="button"
                 onClick={cancelChat}
-                className="px-2 py-1 text-sm rounded border"
+                disabled={chatStatus !== "running"}
+                className="px-2 py-1 text-sm rounded border disabled:opacity-50"
               >
                 中断
               </button>

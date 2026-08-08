@@ -141,18 +141,35 @@ public class ClaudeAgentService {
     /// </summary>
     public event Func<Task>? SchemaChanged;
 
+    /// <summary>
+    /// チャット処理の現在の状態。処理中かどうかを画面に表示するためのもの。
+    /// idle(何もしていない) | running(claude実行中) | building(スキーマ変更の反映ビルド中)。
+    /// 値の変更は <see cref="SetChatStatusAsync"/> で行い、SignalRで全クライアントへ配信する。
+    /// </summary>
+    public string ChatStatus { get; private set; } = "idle";
+
+    public async Task SetChatStatusAsync(string status) {
+        ChatStatus = status;
+        await _hub.Clients.All.ChatStatusChanged(status);
+    }
+
     public async Task RunAsync(string userMessage) {
         AppendHistory("user", userMessage);
         await _hub.Clients.All.ChatMessageAppended(new DemoChatMessage("user", userMessage, DateTime.UtcNow));
 
-        var schemaBeforeRun = ReadSchemaXmlOrNull();
+        try {
+            var schemaBeforeRun = ReadSchemaXmlOrNull();
 
-        await RunClaudeAsync(userMessage);
+            await RunClaudeAsync(userMessage);
 
-        // 実行前後で nijo.xml の内容が変わったときだけ発火する。
-        // 変わっていないのに毎回generate+デモ101再起動+全員強制リロードが走るのを防ぐ。
-        if (SchemaChanged != null && ReadSchemaXmlOrNull() != schemaBeforeRun) {
-            await SchemaChanged.Invoke();
+            // 実行前後で nijo.xml の内容が変わったときだけ発火する。
+            // 変わっていないのに毎回generate+デモ101再起動+全員強制リロードが走るのを防ぐ。
+            if (SchemaChanged != null && ReadSchemaXmlOrNull() != schemaBeforeRun) {
+                await SchemaChanged.Invoke();
+            }
+        } finally {
+            // 例外・中断を含むどの経路でも、処理が終わったことを画面に反映する
+            await SetChatStatusAsync("idle");
         }
     }
 
@@ -163,29 +180,39 @@ public class ClaudeAgentService {
     /// ここでは <see cref="SchemaChanged"/> は発火しない(発火すると再帰するため。
     /// リビルドは呼び出し元のループが行う)。
     /// </summary>
-    /// <returns>実行が完了したらtrue。ユーザーに中断された場合はfalse(呼び出し元はループをやめるべき)</returns>
+    /// <returns>実行が完了したらtrue。中断・実行失敗の場合はfalse(呼び出し元はループをやめるべき)</returns>
     public async Task<bool> RunBuildRepairAsync(string buildLog) {
         var tail = buildLog.Length > MAX_BUILD_LOG_CHARS
             ? buildLog[^MAX_BUILD_LOG_CHARS..]
             : buildLog;
-        await RunClaudeAsync(BUILD_REPAIR_PROMPT + "\n" + tail);
-        return !_cancelRequested;
+        var completed = await RunClaudeAsync(BUILD_REPAIR_PROMPT + "\n" + tail);
+        return completed && !_cancelRequested;
     }
 
     /// <summary>
-    /// システム側からの通知(ビルド修復の開始・断念など)をチャット欄に表示する。
-    /// 画面のチャットUIは user / assistant の2ロールのみ想定しているため assistant として表示する。
+    /// システム側からの通知(ビルド修復の開始など)をチャット欄に表示する。
+    /// AIの発言と区別できるよう role=system で送る。
     /// </summary>
     public async Task NotifyServiceMessageAsync(string text) {
-        AppendHistory("assistant", text);
-        await _hub.Clients.All.ChatMessageAppended(new DemoChatMessage("assistant", text, DateTime.UtcNow));
+        AppendHistory("system", text);
+        await _hub.Clients.All.ChatMessageAppended(new DemoChatMessage("system", text, DateTime.UtcNow));
+    }
+
+    /// <summary>
+    /// サーバー側で発生したエラー(claude CLIの実行失敗・ビルド修復の断念など)をチャット欄に表示する。
+    /// ログにしか出ないとユーザーが失敗に気づけないため、チャット欄にも出す。
+    /// </summary>
+    public async Task NotifyErrorMessageAsync(string text) {
+        AppendHistory("error", text);
+        await _hub.Clients.All.ChatMessageAppended(new DemoChatMessage("error", text, DateTime.UtcNow));
     }
 
     /// <summary>
     /// claude CLI を1回実行し、出力のストリーミング・履歴への追記まで行う。
     /// プロンプト以外の関心事(スキーマ変更検知など)は呼び出し元が持つ。
     /// </summary>
-    private async Task RunClaudeAsync(string prompt) {
+    /// <returns>プロセスが正常に完了したらtrue(起動失敗・エラー終了はfalse)</returns>
+    private async Task<bool> RunClaudeAsync(string prompt) {
         var process = new Process();
         process.StartInfo.FileName = "claude";
         process.StartInfo.ArgumentList.Add("-p");
@@ -231,6 +258,8 @@ public class ClaudeAgentService {
             _ = _hub.Clients.All.ProcessOutput("claude", e.Data);
         };
 
+        await SetChatStatusAsync("running");
+
         _runningProcess = process;
         _cancelRequested = false;
         try {
@@ -238,6 +267,12 @@ public class ClaudeAgentService {
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
             await process.WaitForExitAsync();
+        } catch (Exception ex) {
+            // claude CLI がインストールされていない(Win32Exception)等。
+            // ログにしか出ないとユーザーには沈黙にしか見えないため、チャット欄にエラーを表示する。
+            _logger.LogError(ex, "claude CLI の実行に失敗しました。");
+            await NotifyErrorMessageAsync($"AIの実行に失敗しました: {ex.Message}");
+            return false;
         } finally {
             _runningProcess = null;
         }
@@ -253,6 +288,17 @@ public class ClaudeAgentService {
             AppendHistory("assistant", finalText);
             await _hub.Clients.All.ChatMessageAppended(new DemoChatMessage("assistant", finalText, DateTime.UtcNow));
         }
+
+        // APIキー不備などでclaudeが応答を返さずエラー終了した場合、
+        // 何も表示しないとユーザーには沈黙にしか見えないため、チャット欄にエラーを表示する。
+        // (エラーの詳細はstderr経由でProcessOutputに流れているため「ログ」タブへ誘導する)
+        if (!_cancelRequested && process.ExitCode != 0 && finalText.Length == 0) {
+            _logger.LogError("claude CLI がエラー終了しました (exit code={code})。", process.ExitCode);
+            await NotifyErrorMessageAsync($"AIの実行がエラー終了しました (exit code {process.ExitCode})。詳細は「ログ」タブを確認してください。");
+            return false;
+        }
+
+        return !_cancelRequested;
     }
 
     public void Cancel() {

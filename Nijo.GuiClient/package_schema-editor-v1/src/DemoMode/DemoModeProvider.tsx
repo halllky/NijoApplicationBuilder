@@ -2,7 +2,7 @@ import * as React from "react"
 import * as signalR from "@microsoft/signalr"
 import { SERVER_DOMAIN } from "../main"
 import { demoFetchHeaders, fetchDemoStatus, getDemoClientId } from "./clientId"
-import { DemoAppStatus, DemoChatMessage, DemoLockInfo } from "./types"
+import { ChatStatus, DemoAppStatus, DemoChatMessage, DemoLockInfo } from "./types"
 
 type DemoModeContextValue = {
   isDemoMode: boolean
@@ -11,6 +11,7 @@ type DemoModeContextValue = {
   isLockedByOther: boolean
   isLockedByMe: boolean
   demoAppStatus: DemoAppStatus
+  chatStatus: ChatStatus
   chatMessages: DemoChatMessage[]
   streamingText: string
   processLogs: { stream: string, line: string }[]
@@ -29,6 +30,7 @@ const NOT_DEMO_MODE: DemoModeContextValue = {
   isLockedByOther: false,
   isLockedByMe: false,
   demoAppStatus: "stopped",
+  chatStatus: "idle",
   chatMessages: [],
   streamingText: "",
   processLogs: [],
@@ -51,6 +53,7 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [demoUrl, setDemoUrl] = React.useState("")
   const [lock, setLock] = React.useState<DemoLockInfo | null>(null)
   const [demoAppStatus, setDemoAppStatus] = React.useState<DemoAppStatus>("stopped")
+  const [chatStatus, setChatStatus] = React.useState<ChatStatus>("idle")
   const [chatMessages, setChatMessages] = React.useState<DemoChatMessage[]>([])
   const [streamingText, setStreamingText] = React.useState("")
   const [processLogs, setProcessLogs] = React.useState<{ stream: string, line: string }[]>([])
@@ -70,6 +73,8 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setDemoUrl(status.demoUrl)
       setLock(status.lockInfo)
       setDemoAppStatus(status.demoAppStatus)
+      // ページを開いた時点で既にAIが処理中の場合もあるため、初期表示に反映する
+      setChatStatus(status.chatStatus ?? "idle")
       setChatMessages(status.chatHistory)
     }
     detect()
@@ -95,6 +100,13 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     connection.on("LockStateChanged", (lockInfo: DemoLockInfo | null) => setLock(lockInfo))
     connection.on("DemoAppStatusChanged", (status: DemoAppStatus) => setDemoAppStatus(status))
+    connection.on("ChatStatusChanged", (status: ChatStatus) => {
+      setChatStatus(status)
+      // claude実行が終わった時点でストリーミング途中のテキストを消す。
+      // 正常時は最終応答のChatMessageAppendedで消えるが、エラー終了時は
+      // それが来ないため、ここで消さないと書きかけの吹き出しが残り続ける。
+      if (status !== "running") setStreamingText("")
+    })
     connection.on("ProcessOutput", (stream: string, line: string) => {
       setProcessLogs(prev => {
         const next = [...prev, { stream, line }]
@@ -165,6 +177,7 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     isLockedByOther: lock != null && lock.ownerClientId !== myClientId,
     isLockedByMe: lock != null && lock.ownerClientId === myClientId,
     demoAppStatus,
+    chatStatus,
     chatMessages,
     streamingText,
     processLogs,
@@ -172,7 +185,7 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     sendChat,
     cancelChat,
     resetDemo,
-  }), [isDemoMode, demoUrl, lock, myClientId, demoAppStatus, chatMessages, streamingText, processLogs, reloadReason, sendChat, cancelChat, resetDemo])
+  }), [isDemoMode, demoUrl, lock, myClientId, demoAppStatus, chatStatus, chatMessages, streamingText, processLogs, reloadReason, sendChat, cancelChat, resetDemo])
 
   return (
     <DemoModeContext.Provider value={value}>
