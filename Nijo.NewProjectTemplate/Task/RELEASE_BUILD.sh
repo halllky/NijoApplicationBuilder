@@ -74,8 +74,18 @@ fi
 # ASP.NET Core のビルド
 
 pushd "$PROJECT_ROOT/WebApi" > /dev/null
-rm -rf "$ASP_NET_CORE_PUBLISH_DIR"
-dotnet publish /p:PublishProfile=本番用ビルド --output "$ASP_NET_CORE_PUBLISH_DIR"
+# publish出力先の掃除は publish プロファイル側の DeleteExistingFiles=true (本番用ビルド.pubxml)が
+# 行うため、ここで事前に rm -rf する必要はない(むしろ消さないほうが不変ファイルの再コピーを
+# 省略でき速い)。
+PUBLISH_ARGS=(/p:PublishProfile=本番用ビルド --output "$ASP_NET_CORE_PUBLISH_DIR")
+if [ "$SKIP_GENERATE" -eq 1 ]; then
+    # --skip-generate 指定時(=共有デモサイトからの自動リビルド)は、依存パッケージの追加が
+    # AIチャットのツール権限で禁止されている(ClaudeAgentService.cs参照)ため、
+    # 直前のビルドで復元済みのパッケージ構成が変わっていない前提が常に成り立つ。
+    # そのため復元をスキップして高速化する。
+    PUBLISH_ARGS+=(--no-restore)
+fi
+dotnet publish "${PUBLISH_ARGS[@]}"
 if [ $? -ne 0 ]; then
     echo "ASP.NET Core のビルドでエラーが発生しました。ビルドを中断します。"
     popd > /dev/null
@@ -88,6 +98,9 @@ rm -f "$ASP_NET_CORE_PUBLISH_DIR/appsettings.json" "$ASP_NET_CORE_PUBLISH_DIR/ap
 
 # ------------------------------------
 # Node.js のビルド
+# tsc(型チェック)とvite build(バンドル)は出力として独立だが、あえて並列実行はしていない。
+# vite内部のesbuild/rollupは既にワーカースレッドで並列化されており、CPUに余裕のない環境
+# (本番はfly.ioのshared-cpu-2x)ではtscを同時に走らせるとCPUを奪い合ってかえって遅くなりうるため。
 
 pushd "$PROJECT_ROOT/client" > /dev/null
 npm run build
