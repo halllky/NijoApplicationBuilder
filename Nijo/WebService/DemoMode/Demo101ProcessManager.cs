@@ -53,23 +53,39 @@ public class Demo101ProcessManager : IDisposable {
         await SetStatusAsync("starting");
 
         var webApiDir = Path.Combine(_options.WorkspaceRoot, "WebApi");
-        _webApi.Start(psi => {
-            psi.FileName = "dotnet";
-            psi.ArgumentList.Add("watch");
-            psi.ArgumentList.Add("--launch-profile");
-            psi.ArgumentList.Add("http");
-            psi.WorkingDirectory = webApiDir;
-        });
+        _logger.LogInformation("demo101 WebApi を起動します。dir={dir}", webApiDir);
+        try {
+            _webApi.Start(psi => {
+                psi.FileName = "dotnet";
+                psi.ArgumentList.Add("watch");
+                psi.ArgumentList.Add("--launch-profile");
+                psi.ArgumentList.Add("http");
+                psi.ArgumentList.Add("--non-interactive");
+                psi.WorkingDirectory = webApiDir;
+                // dotnet watch を非対話・ホットリロード無効で動かす。
+                // TTYの無いコンテナで対話待ちや不要な再起動が起きないようにする。
+                psi.Environment["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "true";
+                psi.Environment["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1";
+                psi.Environment["DOTNET_USE_POLLING_FILE_WATCHER"] = "true";
+            });
+        } catch (Exception ex) {
+            _logger.LogError(ex, "demo101 WebApi の起動に失敗しました。dir={dir}", webApiDir);
+        }
 
         var clientDir = Path.Combine(_options.WorkspaceRoot, "client");
-        _client.Start(psi => {
-            psi.FileName = "npm";
-            psi.ArgumentList.Add("run");
-            psi.ArgumentList.Add("dev");
-            psi.WorkingDirectory = clientDir;
-            psi.Environment["VITE_DEMO_BASE"] = "/demo/";
-            psi.Environment["VITE_API_BASE_URL"] = "/demo-api/";
-        });
+        _logger.LogInformation("demo101 client(vite) を起動します。dir={dir}", clientDir);
+        try {
+            _client.Start(psi => {
+                psi.FileName = "npm";
+                psi.ArgumentList.Add("run");
+                psi.ArgumentList.Add("dev");
+                psi.WorkingDirectory = clientDir;
+                psi.Environment["VITE_DEMO_BASE"] = "/demo/";
+                psi.Environment["VITE_API_BASE_URL"] = "/demo-api/";
+            });
+        } catch (Exception ex) {
+            _logger.LogError(ex, "demo101 client(vite) の起動に失敗しました。dir={dir}", clientDir);
+        }
 
         _ = Task.Run(WaitUntilHealthyAsync);
     }
@@ -93,13 +109,24 @@ public class Demo101ProcessManager : IDisposable {
         // 応答してはじめて "running" とする(WebApiだけ見ていると、viteが
         // ポート競合等で起動失敗していても稼働中と表示されてしまう)。
         while (DateTime.UtcNow < deadline) {
-            if (await RespondsAsync(http, _options.WebApiUrl) && await RespondsAsync(http, _options.ViteUrl)) {
+            var webApiUp = await RespondsAsync(http, _options.WebApiUrl);
+            var viteUp = await RespondsAsync(http, _options.ViteUrl);
+            if (webApiUp && viteUp) {
+                _logger.LogInformation("demo101 が起動しました(WebApi・vite ともに応答)。");
                 await SetStatusAsync("running");
                 return;
             }
             await Task.Delay(TimeSpan.FromSeconds(2));
         }
 
+        // 3分待っても起動しなかった。どちらが上がっていないかをログに残す。
+        var finalWebApi = await RespondsAsync(http, _options.WebApiUrl);
+        var finalVite = await RespondsAsync(http, _options.ViteUrl);
+        _logger.LogError(
+            "demo101 が3分以内に起動しませんでした。WebApi({webApiUrl})={webApi}, vite({viteUrl})={vite}。" +
+            "直前のプロセス出力については上の [webapi]/[client] ログを参照してください。",
+            _options.WebApiUrl, finalWebApi ? "応答あり" : "応答なし",
+            _options.ViteUrl, finalVite ? "応答あり" : "応答なし");
         await SetStatusAsync("error");
     }
 
@@ -124,6 +151,13 @@ public class Demo101ProcessManager : IDisposable {
             if (_recentLogs.Count > MAX_LOG_LINES) {
                 _recentLogs.RemoveAt(0);
             }
+        }
+        // SignalR(画面のログタブ)だけでなくアプリのログ(fly logs等)にも流す。
+        // demo101が起動失敗したときに原因をサーバーログから追えるようにするため。
+        if (std == ProcessExtension.E_STD.StdErr) {
+            _logger.LogWarning("[{stream}] {line}", stream, line);
+        } else {
+            _logger.LogInformation("[{stream}] {line}", stream, line);
         }
         _ = _hub.Clients.All.ProcessOutput(stream, line);
     }
