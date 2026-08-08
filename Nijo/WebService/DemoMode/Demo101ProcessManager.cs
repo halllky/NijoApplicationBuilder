@@ -26,6 +26,13 @@ public class Demo101ProcessManager : IDisposable {
 
     private const int MAX_LOG_LINES = 500;
 
+    /// <summary>
+    /// AIチャットへのビルドエラー差し戻し(<see cref="ClaudeAgentService.RunBuildRepairAsync"/>)に使うため、
+    /// 直近のビルド(コード自動生成 + RELEASE_BUILD.sh)の出力を保持しておく最大行数。
+    /// エラーはログ末尾に出るため、末尾からこの行数だけ保持する。
+    /// </summary>
+    private const int MAX_BUILD_LOG_LINES = 400;
+
     private readonly DemoModeOptions _options;
     private readonly IHubContext<DemoHub, IDemoHubClient> _hub;
     private readonly ILogger<Demo101ProcessManager> _logger;
@@ -33,6 +40,9 @@ public class Demo101ProcessManager : IDisposable {
     private readonly LongRunningProcess _webApi = new();
     private readonly object _logLock = new();
     private readonly List<(string Stream, string Line)> _recentLogs = new();
+
+    private readonly object _buildLogLock = new();
+    private readonly List<string> _lastBuildLog = new();
 
     public Demo101ProcessManager(DemoModeOptions options, IHubContext<DemoHub, IDemoHubClient> hub, ILogger<Demo101ProcessManager> logger) {
         _options = options;
@@ -54,9 +64,22 @@ public class Demo101ProcessManager : IDisposable {
     }
 
     /// <summary>
+    /// 直近のビルド(コード自動生成 + RELEASE_BUILD.sh)の出力ログ(末尾のみ)。
+    /// ビルド失敗時にAIチャットへエラー内容を差し戻すために使う。
+    /// </summary>
+    public string LastBuildLog {
+        get {
+            lock (_buildLogLock) {
+                return string.Join("\n", _lastBuildLog);
+            }
+        }
+    }
+
+    /// <summary>
     /// 起動する。publish済み成果物が無ければ先にビルドする。
     /// </summary>
-    public Task StartAsync() {
+    /// <returns>ビルドに成功しプロセスの起動まで到達したらtrue(起動後のヘルスチェックは待たない)</returns>
+    public Task<bool> StartAsync() {
         return StartInternalAsync(forceRebuild: false);
     }
 
@@ -64,8 +87,16 @@ public class Demo101ProcessManager : IDisposable {
     /// 現在のプロセスを止め、成果物の有無に関わらず必ずフルビルドしなおしてから起動する。
     /// スキーマ変更後・環境リセット後など、ソースが変わった可能性がある場合に使う。
     /// </summary>
-    public Task RebuildAndRestartAsync() {
+    /// <param name="resetDatabase">
+    /// trueの場合、起動前にSQLiteのDBファイルを削除する。DBはファイルが存在しないときだけ
+    /// 起動時に現在のデータモデルから再作成される(WebApi/Program.cs参照)ため、
+    /// AIチャットでdata-modelが変更された場合、古いDBファイルを残したままだと
+    /// テーブル定義の不一致で画面が実行時エラーになる。スキーマ変更起因のリビルドではtrueを渡すこと。
+    /// </param>
+    /// <returns>ビルドに成功しプロセスの起動まで到達したらtrue(起動後のヘルスチェックは待たない)</returns>
+    public Task<bool> RebuildAndRestartAsync(bool resetDatabase = false) {
         Stop();
+        if (resetDatabase) DeleteDatabaseFiles();
         return StartInternalAsync(forceRebuild: true);
     }
 
@@ -73,7 +104,7 @@ public class Demo101ProcessManager : IDisposable {
     /// 現在のプロセスを止めて、成果物があればそのまま(無ければビルドして)起動しなおす。
     /// 手動の「デモ101を再起動」ボタンから呼ばれる。
     /// </summary>
-    public Task RestartAsync() {
+    public Task<bool> RestartAsync() {
         Stop();
         return StartInternalAsync(forceRebuild: false);
     }
@@ -83,20 +114,20 @@ public class Demo101ProcessManager : IDisposable {
         _ = SetStatusAsync("stopped");
     }
 
-    private async Task StartInternalAsync(bool forceRebuild) {
+    private async Task<bool> StartInternalAsync(bool forceRebuild) {
         await SetStatusAsync("starting");
 
         if (!await EnsureBuiltAsync(forceRebuild)) {
             _logger.LogError("demo101のビルドに失敗したため起動できません。上の [release-build] ログを参照してください。");
             await SetStatusAsync("error");
-            return;
+            return false;
         }
 
         var dllPath = FindPublishedDllOrNull();
         if (dllPath == null) {
             _logger.LogError("demo101のpublish済みDLLが見つかりません。");
             await SetStatusAsync("error");
-            return;
+            return false;
         }
 
         var webApiDir = Path.Combine(_options.WorkspaceRoot, "WebApi");
@@ -119,9 +150,12 @@ public class Demo101ProcessManager : IDisposable {
             });
         } catch (Exception ex) {
             _logger.LogError(ex, "demo101 WebApi の起動に失敗しました。dll={dll}", dllPath);
+            await SetStatusAsync("error");
+            return false;
         }
 
         _ = Task.Run(WaitUntilHealthyAsync);
+        return true;
     }
 
     /// <summary>
@@ -134,15 +168,21 @@ public class Demo101ProcessManager : IDisposable {
             return true;
         }
 
+        lock (_buildLogLock) {
+            _lastBuildLog.Clear();
+        }
+
         _logger.LogInformation("demo101 のソースコードを自動生成します。");
         if (!GenerateCode()) {
             _logger.LogError("demo101 のソースコード自動生成に失敗しました。");
+            AppendBuildLog("demo101 のソースコード自動生成(nijo generate相当)に失敗しました。");
             return false;
         }
 
         var buildScript = Path.Combine(_options.WorkspaceRoot, "Task", "RELEASE_BUILD.sh");
         if (!File.Exists(buildScript)) {
             _logger.LogError("ビルドスクリプトが見つかりません: {path}", buildScript);
+            AppendBuildLog($"ビルドスクリプトが見つかりません: {buildScript}");
             return false;
         }
 
@@ -158,6 +198,7 @@ public class Demo101ProcessManager : IDisposable {
             psi.Environment["VITE_DEMO_BASE"] = "/demo/";
             psi.Environment["VITE_API_BASE_URL"] = "/demo-api/";
         }, (std, line) => {
+            AppendBuildLog(line);
             if (std == ProcessExtension.E_STD.StdErr) {
                 _logger.LogWarning("[release-build] {line}", line);
             } else {
@@ -167,6 +208,7 @@ public class Demo101ProcessManager : IDisposable {
 
         if (exitCode != 0) {
             _logger.LogError("demo101 のビルドが失敗しました(exit code={code})。", exitCode);
+            AppendBuildLog($"demo101 のビルドが失敗しました(exit code={exitCode})。");
             return false;
         }
 
@@ -178,23 +220,81 @@ public class Demo101ProcessManager : IDisposable {
         return true;
     }
 
+    private void AppendBuildLog(string line) {
+        lock (_buildLogLock) {
+            _lastBuildLog.Add(line);
+            if (_lastBuildLog.Count > MAX_BUILD_LOG_LINES) {
+                _lastBuildLog.RemoveAt(0);
+            }
+        }
+    }
+
     /// <summary>
     /// `nijo generate` 相当の処理を、サブプロセスを起動せずこのプロセス内で直接実行する。
+    /// スキーマ不正等のエラーメッセージはAIチャットへの差し戻しに使うためビルドログにも取り込む。
     /// </summary>
     private bool GenerateCode() {
         if (!GeneratedProject.TryOpen(_options.WorkspaceRoot, out var project, out var error)) {
             _logger.LogError("demo101のプロジェクトを開けませんでした: {error}", error);
+            AppendBuildLog($"demo101のプロジェクトを開けませんでした: {error}");
             return false;
         }
 
-        var rule = SchemaParseRule.Default();
-        var xDocument = XDocument.Load(project.SchemaXmlPath);
-        var parseContext = new SchemaParseContext(xDocument, rule, GeneratedProjectOptions.Parse(xDocument, true));
-        var renderingOptions = new CodeRenderingOptions {
-            AllowNotImplemented = false,
-        };
+        try {
+            var rule = SchemaParseRule.Default();
+            var xDocument = XDocument.Load(project.SchemaXmlPath);
+            var parseContext = new SchemaParseContext(xDocument, rule, GeneratedProjectOptions.Parse(xDocument, true));
+            var renderingOptions = new CodeRenderingOptions {
+                AllowNotImplemented = false,
+            };
 
-        return project.GenerateCode(parseContext, renderingOptions, _logger);
+            var teeLogger = new BuildLogCapturingLogger(_logger, AppendBuildLog);
+            return project.GenerateCode(parseContext, renderingOptions, teeLogger);
+        } catch (Exception ex) {
+            // nijo.xml が整形式でない(XDocument.Loadで例外)等。AIが修正できるようログに残す。
+            _logger.LogError(ex, "demo101 のソースコード自動生成で例外が発生しました。");
+            AppendBuildLog($"ソースコード自動生成で例外が発生しました: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 元のロガーへ流しつつ、警告以上のメッセージをビルドログにも取り込むロガー。
+    /// コード自動生成(スキーマ解析)のエラー内容をAIチャットへ差し戻せるようにするためのもの。
+    /// </summary>
+    private class BuildLogCapturingLogger : ILogger {
+        public BuildLogCapturingLogger(ILogger inner, Action<string> capture) {
+            _inner = inner;
+            _capture = capture;
+        }
+        private readonly ILogger _inner;
+        private readonly Action<string> _capture;
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => _inner.BeginScope(state);
+        public bool IsEnabled(LogLevel logLevel) => _inner.IsEnabled(logLevel);
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) {
+            _inner.Log(logLevel, eventId, state, exception, formatter);
+            if (logLevel >= LogLevel.Warning) {
+                _capture(formatter(state, exception) + (exception == null ? "" : $" ({exception.Message})"));
+            }
+        }
+    }
+
+    /// <summary>
+    /// ワークスペース直下のSQLiteのDBファイル(DEBUG.sqlite3とそのWALファイル等)を削除する。
+    /// DBはファイルが存在しないとき、次回起動時に現在のデータモデルから再作成され
+    /// ダミーデータが投入される(WebApi/Program.cs参照)。
+    /// スキーマ変更後に古いテーブル定義のDBが残ることによる実行時エラーを防ぐためのもの。
+    /// </summary>
+    private void DeleteDatabaseFiles() {
+        try {
+            foreach (var file in Directory.GetFiles(_options.WorkspaceRoot, "*.sqlite3*")) {
+                File.Delete(file);
+                _logger.LogInformation("スキーマ変更に伴いDBファイルを削除しました(次回起動時に再作成されます): {file}", file);
+            }
+        } catch (Exception ex) {
+            _logger.LogWarning(ex, "DBファイルの削除に失敗しました。古いテーブル定義のまま起動する可能性があります。");
+        }
     }
 
     private bool IsBuilt() {

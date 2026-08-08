@@ -23,6 +23,14 @@ public class DemoEndpointHandlers {
     /// </summary>
     private const int MAX_CHAT_MESSAGE_LENGTH = 4000;
 
+    /// <summary>
+    /// 自動ビルド失敗時にAIへエラーを差し戻して修正させる最大回数。
+    /// AIはビルドを自分で実行できない(Bash不許可)ため、ビルド結果の差し戻しがないと
+    /// コンパイルエラーを残したままデモが壊れる。一方、無制限に繰り返すと
+    /// APIコストとロック保持時間が暴走するため上限を設ける。
+    /// </summary>
+    private const int MAX_BUILD_REPAIR_ATTEMPTS = 2;
+
     private readonly DemoModeOptions _options;
     private readonly DemoLockService _lockService;
     private readonly DemoClientRegistry _registry;
@@ -53,9 +61,32 @@ public class DemoEndpointHandlers {
         // チャットの結果nijo.xmlが実際に変更されたときだけ、フルリビルド
         // (nijo generate + dotnet publish + npm run build。RELEASE_BUILD.sh参照)して
         // デモ101を再起動したうえで全員へ強制リロードを配信する。
+        // ビルドが失敗した場合は、エラーログをAIに差し戻して修正させ、再度ビルドする。
+        // (このハンドラはチャットのロックを保持したまま RunAsync の延長で実行されるため、
+        //  修復ループ中に他のユーザーの操作が割り込むことはない)
         _claudeAgent.SchemaChanged += async () => {
-            await _processManager.RebuildAndRestartAsync();
-            await _hub.Clients.All.ForceReload("AIがスキーマを更新しました");
+            for (var attempt = 0; ; attempt++) {
+                // スキーマが変わった場合、古いデータモデルのDBファイルを残すと画面が
+                // 実行時エラーになるため、DBも初期化する(起動時にダミーデータから再作成される)。
+                var built = await _processManager.RebuildAndRestartAsync(resetDatabase: true);
+                if (built) {
+                    await _hub.Clients.All.ForceReload("AIがスキーマを更新しました");
+                    return;
+                }
+                if (attempt >= MAX_BUILD_REPAIR_ATTEMPTS) {
+                    await _claudeAgent.NotifyServiceMessageAsync(
+                        "自動ビルドの修復を試みましたが失敗しました。デモアプリが停止している可能性があります。" +
+                        "「環境をリセット」ボタンで初期状態に戻すことができます。");
+                    return;
+                }
+                await _claudeAgent.NotifyServiceMessageAsync(
+                    $"自動ビルドが失敗しました。AIがエラー内容を確認して修正を試みます… ({attempt + 1}/{MAX_BUILD_REPAIR_ATTEMPTS + 1}回目のビルド)");
+                var completed = await _claudeAgent.RunBuildRepairAsync(_processManager.LastBuildLog);
+                if (!completed) {
+                    // ユーザーが中断した場合はループをやめる(環境はリセットボタンで復旧できる)
+                    return;
+                }
+            }
         };
     }
 
