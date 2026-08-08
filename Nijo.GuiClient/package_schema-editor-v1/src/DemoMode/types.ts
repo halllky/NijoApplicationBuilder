@@ -13,7 +13,7 @@ export type DemoChatMessage = {
 
 export type DemoAppStatus = "stopped" | "starting" | "running" | "error"
 
-/** AIチャット処理の状態。running: claude実行中, building: スキーマ変更の反映ビルド中 */
+/** AIチャット処理の状態。running: claude実行中, building: 変更の反映ビルド中 */
 export type ChatStatus = "idle" | "running" | "building"
 
 export type DemoStatusResponse = {

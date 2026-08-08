@@ -6,7 +6,7 @@ namespace Nijo.WebService.DemoMode;
 /// 排他ロックの現在の保持状況。
 /// </summary>
 /// <param name="OwnerClientId">ロックを取得したクライアントのID</param>
-/// <param name="Reason">ロックの理由(画面表示用。例: "AIがスキーマを編集中")</param>
+/// <param name="Reason">ロックの理由(画面表示用。例: "AIが編集中")</param>
 /// <param name="AcquiredAtUtc">ロック取得時刻</param>
 public record DemoLockInfo(string OwnerClientId, string Reason, DateTime AcquiredAtUtc);
 

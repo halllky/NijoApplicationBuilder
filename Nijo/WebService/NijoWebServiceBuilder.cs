@@ -112,7 +112,7 @@ public class NijoWebServiceBuilder {
             app.MapHub<DemoHub>("/api/demo/hub");
 
             // 統合された共有デモサイトのエンドポイントハンドラ。
-            // (このインスタンス化のタイミングで ClaudeAgentService.SchemaChanged の購読も行われる)
+            // (このインスタンス化のタイミングで ClaudeAgentService.WorkspaceChanged の購読も行われる)
             var demoHandlers = app.Services.GetRequiredService<DemoEndpointHandlers>();
 
             app.MapGet("/api/demo/status", demoHandlers.HandleStatus);

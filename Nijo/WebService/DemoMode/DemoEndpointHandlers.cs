@@ -58,22 +58,22 @@ public class DemoEndpointHandlers {
         _hub = hub;
         _logger = logger;
 
-        // チャットの結果nijo.xmlが実際に変更されたときだけ、フルリビルド
+        // チャットの結果ワークスペース内のソースが実際に変更されたときだけ、フルリビルド
         // (nijo generate + dotnet publish + npm run build。RELEASE_BUILD.sh参照)して
         // デモ101を再起動したうえで全員へ強制リロードを配信する。
         // ビルドが失敗した場合は、エラーログをAIに差し戻して修正させ、再度ビルドする。
         // (このハンドラはチャットのロックを保持したまま RunAsync の延長で実行されるため、
         //  修復ループ中に他のユーザーの操作が割り込むことはない)
-        _claudeAgent.SchemaChanged += async () => {
+        _claudeAgent.WorkspaceChanged += async changes => {
             for (var attempt = 0; ; attempt++) {
                 // チャット処理中である旨の表示を「ビルド中」に切り替える(claude実行中はRunClaudeAsyncが"running"に戻す)
                 await _claudeAgent.SetChatStatusAsync("building");
 
-                // スキーマが変わった場合、古いデータモデルのDBファイルを残すと画面が
-                // 実行時エラーになるため、DBも初期化する(起動時にダミーデータから再作成される)。
-                var built = await _processManager.RebuildAndRestartAsync(resetDatabase: true);
+                // スキーマ・ダミーデータ生成が変わった場合だけDBも初期化する(起動時にダミーデータから
+                // 再作成される)。手書きコードのみの変更ではユーザーが入力したデータを保持する。
+                var built = await _processManager.RebuildAndRestartAsync(resetDatabase: changes.RequiresDatabaseReset);
                 if (built) {
-                    await _hub.Clients.All.ForceReload("AIがスキーマを更新しました");
+                    await _hub.Clients.All.ForceReload("AIがデモアプリを更新しました");
                     return;
                 }
                 if (attempt >= MAX_BUILD_REPAIR_ATTEMPTS) {
@@ -132,7 +132,7 @@ public class DemoEndpointHandlers {
         }
 
         var clientId = DemoClientIdHeader.GetClientId(context);
-        var handle = await _lockService.TryAcquireAsync(clientId, "AIがスキーマを編集中");
+        var handle = await _lockService.TryAcquireAsync(clientId, "AIが編集中");
         if (handle == null) {
             context.Response.StatusCode = StatusCodes.Status423Locked;
             await context.Response.WriteAsJsonAsync(new {
