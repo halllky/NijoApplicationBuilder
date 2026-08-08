@@ -89,20 +89,28 @@ public class Demo101ProcessManager : IDisposable {
         using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
         var deadline = DateTime.UtcNow.AddMinutes(3);
 
+        // ユーザーが閲覧するのはviteが返す画面なので、WebApiとviteの両方が
+        // 応答してはじめて "running" とする(WebApiだけ見ていると、viteが
+        // ポート競合等で起動失敗していても稼働中と表示されてしまう)。
         while (DateTime.UtcNow < deadline) {
-            try {
-                var response = await http.GetAsync(_options.WebApiUrl);
-                if (response.IsSuccessStatusCode || (int)response.StatusCode < 500) {
-                    await SetStatusAsync("running");
-                    return;
-                }
-            } catch {
-                // まだ起動していない。再試行する。
+            if (await RespondsAsync(http, _options.WebApiUrl) && await RespondsAsync(http, _options.ViteUrl)) {
+                await SetStatusAsync("running");
+                return;
             }
             await Task.Delay(TimeSpan.FromSeconds(2));
         }
 
         await SetStatusAsync("error");
+    }
+
+    private static async Task<bool> RespondsAsync(HttpClient http, string url) {
+        try {
+            var response = await http.GetAsync(url);
+            return response.IsSuccessStatusCode || (int)response.StatusCode < 500;
+        } catch {
+            // まだ起動していない
+            return false;
+        }
     }
 
     private async Task SetStatusAsync(string status) {

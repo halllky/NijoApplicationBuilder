@@ -45,7 +45,10 @@ export const SchemaCandidatesProvider = ({ watch, children }: {
     abortControllerRef.current = abortController;
     setIsLoading(true);
     try {
-      const url = new URL(`${SERVER_DOMAIN}/api/types`);
+      // SERVER_DOMAIN は本番ビルドでは空文字(同一オリジン)のため、baseを渡さないと
+      // new URL('/api/types') が Invalid URL で例外になる。
+      // SERVER_DOMAINが絶対URLの場合(ローカル開発時)はbaseは無視される。
+      const url = new URL(`${SERVER_DOMAIN}/api/types`, window.location.origin);
       url.searchParams.set(NIJOUI_CLIENT_ROUTE_PARAMS.QUERY_PROJECT_DIR, projectDir ?? '');
 
       const res = await fetch(url.toString(), {

@@ -18,4 +18,5 @@ export type DemoStatusResponse = {
   demoUrl: string
   demoAppStatus: DemoAppStatus
   lastActivityUtc: string
+  chatHistory: DemoChatMessage[]
 }

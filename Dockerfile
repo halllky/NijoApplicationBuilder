@@ -39,24 +39,28 @@ RUN apt-get update \
 RUN useradd --create-home --shell /bin/bash demo
 COPY --from=nijo-build --chown=demo:demo /out /opt/nijo
 COPY --chown=demo:demo "demo/101_販売管理システム" /app/workspace
+COPY --chmod=755 docker/entrypoint.sh /entrypoint.sh
 
 WORKDIR /app/workspace
 
 # ビルドキャッシュ(NuGet/npm)をイメージ層に焼き込み、
 # 起動時・リセット後の再ビルド時間を短縮する。
+#
+# ⚠️ 実行時ユーザー(demo)と同じユーザーで実行すること(USER demo より後に置くこと)。
+# rootで実行すると node_modules / bin / obj / .git がroot所有になり、実行時に
+#   - viteが node_modules/.vite を書けずEACCESで即死(→/demoが502)
+#   - dotnet watch がobjへ書き込めずビルド失敗で即死
+#   - gitが「dubious ownership」で失敗しリセットが空振り
+# する。git config --global も /home/demo/.gitconfig に書かれる必要がある。
+USER demo
 RUN cd client && npm ci \
     && cd ../WebApi && dotnet build \
+    && cd .. \
     && git config --global user.email "demo@example.com" \
     && git config --global user.name "demo" \
-    && git config --global --add safe.directory /app/workspace \
     && git init \
     && git add -A \
     && git commit -m "pristine state (image build)"
-
-COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
-USER demo
 
 ENTRYPOINT ["/entrypoint.sh"]
 

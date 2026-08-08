@@ -1,8 +1,8 @@
 import * as React from "react"
 import * as signalR from "@microsoft/signalr"
 import { SERVER_DOMAIN } from "../main"
-import { demoFetchHeaders, getDemoClientId } from "./clientId"
-import { DemoAppStatus, DemoChatMessage, DemoLockInfo, DemoStatusResponse } from "./types"
+import { demoFetchHeaders, fetchDemoStatus, getDemoClientId } from "./clientId"
+import { DemoAppStatus, DemoChatMessage, DemoLockInfo } from "./types"
 
 type DemoModeContextValue = {
   isDemoMode: boolean
@@ -63,21 +63,14 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     let cancelled = false
 
     const detect = async () => {
-      try {
-        const response = await fetch(`${SERVER_DOMAIN}/api/demo/status`, { headers: demoFetchHeaders() })
-        const contentType = response.headers.get("content-type") ?? ""
-        if (!response.ok || !contentType.includes("application/json")) return
+      const status = await fetchDemoStatus(SERVER_DOMAIN)
+      if (cancelled || !status) return
 
-        const status: DemoStatusResponse = await response.json()
-        if (cancelled || !status.demoMode) return
-
-        setIsDemoMode(true)
-        setDemoUrl(status.demoUrl)
-        setLock(status.lockInfo)
-        setDemoAppStatus(status.demoAppStatus)
-      } catch {
-        // ネットワークエラー等は非デモモード扱いにする
-      }
+      setIsDemoMode(true)
+      setDemoUrl(status.demoUrl)
+      setLock(status.lockInfo)
+      setDemoAppStatus(status.demoAppStatus)
+      setChatMessages(status.chatHistory)
     }
     detect()
 
@@ -89,7 +82,14 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (!isDemoMode) return
 
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl(`${SERVER_DOMAIN}/api/demo/hub?clientId=${encodeURIComponent(myClientId)}`)
+      .withUrl(`${SERVER_DOMAIN}/api/demo/hub?clientId=${encodeURIComponent(myClientId)}`, {
+        // negotiate(HTTP) → WebSocket の2段階だと、ロードバランサ配下で
+        // 2つのリクエストが別サーバーに振り分けられたときに
+        // "connection ID is not present on the server" で接続失敗する。
+        // 最初からWebSocket一本で接続してこの問題を回避する。
+        skipNegotiation: true,
+        transport: signalR.HttpTransportType.WebSockets,
+      })
       .withAutomaticReconnect()
       .build()
 

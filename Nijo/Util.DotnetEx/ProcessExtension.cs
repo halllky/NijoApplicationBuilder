@@ -93,35 +93,24 @@ public static class ProcessExtension {
     public static string EnsureKill(this Process process) {
         int? pid = null;
         try {
-            if (process.HasExited) return "Process is already exited. taskkill is skipped.";
+            if (process.HasExited) return "Process is already exited. kill is skipped.";
 
             pid = process.Id;
 
-            var kill = new Process();
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                kill.StartInfo.FileName = "taskkill";
-                kill.StartInfo.ArgumentList.Add("/PID");
-                kill.StartInfo.ArgumentList.Add(pid.ToString()!);
-                kill.StartInfo.ArgumentList.Add("/T");
-                kill.StartInfo.ArgumentList.Add("/F");
-            } else {
-                kill.StartInfo.FileName = "kill";
-                kill.StartInfo.ArgumentList.Add(pid.ToString()!);
-            }
-            kill.StartInfo.RedirectStandardOutput = true;
-            kill.StartInfo.RedirectStandardError = true;
+            // npm run dev → vite、dotnet watch → アプリ本体 のような親子構成のプロセスを
+            // 子も含めて確実に終了させる。親だけをkillすると孤児になった子がポートを
+            // 掴んだままになり、次回起動が strictPort 等で失敗する。
+            process.Kill(entireProcessTree: true);
 
-            kill.Start();
-            kill.WaitForExit(TimeSpan.FromSeconds(5));
-
-            if (kill.ExitCode == 0) {
-                return $"Success to task kill (PID = {pid})";
-            } else {
-                return $"Exit code of TASKKILL is '{kill.ExitCode}' (PID = {pid})";
+            // ポートが解放される前に次のプロセスを起動してしまわないよう、終了を待つ
+            if (!process.WaitForExit(TimeSpan.FromSeconds(5))) {
+                return $"Kill signal sent but the process did not exit within 5 seconds (PID = {pid})";
             }
+
+            return $"Success to kill process tree (PID = {pid})";
 
         } catch (Exception ex) {
-            return $"Failed to task kill (PID = {pid}): {ex.Message}";
+            return $"Failed to kill process tree (PID = {pid}): {ex.Message}";
         }
     }
 

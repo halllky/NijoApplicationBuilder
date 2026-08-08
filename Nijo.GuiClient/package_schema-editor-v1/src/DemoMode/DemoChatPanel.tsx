@@ -89,6 +89,7 @@ export const DemoChatPanel: React.FC = () => {
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter") handleSend() }}
                 disabled={isLockedByOther || sending}
+                maxLength={4000}
                 placeholder="AIに指示を入力..."
                 className="flex-1 border rounded px-2 py-1 text-sm disabled:bg-gray-100"
               />

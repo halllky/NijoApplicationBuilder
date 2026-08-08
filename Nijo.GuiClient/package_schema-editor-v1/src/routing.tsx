@@ -5,6 +5,8 @@ import { NowLoading } from "@nijo/ui-components/layout"
 import { loadSchema } from "./useSaveLoad"
 import { ProjectSelector } from "./ProjectSelector/ProjectSelector"
 import ProjectPage from "./ProjectPage"
+import { fetchDemoStatus } from "./DemoMode/clientId"
+import { SERVER_DOMAIN } from "./main"
 
 /** WindowsForms埋め込みアプリまたはそのデバッグ用のルーティング */
 export const getRouterForNijoUi = (): ReactRouter.RouteObject[] => {
@@ -23,8 +25,10 @@ const rootLoader = async ({ request }: ReactRouter.LoaderFunctionArgs) => {
   const url = new URL(request.url)
   const projectDir = url.searchParams.get(NIJOUI_CLIENT_ROUTE_PARAMS.QUERY_PROJECT_DIR)
 
-  // クエリパラメータでプロジェクト情報が無い場合
-  if (!projectDir) {
+  // クエリパラメータでプロジェクト情報が無い場合。
+  // ただし共有デモサイトモードでは pj クエリパラメータは無視され、
+  // サーバー側で常に固定のプロジェクトが開かれるため、そのまま読み込みへ進む。
+  if (!projectDir && !(await fetchDemoStatus(SERVER_DOMAIN))) {
     return null
   }
 

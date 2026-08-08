@@ -110,7 +110,7 @@ fly secrets set ANTHROPIC_API_KEY=sk-ant-xxxxx
 fly secrets set DEMO_IDLE_RESET_MINUTES=30
 
 # デプロイ
-fly deploy
+fly deploy --ha=false
 ```
 
 注意点:

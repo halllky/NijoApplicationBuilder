@@ -57,10 +57,9 @@ public class NijoWebServiceBuilder {
             builder.Services.AddSingleton<DemoClientRegistry>();
             builder.Services.AddSingleton<DemoLockService>();
             builder.Services.AddSingleton<DemoActivityTracker>();
-            builder.Services.AddSingleton<DemoStatusEndpointHandler>();
             builder.Services.AddSingleton<Demo101ProcessManager>();
             builder.Services.AddSingleton<ClaudeAgentService>();
-            builder.Services.AddSingleton<DemoResetService>();
+            builder.Services.AddSingleton<DemoEndpointHandlers>();
             builder.Services.AddHostedService<IdleResetService>();
 
             var (routes, clusters) = DemoReverseProxyConfig.Build(demo);
@@ -111,40 +110,16 @@ public class NijoWebServiceBuilder {
                 reloadReason: "他のユーザーがコードを生成しました"));
 
             app.MapHub<DemoHub>("/api/demo/hub");
-            app.MapGet("/api/demo/status", context =>
-                app.Services.GetRequiredService<DemoStatusEndpointHandler>().Handle(context));
 
-            // チャット完了後、nijo.xmlが変更されていればコード生成して全員へ強制リロードを配信する
-            var claudeAgent = app.Services.GetRequiredService<ClaudeAgentService>();
-            claudeAgent.SchemaMayHaveChanged += async () => {
-                SchemaGenerateHelper.TryGenerate(demo.WorkspaceRoot, logger);
-                await hub.Clients.All.ForceReload("AIがスキーマを更新しました");
-            };
+            // 統合された共有デモサイトのエンドポイントハンドラ。
+            // (このインスタンス化のタイミングで ClaudeAgentService.SchemaChanged の購読も行われる)
+            var demoHandlers = app.Services.GetRequiredService<DemoEndpointHandlers>();
 
-            app.MapPost("/api/demo/chat", DemoChatEndpointHandlers.HandleChat(
-                lockService, claudeAgent, logger));
-            app.MapPost("/api/demo/chat/cancel", DemoChatEndpointHandlers.HandleCancel(claudeAgent));
-
-            app.MapPost("/api/demo/reset", async context => {
-                var clientId = DemoClientIdHeader.GetClientId(context);
-                var ok = await app.Services.GetRequiredService<DemoResetService>().ResetAsync(clientId);
-                if (!ok) {
-                    context.Response.StatusCode = StatusCodes.Status423Locked;
-                    await context.Response.WriteAsJsonAsync(new { message = "他のユーザーまたはAIが編集中です" });
-                    return;
-                }
-                await HttpResponseHelper.WriteSuccessMessageAsync(context, "reset");
-            });
-
-            app.MapPost("/api/demo/app/restart", DemoLocking.WithLock(
-                lockService, registry, hub,
-                async context => {
-                    await app.Services.GetRequiredService<Demo101ProcessManager>().RestartAsync();
-                    await HttpResponseHelper.WriteSuccessMessageAsync(context, "restarted");
-                },
-                reason: "デモ101を再起動中",
-                broadcastReloadOnSuccess: true,
-                reloadReason: "デモ101が再起動されました"));
+            app.MapGet("/api/demo/status", demoHandlers.HandleStatus);
+            app.MapPost("/api/demo/chat", demoHandlers.HandleChat);
+            app.MapPost("/api/demo/chat/cancel", demoHandlers.HandleChatCancel);
+            app.MapPost("/api/demo/reset", demoHandlers.HandleReset);
+            app.MapPost("/api/demo/app/restart", demoHandlers.HandleRestart());
 
             // 起動時にデモ101(WebApi + client)を立ち上げる
             app.Lifetime.ApplicationStarted.Register(() => {

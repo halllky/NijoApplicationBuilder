@@ -17,17 +17,17 @@ public class IdleResetService : BackgroundService {
 
     private readonly DemoModeOptions _options;
     private readonly DemoActivityTracker _activityTracker;
-    private readonly DemoResetService _resetService;
+    private readonly DemoEndpointHandlers _endpointHandlers;
     private readonly ILogger<IdleResetService> _logger;
 
     public IdleResetService(
         DemoModeOptions options,
         DemoActivityTracker activityTracker,
-        DemoResetService resetService,
+        DemoEndpointHandlers endpointHandlers,
         ILogger<IdleResetService> logger) {
         _options = options;
         _activityTracker = activityTracker;
-        _resetService = resetService;
+        _endpointHandlers = endpointHandlers;
         _logger = logger;
     }
 
@@ -45,7 +45,7 @@ public class IdleResetService : BackgroundService {
             if (!await IsWorkspaceDirtyAsync(stoppingToken)) continue;
 
             _logger.LogInformation("アイドル状態が{minutes}分続いたため環境をリセットします。", _options.IdleResetMinutes);
-            await _resetService.ResetAsync("system:idle-reset");
+            await _endpointHandlers.ResetAsync("system:idle-reset");
         }
     }
 
