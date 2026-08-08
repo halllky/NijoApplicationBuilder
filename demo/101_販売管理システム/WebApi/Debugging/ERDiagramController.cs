@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 namespace MyApp.WebApi.Debugging;
 
 [ApiController]
-[Route("/debug/er-diagram")]
+[Route("api/debug/er-diagram")]
 public class ERDiagramController : ControllerBase {
 
     private const string SAVE_FILE_NAME = "ERDiagram.layout.json";

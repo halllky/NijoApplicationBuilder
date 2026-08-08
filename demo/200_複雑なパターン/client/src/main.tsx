@@ -40,7 +40,7 @@ function App() {
 
     setIsRecreating(true)
     try {
-      const response = await callAspNetCoreApiAsync('example/destroy-and-recreate-database', {
+      const response = await callAspNetCoreApiAsync('api/example/destroy-and-recreate-database', {
         method: 'POST',
       })
 

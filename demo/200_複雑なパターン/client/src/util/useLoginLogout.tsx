@@ -48,7 +48,7 @@ export function LoginUserProvider({ children }: { children: React.ReactNode }) {
       setInitializing(false)
       return
     }
-    callAspNetCoreApiAsync("example/login-status", { method: "GET" })
+    callAspNetCoreApiAsync("api/example/login-status", { method: "GET" })
       .then(res => {
         if (res.ok && res.status !== 204) return res.json() as Promise<ログインユーザー情報>
         return null
@@ -66,7 +66,7 @@ export function LoginUserProvider({ children }: { children: React.ReactNode }) {
   const contextValue = React.useMemo((): LoginUserContextType => {
     const loginAsync = async (userId: string, password: string): Promise<string | null> => {
       try {
-        const res = await callAspNetCoreApiAsync("example/login", {
+        const res = await callAspNetCoreApiAsync("api/example/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userId, password }),
@@ -86,7 +86,7 @@ export function LoginUserProvider({ children }: { children: React.ReactNode }) {
 
     const logoutAsync = async () => {
       try {
-        await callAspNetCoreApiAsync("example/logout", { method: "POST" })
+        await callAspNetCoreApiAsync("api/example/logout", { method: "POST" })
       } catch { /* ignore */ }
       sessionStorage.removeItem(SESSION_STORAGE_KEY)
       setLoginUser(null)

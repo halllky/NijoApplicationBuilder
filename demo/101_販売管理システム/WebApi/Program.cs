@@ -17,19 +17,6 @@ builder.Services.AddControllers(options => {
 // swagger。デバッグのためにこのアプリで定義されているエンドポイントを一覧する
 builder.Services.AddSwaggerGen();
 
-// CORS設定
-builder.Services.AddCors(options => {
-    // 開発環境ではViteからのリクエストを許可
-    if (builder.Environment.IsDevelopment()) {
-        options.AddDefaultPolicy(policy => {
-            policy.SetIsOriginAllowed(origin => new Uri(origin).Host == "localhost") // localhostであればポート問わず許可
-                  .AllowAnyMethod()
-                  .AllowAnyHeader()
-                  .AllowCredentials(); // クライアント側の credentials: 'include' に対応するために必須
-        });
-    }
-});
-
 // アプリケーションサービス層のDI設定
 var basePath = Path.GetFullPath(builder.Environment.ContentRootPath);
 OverridedApplicationService.ConfigureServices(builder.Services, basePath);
@@ -74,9 +61,6 @@ if (app.Environment.IsDevelopment()) {
         }
     });
 }
-
-// CORSミドルウェアを追加
-app.UseCors();
 
 app.MapDefaultControllerRoute();
 

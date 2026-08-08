@@ -21,7 +21,7 @@ const apiResponse = document.querySelector<HTMLDivElement>('#api-response')!
 apiButton.addEventListener('click', async () => {
   try {
     apiResponse.textContent = '読み込み中...'
-    const response = await callAspNetCoreApiAsync('/example', {
+    const response = await callAspNetCoreApiAsync('/api/example', {
       method: 'GET'
     })
 
@@ -39,7 +39,7 @@ const recreateDbButton = document.querySelector<HTMLButtonElement>('#recreate-db
 recreateDbButton.addEventListener('click', async () => {
   try {
     apiResponse.textContent = 'DB再作成中...'
-    const response = await callAspNetCoreApiAsync('/example/destroy-and-recreate-database', {
+    const response = await callAspNetCoreApiAsync('/api/example/destroy-and-recreate-database', {
       method: 'POST'
     })
     if (response.ok) {

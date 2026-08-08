@@ -20,7 +20,7 @@ export default function デバッグメニュー() {
       // ログイン情報も消えるので一旦ログアウト
       await logoutAsync()
 
-      const res = await callAspNetCoreApiAsync('/example/destroy-and-recreate-database', { method: 'POST' })
+      const res = await callAspNetCoreApiAsync('/api/example/destroy-and-recreate-database', { method: 'POST' })
       if (res.ok) {
         alert("データベースを再作成しました。")
       } else {

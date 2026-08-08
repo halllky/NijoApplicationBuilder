@@ -26,47 +26,69 @@ localhost 側の実装方針（iframe + postMessage ブリッジ、生成コー�
 ポートの動的割当・machine のオーケストレーション・プロジェクト単位の隔離は不要になる。
 代わりに以下の 4 点が主要な論点となる。
 
-### 1.3 関連する既存実装の状態
+### 1.3 関連する既存実装の状態（オリジン統一は実施済み）
+
+生成テンプレート・全 demo（000/101/200）に対して、通常デバッグ時のオリジン統一を実施済み。
 
 | 対象 | 現状 |
 |---|---|
-| エディタの配信 | `Nijo/WebService/NijoWebServiceBuilder.cs` が単一 HTML を埋め込みリソースとして返す。dev 時 `localhost:5176` / serve 時 `localhost:5001` |
-| プレビュー対象 | `demo/101_販売管理システム/client` → `vite --port 5173 --host` |
-| 生成アプリの API 呼び出し | `demo/101_販売管理システム/client/src/example/callAspNetCoreApiAsync.ts` が DEV 時 `http://localhost:5290/` 決め打ち、`credentials: 'include'` |
+| エディタの配信 | `Nijo/WebService/NijoWebServiceBuilder.cs` が単一 HTML を埋め込みリソースとして返す。dev 時 `localhost:5176` / serve 時 `localhost:5001`。**API は `/api/*` 配下**（`/api/load` 等） |
+| 生成アプリのデバッグ入口 | `client` → `vite --port 5173 --host`（変更なし）。**`vite.config.ts` の `server.proxy` が `/api/*` を ASP.NET Core (`:5290`) へ転送**するため、ブラウザは常に `localhost:5173` のみを見る |
+| 生成アプリの API 呼び出し | `callAspNetCoreApiAsync.ts` は環境分岐を持たない。常にルート相対パス（`/api/...`）で `fetch`、`credentials: 'same-origin'` |
+| 生成アプリの CORS 設定 | `WebApi/Program.cs` の開発用 CORS 設定は撤去済み（同一オリジンのため不要） |
 | React / Vite | React 19.2 / Vite 7.3（モノレポ共通の root node_modules から解決） |
+
+**この結果、生成アプリ側は「ローカルデバッグでも本番でもサーバー URL の環境差異がない」状態になっている。**
+fly.io 側で必要な作業は、この前提の上に「iframe 埋め込み用の外側の振り分け」を足すことに縮小された。
 
 ---
 
-## 2. 実装上の必須事項：オリジン統一
+## 2. fly.io 環境での残課題：iframe 埋め込み時の振り分け
 
 fly.io 環境では、以下 2 つの理由により**オリジンを統一しない限り成立しない**。
 
 - **混在コンテンツ**: `https://` のエディタから `http://localhost:*` は iframe 読み込みごとブラウザに拒否される。
-- **3rd-party cookie**: `callAspNetCoreApiAsync` は `credentials: 'include'` で Cookie を送るが、クロスサイト iframe 内ではブロックされる。
+- **3rd-party cookie**: クロスサイト iframe 内では Cookie がブロックされる（`same-origin` 指定なので特に顕著）。
+
+生成アプリ側の `callAspNetCoreApiAsync` は既にルート相対 `/api/...` に統一済みのため、
+fly.io 側で追加の環境変数分岐（`VITE_API_BASE` 等）は**不要**。
+必要なのは `Nijo/WebService/NijoWebServiceBuilder.cs` 側の振り分けのみ。
 
 ### 2.1 単一オリジンへの振り分け
 
-`https://<app>.fly.dev` に集約し、`NijoWebServiceBuilder` を振り分け役にする。
+`https://<app>.fly.dev` に集約する。
 
 ```
 /                → スキーマエディタ HTML（既存）
-/api/*           → スキーマ編集 API（既存）
-/preview/*       → vite dev (5173) へリバースプロキシ ※WebSocket upgrade 必須
-/preview-api/*   → 生成アプリ WebApi (5290) へリバースプロキシ
+/preview/*       → vite dev (5173) へリバースプロキシ ※WebSocket upgrade 必須（HMR 用）
+/api/*           → 生成アプリ WebApi (5290) へリバースプロキシ（vite の server.proxy と同じ転送先）
 ```
 
 実装は YARP または `HttpForwarder` の手書き。**HMR の WebSocket を Upgrade 中継できること**が要件。
 
-### 2.2 生成テンプレート側の変更
+`/api/*` は vite の `server.proxy` を経由させず、`NijoWebServiceBuilder` から直接 WebApi(5290) へ転送してよい
+（vite を二重に経由する必要はない）。
 
-`callAspNetCoreApiAsync.ts` のベース URL を環境変数で差し替え可能にする（最小変更）。
+### 2.2 名前空間の衝突 ← 要対応（本タスクの範囲外）
 
-```ts
-const ASP_NET_CORE_BASE_URL = import.meta.env.VITE_API_BASE
-  ?? (import.meta.env.DEV ? 'http://localhost:5290/' : '/')
-```
+生成アプリの `callAspNetCoreApiAsync` は**ルート相対**の `/api/...` を叩く。
+iframe 内のページが `/preview/` 配下で配信されていても、`fetch('/api/...')` は
+**iframe の base ではなくオリジンのルート**（`https://<app>.fly.dev/api/...`）に解決される。
 
-### 2.3 vite.config.ts 側の設定
+一方、`NijoWebServiceBuilder` は自身のスキーマ編集 API を既に `/api/*`
+（`/api/load`, `/api/save`, `/api/generate` 等）に持っている。**このままではルートの `/api/*` が衝突する。**
+
+対応（どちらか）:
+
+1. **エディタ側の API を `/api/*` から退避する**（例: `/nijo-api/*`）。
+   ルートの `/api/*` は生成アプリ専用として明け渡し、2.1 の振り分けをそのまま使う。**推奨。**
+2. 生成アプリ側にだけ別プレフィックス（`/preview-api/*`）を持たせる。
+   ただしこれは `callAspNetCoreApiAsync` に再び環境分岐を持ち込むことになり、
+   本タスクで撤去した「サーバー URL の環境差異」が iframe 埋め込みのためだけに復活する。**非推奨。**
+
+fly.io 環境の構築に着手する際に 1. を先に行うこと。
+
+### 2.3 vite.config.ts 側の追加設定（fly.io 用）
 
 ```ts
 server: {
@@ -77,12 +99,13 @@ base: '/preview/',
 ```
 
 fly の https ハンドラは wss をそのまま通すため、HMR は上記設定で動作する。
+`base: '/preview/'` は HTML/JS/CSS の相対パス解決のためのものであり、
+2.2 で述べた通り `fetch` のルート相対パスの解決には影響しない点に注意。
 
 ### 2.4 副産物
 
 オリジン統一により iframe が同一オリジンになるため、
 埋め込み内とのやり取りは postMessage ブリッジと DOM 直接アクセスのどちらも選べるようになる。
-**localhost 側の実装よりも先に着手する価値がある。**
 
 ---
 
@@ -172,8 +195,9 @@ HMR が即時に効くのは **React 層だけ**。スキーマ変更に伴う C
 
 | 項目 | 方針 |
 |---|---|
-| オリジン | `https://<app>.fly.dev` 単一。`/preview/*` を vite dev へ、`/preview-api/*` を WebApi へプロキシ |
-| API ベース URL | `VITE_API_BASE` で差し替え可能にする |
+| オリジン | `https://<app>.fly.dev` 単一。`/preview/*` を vite dev へ、`/api/*` を WebApi へ直接プロキシ |
+| API ベース URL | 生成アプリ側は対応済み（ルート相対 `/api/...` 固定、環境分岐なし） |
+| 名前空間 | エディタ自身の API を `/api/*` から `/nijo-api/*` 等へ退避し、ルート `/api/*` を生成アプリに明け渡す |
 | 永続化 | volume なし。プロジェクトと node_modules はイメージに焼く |
 | リセット | アイドル 10 分で pristine 復元（主）＋ 手動ボタン ＋ 日次（保険） |
 | machine | `min_machines_running = 1`、`auto_stop_machines` 無効 |
@@ -184,11 +208,12 @@ HMR が即時に効くのは **React 層だけ**。スキーマ変更に伴う C
 
 ## 5. 着手順
 
-1. **オリジン統一**（`/preview/*` プロキシ + `VITE_API_BASE` 化）
-   — localhost でも fly でも同じ経路になり、以降の作業が全て楽になる
+1. ~~オリジン統一（生成アプリ側）~~ **実施済み** — `callAspNetCoreApiAsync` のルート相対化、
+   `vite.config.ts` の `server.proxy`、`Program.cs` の CORS 撤去。テンプレート・全 demo に反映済み。
 2. **生成のアトミック化 + 直列化** — 共有環境における品質の土台
 3. iframe + postMessage ブリッジ + `data-nijo-node` 注入（localhost 側の実装）
-4. pristine 復元によるアイドルリセット
-5. fly デプロイ（volume なし / 専用 org / `min_machines_running = 1`）
+4. **エディタ側 API の名前空間退避**（2.2）+ `NijoWebServiceBuilder` の `/preview/*` `/api/*` 振り分け
+5. pristine 復元によるアイドルリセット
+6. fly デプロイ（volume なし / 専用 org / `min_machines_running = 1`）
 
-4 と 5 は 1〜3 が localhost で動作してからで問題ない。
+2〜3 が localhost で動作してから 4〜6 に進めば問題ない。

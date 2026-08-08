@@ -8,7 +8,7 @@ export default function example() {
   apiButton.addEventListener('click', async () => {
     try {
       apiResponse.textContent = '読み込み中...'
-      const response = await callAspNetCoreApiAsync('/example', {
+      const response = await callAspNetCoreApiAsync('/api/example', {
         method: 'GET'
       })
 

@@ -89,7 +89,7 @@ function ER図画面() {
     setError(null)
 
     try {
-      const response = await callAspNetCoreApiAsync("/debug/er-diagram", { method: "GET" })
+      const response = await callAspNetCoreApiAsync("/api/debug/er-diagram", { method: "GET" })
       if (!response.ok) {
         const detail = await response.text()
         throw new Error(detail || "ER図の取得に失敗しました。")
@@ -144,7 +144,7 @@ function ER図画面() {
         selectedDataSetKey: snapshot.selectedDataSetKey,
       }
 
-      const response = await callAspNetCoreApiAsync("/debug/er-diagram/layout", {
+      const response = await callAspNetCoreApiAsync("/api/debug/er-diagram/layout", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

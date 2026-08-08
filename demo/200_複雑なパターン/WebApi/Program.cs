@@ -14,19 +14,6 @@ builder.Services.AddControllers();
 // swagger。デバッグのためにこのアプリで定義されているエンドポイントを一覧する
 builder.Services.AddSwaggerGen();
 
-// CORS設定
-builder.Services.AddCors(options => {
-    // 開発環境ではViteからのリクエストを許可
-    if (builder.Environment.IsDevelopment()) {
-        options.AddDefaultPolicy(policy => {
-            policy.SetIsOriginAllowed(origin => new Uri(origin).Host == "localhost") // localhostであればポート問わず許可
-                  .AllowAnyMethod()
-                  .AllowAnyHeader()
-                  .AllowCredentials(); // クライアント側の credentials: 'include' に対応するために必須
-        });
-    }
-});
-
 // アプリケーションサービス層のDI設定
 var basePath = Path.GetFullPath(builder.Environment.ContentRootPath);
 OverridedApplicationService.ConfigureServices(builder.Services, basePath);
@@ -59,10 +46,14 @@ if (app.Environment.IsDevelopment()) {
     app.UseStaticFiles();
 }
 
-// CORSミドルウェアを追加
-app.UseCors();
-
 app.MapDefaultControllerRoute();
+
+// 存在しないパスへのリクエストは index.html を返すようにし、
+// 実際にどの画面が初期表示されるかは React Router のルーティング設定で制御する。
+// 開発環境ではViteの開発サーバーがHTMLを配信するため、ここでのフォールバックは不要
+if (!app.Environment.IsDevelopment()) {
+    app.MapFallbackToFile("index.html");
+}
 
 // セキュリティの設定が必要なら追加
 // app.UseHttpsRedirection();

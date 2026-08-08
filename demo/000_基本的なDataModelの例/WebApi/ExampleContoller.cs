@@ -9,7 +9,7 @@ namespace MyApp.WebApi;
 /// 自動生成に頼らず自前でControllerを定義する場合の実装例
 /// </summary>
 [ApiController]
-[Route("/example")]
+[Route("api/example")]
 [AllowAnonymous]
 public class ExampleContoller : ControllerBase {
 
