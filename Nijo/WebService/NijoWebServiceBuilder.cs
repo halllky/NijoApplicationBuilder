@@ -55,14 +55,15 @@ public class NijoWebServiceBuilder {
             builder.Services.AddSingleton(demo);
             builder.Services.AddSignalR();
             builder.Services.AddSingleton<DemoClientRegistry>();
-            builder.Services.AddSingleton<DemoLockService>();
-            builder.Services.AddSingleton<DemoActivityTracker>();
-            builder.Services.AddSingleton<Demo101ProcessManager>();
-            builder.Services.AddSingleton<ClaudeAgentService>();
+            builder.Services.AddSingleton<DemoLock>();
+            builder.Services.AddSingleton<DemoActivity>();
+            builder.Services.AddSingleton<Demo101App>();
+            builder.Services.AddSingleton<ClaudeAgent>();
+            builder.Services.AddSingleton<DemoEnvironment>();
             builder.Services.AddSingleton<DemoEndpointHandlers>();
-            builder.Services.AddHostedService<IdleResetService>();
+            builder.Services.AddHostedService<IdleResetWatchdog>();
 
-            var (routes, clusters) = DemoReverseProxyConfig.Build(demo);
+            var (routes, clusters) = demo.BuildReverseProxyConfig();
             builder.Services.AddReverseProxy().LoadFromMemory(routes, clusters);
         }
 
@@ -73,9 +74,9 @@ public class NijoWebServiceBuilder {
         }
 
         if (demo != null) {
-            // 全リクエストで最終操作時刻を更新する(IdleResetServiceのアイドル判定に使う)
+            // 全リクエストで最終操作時刻を更新する(IdleResetWatchdogのアイドル判定に使う)
             app.Use(async (context, next) => {
-                app.Services.GetRequiredService<DemoActivityTracker>().Touch();
+                app.Services.GetRequiredService<DemoActivity>().Touch();
                 await next(context);
             });
         }
@@ -91,19 +92,15 @@ public class NijoWebServiceBuilder {
             app.MapPost("/api/generate", schemaHandlers.HandleGenerateCode);
         } else {
             // デモモードでは保存・生成は排他ロック対象。成功時は他クライアントへ強制リロードを配信する。
-            var lockService = app.Services.GetRequiredService<DemoLockService>();
-            var registry = app.Services.GetRequiredService<DemoClientRegistry>();
-            var hub = app.Services.GetRequiredService<Microsoft.AspNetCore.SignalR.IHubContext<DemoHub, IDemoHubClient>>();
+            var demoLock = app.Services.GetRequiredService<DemoLock>();
 
-            app.MapPost("/api/save", DemoLocking.WithLock(
-                lockService, registry, hub,
+            app.MapPost("/api/save", demoLock.WithLock(
                 schemaHandlers.HandleSaveSchema,
                 reason: "スキーマを保存中",
                 broadcastReloadOnSuccess: true,
                 reloadReason: "他のユーザーがスキーマを保存しました"));
 
-            app.MapPost("/api/generate", DemoLocking.WithLock(
-                lockService, registry, hub,
+            app.MapPost("/api/generate", demoLock.WithLock(
                 schemaHandlers.HandleGenerateCode,
                 reason: "コードを生成中",
                 broadcastReloadOnSuccess: true,
@@ -112,7 +109,6 @@ public class NijoWebServiceBuilder {
             app.MapHub<DemoHub>("/api/demo/hub");
 
             // 統合された共有デモサイトのエンドポイントハンドラ。
-            // (このインスタンス化のタイミングで ClaudeAgentService.WorkspaceChanged の購読も行われる)
             var demoHandlers = app.Services.GetRequiredService<DemoEndpointHandlers>();
 
             app.MapGet("/api/demo/status", demoHandlers.HandleStatus);
@@ -123,13 +119,13 @@ public class NijoWebServiceBuilder {
 
             // 起動時にデモ101(WebApi + client)を立ち上げる
             app.Lifetime.ApplicationStarted.Register(() => {
-                var processManager = app.Services.GetRequiredService<Demo101ProcessManager>();
+                var demoApp = app.Services.GetRequiredService<Demo101App>();
                 _ = demo.ForceRebuildOnStart
-                    ? processManager.RebuildAndRestartAsync()
-                    : processManager.StartAsync();
+                    ? demoApp.RebuildAndRestartAsync()
+                    : demoApp.StartAsync();
             });
             app.Lifetime.ApplicationStopping.Register(() => {
-                app.Services.GetRequiredService<Demo101ProcessManager>().Stop();
+                app.Services.GetRequiredService<Demo101App>().Stop();
             });
 
             app.MapReverseProxy();

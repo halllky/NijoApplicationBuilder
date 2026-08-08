@@ -13,10 +13,18 @@ using Nijo.Util.DotnetEx;
 namespace Nijo.WebService.DemoMode;
 
 /// <summary>
+/// AIチャットの1メッセージ。
+/// </summary>
+/// <param name="Role">"user" または "assistant"</param>
+/// <param name="Content">本文</param>
+/// <param name="CreatedAtUtc">作成時刻</param>
+public record DemoChatMessage(string Role, string Content, DateTime CreatedAtUtc);
+
+/// <summary>
 /// ユーザーのチャットメッセージを headless の claude CLI (`claude -p`) に渡し、
 /// 出力をSignalR経由で全クライアントへストリーミングする。
 /// </summary>
-public class ClaudeAgentService {
+public class ClaudeAgent {
 
     private const int MAX_HISTORY = 100;
 
@@ -122,12 +130,12 @@ public class ClaudeAgentService {
 
     private readonly DemoModeOptions _options;
     private readonly IHubContext<DemoHub, IDemoHubClient> _hub;
-    private readonly ILogger<ClaudeAgentService> _logger;
+    private readonly ILogger<ClaudeAgent> _logger;
 
     /// <summary>
     /// チャット履歴の永続化先。プロセス再起動をまたいでも表示できるようにするためのもの。
     /// gitで管理されたワークスペース(WorkspaceRoot)の外に置き、
-    /// IdleResetServiceのgit dirty判定やリセット時のgit clean対象に含めない。
+    /// IdleResetWatchdogのgit dirty判定やリセット時のgit clean対象に含めない。
     /// </summary>
     private readonly string _historyFilePath = Path.Combine(Path.GetTempPath(), "nijo-demo-chat-history.jsonl");
 
@@ -137,7 +145,7 @@ public class ClaudeAgentService {
     private Process? _runningProcess;
     private volatile bool _cancelRequested;
 
-    public ClaudeAgentService(DemoModeOptions options, IHubContext<DemoHub, IDemoHubClient> hub, ILogger<ClaudeAgentService> logger) {
+    public ClaudeAgent(DemoModeOptions options, IHubContext<DemoHub, IDemoHubClient> hub, ILogger<ClaudeAgent> logger) {
         _options = options;
         _hub = hub;
         _logger = logger;
@@ -154,12 +162,6 @@ public class ClaudeAgentService {
     }
 
     /// <summary>
-    /// チャットの結果、ワークスペース内のソース(nijo.xml・手書きコード)が実際に変更されたときに
-    /// 発火するイベント(=自動ビルドすべき)。変更の有無は実行前後のスナップショット比較で判定する。
-    /// </summary>
-    public event Func<WorkspaceSourceChanges, Task>? WorkspaceChanged;
-
-    /// <summary>
     /// チャット処理の現在の状態。処理中かどうかを画面に表示するためのもの。
     /// idle(何もしていない) | running(claude実行中) | building(スキーマ変更の反映ビルド中)。
     /// 値の変更は <see cref="SetChatStatusAsync"/> で行い、SignalRで全クライアントへ配信する。
@@ -171,33 +173,28 @@ public class ClaudeAgentService {
         await _hub.Clients.All.ChatStatusChanged(status);
     }
 
-    public async Task RunAsync(string userMessage) {
+    /// <summary>
+    /// チャットメッセージをclaude CLIに1回渡して実行する。
+    /// ワークスペース内のソース(nijo.xml・手書きコード)が実際に変更されたかどうかは
+    /// 実行前後のスナップショット比較で判定し、呼び出し元(<see cref="DemoEndpointHandlers.HandleChat"/>)へ返す。
+    /// idle状態への復帰は呼び出し元(ロックを保持している側)の責任で行う。
+    /// </summary>
+    public async Task<WorkspaceSourceChanges> RunAsync(string userMessage) {
         AppendHistory("user", userMessage);
         await _hub.Clients.All.ChatMessageAppended(new DemoChatMessage("user", userMessage, DateTime.UtcNow));
 
-        try {
-            var snapshotBeforeRun = WorkspaceSourceSnapshot.Capture(_options.WorkspaceRoot);
+        var snapshotBeforeRun = WorkspaceSourceSnapshot.Capture(_options.WorkspaceRoot);
+        await RunClaudeAsync(userMessage);
 
-            await RunClaudeAsync(userMessage);
-
-            // 実行前後でソースファイルの内容が変わったときだけ発火する。
-            // 変わっていないのに毎回リビルド+デモ101再起動+全員強制リロードが走るのを防ぐ。
-            var changes = WorkspaceSourceSnapshot.Capture(_options.WorkspaceRoot).DiffFrom(snapshotBeforeRun);
-            if (WorkspaceChanged != null && changes.Any) {
-                await WorkspaceChanged.Invoke(changes);
-            }
-        } finally {
-            // 例外・中断を含むどの経路でも、処理が終わったことを画面に反映する
-            await SetChatStatusAsync("idle");
-        }
+        // 実行前後でソースファイルの内容が変わったときだけリビルドすべきと判定する。
+        // 変わっていないのに毎回リビルド+デモ101再起動+全員強制リロードが走るのを防ぐ。
+        return WorkspaceSourceSnapshot.Capture(_options.WorkspaceRoot).DiffFrom(snapshotBeforeRun);
     }
 
     /// <summary>
     /// 自動ビルドが失敗したとき、エラーログを添えて修正を依頼するメッセージを
     /// 同じセッションのエージェントに送る。<see cref="DemoEndpointHandlers"/> の
     /// リビルド→失敗→修正依頼→リビルド のループから呼ばれる。
-    /// ここでは <see cref="WorkspaceChanged"/> は発火しない(発火すると再帰するため。
-    /// リビルドは呼び出し元のループが行う)。
     /// </summary>
     /// <returns>実行が完了したらtrue。中断・実行失敗の場合はfalse(呼び出し元はループをやめるべき)</returns>
     public async Task<bool> RunBuildRepairAsync(string buildLog) {

@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
-using Nijo.Util.DotnetEx;
 using Nijo.WebService.Common;
 
 namespace Nijo.WebService.DemoMode;
@@ -12,8 +11,7 @@ namespace Nijo.WebService.DemoMode;
 internal record ChatRequestBody([property: JsonPropertyName("message")] string? Message);
 
 /// <summary>
-/// 共有デモサイトモードのプレゼンテーション層エンドポイントをまとめて処理する。
-/// (旧 DemoChatEndpointHandlers / DemoResetService / DemoStatusEndpointHandler を統合)
+/// 共有デモサイトモードのプレゼンテーション層エンドポイント。
 /// </summary>
 public class DemoEndpointHandlers {
 
@@ -31,67 +29,29 @@ public class DemoEndpointHandlers {
     /// </summary>
     private const int MAX_BUILD_REPAIR_ATTEMPTS = 2;
 
-    private readonly DemoModeOptions _options;
-    private readonly DemoLockService _lockService;
-    private readonly DemoClientRegistry _registry;
-    private readonly DemoActivityTracker _activityTracker;
-    private readonly Demo101ProcessManager _processManager;
-    private readonly ClaudeAgentService _claudeAgent;
+    private readonly DemoLock _lock;
+    private readonly Demo101App _demoApp;
+    private readonly ClaudeAgent _claudeAgent;
+    private readonly DemoActivity _activity;
+    private readonly DemoEnvironment _environment;
     private readonly IHubContext<DemoHub, IDemoHubClient> _hub;
     private readonly ILogger<DemoEndpointHandlers> _logger;
 
     public DemoEndpointHandlers(
-        DemoModeOptions options,
-        DemoLockService lockService,
-        DemoClientRegistry registry,
-        DemoActivityTracker activityTracker,
-        Demo101ProcessManager processManager,
-        ClaudeAgentService claudeAgent,
+        DemoLock @lock,
+        Demo101App demoApp,
+        ClaudeAgent claudeAgent,
+        DemoActivity activity,
+        DemoEnvironment environment,
         IHubContext<DemoHub, IDemoHubClient> hub,
         ILogger<DemoEndpointHandlers> logger) {
-        _options = options;
-        _lockService = lockService;
-        _registry = registry;
-        _activityTracker = activityTracker;
-        _processManager = processManager;
+        _lock = @lock;
+        _demoApp = demoApp;
         _claudeAgent = claudeAgent;
+        _activity = activity;
+        _environment = environment;
         _hub = hub;
         _logger = logger;
-
-        // チャットの結果ワークスペース内のソースが実際に変更されたときだけ、フルリビルド
-        // (nijo generate + dotnet publish + npm run build。RELEASE_BUILD.sh参照)して
-        // デモ101を再起動したうえで全員へ強制リロードを配信する。
-        // ビルドが失敗した場合は、エラーログをAIに差し戻して修正させ、再度ビルドする。
-        // (このハンドラはチャットのロックを保持したまま RunAsync の延長で実行されるため、
-        //  修復ループ中に他のユーザーの操作が割り込むことはない)
-        _claudeAgent.WorkspaceChanged += async changes => {
-            for (var attempt = 0; ; attempt++) {
-                // チャット処理中である旨の表示を「ビルド中」に切り替える(claude実行中はRunClaudeAsyncが"running"に戻す)
-                await _claudeAgent.SetChatStatusAsync("building");
-
-                // スキーマ・ダミーデータ生成が変わった場合だけDBも初期化する(起動時にダミーデータから
-                // 再作成される)。手書きコードのみの変更ではユーザーが入力したデータを保持する。
-                var built = await _processManager.RebuildAndRestartAsync(resetDatabase: changes.RequiresDatabaseReset);
-                if (built) {
-                    await _hub.Clients.All.ForceReload("AIがデモアプリを更新しました");
-                    return;
-                }
-                if (attempt >= MAX_BUILD_REPAIR_ATTEMPTS) {
-                    await _claudeAgent.NotifyErrorMessageAsync(
-                        "自動ビルドの修復を試みましたが失敗しました。デモアプリが停止している可能性があります。" +
-                        "「環境をリセット」ボタンで初期状態に戻すことができます。");
-                    return;
-                }
-                await _claudeAgent.NotifyServiceMessageAsync(
-                    $"自動ビルドが失敗しました。AIがエラー内容を確認して修正を試みます… ({attempt + 1}/{MAX_BUILD_REPAIR_ATTEMPTS + 1}回目のビルド)");
-                var completed = await _claudeAgent.RunBuildRepairAsync(_processManager.LastBuildLog);
-                if (!completed) {
-                    // ユーザーが中断した・claudeの実行自体に失敗した場合はループをやめる
-                    // (エラーはチャット欄に通知済み。環境はリセットボタンで復旧できる)
-                    return;
-                }
-            }
-        };
     }
 
     /// <summary>
@@ -103,11 +63,11 @@ public class DemoEndpointHandlers {
         context.Response.ContentType = "application/json";
         await context.Response.WriteAsJsonAsync(new {
             demoMode = true,
-            lockInfo = _lockService.CurrentLock,
+            lockInfo = _lock.CurrentLock,
             demoUrl = "/demo/",
-            demoAppStatus = _processManager.Status,
+            demoAppStatus = _demoApp.Status,
             chatStatus = _claudeAgent.ChatStatus,
-            lastActivityUtc = _activityTracker.LastActivityUtc,
+            lastActivityUtc = _activity.LastActivityUtc,
             chatHistory = _claudeAgent.History,
         });
     }
@@ -115,7 +75,7 @@ public class DemoEndpointHandlers {
     /// <summary>
     /// POST /api/demo/chat
     /// チャットはロックを保持したまま非同期に実行されるため、
-    /// (保存・生成のような)リクエストスコープの<see cref="DemoLocking.WithLock"/>は使わず、
+    /// (保存・生成のような)リクエストスコープの<see cref="DemoLock.WithLock"/>は使わず、
     /// ここでロックの取得・解放を明示的に管理する。
     /// </summary>
     public async Task HandleChat(HttpContext context) {
@@ -132,11 +92,11 @@ public class DemoEndpointHandlers {
         }
 
         var clientId = DemoClientIdHeader.GetClientId(context);
-        var handle = await _lockService.TryAcquireAsync(clientId, "AIが編集中");
+        var handle = await _lock.TryAcquireAsync(clientId, "AIが編集中");
         if (handle == null) {
             context.Response.StatusCode = StatusCodes.Status423Locked;
             await context.Response.WriteAsJsonAsync(new {
-                reason = _lockService.CurrentLock?.Reason,
+                reason = _lock.CurrentLock?.Reason,
                 message = "他のユーザーまたはAIが編集中です",
             });
             return;
@@ -148,7 +108,40 @@ public class DemoEndpointHandlers {
         // ロックを保持したままバックグラウンドで実行する。完了後に解放する。
         _ = Task.Run(async () => {
             try {
-                await _claudeAgent.RunAsync(body.Message);
+                var changes = await _claudeAgent.RunAsync(body.Message);
+
+                // チャットの結果ワークスペース内のソースが実際に変更されたときだけ、フルリビルド
+                // (nijo generate + dotnet publish + npm run build。RELEASE_BUILD.sh参照)して
+                // デモ101を再起動したうえで全員へ強制リロードを配信する。
+                // ビルドが失敗した場合は、エラーログをAIに差し戻して修正させ、再度ビルドする。
+                if (changes.Any) {
+                    for (var attempt = 0; ; attempt++) {
+                        // チャット処理中である旨の表示を「ビルド中」に切り替える(claude実行中はRunClaudeAsyncが"running"に戻す)
+                        await _claudeAgent.SetChatStatusAsync("building");
+
+                        // スキーマ・ダミーデータ生成が変わった場合だけDBも初期化する(起動時にダミーデータから
+                        // 再作成される)。手書きコードのみの変更ではユーザーが入力したデータを保持する。
+                        var built = await _demoApp.RebuildAndRestartAsync(resetDatabase: changes.RequiresDatabaseReset);
+                        if (built) {
+                            await _hub.Clients.All.ForceReload("AIがデモアプリを更新しました");
+                            break;
+                        }
+                        if (attempt >= MAX_BUILD_REPAIR_ATTEMPTS) {
+                            await _claudeAgent.NotifyErrorMessageAsync(
+                                "自動ビルドの修復を試みましたが失敗しました。デモアプリが停止している可能性があります。" +
+                                "「環境をリセット」ボタンで初期状態に戻すことができます。");
+                            break;
+                        }
+                        await _claudeAgent.NotifyServiceMessageAsync(
+                            $"自動ビルドが失敗しました。AIがエラー内容を確認して修正を試みます… ({attempt + 1}/{MAX_BUILD_REPAIR_ATTEMPTS + 1}回目のビルド)");
+                        var completed = await _claudeAgent.RunBuildRepairAsync(_demoApp.LastBuildLog);
+                        if (!completed) {
+                            // ユーザーが中断した・claudeの実行自体に失敗した場合はループをやめる
+                            // (エラーはチャット欄に通知済み。環境はリセットボタンで復旧できる)
+                            break;
+                        }
+                    }
+                }
             } catch (Exception ex) {
                 // 想定外の例外の最終防波堤。ログにしか出ないとユーザーには沈黙にしか
                 // 見えないため、チャット欄にもエラーを表示する。
@@ -159,6 +152,8 @@ public class DemoEndpointHandlers {
                     _logger.LogError(notifyEx, "エラーのチャット欄への通知に失敗しました。");
                 }
             } finally {
+                // 例外・中断を含むどの経路でも、処理が終わったことを画面に反映する
+                await _claudeAgent.SetChatStatusAsync("idle");
                 await handle.DisposeAsync();
             }
         });
@@ -170,7 +165,7 @@ public class DemoEndpointHandlers {
     /// </summary>
     public async Task HandleChatCancel(HttpContext context) {
         var clientId = DemoClientIdHeader.GetClientId(context);
-        var currentLock = _lockService.CurrentLock;
+        var currentLock = _lock.CurrentLock;
         if (currentLock != null && currentLock.OwnerClientId != clientId) {
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             await context.Response.WriteAsJsonAsync(new { message = "他のユーザーの実行は中断できません" });
@@ -182,65 +177,10 @@ public class DemoEndpointHandlers {
 
     /// <summary>
     /// POST /api/demo/reset
-    /// 共有デモ環境を pristine 状態(イメージビルド時にgit commitした状態)へ戻す。
-    /// 手動リセットボタンと <see cref="IdleResetService"/> の両方から呼ばれる。
-    /// </summary>
-    public async Task<bool> ResetAsync(string clientId) {
-        var handle = await _lockService.TryAcquireAsync(clientId, "環境をリセット中");
-        if (handle == null) return false;
-
-        try {
-            _processManager.Stop();
-
-            // pristine状態(イメージビルド時にコミットしたコミット)へ強制的に戻す。
-            // node_modules/bin/obj はビルドキャッシュとして残し、再ビルドの時間を短縮する。
-            var checkoutExitCode = await ProcessExtension.ExecuteProcessAsync(psi => {
-                psi.FileName = "git";
-                psi.ArgumentList.Add("checkout");
-                psi.ArgumentList.Add("--");
-                psi.ArgumentList.Add(".");
-                psi.WorkingDirectory = _options.WorkspaceRoot;
-            }, (std, line) => _logger.LogInformation("[git checkout] {line}", line), TimeSpan.FromMinutes(1));
-            if (checkoutExitCode != 0) {
-                _logger.LogError("リセット中の git checkout が失敗しました (exit code = {code})。ワークスペースが復元されていない可能性があります。", checkoutExitCode);
-            }
-
-            var cleanExitCode = await ProcessExtension.ExecuteProcessAsync(psi => {
-                psi.FileName = "git";
-                psi.ArgumentList.Add("clean");
-                psi.ArgumentList.Add("-fd");
-                psi.ArgumentList.Add("-e");
-                psi.ArgumentList.Add("node_modules");
-                psi.ArgumentList.Add("-e");
-                psi.ArgumentList.Add("**/bin");
-                psi.ArgumentList.Add("-e");
-                psi.ArgumentList.Add("**/obj");
-                psi.WorkingDirectory = _options.WorkspaceRoot;
-            }, (std, line) => _logger.LogInformation("[git clean] {line}", line), TimeSpan.FromMinutes(1));
-            if (cleanExitCode != 0) {
-                _logger.LogError("リセット中の git clean が失敗しました (exit code = {code})。ワークスペースが復元されていない可能性があります。", cleanExitCode);
-            }
-
-            _claudeAgent.ResetConversation();
-
-            // pristine状態(イメージビルド時のコミット)にはビルド済みのpublish成果物/wwwrootも
-            // 含めてコミットしてあるため、通常はgit checkoutで復元されておりそのまま起動できる
-            // (StartAsyncは成果物が無いときだけ自動的にフルビルドする)。
-            await _processManager.StartAsync();
-        } finally {
-            await handle.DisposeAsync();
-        }
-
-        await _hub.Clients.All.ForceReload("環境がリセットされました");
-        return true;
-    }
-
-    /// <summary>
-    /// POST /api/demo/reset のHTTPハンドラ。
     /// </summary>
     public async Task HandleReset(HttpContext context) {
         var clientId = DemoClientIdHeader.GetClientId(context);
-        var ok = await ResetAsync(clientId);
+        var ok = await _environment.ResetAsync(clientId);
         if (!ok) {
             context.Response.StatusCode = StatusCodes.Status423Locked;
             await context.Response.WriteAsJsonAsync(new { message = "他のユーザーまたはAIが編集中です" });
@@ -253,10 +193,9 @@ public class DemoEndpointHandlers {
     /// POST /api/demo/app/restart
     /// </summary>
     public RequestDelegate HandleRestart() {
-        return DemoLocking.WithLock(
-            _lockService, _registry, _hub,
+        return _lock.WithLock(
             async context => {
-                await _processManager.RestartAsync();
+                await _demoApp.RestartAsync();
                 await HttpResponseHelper.WriteSuccessMessageAsync(context, "restarted");
             },
             reason: "デモ101を再起動中",

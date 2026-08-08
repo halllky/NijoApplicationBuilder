@@ -14,7 +14,7 @@ public interface IDemoHubClient {
     Task ChatMessageAppended(DemoChatMessage message);
     Task ChatStreamChunk(string chunk);
     Task DemoAppStatusChanged(string status);
-    /// <summary>AIチャット処理の状態変化。statusは <see cref="ClaudeAgentService.ChatStatus"/> の値(idle | running | building)</summary>
+    /// <summary>AIチャット処理の状態変化。statusは <see cref="ClaudeAgent.ChatStatus"/> の値(idle | running | building)</summary>
     Task ChatStatusChanged(string status);
 }
 
@@ -25,11 +25,11 @@ public interface IDemoHubClient {
 /// </summary>
 public class DemoHub : Hub<IDemoHubClient> {
 
-    private readonly DemoLockService _lockService;
+    private readonly DemoLock _lock;
     private readonly DemoClientRegistry _clientRegistry;
 
-    public DemoHub(DemoLockService lockService, DemoClientRegistry clientRegistry) {
-        _lockService = lockService;
+    public DemoHub(DemoLock @lock, DemoClientRegistry clientRegistry) {
+        _lock = @lock;
         _clientRegistry = clientRegistry;
     }
 
@@ -40,7 +40,7 @@ public class DemoHub : Hub<IDemoHubClient> {
         }
 
         // 接続直後に現在のロック状態を通知する
-        await Clients.Caller.LockStateChanged(_lockService.CurrentLock);
+        await Clients.Caller.LockStateChanged(_lock.CurrentLock);
 
         await base.OnConnectedAsync();
     }

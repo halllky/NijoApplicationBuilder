@@ -22,12 +22,12 @@ namespace Nijo.WebService.DemoMode;
 /// キャッシュが壊れて起動失敗する問題があったため、publish済みの単一プロセスに変更した。
 /// ビルドは <see cref="EnsureBuiltAsync"/> が Task/RELEASE_BUILD.sh を呼んで行う。
 /// </summary>
-public class Demo101ProcessManager : IDisposable {
+public class Demo101App : IDisposable {
 
     private const int MAX_LOG_LINES = 500;
 
     /// <summary>
-    /// AIチャットへのビルドエラー差し戻し(<see cref="ClaudeAgentService.RunBuildRepairAsync"/>)に使うため、
+    /// AIチャットへのビルドエラー差し戻し(<see cref="ClaudeAgent.RunBuildRepairAsync"/>)に使うため、
     /// 直近のビルド(コード自動生成 + RELEASE_BUILD.sh)の出力を保持しておく最大行数。
     /// エラーはログ末尾に出るため、末尾からこの行数だけ保持する。
     /// </summary>
@@ -35,7 +35,7 @@ public class Demo101ProcessManager : IDisposable {
 
     private readonly DemoModeOptions _options;
     private readonly IHubContext<DemoHub, IDemoHubClient> _hub;
-    private readonly ILogger<Demo101ProcessManager> _logger;
+    private readonly ILogger<Demo101App> _logger;
 
     private readonly LongRunningProcess _webApi = new();
     private readonly object _logLock = new();
@@ -44,7 +44,7 @@ public class Demo101ProcessManager : IDisposable {
     private readonly object _buildLogLock = new();
     private readonly List<string> _lastBuildLog = new();
 
-    public Demo101ProcessManager(DemoModeOptions options, IHubContext<DemoHub, IDemoHubClient> hub, ILogger<Demo101ProcessManager> logger) {
+    public Demo101App(DemoModeOptions options, IHubContext<DemoHub, IDemoHubClient> hub, ILogger<Demo101App> logger) {
         _options = options;
         _hub = hub;
         _logger = logger;
