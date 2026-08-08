@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nijo.CodeGenerating;
+using Nijo.Previewing;
 using Nijo.SchemaParsing;
 using Nijo.WebService.Common;
 
@@ -22,8 +23,11 @@ namespace Nijo.WebService.SchemaEditor;
 /// </summary>
 internal class SchemaEndpointHandlers {
 
-    internal SchemaEndpointHandlers() {
+    internal SchemaEndpointHandlers(NijoWebService webService) {
+        _webService = webService;
     }
+
+    private readonly NijoWebService _webService;
 
     /// <summary>
     /// 画面初期表示時データ読み込み処理
@@ -58,20 +62,24 @@ internal class SchemaEndpointHandlers {
             };
 
             // nijo.viewState.jsonの読み込み
-            ApplicationStateAndSchemaGraphViewState.SchemaGraphViewStateTypeByViewMode? schemaGraphViewState = null;
+            NijoProjectFiles.SchemaGraphViewStateTypeByViewMode? schemaGraphViewState = null;
             var viewStatePath = project.ViewStateJsonPath;
             if (File.Exists(viewStatePath)) {
                 try {
                     var viewStateJson = await File.ReadAllTextAsync(viewStatePath, context.RequestAborted);
-                    schemaGraphViewState = JsonSerializer.Deserialize<ApplicationStateAndSchemaGraphViewState.SchemaGraphViewStateTypeByViewMode>(viewStateJson);
+                    schemaGraphViewState = JsonSerializer.Deserialize<NijoProjectFiles.SchemaGraphViewStateTypeByViewMode>(viewStateJson);
                 } catch (Exception) {
                     // ファイル読み込みやデシリアライズに失敗した場合はnullのまま
                 }
             }
 
-            var response = new ApplicationStateAndSchemaGraphViewState {
+            // nijo.preview.jsonの読み込み
+            var previewSetting = PreviewSetting.Load(project);
+
+            var response = new NijoProjectFiles {
                 ApplicationState = applicationState,
                 SchemaGraphViewState = schemaGraphViewState,
+                PreviewSetting = previewSetting,
             };
 
             context.Response.StatusCode = StatusCodes.Status200OK;
@@ -141,11 +149,12 @@ internal class SchemaEndpointHandlers {
                 return;
             }
 
-            var applicationStateAndSchemaGraphViewState = await context.Request.ReadFromJsonAsync<ApplicationStateAndSchemaGraphViewState>(context.RequestAborted)
-                ?? throw new Exception("applicationStateAndSchemaGraphViewState is null");
+            var nijoProjectFiles = await context.Request.ReadFromJsonAsync<NijoProjectFiles>(context.RequestAborted)
+                ?? throw new Exception("nijoProjectFiles is null");
 
-            var applicationState = applicationStateAndSchemaGraphViewState.ApplicationState;
-            var schemaGraphViewState = applicationStateAndSchemaGraphViewState.SchemaGraphViewState;
+            var applicationState = nijoProjectFiles.ApplicationState;
+            var schemaGraphViewState = nijoProjectFiles.SchemaGraphViewState;
+            var previewSetting = nijoProjectFiles.PreviewSetting;
 
             // XMLとして正しいか検証（スキーマ定義としてのエラーは見ない。作業中の一時保存のケースがあるため）
             var originalXDocument = XDocument.Load(project.SchemaXmlPath);
@@ -222,13 +231,16 @@ internal class SchemaEndpointHandlers {
                     WriteIndented = true,
                     Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
                     Converters = {
-                        new ApplicationStateAndSchemaGraphViewState.SortedJsonConverter(),
-                        new ApplicationStateAndSchemaGraphViewState.SortedJsonArrayConverter()
+                        new NijoProjectFiles.SortedJsonConverter(),
+                        new NijoProjectFiles.SortedJsonArrayConverter()
                     }
                 };
                 var jsonString = JsonSerializer.Serialize(schemaGraphViewState, jsonOptions);
                 await File.WriteAllTextAsync(viewStatePath, jsonString, new UTF8Encoding(false, false), context.RequestAborted);
             }
+
+            // nijo.preview.jsonの保存
+            await previewSetting.SaveAsync(project, context.RequestAborted);
 
             context.Response.StatusCode = (int)HttpStatusCode.OK;
 
@@ -268,8 +280,12 @@ internal class SchemaEndpointHandlers {
             var generationParseContext = new SchemaParseContext(xDocumentToSave, rule, GeneratedProjectOptions.Parse(xDocumentToSave, true));
             var renderingOptions = new CodeRenderingOptions { AllowNotImplemented = false };
 
-            var logger = context.RequestServices.GetRequiredService<ILogger<NijoWebServiceBuilder>>();
+            var logger = context.RequestServices.GetRequiredService<ILogger<NijoWebService>>();
             if (project.GenerateCode(generationParseContext, renderingOptions, logger)) {
+                // コード再生成が成功したので、restartOnGenerateCode が true のプレビュープロセスを再起動する
+                var previewSetting = PreviewSetting.Load(project);
+                _webService.GetPreview(project).RestartAfterCodeGenerating(previewSetting, logger);
+
                 context.Response.StatusCode = StatusCodes.Status200OK;
                 await HttpResponseHelper.WriteJsonResponseAsync(
                     context,

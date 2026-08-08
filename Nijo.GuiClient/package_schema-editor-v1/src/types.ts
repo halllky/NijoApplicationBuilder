@@ -7,6 +7,7 @@ import {
   ProjectOptionPropertyInfo,
   NijoXmlCustomAttribute,
   GenericLookupTableCategoriesData,
+  PreviewSetting,
 } from "./types.nijoXml"
 
 export * from "./types.nijoXml"
@@ -51,4 +52,6 @@ export type ApplicationState = {
   genericLookupTableCategories: GenericLookupTableCategoriesData[]
   /** グラフのViewState */
   schemaGraphViewState?: AppSchemaDefinitionGraphDataSet | null
+  /** 生成後アプリのデバッグ起動設定（nijo.preview.jsonの内容） */
+  previewSetting: PreviewSetting
 }

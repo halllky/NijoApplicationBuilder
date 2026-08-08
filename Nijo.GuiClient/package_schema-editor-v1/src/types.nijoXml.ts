@@ -51,6 +51,61 @@ export type ProjectOptions = {
 
 // ---------------------------------
 
+/**
+ * nijo.preview.json の内容。生成後アプリをデバッグ起動するための設定。
+ * PreviewSetting.cs に対応する。
+ */
+export type PreviewSetting = {
+  /** 起動完了時にこのURLをブラウザで開く。空文字なら開かない */
+  browser: string
+  /** true なら nijo serve の起動と同時にプロセス群を自動起動する */
+  startOnNijoServe: boolean
+  /** 並列実行するプロセスの定義 */
+  concurrently: PreviewProcessSetting[]
+}
+
+/** concurrently で並列起動する1プロセスの設定 */
+export type PreviewProcessSetting = {
+  /** プロセスの識別名。GUI上の表示やログ取得のキーに使う */
+  name: string
+  process: {
+    /** nijo.xml のディレクトリからの相対パス */
+    cwd: string
+    filename: string
+    args: string
+  }
+  log: {
+    /** 標準出力の書き出し先。nijo.xml のディレクトリからの相対パス。空文字ならログファイルを作らない */
+    stdout: string
+    /** 標準エラー出力の書き出し先。nijo.xml のディレクトリからの相対パス。空文字ならログファイルを作らない */
+    stderr: string
+    /** true=起動の度に追記 / false=起動の度にクリア */
+    appendStdout: boolean
+    /** true=起動の度に追記 / false=起動の度にクリア */
+    appendStderr: boolean
+  }
+  /** コード再生成が成功した直後にこのプロセスを再起動するか */
+  restartOnGenerateCode: boolean
+}
+
+/** 稼働中の1プロセスの状態（/api/preview/state のレスポンス） */
+export type PreviewProcessState = {
+  name: string
+  isRunning: boolean
+  processId: number | null
+  exitCode: number | null
+  stdout: PreviewLogIncrement
+  stderr: PreviewLogIncrement
+}
+
+/** ログファイルの指定オフセット以降の増分 */
+export type PreviewLogIncrement = {
+  text: string
+  offset: number
+}
+
+// ---------------------------------
+
 /** XML要素1個分と対応するデータ型 */
 export type XmlElementItem = {
   /** XML要素を一意に識別するID */

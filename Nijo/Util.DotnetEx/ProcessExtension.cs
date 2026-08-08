@@ -1,142 +1,75 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Nijo.Util.DotnetEx;
 
 public static class ProcessExtension {
 
     /// <summary>
-    /// 標準出力か標準エラー出力かの別
+    /// 実行ファイル名をOSの実行可能ファイル探索規則に従って解決する。
+    /// <see cref="ProcessStartInfo.UseShellExecute"/> = false のとき、
+    /// .NET は Windows の PATHEXT による拡張子解決を行わない
+    /// （"npm" を指定しても実体の "npm.cmd" を見つけられない）ため、これを補う。
+    /// Windows以外では入力をそのまま返す（シェルを介さずとも実行ファイルとして解決できるため）。
     /// </summary>
-    public enum E_STD {
-        StdOut,
-        StdErr,
-    }
+    public static string ResolveExecutablePath(string fileName) {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return fileName;
+        if (string.IsNullOrEmpty(fileName) || Path.IsPathRooted(fileName)) return fileName;
 
-    /// <summary>
-    /// Process.Startのラッパーメソッド
-    /// </summary>
-    /// <param name="editStartInfo">StartInfoをカスタマイズする</param>
-    /// <param name="logOut">標準出力 or 標準エラー出力</param>
-    /// <param name="timeout">タイムアウト。既定は30秒</param>
-    /// <returns>EXIT CODE</returns>
-    public static async Task<int> ExecuteProcessAsync(Action<ProcessStartInfo> editStartInfo, Action<E_STD, string> logOut, TimeSpan? timeout = null) {
-        using var process = new Process();
-        process.StartInfo.UseShellExecute = false;
-        process.StartInfo.CreateNoWindow = true;
-        process.StartInfo.RedirectStandardOutput = true; // 標準出力をリダイレクト
-        process.StartInfo.RedirectStandardError = true;  // 標準エラーをリダイレクト
-        editStartInfo(process.StartInfo);
+        var pathExtensions = (Environment.GetEnvironmentVariable("PATHEXT") ?? ".COM;.EXE;.BAT;.CMD")
+            .Split(';', StringSplitOptions.RemoveEmptyEntries);
+        var searchDirectories = (Environment.GetEnvironmentVariable("PATH") ?? "")
+            .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries);
 
-        process.OutputDataReceived += (sender, e) => {
-            try {
-                if (e.Data != null) {
-                    logOut(E_STD.StdOut, e.Data);
-                } else {
-                    logOut(E_STD.StdOut, $"OutputDataReceived: Stream closed (Data is null).");
-                }
-            } catch (InvalidOperationException ioex) {
-                // プロセス終了時などにストリームが閉じられてこの例外が発生することがあるため、無視する
-                logOut(E_STD.StdOut, $"Caught InvalidOperationException in OutputDataReceived (likely harmless): {ioex.Message}");
-            } catch (Exception ex) {
-                logOut(E_STD.StdOut, $"EXCEPTION in OutputDataReceived: {ex.ToString()}");
-            }
-        };
-        process.ErrorDataReceived += (sender, e) => {
-            try {
-                if (e.Data != null) {
-                    logOut(E_STD.StdErr, e.Data);
-                } else {
-                    logOut(E_STD.StdErr, $"ErrorDataReceived: Stream closed (Data is null).");
-                }
-            } catch (InvalidOperationException ioex) {
-                // プロセス終了時などにストリームが閉じられてこの例外が発生することがあるため、ログのみ出力して無視する
-                logOut(E_STD.StdErr, $"Caught InvalidOperationException in ErrorDataReceived (likely harmless): {ioex.Message}");
-            } catch (Exception ex) {
-                logOut(E_STD.StdErr, $"EXCEPTION in ErrorDataReceived: {ex.ToString()}");
-            }
-        };
+        // 拡張子が既に指定されている場合はそのファイル名のみを探す。無指定ならPATHEXTの全候補を試す
+        var candidateNames = Path.HasExtension(fileName)
+            ? [fileName]
+            : pathExtensions.Select(ext => fileName + ext).ToArray();
 
-        process.Start();
-
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-        var timeoutLimit = DateTime.Now.Add(timeout ?? TimeSpan.FromSeconds(30));
-        while (true) {
-            if (DateTime.Now > timeoutLimit) {
-                EnsureKill(process);
-                process.CancelOutputRead();
-                process.CancelErrorRead();
-                throw new TimeoutException();
-
-            } else if (process.HasExited) {
-                process.CancelOutputRead();
-                process.CancelErrorRead();
-                return process.ExitCode;
-
-            } else {
-                await Task.Delay(100);
+        foreach (var directory in searchDirectories) {
+            foreach (var candidateName in candidateNames) {
+                var candidatePath = Path.Combine(directory, candidateName);
+                if (File.Exists(candidatePath)) return candidatePath;
             }
         }
+
+        // 見つからなければ元の指定のまま返し、以降の解決は Process.Start に委ねる
+        return fileName;
     }
 
     /// <summary>
-    /// プロセスツリーを確実に終了させます。
+    /// 既定のブラウザでURLを開く。
+    /// プロセス起動という副作用を持つため厳密には「純粋な処理」ではないが、
+    /// OS間差異の吸収という点で Util.DotnetEx に置く。
     /// </summary>
-    /// <returns>処理結果</returns>
-    public static string EnsureKill(this Process process) {
-        int? pid = null;
-        try {
-            if (process.HasExited) return "Process is already exited. taskkill is skipped.";
-
-            pid = process.Id;
-
-            var kill = new Process();
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                kill.StartInfo.FileName = "taskkill";
-                kill.StartInfo.ArgumentList.Add("/PID");
-                kill.StartInfo.ArgumentList.Add(pid.ToString()!);
-                kill.StartInfo.ArgumentList.Add("/T");
-                kill.StartInfo.ArgumentList.Add("/F");
-            } else {
-                kill.StartInfo.FileName = "kill";
-                kill.StartInfo.ArgumentList.Add(pid.ToString()!);
-            }
-            kill.StartInfo.RedirectStandardOutput = true;
-            kill.StartInfo.RedirectStandardError = true;
-
-            kill.Start();
-            kill.WaitForExit(TimeSpan.FromSeconds(5));
-
-            if (kill.ExitCode == 0) {
-                return $"Success to task kill (PID = {pid})";
-            } else {
-                return $"Exit code of TASKKILL is '{kill.ExitCode}' (PID = {pid})";
-            }
-
-        } catch (Exception ex) {
-            return $"Failed to task kill (PID = {pid}): {ex.Message}";
+    public static void OpenBrowser(string url) {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+            Process.Start(new ProcessStartInfo {
+                FileName = "cmd",
+                Arguments = $"/c \"start {url}\"",
+                UseShellExecute = true,
+                WindowStyle = ProcessWindowStyle.Hidden,
+            });
+        } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+            Process.Start(new ProcessStartInfo {
+                FileName = "open",
+                Arguments = url,
+                UseShellExecute = true,
+                WindowStyle = ProcessWindowStyle.Hidden,
+            });
+        } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BROWSER"))) {
+            Process.Start(new ProcessStartInfo {
+                FileName = Environment.GetEnvironmentVariable("BROWSER")!,
+                Arguments = url,
+                UseShellExecute = false,
+            });
+        } else {
+            Console.Error.WriteLine(
+                $"このOSではブラウザを自動起動できません。" +
+                $"手動で次のURLを開いてください: {url}");
         }
-    }
-
-    /// <summary>
-    /// .cmd ファイルを、文字コードや行末処理を加えたうえで出力する。
-    /// 特にdotnetコマンド（暗黙的にutf8で実行される）を呼び出す状況を考慮している。
-    /// </summary>
-    /// <param name="cmdFilePath">ファイルパス</param>
-    /// <param name="cmdFileContent">ファイルの内容</param>
-    /// <param name="fileEncoding">エンコード。既定ではBOMなしUTF8</param>
-    public static void RenderCmdFile(string cmdFilePath, string cmdFileContent, Encoding? fileEncoding = null) {
-        File.WriteAllText(
-            cmdFilePath,
-            // cmd処理中にchcpしたときは各行の改行コードの前にスペースが無いと上手く動かないので
-            cmdFileContent.ReplaceLineEndings(" \r\n"),
-            fileEncoding ?? new UTF8Encoding(false, false));
     }
 }

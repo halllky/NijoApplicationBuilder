@@ -3,22 +3,29 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Linq;
 using System.Text.Json.Nodes;
+using Nijo.Previewing;
 
 namespace Nijo.WebService.SchemaEditor;
 
 /// <summary>
-/// <see cref="SchemaEditor.ApplicationState"/> と <see cref="SchemaGraphViewStateTypeByViewMode"/> の組
+/// nijo.xml と同階層に置かれる固定名ファイル群の内容の組。
 /// </summary>
-public class ApplicationStateAndSchemaGraphViewState {
+public class NijoProjectFiles {
     /// <summary>
-    /// アプリケーション全体の状態
+    /// アプリケーション全体の状態（nijo.xmlの内容）
     /// </summary>
     [JsonPropertyName("applicationState")]
     public ApplicationState ApplicationState { get; set; } = new();
 
+    /// <summary>
+    /// 生成後アプリのデバッグ起動設定（nijo.preview.jsonの内容）
+    /// </summary>
+    [JsonPropertyName("previewSetting")]
+    public PreviewSetting PreviewSetting { get; set; } = new();
+
     #region スキーマ定義グラフの見た目の状態
     /// <summary>
-    /// スキーマ定義グラフの見た目の状態。
+    /// スキーマ定義グラフの見た目の状態（nijo.viewState.jsonの内容）。
     /// nullの場合は保存をスキップする。
     /// </summary>
     [JsonPropertyName("schemaGraphViewState")]
@@ -98,4 +105,3 @@ public class ApplicationStateAndSchemaGraphViewState {
     }
     #endregion スキーマ定義グラフの見た目の状態
 }
-

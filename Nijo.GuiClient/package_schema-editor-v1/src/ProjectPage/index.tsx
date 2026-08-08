@@ -75,6 +75,7 @@ export default function ProjectPage({ defaultValues }: {
       projectDir,
       currentValues,
       currentValues.schemaGraphViewState,
+      currentValues.previewSetting,
       personalSettings.autoGenerateCode ?? false
     )
     if (result.ok) {
@@ -194,7 +195,7 @@ export default function ProjectPage({ defaultValues }: {
                 )}
 
                 {displayTab === "project-settings" && (
-                  <ProjectSettings formMethods={formMethods} />
+                  <ProjectSettings formMethods={formMethods} projectDir={projectDir} />
                 )}
 
               </main>

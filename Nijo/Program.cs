@@ -10,8 +10,7 @@ using System.Threading.Tasks;
 using Nijo.Util.DotnetEx;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
+using Nijo.Previewing;
 using Nijo.SchemaParsing;
 using System.Xml.Linq;
 using Nijo.CodeGenerating;
@@ -105,7 +104,8 @@ namespace Nijo {
             serve.SetAction((parseResult, ct) => Serve(
                 parseResult.GetValue(path),
                 parseResult.GetValue(url),
-                parseResult.GetValue(noBrowser)));
+                parseResult.GetValue(noBrowser),
+                ct));
             rootCommand.Add(serve);
 
             // リファレンスドキュメント生成
@@ -267,57 +267,49 @@ namespace Nijo {
         /// <summary>
         /// GUI用のサービスを展開する
         /// </summary>
-        private static async Task Serve(string? path, string? optUrl, bool noBrowser) {
+        private static async Task Serve(string? path, string? optUrl, bool noBrowser, CancellationToken cancellationToken) {
             var logger = ILoggerExtension.CreateConsoleLogger();
 
             // サービス内容定義
-            var nijoUi = new WebService.NijoWebServiceBuilder();
-            var app = nijoUi.BuildWebApplication(logger);
+            using var nijoWebService = new WebService.NijoWebService();
+            var app = nijoWebService.BuildWebApplication(logger);
 
             // 起動
             var url = optUrl ?? $"http://localhost:5000";
             logger.LogInformation("GUI用のサービスを起動します: {url}", url);
 
-            // ブラウザを立ち上げる
-            if (!noBrowser) {
-                string browserUrl;
-                if (string.IsNullOrWhiteSpace(path)) {
-                    browserUrl = url;
-                } else {
-                    var param = System.Web.HttpUtility.ParseQueryString(string.Empty);
-                    param.Add(WebService.Common.ProjectHelper.PROJECT_DIR_PARAMETER, path);
-                    browserUrl = $"{url}/?{param}";
-                }
+            // pathが指定されていればそのプロジェクトを開いておき、
+            // ブラウザURLの組み立てと nijo.preview.json の startOnNijoServe 判定に使う
+            string browserUrl = url;
+            GeneratedProject? project = null;
+            if (!string.IsNullOrWhiteSpace(path)) {
+                var projectRoot = Path.Combine(Directory.GetCurrentDirectory(), path);
+                GeneratedProject.TryOpen(projectRoot, out project, out _);
 
-                app.Lifetime.ApplicationStarted.Register(() => {
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                        Process.Start(new ProcessStartInfo {
-                            FileName = "cmd",
-                            Arguments = $"/c \"start {browserUrl}\"",
-                            UseShellExecute = true,
-                            WindowStyle = ProcessWindowStyle.Hidden,
-                        });
-                    } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                        Process.Start(new ProcessStartInfo {
-                            FileName = "open",
-                            Arguments = browserUrl,
-                            UseShellExecute = true,
-                            WindowStyle = ProcessWindowStyle.Hidden,
-                        });
-                    } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BROWSER"))) {
-                        Process.Start(new ProcessStartInfo {
-                            FileName = Environment.GetEnvironmentVariable("BROWSER")!,
-                            Arguments = browserUrl,
-                            UseShellExecute = false,
-                        });
-                    } else {
-                        Console.Error.WriteLine(
-                            $"このOSではブラウザを自動起動できません。" +
-                            $"手動で次のURLを開いてください: {browserUrl}");
-                    }
-                });
+                var param = System.Web.HttpUtility.ParseQueryString(string.Empty);
+                param.Add(WebService.Common.ProjectHelper.PROJECT_DIR_PARAMETER, path);
+                browserUrl = $"{url}/?{param}";
             }
 
+            app.Lifetime.ApplicationStarted.Register(() => {
+                // nijo.preview.json で自動起動が有効ならプレビューを開始する
+                if (project != null) {
+                    var previewSetting = PreviewSetting.Load(project);
+                    if (previewSetting.StartOnNijoServe) {
+                        nijoWebService.GetPreview(project).Start(previewSetting, logger);
+                    }
+                }
+
+                // ブラウザを立ち上げる
+                if (!noBrowser) {
+                    ProcessExtension.OpenBrowser(browserUrl);
+                }
+            });
+
+            // アプリケーション終了時（Ctrl+Cを含む）は稼働中のプレビュープロセスを確実に停止する
+            app.Lifetime.ApplicationStopping.Register(() => nijoWebService.StopAllPreviews(logger));
+
+            using var registration = cancellationToken.Register(() => app.Lifetime.StopApplication());
             await app.RunAsync(url);
         }
     }

@@ -1,5 +1,5 @@
 import { SERVER_DOMAIN } from "./main"
-import { AppSchemaDefinitionGraphDataSet, ApplicationState } from "./types"
+import { AppSchemaDefinitionGraphDataSet, ApplicationState, PreviewSetting } from "./types"
 import { NIJOUI_CLIENT_ROUTE_PARAMS } from "./routing"
 
 type LoadSchemaReturn =
@@ -21,13 +21,14 @@ export const loadSchema = async (projectDir: string | null, signal: AbortSignal)
       throw new Error(`Failed to load schema: ${schemaResponse.status} ${body}`);
     }
 
-    const responseData: { applicationState: ApplicationState, schemaGraphViewState: AppSchemaDefinitionGraphDataSet | null } = await schemaResponse.json()
+    const responseData: { applicationState: ApplicationState, schemaGraphViewState: AppSchemaDefinitionGraphDataSet | null, previewSetting: PreviewSetting } = await schemaResponse.json()
     if (signal.aborted) return { ok: false }
 
-    // schemaGraphViewStateをapplicationStateに含める
+    // schemaGraphViewState・previewSettingをapplicationStateに含める
     const schema: ApplicationState = {
       ...responseData.applicationState,
       schemaGraphViewState: responseData.schemaGraphViewState,
+      previewSetting: responseData.previewSetting,
     }
 
     return { ok: true, schema: { applicationState: schema, schemaGraphViewState: responseData.schemaGraphViewState } }
@@ -49,6 +50,7 @@ export const saveSchema = async (
   projectDir: string | null,
   applicationState: ApplicationState,
   schemaGraphViewState: AppSchemaDefinitionGraphDataSet | null,
+  previewSetting: PreviewSetting,
   generateCode: boolean = false,
 ): Promise<{ ok: boolean, error?: string }> => {
   try {
@@ -58,6 +60,7 @@ export const saveSchema = async (
       body: JSON.stringify({
         applicationState,
         schemaGraphViewState,
+        previewSetting,
       }),
     })
     if (!response.ok) {

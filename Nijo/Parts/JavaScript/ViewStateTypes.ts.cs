@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
-using static Nijo.WebService.SchemaEditor.ApplicationStateAndSchemaGraphViewState;
+using static Nijo.WebService.SchemaEditor.NijoProjectFiles;
 using Nijo.Util.DotnetEx;
 
 namespace Nijo.Parts.JavaScript;

@@ -30,13 +30,13 @@ localhost 側の実装方針（iframe + postMessage ブリッジ、生成コー�
 
 生成テンプレート・全 demo（000/101/200）に対して、通常デバッグ時のオリジン統一を実施済み。
 
-| 対象 | 現状 |
-|---|---|
-| エディタの配信 | `Nijo/WebService/NijoWebServiceBuilder.cs` が単一 HTML を埋め込みリソースとして返す。dev 時 `localhost:5176` / serve 時 `localhost:5001`。**API は `/api/*` 配下**（`/api/load` 等） |
-| 生成アプリのデバッグ入口 | `client` → `vite --port 5173 --host`（変更なし）。**`vite.config.ts` の `server.proxy` が `/api/*` を ASP.NET Core (`:5290`) へ転送**するため、ブラウザは常に `localhost:5173` のみを見る |
-| 生成アプリの API 呼び出し | `callAspNetCoreApiAsync.ts` は環境分岐を持たない。常にルート相対パス（`/api/...`）で `fetch`、`credentials: 'same-origin'` |
-| 生成アプリの CORS 設定 | `WebApi/Program.cs` の開発用 CORS 設定は撤去済み（同一オリジンのため不要） |
-| React / Vite | React 19.2 / Vite 7.3（モノレポ共通の root node_modules から解決） |
+| 対象                      | 現状                                                                                                                                                                                      |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| エディタの配信            | `Nijo/WebService/NijoWebService.cs` が単一 HTML を埋め込みリソースとして返す。dev 時 `localhost:5176` / serve 時 `localhost:5001`。**API は `/api/*` 配下**（`/api/load` 等）             |
+| 生成アプリのデバッグ入口  | `client` → `vite --port 5173 --host`（変更なし）。**`vite.config.ts` の `server.proxy` が `/api/*` を ASP.NET Core (`:5290`) へ転送**するため、ブラウザは常に `localhost:5173` のみを見る |
+| 生成アプリの API 呼び出し | `callAspNetCoreApiAsync.ts` は環境分岐を持たない。常にルート相対パス（`/api/...`）で `fetch`、`credentials: 'same-origin'`                                                                |
+| 生成アプリの CORS 設定    | `WebApi/Program.cs` の開発用 CORS 設定は撤去済み（同一オリジンのため不要）                                                                                                                |
+| React / Vite              | React 19.2 / Vite 7.3（モノレポ共通の root node_modules から解決）                                                                                                                        |
 
 **この結果、生成アプリ側は「ローカルデバッグでも本番でもサーバー URL の環境差異がない」状態になっている。**
 fly.io 側で必要な作業は、この前提の上に「iframe 埋め込み用の外側の振り分け」を足すことに縮小された。
@@ -52,7 +52,7 @@ fly.io 環境では、以下 2 つの理由により**オリジンを統一し�
 
 生成アプリ側の `callAspNetCoreApiAsync` は既にルート相対 `/api/...` に統一済みのため、
 fly.io 側で追加の環境変数分岐（`VITE_API_BASE` 等）は**不要**。
-必要なのは `Nijo/WebService/NijoWebServiceBuilder.cs` 側の振り分けのみ。
+必要なのは `Nijo/WebService/NijoWebService.cs` 側の振り分けのみ。
 
 ### 2.1 単一オリジンへの振り分け
 
@@ -66,7 +66,7 @@ fly.io 側で追加の環境変数分岐（`VITE_API_BASE` 等）は**不要**�
 
 実装は YARP または `HttpForwarder` の手書き。**HMR の WebSocket を Upgrade 中継できること**が要件。
 
-`/api/*` は vite の `server.proxy` を経由させず、`NijoWebServiceBuilder` から直接 WebApi(5290) へ転送してよい
+`/api/*` は vite の `server.proxy` を経由させず、`NijoWebService` から直接 WebApi(5290) へ転送してよい
 （vite を二重に経由する必要はない）。
 
 ### 2.2 名前空間の衝突 ← 要対応（本タスクの範囲外）
@@ -75,7 +75,7 @@ fly.io 側で追加の環境変数分岐（`VITE_API_BASE` 等）は**不要**�
 iframe 内のページが `/preview/` 配下で配信されていても、`fetch('/api/...')` は
 **iframe の base ではなくオリジンのルート**（`https://<app>.fly.dev/api/...`）に解決される。
 
-一方、`NijoWebServiceBuilder` は自身のスキーマ編集 API を既に `/api/*`
+一方、`NijoWebService` は自身のスキーマ編集 API を既に `/api/*`
 （`/api/load`, `/api/save`, `/api/generate` 等）に持っている。**このままではルートの `/api/*` が衝突する。**
 
 対応（どちらか）:
@@ -178,10 +178,10 @@ HMR が即時に効くのは **React 層だけ**。スキーマ変更に伴う C
 
 ### 3.5 サイジング
 
-| プロセス | メモリ目安 |
-|---|---|
-| vite dev（デモ101規模） | 400〜700MB |
-| Nijo serve (.NET) | 〜150MB |
+| プロセス                            | メモリ目安               |
+| ----------------------------------- | ------------------------ |
+| vite dev（デモ101規模）             | 400〜700MB               |
+| Nijo serve (.NET)                   | 〜150MB                  |
 | WebApi `dotnet watch`（(a) 採用時） | 250MB + ビルド時スパイク |
 
 - **shared-cpu-2x / 2GB が下限、4GB 推奨。**
@@ -193,18 +193,18 @@ HMR が即時に効くのは **React 層だけ**。スキーマ変更に伴う C
 
 ## 4. 推奨方針まとめ
 
-| 項目 | 方針 |
-|---|---|
-| オリジン | `https://<app>.fly.dev` 単一。`/preview/*` を vite dev へ、`/api/*` を WebApi へ直接プロキシ |
-| API ベース URL | 生成アプリ側は対応済み（ルート相対 `/api/...` 固定、環境分岐なし） |
-| 名前空間 | エディタ自身の API を `/api/*` から `/nijo-api/*` 等へ退避し、ルート `/api/*` を生成アプリに明け渡す |
-| 永続化 | volume なし。プロジェクトと node_modules はイメージに焼く |
-| リセット | アイドル 10 分で pristine 復元（主）＋ 手動ボタン ＋ 日次（保険） |
-| machine | `min_machines_running = 1`、`auto_stop_machines` 無効 |
-| サイズ | shared-cpu-2x / 4GB、swap 1GB |
-| 隔離 | デモ専用の fly org。シークレットをイメージに入れない |
-| 生成処理 | アトミック差し替え + サーバー側で直列化 + 実行中の全員通知 |
-| スコープ | まず React 層のみ（(b)）で立ち上げ、後から WebApi 連動（(a)）へ |
+| 項目           | 方針                                                                                                 |
+| -------------- | ---------------------------------------------------------------------------------------------------- |
+| オリジン       | `https://<app>.fly.dev` 単一。`/preview/*` を vite dev へ、`/api/*` を WebApi へ直接プロキシ         |
+| API ベース URL | 生成アプリ側は対応済み（ルート相対 `/api/...` 固定、環境分岐なし）                                   |
+| 名前空間       | エディタ自身の API を `/api/*` から `/nijo-api/*` 等へ退避し、ルート `/api/*` を生成アプリに明け渡す |
+| 永続化         | volume なし。プロジェクトと node_modules はイメージに焼く                                            |
+| リセット       | アイドル 10 分で pristine 復元（主）＋ 手動ボタン ＋ 日次（保険）                                    |
+| machine        | `min_machines_running = 1`、`auto_stop_machines` 無効                                                |
+| サイズ         | shared-cpu-2x / 4GB、swap 1GB                                                                        |
+| 隔離           | デモ専用の fly org。シークレットをイメージに入れない                                                 |
+| 生成処理       | アトミック差し替え + サーバー側で直列化 + 実行中の全員通知                                           |
+| スコープ       | まず React 層のみ（(b)）で立ち上げ、後から WebApi 連動（(a)）へ                                      |
 
 ## 5. 着手順
 
@@ -212,7 +212,7 @@ HMR が即時に効くのは **React 層だけ**。スキーマ変更に伴う C
    `vite.config.ts` の `server.proxy`、`Program.cs` の CORS 撤去。テンプレート・全 demo に反映済み。
 2. **生成のアトミック化 + 直列化** — 共有環境における品質の土台
 3. iframe + postMessage ブリッジ + `data-nijo-node` 注入（localhost 側の実装）
-4. **エディタ側 API の名前空間退避**（2.2）+ `NijoWebServiceBuilder` の `/preview/*` `/api/*` 振り分け
+4. **エディタ側 API の名前空間退避**（2.2）+ `NijoWebService` の `/preview/*` `/api/*` 振り分け
 5. pristine 復元によるアイドルリセット
 6. fly デプロイ（volume なし / 専用 org / `min_machines_running = 1`）
 

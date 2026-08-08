@@ -114,6 +114,8 @@ namespace Nijo {
         public string SchemaXmlPath => Path.Combine(ProjectRoot, NIJO_XML);
         /// <summary>プロジェクトのビュー状態JSONの絶対パス</summary>
         public string ViewStateJsonPath => Path.Combine(ProjectRoot, "nijo.viewState.json");
+        /// <summary>プロジェクトのデバッグ起動設定JSONの絶対パス</summary>
+        public string PreviewJsonPath => Path.Combine(ProjectRoot, Previewing.PreviewSetting.FILE_NAME);
 
         public string CoreLibraryRoot => Path.Combine(ProjectRoot, GetConfig().CoreLibraryFolderName);
         public string WebapiProjectRoot => Path.Combine(ProjectRoot, GetConfig().WebapiProjectFolderName);
