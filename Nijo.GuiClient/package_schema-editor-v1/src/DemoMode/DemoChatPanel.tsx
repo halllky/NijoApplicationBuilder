@@ -47,7 +47,7 @@ export const DemoChatPanel: React.FC = () => {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-4 right-4 z-40 rounded-full bg-indigo-600 text-white w-14 h-14 shadow-lg hover:bg-indigo-700"
+        className="fixed bottom-4 left-4 z-40 rounded-full bg-indigo-600 text-white w-14 h-14 shadow-lg hover:bg-indigo-700"
       >
         {/* パネルを閉じていてもAIが処理中であることが分かるようにする */}
         {busy && <span className="absolute inset-0 rounded-full bg-indigo-400 animate-ping opacity-75" />}
@@ -57,7 +57,7 @@ export const DemoChatPanel: React.FC = () => {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-40 w-96 h-[32rem] bg-white border border-gray-300 rounded shadow-xl flex flex-col">
+    <div className="fixed bottom-4 left-4 z-40 w-96 h-[32rem] bg-white border border-gray-300 rounded shadow-xl flex flex-col">
       <div className="flex items-center justify-between px-3 py-2 border-b">
         <div className="flex gap-2 text-sm">
           <button
