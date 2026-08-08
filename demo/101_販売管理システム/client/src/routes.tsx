@@ -49,4 +49,10 @@ export const router = createBrowserRouter([
     // loader などでエラーが発生した場合に表示するエラーページ
     errorElement: <ErrorPage />,
   },
-])
+], {
+  // 共有デモサイトでは /demo/ 配下に公開されるため、ルーティングのbasenameを合わせる。
+  // (Viteのアセット配信自体はルート相対のままなので、base設定とは連動させていない。
+  //  詳細は vite.config.ts のコメント参照)
+  // 通常のローカル開発ではVITE_DEMO_BASEは未設定なので挙動は変わらない。
+  basename: import.meta.env.VITE_DEMO_BASE ?? "/",
+})

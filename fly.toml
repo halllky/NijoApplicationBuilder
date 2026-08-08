@@ -1,0 +1,35 @@
+# 共有デモサイト(全ユーザーが同じ環境を共有する単一Machine構成)。
+# 排他ロックがプロセス内メモリ実装のため、複数台に増やさないこと(`fly scale count 1` 固定)。
+app = "nijo-demo"
+primary_region = "nrt"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  DEMO_IDLE_RESET_MINUTES = "30"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "connections"
+    soft_limit = 200
+    hard_limit = 250
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "10s"
+    grace_period = "90s"
+    method = "GET"
+    path = "/api/demo/status"
+
+[[vm]]
+  size = "shared-cpu-2x"
+  memory = "4gb"
+  processes = ["app"]

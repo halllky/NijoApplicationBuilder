@@ -15,6 +15,7 @@ import ProjectSettings from "./ProjectSettings"
 import { DiagramRef } from "./DataStructure/Diagram"
 import { useValidationErrorMessages, ValidationContextProvider } from "./useValidation"
 import { JumpToElementContext, JumpToElementFunction } from "./useJumpToElement"
+import { useDemoMode } from "../DemoMode/DemoModeProvider"
 
 /**
  * プロジェクト編集画面のメインレイアウト。
@@ -61,8 +62,9 @@ export default function ProjectPage({ defaultValues }: {
   const [saveButtonText, setSaveButtonText] = React.useState('保存(Ctrl + S)')
   const [nowSaving, setNowSaving] = React.useState(false)
   const [saveError, setSaveError] = React.useState<string>()
+  const { isLockedByOther } = useDemoMode()
   const handleSave = async () => {
-    if (nowSaving) return;
+    if (nowSaving || isLockedByOther) return;
     setSaveError(undefined)
     setNowSaving(true)
 
@@ -161,8 +163,9 @@ export default function ProjectPage({ defaultValues }: {
                     fill
                     onClick={handleSave}
                     loading={nowSaving}
+                    disabled={isLockedByOther}
                   >
-                    {saveButtonText}
+                    {isLockedByOther ? '他のユーザーが編集中' : saveButtonText}
                   </UI.Button>
                 </div>
               </header>

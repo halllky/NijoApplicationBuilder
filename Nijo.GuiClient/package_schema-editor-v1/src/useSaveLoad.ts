@@ -1,6 +1,7 @@
 import { SERVER_DOMAIN } from "./main"
 import { AppSchemaDefinitionGraphDataSet, ApplicationState } from "./types"
 import { NIJOUI_CLIENT_ROUTE_PARAMS } from "./routing"
+import { demoFetchHeaders } from "./DemoMode/clientId"
 
 type LoadSchemaReturn =
   | { ok: true; schema: { applicationState: ApplicationState, schemaGraphViewState: AppSchemaDefinitionGraphDataSet | null } }
@@ -54,12 +55,16 @@ export const saveSchema = async (
   try {
     const response = await fetch(`${SERVER_DOMAIN}/api/save?${NIJOUI_CLIENT_ROUTE_PARAMS.QUERY_PROJECT_DIR}=${encodeURIComponent(projectDir ?? '')}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...demoFetchHeaders() },
       body: JSON.stringify({
         applicationState,
         schemaGraphViewState,
       }),
     })
+    if (response.status === 423) {
+      const body = await response.json().catch(() => null)
+      return { ok: false, error: body?.message ?? '他のユーザーが編集中のため保存できません' }
+    }
     if (!response.ok) {
       const bodyText = await response.text()
       try {
@@ -77,8 +82,12 @@ export const saveSchema = async (
       try {
         const generateResponse = await fetch(`${SERVER_DOMAIN}/api/generate?${NIJOUI_CLIENT_ROUTE_PARAMS.QUERY_PROJECT_DIR}=${encodeURIComponent(projectDir ?? '')}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...demoFetchHeaders() },
         })
+        if (generateResponse.status === 423) {
+          const body = await generateResponse.json().catch(() => null)
+          return { ok: false, error: body?.message ?? '他のユーザーが編集中のためコード生成できません' }
+        }
         if (!generateResponse.ok) {
           const bodyText = await generateResponse.text()
           console.error(bodyText)

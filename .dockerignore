@@ -1,0 +1,10 @@
+**/node_modules
+**/bin
+**/obj
+**/dist
+**/.git
+**/*.Log
+**/UnitTest.Log
+**/WebApi.Log
+.devcontainer
+.vscode

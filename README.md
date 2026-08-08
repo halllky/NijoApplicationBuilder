@@ -38,3 +38,91 @@ Dockerイメージは .NET の公式イメージをベースに、追加で Node
 * 基本的にデモプロジェクトを使って動作確認を行なっています。
   デモプロジェクトのコード自動整形かけ直しやデバッグなどは VSCode の Run Task（ [ワークスペースファイル](./nijo.code-workspace)  の `tasks` セクションで定義された各タスク）から行なっています。
 * リリースも Run Task から行ないます。
+
+## デモについて（Nijo保守向け説明）
+
+### 構成
+
+全ユーザーが同じ環境を共有する、単一Fly Machine構成の共有デモサイトです。
+ユーザーに公開されるのは [デモ101(`demo/101_販売管理システム`)](./demo/101_販売管理システム/) のみで、
+GUI（フロント: `Nijo.GuiClient`、バックエンド: `Nijo/WebService`）からスキーマ編集・AIチャットでの編集・デモ101のデバッグ起動を行います。
+
+```
+Browser ──HTTPS──> Fly edge ──> nijo serve --demo-mode (:8080)  ※Machineは1台固定
+                                 ├ /              → 埋め込みSPA(スキーマエディタ)
+                                 ├ /api/*         → 既存API + 共有デモ用API
+                                 ├ /api/demo/hub  → SignalR
+                                 ├ /demo/{**}     → YARP → vite dev server (:5173, HMR含む)
+                                 └ /demo-api/{**} → YARP → デモ101 WebApi (:5290, prefix除去)
+                                 子プロセス: dotnet watch(WebApi) / npm run dev(client) / claude -p
+```
+
+- **排他ロック**: AIによる編集や保存・生成・リセットなど環境を変更する操作は同時に1つしか実行できません。
+  実行中は他ユーザーの同種の操作が HTTP 423 で拒否されます（単一Machine・単一プロセス前提のメモリ内ロック）。
+- **SignalR**: サーバーから全クライアントへ、ロック状態の変化・他ユーザーによる更新時の強制リロード・
+  AIチャットやビルドプロセスの出力をリアルタイムに配信します。
+- **AIチャット**: GUIのチャットパネルから入力した指示を、WebServiceが headless の `claude` CLI (`claude -p`)
+  に渡して実行し、出力をストリーミング表示します。スキーマ(`nijo.xml`)が変更されていれば自動でコード生成し、
+  他クライアントへ強制リロードを配信します。
+- **デモ101の公開**: WebService内蔵のYARPリバースプロキシ経由で `/demo/*`(vite dev server)・
+  `/demo-api/*`(WebApi、プレフィックス除去)を公開します。Viteの開発サーバーは `base` 設定を
+  HTMLアセット参照(`/@vite/client` 等)には反映しない仕様のため、`/demo/**` に加えて
+  `/@vite/**`, `/src/**`, `/node_modules/**` などVite開発専用パスも同じクラスターへ転送しています
+  （詳細は [`vite.config.ts`](./demo/101_販売管理システム/client/vite.config.ts) と
+  [`DemoReverseProxyConfig.cs`](./Nijo/WebService/DemoMode/DemoReverseProxyConfig.cs) のコメント参照）。
+- **アイドル検知リセット**: 最終操作から一定時間（既定30分、`DEMO_IDLE_RESET_MINUTES` で変更可）
+  操作が無く、かつワークスペースがpristine状態から変化している場合、自動的に環境をリセットします。
+  手動リセットボタンも用意されています。リセットは `git checkout -- . && git clean` で
+  イメージビルド時にコミットしたpristine状態へ戻し、コード再生成・プロセス再起動を行います。
+
+主要な実装ファイル:
+
+* `Nijo/Program.cs` — `serve --demo-mode` フラグ
+* `Nijo/WebService/NijoWebServiceBuilder.cs` — DI・SignalR・YARP・ロック付きエンドポイントの組み込み
+* `Nijo/WebService/DemoMode/` — 共有デモサイト機能一式（ロック、Hub、プロセス管理、claude連携、リセット）
+* `Nijo.GuiClient/package_schema-editor-v1/src/DemoMode/` — GUI側のプロバイダー・バナー・チャットパネル
+* `Dockerfile` / `fly.toml` / `docker/entrypoint.sh` — デプロイ用構成
+
+### ローカルでの動作確認
+
+```bash
+dotnet run --project Nijo -- serve "demo/101_販売管理システム" --demo-mode --no-browser --url http://localhost:5001
+```
+
+* `http://localhost:5001/` — スキーマエディタ(GUI)
+* `http://localhost:5001/demo/` — デモ101本体（起動には数十秒〜数分かかります）
+* `http://localhost:5001/api/demo/status` — デモモードの状態確認用API
+
+通常の(共有デモではない)ローカル開発では、これまで通り `--demo-mode` を付けずに `nijo serve` を使ってください。挙動は変わりません。
+
+### Fly.io へのデプロイ
+
+このリポジトリ直下に `Dockerfile` と `fly.toml` を用意しています。
+
+```bash
+# 初回のみ: fly.toml が既にあるので --no-deploy でアプリを登録
+fly launch --no-deploy
+
+# 必須シークレット(claude CLI が使用)
+fly secrets set ANTHROPIC_API_KEY=sk-ant-xxxxx
+
+# 任意(既定30分)
+fly secrets set DEMO_IDLE_RESET_MINUTES=30
+
+# デプロイ
+fly deploy
+```
+
+注意点:
+
+* **`fly scale count 1` を維持してください。** 排他ロック・チャット履歴・子プロセス管理はすべて単一プロセスの
+  メモリ内実装のため、Machineを複数台にすると排他制御が破綻します。
+* イメージは `mcr.microsoft.com/dotnet/sdk:10.0` ベースです。デモ101の `dotnet watch` / `npm run dev` を
+  コンテナ内で常駐実行するため、ランタイムイメージではなくSDKイメージを使用しています。
+* イメージビルド時にデモ101の `npm ci` / `dotnet build` を実行してキャッシュを焼き込み、
+  `git init && git commit` でpristine状態を固定しています。起動時・リセット時はこの状態を基準に戻します。
+* ヘルスチェックは `GET /api/demo/status` です。起動時に `nijo generate` 相当の処理とdotnet watch/viteの
+  初回ビルドが走るため `grace_period` を長め(90秒)に設定しています。
+* 無認証で公開されるため、`claude` の実行はコンテナ内に留めた上で
+  `--dangerously-skip-permissions` を使用しています。API利用量やアクセス制御（サイトパスワード等）が
+  必要な場合は別途検討してください。

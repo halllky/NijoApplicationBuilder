@@ -8,6 +8,9 @@ import { PersonalSettingsProvider } from "./PersonalSettings"
 import "./main.css"
 import "allotment/dist/style.css"
 import { CtrlSProvider } from "./UI/useCtrlS"
+import { DemoModeProvider } from "./DemoMode/DemoModeProvider"
+import { DemoBanner } from "./DemoMode/DemoBanner"
+import { DemoChatPanel } from "./DemoMode/DemoChatPanel"
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -22,9 +25,13 @@ function App() {
 
   return (
     <PersonalSettingsProvider>
-      <CtrlSProvider>
-        <ReactRouter.RouterProvider router={router} />
-      </CtrlSProvider>
+      <DemoModeProvider>
+        <CtrlSProvider>
+          <DemoBanner />
+          <ReactRouter.RouterProvider router={router} />
+          <DemoChatPanel />
+        </CtrlSProvider>
+      </DemoModeProvider>
     </PersonalSettingsProvider>
   )
 }

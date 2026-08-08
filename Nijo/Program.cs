@@ -76,6 +76,13 @@ namespace Nijo {
                 Description = "GUI用のサービスが実行されるURLを明示的に指定します。",
             };
 
+            // 共有デモサイトモード
+            var demoMode = new Option<bool>("--demo-mode") {
+                Description = "全ユーザーが1つの環境を共有する共有デモサイトモードで起動します。"
+                    + "排他ロック・SignalRによる強制リロード通知が有効になり、"
+                    + "プロジェクトパスは常にこのコマンドで指定した path に固定されます(pjクエリパラメータは無視されます)。",
+            };
+
             // 新規プロジェクト作成時のテンプレート
             var template = new Option<string?>("--template", "-t") {
                 Description = "新規プロジェクト作成時に使用するテンプレート名。"
@@ -101,11 +108,12 @@ namespace Nijo {
             rootCommand.Add(generate);
 
             // GUI用のサービスを展開する
-            var serve = new Command("serve", "GUI用のサービスを展開します。") { path, url, noBrowser };
+            var serve = new Command("serve", "GUI用のサービスを展開します。") { path, url, noBrowser, demoMode };
             serve.SetAction((parseResult, ct) => Serve(
                 parseResult.GetValue(path),
                 parseResult.GetValue(url),
-                parseResult.GetValue(noBrowser)));
+                parseResult.GetValue(noBrowser),
+                parseResult.GetValue(demoMode)));
             rootCommand.Add(serve);
 
             // リファレンスドキュメント生成
@@ -267,12 +275,26 @@ namespace Nijo {
         /// <summary>
         /// GUI用のサービスを展開する
         /// </summary>
-        private static async Task Serve(string? path, string? optUrl, bool noBrowser) {
+        private static async Task Serve(string? path, string? optUrl, bool noBrowser, bool demoMode) {
             var logger = ILoggerExtension.CreateConsoleLogger();
+
+            WebService.DemoMode.DemoModeOptions? demoOptions = null;
+            if (demoMode) {
+                if (string.IsNullOrWhiteSpace(path)) {
+                    throw new InvalidOperationException("--demo-mode を指定する場合は project path が必須です。");
+                }
+                var workspaceRoot = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), path));
+                var idleResetMinutes = int.TryParse(Environment.GetEnvironmentVariable("DEMO_IDLE_RESET_MINUTES"), out var m) ? m : 30;
+                demoOptions = new WebService.DemoMode.DemoModeOptions {
+                    WorkspaceRoot = workspaceRoot,
+                    IdleResetMinutes = idleResetMinutes,
+                };
+                logger.LogInformation("共有デモサイトモードで起動します。ワークスペース: {workspaceRoot}", workspaceRoot);
+            }
 
             // サービス内容定義
             var nijoUi = new WebService.NijoWebServiceBuilder();
-            var app = nijoUi.BuildWebApplication(logger);
+            var app = nijoUi.BuildWebApplication(logger, demoOptions);
 
             // 起動
             var url = optUrl ?? $"http://localhost:5000";

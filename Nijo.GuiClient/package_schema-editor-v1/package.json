@@ -8,6 +8,7 @@
     "build": "tsc && vite build"
   },
   "dependencies": {
+    "@microsoft/signalr": "^10.0.0",
     "@nijo/ui-components": "file:../package_ui-components"
   }
 }
