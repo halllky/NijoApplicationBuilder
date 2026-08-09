@@ -10,10 +10,10 @@ using System.Threading.Tasks;
 using Nijo.Util.DotnetEx;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
-using Nijo.Previewing;
 using Nijo.SchemaParsing;
 using System.Xml.Linq;
 using Nijo.CodeGenerating;
+using Nijo.WebService.Previewing;
 
 [assembly: InternalsVisibleTo("Nijo.IntegrationTest")]
 

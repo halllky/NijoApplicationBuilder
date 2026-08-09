@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nijo.Util.DotnetEx;
 
-namespace Nijo.Previewing;
+namespace Nijo.WebService.Previewing;
 
 /// <summary>
 /// 生成後アプリを実際に起動して動かしている状態。

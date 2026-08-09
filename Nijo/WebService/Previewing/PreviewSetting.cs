@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Nijo.Previewing;
+namespace Nijo.WebService.Previewing;
 
 /// <summary>
 /// nijo.xml と同階層に配置される固定名JSON（nijo.preview.json）の内容。

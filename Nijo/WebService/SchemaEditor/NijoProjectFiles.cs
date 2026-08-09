@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Linq;
 using System.Text.Json.Nodes;
-using Nijo.Previewing;
+using Nijo.WebService.Previewing;
 
 namespace Nijo.WebService.SchemaEditor;
 
