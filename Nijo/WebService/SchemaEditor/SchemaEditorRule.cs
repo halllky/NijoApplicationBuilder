@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 using Nijo.CodeGenerating;
 using Nijo.SchemaParsing;
 
-namespace Nijo.WebService.SchemaEditor2;
+namespace Nijo.WebService.SchemaEditor;
 
 /// <summary>
 /// スキーマ編集画面が必要とする、プロジェクトに依存しない固定ルール。

@@ -13,7 +13,7 @@ export type CreateComboBoxCellFunction = <TRow>(
 
 /**
  * {@link EditingMemberType} を、種類コンボボックスが扱うフラットな文字列に変換する。
- * C#側の EditingMemberType.ToAttributeValue (Nijo/WebService/SchemaEditor2/EditingMember.cs) と対になる。
+ * C#側の EditingMemberType.ToAttributeValue (Nijo/WebService/SchemaEditor/EditingMember.cs) と対になる。
  */
 function memberTypeToText(type: EditingMemberType): string {
   switch (type.kind) {

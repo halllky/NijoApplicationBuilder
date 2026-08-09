@@ -112,7 +112,7 @@ export type EditingCustomAttribute = {
 
 /**
  * スキーマ定義グラフの見た目の状態（nijo.viewState.jsonの内容）。
- * C#側の SchemaEditor2.SchemaGraphViewState に対応する。
+ * C#側の SchemaEditor.SchemaGraphViewState に対応する。
  */
 export type EditingSchemaGraphViewState = {
   schemaDefinition: {

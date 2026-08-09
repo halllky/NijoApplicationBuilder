@@ -3,7 +3,7 @@ using System.Text.Json.Nodes;
 using System.Xml.Linq;
 using Nijo.SchemaParsing;
 
-namespace Nijo.WebService.SchemaEditor2;
+namespace Nijo.WebService.SchemaEditor;
 
 /// <summary>
 /// スキーマ定義のバリデーションエラーを、XML要素のUniqueIdをキーにして引けるように整理したもの。

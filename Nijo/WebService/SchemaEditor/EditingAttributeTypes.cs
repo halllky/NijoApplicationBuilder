@@ -7,7 +7,7 @@ using System.Text.Json.Nodes;
 using System.Xml.Linq;
 using Nijo.SchemaParsing;
 
-namespace Nijo.WebService.SchemaEditor2;
+namespace Nijo.WebService.SchemaEditor;
 
 /// <summary>
 /// XML属性の値とJSON値の間の型変換ルール。

@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 using System.Xml.Linq;
 using Nijo.SchemaParsing;
 
-namespace Nijo.WebService.SchemaEditor2;
+namespace Nijo.WebService.SchemaEditor;
 
 /// <summary>
 /// 汎用参照テーブル1個分のカテゴリ定義データ。

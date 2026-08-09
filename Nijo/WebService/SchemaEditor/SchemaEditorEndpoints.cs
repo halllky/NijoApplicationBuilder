@@ -12,7 +12,7 @@ using Nijo.SchemaParsing;
 using Nijo.WebService.Common;
 using Nijo.WebService.Previewing;
 
-namespace Nijo.WebService.SchemaEditor2;
+namespace Nijo.WebService.SchemaEditor;
 
 /// <summary>
 /// スキーマ編集関連のエンドポイントハンドラ（構造化されたデータ形式版）。

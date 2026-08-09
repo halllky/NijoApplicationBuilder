@@ -10,12 +10,15 @@ using Nijo.CodeGenerating;
 using Nijo.SchemaParsing;
 using Nijo.WebService.Previewing;
 
-namespace Nijo.WebService.SchemaEditor2;
+namespace Nijo.WebService.SchemaEditor;
 
 /// <summary>
 /// スキーマ定義編集画面が扱う、nijo.xml とその同階層に置かれる固定名ファイル群
 /// （nijo.viewState.json, nijo.preview.json）の内容の組。
-/// ルート集約はモデル種別ごとのリストに分類済みで返す。
+///
+/// 保存ファイルの粒度でもGUIの画面構造でもなく、
+/// Nijo の論理的概念モデルにあわせたデータ構造にすることで、
+/// ファイル仕様変更と画面仕様変更の両方に強くする。
 /// </summary>
 public class EditingProject {
     [JsonPropertyName("dataStructures")]

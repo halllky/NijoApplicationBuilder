@@ -8,7 +8,7 @@ using System.Xml;
 using System.Xml.Linq;
 using Nijo.SchemaParsing;
 
-namespace Nijo.WebService.SchemaEditor2;
+namespace Nijo.WebService.SchemaEditor;
 
 /// <summary>
 /// ルート集約1個分。データ構造・コマンド・静的区分・値オブジェクト・定数のいずれも、

@@ -104,7 +104,7 @@ public class NijoWebService : IDisposable {
         app.UseCors(CORS_POLICY_NAME);
 
         // スキーマ編集エンドポイント
-        var schemaEditor = new SchemaEditor2.SchemaEditorEndpoints(this);
+        var schemaEditor = new SchemaEditor.SchemaEditorEndpoints(this);
         app.MapGet("/nijo-api/load", schemaEditor.HandleLoad);
         app.MapGet("/nijo-api/schema-rule", schemaEditor.HandleGetRule);
         app.MapPost("/nijo-api/validate", schemaEditor.HandleValidate);

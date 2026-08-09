@@ -30,13 +30,13 @@ localhost 側の実装方針（iframe + postMessage ブリッジ、生成コー�
 
 生成テンプレート・全 demo（000/101/200）に対して、通常デバッグ時のオリジン統一を実施済み。
 
-| 対象                      | 現状                                                                                                                                                                                      |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| エディタの配信            | `Nijo/WebService/NijoWebService.cs` が単一 HTML を埋め込みリソースとして返す。dev 時 `localhost:5176` / serve 時 `localhost:5001`。**API は `/nijo-api/*` 配下**（`/nijo-api/load` 等。2.2 参照）             |
-| 生成アプリのデバッグ入口  | `client` → `vite --port 5173 --host`（変更なし）。**`vite.config.ts` の `server.proxy` が `/api/*` を ASP.NET Core (`:5290`) へ転送**するため、ブラウザは常に `localhost:5173` のみを見る |
-| 生成アプリの API 呼び出し | `callAspNetCoreApiAsync.ts` は環境分岐を持たない。常にルート相対パス（`/api/...`）で `fetch`、`credentials: 'same-origin'`                                                                |
-| 生成アプリの CORS 設定    | `WebApi/Program.cs` の開発用 CORS 設定は撤去済み（同一オリジンのため不要）                                                                                                                |
-| React / Vite              | React 19.2 / Vite 7.3（モノレポ共通の root node_modules から解決）                                                                                                                        |
+| 対象                      | 現状                                                                                                                                                                                              |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| エディタの配信            | `Nijo/WebService/NijoWebService.cs` が単一 HTML を埋め込みリソースとして返す。dev 時 `localhost:5176` / serve 時 `localhost:5001`。**API は `/nijo-api/*` 配下**（`/nijo-api/load` 等。2.2 参照） |
+| 生成アプリのデバッグ入口  | `client` → `vite --port 5173 --host`（変更なし）。**`vite.config.ts` の `server.proxy` が `/api/*` を ASP.NET Core (`:5290`) へ転送**するため、ブラウザは常に `localhost:5173` のみを見る         |
+| 生成アプリの API 呼び出し | `callAspNetCoreApiAsync.ts` は環境分岐を持たない。常にルート相対パス（`/api/...`）で `fetch`、`credentials: 'same-origin'`                                                                        |
+| 生成アプリの CORS 設定    | `WebApi/Program.cs` の開発用 CORS 設定は撤去済み（同一オリジンのため不要）                                                                                                                        |
+| React / Vite              | React 19.2 / Vite 7.3（モノレポ共通の root node_modules から解決）                                                                                                                                |
 
 **この結果、生成アプリ側は「ローカルデバッグでも本番でもサーバー URL の環境差異がない」状態になっている。**
 fly.io 側で必要な作業は、この前提の上に「iframe 埋め込み用の外側の振り分け」を足すことに縮小された。
@@ -86,7 +86,7 @@ iframe 内のページが `/preview/` 配下で配信されていても、`fetch
    ただしこれは `callAspNetCoreApiAsync` に再び環境分岐を持ち込むことになり、
    本タスクで撤去した「サーバー URL の環境差異」が iframe 埋め込みのためだけに復活する。**非推奨。**
 
-**1. を実施済み。** `Nijo/WebService/SchemaEditor2/SchemaEditorEndpoints.cs` がスキーマ編集 API を
+**1. を実施済み。** `Nijo/WebService/SchemaEditor/SchemaEditorEndpoints.cs` がスキーマ編集 API を
 `/nijo-api/load`, `/nijo-api/save`, `/nijo-api/validate`, `/nijo-api/generate`, `/nijo-api/types`,
 `/nijo-api/schema-rule` として、`PreviewEndpointHandlers` がプレビュープロセス管理 API を
 `/nijo-api/preview/start`, `/nijo-api/preview/stop`, `/nijo-api/preview/state` として提供しており、
@@ -198,18 +198,18 @@ HMR が即時に効くのは **React 層だけ**。スキーマ変更に伴う C
 
 ## 4. 推奨方針まとめ
 
-| 項目           | 方針                                                                                                 |
-| -------------- | ---------------------------------------------------------------------------------------------------- |
-| オリジン       | `https://<app>.fly.dev` 単一。`/preview/*` を vite dev へ、`/api/*` を WebApi へ直接プロキシ         |
-| API ベース URL | 生成アプリ側は対応済み（ルート相対 `/api/...` 固定、環境分岐なし）                                   |
+| 項目           | 方針                                                                                                     |
+| -------------- | -------------------------------------------------------------------------------------------------------- |
+| オリジン       | `https://<app>.fly.dev` 単一。`/preview/*` を vite dev へ、`/api/*` を WebApi へ直接プロキシ             |
+| API ベース URL | 生成アプリ側は対応済み（ルート相対 `/api/...` 固定、環境分岐なし）                                       |
 | 名前空間       | エディタ自身の API を `/api/*` から `/nijo-api/*` へ退避済み。ルート `/api/*` は生成アプリに明け渡し済み |
-| 永続化         | volume なし。プロジェクトと node_modules はイメージに焼く                                            |
-| リセット       | アイドル 10 分で pristine 復元（主）＋ 手動ボタン ＋ 日次（保険）                                    |
-| machine        | `min_machines_running = 1`、`auto_stop_machines` 無効                                                |
-| サイズ         | shared-cpu-2x / 4GB、swap 1GB                                                                        |
-| 隔離           | デモ専用の fly org。シークレットをイメージに入れない                                                 |
-| 生成処理       | アトミック差し替え + サーバー側で直列化 + 実行中の全員通知                                           |
-| スコープ       | まず React 層のみ（(b)）で立ち上げ、後から WebApi 連動（(a)）へ                                      |
+| 永続化         | volume なし。プロジェクトと node_modules はイメージに焼く                                                |
+| リセット       | アイドル 10 分で pristine 復元（主）＋ 手動ボタン ＋ 日次（保険）                                        |
+| machine        | `min_machines_running = 1`、`auto_stop_machines` 無効                                                    |
+| サイズ         | shared-cpu-2x / 4GB、swap 1GB                                                                            |
+| 隔離           | デモ専用の fly org。シークレットをイメージに入れない                                                     |
+| 生成処理       | アトミック差し替え + サーバー側で直列化 + 実行中の全員通知                                               |
+| スコープ       | まず React 層のみ（(b)）で立ち上げ、後から WebApi 連動（(a)）へ                                          |
 
 ## 5. 着手順
 

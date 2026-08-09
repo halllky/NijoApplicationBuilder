@@ -8,7 +8,7 @@ using System.Xml;
 using System.Xml.Linq;
 using Nijo.SchemaParsing;
 
-namespace Nijo.WebService.SchemaEditor2;
+namespace Nijo.WebService.SchemaEditor;
 
 /// <summary>
 /// 集約の子孫要素（Child, Children, ValueMember, Ref）1個分。
