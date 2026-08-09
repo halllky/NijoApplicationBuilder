@@ -112,6 +112,15 @@ public class NijoWebService : IDisposable {
         app.MapPost("/api/generate", schemaHandlers.HandleGenerateCode);
         app.MapPost("/api/types", schemaHandlers.HandleGetNodeTypes);
 
+        // スキーマ編集エンドポイント（構造化されたデータ形式版。段階的移行中のため /api/... と併存する）
+        var schemaEditor2 = new SchemaEditor2.SchemaEditorEndpoints(this);
+        app.MapGet("/nijo-api/load", schemaEditor2.HandleLoad);
+        app.MapGet("/nijo-api/schema-rule", schemaEditor2.HandleGetRule);
+        app.MapPost("/nijo-api/validate", schemaEditor2.HandleValidate);
+        app.MapPost("/nijo-api/save", schemaEditor2.HandleSave);
+        app.MapPost("/nijo-api/generate", schemaEditor2.HandleGenerate);
+        app.MapPost("/nijo-api/types", schemaEditor2.HandleGetTypes);
+
         // プレビュー（生成後アプリのデバッグプロセス）エンドポイント
         var previewHandlers = new PreviewEndpointHandlers(this);
         app.MapPost("/api/preview/start", previewHandlers.HandleStartPreview);
