@@ -2,7 +2,7 @@ import React from "react"
 import * as ReactHookForm from "react-hook-form"
 import * as EG2 from "@nijo/ui-components/layout/EditableGrid2"
 import { TextCellEditor } from "./GridCell.Text"
-import { XmlElementItem } from "../types"
+import { EditingMember } from "../backend"
 import { useFieldValidationError } from "../ProjectPage/useValidation"
 
 export type CreateElementNameCellFunction = <TRow>(
@@ -35,7 +35,7 @@ export function createElementNameCellHelper(
     ),
     renderBody: ({ context }) => {
       const fieldRowIndex = skipFirstRow ? context.row.index + 1 : context.row.index
-      const rowData: XmlElementItem = ReactHookForm.useWatch({ name: `${arrayName}.${fieldRowIndex}`, control })
+      const rowData: EditingMember = ReactHookForm.useWatch({ name: `${arrayName}.${fieldRowIndex}`, control })
       const { hasError, errorMessages } = useFieldValidationError(rowData.uniqueId)
       const bgColor = hasError ? 'bg-amber-300/50' : ''
       const tooltip = errorMessages.join('\n')
@@ -49,7 +49,7 @@ export function createElementNameCellHelper(
               <div key={i} className="basis-[20px] shrink-0 relative leading-none border-l border-gray-300" />
             ))}
             <span className="flex-1 truncate">
-              {rowData.localName}
+              {rowData.physicalName}
               &nbsp;
             </span>
           </div>
@@ -66,13 +66,13 @@ export function createElementNameCellHelper(
     },
     getValueForEditor: ({ rowIndex }) => {
       const fieldRowIndex = skipFirstRow ? rowIndex + 1 : rowIndex
-      const val = getValues(`${arrayName}.${fieldRowIndex}.localName`)
+      const val = getValues(`${arrayName}.${fieldRowIndex}.physicalName`)
       return val?.toString() ?? ''
     },
     setValueFromEditor: ({ rowIndex, value }) => {
       const fieldRowIndex = skipFirstRow ? rowIndex + 1 : rowIndex
       setValue(
-        `${arrayName}.${fieldRowIndex}.localName`,
+        `${arrayName}.${fieldRowIndex}.physicalName`,
         value,
         { shouldDirty: true }
       )

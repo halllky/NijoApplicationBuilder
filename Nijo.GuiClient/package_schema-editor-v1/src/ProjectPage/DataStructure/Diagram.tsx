@@ -2,20 +2,20 @@ import React from "react";
 import useEvent from "react-use-event-hook";
 import * as ReactHookForm from "react-hook-form";
 import { GraphView2 } from "@nijo/ui-components";
-import { GeneratedProjectInGui, SchemaGraphViewState } from "../../types";
+import { EditingProject, EditingSchemaGraphViewState } from "../../backend";
 import { NodeMetadata, useDiagramDataSet } from "./useDiagramDataSet";
 import { useDiagramPanZoomSaving } from "./useDiagramPanZoomSaving";
 
 export type DiagramRef = {
   graphViewRef: React.RefObject<GraphView2.GraphViewRef | null>
-  getGraphDataSet: () => SchemaGraphViewState
+  getGraphDataSet: () => EditingSchemaGraphViewState
 }
 
 /**
  * スキーマ定義ダイアグラム
  */
 export function Diagram(props: {
-  formMethods: ReactHookForm.UseFormReturn<GeneratedProjectInGui>
+  formMethods: ReactHookForm.UseFormReturn<EditingProject>
   onSelectedRootAggregateChanged: (aggregateId: string | null) => void
   diagramRef: React.RefObject<DiagramRef | null>
   className?: string
@@ -25,7 +25,7 @@ export function Diagram(props: {
 
   const graphViewRef = React.useRef<GraphView2.GraphViewRef | null>(null)
   const { nodes, edges } = useDiagramDataSet(props.formMethods)
-  const schemaGraphViewState = ReactHookForm.useWatch({ name: 'schemaGraphViewState', control: props.formMethods.control });
+  const graphViewState = ReactHookForm.useWatch({ name: 'graphViewState', control: props.formMethods.control });
 
   // パン、ズームの localStorage への保存
   const { defaultPan, defaultZoom, handlePanZoomChanged } = useDiagramPanZoomSaving()
@@ -71,7 +71,7 @@ export function Diagram(props: {
         ref={graphViewRef}
         nodes={nodes}
         edges={edges}
-        defaultNodePositions={schemaGraphViewState?.schemaDefinition?.nodePositions}
+        defaultNodePositions={graphViewState?.schemaDefinition?.nodePositions}
         defaultPan={defaultPan}
         defaultZoom={defaultZoom}
         onSelectionChange={handleSelectionChange}

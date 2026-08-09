@@ -1,8 +1,8 @@
 import React from "react"
 import * as ReactHookForm from "react-hook-form"
 import * as ReactRouter from "react-router-dom"
-import { asTree, GeneratedProjectInGui, XmlElementAttributeName } from "../types"
-import { SERVER_DOMAIN } from "../main"
+import { EditingProject, ValidationErrorMap } from "../backend"
+import { validateProject } from "../backend/api"
 import { NIJOUI_CLIENT_ROUTE_PARAMS } from "../routing"
 
 //#region 内部コンテキスト
@@ -29,24 +29,6 @@ type ErrorStateByField = {
   errorMessages: string[]
 }
 
-/**
- * サーバーから返ってくる検証結果の型。
- * この形は、C#側の ToReactErrorObject で生成されるJsonObjectの型と一致する。
- */
-export type ValidationResult = {
-  [xmlElementUniqueId: string]: ValidationResultToElement
-}
-
-/**
- * サーバーから返ってくる検証結果のうち特定のXML要素に対するもの。
- */
-export type ValidationResultToElement = {
-  /** この要素自体に対するエラー */
-  _own: string[]
-  /** この要素の属性に対するエラー */
-  [attributeName: string]: string[]
-}
-
 const ValidationContextInternal = React.createContext<ValidationContextType>({
   errorFlagContext: {
     subscribe: () => { },
@@ -64,13 +46,13 @@ const ValidationContextInternal = React.createContext<ValidationContextType>({
 //#region プロバイダー
 
 export function ValidationContextProvider(props: {
-  watch: ReactHookForm.UseFormWatch<GeneratedProjectInGui>
+  watch: ReactHookForm.UseFormWatch<EditingProject>
   children?: React.ReactNode
 }) {
 
   // watchを使って変更検知を行う
   const [isTriggered, setIsTriggered] = React.useState(false)
-  const watchedValuesRef = React.useRef<ReactHookForm.DeepPartial<GeneratedProjectInGui> | null>(null)
+  const watchedValuesRef = React.useRef<ReactHookForm.DeepPartial<EditingProject> | null>(null)
   React.useEffect(() => {
     const subscription = props.watch(values => {
       watchedValuesRef.current = values
@@ -88,7 +70,7 @@ export function ValidationContextProvider(props: {
   const hasErrorSubscribersRef = React.useRef(new Map<(value: ErrorStateByField) => void, HasErrorSubscriber>())
 
   // 最新の検証結果を保持
-  const latestStateRef = React.useRef<{ errors: ValidationResult, validationResultList: ValidationResultListItem[] }>({ errors: {}, validationResultList: [] })
+  const latestStateRef = React.useRef<{ errors: ValidationErrorMap, validationResultList: ValidationResultListItem[] }>({ errors: {}, validationResultList: [] })
 
   // 再レンダリングの抑制のため、コンテキストの値は常に同じオブジェクトを返すようにする。
   const contextValue = React.useMemo((): ValidationContextType => ({
@@ -132,24 +114,11 @@ export function ValidationContextProvider(props: {
 
     (async () => {
       try {
-        // サーバーに問い合わせ。ステータスコード202ならエラーあり。200ならエラーなしなのでエラーをクリアする。
-        const result = await fetch(`${SERVER_DOMAIN}/api/validate?${NIJOUI_CLIENT_ROUTE_PARAMS.QUERY_PROJECT_DIR}=${encodeURIComponent(projectDir ?? '')}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(watchedValuesRef.current),
-        })
-
-        let errors: ValidationResult
-        if (result.status === 202) {
-          errors = await result.json()
-        } else {
-          errors = {}
-        }
+        const result = await validateProject(projectDir, watchedValuesRef.current as EditingProject, new AbortController().signal)
+        const errors: ValidationErrorMap = result.ok ? result.value : {}
 
         // メッセージ一覧
-        const validationResultList = convertToValidationResultListItemList(watchedValuesRef.current as GeneratedProjectInGui, errors)
+        const validationResultList = convertToValidationResultListItemList(watchedValuesRef.current as EditingProject, errors)
         for (const setResultList of resultListSubscribersRef.current) {
           setResultList(validationResultList)
         }
@@ -246,16 +215,25 @@ export function useValidationErrorMessages(): ValidationResultListItem[] {
 
 /**
  * サーバーから返ってくる検証結果を、表形式で表示するときのためのデータに変換する。
+ * ルート集約・メンバーはそれぞれのリスト（dataStructures等）に既に分類済みなので、
+ * 旧実装のようにツリーを遡ってルートを探す必要はない。
  */
-function convertToValidationResultListItemList(state: GeneratedProjectInGui, validationResult: ValidationResult): ValidationResultListItem[] {
+function convertToValidationResultListItemList(state: EditingProject, validationResult: ValidationErrorMap): ValidationResultListItem[] {
 
-  const xmlElementTrees = state.xmlElementTrees ?? []
   const customAttributes = state.customAttributes ?? []
-
-  // IDから当該要素の情報を引き当てるための辞書
-  const elementMap = new Map(xmlElementTrees.flatMap(tree => tree.xmlElements).map(el => [el.uniqueId, el]))
-  const treeUtilsMap = new Map(xmlElementTrees.map(tree => [tree, asTree(tree.xmlElements, el => el.uniqueId)]))
   const customAttributeMap = new Map(customAttributes.map(ca => [ca.uniqueId, ca]))
+
+  // uniqueIdから、それが属するルート集約の情報とその要素自身の名前を引き当てるための辞書
+  const elementMap = new Map<string, { elementName: string, rootAggregateName: string, rootAggregateUniqueId: string }>()
+  for (const roots of [state.dataStructures, state.commands, state.staticEnums, state.valueObjects, state.constants]) {
+    for (const root of roots ?? []) {
+      const rootInfo = { rootAggregateName: root.physicalName ?? '', rootAggregateUniqueId: root.uniqueId }
+      elementMap.set(root.uniqueId, { elementName: root.physicalName ?? '', ...rootInfo })
+      for (const member of root.members) {
+        elementMap.set(member.uniqueId, { elementName: member.physicalName ?? '', ...rootInfo })
+      }
+    }
+  }
 
   const infos: ValidationResultListItem[] = []
 
@@ -263,15 +241,6 @@ function convertToValidationResultListItemList(state: GeneratedProjectInGui, val
     // 集約定義のエラー
     const element = elementMap.get(xmlElementUniqueId)
     if (element) {
-      const tree = xmlElementTrees.find(t => t.xmlElements.some(el => el.uniqueId === xmlElementUniqueId))
-      if (!tree) continue
-
-      const treeUtils = treeUtilsMap.get(tree)
-      if (!treeUtils) continue
-
-      const rootElement = treeUtils.getRoot(element)
-      const rootAggregateName = rootElement.localName
-
       for (const [objKey, attrMessages] of Object.entries(obj)) {
 
         let attributeName: string
@@ -287,9 +256,9 @@ function convertToValidationResultListItemList(state: GeneratedProjectInGui, val
 
         infos.push(...attrMessages.map(x => ({
           xmlElementUniqueId,
-          rootAggregateName: rootAggregateName ?? '',
-          rootAggregateUniqueId: rootElement.uniqueId ?? '',
-          elementName: element.localName ?? '',
+          rootAggregateName: element.rootAggregateName,
+          rootAggregateUniqueId: element.rootAggregateUniqueId,
+          elementName: element.elementName,
           attributeName,
           message: x,
         }) satisfies ValidationResultListItem))
@@ -298,14 +267,14 @@ function convertToValidationResultListItemList(state: GeneratedProjectInGui, val
     }
 
     // カスタム属性定義のエラー
-    const customAttribute = customAttributeMap.get(xmlElementUniqueId as XmlElementAttributeName)
+    const customAttribute = customAttributeMap.get(xmlElementUniqueId)
     if (customAttribute) {
       for (const [objKey, attrMessages] of Object.entries(obj)) {
         const attributeName = objKey === '_own' ? '' : objKey
         infos.push(...attrMessages.map(x => ({
           xmlElementUniqueId,
           rootAggregateName: 'カスタム属性',
-          rootAggregateUniqueId: customAttribute.uniqueId,
+          rootAggregateUniqueId: customAttribute.uniqueId ?? '',
           elementName: customAttribute.physicalName ?? '',
           attributeName,
           message: x,

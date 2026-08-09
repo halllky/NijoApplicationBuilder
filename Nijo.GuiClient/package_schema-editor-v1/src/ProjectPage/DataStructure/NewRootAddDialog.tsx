@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ModalDialog } from "@nijo/ui-components";
 import { Button, ModelTypeRadioButtonGroup, WordTextBox } from "../../UI";
-import { TYPE_DATA_MODEL } from "../../types";
+import { MODEL_DATA } from "../../backend";
 
 /**
  * 新しいルート集約追加ダイアログ
@@ -14,14 +14,14 @@ export function NewRootAddDialog({ open, onClose, onRegister }: {
 
   const [step, setStep] = useState<1 | 2>(1)
   const [name, setName] = useState("")
-  const [modelType, setModelType] = useState(TYPE_DATA_MODEL)
+  const [modelType, setModelType] = useState(MODEL_DATA)
 
   // ダイアログが開かれたときに状態をリセット
   useEffect(() => {
     if (open) {
       setStep(1)
       setName("")
-      setModelType(TYPE_DATA_MODEL)
+      setModelType(MODEL_DATA)
     }
   }, [open])
 

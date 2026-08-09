@@ -3,13 +3,44 @@ import { createPortal } from "react-dom"
 import * as ReactHookForm from "react-hook-form"
 import * as EG2 from "@nijo/ui-components/layout/EditableGrid2"
 import { useSchemaCandidates } from "../ProjectPage/SchemaCandidatesContext"
-import { ATTR_TYPE, XmlElementItem } from "../types"
+import { ATTR_TYPE, EditingMember, EditingMemberType } from "../backend"
 import { useFieldValidationError } from "../ProjectPage/useValidation"
 
 export type CreateComboBoxCellFunction = <TRow>(
   header: string,
   options?: Partial<EG2.EditableGrid2LeafColumn<TRow>>
 ) => EG2.EditableGrid2LeafColumn<TRow>
+
+/**
+ * {@link EditingMemberType} を、種類コンボボックスが扱うフラットな文字列に変換する。
+ * C#側の EditingMemberType.ToAttributeValue (Nijo/WebService/SchemaEditor2/EditingMember.cs) と対になる。
+ */
+function memberTypeToText(type: EditingMemberType): string {
+  switch (type.kind) {
+    case 'child': return 'child'
+    case 'children': return 'children'
+    case 'ref-to': return `ref-to:${type.refToPath.join('/')}`
+    case 'value': return type.valueTypeName
+    case 'unknown': return type.rawValue ?? ''
+  }
+}
+
+/**
+ * 種類コンボボックスに入力されたフラットな文字列を {@link EditingMemberType} に変換する。
+ * C#側の EditingMemberType.FromAttributeValue と対になる。
+ *
+ * "このプロジェクトで定義済みの値の種類名かどうか"（kind:'value' か 'unknown' か）の判定はここでは行わない。
+ * どちらの kind でもテキストへの復元結果 (`memberTypeToText`) は同じであり、
+ * 保存時にサーバーへ送るXML属性値も同じになるため、判別を誤っても実害が無い。
+ * 保存・再読み込みを経ればサーバー側の権威ある判定で上書きされる。
+ */
+function textToMemberType(text: string): EditingMemberType {
+  const trimmed = text.trim()
+  if (trimmed === 'child') return { kind: 'child' }
+  if (trimmed === 'children') return { kind: 'children' }
+  if (trimmed.startsWith('ref-to:')) return { kind: 'ref-to', refToPath: trimmed.slice('ref-to:'.length).split('/') }
+  return { kind: 'unknown', rawValue: trimmed }
+}
 
 /**
  * ノード種別のコンボボックス列（テキスト入力可 + ドロップダウン選択）。
@@ -33,12 +64,13 @@ export function createComboBoxCellHelper(
       ),
       renderBody: ({ context }) => {
         const fieldRowIndex = skipFirstRow ? context.row.index + 1 : context.row.index
-        const rowData: XmlElementItem = ReactHookForm.useWatch({ control, name: `${arrayName}.${fieldRowIndex}` })
+        const rowData: EditingMember = ReactHookForm.useWatch({ control, name: `${arrayName}.${fieldRowIndex}` })
         const { hasError, errorMessages } = useFieldValidationError(rowData.uniqueId, ATTR_TYPE)
+        const text = memberTypeToText(rowData.type)
 
         // 論理名
         const { items } = useSchemaCandidates()
-        const displayText = items.find(item => item.value === rowData.attributes[ATTR_TYPE])?.text
+        const displayText = items.find(item => item.value === text)?.text
 
         // ComboBoxなので、値そのものを表示する
         return (
@@ -47,9 +79,9 @@ export function createComboBoxCellHelper(
             className={`w-full self-start flex items-center gap-2 px-1 truncate ${hasError ? 'bg-amber-300/50' : ''}`}
           >
             <span className="truncate">
-              {rowData.attributes[ATTR_TYPE] as string}
+              {text}
             </span>
-            {displayText && displayText !== rowData.attributes[ATTR_TYPE] && (
+            {displayText && displayText !== text && (
               <span className="flex-1 text-gray-400 text-sm truncate">
                 {displayText}
               </span>
@@ -60,14 +92,14 @@ export function createComboBoxCellHelper(
       editor: TypeComboEditor,
       getValueForEditor: ({ rowIndex }) => {
         const fieldRowIndex = skipFirstRow ? rowIndex + 1 : rowIndex
-        const val: string | null | undefined = getValues(`${arrayName}.${fieldRowIndex}.attributes.${ATTR_TYPE}`)
-        return val ?? ''
+        const type: EditingMemberType | undefined = getValues(`${arrayName}.${fieldRowIndex}.type`)
+        return type ? memberTypeToText(type) : ''
       },
       setValueFromEditor: ({ rowIndex, value }) => {
         const fieldRowIndex = skipFirstRow ? rowIndex + 1 : rowIndex
         setValue(
-          `${arrayName}.${fieldRowIndex}.attributes.${ATTR_TYPE}`,
-          value as ReactHookForm.PathValue<ReactHookForm.FieldValues, typeof ATTR_TYPE>,
+          `${arrayName}.${fieldRowIndex}.type`,
+          textToMemberType(value) as ReactHookForm.PathValue<ReactHookForm.FieldValues, 'type'>,
           { shouldDirty: true }
         )
       },

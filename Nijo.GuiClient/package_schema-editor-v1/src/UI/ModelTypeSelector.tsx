@@ -1,5 +1,5 @@
 import React from "react"
-import { TYPE_DATA_MODEL, TYPE_QUERY_MODEL, TYPE_COMMAND_MODEL, TYPE_STRUCTURE_MODEL } from "../types"
+import { MODEL_DATA, MODEL_QUERY, MODEL_COMMAND, MODEL_STRUCTURE } from "../backend"
 import { DropdownSelector } from "@nijo/ui-components"
 
 /** モデル種類の選択肢 */
@@ -14,28 +14,28 @@ type ModelTypeOption = {
 /** モデル種類の選択肢定義 */
 const MODEL_TYPE_OPTIONS: ModelTypeOption[] = [
   {
-    value: TYPE_DATA_MODEL,
+    value: MODEL_DATA,
     displayName: "Data Model",
     description: "永続化されるデータ。EFCoreの構造定義、自動生成可能なエラーチェック、楽観的排他制御の基本機能が自動生成されます。",
     nameTextColor: "text-orange-600",
     descriptionTextColor: "text-orange-500",
   },
   {
-    value: TYPE_QUERY_MODEL,
+    value: MODEL_QUERY,
     displayName: "Query Model",
     description: "データの検索や照会に特化したモデル。一覧検索処理が自動生成されます。",
     nameTextColor: "text-emerald-600",
     descriptionTextColor: "text-emerald-500",
   },
   {
-    value: TYPE_COMMAND_MODEL,
+    value: MODEL_COMMAND,
     displayName: "Command Model",
     description: "引数を受け取り戻り値を返す処理。Webサーバー・クライアント間で常に同期された型定義を提供します。",
     nameTextColor: "text-sky-600",
     descriptionTextColor: "text-sky-500",
   },
   {
-    value: TYPE_STRUCTURE_MODEL,
+    value: MODEL_STRUCTURE,
     displayName: "Structure Model",
     description: "構造体。Webサーバー・クライアント間で常に同期されているべき構造を定義します。",
     nameTextColor: "text-gray-600",

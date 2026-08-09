@@ -156,6 +156,22 @@ export type EditingPreviewProcessSetting = {
   restartOnGenerateCode: boolean
 }
 
+/** 稼働中の1プロセスの状態（/api/preview/state のレスポンス） */
+export type PreviewProcessState = {
+  name: string
+  isRunning: boolean
+  processId: number | null
+  exitCode: number | null
+  stdout: PreviewLogIncrement
+  stderr: PreviewLogIncrement
+}
+
+/** ログファイルの指定オフセット以降の増分 */
+export type PreviewLogIncrement = {
+  text: string
+  offset: number
+}
+
 // ---------------------------------
 
 /**
@@ -214,4 +230,57 @@ export type ValidationErrorMap = {
     /** この要素の属性に対するエラー */
     [attributeName: string]: string[]
   }
+}
+
+// ---------------------------------
+// 属性名の定数。
+//
+// EditingRootAggregate.attributes / EditingMember.attributes は
+// 汎用的な Record<string, EditingAttributeValue> のままであり、
+// 個別の属性は構造化されていない（Type・UniqueId・UniqueConstraints のみサーバー側で構造化済み）。
+// また ValidationErrorMap の属性エラーキーは常にXML属性名の文字列である。
+// そのため、以下の属性名は「XML書式の知識がクライアントに漏れる」ものではなく、
+// このワイヤ契約を扱うために必要な最小限の定数である。
+
+export const ATTR_TYPE = 'Type'
+export const ATTR_UNIQUE_CONSTRAINTS = 'UniqueConstraints'
+export const ATTR_DISPLAY_NAME = 'DisplayName'
+export const ATTR_PARAMETER = 'Parameter'
+export const ATTR_RETURN_VALUE = 'ReturnValue'
+export const ATTR_CONSTANT_TYPE = 'ConstantType'
+export const ATTR_CONSTANT_VALUE = 'ConstantValue'
+export const ATTR_IS_GENERIC_LOOKUP_TABLE = 'IsGenericLookupTable'
+export const ATTR_IS_HARD_CODED_PRIMARY_KEY = 'IsHardCodedPrimaryKey'
+
+// 定数の種類（ConstantType属性の値）
+export const CONSTANT_TYPE_CHILD = 'child'
+export const CONSTANT_TYPE_STRING = 'string'
+export const CONSTANT_TYPE_INT = 'int'
+export const CONSTANT_TYPE_DECIMAL = 'decimal'
+export const CONSTANT_TYPE_TEMPLATE = 'template'
+
+// ルート集約のモデル種別（EditingRootAggregate.model の値）
+export const MODEL_DATA = 'data-model'
+export const MODEL_QUERY = 'query-model'
+export const MODEL_COMMAND = 'command-model'
+export const MODEL_STRUCTURE = 'structure-model'
+export const MODEL_STATIC_ENUM = 'enum'
+export const MODEL_VALUE_OBJECT = 'value-object'
+export const MODEL_CONSTANT = 'constant-model'
+
+// ノード種別（C#のE_NodeTypeに対応。AttributeDef.availableElements[].nodeType の値）
+export const NODE_TYPE_ROOT_AGGREGATE = 'RootAggregate'
+export const NODE_TYPE_CHILD_AGGREGATE = 'ChildAggregate'
+export const NODE_TYPE_CHILDREN_AGGREGATE = 'ChildrenAggregate'
+export const NODE_TYPE_VALUE_MEMBER = 'ValueMember'
+export const NODE_TYPE_REF = 'Ref'
+export const NODE_TYPE_STATIC_ENUM_VALUE = 'StaticEnumValue'
+export const NODE_TYPE_UNKNOWN = 'Unknown'
+
+/**
+ * 指定された属性が、指定されたモデル種別・ノード種別の組み合わせで利用可能かを判定する。
+ */
+export const isAttributeAvailable = (attr: AttributeDef, modelType: string, nodeTypes: string[]): boolean => {
+  if (!modelType) return false
+  return attr.availableElements.some(ae => ae.model === modelType && nodeTypes.includes(ae.nodeType))
 }

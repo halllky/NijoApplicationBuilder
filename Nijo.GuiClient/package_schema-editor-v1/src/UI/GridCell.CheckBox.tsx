@@ -1,7 +1,6 @@
 import React from "react"
 import * as ReactHookForm from "react-hook-form"
 import * as EG2 from "@nijo/ui-components/layout/EditableGrid2"
-import { toServerValue } from "./CheckBox"
 import { useFieldValidationError } from "../ProjectPage/useValidation"
 
 export type CreateCheckBoxCellFunction = <TRow>(
@@ -48,7 +47,7 @@ export function createCheckBoxCellHelper(
             checked={!!value}
             onChange={e => setValue(
               `${arrayName}.${fieldRowIndex}.${key}`,
-              toServerValue(e.target.checked) as ReactHookForm.PathValue<ReactHookForm.FieldValues, typeof key>,
+              e.target.checked as ReactHookForm.PathValue<ReactHookForm.FieldValues, typeof key>,
               { shouldDirty: true }
             )}
             disabled={isReadOnly}
@@ -65,7 +64,7 @@ export function createCheckBoxCellHelper(
         const current = getValues(`${arrayName}.${fieldRowIndex}.${key}`)
         setValue(
           `${arrayName}.${fieldRowIndex}.${key}`,
-          toServerValue(!current) as ReactHookForm.PathValue<ReactHookForm.FieldValues, typeof key>,
+          (!current) as ReactHookForm.PathValue<ReactHookForm.FieldValues, typeof key>,
           { shouldDirty: true }
         )
       }
@@ -80,7 +79,7 @@ export function createCheckBoxCellHelper(
       const blnValue = [true, 1, 'true', '1', 'yes'].includes(typeof value === 'string' ? value.toLowerCase() : value)
       setValue(
         `${arrayName}.${fieldRowIndex}.${key}`,
-        toServerValue(blnValue) as ReactHookForm.PathValue<ReactHookForm.FieldValues, typeof key>,
+        blnValue as ReactHookForm.PathValue<ReactHookForm.FieldValues, typeof key>,
         { shouldDirty: true }
       )
     },

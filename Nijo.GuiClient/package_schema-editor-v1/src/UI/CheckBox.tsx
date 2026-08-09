@@ -8,15 +8,12 @@ type CheckBoxProps<TFieldValues extends ReactHookForm.FieldValues = ReactHookFor
   }
 
 /**
- * サーバー側ではbool値ではなく "True" or "" で管理しているのでそれにあわせたチェックボックス
+ * react-hook-form の boolean フィールドと連動するチェックボックス
  */
 export const CheckBox = React.forwardRef(CheckBoxInner) as <TFieldValues extends ReactHookForm.FieldValues = ReactHookForm.FieldValues>(
   props: CheckBoxProps<TFieldValues> & React.RefAttributes<HTMLInputElement>
 ) => React.ReactElement | null
 
-/**
- * サーバー側ではbool値ではなく "True" or "" で管理しているのでそれにあわせたチェックボックス
- */
 function CheckBoxInner<TFieldValues extends ReactHookForm.FieldValues>(
   { control, name, className, ...props }: CheckBoxProps<TFieldValues>,
   ref: React.ForwardedRef<HTMLInputElement>
@@ -30,7 +27,7 @@ function CheckBoxInner<TFieldValues extends ReactHookForm.FieldValues>(
           type="checkbox"
           className={`h-4 w-4 ${className ?? ''}`}
           checked={!!value}
-          onChange={e => onChange(toServerValue(e.target.checked))}
+          onChange={e => onChange(e.target.checked)}
           ref={(e) => {
             fieldRef(e)
             if (typeof ref === 'function') ref(e)
@@ -42,11 +39,4 @@ function CheckBoxInner<TFieldValues extends ReactHookForm.FieldValues>(
       )}
     />
   )
-}
-
-/**
- * サーバー側ではbool値ではなく "True" or "" で管理しているのでそれにあわせる
- */
-export function toServerValue(value: unknown): 'True' | '' {
-  return value === true || value === 'True' ? 'True' : ''
 }

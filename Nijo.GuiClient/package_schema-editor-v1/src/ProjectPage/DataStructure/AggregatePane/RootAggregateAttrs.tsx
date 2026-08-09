@@ -1,22 +1,24 @@
 import * as ReactHookForm from "react-hook-form"
 import * as UI from "../../../UI"
-import { GeneratedProjectInGui, ATTR_TYPE, isAttributeAvailable } from "../../../types"
+import { EditingProject, isAttributeAvailable, NODE_TYPE_ROOT_AGGREGATE } from "../../../backend"
+import { useSchemaEditorRule } from "../../SchemaEditorRuleContext"
+import { RootAggregateLocation } from "../../rootAggregateLocation"
 
 /**
  * ルート集約の属性（コメント + 既定の属性 + カスタム属性）
  */
-export default function RootAggregateAttrs({ selectedRootAggregateIndex, formMethods: { getValues, control, register }, className }: {
-  selectedRootAggregateIndex: number
-  formMethods: ReactHookForm.UseFormReturn<GeneratedProjectInGui>
+export default function RootAggregateAttrs({ rootLocation, formMethods: { getValues, control, register }, className }: {
+  rootLocation: RootAggregateLocation
+  formMethods: ReactHookForm.UseFormReturn<EditingProject>
   className?: string
 }) {
 
-  const attributeDefs = ReactHookForm.useWatch({ name: `attributeDefs`, control })
+  const { attributeDefs } = useSchemaEditorRule()
   const customAttributes = ReactHookForm.useWatch({ name: "customAttributes", control }) ?? []
 
-  const rootElementPath = `xmlElementTrees.${selectedRootAggregateIndex}.xmlElements.0` as const
-  const rootElement = ReactHookForm.useWatch({ name: rootElementPath, control })
-  const rootModelType = rootElement?.attributes?.[ATTR_TYPE]
+  const rootPath = `${rootLocation.list}.${rootLocation.index}` as const
+  const root = ReactHookForm.useWatch({ name: rootPath, control })
+  const rootModelType = root?.model
 
   const getMentionSuggestions = UI.useMentionSuggestions(getValues)
 
@@ -26,11 +28,12 @@ export default function RootAggregateAttrs({ selectedRootAggregateIndex, formMet
       {/* ルート集約のコメント */}
       <ReactHookForm.Controller
         control={control}
-        name={`${rootElementPath}.comment`}
+        name={`${rootPath}.comment`}
         render={({ field }) => (
           <div className="max-h-64 overflow-auto border border-gray-700 px-1 bg-white">
             <UI.MentionableTextarea
               {...field}
+              value={field.value ?? undefined}
               getSuggestions={getMentionSuggestions}
               className="w-full"
               placeholder="コメントを入力..."
@@ -44,11 +47,10 @@ export default function RootAggregateAttrs({ selectedRootAggregateIndex, formMet
 
         {/* モデルの既定の属性 */}
         <div className="basis-96 flex flex-col gap-1">
-          {Array.from(attributeDefs.values()).map(attrDef => {
-            if (attrDef.attributeName === ATTR_TYPE) return null
-            if (!rootModelType || !isAttributeAvailable(attrDef, rootModelType, ['RootAggregate'])) return null
+          {attributeDefs.map(attrDef => {
+            if (!rootModelType || !isAttributeAvailable(attrDef, rootModelType, [NODE_TYPE_ROOT_AGGREGATE])) return null
 
-            const path = `${rootElementPath}.attributes.${attrDef.attributeName}` as const
+            const path = `${rootPath}.attributes.${attrDef.attributeName}` as const
 
             return (
               <AttributeRow key={attrDef.attributeName} label={attrDef.displayName}>
@@ -58,7 +60,7 @@ export default function RootAggregateAttrs({ selectedRootAggregateIndex, formMet
                     className="border border-gray-700 bg-white px-1 py-px text-sm"
                   >
                     <option value=""></option>
-                    {attrDef.typeEnumValues.map(opt => (
+                    {attrDef.typeEnumValues?.map(opt => (
                       <option key={opt} value={opt}>{opt}</option>
                     ))}
                   </select>
@@ -86,11 +88,11 @@ export default function RootAggregateAttrs({ selectedRootAggregateIndex, formMet
           {customAttributes.map(customAttr => {
             if (!rootModelType || !customAttr.availableModels.includes(rootModelType)) return null
 
-            const path = `${rootElementPath}.attributes.${customAttr.uniqueId}` as const
+            const path = `${rootPath}.attributes.${customAttr.uniqueId}` as const
             const userLabel = customAttr.displayName ?? customAttr.physicalName
 
             return (
-              <AttributeRow key={customAttr.uniqueId} label={userLabel}>
+              <AttributeRow key={customAttr.uniqueId} label={userLabel ?? ''}>
                 {customAttr.type === 'Enum' ? (
                   <select
                     {...register(path)}

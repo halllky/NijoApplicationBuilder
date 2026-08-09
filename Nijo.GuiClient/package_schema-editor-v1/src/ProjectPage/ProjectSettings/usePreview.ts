@@ -2,7 +2,7 @@ import React from "react"
 import useEvent from "react-use-event-hook"
 import { SERVER_DOMAIN } from "../../main"
 import { NIJOUI_CLIENT_ROUTE_PARAMS } from "../../routing"
-import { PreviewProcessState } from "../../types"
+import { PreviewProcessState } from "../../backend"
 
 /** ログ表示欄に保持する行数の上限。これを超えたら古い行から捨てる */
 const MAX_LOG_LINES = 2000

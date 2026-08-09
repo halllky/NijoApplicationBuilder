@@ -5,7 +5,7 @@ import * as Input from "@nijo/ui-components/input"
 import * as EG2 from "@nijo/ui-components/layout/EditableGrid2"
 import FormLayout from "@nijo/ui-components/layout/FormLayout"
 import useEvent from "react-use-event-hook"
-import { GeneratedProjectInGui, PreviewProcessSetting } from "../../types"
+import { EditingProject, EditingPreviewProcessSetting } from "../../backend"
 import * as UI from "../../UI"
 import { usePreview } from "./usePreview"
 
@@ -16,7 +16,7 @@ import { usePreview } from "./usePreview"
  * 画面共通の保存ボタン（Ctrl+S）に相乗りする。
  */
 export const PreviewSection: React.FC<{
-  formMethods: ReactHookForm.UseFormReturn<GeneratedProjectInGui>
+  formMethods: ReactHookForm.UseFormReturn<EditingProject>
   projectDir: string | null
 }> = ({ formMethods, projectDir }) => {
   const { control, register, getValues, setValue } = formMethods
@@ -25,8 +25,6 @@ export const PreviewSection: React.FC<{
   const { processes, logs, start, stop, isBusy, error } = usePreview(projectDir)
 
   // concurrently配列の編集グリッド
-  const looseControl = control as unknown as ReactHookForm.Control<ReactHookForm.FieldValues>
-  const looseSetValue = setValue as unknown as ReactHookForm.UseFormSetValue<ReactHookForm.FieldValues>
   const {
     gridRef,
     editableGrid2Props,
@@ -43,13 +41,13 @@ export const PreviewSection: React.FC<{
     helper.text("引数", "process.args", { defaultWidth: 140 }),
     helper.text("標準出力ログ", "log.stdout", { defaultWidth: 150 }),
     helper.text("標準エラーログ", "log.stderr", { defaultWidth: 150 }),
-    createBooleanColumn(looseControl, looseSetValue, "追記", "log.appendStdout"),
-    createBooleanColumn(looseControl, looseSetValue, "追記(エラー)", "log.appendStderr"),
-    createBooleanColumn(looseControl, looseSetValue, "生成時再起動", "restartOnGenerateCode"),
-  ], [looseControl, looseSetValue])
+    helper.checkBox("追記", "log.appendStdout", { defaultWidth: 90 }),
+    helper.checkBox("追記(エラー)", "log.appendStderr", { defaultWidth: 90 }),
+    helper.checkBox("生成時再起動", "restartOnGenerateCode", { defaultWidth: 90 }),
+  ], [])
 
   const handleAddRow = useEvent(() => {
-    const newProcess: PreviewProcessSetting = {
+    const newProcess: EditingPreviewProcessSetting = {
       name: '',
       process: { cwd: '', filename: '', args: '' },
       log: { stdout: '', stderr: '', appendStdout: true, appendStderr: false },
@@ -128,39 +126,6 @@ export const PreviewSection: React.FC<{
       ))}
     </FormLayout.Section>
   )
-}
-
-/**
- * boolean値をそのまま扱うチェックボックス列。
- * UI.useFieldArrayForEditableGrid2 の helper.checkBox はサーバー側が "True"/"" 文字列で
- * 管理するXML属性向けであり、nijo.preview.json のような素のJSON真偽値には使えないため独自定義する。
- */
-function createBooleanColumn<TRow>(
-  control: ReactHookForm.Control<ReactHookForm.FieldValues>,
-  setValue: ReactHookForm.UseFormSetValue<ReactHookForm.FieldValues>,
-  header: string,
-  key: string,
-): EG2.EditableGrid2LeafColumn<TRow> {
-  return {
-    defaultWidth: 90,
-    renderHeader: () => (
-      <div className="px-1 py-px truncate text-sm text-gray-700">{header}</div>
-    ),
-    renderBody: ({ context }) => {
-      const name = `previewSetting.concurrently.${context.row.index}.${key}`
-      const value = ReactHookForm.useWatch({ control, name })
-      return (
-        <label className="self-start block h-full w-full px-1 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={!!value}
-            onChange={e => setValue(name, e.target.checked, { shouldDirty: true })}
-            className="block h-6"
-          />
-        </label>
-      )
-    },
-  }
 }
 
 /** ログ1本分の表示欄。追記のたびに末尾へ自動スクロールする */

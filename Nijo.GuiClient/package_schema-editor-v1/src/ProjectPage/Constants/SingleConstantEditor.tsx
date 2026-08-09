@@ -4,7 +4,8 @@ import * as Icon from "@heroicons/react/24/solid"
 import * as EG2 from "@nijo/ui-components/layout/EditableGrid2"
 import { UUID } from "uuidjs"
 import {
-  GeneratedProjectInGui,
+  EditingProject,
+  EditingMember,
   ATTR_DISPLAY_NAME,
   ATTR_CONSTANT_TYPE,
   ATTR_CONSTANT_VALUE,
@@ -13,29 +14,40 @@ import {
   CONSTANT_TYPE_INT,
   CONSTANT_TYPE_DECIMAL,
   CONSTANT_TYPE_TEMPLATE,
-} from "../../types"
+} from "../../backend"
 import * as UI from '../../UI'
+
+/** グリッドに新しい行を挿入するときの初期値。定数の要素にType属性は無いのでkindは常にunknown。 */
+const newEmptyMember = (indent: number): EditingMember => ({
+  uniqueId: UUID.generate(),
+  indent,
+  physicalName: '',
+  type: { kind: 'unknown' },
+  attributes: {},
+  uniqueConstraints: [],
+})
 
 /**
  * 定数のルート集約1個分のエディタ
  */
 export function SingleConstantEditor({ index, formMethods }: {
   index: number
-  formMethods: ReactHookForm.UseFormReturn<GeneratedProjectInGui>
+  formMethods: ReactHookForm.UseFormReturn<EditingProject>
 }) {
   const { control, getValues, setValue, register } = formMethods
 
   // ルート要素（定数定義ブロック自体）の名前
-  const rootNamePath = `xmlElementTrees.${index}.xmlElements.0.localName` as const
-  const rootDisplayNamePath = `xmlElementTrees.${index}.xmlElements.0.attributes.${ATTR_DISPLAY_NAME}` as const
+  const rootNamePath = `constants.${index}.physicalName` as const
+  const rootDisplayNamePath = `constants.${index}.attributes.${ATTR_DISPLAY_NAME}` as const
+  const membersPath = `constants.${index}.members` as const
 
   // 削除処理
   const handleDeleteConstant = () => {
     if (!window.confirm("この定数定義ブロックを削除しますか？")) return
-    const current = getValues("xmlElementTrees")
+    const current = getValues("constants")
     const next = [...current]
     next.splice(index, 1)
-    setValue("xmlElementTrees", next)
+    setValue("constants", next)
   }
 
   // グリッド設定
@@ -44,8 +56,7 @@ export function SingleConstantEditor({ index, formMethods }: {
     editableGrid2Props,
     gridRef,
   } = UI.useFieldArrayForEditableGrid2({
-    name: `xmlElementTrees.${index}.xmlElements`,
-    skipFirstRow: true, // 先頭行はルート要素なのでグリッドには含めない
+    name: membersPath,
     control,
     getValues,
     setValue,
@@ -87,22 +98,17 @@ export function SingleConstantEditor({ index, formMethods }: {
   }, [index])
 
   // 行操作ハンドラ (StaticEnumGridから流用)
-  const watchedFields = ReactHookForm.useWatch({ control, name: `xmlElementTrees.${index}.xmlElements` })
+  const watchedFields = ReactHookForm.useWatch({ control, name: membersPath })
 
   const handleInsertRow = () => {
     const selectedRows = gridRef.current?.getSelectedRows()
     if (!selectedRows || selectedRows.length === 0) {
-      insert(1, { uniqueId: UUID.generate(), indent: 1, localName: '', attributes: {} })
+      insert(0, newEmptyMember(1))
     } else {
-      const insertPosition = selectedRows[0].rowIndex + 1
+      const insertPosition = selectedRows[0].rowIndex
       const indent = watchedFields[insertPosition]?.indent ?? 1
       const count = selectedRows.length
-      const insertRows = Array.from({ length: count }, () => ({
-        uniqueId: UUID.generate(),
-        indent,
-        localName: '',
-        attributes: {},
-      }))
+      const insertRows = Array.from({ length: count }, () => newEmptyMember(indent))
       insert(insertPosition, insertRows)
     }
   }
@@ -110,17 +116,12 @@ export function SingleConstantEditor({ index, formMethods }: {
   const handleInsertRowBelow = () => {
     const selectedRows = gridRef.current?.getSelectedRows()
     if (!selectedRows || selectedRows.length === 0) {
-      insert(1, { uniqueId: UUID.generate(), indent: 1, localName: '', attributes: {} })
+      insert(0, newEmptyMember(1))
     } else {
-      const insertPosition = selectedRows[selectedRows.length - 1].rowIndex + 1 + 1
+      const insertPosition = selectedRows[selectedRows.length - 1].rowIndex + 1
       const indent = watchedFields[insertPosition]?.indent ?? 1
       const count = selectedRows.length
-      const insertRows = Array.from({ length: count }, () => ({
-        uniqueId: UUID.generate(),
-        indent,
-        localName: '',
-        attributes: {},
-      }))
+      const insertRows = Array.from({ length: count }, () => newEmptyMember(indent))
       insert(insertPosition, insertRows)
     }
   }
@@ -128,16 +129,16 @@ export function SingleConstantEditor({ index, formMethods }: {
   const handleDeleteRow = () => {
     const selectedRows = gridRef.current?.getSelectedRows()
     if (!selectedRows || selectedRows.length === 0) return
-    const removedIndexes = selectedRows.map(row => row.rowIndex + 1)
+    const removedIndexes = selectedRows.map(row => row.rowIndex)
     remove(removedIndexes)
   }
 
   const handleMoveUp = () => {
     const selectedRows = gridRef.current?.getSelectedRows()
     if (!selectedRows || selectedRows.length === 0) return
-    const startRow = selectedRows[0].rowIndex + 1 // Field Index
+    const startRow = selectedRows[0].rowIndex
     const endRow = startRow + selectedRows.length - 1
-    if (startRow <= 1) return // Can't move above root (index 0)
+    if (startRow <= 0) return
 
     move(startRow - 1, endRow)
 
@@ -148,7 +149,7 @@ export function SingleConstantEditor({ index, formMethods }: {
   const handleMoveDown = () => {
     const selectedRows = gridRef.current?.getSelectedRows()
     if (!selectedRows || selectedRows.length === 0) return
-    const startRow = selectedRows[0].rowIndex + 1
+    const startRow = selectedRows[0].rowIndex
     const endRow = startRow + selectedRows.length - 1
     if (endRow >= watchedFields.length - 1) return
 
@@ -161,7 +162,7 @@ export function SingleConstantEditor({ index, formMethods }: {
     const selectedRows = gridRef.current?.getSelectedRows()
     if (!selectedRows) return
     for (const row of selectedRows) {
-      update(row.rowIndex + 1, { ...row.row, indent: Math.max(1, row.row.indent - 1) })
+      update(row.rowIndex, { ...row.row, indent: Math.max(1, row.row.indent - 1) })
     }
   }
 
@@ -169,7 +170,7 @@ export function SingleConstantEditor({ index, formMethods }: {
     const selectedRows = gridRef.current?.getSelectedRows()
     if (!selectedRows) return
     for (const row of selectedRows) {
-      update(row.rowIndex + 1, { ...row.row, indent: row.row.indent + 1 })
+      update(row.rowIndex, { ...row.row, indent: row.row.indent + 1 })
     }
   }
 

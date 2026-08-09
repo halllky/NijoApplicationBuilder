@@ -1,41 +1,71 @@
 import React from "react";
 import * as ReactHookForm from "react-hook-form"
 import * as Icon from "@heroicons/react/24/outline"
-import { ATTR_TYPE, ATTR_IS_GENERIC_LOOKUP_TABLE, GeneratedProjectInGui, TYPE_COMMAND_MODEL } from "../../../types";
+import { ATTR_IS_GENERIC_LOOKUP_TABLE, EditingProject, MODEL_COMMAND } from "../../../backend";
 import * as UI from "../../../UI"
 import { Allotment, LayoutPriority } from "allotment";
 import DecsendantsGrid from "./DecsendantsGrid";
 import RootAggregateAttrs from "./RootAggregateAttrs";
 import GenericLookupTableCategoriesPane from "./GenericLookupTableCategoriesPane";
+import { RootAggregateLocation } from "../../rootAggregateLocation";
 
 /**
  * ルート集約1個分の編集ペイン
  */
 function AggregatePane(props: {
-  selectedRootAggregateIndex: number
-  formMethods: ReactHookForm.UseFormReturn<GeneratedProjectInGui>
+  rootLocation: RootAggregateLocation
+  formMethods: ReactHookForm.UseFormReturn<EditingProject>
   className?: string
   onRequestDelete?: () => void
+  /** モデル種別の変更でルート集約が dataStructures ⇔ commands 間を移動したときに呼ばれる */
+  onRootLocationChanged?: (newLocation: RootAggregateLocation) => void
   orientation?: 'horizontal' | 'vertical'
   onSwitchOrientation?: () => void
 }) {
   const {
-    selectedRootAggregateIndex,
-    formMethods: { register, getValues, control },
+    rootLocation,
+    formMethods: { register, getValues, setValue, control },
     className,
     onRequestDelete,
+    onRootLocationChanged,
     orientation,
     onSwitchOrientation,
   } = props
 
+  const rootPath = `${rootLocation.list}.${rootLocation.index}` as const
+
   const handleDelete = () => {
-    const localName = getValues(`xmlElementTrees.${selectedRootAggregateIndex}.xmlElements.0.localName`)
-    if (!confirm(`「${localName}」を削除しますか？`)) return
+    const physicalName = getValues(`${rootPath}.physicalName`)
+    if (!confirm(`「${physicalName}」を削除しますか？`)) return
     onRequestDelete?.()
   }
 
-  const rootAggregateModelType = ReactHookForm.useWatch({ name: `xmlElementTrees.${selectedRootAggregateIndex}.xmlElements.0.attributes.${ATTR_TYPE}`, control })
-  const isGenericLookupTable = ReactHookForm.useWatch({ name: `xmlElementTrees.${selectedRootAggregateIndex}.xmlElements.0.attributes.${ATTR_IS_GENERIC_LOOKUP_TABLE}`, control }) === 'True'
+  const rootAggregateModelType = ReactHookForm.useWatch({ name: `${rootPath}.model`, control })
+  const isGenericLookupTable = ReactHookForm.useWatch({ name: `${rootPath}.attributes.${ATTR_IS_GENERIC_LOOKUP_TABLE}`, control }) === true
+
+  // モデル種別の変更。dataStructures と commands をまたぐ場合は配列間の移動になる。
+  const dataStructuresFieldArray = ReactHookForm.useFieldArray({ name: 'dataStructures', control })
+  const commandsFieldArray = ReactHookForm.useFieldArray({ name: 'commands', control })
+  const handleModelChange = (newModel: string) => {
+    const newList: RootAggregateLocation['list'] = newModel === MODEL_COMMAND ? 'commands' : 'dataStructures'
+
+    if (newList === rootLocation.list) {
+      setValue(`${rootPath}.model`, newModel, { shouldDirty: true })
+      return
+    }
+
+    const current = getValues(rootPath)
+    const updated = { ...current, model: newModel }
+    const newIndex = getValues(newList).length
+
+    if (newList === 'dataStructures') dataStructuresFieldArray.append(updated)
+    else commandsFieldArray.append(updated)
+
+    if (rootLocation.list === 'dataStructures') dataStructuresFieldArray.remove(rootLocation.index)
+    else commandsFieldArray.remove(rootLocation.index)
+
+    onRootLocationChanged?.({ list: newList, index: newIndex })
+  }
 
   return (
     <div className={`flex flex-col gap-1 ${className ?? ''}`}>
@@ -58,17 +88,15 @@ function AggregatePane(props: {
         {/* ルート集約名 */}
         {/* TODO: GUI上ではDisplayNameを編集し、LocalNameへの変換はサーバー側で行うようにする */}
         <UI.WordTextBox
-          {...register(`xmlElementTrees.${selectedRootAggregateIndex}.xmlElements.0.localName`)}
+          {...register(`${rootPath}.physicalName`)}
           className="flex-1 font-bold"
         />
 
         {/* モデル */}
-        <ReactHookForm.Controller
-          control={control}
-          name={`xmlElementTrees.${selectedRootAggregateIndex}.xmlElements.0.attributes.${ATTR_TYPE}`}
-          render={({ field }) => (
-            <UI.ModelTypeSelector {...field} className="min-w-48" />
-          )}
+        <UI.ModelTypeSelector
+          value={rootAggregateModelType ?? undefined}
+          onChange={handleModelChange}
+          className="min-w-48"
         />
 
         {/* 削除ボタン */}
@@ -86,7 +114,7 @@ function AggregatePane(props: {
         <Allotment.Pane preferredSize={120} snap minSize={80}>
           <div className="w-full h-full p-1 bg-gray-200 border-t border-x border-gray-300 overflow-auto">
             <RootAggregateAttrs
-              selectedRootAggregateIndex={selectedRootAggregateIndex}
+              rootLocation={rootLocation}
               formMethods={props.formMethods}
               className="w-full"
             />
@@ -97,10 +125,10 @@ function AggregatePane(props: {
         <Allotment.Pane
           priority={LayoutPriority.High}
           minSize={80}
-          visible={rootAggregateModelType !== TYPE_COMMAND_MODEL}
+          visible={rootLocation.list !== 'commands'}
         >
           <DecsendantsGrid
-            selectedRootAggregateIndex={selectedRootAggregateIndex}
+            rootLocation={rootLocation}
             formMethods={props.formMethods}
             className="w-full h-full py-1"
           />
@@ -114,7 +142,7 @@ function AggregatePane(props: {
           >
             <div className="w-full h-full p-1 bg-gray-100 border-t border-x border-gray-300 overflow-auto">
               <GenericLookupTableCategoriesPane
-                selectedRootAggregateIndex={selectedRootAggregateIndex}
+                rootLocation={rootLocation}
                 formMethods={props.formMethods}
                 className="w-full"
               />

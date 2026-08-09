@@ -4,97 +4,86 @@ import * as Icon from "@heroicons/react/24/solid"
 import * as EG2 from "@nijo/ui-components/layout/EditableGrid2"
 import { UUID } from "uuidjs"
 import {
-  GeneratedProjectInGui,
+  EditingProject,
   ATTR_DISPLAY_NAME,
   ATTR_IS_HARD_CODED_PRIMARY_KEY,
-  GenericLookupTableCategory,
-} from "../../../types"
+  EditingGenericLookupTableCategory,
+} from "../../../backend"
 import * as UI from "../../../UI"
+import { RootAggregateLocation } from "../../rootAggregateLocation"
+
+type GridRow = EditingGenericLookupTableCategory & { id: string }
 
 /**
  * 汎用参照テーブルのカテゴリ定義編集ペイン
  * IsGenericLookupTable が True のルート集約の場合に表示される。
  */
 function GenericLookupTableCategoriesPane(props: {
-  selectedRootAggregateIndex: number
-  formMethods: ReactHookForm.UseFormReturn<GeneratedProjectInGui>
+  rootLocation: RootAggregateLocation
+  formMethods: ReactHookForm.UseFormReturn<EditingProject>
   className?: string
 }) {
-  const { selectedRootAggregateIndex, formMethods: { control, getValues, setValue }, className } = props
+  const { rootLocation, formMethods: { control, getValues, setValue }, className } = props
+  const rootPath = `${rootLocation.list}.${rootLocation.index}` as const
+  const categoriesPath = `${rootPath}.genericLookupTable.categories` as const
 
-  // このルート集約の UniqueId
-  const rootUniqueId = ReactHookForm.useWatch({
-    name: `xmlElementTrees.${selectedRootAggregateIndex}.xmlElements.0.uniqueId`,
-    control,
-  })
+  // このルート集約の genericLookupTable
+  const genericLookupTable = ReactHookForm.useWatch({ name: `${rootPath}.genericLookupTable`, control })
 
   // このルート集約の子要素（ValueMember等）のうち IsHardCodedPrimaryKey が True のもの
-  const xmlElements = ReactHookForm.useWatch({
-    name: `xmlElementTrees.${selectedRootAggregateIndex}.xmlElements`,
-    control,
-  }) ?? []
+  const members = ReactHookForm.useWatch({ name: `${rootPath}.members`, control }) ?? []
 
   const hardCodedKeyElements = React.useMemo(() => {
-    return xmlElements.filter(el =>
-      el.attributes?.[ATTR_IS_HARD_CODED_PRIMARY_KEY] === 'True'
-    )
-  }, [xmlElements])
+    return members.filter(m => m.attributes?.[ATTR_IS_HARD_CODED_PRIMARY_KEY] === true)
+  }, [members])
 
-  // genericLookupTableCategories のうちこのルート集約に対応するエントリのインデックスを特定する。
-  // 存在しない場合は新規追加する。
-  const categoriesListIndex = React.useMemo(() => {
-    if (!rootUniqueId) return -1
-    const list = getValues('genericLookupTableCategories') ?? []
-    const idx = list.findIndex(entry => entry.for === rootUniqueId)
-    if (idx !== -1) return idx
-    // 存在しないので追加する
-    const newList = [...list, { for: rootUniqueId, categories: [] }]
-    setValue('genericLookupTableCategories', newList)
-    return newList.length - 1
-  }, [rootUniqueId, getValues, setValue])
-
-  // useFieldArray: genericLookupTableCategories[categoriesListIndex].categories を管理する
-  const fieldArrayName = `genericLookupTableCategories.${categoriesListIndex}.categories` as const
+  // このペインが表示された時点で genericLookupTable が未設定なら空で初期化する。
+  // このペイン自体、IsGenericLookupTable が True の場合にのみ表示される（AggregatePane側で制御）。
+  React.useEffect(() => {
+    if (getValues(`${rootPath}.genericLookupTable`) == null) {
+      setValue(`${rootPath}.genericLookupTable`, { categories: [] }, { shouldDirty: false })
+    }
+  }, [rootPath, getValues, setValue])
 
   const {
     fieldArrayReturn: { insert, remove, move },
     editableGrid2Props,
     gridRef,
   } = UI.useFieldArrayForEditableGrid2({
-    name: fieldArrayName,
+    name: categoriesPath,
     control,
     getValues,
     setValue,
   }, helper => {
-    const columns: EG2.EditableGrid2Column<ReactHookForm.FieldArrayWithId<GeneratedProjectInGui, typeof fieldArrayName, 'id'>>[] = []
+    const columns: EG2.EditableGrid2Column<GridRow>[] = []
 
     // 物理名（カテゴリのXML要素名）
-    columns.push(helper.text('物理名', 'name' as ReactHookForm.Path<ReactHookForm.FieldArrayWithId<GeneratedProjectInGui, typeof fieldArrayName, 'id'>>, {
+    columns.push(helper.text('物理名', 'name', {
       defaultWidth: 180,
     }))
 
     // 表示名
-    columns.push(helper.text('表示名', 'displayName' as ReactHookForm.Path<ReactHookForm.FieldArrayWithId<GeneratedProjectInGui, typeof fieldArrayName, 'id'>>, {
+    columns.push(helper.text('表示名', 'displayName', {
       defaultWidth: 200,
     }))
 
     // ハードコードされる主キーごとの列
     for (const keyEl of hardCodedKeyElements) {
       const keyUniqueId = keyEl.uniqueId
-      const keyDisplayName = keyEl.attributes?.[ATTR_DISPLAY_NAME] || keyEl.localName || keyUniqueId
-      const keyPath = `hardCodedKeyValues.${keyUniqueId}` as ReactHookForm.Path<ReactHookForm.FieldArrayWithId<GeneratedProjectInGui, typeof fieldArrayName, 'id'>>
-      columns.push(helper.text(keyDisplayName, keyPath, {
+      const keyDisplayName = keyEl.attributes?.[ATTR_DISPLAY_NAME] || keyEl.physicalName || keyUniqueId
+      const keyPath = `hardCodedKeyValues.${keyUniqueId}` as const
+      columns.push(helper.text(String(keyDisplayName), keyPath, {
         defaultWidth: 160,
       }))
     }
 
     return columns
-  }, [hardCodedKeyElements, fieldArrayName])
+  }, [hardCodedKeyElements])
 
   // ----- ハンドラ -----
   const handleInsertRow = () => {
     const selectedRows = gridRef.current?.getSelectedRows()
-    const newRow: GenericLookupTableCategory = {
+    const newRow: EditingGenericLookupTableCategory = {
       name: '',
       displayName: '',
       hardCodedKeyValues: {},
@@ -133,7 +122,7 @@ function GenericLookupTableCategoriesPane(props: {
     if (!selectedRows || selectedRows.length === 0) return
     const startRow = selectedRows[0].rowIndex
     const endRow = startRow + selectedRows.length - 1
-    const total = (getValues(fieldArrayName) ?? []).length
+    const total = (getValues(categoriesPath) ?? []).length
     if (endRow >= total - 1) return
     move(endRow + 1, startRow)
     gridRef.current?.selectRow(selectedRows[0].rowIndex + 1, selectedRows[0].rowIndex + selectedRows.length)
@@ -154,7 +143,7 @@ function GenericLookupTableCategoriesPane(props: {
     e.preventDefault()
   }
 
-  if (categoriesListIndex < 0) return null
+  if (!genericLookupTable) return null
 
   return (
     <div onKeyDown={handleKeyDown} className={`flex flex-col gap-1 ${className ?? ''}`}>

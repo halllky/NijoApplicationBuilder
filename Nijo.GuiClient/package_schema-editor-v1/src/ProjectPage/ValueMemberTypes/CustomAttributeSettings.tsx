@@ -4,35 +4,38 @@ import * as ReactHookForm from "react-hook-form"
 import * as Icon from "@heroicons/react/24/outline"
 import { ModalDialog } from "@nijo/ui-components/layout"
 import * as Input from "@nijo/ui-components/input"
-import { GeneratedProjectInGui, NijoXmlCustomAttribute, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, TYPE_COMMAND_MODEL, TYPE_STRUCTURE_MODEL, TYPE_STATIC_ENUM_MODEL, TYPE_VALUE_OBJECT_MODEL, XmlElementAttributeName } from "../../types"
+import { EditingProject, EditingCustomAttribute } from "../../backend"
 import { UUID } from "uuidjs"
 import FormLayout from "@nijo/ui-components/layout/FormLayout"
 import { useFieldValidationError, useValidationErrorMessages } from "../useValidation"
 import * as EG2 from "@nijo/ui-components/layout/EditableGrid2"
 import * as UI from "../../UI"
+import { useSchemaEditorRule } from "../SchemaEditorRuleContext"
 
 type CustomAttributeSettingsProps = {
-  formMethods: ReactHookForm.UseFormReturn<GeneratedProjectInGui>
+  formMethods: ReactHookForm.UseFormReturn<EditingProject>
   elementRef?: React.RefObject<HTMLDivElement | null>
 }
 
-type GridRow = NijoXmlCustomAttribute & { id: string }
+type GridRow = EditingCustomAttribute & { id: string }
 
-const ATTR_TYPES: NijoXmlCustomAttribute['type'][] = [
+const ATTR_TYPES: NonNullable<EditingCustomAttribute['type']>[] = [
   'String',
   'Boolean',
   'Enum',
   'Decimal',
 ]
 
-const AVAILABLE_MODELS = [
-  { id: TYPE_DATA_MODEL, label: 'Data Model' },
-  { id: TYPE_QUERY_MODEL, label: 'Query Model' },
-  { id: TYPE_COMMAND_MODEL, label: 'Command Model' },
-  { id: TYPE_STRUCTURE_MODEL, label: 'Structure Model' },
-  { id: TYPE_STATIC_ENUM_MODEL, label: 'Enum' },
-  { id: TYPE_VALUE_OBJECT_MODEL, label: 'Value Object' },
-]
+/** モデルの物理名 → GUI上の表示ラベル。無いモデルは物理名をそのまま表示する。 */
+const MODEL_LABELS: Record<string, string> = {
+  'data-model': 'Data Model',
+  'query-model': 'Query Model',
+  'command-model': 'Command Model',
+  'structure-model': 'Structure Model',
+  'enum': 'Enum',
+  'value-object': 'Value Object',
+  'constant-model': 'Constant Model',
+}
 
 /**
  * カスタム属性設定欄
@@ -42,6 +45,11 @@ export const CustomAttributeSettings: React.FC<CustomAttributeSettingsProps> = (
   elementRef,
 }) => {
   const { control, getValues, setValue } = formMethods
+  const { models } = useSchemaEditorRule()
+  const availableModelOptions = React.useMemo(() => models.map(m => ({
+    id: m.schemaName,
+    label: MODEL_LABELS[m.schemaName] ?? m.schemaName,
+  })), [models])
 
   const {
     gridRef,
@@ -93,8 +101,8 @@ export const CustomAttributeSettings: React.FC<CustomAttributeSettingsProps> = (
         renderBody: ({ context }) => {
           const watchedRow = ReactHookForm.useWatch({ name: `customAttributes.${context.row.index}`, control })
           const { hasError } = useFieldValidationError(watchedRow.uniqueId)
-          const models = watchedRow.availableModels
-          const label = models.map(m => AVAILABLE_MODELS.find(am => am.id === m)?.label ?? m).join(", ")
+          const rowModels = watchedRow.availableModels
+          const label = rowModels.map(m => availableModelOptions.find(am => am.id === m)?.label ?? m).join(", ")
           return (
             <div className={`flex items-center justify-between w-full h-full px-1 ${hasError ? 'bg-amber-300/50' : ''}`}>
               <span className="truncate">{label}</span>
@@ -105,23 +113,16 @@ export const CustomAttributeSettings: React.FC<CustomAttributeSettingsProps> = (
       },
       helper.text("コメント", "comment", { wrap: true, defaultWidth: 200, renderBody: renderBodyWithValidation("comment") }),
     ]
-  }, [])
+  }, [availableModelOptions])
 
   const handleAddRow = useEvent(() => {
-    const newAttr: NijoXmlCustomAttribute = {
-      uniqueId: "Custom-" + UUID.generate().toLowerCase() as XmlElementAttributeName,
+    const newAttr: EditingCustomAttribute = {
+      uniqueId: "Custom-" + UUID.generate().toLowerCase(),
       physicalName: '',
       displayName: '',
       type: 'String',
       isValidation: false,
-      availableModels: [
-        TYPE_DATA_MODEL,
-        TYPE_QUERY_MODEL,
-        TYPE_COMMAND_MODEL,
-        TYPE_STRUCTURE_MODEL,
-        TYPE_STATIC_ENUM_MODEL,
-        TYPE_VALUE_OBJECT_MODEL,
-      ],
+      availableModels: models.map(m => m.schemaName),
       enumValues: [],
     }
     append(newAttr)
@@ -175,9 +176,10 @@ export const CustomAttributeSettings: React.FC<CustomAttributeSettingsProps> = (
 
       {editingAvailableModelsIndex !== null && (
         <AvailableModelsDialog
+          options={availableModelOptions}
           initialSelection={customAttributes[editingAvailableModelsIndex].availableModels}
-          onSave={(models) => {
-            setValue(`customAttributes.${editingAvailableModelsIndex}.availableModels`, models, { shouldDirty: true })
+          onSave={(selectedModels) => {
+            setValue(`customAttributes.${editingAvailableModelsIndex}.availableModels`, selectedModels, { shouldDirty: true })
             setEditingAvailableModelsIndex(null)
           }}
           onClose={() => setEditingAvailableModelsIndex(null)}
@@ -198,7 +200,12 @@ export const CustomAttributeSettings: React.FC<CustomAttributeSettingsProps> = (
   )
 }
 
-const AvailableModelsDialog = ({ initialSelection, onSave, onClose }: { initialSelection: string[], onSave: (models: string[]) => void, onClose: () => void }) => {
+const AvailableModelsDialog = ({ options, initialSelection, onSave, onClose }: {
+  options: { id: string, label: string }[]
+  initialSelection: string[]
+  onSave: (models: string[]) => void
+  onClose: () => void
+}) => {
   const [selection, setSelection] = React.useState(new Set(initialSelection))
 
   const toggle = (id: string) => {
@@ -211,7 +218,7 @@ const AvailableModelsDialog = ({ initialSelection, onSave, onClose }: { initialS
   return (
     <ModalDialog open className="w-[400px]">
       <div className="p-4 flex flex-col gap-2">
-        {AVAILABLE_MODELS.map(model => (
+        {options.map(model => (
           <label key={model.id} className="flex items-center gap-2">
             <input type="checkbox" checked={selection.has(model.id)} onChange={() => toggle(model.id)} />
             {model.label}

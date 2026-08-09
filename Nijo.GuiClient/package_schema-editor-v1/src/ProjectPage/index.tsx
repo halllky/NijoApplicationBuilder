@@ -1,14 +1,15 @@
 import React from "react"
 import * as ReactRouter from "react-router-dom"
 import * as ReactHookForm from "react-hook-form"
-import * as Icon from "@heroicons/react/24/outline"
+import * as Icon from "@heroicons/react/24/solid"
 import * as UI from "../UI"
-import { GeneratedProjectInGui } from "../types"
+import { EditingProject, SchemaEditorRule } from "../backend"
+import { saveProject, generateCode } from "../backend/api"
 import { usePersonalSettings } from "../PersonalSettings"
 import { NIJOUI_CLIENT_ROUTE_PARAMS } from "../routing"
-import { saveSchema } from "../useSaveLoad"
 import DataStructure, { DataStructureTabRef } from "./DataStructure"
 import { SchemaCandidatesProvider } from "./SchemaCandidatesContext"
+import { SchemaEditorRuleProvider } from "./SchemaEditorRuleContext"
 import ValueMemberTypes from "./ValueMemberTypes"
 import ConstantsGrid from "./Constants"
 import ProjectSettings from "./ProjectSettings"
@@ -25,8 +26,9 @@ import { JumpToElementContext, JumpToElementFunction } from "./useJumpToElement"
  *
  * フッターではスキーマ定義で発生しているエラー情報の表示を行う。
  */
-export default function ProjectPage({ defaultValues }: {
-  defaultValues: GeneratedProjectInGui
+export default function ProjectPage({ defaultValues, schemaRule }: {
+  defaultValues: EditingProject
+  schemaRule: SchemaEditorRule
 }) {
 
   // 現在開いているプロジェクトの情報
@@ -34,7 +36,7 @@ export default function ProjectPage({ defaultValues }: {
   const projectDir = searchParams.get(NIJOUI_CLIENT_ROUTE_PARAMS.QUERY_PROJECT_DIR)
 
   // react-hook-form
-  const formMethods = ReactHookForm.useForm<GeneratedProjectInGui>({
+  const formMethods = ReactHookForm.useForm<EditingProject>({
     defaultValues: defaultValues,
   })
   const { getValues, formState: { isDirty }, control } = formMethods
@@ -69,144 +71,154 @@ export default function ProjectPage({ defaultValues }: {
     // データは随時setValueで更新されているため単にgetValuesで取得。
     // パフォーマンスの最適化のため、ダイアグラムのノード位置はこの時点で収集する
     const currentValues = window.structuredClone(getValues())
-    currentValues.schemaGraphViewState = diagramRef.current?.getGraphDataSet() ?? null
+    currentValues.graphViewState = diagramRef.current?.getGraphDataSet() ?? null
 
-    const result = await saveSchema(
-      projectDir,
-      currentValues,
-      personalSettings.autoGenerateCode ?? false
-    )
-    if (result.ok) {
-      setSaveButtonText('保存しました')
-      formMethods.reset(currentValues)
-      window.setTimeout(() => {
-        setSaveButtonText('保存(Ctrl + S)')
-      }, 2000)
-    } else {
-      setSaveError(result.error)
+    const saveResult = await saveProject(projectDir, currentValues)
+    if (!saveResult.ok) {
+      setSaveError(saveResult.error)
+      setNowSaving(false)
+      return
     }
+
+    // 保存時にコード自動生成をかけ直す設定の場合は続けて実行
+    if (personalSettings.autoGenerateCode) {
+      const generateResult = await generateCode(projectDir)
+      if (!generateResult.ok) {
+        setSaveError(generateResult.error)
+        setNowSaving(false)
+        return
+      }
+    }
+
+    setSaveButtonText('保存しました')
+    formMethods.reset(currentValues)
+    window.setTimeout(() => {
+      setSaveButtonText('保存(Ctrl + S)')
+    }, 2000)
     setNowSaving(false)
   }
   UI.useCtrlS(handleSave)
 
 
   return (
-    <SchemaCandidatesProvider watch={formMethods.watch}>
-      <JumpToElementContext.Provider value={jumpToElement}>
-        <ValidationContextProvider watch={formMethods.watch}>
+    <SchemaEditorRuleProvider rule={schemaRule}>
+      <SchemaCandidatesProvider watch={formMethods.watch}>
+        <JumpToElementContext.Provider value={jumpToElement}>
+          <ValidationContextProvider watch={formMethods.watch}>
 
-          {/* react hook form の機能は基本的にpropsのバケツリレーで受け渡すが、
-        一部 useFormContext に頼らざるを得ない箇所があるので FormProvider で全体をラップする */}
-          <ReactHookForm.FormProvider {...formMethods}>
+            {/* react hook form の機能は基本的にpropsのバケツリレーで受け渡すが、
+          一部 useFormContext に頼らざるを得ない箇所があるので FormProvider で全体をラップする */}
+            <ReactHookForm.FormProvider {...formMethods}>
 
-            <div className="h-full w-full flex flex-col bg-gray-200">
+              <div className="h-full w-full flex flex-col bg-gray-200">
 
-              {/* ヘッダ */}
-              <header className="shrink-0 flex flex-wrap items-center gap-x-px gap-y-2 py-1 px-1">
+                {/* ヘッダ */}
+                <header className="shrink-0 flex flex-wrap items-center gap-x-px gap-y-2 py-1 px-1">
 
-                <ReactRouter.Link to="/" title="プロジェクト選択へ戻る">
-                  <Icon.ChevronLeftIcon className="w-6 h-6 p-1 text-sky-600" />
-                </ReactRouter.Link>
+                  <ReactRouter.Link to="/" title="プロジェクト選択へ戻る">
+                    <Icon.ChevronLeftIcon className="w-6 h-6 p-1 text-sky-600" />
+                  </ReactRouter.Link>
 
-                {/* プロジェクト名 兼 設定画面 */}
-                <UI.TabHeader
-                  isAppTitle
-                  isSelected={displayTab === "project-settings"}
-                  onClick={() => setDisplayTab("project-settings")}
-                >
-                  <div className="flex items-center gap-1">
-                    {applicationName || "名無しのプロジェクト"}
-                    <Icon.Cog6ToothIcon className="w-5 h-5 text-gray-600" />
-                  </div>
-                </UI.TabHeader>
-
-                <div className="basis-2"></div>
-
-                <UI.TabHeader isSelected={displayTab === "data-structures"}
-                  onClick={() => setDisplayTab("data-structures")}
-                >
-                  データ構造
-                </UI.TabHeader>
-
-                <UI.TabHeader isSelected={displayTab === "value-member-types"}
-                  onClick={() => setDisplayTab("value-member-types")}
-                >
-                  種類設定
-                </UI.TabHeader>
-
-                <UI.TabHeader isSelected={displayTab === "constants"}
-                  onClick={() => setDisplayTab("constants")}
-                >
-                  定数
-                </UI.TabHeader>
-
-                <div className="flex-1"></div>
-
-                {/* 保存時にコード自動生成をかけ直す */}
-                <label className="flex items-center gap-1 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={personalSettings.autoGenerateCode ?? false}
-                    onChange={e => savePersonalSettings('autoGenerateCode', e.target.checked)}
-                    className="h-4 w-4"
-                  />
-                  <span className="text-xs select-none">保存時にコード自動生成をかけ直す</span>
-                </label>
-
-                {/* 保存ボタン */}
-                <div className="basis-36 flex justify-end">
-                  <UI.Button
-                    icon={Icon.ArrowUpTrayIcon}
-                    fill
-                    onClick={handleSave}
-                    loading={nowSaving}
+                  {/* プロジェクト名 兼 設定画面 */}
+                  <UI.TabHeader
+                    isAppTitle
+                    isSelected={displayTab === "project-settings"}
+                    onClick={() => setDisplayTab("project-settings")}
                   >
-                    {saveButtonText}
-                  </UI.Button>
-                </div>
-              </header>
+                    <div className="flex items-center gap-1">
+                      {applicationName || "名無しのプロジェクト"}
+                      <Icon.Cog6ToothIcon className="w-5 h-5 text-gray-600" />
+                    </div>
+                  </UI.TabHeader>
 
-              {/* 保存時エラー */}
-              {saveError && (
-                <div className="text-rose-500 text-sm p-2">
-                  {saveError}
-                </div>
-              )}
+                  <div className="basis-2"></div>
 
-              {/* メインコンテンツ */}
-              <main className="flex-1 bg-white overflow-auto border-t border-gray-400">
+                  <UI.TabHeader isSelected={displayTab === "data-structures"}
+                    onClick={() => setDisplayTab("data-structures")}
+                  >
+                    データ構造
+                  </UI.TabHeader>
 
-                {/* データ構造タブは初期化コストが高いのでDOMを常に維持する */}
-                <DataStructure
-                  visible={displayTab === "data-structures"}
-                  formMethods={formMethods}
-                  dataStructureRef={dataStructureRef}
-                  diagramRef={diagramRef}
-                />
+                  <UI.TabHeader isSelected={displayTab === "value-member-types"}
+                    onClick={() => setDisplayTab("value-member-types")}
+                  >
+                    種類設定
+                  </UI.TabHeader>
 
-                {displayTab === "value-member-types" && (
-                  <ValueMemberTypes formMethods={formMethods} />
+                  <UI.TabHeader isSelected={displayTab === "constants"}
+                    onClick={() => setDisplayTab("constants")}
+                  >
+                    定数
+                  </UI.TabHeader>
+
+                  <div className="flex-1"></div>
+
+                  {/* 保存時にコード自動生成をかけ直す */}
+                  <label className="flex items-center gap-1 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={personalSettings.autoGenerateCode ?? false}
+                      onChange={e => savePersonalSettings('autoGenerateCode', e.target.checked)}
+                      className="h-4 w-4"
+                    />
+                    <span className="text-xs select-none">保存時にコード自動生成をかけ直す</span>
+                  </label>
+
+                  {/* 保存ボタン */}
+                  <div className="basis-36 flex justify-end">
+                    <UI.Button
+                      icon={Icon.ArrowUpTrayIcon}
+                      fill
+                      onClick={handleSave}
+                      loading={nowSaving}
+                    >
+                      {saveButtonText}
+                    </UI.Button>
+                  </div>
+                </header>
+
+                {/* 保存時エラー */}
+                {saveError && (
+                  <div className="text-rose-500 text-sm p-2">
+                    {saveError}
+                  </div>
                 )}
 
-                {displayTab === "constants" && (
-                  <ConstantsGrid formMethods={formMethods} />
-                )}
+                {/* メインコンテンツ */}
+                <main className="flex-1 bg-white overflow-auto border-t border-gray-400">
 
-                {displayTab === "project-settings" && (
-                  <ProjectSettings formMethods={formMethods} projectDir={projectDir} />
-                )}
+                  {/* データ構造タブは初期化コストが高いのでDOMを常に維持する */}
+                  <DataStructure
+                    visible={displayTab === "data-structures"}
+                    formMethods={formMethods}
+                    dataStructureRef={dataStructureRef}
+                    diagramRef={diagramRef}
+                  />
 
-              </main>
+                  {displayTab === "value-member-types" && (
+                    <ValueMemberTypes formMethods={formMethods} />
+                  )}
 
-              <footer className="max-h-20 overflow-auto bg-white border-t border-gray-400">
-                <ErrorMessage />
-              </footer>
+                  {displayTab === "constants" && (
+                    <ConstantsGrid formMethods={formMethods} />
+                  )}
 
-            </div>
-          </ReactHookForm.FormProvider>
-        </ValidationContextProvider>
-      </JumpToElementContext.Provider>
-    </SchemaCandidatesProvider>
+                  {displayTab === "project-settings" && (
+                    <ProjectSettings formMethods={formMethods} projectDir={projectDir} />
+                  )}
+
+                </main>
+
+                <footer className="max-h-20 overflow-auto bg-white border-t border-gray-400">
+                  <ErrorMessage />
+                </footer>
+
+              </div>
+            </ReactHookForm.FormProvider>
+          </ValidationContextProvider>
+        </JumpToElementContext.Provider>
+      </SchemaCandidatesProvider>
+    </SchemaEditorRuleProvider>
   )
 }
 

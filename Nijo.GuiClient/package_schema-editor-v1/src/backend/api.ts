@@ -124,10 +124,9 @@ export const fetchTypeCandidates = async (
   signal: AbortSignal,
 ): Promise<LoadResult<{ value: string, text: string }[]>> => {
   try {
-    const url = new URL(`${SERVER_DOMAIN}/nijo-api/types`)
-    url.searchParams.set(NIJOUI_CLIENT_ROUTE_PARAMS.QUERY_PROJECT_DIR, projectDir ?? '')
-
-    const response = await fetch(url.toString(), {
+    // SERVER_DOMAIN は本番ビルドでは空文字（同一オリジンへの相対パス）になるため、
+    // ベースURLを要求する `new URL()` ではなく文字列連結でURLを組み立てる。
+    const response = await fetch(`${SERVER_DOMAIN}/nijo-api/types?${NIJOUI_CLIENT_ROUTE_PARAMS.QUERY_PROJECT_DIR}=${encodeURIComponent(projectDir ?? '')}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(project),

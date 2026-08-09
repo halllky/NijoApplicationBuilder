@@ -2,17 +2,18 @@ import React from "react";
 import * as ReactHookForm from "react-hook-form";
 import FormLayout, { LabelProps } from "@nijo/ui-components/layout/FormLayout";
 import useEvent from "react-use-event-hook";
-import { ProjectOptionPropertyInfo, GeneratedProjectInGui } from "../../types";
+import { ProjectOptionPropertyInfo, EditingProject } from "../../backend";
 import { usePersonalSettings } from "../../PersonalSettings";
 import { PersonalSettings } from "../../PersonalSettings/PersonalSettings";
 import { Allotment, LayoutPriority } from "allotment";
 import { PreviewSection } from "./PreviewSection";
+import { useSchemaEditorRule } from "../SchemaEditorRuleContext";
 
 /**
  * プロジェクト設定タブの内容
  */
 function ProjectSettings({ formMethods, projectDir }: {
-  formMethods: ReactHookForm.UseFormReturn<GeneratedProjectInGui>
+  formMethods: ReactHookForm.UseFormReturn<EditingProject>
   projectDir: string | null
 }) {
 
@@ -74,9 +75,10 @@ export default React.memo(ProjectSettings)
  * プロジェクト設定セクション
  */
 const ProjectOptionsSection: React.FC<{
-  formMethods: ReactHookForm.UseFormReturn<GeneratedProjectInGui>
+  formMethods: ReactHookForm.UseFormReturn<EditingProject>
 }> = ({ formMethods }) => {
-  const { getValues, register } = formMethods
+  const { register } = formMethods
+  const { projectOptionPropertyInfos } = useSchemaEditorRule()
 
   return (
     <FormLayout.Section labelEnd={(
@@ -87,7 +89,7 @@ const ProjectOptionsSection: React.FC<{
         </span>
       </div>
     )}>
-      {getValues('projectOptionPropertyInfos').map((propInfo, index) => (
+      {projectOptionPropertyInfos.map((propInfo, index) => (
         <ProjectSettingField
           key={propInfo?.propertyName || index}
           propertyInfo={propInfo}
@@ -106,7 +108,7 @@ const ProjectSettingField: React.FC<{
   register: ReactHookForm.UseFormRegister<any>
 }> = ({ propertyInfo, register }) => {
 
-  const fieldName: ReactHookForm.Path<GeneratedProjectInGui> = `projectOptions.${propertyInfo.propertyName}`
+  const fieldName: ReactHookForm.Path<EditingProject> = `projectOptions.${propertyInfo.propertyName}`
 
   return (
     <>

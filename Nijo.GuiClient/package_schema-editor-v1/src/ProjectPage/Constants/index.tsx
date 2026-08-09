@@ -3,11 +3,10 @@ import * as ReactHookForm from "react-hook-form"
 import * as Icon from "@heroicons/react/24/solid"
 import { UUID } from "uuidjs"
 import {
-  GeneratedProjectInGui,
-  ATTR_TYPE,
-  TYPE_CONSTANT_MODEL,
-  XmlElementItem,
-} from "../../types"
+  EditingProject,
+  EditingRootAggregate,
+  MODEL_CONSTANT,
+} from "../../backend"
 import * as UI from '../../UI'
 import { SingleConstantEditor } from "./SingleConstantEditor"
 
@@ -17,43 +16,34 @@ import { SingleConstantEditor } from "./SingleConstantEditor"
  * 複数の定数定義をリスト形式で表示し、それぞれを編集可能にする。
  */
 function ConstantsGrid(props: {
-  formMethods: ReactHookForm.UseFormReturn<GeneratedProjectInGui>
+  formMethods: ReactHookForm.UseFormReturn<EditingProject>
 }) {
   const { control, setValue, getValues } = props.formMethods
-  const xmlElementTrees = ReactHookForm.useWatch({
+  const constants = ReactHookForm.useWatch({
     control,
-    name: "xmlElementTrees"
+    name: "constants"
   }) ?? []
 
-  // 定数定義のインデックスのみを抽出
-  const constantIndexes = React.useMemo(() => {
-    return xmlElementTrees
-      .map((tree, index) => ({ tree, index }))
-      .filter(({ tree }) => tree.xmlElements?.[0]?.attributes?.[ATTR_TYPE] === TYPE_CONSTANT_MODEL)
-      .map(({ index }) => index)
-  }, [xmlElementTrees])
-
   const handleAddConstant = () => {
-    const newConstant: XmlElementItem = {
+    const newConstant: EditingRootAggregate = {
       uniqueId: UUID.generate(),
-      indent: 0,
-      localName: "",
-      value: undefined,
-      attributes: { [ATTR_TYPE]: TYPE_CONSTANT_MODEL },
-      comment: undefined,
+      physicalName: "",
+      model: MODEL_CONSTANT,
+      attributes: {},
+      uniqueConstraints: [],
+      members: [],
     }
-    const newTree = { xmlElements: [newConstant] }
 
     // 末尾に追加
-    const current = getValues("xmlElementTrees") ?? []
-    setValue("xmlElementTrees", [...current, newTree])
+    const current = getValues("constants") ?? []
+    setValue("constants", [...current, newConstant])
   }
 
   return (
     <div className="flex flex-col gap-2 py-2 p-4">
-      {constantIndexes.map(index => (
+      {constants.map((constant, index) => (
         <SingleConstantEditor
-          key={xmlElementTrees[index].xmlElements[0]?.uniqueId ?? index}
+          key={constant.uniqueId ?? index}
           index={index}
           formMethods={props.formMethods}
         />

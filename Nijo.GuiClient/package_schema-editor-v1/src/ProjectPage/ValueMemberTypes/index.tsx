@@ -2,7 +2,7 @@ import { Allotment, LayoutPriority } from "allotment"
 import React from "react"
 import * as ReactHookForm from "react-hook-form"
 import FormLayout from "@nijo/ui-components/layout/FormLayout"
-import { ATTR_TYPE, GeneratedProjectInGui, TYPE_STATIC_ENUM_MODEL } from "../../types"
+import { EditingProject } from "../../backend"
 import StaticEnumGrid from "./StaticEnumGrid"
 import { CustomAttributeSettings } from "./CustomAttributeSettings"
 
@@ -12,24 +12,21 @@ import { CustomAttributeSettings } from "./CustomAttributeSettings"
  * Nijo の ValueMemberType に相当する属性種類を定義する。
  */
 function ValueMemberTypes(props: {
-  formMethods?: ReactHookForm.UseFormReturn<GeneratedProjectInGui>
+  formMethods?: ReactHookForm.UseFormReturn<EditingProject>
 }) {
   const { control } = props.formMethods ?? {}
-  const xmlElementTrees = control ? ReactHookForm.useWatch({
+  const staticEnums = control ? ReactHookForm.useWatch({
     control,
-    name: "xmlElementTrees"
+    name: "staticEnums"
   }) : []
 
   // 静的区分の一覧を取得
   const enumItems = React.useMemo(() => {
-    return (xmlElementTrees ?? [])
-      .map(tree => tree.xmlElements[0])
-      .filter(el => el?.attributes?.[ATTR_TYPE] === TYPE_STATIC_ENUM_MODEL)
-      .map(el => ({
-        uniqueId: el.uniqueId,
-        localName: el.localName,
-      }))
-  }, [xmlElementTrees])
+    return (staticEnums ?? []).map(root => ({
+      uniqueId: root.uniqueId,
+      physicalName: root.physicalName,
+    }))
+  }, [staticEnums])
 
   return (
     <Allotment proportionalLayout={false} separator={false}>
@@ -67,8 +64,8 @@ function ValueMemberTypes(props: {
                         }}
                         className="pl-1 py-0.5 w-full text-left hover:bg-gray-200 cursor-pointer select-none"
                       >
-                        <div className="text-xs truncate max-w-full" title={item.localName}>
-                          {item.localName || '(名前なし)'}
+                        <div className="text-xs truncate max-w-full" title={item.physicalName ?? undefined}>
+                          {item.physicalName || '(名前なし)'}
                         </div>
                       </button>
                     ))}

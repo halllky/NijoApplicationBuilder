@@ -1,40 +1,36 @@
-import { XmlElementItem, GeneratedProjectInGui, asTree, ATTR_TYPE } from "../types";
+import { EditingMember, EditingRootAggregate } from "../backend";
+import { asTree } from "../asTree";
 
 /**
- * 'ref-to' 属性の値を解析し、ターゲットとなる XmlElementItem を検索する。
- * @param refToValue 'ref-to:PathSegment1/PathSegment2/...' 形式の文字列。
- * @param allElements 検索対象のツリーの配列。
- * @returns 見つかった場合は XmlElementItem、見つからない場合は undefined。
+ * ref-to種別のメンバーが参照している先の集約・メンバーを検索する。
+ * @param refFrom 参照元メンバー
+ * @param dataStructures 検索対象のデータ構造のルート集約一覧（ref-toはデータ構造のみを参照できる）
+ * @returns 見つかった場合はその参照先と、参照先が属するルート集約
  */
 export const findRefToTarget = (
-  refFrom: XmlElementItem,
-  allElements: GeneratedProjectInGui['xmlElementTrees']
-): { refTo: XmlElementItem, refToRoot: XmlElementItem } | undefined => {
-  const refToValue = refFrom.attributes[ATTR_TYPE];
-  if (!refToValue || !refToValue.startsWith('ref-to:')) return undefined
+  refFrom: EditingMember,
+  dataStructures: EditingRootAggregate[]
+): { refTo: EditingRootAggregate | EditingMember, refToRoot: EditingRootAggregate } | undefined => {
+  if (refFrom.type.kind !== 'ref-to') return undefined
 
-  const pathString = refToValue.substring('ref-to:'.length);
-
-  const pathSegments = pathString.split('/');
-  const [rootAggregateName, ...descendantNames] = pathSegments
+  const [rootAggregateName, ...descendantNames] = refFrom.type.refToPath
 
   // ルート集約を探す
-  const rootAggregateGroup = allElements.find(element => element.xmlElements[0]?.localName === rootAggregateName)
-  if (!rootAggregateGroup) return undefined
+  const rootAggregate = dataStructures.find(root => root.physicalName === rootAggregateName)
+  if (!rootAggregate) return undefined
 
   // 子孫を探す
-  const tree = asTree(rootAggregateGroup.xmlElements, el => el.uniqueId)
-  const findRecursively = (remaining: string[], candidatesOwner: XmlElementItem) => {
+  const tree = asTree(rootAggregate.members, m => m.uniqueId)
+  const findRecursively = (remaining: string[], candidatesOwner: EditingRootAggregate | EditingMember): EditingRootAggregate | EditingMember | undefined => {
     if (remaining.length === 0) return candidatesOwner
 
     const [currentSegment, ...rest] = remaining
-    const candidates = tree.getChildren(candidatesOwner)
-    const found = candidates.find(candidate => candidate.localName === currentSegment)
+    const candidates = 'indent' in candidatesOwner ? tree.getChildren(candidatesOwner) : rootAggregate.members.filter(m => m.indent === 1)
+    const found = candidates.find(candidate => candidate.physicalName === currentSegment)
     if (!found) return undefined
     return findRecursively(rest, found)
   }
 
-  const rootAggregate = rootAggregateGroup.xmlElements[0]
   const refTo = findRecursively(descendantNames, rootAggregate)
   return refTo ? { refTo, refToRoot: rootAggregate } : undefined
 };

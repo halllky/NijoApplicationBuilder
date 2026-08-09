@@ -2,7 +2,7 @@ import * as React from "react"
 import * as ReactRouter from "react-router-dom"
 import useEvent from "react-use-event-hook"
 import { NowLoading } from "@nijo/ui-components/layout"
-import { loadSchema } from "./useSaveLoad"
+import { loadProject, loadSchemaRule } from "./backend/api"
 import { ProjectSelector } from "./ProjectSelector/ProjectSelector"
 import ProjectPage from "./ProjectPage"
 
@@ -28,14 +28,19 @@ const rootLoader = async ({ request }: ReactRouter.LoaderFunctionArgs) => {
     return null
   }
 
-  // 読み込み
-  const result = await loadSchema(projectDir, request.signal)
+  // 読み込み（編集対象のプロジェクトの内容と、プロジェクトに依存しない固定ルールを並列取得する）
+  const [projectResult, ruleResult] = await Promise.all([
+    loadProject(projectDir, request.signal),
+    loadSchemaRule(request.signal),
+  ])
 
-  if (!result.ok) {
-    throw new Error(result.error ?? '不明なエラー')
-  } else {
-    return result.schema
+  if (!projectResult.ok) {
+    throw new Error(projectResult.error ?? '不明なエラー')
   }
+  if (!ruleResult.ok) {
+    throw new Error(ruleResult.error ?? '不明なエラー')
+  }
+  return { project: projectResult.value, rule: ruleResult.value }
 }
 
 /**
@@ -54,7 +59,7 @@ function Root() {
   )
 
   return (
-    <ProjectPage defaultValues={data} />
+    <ProjectPage defaultValues={data.project} schemaRule={data.rule} />
   )
 }
 

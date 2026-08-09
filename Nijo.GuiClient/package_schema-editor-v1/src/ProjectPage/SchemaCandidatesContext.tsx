@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import * as ReactHookForm from 'react-hook-form';
-import { ATTR_TYPE, GeneratedProjectInGui, TYPE_CHILD, TYPE_CHILDREN } from '../types';
-import { SERVER_DOMAIN } from '../main';
-import { NIJOUI_CLIENT_ROUTE_PARAMS } from '../routing';
 import * as ReactRouter from 'react-router-dom';
+import { EditingProject } from '../backend';
+import { fetchTypeCandidates } from '../backend/api';
+import { NIJOUI_CLIENT_ROUTE_PARAMS } from '../routing';
 
 type CandidateItem = { value: string; text: string };
 
@@ -19,7 +19,7 @@ const SchemaCandidatesContext = createContext<SchemaCandidatesContextType>({ isL
  * フォームの内容に応じてサーバーから候補を取得し、コンテキスト経由で提供する。
  */
 export const SchemaCandidatesProvider = ({ watch, children }: {
-  watch: ReactHookForm.UseFormWatch<GeneratedProjectInGui>,
+  watch: ReactHookForm.UseFormWatch<EditingProject>,
   children: ReactNode
 }) => {
   // フォーム全体の値
@@ -45,33 +45,15 @@ export const SchemaCandidatesProvider = ({ watch, children }: {
     abortControllerRef.current = abortController;
     setIsLoading(true);
     try {
-      const url = new URL(`${SERVER_DOMAIN}/api/types`);
-      url.searchParams.set(NIJOUI_CLIENT_ROUTE_PARAMS.QUERY_PROJECT_DIR, projectDir ?? '');
-
-      const res = await fetch(url.toString(), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(watchedValues),
-      });
-
+      const result = await fetchTypeCandidates(projectDir, watchedValues, abortController.signal);
       if (abortController.signal.aborted) {
         return;
       }
-      if (!res.ok) {
-        console.error('Failed to fetch candidates:', res.statusText);
+      if (!result.ok) {
+        console.error('Failed to fetch candidates:', result.error);
         return;
       }
-
-      const result: CandidateItem[] = await res.json();
-      if (abortController.signal.aborted) {
-        return;
-      }
-      setItems(result);
-
-    } catch (error) {
-      console.error('Error fetching candidates:', error);
+      setItems(result.value);
 
     } finally {
       if (abortControllerRef.current === abortController) {
@@ -82,22 +64,21 @@ export const SchemaCandidatesProvider = ({ watch, children }: {
   };
 
   // 処理の最適化のため、以下のいずれかの情報が変わった時のみ候補のリロードをトリガーする
-  // * ルート集約の数
-  // * ルート集約のいずれかのモデルの種類
-  // * ルート集約, Child, Children のいずれかの名前
+  // * ルート集約（データ構造・コマンド）の数
+  // * ルート集約のいずれかのモデルの種類・名前
+  // * ルート集約直下の child, children いずれかの名前
   const [triggerValue, setTriggerValue] = useState<unknown[]>([]);
   React.useEffect(() => {
+    const roots = [...(watchedValues.dataStructures ?? []), ...(watchedValues.commands ?? [])];
     const newTriggerValue = [
-      watchedValues.xmlElementTrees?.length,
-      ...(watchedValues.xmlElementTrees?.flatMap(tree => [
-        tree.xmlElements?.[0].attributes?.[ATTR_TYPE],
-        tree.xmlElements?.[0].localName,
-        ...tree.xmlElements
-          ?.filter(el => el.attributes?.[ATTR_TYPE] === TYPE_CHILD
-            || el.attributes?.[ATTR_TYPE] === TYPE_CHILDREN)
-          .map(el => el.localName)
-        ?? []
-      ]) ?? []),
+      roots.length,
+      ...roots.flatMap(root => [
+        root.model,
+        root.physicalName,
+        ...root.members
+          .filter(m => m.type.kind === 'child' || m.type.kind === 'children')
+          .map(m => m.physicalName),
+      ]),
     ];
     const isChanged = newTriggerValue.length !== triggerValue.length ||
       newTriggerValue.some((v, i) => v !== triggerValue[i]);

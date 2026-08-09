@@ -1,55 +1,46 @@
 import React from "react"
 import * as ReactHookForm from "react-hook-form"
-import { XmlElementItem, ATTR_TYPE, TYPE_DATA_MODEL, TYPE_COMMAND_MODEL, TYPE_QUERY_MODEL, TYPE_CHILD, TYPE_CHILDREN, GeneratedProjectInGui, TYPE_STRUCTURE_MODEL } from "../types"
+import { EditingProject } from "../backend"
 import { MentionableTextarea } from "./Mention"
 
 /**
  * スキーマ定義データからメンションの候補リストを取得するカスタムフック
  */
 export function useMentionSuggestions(
-  getValues: ReactHookForm.UseFormGetValues<GeneratedProjectInGui>
+  getValues: ReactHookForm.UseFormGetValues<EditingProject>
 ): Parameters<typeof MentionableTextarea>[0]['getSuggestions'] {
 
   return React.useCallback((query, callback) => {
-    const schemaDefinitionData = getValues()
-    if (!schemaDefinitionData) {
+    const project = getValues()
+    if (!project) {
       callback([])
       return
     }
 
-    // 全てのXML要素を収集
-    const allElements: XmlElementItem[] = []
-    for (const tree of schemaDefinitionData.xmlElementTrees) {
-      allElements.push(...tree.xmlElements)
+    // メンション対象: データ構造・コマンドのルート集約自身、
+    // および全リスト（データ構造・コマンド・静的区分・値オブジェクト・定数）の child, children メンバー
+    const targets: { uniqueId: string, physicalName: string | null | undefined }[] = []
+    for (const root of [...project.dataStructures, ...project.commands]) {
+      targets.push({ uniqueId: root.uniqueId, physicalName: root.physicalName })
+    }
+    for (const root of [...project.dataStructures, ...project.commands, ...project.staticEnums, ...project.valueObjects, ...project.constants]) {
+      for (const member of root.members) {
+        if (member.type.kind === 'child' || member.type.kind === 'children') {
+          targets.push({ uniqueId: member.uniqueId, physicalName: member.physicalName })
+        }
+      }
     }
 
-    // ルート集約、child、childrenのみに制限
-    const targetElements = allElements.filter(el => {
-      const type = el.attributes[ATTR_TYPE]
-
-      // ルート集約
-      if (el.indent === 0
-        && (type === TYPE_DATA_MODEL
-          || type === TYPE_QUERY_MODEL
-          || type === TYPE_COMMAND_MODEL
-          || type === TYPE_STRUCTURE_MODEL)) return true
-
-      // child または children
-      if (type === TYPE_CHILD || type === TYPE_CHILDREN) return true
-
-      return false
-    })
-
     // クエリに基づいてフィルタリング
-    const filtered = targetElements.filter(el => {
-      const localName = el.localName || ''
-      return localName.toLowerCase().includes(query.toLowerCase())
+    const filtered = targets.filter(el => {
+      const physicalName = el.physicalName || ''
+      return physicalName.toLowerCase().includes(query.toLowerCase())
     })
 
     // 提案リストを作成
     const suggestions = filtered.map(el => ({
       id: el.uniqueId,
-      display: el.localName || '(名前なし)',
+      display: el.physicalName || '(名前なし)',
     }))
 
     callback(suggestions)

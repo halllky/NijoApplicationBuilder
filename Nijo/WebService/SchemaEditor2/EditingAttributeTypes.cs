@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Xml.Linq;
 using Nijo.SchemaParsing;
@@ -53,18 +54,45 @@ internal class EditingAttributeTypes {
     /// <summary>
     /// JSON値をXML属性値に変換する。属性を出力すべきでない場合（false・空文字・未指定）はnullを返す。
     /// </summary>
+    /// <remarks>
+    /// クライアント側では、まだ値が設定されていない属性の入力欄も他の属性と同様にあらかじめ描画されるため、
+    /// Boolean型・数値型の属性であっても未入力状態は空文字列として送られてくることがある。
+    /// そのため素直に <see cref="JsonNode.GetValue{TValue}"/> を呼ぶのではなく、値の種類を見て寛容に解釈する。
+    /// </remarks>
     internal string? ToXmlValue(string attributeName, JsonNode? value) {
         if (value == null) return null;
 
         if (_booleanAttributeNames.Contains(attributeName)) {
-            return value.GetValue<bool>() ? "True" : null;
+            return TryGetBoolean(value) == true ? "True" : null;
         }
         if (_numberAttributeNames.Contains(attributeName)) {
-            return value.GetValue<decimal>().ToString(CultureInfo.InvariantCulture);
+            var number = TryGetNumber(value);
+            return number?.ToString(CultureInfo.InvariantCulture);
         }
 
         var str = value.GetValue<string>();
         return string.IsNullOrWhiteSpace(str) ? null : str;
+    }
+
+    private static bool? TryGetBoolean(JsonNode value) {
+        return value.GetValueKind() switch {
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.String when !string.IsNullOrWhiteSpace(value.GetValue<string>()) =>
+                value.GetValue<string>().Equals("True", StringComparison.OrdinalIgnoreCase),
+            _ => null,
+        };
+    }
+
+    private static decimal? TryGetNumber(JsonNode value) {
+        if (value.GetValueKind() == JsonValueKind.Number) {
+            return value.GetValue<decimal>();
+        }
+        if (value.GetValueKind() == JsonValueKind.String
+            && decimal.TryParse(value.GetValue<string>(), NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed)) {
+            return parsed;
+        }
+        return null;
     }
 
     /// <summary>
