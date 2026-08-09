@@ -10,7 +10,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nijo.WebService.Common;
 using Nijo.WebService.Previewing;
-using Nijo.WebService.SchemaEditor;
 
 namespace Nijo.WebService;
 
@@ -105,21 +104,13 @@ public class NijoWebService : IDisposable {
         app.UseCors(CORS_POLICY_NAME);
 
         // スキーマ編集エンドポイント
-        var schemaHandlers = new SchemaEndpointHandlers(this);
-        app.MapGet("/api/load", schemaHandlers.HandleLoadSchema);
-        app.MapPost("/api/validate", schemaHandlers.HandleValidateSchema);
-        app.MapPost("/api/save", schemaHandlers.HandleSaveSchema);
-        app.MapPost("/api/generate", schemaHandlers.HandleGenerateCode);
-        app.MapPost("/api/types", schemaHandlers.HandleGetNodeTypes);
-
-        // スキーマ編集エンドポイント（構造化されたデータ形式版。段階的移行中のため /api/... と併存する）
-        var schemaEditor2 = new SchemaEditor2.SchemaEditorEndpoints(this);
-        app.MapGet("/nijo-api/load", schemaEditor2.HandleLoad);
-        app.MapGet("/nijo-api/schema-rule", schemaEditor2.HandleGetRule);
-        app.MapPost("/nijo-api/validate", schemaEditor2.HandleValidate);
-        app.MapPost("/nijo-api/save", schemaEditor2.HandleSave);
-        app.MapPost("/nijo-api/generate", schemaEditor2.HandleGenerate);
-        app.MapPost("/nijo-api/types", schemaEditor2.HandleGetTypes);
+        var schemaEditor = new SchemaEditor2.SchemaEditorEndpoints(this);
+        app.MapGet("/nijo-api/load", schemaEditor.HandleLoad);
+        app.MapGet("/nijo-api/schema-rule", schemaEditor.HandleGetRule);
+        app.MapPost("/nijo-api/validate", schemaEditor.HandleValidate);
+        app.MapPost("/nijo-api/save", schemaEditor.HandleSave);
+        app.MapPost("/nijo-api/generate", schemaEditor.HandleGenerate);
+        app.MapPost("/nijo-api/types", schemaEditor.HandleGetTypes);
 
         // プレビュー（生成後アプリのデバッグプロセス）エンドポイント
         var previewHandlers = new PreviewEndpointHandlers(this);

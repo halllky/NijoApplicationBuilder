@@ -151,7 +151,7 @@ internal class MetadataForPage : IMultiAggregateSourceFile {
 
             return $$"""
                 {
-                  uniqueId: '{{_aggregate.XElement.Attribute(nameof(WebService.SchemaEditor.XmlElementItem.UniqueId))?.Value.Replace("'", "\\'")}}',
+                  uniqueId: '{{_aggregate.XElement.Attribute(SchemaParseContext.ATTR_UNIQUE_ID)?.Value.Replace("'", "\\'")}}',
                   type: '{{type}}',
                   model: '{{_aggregate.GetRoot().Model.SchemaName}}',
                 {{RenderNodeOptions(_aggregate.XElement, ctx).SelectTextTemplate(source => $$"""
@@ -176,7 +176,7 @@ internal class MetadataForPage : IMultiAggregateSourceFile {
 
             return $$"""
                 new {{CSharpTypeName}} {
-                    UniqueId = "{{_aggregate.XElement.Attribute(nameof(WebService.SchemaEditor.XmlElementItem.UniqueId))?.Value.Replace("\"", "\\\"")}}",
+                    UniqueId = "{{_aggregate.XElement.Attribute(SchemaParseContext.ATTR_UNIQUE_ID)?.Value.Replace("\"", "\\\"")}}",
                     Type = "{{type}}",
                     Model = E_ModelType.{{_aggregate.GetRoot().Model.SchemaName.KebabCaseToPascalCase()}},
                 {{RenderNodeOptionsCs(_aggregate.XElement, ctx).SelectTextTemplate(source => $$"""
@@ -314,7 +314,7 @@ internal class MetadataForPage : IMultiAggregateSourceFile {
 
             return $$"""
                 {
-                  uniqueId: '{{_vm.XElement.Attribute(nameof(WebService.SchemaEditor.XmlElementItem.UniqueId))?.Value.Replace("'", "\\'")}}',
+                  uniqueId: '{{_vm.XElement.Attribute(SchemaParseContext.ATTR_UNIQUE_ID)?.Value.Replace("'", "\\'")}}',
                   {{typeProp}}: '{{_vm.Type.SchemaTypeName}}',
                 {{RenderNodeOptions(_vm.XElement, ctx).SelectTextTemplate(source => $$"""
                   {{WithIndent(source)}}
@@ -332,7 +332,7 @@ internal class MetadataForPage : IMultiAggregateSourceFile {
 
             return $$"""
                 new {{TYPE_NAME}} {
-                    UniqueId = "{{_vm.XElement.Attribute(nameof(WebService.SchemaEditor.XmlElementItem.UniqueId))?.Value.Replace("\"", "\\\"")}}",
+                    UniqueId = "{{_vm.XElement.Attribute(SchemaParseContext.ATTR_UNIQUE_ID)?.Value.Replace("\"", "\\\"")}}",
                     {{typeValue}},
                 {{RenderNodeOptionsCs(_vm.XElement, ctx).SelectTextTemplate(source => $$"""
                     {{WithIndent(source)}}
@@ -404,7 +404,7 @@ internal class MetadataForPage : IMultiAggregateSourceFile {
 
             return $$"""
                 {
-                  uniqueId: '{{_refTo.XElement.Attribute(nameof(WebService.SchemaEditor.XmlElementItem.UniqueId))?.Value.Replace("'", "\\'")}}',
+                  uniqueId: '{{_refTo.XElement.Attribute(SchemaParseContext.ATTR_UNIQUE_ID)?.Value.Replace("'", "\\'")}}',
                   type: 'ref-to',
                   refTo: '{{_refTo.RefTo.RefEntryName}}',
                 {{RenderNodeOptions(_refTo.XElement, ctx).SelectTextTemplate(source => $$"""
@@ -417,7 +417,7 @@ internal class MetadataForPage : IMultiAggregateSourceFile {
         string IMetadataEntity.RenderCSharpNewStatement(CodeRenderingContext ctx) {
             return $$"""
                 new {{TYPE_NAME}} {
-                    UniqueId = "{{_refTo.XElement.Attribute(nameof(WebService.SchemaEditor.XmlElementItem.UniqueId))?.Value.Replace("\"", "\\\"")}}",
+                    UniqueId = "{{_refTo.XElement.Attribute(SchemaParseContext.ATTR_UNIQUE_ID)?.Value.Replace("\"", "\\\"")}}",
                     Type = "ref-to",
                     RefTo = "{{_refTo.RefTo.RefEntryName}}",
                 {{RenderNodeOptionsCs(_refTo.XElement, ctx).SelectTextTemplate(source => $$"""

@@ -32,7 +32,7 @@ localhost 側の実装方針（iframe + postMessage ブリッジ、生成コー�
 
 | 対象                      | 現状                                                                                                                                                                                      |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| エディタの配信            | `Nijo/WebService/NijoWebService.cs` が単一 HTML を埋め込みリソースとして返す。dev 時 `localhost:5176` / serve 時 `localhost:5001`。**API は `/api/*` 配下**（`/api/load` 等）             |
+| エディタの配信            | `Nijo/WebService/NijoWebService.cs` が単一 HTML を埋め込みリソースとして返す。dev 時 `localhost:5176` / serve 時 `localhost:5001`。**API は `/nijo-api/*` 配下**（`/nijo-api/load` 等。2.2 参照）             |
 | 生成アプリのデバッグ入口  | `client` → `vite --port 5173 --host`（変更なし）。**`vite.config.ts` の `server.proxy` が `/api/*` を ASP.NET Core (`:5290`) へ転送**するため、ブラウザは常に `localhost:5173` のみを見る |
 | 生成アプリの API 呼び出し | `callAspNetCoreApiAsync.ts` は環境分岐を持たない。常にルート相対パス（`/api/...`）で `fetch`、`credentials: 'same-origin'`                                                                |
 | 生成アプリの CORS 設定    | `WebApi/Program.cs` の開発用 CORS 設定は撤去済み（同一オリジンのため不要）                                                                                                                |
@@ -69,14 +69,14 @@ fly.io 側で追加の環境変数分岐（`VITE_API_BASE` 等）は**不要**�
 `/api/*` は vite の `server.proxy` を経由させず、`NijoWebService` から直接 WebApi(5290) へ転送してよい
 （vite を二重に経由する必要はない）。
 
-### 2.2 名前空間の衝突 ← 要対応（本タスクの範囲外）
+### 2.2 名前空間の衝突 ← 対応済み
 
 生成アプリの `callAspNetCoreApiAsync` は**ルート相対**の `/api/...` を叩く。
 iframe 内のページが `/preview/` 配下で配信されていても、`fetch('/api/...')` は
 **iframe の base ではなくオリジンのルート**（`https://<app>.fly.dev/api/...`）に解決される。
 
-一方、`NijoWebService` は自身のスキーマ編集 API を既に `/api/*`
-（`/api/load`, `/api/save`, `/api/generate` 等）に持っている。**このままではルートの `/api/*` が衝突する。**
+一方、`NijoWebService` は自身のスキーマ編集 API を `/api/*`
+（`/api/load`, `/api/save`, `/api/generate` 等）に持っていたため、**このままではルートの `/api/*` が衝突する**問題があった。
 
 対応（どちらか）:
 
@@ -86,7 +86,12 @@ iframe 内のページが `/preview/` 配下で配信されていても、`fetch
    ただしこれは `callAspNetCoreApiAsync` に再び環境分岐を持ち込むことになり、
    本タスクで撤去した「サーバー URL の環境差異」が iframe 埋め込みのためだけに復活する。**非推奨。**
 
-fly.io 環境の構築に着手する際に 1. を先に行うこと。
+**1. を実施済み。** `Nijo/WebService/SchemaEditor2/SchemaEditorEndpoints.cs` がスキーマ編集 API を
+`/nijo-api/load`, `/nijo-api/save`, `/nijo-api/validate`, `/nijo-api/generate`, `/nijo-api/types`,
+`/nijo-api/schema-rule` として提供しており、ルート直下の `/api/*` は空いている
+（`/api/preview/*` のみ引き続き使用中。生成アプリ側の想定パスと衝突する見込みは低いが、
+実際に fly.io へ載せる際は生成アプリの実ルーティングと突き合わせて確認すること）。
+旧 `Nijo/WebService/SchemaEditor`（`/api/load` 等の実装）は削除済み。
 
 ### 2.3 vite.config.ts 側の追加設定（fly.io 用）
 
@@ -197,7 +202,7 @@ HMR が即時に効くのは **React 層だけ**。スキーマ変更に伴う C
 | -------------- | ---------------------------------------------------------------------------------------------------- |
 | オリジン       | `https://<app>.fly.dev` 単一。`/preview/*` を vite dev へ、`/api/*` を WebApi へ直接プロキシ         |
 | API ベース URL | 生成アプリ側は対応済み（ルート相対 `/api/...` 固定、環境分岐なし）                                   |
-| 名前空間       | エディタ自身の API を `/api/*` から `/nijo-api/*` 等へ退避し、ルート `/api/*` を生成アプリに明け渡す |
+| 名前空間       | エディタ自身の API を `/api/*` から `/nijo-api/*` へ退避済み。ルート `/api/*` は生成アプリに明け渡し済み |
 | 永続化         | volume なし。プロジェクトと node_modules はイメージに焼く                                            |
 | リセット       | アイドル 10 分で pristine 復元（主）＋ 手動ボタン ＋ 日次（保険）                                    |
 | machine        | `min_machines_running = 1`、`auto_stop_machines` 無効                                                |
@@ -210,10 +215,12 @@ HMR が即時に効くのは **React 層だけ**。スキーマ変更に伴う C
 
 1. ~~オリジン統一（生成アプリ側）~~ **実施済み** — `callAspNetCoreApiAsync` のルート相対化、
    `vite.config.ts` の `server.proxy`、`Program.cs` の CORS 撤去。テンプレート・全 demo に反映済み。
-2. **生成のアトミック化 + 直列化** — 共有環境における品質の土台
-3. iframe + postMessage ブリッジ + `data-nijo-node` 注入（localhost 側の実装）
-4. **エディタ側 API の名前空間退避**（2.2）+ `NijoWebService` の `/preview/*` `/api/*` 振り分け
-5. pristine 復元によるアイドルリセット
-6. fly デプロイ（volume なし / 専用 org / `min_machines_running = 1`）
+2. ~~エディタ側 API の名前空間退避~~ **実施済み**（2.2）— `/nijo-api/*` へ移行し、旧 `/api/load` 等
+   （`Nijo/WebService/SchemaEditor`）は削除済み。
+3. **生成のアトミック化 + 直列化** — 共有環境における品質の土台
+4. iframe + postMessage ブリッジ + `data-nijo-node` 注入（localhost 側の実装）
+5. `NijoWebService` の `/preview/*` `/api/*` 振り分け（2.1）
+6. pristine 復元によるアイドルリセット
+7. fly デプロイ（volume なし / 専用 org / `min_machines_running = 1`）
 
-2〜3 が localhost で動作してから 4〜6 に進めば問題ない。
+3〜4 が localhost で動作してから 5〜7 に進めば問題ない。

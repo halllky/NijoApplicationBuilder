@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
-using Nijo.WebService.SchemaEditor;
+using Nijo.WebService.SchemaEditor2;
 using Nijo.Util.DotnetEx;
 
 namespace Nijo.Parts.JavaScript;
