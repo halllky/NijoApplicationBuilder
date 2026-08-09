@@ -88,9 +88,9 @@ iframe 内のページが `/preview/` 配下で配信されていても、`fetch
 
 **1. を実施済み。** `Nijo/WebService/SchemaEditor2/SchemaEditorEndpoints.cs` がスキーマ編集 API を
 `/nijo-api/load`, `/nijo-api/save`, `/nijo-api/validate`, `/nijo-api/generate`, `/nijo-api/types`,
-`/nijo-api/schema-rule` として提供しており、ルート直下の `/api/*` は空いている
-（`/api/preview/*` のみ引き続き使用中。生成アプリ側の想定パスと衝突する見込みは低いが、
-実際に fly.io へ載せる際は生成アプリの実ルーティングと突き合わせて確認すること）。
+`/nijo-api/schema-rule` として、`PreviewEndpointHandlers` がプレビュープロセス管理 API を
+`/nijo-api/preview/start`, `/nijo-api/preview/stop`, `/nijo-api/preview/state` として提供しており、
+`NijoWebService` は `/api/*` を一切使用していない。ルート直下の `/api/*` は生成アプリ専用として完全に空いている。
 旧 `Nijo/WebService/SchemaEditor`（`/api/load` 等の実装）は削除済み。
 
 ### 2.3 vite.config.ts 側の追加設定（fly.io 用）

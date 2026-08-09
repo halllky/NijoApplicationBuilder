@@ -156,7 +156,7 @@ export type EditingPreviewProcessSetting = {
   restartOnGenerateCode: boolean
 }
 
-/** 稼働中の1プロセスの状態（/api/preview/state のレスポンス） */
+/** 稼働中の1プロセスの状態（/nijo-api/preview/state のレスポンス） */
 export type PreviewProcessState = {
   name: string
   isRunning: boolean

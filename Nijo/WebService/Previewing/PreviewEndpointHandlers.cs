@@ -103,7 +103,7 @@ internal class PreviewEndpointHandlers {
         }
     }
 
-    /// <summary>/api/preview/state のリクエストボディ</summary>
+    /// <summary>/nijo-api/preview/state のリクエストボディ</summary>
     private class PreviewStateRequest {
         [JsonPropertyName("offsets")]
         public Dictionary<string, PreviewLogOffsets> Offsets { get; set; } = new();

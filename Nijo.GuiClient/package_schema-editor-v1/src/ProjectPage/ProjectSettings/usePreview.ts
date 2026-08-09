@@ -32,7 +32,7 @@ export function usePreview(projectDir: string | null) {
 
     const poll = async () => {
       try {
-        const res = await fetch(`${SERVER_DOMAIN}/api/preview/state?${query}`, {
+        const res = await fetch(`${SERVER_DOMAIN}/nijo-api/preview/state?${query}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ offsets: offsetsRef.current }),
@@ -73,7 +73,7 @@ export function usePreview(projectDir: string | null) {
     setIsBusy(true)
     setError(undefined)
     try {
-      const res = await fetch(`${SERVER_DOMAIN}/api/preview/start?${query}`, { method: 'POST' })
+      const res = await fetch(`${SERVER_DOMAIN}/nijo-api/preview/start?${query}`, { method: 'POST' })
       if (!res.ok) setError(await res.text())
     } catch (e) {
       setError(e instanceof Error ? e.message : `不明なエラー(${e})`)
@@ -86,7 +86,7 @@ export function usePreview(projectDir: string | null) {
     setIsBusy(true)
     setError(undefined)
     try {
-      const res = await fetch(`${SERVER_DOMAIN}/api/preview/stop?${query}`, { method: 'POST' })
+      const res = await fetch(`${SERVER_DOMAIN}/nijo-api/preview/stop?${query}`, { method: 'POST' })
       if (!res.ok) setError(await res.text())
       // 停止直後は次回起動時にログファイルがクリアされるため、既読オフセットも先頭に戻す
       offsetsRef.current = {}

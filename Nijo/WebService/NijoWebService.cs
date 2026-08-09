@@ -114,9 +114,9 @@ public class NijoWebService : IDisposable {
 
         // プレビュー（生成後アプリのデバッグプロセス）エンドポイント
         var previewHandlers = new PreviewEndpointHandlers(this);
-        app.MapPost("/api/preview/start", previewHandlers.HandleStartPreview);
-        app.MapPost("/api/preview/stop", previewHandlers.HandleStopPreview);
-        app.MapPost("/api/preview/state", previewHandlers.HandleGetPreviewState);
+        app.MapPost("/nijo-api/preview/start", previewHandlers.HandleStartPreview);
+        app.MapPost("/nijo-api/preview/stop", previewHandlers.HandleStopPreview);
+        app.MapPost("/nijo-api/preview/state", previewHandlers.HandleGetPreviewState);
 
         // 上位のいずれにも該当しないエンドポイントへのリクエストは
         // React.js のビルド後html（js, css がすべて1つのhtmlファイル内にバンドルされているもの）を返す。
