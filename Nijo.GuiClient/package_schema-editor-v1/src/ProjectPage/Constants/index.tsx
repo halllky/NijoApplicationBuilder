@@ -3,7 +3,7 @@ import * as ReactHookForm from "react-hook-form"
 import * as Icon from "@heroicons/react/24/solid"
 import { UUID } from "uuidjs"
 import {
-  ApplicationState,
+  GeneratedProjectInGui,
   ATTR_TYPE,
   TYPE_CONSTANT_MODEL,
   XmlElementItem,
@@ -17,7 +17,7 @@ import { SingleConstantEditor } from "./SingleConstantEditor"
  * 複数の定数定義をリスト形式で表示し、それぞれを編集可能にする。
  */
 function ConstantsGrid(props: {
-  formMethods: ReactHookForm.UseFormReturn<ApplicationState>
+  formMethods: ReactHookForm.UseFormReturn<GeneratedProjectInGui>
 }) {
   const { control, setValue, getValues } = props.formMethods
   const xmlElementTrees = ReactHookForm.useWatch({

@@ -2,20 +2,20 @@ import React from "react";
 import useEvent from "react-use-event-hook";
 import * as ReactHookForm from "react-hook-form";
 import { GraphView2 } from "@nijo/ui-components";
-import { ApplicationState, AppSchemaDefinitionGraphDataSet } from "../../types";
+import { GeneratedProjectInGui, SchemaGraphViewState } from "../../types";
 import { NodeMetadata, useDiagramDataSet } from "./useDiagramDataSet";
 import { useDiagramPanZoomSaving } from "./useDiagramPanZoomSaving";
 
 export type DiagramRef = {
   graphViewRef: React.RefObject<GraphView2.GraphViewRef | null>
-  getGraphDataSet: () => AppSchemaDefinitionGraphDataSet
+  getGraphDataSet: () => SchemaGraphViewState
 }
 
 /**
  * スキーマ定義ダイアグラム
  */
 export function Diagram(props: {
-  formMethods: ReactHookForm.UseFormReturn<ApplicationState>
+  formMethods: ReactHookForm.UseFormReturn<GeneratedProjectInGui>
   onSelectedRootAggregateChanged: (aggregateId: string | null) => void
   diagramRef: React.RefObject<DiagramRef | null>
   className?: string

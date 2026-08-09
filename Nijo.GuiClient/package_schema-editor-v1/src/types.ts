@@ -1,22 +1,22 @@
 import { GraphViewProps, Node, Edge } from "@nijo/ui-components/layout/GraphView2"
 import {
-  ModelPageForm,
-  XmlElementAttribute,
+  RootAggregateXmlTree,
+  XmlAttributeDef,
   ValueMemberType,
   ProjectOptions,
   ProjectOptionPropertyInfo,
   NijoXmlCustomAttribute,
-  GenericLookupTableCategoriesData,
+  GenericLookupTableCategories,
   PreviewSetting,
 } from "./types.nijoXml"
 
 export * from "./types.nijoXml"
 
 /**
- * ER図とスキーマ定義グラフのデータセット。
- * 自動生成後のアプリケーションのデバッグメニューで永続化された状態が参照される。
+ * スキーマ定義グラフの見た目の状態（nijo.viewState.jsonの内容）。
+ * SchemaGraphViewState.cs に対応する。
  */
-export type AppSchemaDefinitionGraphDataSet = {
+export type SchemaGraphViewState = {
   schemaDefinition: {
     nodes: { [id: string]: Node }
     edges: Edge[]
@@ -32,14 +32,15 @@ export type AppSchemaDefinitionGraphDataSet = {
 }
 
 /**
- * スキーマ定義編集におけるアプリケーション全体の状態。
- * データの持ち方こそ違うがデータの範囲は nijo.xml 1個分と対応する。
+ * スキーマ定義編集画面が扱う、nijo.xml とその同階層に置かれる固定名ファイル群
+ * （nijo.viewState.json, nijo.preview.json）の内容の組。
+ * GeneratedProjectInGui.cs に対応する。
  */
-export type ApplicationState = {
+export type GeneratedProjectInGui = {
   /** XML要素をルート集約ごとの塊に分類したもの。 */
-  xmlElementTrees: ModelPageForm[]
+  xmlElementTrees: RootAggregateXmlTree[]
   /** XML要素の属性定義。 */
-  attributeDefs: XmlElementAttribute[]
+  attributeDefs: XmlAttributeDef[]
   /** 値メンバーの種類定義。 */
   valueMemberTypes: ValueMemberType[]
   /** プロジェクト設定の現在値 */
@@ -49,9 +50,9 @@ export type ApplicationState = {
   /** カスタム属性定義 */
   customAttributes: NijoXmlCustomAttribute[]
   /** 汎用参照テーブルのカテゴリ定義 */
-  genericLookupTableCategories: GenericLookupTableCategoriesData[]
-  /** グラフのViewState */
-  schemaGraphViewState?: AppSchemaDefinitionGraphDataSet | null
+  genericLookupTableCategories: GenericLookupTableCategories[]
+  /** グラフのViewState（nijo.viewState.jsonの内容） */
+  schemaGraphViewState?: SchemaGraphViewState | null
   /** 生成後アプリのデバッグ起動設定（nijo.preview.jsonの内容） */
   previewSetting: PreviewSetting
 }

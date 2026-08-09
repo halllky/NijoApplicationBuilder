@@ -1,6 +1,6 @@
 import React from "react"
 import * as ReactHookForm from "react-hook-form"
-import { ApplicationState, ATTR_UNIQUE_CONSTRAINTS, asTree, XmlElementItem } from "../../../types"
+import { GeneratedProjectInGui, ATTR_UNIQUE_CONSTRAINTS, asTree, XmlElementItem } from "../../../types"
 import * as EG2 from "@nijo/ui-components/layout/EditableGrid2"
 import { TextCellEditor } from "../../../UI"
 
@@ -8,9 +8,9 @@ import { TextCellEditor } from "../../../UI"
  * ユニーク制約の列定義を提供するフック。
  */
 export function useUniqueConstraintsColumns(
-  control: ReactHookForm.Control<ApplicationState>,
-  getValues: ReactHookForm.UseFormGetValues<ApplicationState>,
-  setValue: ReactHookForm.UseFormSetValue<ApplicationState>,
+  control: ReactHookForm.Control<GeneratedProjectInGui>,
+  getValues: ReactHookForm.UseFormGetValues<GeneratedProjectInGui>,
+  setValue: ReactHookForm.UseFormSetValue<GeneratedProjectInGui>,
   selectedRootAggregateIndex: number,
   skipFirstRow: boolean,
 ) {
@@ -42,7 +42,7 @@ export function useUniqueConstraintsColumns(
   // 列定義。
   // この変数が変わるとグリッド全体の列定義が更新されてしまうため、
   // ユニーク制約の数が変わったとき以外は同じオブジェクトを返すようにする。
-  type GridRow = ReactHookForm.FieldArrayWithId<ApplicationState, `xmlElementTrees.${number}.xmlElements`, "id">
+  type GridRow = ReactHookForm.FieldArrayWithId<GeneratedProjectInGui, `xmlElementTrees.${number}.xmlElements`, "id">
   const uniqueConstraintColumns = React.useMemo((): EG2.EditableGrid2Column<GridRow> => {
     const columns: EG2.EditableGrid2LeafColumn<GridRow>[] = []
     const constraintCount = uniqueConstraintsMaxLength + 1
@@ -111,7 +111,7 @@ export function useUniqueConstraintsColumns(
 
           const newRaw = serializeUniqueConstraints(currentConstraints)
           setValue(
-            `xmlElementTrees.${selectedRootAggregateIndex}.xmlElements.${parentIndex}.attributes.${ATTR_UNIQUE_CONSTRAINTS}` as ReactHookForm.FieldPath<ApplicationState>,
+            `xmlElementTrees.${selectedRootAggregateIndex}.xmlElements.${parentIndex}.attributes.${ATTR_UNIQUE_CONSTRAINTS}` as ReactHookForm.FieldPath<GeneratedProjectInGui>,
             newRaw,
             { shouldDirty: true })
         },

@@ -1,9 +1,9 @@
 import { SERVER_DOMAIN } from "./main"
-import { AppSchemaDefinitionGraphDataSet, ApplicationState, PreviewSetting } from "./types"
+import { GeneratedProjectInGui } from "./types"
 import { NIJOUI_CLIENT_ROUTE_PARAMS } from "./routing"
 
 type LoadSchemaReturn =
-  | { ok: true; schema: { applicationState: ApplicationState, schemaGraphViewState: AppSchemaDefinitionGraphDataSet | null } }
+  | { ok: true; schema: GeneratedProjectInGui }
   | { ok: false; error?: string; }
 
 /**
@@ -21,17 +21,10 @@ export const loadSchema = async (projectDir: string | null, signal: AbortSignal)
       throw new Error(`Failed to load schema: ${schemaResponse.status} ${body}`);
     }
 
-    const responseData: { applicationState: ApplicationState, schemaGraphViewState: AppSchemaDefinitionGraphDataSet | null, previewSetting: PreviewSetting } = await schemaResponse.json()
+    const schema: GeneratedProjectInGui = await schemaResponse.json()
     if (signal.aborted) return { ok: false }
 
-    // schemaGraphViewState・previewSettingをapplicationStateに含める
-    const schema: ApplicationState = {
-      ...responseData.applicationState,
-      schemaGraphViewState: responseData.schemaGraphViewState,
-      previewSetting: responseData.previewSetting,
-    }
-
-    return { ok: true, schema: { applicationState: schema, schemaGraphViewState: responseData.schemaGraphViewState } }
+    return { ok: true, schema }
 
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
@@ -48,20 +41,14 @@ export const loadSchema = async (projectDir: string | null, signal: AbortSignal)
  */
 export const saveSchema = async (
   projectDir: string | null,
-  applicationState: ApplicationState,
-  schemaGraphViewState: AppSchemaDefinitionGraphDataSet | null,
-  previewSetting: PreviewSetting,
+  generatedProjectInGui: GeneratedProjectInGui,
   generateCode: boolean = false,
 ): Promise<{ ok: boolean, error?: string }> => {
   try {
     const response = await fetch(`${SERVER_DOMAIN}/api/save?${NIJOUI_CLIENT_ROUTE_PARAMS.QUERY_PROJECT_DIR}=${encodeURIComponent(projectDir ?? '')}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        applicationState,
-        schemaGraphViewState,
-        previewSetting,
-      }),
+      body: JSON.stringify(generatedProjectInGui),
     })
     if (!response.ok) {
       const bodyText = await response.text()

@@ -1,13 +1,13 @@
 import React from "react"
 import * as ReactHookForm from "react-hook-form"
-import { XmlElementItem, ATTR_TYPE, TYPE_DATA_MODEL, TYPE_COMMAND_MODEL, TYPE_QUERY_MODEL, TYPE_CHILD, TYPE_CHILDREN, ApplicationState, TYPE_STRUCTURE_MODEL } from "../types"
+import { XmlElementItem, ATTR_TYPE, TYPE_DATA_MODEL, TYPE_COMMAND_MODEL, TYPE_QUERY_MODEL, TYPE_CHILD, TYPE_CHILDREN, GeneratedProjectInGui, TYPE_STRUCTURE_MODEL } from "../types"
 import { MentionableTextarea } from "./Mention"
 
 /**
  * スキーマ定義データからメンションの候補リストを取得するカスタムフック
  */
 export function useMentionSuggestions(
-  getValues: ReactHookForm.UseFormGetValues<ApplicationState>
+  getValues: ReactHookForm.UseFormGetValues<GeneratedProjectInGui>
 ): Parameters<typeof MentionableTextarea>[0]['getSuggestions'] {
 
   return React.useCallback((query, callback) => {

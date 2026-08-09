@@ -4,7 +4,7 @@ import * as ReactHookForm from "react-hook-form"
 import * as Icon from "@heroicons/react/24/outline"
 import { ModalDialog } from "@nijo/ui-components/layout"
 import * as Input from "@nijo/ui-components/input"
-import { ApplicationState, NijoXmlCustomAttribute, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, TYPE_COMMAND_MODEL, TYPE_STRUCTURE_MODEL, TYPE_STATIC_ENUM_MODEL, TYPE_VALUE_OBJECT_MODEL, XmlElementAttributeName } from "../../types"
+import { GeneratedProjectInGui, NijoXmlCustomAttribute, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, TYPE_COMMAND_MODEL, TYPE_STRUCTURE_MODEL, TYPE_STATIC_ENUM_MODEL, TYPE_VALUE_OBJECT_MODEL, XmlElementAttributeName } from "../../types"
 import { UUID } from "uuidjs"
 import FormLayout from "@nijo/ui-components/layout/FormLayout"
 import { useFieldValidationError, useValidationErrorMessages } from "../useValidation"
@@ -12,7 +12,7 @@ import * as EG2 from "@nijo/ui-components/layout/EditableGrid2"
 import * as UI from "../../UI"
 
 type CustomAttributeSettingsProps = {
-  formMethods: ReactHookForm.UseFormReturn<ApplicationState>
+  formMethods: ReactHookForm.UseFormReturn<GeneratedProjectInGui>
   elementRef?: React.RefObject<HTMLDivElement | null>
 }
 

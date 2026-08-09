@@ -2,7 +2,7 @@ import { Allotment, LayoutPriority } from "allotment";
 import React from "react";
 import * as ReactHookForm from "react-hook-form"
 import { usePersonalSettings } from "../../PersonalSettings";
-import { ATTR_TYPE, ModelPageForm, ApplicationState } from "../../types";
+import { ATTR_TYPE, RootAggregateXmlTree, GeneratedProjectInGui } from "../../types";
 import { Button } from "../../UI";
 import { Diagram, DiagramRef } from "./Diagram";
 import AggregatePane from "./AggregatePane";
@@ -22,7 +22,7 @@ export type DataStructureTabRef = {
  */
 function DataStructureTab({ visible, formMethods, dataStructureRef, diagramRef }: {
   visible: boolean
-  formMethods: ReactHookForm.UseFormReturn<ApplicationState>
+  formMethods: ReactHookForm.UseFormReturn<GeneratedProjectInGui>
   dataStructureRef: React.RefObject<DataStructureTabRef | null>
   diagramRef: React.RefObject<DiagramRef | null>
 }) {
@@ -77,7 +77,7 @@ function DataStructureTab({ visible, formMethods, dataStructureRef, diagramRef }
   const [isNewRootDialogOpen, setIsNewRootDialogOpen] = React.useState(false)
   const handleRegisterNewRoot = (name: string, modelType: string) => {
     const previousLength = formMethods.getValues("xmlElementTrees")?.length ?? 0
-    const newRoot: ModelPageForm = {
+    const newRoot: RootAggregateXmlTree = {
       xmlElements: [{
         uniqueId: UUID.generate(),
         indent: 0,

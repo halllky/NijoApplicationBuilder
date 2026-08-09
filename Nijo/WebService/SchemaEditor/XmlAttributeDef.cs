@@ -6,10 +6,10 @@ using Nijo.SchemaParsing;
 namespace Nijo.WebService.SchemaEditor;
 
 /// <summary>
-/// nijo.xml のXML要素1個に定義できる属性。
+/// nijo.xml のXML要素1個に定義できる属性の型定義。
 /// ほぼ <see cref="Nijo.SchemaParsing.NodeOption"/> とだいたい同じ。
 /// </summary>
-public class XmlElementAttribute {
+public class XmlAttributeDef {
     [JsonPropertyName("attributeName")]
     public string AttributeName { get; set; } = "";
     [JsonPropertyName("displayName")]
@@ -28,7 +28,7 @@ public class XmlElementAttribute {
         public string NodeType { get; set; } = "";
     }
 
-    internal static List<XmlElementAttribute> FromSchemaParseRule(SchemaParseRule rule) {
+    internal static List<XmlAttributeDef> FromSchemaParseRule(SchemaParseRule rule) {
         return rule.NodeOptions.Select(opt => {
             // 各モデル × 各ノード種別の組み合わせについて、この属性が使用可能かチェックする
             var availableElements = new List<AvailableElement>();
@@ -43,7 +43,7 @@ public class XmlElementAttribute {
                 }
             }
 
-            return new XmlElementAttribute {
+            return new XmlAttributeDef {
                 AttributeName = opt.AttributeName,
                 DisplayName = opt.DisplayName,
                 AvailableElements = availableElements,
@@ -53,4 +53,3 @@ public class XmlElementAttribute {
         }).ToList();
     }
 }
-

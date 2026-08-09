@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
-using static Nijo.WebService.SchemaEditor.NijoProjectFiles;
+using Nijo.WebService.SchemaEditor;
 using Nijo.Util.DotnetEx;
 
 namespace Nijo.Parts.JavaScript;
@@ -31,7 +31,7 @@ public class ViewStateTypes {
         // デフォルト値
         string viewStateJsonContent = $$"""
             {
-              {{SchemaGraphViewStateTypeByViewMode.KEY_SCHEMA_DEFINITION}}: {
+              {{SchemaGraphViewState.KEY_SCHEMA_DEFINITION}}: {
                 nodes: {},
                 edges: [],
                 nodePositions: {},
@@ -58,9 +58,9 @@ public class ViewStateTypes {
 
                 /** nijo.xmlを GraphView で表示するためのデータの型 */
                 type {{RETURN_TYPE}} = {
-                  {{SchemaGraphViewStateTypeByViewMode.KEY_SCHEMA_DEFINITION}}: {
+                  {{SchemaGraphViewState.KEY_SCHEMA_DEFINITION}}: {
                     /** 有向グラフのノード一覧 */
-                    {{SchemaGraphViewStateType.KEY_NODES}}: {
+                    {{SchemaGraphViewState.GraphViewData.KEY_NODES}}: {
                       [id: string]: {
                         id: string
                         label: string
@@ -68,13 +68,13 @@ public class ViewStateTypes {
                       }
                     }
                     /** 有向グラフのエッジ一覧 */
-                    {{SchemaGraphViewStateType.KEY_EDGES}}: {
+                    {{SchemaGraphViewState.GraphViewData.KEY_EDGES}}: {
                       source: string
                       target: string
                       [others: string]: any
                     }[]
                     /** ノードの位置 */
-                    {{SchemaGraphViewStateType.KEY_NODE_POSITIONS}}: {
+                    {{SchemaGraphViewState.GraphViewData.KEY_NODE_POSITIONS}}: {
                       [id: string]: {
                         x: number
                         y: number

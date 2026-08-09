@@ -1,6 +1,6 @@
 import React from "react";
 import * as ReactHookForm from "react-hook-form";
-import { ApplicationState, ATTR_PARAMETER, ATTR_RETURN_VALUE, ATTR_TYPE, TYPE_CHILD, TYPE_CHILDREN, TYPE_COMMAND_MODEL, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, TYPE_STRUCTURE_MODEL, TYPE_STATIC_ENUM_MODEL, TYPE_VALUE_OBJECT_MODEL, TYPE_CONSTANT_MODEL, XmlElementItem, asTree } from "../../types";
+import { GeneratedProjectInGui, ATTR_PARAMETER, ATTR_RETURN_VALUE, ATTR_TYPE, TYPE_CHILD, TYPE_CHILDREN, TYPE_COMMAND_MODEL, TYPE_DATA_MODEL, TYPE_QUERY_MODEL, TYPE_STRUCTURE_MODEL, TYPE_STATIC_ENUM_MODEL, TYPE_VALUE_OBJECT_MODEL, TYPE_CONSTANT_MODEL, XmlElementItem, asTree } from "../../types";
 import { GraphView2 } from "@nijo/ui-components";
 import { parseAsMentionText } from "../../UI/Mention";
 import { findRefToTarget } from "../findRefToTarget";
@@ -12,7 +12,7 @@ export type NodeMetadata = {
 /**
  * ダイアグラム用のデータセット算出
  */
-export function useDiagramDataSet(formMethods: ReactHookForm.UseFormReturn<ApplicationState>): {
+export function useDiagramDataSet(formMethods: ReactHookForm.UseFormReturn<GeneratedProjectInGui>): {
   nodes: GraphView2.Node[]
   edges: GraphView2.Edge[]
 } {

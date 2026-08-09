@@ -5,7 +5,7 @@ import * as Input from "@nijo/ui-components/input"
 import * as EG2 from "@nijo/ui-components/layout/EditableGrid2"
 import FormLayout from "@nijo/ui-components/layout/FormLayout"
 import useEvent from "react-use-event-hook"
-import { ApplicationState, PreviewProcessSetting } from "../../types"
+import { GeneratedProjectInGui, PreviewProcessSetting } from "../../types"
 import * as UI from "../../UI"
 import { usePreview } from "./usePreview"
 
@@ -16,7 +16,7 @@ import { usePreview } from "./usePreview"
  * 画面共通の保存ボタン（Ctrl+S）に相乗りする。
  */
 export const PreviewSection: React.FC<{
-  formMethods: ReactHookForm.UseFormReturn<ApplicationState>
+  formMethods: ReactHookForm.UseFormReturn<GeneratedProjectInGui>
   projectDir: string | null
 }> = ({ formMethods, projectDir }) => {
   const { control, register, getValues, setValue } = formMethods

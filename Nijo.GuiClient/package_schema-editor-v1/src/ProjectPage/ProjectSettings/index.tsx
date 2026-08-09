@@ -2,7 +2,7 @@ import React from "react";
 import * as ReactHookForm from "react-hook-form";
 import FormLayout, { LabelProps } from "@nijo/ui-components/layout/FormLayout";
 import useEvent from "react-use-event-hook";
-import { ProjectOptionPropertyInfo, ApplicationState } from "../../types";
+import { ProjectOptionPropertyInfo, GeneratedProjectInGui } from "../../types";
 import { usePersonalSettings } from "../../PersonalSettings";
 import { PersonalSettings } from "../../PersonalSettings/PersonalSettings";
 import { Allotment, LayoutPriority } from "allotment";
@@ -12,7 +12,7 @@ import { PreviewSection } from "./PreviewSection";
  * プロジェクト設定タブの内容
  */
 function ProjectSettings({ formMethods, projectDir }: {
-  formMethods: ReactHookForm.UseFormReturn<ApplicationState>
+  formMethods: ReactHookForm.UseFormReturn<GeneratedProjectInGui>
   projectDir: string | null
 }) {
 
@@ -74,7 +74,7 @@ export default React.memo(ProjectSettings)
  * プロジェクト設定セクション
  */
 const ProjectOptionsSection: React.FC<{
-  formMethods: ReactHookForm.UseFormReturn<ApplicationState>
+  formMethods: ReactHookForm.UseFormReturn<GeneratedProjectInGui>
 }> = ({ formMethods }) => {
   const { getValues, register } = formMethods
 
@@ -106,7 +106,7 @@ const ProjectSettingField: React.FC<{
   register: ReactHookForm.UseFormRegister<any>
 }> = ({ propertyInfo, register }) => {
 
-  const fieldName: ReactHookForm.Path<ApplicationState> = `projectOptions.${propertyInfo.propertyName}`
+  const fieldName: ReactHookForm.Path<GeneratedProjectInGui> = `projectOptions.${propertyInfo.propertyName}`
 
   return (
     <>

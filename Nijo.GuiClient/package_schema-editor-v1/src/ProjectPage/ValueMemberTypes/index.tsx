@@ -2,7 +2,7 @@ import { Allotment, LayoutPriority } from "allotment"
 import React from "react"
 import * as ReactHookForm from "react-hook-form"
 import FormLayout from "@nijo/ui-components/layout/FormLayout"
-import { ATTR_TYPE, ApplicationState, TYPE_STATIC_ENUM_MODEL } from "../../types"
+import { ATTR_TYPE, GeneratedProjectInGui, TYPE_STATIC_ENUM_MODEL } from "../../types"
 import StaticEnumGrid from "./StaticEnumGrid"
 import { CustomAttributeSettings } from "./CustomAttributeSettings"
 
@@ -12,7 +12,7 @@ import { CustomAttributeSettings } from "./CustomAttributeSettings"
  * Nijo の ValueMemberType に相当する属性種類を定義する。
  */
 function ValueMemberTypes(props: {
-  formMethods?: ReactHookForm.UseFormReturn<ApplicationState>
+  formMethods?: ReactHookForm.UseFormReturn<GeneratedProjectInGui>
 }) {
   const { control } = props.formMethods ?? {}
   const xmlElementTrees = control ? ReactHookForm.useWatch({

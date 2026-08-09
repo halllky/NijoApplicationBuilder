@@ -11,8 +11,8 @@ export type NijoXmlCustomAttribute = {
   enumValues: string[]
 }
 
-/** Model定義画面のデータ型定義 */
-export type ModelPageForm = {
+/** ルート集約1個分のXML要素ツリー */
+export type RootAggregateXmlTree = {
   /**
    * そのXMLツリーの要素の一覧。
    * 以下は保証されているものとする。
@@ -125,34 +125,34 @@ export type XmlElementItem = {
 /** XML要素の属性の識別子 */
 export type XmlElementAttributeName = string & { _brand: 'XmlElementAttributeName' }
 
-/** XML要素の属性の種類定義 */
-export type XmlElementAttribute = {
+/**
+ * nijo.xml のXML要素1個に定義できる属性の型定義
+ */
+export type XmlAttributeDef = {
   /** この属性の識別子。XML要素の属性名になる。 */
   attributeName: XmlElementAttributeName
   /** この属性の画面表示上の名称。 */
   displayName: string
   /** この属性が使用可能なモデルとノード種別の組み合わせの配列。 */
   availableElements: { model: string, nodeType: NijoXmlNodeType }[]
-} & (XmlElementStringAttribute | XmlElementBoolAttribute | XmlElementIntegerAttribute | XmlElementSelectAttribute | XmlElementEnumSelectAttribute)
+} & (StringAttributeDef | BoolAttributeDef | IntegerAttributeDef | EnumSelectAttributeDef)
 
-/** XML要素の属性の種類定義（文字列属性） */
-export type XmlElementStringAttribute = {
+/** 属性の型定義（文字列属性） */
+export type StringAttributeDef = {
   type: 'String'
 }
-/** XML要素の属性の種類定義（ブール属性） */
-export type XmlElementBoolAttribute = {
+/** 属性の型定義（ブール属性） */
+export type BoolAttributeDef = {
   type: 'Boolean'
 }
-export type XmlElementIntegerAttribute = {
+/** 属性の型定義（整数属性） */
+export type IntegerAttributeDef = {
   type: 'Integer'
 }
-export type XmlElementEnumSelectAttribute = {
+/** 属性の型定義（列挙選択属性） */
+export type EnumSelectAttributeDef = {
   type: 'EnumSelect'
   typeEnumValues: string[]
-}
-/** XML要素の属性の種類定義（選択属性） */
-export type XmlElementSelectAttribute = {
-  type: 'XmlNodeType'
 }
 
 // ---------------------------------
@@ -170,7 +170,7 @@ export const ATTR_IS_HARD_CODED_PRIMARY_KEY = 'IsHardCodedPrimaryKey' as XmlElem
 // ---------------------------------
 
 /** 汎用参照テーブルの1カテゴリ分のデータ */
-export type GenericLookupTableCategoryItem = {
+export type GenericLookupTableCategory = {
   /** カテゴリ名（XML要素名）例: "Countries" */
   name: string
   /** 表示用名称 例: "国・地域区分" */
@@ -180,11 +180,11 @@ export type GenericLookupTableCategoryItem = {
 }
 
 /** 汎用参照テーブル1個分のカテゴリ定義データ */
-export type GenericLookupTableCategoriesData = {
+export type GenericLookupTableCategories = {
   /** 対象ルート集約のUniqueId */
   for: string
   /** カテゴリ一覧 */
-  categories: GenericLookupTableCategoryItem[]
+  categories: GenericLookupTableCategory[]
 }
 
 export const TYPE_DATA_MODEL = 'data-model'
@@ -227,7 +227,7 @@ export const CONSTANT_TYPE_TEMPLATE = 'template'
 /**
  * 指定された属性が、指定されたモデル種別で利用可能かを判定する。
  */
-export const isAttributeAvailable = (attr: XmlElementAttribute, modelType: string, nodeTypes: NijoXmlNodeType[]): boolean => {
+export const isAttributeAvailable = (attr: XmlAttributeDef, modelType: string, nodeTypes: NijoXmlNodeType[]): boolean => {
   if (!modelType) return false
   return attr.availableElements.some(ae => ae.model === modelType && nodeTypes.includes(ae.nodeType))
 }

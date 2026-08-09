@@ -1,7 +1,7 @@
 import React from "react"
 import * as ReactHookForm from "react-hook-form"
 import * as ReactRouter from "react-router-dom"
-import { asTree, ApplicationState, XmlElementAttributeName } from "../types"
+import { asTree, GeneratedProjectInGui, XmlElementAttributeName } from "../types"
 import { SERVER_DOMAIN } from "../main"
 import { NIJOUI_CLIENT_ROUTE_PARAMS } from "../routing"
 
@@ -64,13 +64,13 @@ const ValidationContextInternal = React.createContext<ValidationContextType>({
 //#region プロバイダー
 
 export function ValidationContextProvider(props: {
-  watch: ReactHookForm.UseFormWatch<ApplicationState>
+  watch: ReactHookForm.UseFormWatch<GeneratedProjectInGui>
   children?: React.ReactNode
 }) {
 
   // watchを使って変更検知を行う
   const [isTriggered, setIsTriggered] = React.useState(false)
-  const watchedValuesRef = React.useRef<ReactHookForm.DeepPartial<ApplicationState> | null>(null)
+  const watchedValuesRef = React.useRef<ReactHookForm.DeepPartial<GeneratedProjectInGui> | null>(null)
   React.useEffect(() => {
     const subscription = props.watch(values => {
       watchedValuesRef.current = values
@@ -149,7 +149,7 @@ export function ValidationContextProvider(props: {
         }
 
         // メッセージ一覧
-        const validationResultList = convertToValidationResultListItemList(watchedValuesRef.current as ApplicationState, errors)
+        const validationResultList = convertToValidationResultListItemList(watchedValuesRef.current as GeneratedProjectInGui, errors)
         for (const setResultList of resultListSubscribersRef.current) {
           setResultList(validationResultList)
         }
@@ -247,7 +247,7 @@ export function useValidationErrorMessages(): ValidationResultListItem[] {
 /**
  * サーバーから返ってくる検証結果を、表形式で表示するときのためのデータに変換する。
  */
-function convertToValidationResultListItemList(state: ApplicationState, validationResult: ValidationResult): ValidationResultListItem[] {
+function convertToValidationResultListItemList(state: GeneratedProjectInGui, validationResult: ValidationResult): ValidationResultListItem[] {
 
   const xmlElementTrees = state.xmlElementTrees ?? []
   const customAttributes = state.customAttributes ?? []

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import * as ReactHookForm from 'react-hook-form';
-import { ATTR_TYPE, ApplicationState, TYPE_CHILD, TYPE_CHILDREN } from '../types';
+import { ATTR_TYPE, GeneratedProjectInGui, TYPE_CHILD, TYPE_CHILDREN } from '../types';
 import { SERVER_DOMAIN } from '../main';
 import { NIJOUI_CLIENT_ROUTE_PARAMS } from '../routing';
 import * as ReactRouter from 'react-router-dom';
@@ -19,7 +19,7 @@ const SchemaCandidatesContext = createContext<SchemaCandidatesContextType>({ isL
  * フォームの内容に応じてサーバーから候補を取得し、コンテキスト経由で提供する。
  */
 export const SchemaCandidatesProvider = ({ watch, children }: {
-  watch: ReactHookForm.UseFormWatch<ApplicationState>,
+  watch: ReactHookForm.UseFormWatch<GeneratedProjectInGui>,
   children: ReactNode
 }) => {
   // フォーム全体の値

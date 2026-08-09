@@ -34,7 +34,7 @@ const rootLoader = async ({ request }: ReactRouter.LoaderFunctionArgs) => {
   if (!result.ok) {
     throw new Error(result.error ?? '不明なエラー')
   } else {
-    return result.schema.applicationState
+    return result.schema
   }
 }
 

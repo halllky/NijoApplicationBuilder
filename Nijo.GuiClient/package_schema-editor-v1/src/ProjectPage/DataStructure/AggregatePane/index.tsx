@@ -1,11 +1,11 @@
 import React from "react";
 import * as ReactHookForm from "react-hook-form"
 import * as Icon from "@heroicons/react/24/outline"
-import { ATTR_TYPE, ATTR_IS_GENERIC_LOOKUP_TABLE, ApplicationState, TYPE_COMMAND_MODEL } from "../../../types";
+import { ATTR_TYPE, ATTR_IS_GENERIC_LOOKUP_TABLE, GeneratedProjectInGui, TYPE_COMMAND_MODEL } from "../../../types";
 import * as UI from "../../../UI"
 import { Allotment, LayoutPriority } from "allotment";
 import DecsendantsGrid from "./DecsendantsGrid";
-import RootAggreagateAttrs from "./RootAggreagateAttrs";
+import RootAggregateAttrs from "./RootAggregateAttrs";
 import GenericLookupTableCategoriesPane from "./GenericLookupTableCategoriesPane";
 
 /**
@@ -13,7 +13,7 @@ import GenericLookupTableCategoriesPane from "./GenericLookupTableCategoriesPane
  */
 function AggregatePane(props: {
   selectedRootAggregateIndex: number
-  formMethods: ReactHookForm.UseFormReturn<ApplicationState>
+  formMethods: ReactHookForm.UseFormReturn<GeneratedProjectInGui>
   className?: string
   onRequestDelete?: () => void
   orientation?: 'horizontal' | 'vertical'
@@ -85,7 +85,7 @@ function AggregatePane(props: {
         {/* ルート集約の属性 */}
         <Allotment.Pane preferredSize={120} snap minSize={80}>
           <div className="w-full h-full p-1 bg-gray-200 border-t border-x border-gray-300 overflow-auto">
-            <RootAggreagateAttrs
+            <RootAggregateAttrs
               selectedRootAggregateIndex={selectedRootAggregateIndex}
               formMethods={props.formMethods}
               className="w-full"

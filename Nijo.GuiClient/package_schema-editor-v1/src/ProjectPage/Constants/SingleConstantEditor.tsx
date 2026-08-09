@@ -4,7 +4,7 @@ import * as Icon from "@heroicons/react/24/solid"
 import * as EG2 from "@nijo/ui-components/layout/EditableGrid2"
 import { UUID } from "uuidjs"
 import {
-  ApplicationState,
+  GeneratedProjectInGui,
   ATTR_DISPLAY_NAME,
   ATTR_CONSTANT_TYPE,
   ATTR_CONSTANT_VALUE,
@@ -21,7 +21,7 @@ import * as UI from '../../UI'
  */
 export function SingleConstantEditor({ index, formMethods }: {
   index: number
-  formMethods: ReactHookForm.UseFormReturn<ApplicationState>
+  formMethods: ReactHookForm.UseFormReturn<GeneratedProjectInGui>
 }) {
   const { control, getValues, setValue, register } = formMethods
 

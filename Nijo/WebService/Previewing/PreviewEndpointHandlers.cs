@@ -27,7 +27,7 @@ internal class PreviewEndpointHandlers {
     /// </summary>
     internal async Task HandleStartPreview(HttpContext context) {
         try {
-            var project = await ProjectHelper.GetProjectAndSetResponseIfErrorAsync(context);
+            var project = await NijoWebService.OpenProjectOrWriteErrorAsync(context);
             if (project == null) return;
 
             var setting = PreviewSetting.Load(project);
@@ -38,8 +38,7 @@ internal class PreviewEndpointHandlers {
         } catch (Exception ex) {
             await Console.Error.WriteLineAsync(ex.ToString());
 
-            await HttpResponseHelper.WriteErrorResponseAsync(
-                context,
+            await context.WriteErrorAsync(
                 (int)HttpStatusCode.InternalServerError,
                 ex.Message,
                 context.RequestAborted);
@@ -51,7 +50,7 @@ internal class PreviewEndpointHandlers {
     /// </summary>
     internal async Task HandleStopPreview(HttpContext context) {
         try {
-            var project = await ProjectHelper.GetProjectAndSetResponseIfErrorAsync(context);
+            var project = await NijoWebService.OpenProjectOrWriteErrorAsync(context);
             if (project == null) return;
 
             var logger = context.RequestServices.GetRequiredService<ILogger<NijoWebService>>();
@@ -61,8 +60,7 @@ internal class PreviewEndpointHandlers {
         } catch (Exception ex) {
             await Console.Error.WriteLineAsync(ex.ToString());
 
-            await HttpResponseHelper.WriteErrorResponseAsync(
-                context,
+            await context.WriteErrorAsync(
                 (int)HttpStatusCode.InternalServerError,
                 ex.Message,
                 context.RequestAborted);
@@ -74,7 +72,7 @@ internal class PreviewEndpointHandlers {
     /// </summary>
     internal async Task HandleGetPreviewState(HttpContext context) {
         try {
-            var project = await ProjectHelper.GetProjectAndSetResponseIfErrorAsync(context);
+            var project = await NijoWebService.OpenProjectOrWriteErrorAsync(context);
             if (project == null) return;
 
             var request = await context.Request.ReadFromJsonAsync<PreviewStateRequest>(context.RequestAborted)
@@ -94,12 +92,11 @@ internal class PreviewEndpointHandlers {
             }).ToList();
 
             context.Response.StatusCode = StatusCodes.Status200OK;
-            await HttpResponseHelper.WriteJsonResponseAsync(context, new { processes }, cancellationToken: context.RequestAborted);
+            await context.WriteJsonAsync(new { processes }, cancellationToken: context.RequestAborted);
         } catch (Exception ex) {
             await Console.Error.WriteLineAsync(ex.ToString());
 
-            await HttpResponseHelper.WriteErrorResponseAsync(
-                context,
+            await context.WriteErrorAsync(
                 (int)HttpStatusCode.InternalServerError,
                 ex.Message,
                 context.RequestAborted);

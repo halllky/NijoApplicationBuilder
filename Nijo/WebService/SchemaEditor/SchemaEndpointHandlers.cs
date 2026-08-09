@@ -1,12 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using System.Xml;
 using System.Xml.Linq;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,7 +31,7 @@ internal class SchemaEndpointHandlers {
     /// </summary>
     internal async Task HandleLoadSchema(HttpContext context) {
         try {
-            var project = await ProjectHelper.GetProjectAndSetResponseIfErrorAsync(context);
+            var project = await NijoWebService.OpenProjectOrWriteErrorAsync(context);
             if (project == null) {
                 return;
             }
@@ -44,51 +41,30 @@ internal class SchemaEndpointHandlers {
 
             var projectOptions = GeneratedProjectOptions.Parse(xDocument, false);
 
-            var applicationState = new ApplicationState {
+            var generatedProjectInGui = new GeneratedProjectInGui {
                 XmlElementTrees = SchemaParseContext.GetAllSectionNames()
                     .Where(sectionName => sectionName != SchemaParseContext.SECTION_CUSTOM_ATTRIBUTES)
                     .Select(sectionName => xDocument.Root?.Element(sectionName))
                     .Where(section => section != null)
                     .SelectMany(section => section!.Elements())
-                    .Select(root => new ModelPageForm {
-                        XmlElements = XmlElementItem.FromXElement(root).ToList(),
-                    }).ToList() ?? [],
+                    .Select(RootAggregateXmlTree.FromXElement)
+                    .ToList() ?? [],
                 ValueMemberTypes = ValueMemberType.FromSchemaParseRule(rule),
-                AttributeDefs = XmlElementAttribute.FromSchemaParseRule(rule),
+                AttributeDefs = XmlAttributeDef.FromSchemaParseRule(rule),
                 CustomAttributes = NijoXmlCustomAttribute.FromXDocument(xDocument).ToList(),
                 ProjectOptions = projectOptions.GetCurrentValues(),
                 ProjectOptionPropertyInfos = GeneratedProjectOptions.GetPropertyInfos().ToList(),
-                GenericLookupTableCategories = LoadGenericLookupTableCategories(xDocument),
-            };
-
-            // nijo.viewState.jsonの読み込み
-            NijoProjectFiles.SchemaGraphViewStateTypeByViewMode? schemaGraphViewState = null;
-            var viewStatePath = project.ViewStateJsonPath;
-            if (File.Exists(viewStatePath)) {
-                try {
-                    var viewStateJson = await File.ReadAllTextAsync(viewStatePath, context.RequestAborted);
-                    schemaGraphViewState = JsonSerializer.Deserialize<NijoProjectFiles.SchemaGraphViewStateTypeByViewMode>(viewStateJson);
-                } catch (Exception) {
-                    // ファイル読み込みやデシリアライズに失敗した場合はnullのまま
-                }
-            }
-
-            // nijo.preview.jsonの読み込み
-            var previewSetting = PreviewSetting.Load(project);
-
-            var response = new NijoProjectFiles {
-                ApplicationState = applicationState,
-                SchemaGraphViewState = schemaGraphViewState,
-                PreviewSetting = previewSetting,
+                GenericLookupTableCategories = GenericLookupTableCategories.FromXDocument(xDocument),
+                SchemaGraphViewState = SchemaGraphViewState.Load(project),
+                PreviewSetting = PreviewSetting.Load(project),
             };
 
             context.Response.StatusCode = StatusCodes.Status200OK;
-            await HttpResponseHelper.WriteJsonResponseAsync(context, response, cancellationToken: context.RequestAborted);
+            await context.WriteJsonAsync(generatedProjectInGui, cancellationToken: context.RequestAborted);
         } catch (Exception ex) {
             await Console.Error.WriteLineAsync(ex.ToString());
 
-            await HttpResponseHelper.WriteErrorResponseAsync(
-                context,
+            await context.WriteErrorAsync(
                 (int)HttpStatusCode.InternalServerError,
                 ex.Message,
                 context.RequestAborted);
@@ -100,29 +76,30 @@ internal class SchemaEndpointHandlers {
     /// </summary>
     internal async Task HandleValidateSchema(HttpContext context) {
         try {
-            var project = await ProjectHelper.GetProjectAndSetResponseIfErrorAsync(context);
+            var project = await NijoWebService.OpenProjectOrWriteErrorAsync(context);
             if (project == null) {
                 return;
             }
 
             var originalXDocument = XDocument.Load(project.SchemaXmlPath);
-            var applicationState = await context.Request.ReadFromJsonAsync<ApplicationState>(context.RequestAborted)
-                ?? throw new Exception("applicationState is null");
+            var generatedProjectInGui = await context.Request.ReadFromJsonAsync<GeneratedProjectInGui>(context.RequestAborted)
+                ?? throw new Exception("generatedProjectInGui is null");
 
             // XMLとして正しいか検証
-            if (!SchemaValidationService.TryValidateAsXml(
-                applicationState, originalXDocument, out var xDocument, out var uuidToXmlElement, out var xmlErrors)) {
+            var xmlErrors = new List<string>();
+            if (!generatedProjectInGui.TryConvertToXDocument(originalXDocument, xmlErrors, out var xDocument, out var uuidToXmlElement)) {
                 context.Response.StatusCode = (int)HttpStatusCode.Accepted;
-                await HttpResponseHelper.WriteJsonResponseAsync(context, xmlErrors, cancellationToken: context.RequestAborted);
+                await context.WriteJsonAsync(xmlErrors, cancellationToken: context.RequestAborted);
                 return;
             }
 
             // スキーマ定義として正しいか検証
             var rule = SchemaParseRule.Default();
-            if (!SchemaValidationService.TryValidateAsSchema(xDocument!, rule, out var schemaErrors)) {
-                var reactErrorObject = SchemaValidationService.ConvertErrorsToReactFormat(schemaErrors, uuidToXmlElement!);
+            var schemaParseContext = new SchemaParseContext(xDocument, rule, GeneratedProjectOptions.Parse(xDocument, true));
+            if (!schemaParseContext.TryBuildSchema(schemaParseContext.Document, out var _, out var schemaErrors)) {
+                var reactErrorObject = ValidationErrorMap.FromValidationErrors(schemaErrors, uuidToXmlElement);
                 context.Response.StatusCode = (int)HttpStatusCode.Accepted;
-                await HttpResponseHelper.WriteJsonResponseAsync(context, reactErrorObject, cancellationToken: context.RequestAborted);
+                await context.WriteJsonAsync(reactErrorObject, cancellationToken: context.RequestAborted);
                 return;
             }
 
@@ -131,8 +108,7 @@ internal class SchemaEndpointHandlers {
         } catch (Exception ex) {
             await Console.Error.WriteLineAsync(ex.ToString());
 
-            await HttpResponseHelper.WriteErrorResponseAsync(
-                context,
+            await context.WriteErrorAsync(
                 (int)HttpStatusCode.InternalServerError,
                 ex.Message,
                 context.RequestAborted);
@@ -144,34 +120,31 @@ internal class SchemaEndpointHandlers {
     /// </summary>
     internal async Task HandleSaveSchema(HttpContext context) {
         try {
-            var project = await ProjectHelper.GetProjectAndSetResponseIfErrorAsync(context);
+            var project = await NijoWebService.OpenProjectOrWriteErrorAsync(context);
             if (project == null) {
                 return;
             }
 
-            var nijoProjectFiles = await context.Request.ReadFromJsonAsync<NijoProjectFiles>(context.RequestAborted)
-                ?? throw new Exception("nijoProjectFiles is null");
-
-            var applicationState = nijoProjectFiles.ApplicationState;
-            var schemaGraphViewState = nijoProjectFiles.SchemaGraphViewState;
-            var previewSetting = nijoProjectFiles.PreviewSetting;
+            var generatedProjectInGui = await context.Request.ReadFromJsonAsync<GeneratedProjectInGui>(context.RequestAborted)
+                ?? throw new Exception("generatedProjectInGui is null");
 
             // XMLとして正しいか検証（スキーマ定義としてのエラーは見ない。作業中の一時保存のケースがあるため）
             var originalXDocument = XDocument.Load(project.SchemaXmlPath);
-            if (!SchemaValidationService.TryValidateAsXml(applicationState, originalXDocument, out var xDocument, out var _, out var errors)) {
+            var errors = new List<string>();
+            if (!generatedProjectInGui.TryConvertToXDocument(originalXDocument, errors, out var xDocument, out var _)) {
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-                await HttpResponseHelper.WriteJsonResponseAsync(context, errors, cancellationToken: context.RequestAborted);
+                await context.WriteJsonAsync(errors, cancellationToken: context.RequestAborted);
                 return;
             }
 
             // プロジェクト設定をXMLルート要素の属性として保存
-            if (applicationState.ProjectOptions != null) {
+            if (generatedProjectInGui.ProjectOptions != null) {
                 var defaultOptions = GeneratedProjectOptions.Parse(null, true);
                 var defaultValues = defaultOptions.GetCurrentValues();
 
                 // クライアント側から送られてきたキーを起点に、XMLへの反映を行う。
                 // デフォルト値と同じ、またはnullの場合は属性を削除する。
-                foreach (var (key, value) in applicationState.ProjectOptions) {
+                foreach (var (key, value) in generatedProjectInGui.ProjectOptions) {
                     var kind = value?.GetValueKind();
                     var defaultValue = defaultValues.ContainsKey(key) ? defaultValues[key] : null;
 
@@ -207,48 +180,22 @@ internal class SchemaEndpointHandlers {
             }
 
             // nijo.xmlの保存
-            XmlHelper.SortXmlAttributes(xDocument);
-            using (var writer = XmlWriter.Create(project.SchemaXmlPath, new XmlWriterSettings {
-                Indent = true,
-                NewLineOnAttributes = true,
-                Encoding = new UTF8Encoding(false, false),
-                NewLineChars = "\n",
-            })) {
-                xDocument.Save(writer);
-            }
+            await project.SaveSchemaXmlAsync(xDocument, context.RequestAborted);
 
-            // ファイル末尾に改行を追加（VSCodeで保存したときの設定にあわせる。
-            // Gitでファイル末尾の改行が都度差分になってしまうのを避けるため）
-            var xmlContent = await File.ReadAllTextAsync(project.SchemaXmlPath, context.RequestAborted);
-            if (!xmlContent.EndsWith("\n")) {
-                await File.WriteAllTextAsync(project.SchemaXmlPath, xmlContent + "\n", new UTF8Encoding(false, false), context.RequestAborted);
-            }
-
-            // SchemaGraphViewStateの保存（nullでない場合のみ）
-            if (schemaGraphViewState != null) {
-                var viewStatePath = project.ViewStateJsonPath;
-                var jsonOptions = new JsonSerializerOptions {
-                    WriteIndented = true,
-                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-                    Converters = {
-                        new NijoProjectFiles.SortedJsonConverter(),
-                        new NijoProjectFiles.SortedJsonArrayConverter()
-                    }
-                };
-                var jsonString = JsonSerializer.Serialize(schemaGraphViewState, jsonOptions);
-                await File.WriteAllTextAsync(viewStatePath, jsonString, new UTF8Encoding(false, false), context.RequestAborted);
+            // nijo.viewState.jsonの保存（nullでない場合のみ）
+            if (generatedProjectInGui.SchemaGraphViewState != null) {
+                await generatedProjectInGui.SchemaGraphViewState.SaveAsync(project, context.RequestAborted);
             }
 
             // nijo.preview.jsonの保存
-            await previewSetting.SaveAsync(project, context.RequestAborted);
+            await generatedProjectInGui.PreviewSetting.SaveAsync(project, context.RequestAborted);
 
             context.Response.StatusCode = (int)HttpStatusCode.OK;
 
         } catch (Exception ex) {
             await Console.Error.WriteLineAsync(ex.ToString());
 
-            await HttpResponseHelper.WriteErrorResponseAsync(
-                context,
+            await context.WriteErrorAsync(
                 (int)HttpStatusCode.BadRequest,
                 ex.Message,
                 context.RequestAborted);
@@ -260,7 +207,7 @@ internal class SchemaEndpointHandlers {
     /// </summary>
     internal async Task HandleGenerateCode(HttpContext context) {
         try {
-            var project = await ProjectHelper.GetProjectAndSetResponseIfErrorAsync(context);
+            var project = await NijoWebService.OpenProjectOrWriteErrorAsync(context);
             if (project == null) {
                 return;
             }
@@ -269,10 +216,11 @@ internal class SchemaEndpointHandlers {
             var rule = SchemaParseRule.Default();
 
             // バリデーション (validate相当)
-            if (!SchemaValidationService.TryValidateAsSchema(xDocumentToSave, rule, out var errors)) {
-                var reactErrorObject = SchemaValidationService.ConvertErrorsToReactFormat(errors, new Dictionary<XElement, string>());
+            var schemaParseContextForValidation = new SchemaParseContext(xDocumentToSave, rule, GeneratedProjectOptions.Parse(xDocumentToSave, true));
+            if (!schemaParseContextForValidation.TryBuildSchema(schemaParseContextForValidation.Document, out var _, out var errors)) {
+                var reactErrorObject = ValidationErrorMap.FromValidationErrors(errors, new Dictionary<XElement, string>());
                 context.Response.StatusCode = (int)HttpStatusCode.Accepted;
-                await HttpResponseHelper.WriteJsonResponseAsync(context, reactErrorObject, cancellationToken: context.RequestAborted);
+                await context.WriteJsonAsync(reactErrorObject, cancellationToken: context.RequestAborted);
                 return;
             }
 
@@ -287,13 +235,11 @@ internal class SchemaEndpointHandlers {
                 _webService.GetPreview(project).RestartAfterCodeGenerating(previewSetting, logger);
 
                 context.Response.StatusCode = StatusCodes.Status200OK;
-                await HttpResponseHelper.WriteJsonResponseAsync(
-                    context,
+                await context.WriteJsonAsync(
                     "Code generation successful.",
                     cancellationToken: context.RequestAborted);
             } else {
-                await HttpResponseHelper.WriteErrorResponseAsync(
-                    context,
+                await context.WriteErrorAsync(
                     (int)HttpStatusCode.InternalServerError,
                     "Code generation failed. Check server logs for details.",
                     context.RequestAborted);
@@ -302,8 +248,7 @@ internal class SchemaEndpointHandlers {
         } catch (Exception ex) {
             await Console.Error.WriteLineAsync(ex.ToString());
 
-            await HttpResponseHelper.WriteErrorResponseAsync(
-                context,
+            await context.WriteErrorAsync(
                 (int)HttpStatusCode.InternalServerError,
                 ex.Message,
                 context.RequestAborted);
@@ -315,7 +260,7 @@ internal class SchemaEndpointHandlers {
     /// </summary>
     internal async Task HandleGetNodeTypes(HttpContext context) {
         try {
-            var project = await ProjectHelper.GetProjectAndSetResponseIfErrorAsync(context);
+            var project = await NijoWebService.OpenProjectOrWriteErrorAsync(context);
             if (project == null) {
                 return;
             }
@@ -336,10 +281,10 @@ internal class SchemaEndpointHandlers {
 
             // 3. 参照 (ref-to)
             var xDocument = XDocument.Load(project.SchemaXmlPath);
-            var applicationState = await context.Request.ReadFromJsonAsync<ApplicationState>(context.RequestAborted);
-            if (applicationState != null) {
-                SchemaValidationService.TryValidateAsXml(applicationState, xDocument, out var editingXDocument, out _, out _);
-                if (editingXDocument != null) {
+            var generatedProjectInGui = await context.Request.ReadFromJsonAsync<GeneratedProjectInGui>(context.RequestAborted);
+            if (generatedProjectInGui != null) {
+                var errors = new List<string>();
+                if (generatedProjectInGui.TryConvertToXDocument(xDocument, errors, out var editingXDocument, out _)) {
                     xDocument = editingXDocument;
                 }
             }
@@ -361,50 +306,15 @@ internal class SchemaEndpointHandlers {
                 .ToList();
 
             context.Response.StatusCode = StatusCodes.Status200OK;
-            await HttpResponseHelper.WriteJsonResponseAsync(context, result, cancellationToken: context.RequestAborted);
+            await context.WriteJsonAsync(result, cancellationToken: context.RequestAborted);
 
         } catch (Exception ex) {
             await Console.Error.WriteLineAsync(ex.ToString());
 
-            await HttpResponseHelper.WriteErrorResponseAsync(
-                context,
+            await context.WriteErrorAsync(
                 (int)HttpStatusCode.InternalServerError,
                 ex.Message,
                 context.RequestAborted);
         }
     }
-
-    /// <summary>
-    /// nijo.xml の GenericLookupTableCategories セクションを読み込んで返す。
-    /// </summary>
-    private static List<GenericLookupTableCategoriesData> LoadGenericLookupTableCategories(XDocument xDocument) {
-        var result = new List<GenericLookupTableCategoriesData>();
-        var section = xDocument.Root?.Element(SchemaParseContext.SECTION_GENERIC_LOOKUP_TABLES);
-        if (section == null) return result;
-
-        foreach (var categoriesElement in section.Elements(SchemaParsing.GenericLookupTableParser.CATEGORIES)) {
-            var forAttr = categoriesElement.Attribute(SchemaParsing.GenericLookupTableParser.FOR)?.Value;
-            if (string.IsNullOrEmpty(forAttr)) continue;
-
-            var data = new GenericLookupTableCategoriesData { For = forAttr };
-            foreach (var categoryElement in categoriesElement.Elements()) {
-                var category = new GenericLookupTableCategoryData {
-                    Name = categoryElement.Name.LocalName,
-                    DisplayName = categoryElement.Attribute(SchemaParsing.BasicNodeOptions.DisplayName.AttributeName)?.Value
-                        ?? categoryElement.Name.LocalName,
-                };
-                foreach (var keyElement in categoryElement.Elements(SchemaParsing.GenericLookupTableParser.KEY)) {
-                    var keyFor = keyElement.Attribute(SchemaParsing.GenericLookupTableParser.FOR)?.Value;
-                    var keyValue = keyElement.Attribute(SchemaParsing.GenericLookupTableParser.KEY_VALUE)?.Value;
-                    if (!string.IsNullOrEmpty(keyFor) && keyValue != null) {
-                        category.HardCodedKeyValues[keyFor] = keyValue;
-                    }
-                }
-                data.Categories.Add(category);
-            }
-            result.Add(data);
-        }
-        return result;
-    }
 }
-

@@ -287,7 +287,7 @@ namespace Nijo {
                 GeneratedProject.TryOpen(projectRoot, out project, out _);
 
                 var param = System.Web.HttpUtility.ParseQueryString(string.Empty);
-                param.Add(WebService.Common.ProjectHelper.PROJECT_DIR_PARAMETER, path);
+                param.Add(WebService.NijoWebService.PROJECT_DIR_PARAMETER, path);
                 browserUrl = $"{url}/?{param}";
             }
 

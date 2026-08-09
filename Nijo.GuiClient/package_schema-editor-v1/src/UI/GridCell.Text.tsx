@@ -3,7 +3,7 @@ import * as ReactHookForm from "react-hook-form"
 import * as EG2 from "@nijo/ui-components/layout/EditableGrid2"
 import { MentionableTextarea, MentionableTextareaReadOnly } from "./Mention"
 import { useFieldValidationError } from "../ProjectPage/useValidation"
-import { ApplicationState } from "../types"
+import { GeneratedProjectInGui } from "../types"
 import { useMentionSuggestions } from "./useMentionSuggestions"
 import { JumpToElementContext } from "../ProjectPage/useJumpToElement"
 
@@ -148,7 +148,7 @@ export const MentionableCellEditor: EG2.EditableGridCellEditor = React.forwardRe
   style,
 }, ref) => {
 
-  const { getValues } = ReactHookForm.useFormContext<ApplicationState>()
+  const { getValues } = ReactHookForm.useFormContext<GeneratedProjectInGui>()
   const getMentionSuggestions = useMentionSuggestions(getValues)
 
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);

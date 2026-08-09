@@ -10,7 +10,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
 using System.Xml.Linq;
 using Nijo.Util.DotnetEx;
 using System.Diagnostics.CodeAnalysis;
@@ -122,6 +124,66 @@ namespace Nijo {
         public string WebapiProjectRoot => Path.Combine(ProjectRoot, GetConfig().WebapiProjectFolderName);
         public string ReactProjectRoot => Path.Combine(ProjectRoot, GetConfig().ReactProjectFolderName);
         public string UnitTestProjectRoot => Path.Combine(ProjectRoot, GetConfig().UnitTestProjectFolderName);
+
+        /// <summary>
+        /// nijo.xml を保存します。保存の度に差分が最小限になるよう、属性を名前順にソートしてから書き込みます。
+        /// </summary>
+        public async Task SaveSchemaXmlAsync(XDocument xDocument, CancellationToken cancellationToken) {
+            if (xDocument.Root != null) {
+                SortElementAttributesRecursively(xDocument.Root);
+            }
+
+            using (var writer = XmlWriter.Create(SchemaXmlPath, new XmlWriterSettings {
+                Indent = true,
+                NewLineOnAttributes = true,
+                Encoding = new UTF8Encoding(false, false),
+                NewLineChars = "\n",
+            })) {
+                xDocument.Save(writer);
+            }
+
+            // ファイル末尾に改行を追加（VSCodeで保存したときの設定にあわせる。
+            // Gitでファイル末尾の改行が都度差分になってしまうのを避けるため）
+            var xmlContent = await File.ReadAllTextAsync(SchemaXmlPath, cancellationToken);
+            if (!xmlContent.EndsWith("\n")) {
+                await File.WriteAllTextAsync(SchemaXmlPath, xmlContent + "\n", new UTF8Encoding(false, false), cancellationToken);
+            }
+        }
+
+        /// <summary>
+        /// XML要素とその子要素の属性を再帰的に名前順にソートする。
+        ///
+        /// <see cref="SchemaParseContext.ATTR_UNIQUE_ID"/> だけは一番後ろ。
+        /// バージョン管理でnijo.xmlの差分をとったとき、XMLの閉じ括弧と同じ行に「絶対に変わらない属性」があると差分が見やすくて嬉しいため。
+        /// </summary>
+        private static void SortElementAttributesRecursively(XElement element) {
+            // 現在の要素の属性をソート
+            var attributes = element.Attributes().ToList();
+            if (attributes.Count > 1) {
+                // 属性を名前順にソート
+                var sortedAttributes = attributes
+                    .Where(attr => attr.Name.LocalName != SchemaParseContext.ATTR_UNIQUE_ID)
+                    .OrderBy(attr => attr.Name.LocalName)
+                    .ToList();
+
+                // 既存の属性をすべて削除
+                element.RemoveAttributes();
+
+                // ソート済みの属性を再追加。ユニークIDは最後に追加
+                foreach (var attr in sortedAttributes) {
+                    element.SetAttributeValue(attr.Name, attr.Value);
+                }
+                var uniqueId = attributes.SingleOrDefault(attr => attr.Name.LocalName == SchemaParseContext.ATTR_UNIQUE_ID);
+                if (uniqueId != null) {
+                    element.SetAttributeValue(uniqueId.Name, uniqueId.Value);
+                }
+            }
+
+            // 子要素を再帰的に処理
+            foreach (var child in element.Elements()) {
+                SortElementAttributesRecursively(child);
+            }
+        }
 
         /// <summary>
         /// このプロジェクトのソースコード自動生成設定を返します。

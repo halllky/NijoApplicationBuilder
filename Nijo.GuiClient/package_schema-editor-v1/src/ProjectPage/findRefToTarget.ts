@@ -1,4 +1,4 @@
-import { XmlElementItem, ApplicationState, asTree, ATTR_TYPE } from "../types";
+import { XmlElementItem, GeneratedProjectInGui, asTree, ATTR_TYPE } from "../types";
 
 /**
  * 'ref-to' 属性の値を解析し、ターゲットとなる XmlElementItem を検索する。
@@ -8,7 +8,7 @@ import { XmlElementItem, ApplicationState, asTree, ATTR_TYPE } from "../types";
  */
 export const findRefToTarget = (
   refFrom: XmlElementItem,
-  allElements: ApplicationState['xmlElementTrees']
+  allElements: GeneratedProjectInGui['xmlElementTrees']
 ): { refTo: XmlElementItem, refToRoot: XmlElementItem } | undefined => {
   const refToValue = refFrom.attributes[ATTR_TYPE];
   if (!refToValue || !refToValue.startsWith('ref-to:')) return undefined

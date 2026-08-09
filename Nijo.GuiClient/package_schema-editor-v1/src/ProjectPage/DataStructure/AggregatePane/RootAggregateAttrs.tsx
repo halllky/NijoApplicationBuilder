@@ -1,13 +1,13 @@
 import * as ReactHookForm from "react-hook-form"
 import * as UI from "../../../UI"
-import { ApplicationState, ATTR_TYPE, isAttributeAvailable } from "../../../types"
+import { GeneratedProjectInGui, ATTR_TYPE, isAttributeAvailable } from "../../../types"
 
 /**
  * ルート集約の属性（コメント + 既定の属性 + カスタム属性）
  */
 export default function RootAggregateAttrs({ selectedRootAggregateIndex, formMethods: { getValues, control, register }, className }: {
   selectedRootAggregateIndex: number
-  formMethods: ReactHookForm.UseFormReturn<ApplicationState>
+  formMethods: ReactHookForm.UseFormReturn<GeneratedProjectInGui>
   className?: string
 }) {
 

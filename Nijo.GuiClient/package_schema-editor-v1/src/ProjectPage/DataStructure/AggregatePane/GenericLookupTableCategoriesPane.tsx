@@ -4,10 +4,10 @@ import * as Icon from "@heroicons/react/24/solid"
 import * as EG2 from "@nijo/ui-components/layout/EditableGrid2"
 import { UUID } from "uuidjs"
 import {
-  ApplicationState,
+  GeneratedProjectInGui,
   ATTR_DISPLAY_NAME,
   ATTR_IS_HARD_CODED_PRIMARY_KEY,
-  GenericLookupTableCategoryItem,
+  GenericLookupTableCategory,
 } from "../../../types"
 import * as UI from "../../../UI"
 
@@ -17,7 +17,7 @@ import * as UI from "../../../UI"
  */
 function GenericLookupTableCategoriesPane(props: {
   selectedRootAggregateIndex: number
-  formMethods: ReactHookForm.UseFormReturn<ApplicationState>
+  formMethods: ReactHookForm.UseFormReturn<GeneratedProjectInGui>
   className?: string
 }) {
   const { selectedRootAggregateIndex, formMethods: { control, getValues, setValue }, className } = props
@@ -66,15 +66,15 @@ function GenericLookupTableCategoriesPane(props: {
     getValues,
     setValue,
   }, helper => {
-    const columns: EG2.EditableGrid2Column<ReactHookForm.FieldArrayWithId<ApplicationState, typeof fieldArrayName, 'id'>>[] = []
+    const columns: EG2.EditableGrid2Column<ReactHookForm.FieldArrayWithId<GeneratedProjectInGui, typeof fieldArrayName, 'id'>>[] = []
 
     // 物理名（カテゴリのXML要素名）
-    columns.push(helper.text('物理名', 'name' as ReactHookForm.Path<ReactHookForm.FieldArrayWithId<ApplicationState, typeof fieldArrayName, 'id'>>, {
+    columns.push(helper.text('物理名', 'name' as ReactHookForm.Path<ReactHookForm.FieldArrayWithId<GeneratedProjectInGui, typeof fieldArrayName, 'id'>>, {
       defaultWidth: 180,
     }))
 
     // 表示名
-    columns.push(helper.text('表示名', 'displayName' as ReactHookForm.Path<ReactHookForm.FieldArrayWithId<ApplicationState, typeof fieldArrayName, 'id'>>, {
+    columns.push(helper.text('表示名', 'displayName' as ReactHookForm.Path<ReactHookForm.FieldArrayWithId<GeneratedProjectInGui, typeof fieldArrayName, 'id'>>, {
       defaultWidth: 200,
     }))
 
@@ -82,7 +82,7 @@ function GenericLookupTableCategoriesPane(props: {
     for (const keyEl of hardCodedKeyElements) {
       const keyUniqueId = keyEl.uniqueId
       const keyDisplayName = keyEl.attributes?.[ATTR_DISPLAY_NAME] || keyEl.localName || keyUniqueId
-      const keyPath = `hardCodedKeyValues.${keyUniqueId}` as ReactHookForm.Path<ReactHookForm.FieldArrayWithId<ApplicationState, typeof fieldArrayName, 'id'>>
+      const keyPath = `hardCodedKeyValues.${keyUniqueId}` as ReactHookForm.Path<ReactHookForm.FieldArrayWithId<GeneratedProjectInGui, typeof fieldArrayName, 'id'>>
       columns.push(helper.text(keyDisplayName, keyPath, {
         defaultWidth: 160,
       }))
@@ -94,7 +94,7 @@ function GenericLookupTableCategoriesPane(props: {
   // ----- ハンドラ -----
   const handleInsertRow = () => {
     const selectedRows = gridRef.current?.getSelectedRows()
-    const newRow: GenericLookupTableCategoryItem = {
+    const newRow: GenericLookupTableCategory = {
       name: '',
       displayName: '',
       hardCodedKeyValues: {},

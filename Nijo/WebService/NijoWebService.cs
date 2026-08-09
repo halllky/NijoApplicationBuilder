@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Nijo.WebService.Common;
 using Nijo.WebService.Previewing;
 using Nijo.WebService.SchemaEditor;
 
@@ -24,12 +25,38 @@ public class NijoWebService : IDisposable {
     public NijoWebService() {
     }
 
+    /// <summary>
+    /// クエリパラメータ名: プロジェクトディレクトリ
+    /// ※React側と合わせる必要あり
+    /// </summary>
+    public const string PROJECT_DIR_PARAMETER = "pj";
+
     /// <summary>稼働中のプレビュー。キーはプロジェクトルートの絶対パス</summary>
     private readonly ConcurrentDictionary<string, Preview> _previews = new();
 
     /// <summary>指定プロジェクトのプレビューを返す。無ければ新規に作る</summary>
     public Preview GetPreview(GeneratedProject project) {
         return _previews.GetOrAdd(project.ProjectRoot, _ => new Preview(project.ProjectRoot));
+    }
+
+    /// <summary>
+    /// HttpContextからプロジェクトディレクトリを取得し、GeneratedProjectを作成する。
+    /// 失敗した場合は適切なエラーレスポンスを送信する。
+    /// </summary>
+    /// <returns>成功した場合はGeneratedProject、失敗した場合はnull（エラーレスポンスは既に送信済み）</returns>
+    internal static async Task<GeneratedProject?> OpenProjectOrWriteErrorAsync(HttpContext context) {
+        if (!context.TryGetQueryParameter(PROJECT_DIR_PARAMETER, out var projectDir)) {
+            await context.WriteErrorAsync(400, $"{PROJECT_DIR_PARAMETER} query parameter is required", context.RequestAborted);
+            return null;
+        }
+
+        var projectRoot = Path.GetFullPath(projectDir);
+        if (!GeneratedProject.TryOpen(projectRoot, out var project, out var error)) {
+            await context.WriteErrorAsync(400, error ?? "Unknown error", context.RequestAborted);
+            return null;
+        }
+
+        return project;
     }
 
     /// <summary>稼働中の全プレビューを停止する</summary>
