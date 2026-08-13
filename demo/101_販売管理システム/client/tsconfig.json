@@ -29,7 +29,14 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     /* Alias */
-    "paths": {}
+    "paths": {
+      "@nijo/ui-components": [
+        "../../../Nijo.GuiClient/package_ui-components/src"
+      ],
+      "@nijo/ui-components/*": [
+        "../../../Nijo.GuiClient/package_ui-components/src/*"
+      ]
+    }
   },
   "include": [
     "src"

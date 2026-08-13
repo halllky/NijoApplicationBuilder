@@ -2,7 +2,7 @@ import React from "react"
 import * as ReactRouter from "react-router-dom"
 import { useNavigate } from "react-router-dom"
 import { PageBase } from "../app/PageBase"
-import { useForm, UseFormReturn, useFieldArray } from "react-hook-form"
+import { useForm, UseFormReturn } from "react-hook-form"
 import {
   従業員一括更新ParameterDisplayData,
   createNew従業員一括更新ParameterDisplayData,
@@ -17,7 +17,7 @@ import {
 import { callComplexPostEndpointAsync } from "../example/callComplexPostEndpointAsync"
 import { FormLabel } from "../ui/FormLabel"
 import { WordTextBox } from "../ui/WordTextBox"
-import { CheckBox } from "../ui/CheckBox"
+import * as Grid from "../ui/grid"
 import { maxLengthOf } from "../app/fieldMetadata"
 import { Button } from "../ui/Button"
 import { PageTitle } from "../ui/PageTitle"
@@ -149,7 +149,7 @@ function P400_従業員() {
           </div>
 
           {/* 一覧編集エリア */}
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 min-h-0">
             <EmployeeGrid methods={methods} />
           </div>
         </div>
@@ -159,106 +159,71 @@ function P400_従業員() {
 }
 
 function EmployeeGrid({ methods }: { methods: UseFormReturn<従業員一括更新ParameterDisplayData> }) {
-  const { fields, append, remove } = useFieldArray({
-    control: methods.control,
-    name: "更新対象従業員一覧"
-  })
+  const maxLen従業員番号 = maxLengthOf("従業員マスタ", "従業員番号")
+  const maxLen氏名 = maxLengthOf("従業員マスタ", "氏名")
+
+  // 列定義（下の useFieldArrayForEditableGrid2 呼び出しの中）から remove を呼べるようにするための ref。
+  // 同一文の中で自分自身の戻り値（remove）を参照すると型推論が循環してしまうため、
+  // 呼び出しより前に宣言した ref 経由で間接的に参照する。
+  const removeRef = React.useRef<(index: number) => void>(() => { })
+
+  const {
+    fieldArrayReturn: { append, remove },
+    editableGrid2Props,
+  } = Grid.useFieldArrayForEditableGrid2(
+    {
+      name: "更新対象従業員一覧",
+      control: methods.control,
+      getValues: methods.getValues,
+      setValue: methods.setValue,
+    },
+    helper => [
+      // 操作列（削除・復元）。既にDBにある行は論理削除（willBeDeletedフラグ）、新規行は物理削除。
+      helper.button(
+        row => row.willBeDeleted ? "復元" : "削除",
+        (row, rowIndex) => {
+          if (row.willBeDeleted) {
+            methods.setValue(`更新対象従業員一覧.${rowIndex}.willBeDeleted`, false)
+          } else if (row.existsInDatabase) {
+            methods.setValue(`更新対象従業員一覧.${rowIndex}.willBeDeleted`, true)
+          } else {
+            removeRef.current(rowIndex)
+          }
+        },
+        { defaultWidth: 64, disableResizing: true, isFixed: true },
+      ),
+      helper.text("従業員番号", "従業員.従業員番号", {
+        defaultWidth: 160,
+        maxLength: maxLen従業員番号,
+        isReadOnly: row => !!row.existsInDatabase,
+      }),
+      helper.text("氏名", "従業員.氏名", { defaultWidth: 240, maxLength: maxLen氏名 }),
+      helper.checkBox("入荷担当", "従業員.入荷担当", { defaultWidth: 88 }),
+      helper.checkBox("販売担当", "従業員.販売担当", { defaultWidth: 88 }),
+      helper.checkBox("管理者", "従業員.システム管理者", { defaultWidth: 88 }),
+      helper.detailMessage({ defaultWidth: 320 }),
+    ],
+    [],
+  )
+  removeRef.current = remove
 
   // 行追加
   const handleAdd = () => {
-    const newRow = createNew更新対象従業員一覧DisplayData()
-    append(newRow)
-  }
-
-  // 行削除（論理削除または物理削除）
-  const handleRemove = (index: number) => {
-    const item = fields[index]
-    if (item.existsInDatabase) {
-      // 既にDBにある場合は論理削除フラグを立てる
-      methods.setValue(`更新対象従業員一覧.${index}.willBeDeleted`, true)
-    } else {
-      // 新規行なら物理削除
-      remove(index)
-    }
-  }
-
-  // 削除取り消し
-  const handleUndoRemove = (index: number) => {
-    methods.setValue(`更新対象従業員一覧.${index}.willBeDeleted`, false)
+    append(createNew更新対象従業員一覧DisplayData())
   }
 
   return (
-    <div>
-      <div className="mb-2">
+    <div className="h-full flex flex-col gap-2">
+      <div>
         <Button outline mini onClick={handleAdd}>＋ 行追加</Button>
       </div>
-      <table className="table-fixed border-collapse border border-gray-300">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="border px-1 py-px">操作</th>
-            <th className="border px-1 py-px">従業員番号</th>
-            <th className="border px-1 py-px">氏名</th>
-            <th className="border px-1 py-px">入荷担当</th>
-            <th className="border px-1 py-px">販売担当</th>
-            <th className="border px-1 py-px">管理者</th>
-            <th className="border px-1 py-px w-80">{/* メッセージ列 */}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {fields.map((field, index) => {
-            const isLogicalDeleted = methods.watch(`更新対象従業員一覧.${index}.willBeDeleted`)
-
-            return (
-              <tr key={field.id} className={isLogicalDeleted ? "bg-red-50 opacity-60" : ""}>
-                <td className="border px-1 py-px text-center">
-                  {isLogicalDeleted ? (
-                    <Button mini onClick={() => handleUndoRemove(index)}>復元</Button>
-                  ) : (
-                    <Button mini onClick={() => handleRemove(index)}>削除</Button>
-                  )}
-                </td>
-                <td className="border px-1 py-px">
-                  <WordTextBox
-                    {...methods.register(`更新対象従業員一覧.${index}.従業員.従業員番号`)}
-                    maxLength={maxLengthOf("従業員マスタ", "従業員番号")}
-                    readOnly={field.existsInDatabase}
-                    className="w-40"
-                  />
-                </td>
-                <td className="border p-px">
-                  <WordTextBox
-                    {...methods.register(`更新対象従業員一覧.${index}.従業員.氏名`)}
-                    maxLength={maxLengthOf("従業員マスタ", "氏名")}
-                    readOnly={isLogicalDeleted}
-                    className="w-full"
-                  />
-                </td>
-                <td className="border px-1 py-px text-center">
-                  <CheckBox
-                    {...methods.register(`更新対象従業員一覧.${index}.従業員.入荷担当`)}
-                    readOnly={isLogicalDeleted}
-                  />
-                </td>
-                <td className="border px-1 py-px text-center">
-                  <CheckBox
-                    {...methods.register(`更新対象従業員一覧.${index}.従業員.販売担当`)}
-                    readOnly={isLogicalDeleted}
-                  />
-                </td>
-                <td className="border px-1 py-px text-center">
-                  <CheckBox
-                    {...methods.register(`更新対象従業員一覧.${index}.従業員.システム管理者`)}
-                    readOnly={isLogicalDeleted}
-                  />
-                </td>
-                <td className="border px-1 py-px text-left">
-                  <DetailMessage.Of name={`更新対象従業員一覧.${index}`} control={methods.control} />
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+      <Grid.EG2.EditableGrid2
+        {...editableGrid2Props}
+        // 論理削除された行はグリッド全体を読み取り専用にする（削除・復元ボタン自体は disableIfReadOnly を付けていないため操作可能）
+        isReadOnly={row => row.willBeDeleted === true}
+        getRowClassName={row => row.willBeDeleted ? "bg-red-50 opacity-60" : ""}
+        className="flex-1 border border-gray-300"
+      />
     </div>
   )
 }

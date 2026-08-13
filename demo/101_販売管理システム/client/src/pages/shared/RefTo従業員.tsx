@@ -3,6 +3,7 @@ import { defineSearchDialog } from "../../app/defineSearchDialog"
 import { callComplexPostEndpointAsync } from "../../example/callComplexPostEndpointAsync"
 import { FormLabel } from "../../ui/FormLabel"
 import { WordTextBox } from "../../ui/WordTextBox"
+import * as Grid from "../../ui/grid"
 
 export const [
   /**
@@ -62,8 +63,8 @@ export const [
 
   // 検索結果グリッドの列定義
   getSearchResultGridColumns: () => [
-    { header: '従業員番号', widthPx: 120, render: row => row.従業員番号 },
-    { header: '氏名', widthPx: 200, render: row => row.氏名 },
+    Grid.textColumn<従業員RefRefTarget>('従業員番号', row => row.従業員番号, { defaultWidth: 120 }),
+    Grid.textColumn<従業員RefRefTarget>('氏名', row => row.氏名, { defaultWidth: 200 }),
   ],
 
   // 検索条件欄のレンダリング

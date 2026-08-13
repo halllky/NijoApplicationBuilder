@@ -10,5 +10,8 @@
     "tsc": "tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run"
+  },
+  "dependencies": {
+    "@nijo/ui-components": "file:../../../Nijo.GuiClient/package_ui-components"
   }
 }

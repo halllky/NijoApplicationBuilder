@@ -3,7 +3,7 @@ import * as ReactRouter from "react-router-dom"
 import { useNavigate } from "react-router-dom"
 import { useForm, Controller } from "react-hook-form"
 import { PageBase } from "../app/PageBase"
-import { DataTable, DataTableColumn } from "../ui/DataTable"
+import * as Grid from "../ui/grid"
 import { PageTitle } from "../ui/PageTitle"
 import { FormLabel } from "../ui/FormLabel"
 import { CheckBox } from "../ui/CheckBox"
@@ -64,7 +64,7 @@ function UIComponentCatalog() {
 
   const [loadingVisible, setLoadingVisible] = useState(false)
 
-  // DataTable example data
+  // EditableGrid2（読み取り専用）example data
   type TableRow = { id: number, name: string, price: number, category: string }
   const tableRows: TableRow[] = React.useMemo(() => Array.from({ length: 20 }).flatMap((_, i) => [
     { id: i * 10 + 1, name: "商品A", price: 1000, category: "食品" },
@@ -73,12 +73,62 @@ function UIComponentCatalog() {
     { id: i * 10 + 4, name: "商品D", price: 12000, category: "家電" },
     { id: i * 10 + 5, name: "商品E", price: 300, category: "食品" },
   ]), [])
-  const tableColumns: DataTableColumn<TableRow>[] = [
-    { header: "ID", render: row => row.id, widthPx: 60 },
-    { header: "商品名", render: row => row.name },
-    { header: "価格", render: row => <div className="text-right">{row.price.toLocaleString()}円</div>, widthPx: 100 },
-    { header: "カテゴリ", render: row => <span className="px-2 py-1 bg-gray-200 rounded text-xs">{row.category}</span>, widthPx: 100 },
-  ]
+  const readOnlyColumns = React.useMemo(() => [
+    Grid.textColumn<TableRow>("ID", row => row.id, { defaultWidth: 60 }),
+    Grid.textColumn<TableRow>("商品名", row => row.name),
+    Grid.numericColumn<TableRow>("価格", row => row.price, { defaultWidth: 100, suffix: "円" }),
+    Grid.customColumn<TableRow>("カテゴリ", row => (
+      <span className="px-2 py-1 bg-gray-200 rounded text-xs">{row.category}</span>
+    ), { defaultWidth: 100, getValueForCopy: row => row.category }),
+  ], [])
+
+  // EditableGrid2（編集可能）example data
+  type EditableRow = {
+    name: string
+    price: string
+    taxType: EnumDefs.消費税区分
+    active: boolean
+    comment: string
+  }
+  const editableGridForm = useForm<{ rows: EditableRow[] }>({
+    defaultValues: {
+      rows: Array.from({ length: 20 }).map((_, i) => ({
+        name: `商品${i + 1}`,
+        price: String((i + 1) * 100),
+        taxType: "一般税率",
+        active: i % 3 !== 0,
+        comment: "",
+      })),
+    },
+  })
+  // 列定義（下の useFieldArrayForEditableGrid2 呼び出しの中）から remove を呼べるようにするための ref。
+  // 同一文の中で自分自身の戻り値（removeGridRow）を参照すると型推論が循環してしまうため、
+  // 呼び出しより前に宣言した ref 経由で間接的に参照する。
+  const removeGridRowRef = React.useRef<(index: number | number[]) => void>(() => { })
+
+  const {
+    fieldArrayReturn: { append: appendGridRow, remove: removeGridRow },
+    editableGrid2Props,
+    gridRef,
+  } = Grid.useFieldArrayForEditableGrid2(
+    {
+      name: "rows",
+      control: editableGridForm.control,
+      getValues: editableGridForm.getValues,
+      setValue: editableGridForm.setValue,
+    },
+    helper => [
+      helper.text("商品名", "name", { defaultWidth: 160 }),
+      helper.numeric("価格", "price", { defaultWidth: 120, integerDigit: 9, decimalDigit: 0, commaSeparated: true, suffix: "円" }),
+      helper.enumeration("消費税区分", "taxType", "消費税区分", { defaultWidth: 120 }),
+      helper.checkBox("有効", "active", { defaultWidth: 72 }),
+      helper.text("コメント（複数行）", "comment", { defaultWidth: 240, multiline: true }),
+      helper.button(() => "削除", (_row, rowIndex) => removeGridRowRef.current(rowIndex), { defaultWidth: 64 }),
+      helper.detailMessage({ defaultWidth: 200 }),
+    ],
+    [],
+  )
+  removeGridRowRef.current = removeGridRow
 
   return (
     <PageBase
@@ -280,16 +330,51 @@ function UIComponentCatalog() {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold mb-4 border-b">DataTable</h2>
+            <h2 className="text-xl font-bold mb-4 border-b">EditableGrid2（読み取り専用）</h2>
             <div className="space-y-2">
               <div className="p-4 border rounded">
-                <DataTable
-                  rows={tableRows}
-                  columns={tableColumns}
-                  className="w-full max-h-60 resize-x border border-gray-700"
+                <Grid.EG2.EditableGrid2
+                  data={tableRows}
+                  columns={[() => readOnlyColumns, []]}
+                  getRowId={(_, index) => index.toString()}
+                  striped
+                  showCheckBox
+                  className="w-full h-60 resize border border-gray-700"
                 />
                 <div className="mt-2 text-sm text-gray-500">
-                  シンプルなテーブルコンポーネント。ヘッダ固定、横スクロール対応。
+                  仮想化・セル範囲選択・列幅変更・TSVコピペに対応した共有グリッドコンポーネント。読み取り専用列は編集エディタを持たない。
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold mb-4 border-b">EditableGrid2（編集可能）</h2>
+            <div className="space-y-2">
+              <div className="p-4 border rounded space-y-2">
+                <div className="flex flex-wrap gap-2">
+                  <Button mini outline onClick={() => appendGridRow({
+                    name: "", price: "0", taxType: "一般税率", active: true, comment: "",
+                  })}>
+                    ＋ 行追加
+                  </Button>
+                  <Button mini outline onClick={() => {
+                    const checkedRows = gridRef.current?.getCheckedRows() ?? []
+                    removeGridRow(checkedRows.map(r => r.rowIndex))
+                  }}>
+                    選択した行を削除
+                  </Button>
+                </div>
+                <Grid.EG2.EditableGrid2
+                  {...editableGrid2Props}
+                  showCheckBox
+                  striped
+                  clearSelectionOnBlur
+                  getRowClassName={row => row.active ? "" : "opacity-50"}
+                  className="w-full h-72 resize border border-gray-700"
+                />
+                <div className="mt-2 text-sm text-gray-500">
+                  react-hook-form の useFieldArray と連携する編集可能グリッド。1文字入力で編集開始（クイック編集）、F2/ダブルクリックでも編集開始。矢印キーでセル移動、Ctrl+C/Ctrl+Vで範囲コピペ、Deleteで範囲クリア。
                 </div>
               </div>
             </div>

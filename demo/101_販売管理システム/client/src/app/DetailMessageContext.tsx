@@ -117,10 +117,35 @@ export function Provider(props: { children: React.ReactNode }) {
   // エラーメッセージなどの表示時、この登録情報をもとに各フィールド名に対応する setter 関数を探し出して呼び出す。
   const registeredRef = React.useRef<FieldRegistration[]>([])
 
+  // これまでに appendMessages に渡された detail をすべて平坦化して蓄積しておく。
+  // EditableGrid2 のような仮想化されたグリッドでは、メッセージが発生した時点で
+  // 対象の行がまだ画面外で未マウントのことがあるため、この蓄積をもとに
+  // 新しく登録されたコンポーネントへ後から配信し直す（下記 scheduleRedistribute）。
+  const accumulatedFlatMapRef = React.useRef<[string[], DetailMessageByField][]>([])
+  // 同一フレーム内で複数の register が発生しても再配信を1回にまとめるためのガード
+  const redistributeScheduledRef = React.useRef(false)
+
   // 内部コンテキストの末端コンポーネントに対して公開する登録関数
   const internalContextValue: DetailMessageContextTypeInternal = React.useMemo(() => ({
     register: request => {
       registeredRef.current.push(request)
+
+      // 蓄積済みのメッセージが無ければ再配信の必要はない
+      if (accumulatedFlatMapRef.current.length === 0) return
+      if (redistributeScheduledRef.current) return
+      redistributeScheduledRef.current = true
+
+      // マウント直後は他のコンポーネントの登録もまとめて行われることが多いため、
+      // 1フレーム分をまとめてから再配信する
+      queueMicrotask(() => {
+        redistributeScheduledRef.current = false
+        const { messageCache } = distribute(accumulatedFlatMapRef.current, registeredRef.current)
+        // 蓄積済みメッセージの再計算結果で全登録を上書きする（該当が無い登録には null をセットして消す）
+        for (const registration of registeredRef.current) {
+          if (registration.type === 'unregistered') continue
+          registration.messageSetter(messageCache.get(registration.messageSetter) ?? null)
+        }
+      })
     },
     unregister: request => {
       registeredRef.current = registeredRef.current.filter(item => item !== request)
@@ -134,6 +159,8 @@ export function Provider(props: { children: React.ReactNode }) {
         registerInfo.messageSetter(null)
       }
       setUnregisteredMessages({})
+      // 蓄積分もクリアしないと、後から生えてくる行に古いメッセージが配信されてしまう
+      accumulatedFlatMapRef.current = []
     }
 
     const replaceMessages = (detail: PresentationContextDetail | null | undefined) => {
@@ -142,116 +169,27 @@ export function Provider(props: { children: React.ReactNode }) {
     }
 
     const appendMessages = (detail: PresentationContextDetail | null | undefined) => {
-      // どこに表示されないメッセージはここに蓄積させておいて最後にまとめて表示
-      const unregisteredCache: DetailMessageByField = {}
-
-      // 同じメッセージセッターに複数のメッセージが送られる場合に備えて、
-      // 各メッセージセッターへの通知をここでバッファリングする
-      const messageCache = new Map<(messages: DetailMessageByField | null) => void, DetailMessageByField>()
-      const addToCache = (setter: (messages: DetailMessageByField | null) => void, msg: DetailMessageByField) => {
-        const current = messageCache.get(setter) ?? {}
-        messageCache.set(setter, {
-          error: [...(current.error ?? []), ...(msg.error ?? [])],
-          warn: [...(current.warn ?? []), ...(msg.warn ?? [])],
-          info: [...(current.info ?? []), ...(msg.info ?? [])],
-        })
-      }
-
       // 構造化されたオブジェクトを平坦化
       const flatMap = flattenDetailMessages(detail)
 
-      // 平坦化されたメッセージを順に処理し、
-      // それぞれどこに表示するかを判定して setter 関数を呼び出す。
-      const exactMatchMap = new Map(registeredRef.current
-        .filter(item => item.type === 'exact')
-        .map(item => [item.name, item]))
-      const forwardMatcheList = registeredRef.current
-        .filter(item => item.type === 'forwardMatch')
-        .map(item => ({ splittedName: item.name.split('.'), ...item }))
+      // 仮想化グリッドで後からマウントされる行のために蓄積しておく（register 側で使用）
+      accumulatedFlatMapRef.current = [...accumulatedFlatMapRef.current, ...flatMap]
 
-      for (const [nameSplittedByPeriod, messageByField] of flatMap) {
-
-        // nameの完全一致が登録されている場合はそこに優先的に表示
-        const name = nameSplittedByPeriod.join('.')
-        const exactMatch = exactMatchMap.get(name)
-        if (exactMatch) {
-          addToCache(exactMatch.messageSetter, messageByField)
-          continue
-        }
-
-        // 無い場合は前方一致を探す。
-        // 前方一致でヒットした登録情報のうち、最も長いものに表示。
-        // 最も長いものが複数ある場合は最初に登場した登録情報の箇所に表示。
-        // また、ヒットした以降の部分もエラーメッセージに含める。
-        // 例: 項目 "a.b.c.d" に対してエラーメッセージが発生しているとき、
-        //    "a.b" と "a.b.c" が登録されている場合は "a.b.c" にこれを表示する。
-        const forwardMatchCandidates = forwardMatcheList.map(registration => {
-          if (registration.splittedName.length > nameSplittedByPeriod.length) {
-            return { match: false, hitLength: -1, rest: [], messageSetter: registration.messageSetter }
-          }
-          for (let i = 0; i < registration.splittedName.length; i++) {
-            if (registration.splittedName[i] !== nameSplittedByPeriod[i]) {
-              return { match: false, hitLength: -1, rest: [], messageSetter: registration.messageSetter }
-            }
-          }
-          return {
-            match: true,
-            hitLength: registration.splittedName.length,
-            rest: nameSplittedByPeriod.slice(registration.splittedName.length),
-            messageSetter: registration.messageSetter,
-          }
-        }).filter(x => x.match)
-
-        if (forwardMatchCandidates.length > 0) {
-          // 上記でヒットした登録情報のうち最もパスが長いものを探す
-          let bestCandidate = forwardMatchCandidates[0]
-          for (const candidate of forwardMatchCandidates) {
-            if (candidate.hitLength > bestCandidate.hitLength) {
-              bestCandidate = candidate
-            }
-          }
-
-          // nameの残り部分をメッセージの先頭に付与してセットする。
-          // 半角数値の場合は配列インデックスなので「x行目」という文字に変換する。
-          let prefix = bestCandidate.rest
-            .map(part => /^\d+$/.test(part) ? `${Number(part) + 1}行目` : part)
-            .join(' ')
-          if (prefix.length > 0) {
-            prefix += ': '
-          }
-          addToCache(bestCandidate.messageSetter, {
-            error: messageByField.error?.map(msg => prefix + msg),
-            warn: messageByField.warn?.map(msg => prefix + msg),
-            info: messageByField.info?.map(msg => prefix + msg),
-          })
-          continue
-        }
-
-        // どこにも登録されていないnameの場合はオブジェクトに溜めておいて最後にまとめてセットする。
-        // 該当のフィールドまでのパスをメッセージに含める。
-        let prefix = nameSplittedByPeriod
-          .map(part => /^\d+$/.test(part) ? `${Number(part) + 1}行目` : part)
-          .join(' ')
-        if (prefix.length > 0) {
-          prefix += ': '
-        }
-        if (messageByField.error) {
-          unregisteredCache.error = [...(unregisteredCache.error ?? []), ...messageByField.error.map(msg => prefix + msg)]
-        }
-        if (messageByField.warn) {
-          unregisteredCache.warn = [...(unregisteredCache.warn ?? []), ...messageByField.warn.map(msg => prefix + msg)]
-        }
-        if (messageByField.info) {
-          unregisteredCache.info = [...(unregisteredCache.info ?? []), ...messageByField.info.map(msg => prefix + msg)]
-        }
-      }
+      // 平坦化されたメッセージを、それぞれどこに表示するかを判定して setter 関数に振り分ける
+      const { messageCache, unregisteredCache } = distribute(flatMap, registeredRef.current)
 
       // どこにも登録されていないname用のメッセージをセットする。
       // コンテキスト内部で登録されている場合は最後に登録された箇所に表示し、
       // どこにも無い場合はこのコンポーネントのstateにセットする。
       const unregistered = registeredRef.current.filter(item => item.type === 'unregistered')
       if (unregistered.length > 0) {
-        addToCache(unregistered[unregistered.length - 1].messageSetter, unregisteredCache)
+        const setter = unregistered[unregistered.length - 1].messageSetter
+        const current = messageCache.get(setter) ?? {}
+        messageCache.set(setter, {
+          error: [...(current.error ?? []), ...(unregisteredCache.error ?? [])],
+          warn: [...(current.warn ?? []), ...(unregisteredCache.warn ?? [])],
+          info: [...(current.info ?? []), ...(unregisteredCache.info ?? [])],
+        })
       } else {
         setUnregisteredMessages(prev => ({
           error: [...(prev.error ?? []), ...(unregisteredCache.error ?? [])],
@@ -398,6 +336,122 @@ export function Rest(props: { className?: string }) {
 //#endregion どこにも登録されていないname用
 
 //#region ユーティリティ
+
+/**
+ * 平坦化されたメッセージ一覧を、登録情報（各表示箇所）ごとに振り分ける。
+ * appendMessages（新着メッセージの配信）と、register 時の再配信（蓄積済みメッセージの後追い配信）の両方から使う純粋関数。
+ */
+function distribute(
+  flatMap: [nameSplittedByPeriod: string[], messages: DetailMessageByField][],
+  registered: FieldRegistration[],
+): {
+  messageCache: Map<(messages: DetailMessageByField | null) => void, DetailMessageByField>
+  unregisteredCache: DetailMessageByField
+} {
+  // どこにも表示されないメッセージはここに蓄積させておいて最後にまとめて表示
+  const unregisteredCache: DetailMessageByField = {}
+
+  // 同じメッセージセッターに複数のメッセージが送られる場合に備えて、
+  // 各メッセージセッターへの通知をここでバッファリングする
+  const messageCache = new Map<(messages: DetailMessageByField | null) => void, DetailMessageByField>()
+  const addToCache = (setter: (messages: DetailMessageByField | null) => void, msg: DetailMessageByField) => {
+    const current = messageCache.get(setter) ?? {}
+    messageCache.set(setter, {
+      error: [...(current.error ?? []), ...(msg.error ?? [])],
+      warn: [...(current.warn ?? []), ...(msg.warn ?? [])],
+      info: [...(current.info ?? []), ...(msg.info ?? [])],
+    })
+  }
+
+  // 平坦化されたメッセージを順に処理し、
+  // それぞれどこに表示するかを判定して setter 関数を呼び出す。
+  const exactMatchMap = new Map(registered
+    .filter(item => item.type === 'exact')
+    .map(item => [item.name, item]))
+  const forwardMatcheList = registered
+    .filter(item => item.type === 'forwardMatch')
+    .map(item => ({ splittedName: item.name.split('.'), ...item }))
+
+  for (const [nameSplittedByPeriod, messageByField] of flatMap) {
+
+    // nameの完全一致が登録されている場合はそこに優先的に表示
+    const name = nameSplittedByPeriod.join('.')
+    const exactMatch = exactMatchMap.get(name)
+    if (exactMatch) {
+      addToCache(exactMatch.messageSetter, messageByField)
+      continue
+    }
+
+    // 無い場合は前方一致を探す。
+    // 前方一致でヒットした登録情報のうち、最も長いものに表示。
+    // 最も長いものが複数ある場合は最初に登場した登録情報の箇所に表示。
+    // また、ヒットした以降の部分もエラーメッセージに含める。
+    // 例: 項目 "a.b.c.d" に対してエラーメッセージが発生しているとき、
+    //    "a.b" と "a.b.c" が登録されている場合は "a.b.c" にこれを表示する。
+    const forwardMatchCandidates = forwardMatcheList.map(registration => {
+      if (registration.splittedName.length > nameSplittedByPeriod.length) {
+        return { match: false, hitLength: -1, rest: [], messageSetter: registration.messageSetter }
+      }
+      for (let i = 0; i < registration.splittedName.length; i++) {
+        if (registration.splittedName[i] !== nameSplittedByPeriod[i]) {
+          return { match: false, hitLength: -1, rest: [], messageSetter: registration.messageSetter }
+        }
+      }
+      return {
+        match: true,
+        hitLength: registration.splittedName.length,
+        rest: nameSplittedByPeriod.slice(registration.splittedName.length),
+        messageSetter: registration.messageSetter,
+      }
+    }).filter(x => x.match)
+
+    if (forwardMatchCandidates.length > 0) {
+      // 上記でヒットした登録情報のうち最もパスが長いものを探す
+      let bestCandidate = forwardMatchCandidates[0]
+      for (const candidate of forwardMatchCandidates) {
+        if (candidate.hitLength > bestCandidate.hitLength) {
+          bestCandidate = candidate
+        }
+      }
+
+      // nameの残り部分をメッセージの先頭に付与してセットする。
+      // 半角数値の場合は配列インデックスなので「x行目」という文字に変換する。
+      let prefix = bestCandidate.rest
+        .map(part => /^\d+$/.test(part) ? `${Number(part) + 1}行目` : part)
+        .join(' ')
+      if (prefix.length > 0) {
+        prefix += ': '
+      }
+      addToCache(bestCandidate.messageSetter, {
+        error: messageByField.error?.map(msg => prefix + msg),
+        warn: messageByField.warn?.map(msg => prefix + msg),
+        info: messageByField.info?.map(msg => prefix + msg),
+      })
+      continue
+    }
+
+    // どこにも登録されていないnameの場合はオブジェクトに溜めておいて最後にまとめてセットする。
+    // 該当のフィールドまでのパスをメッセージに含める。
+    let prefix = nameSplittedByPeriod
+      .map(part => /^\d+$/.test(part) ? `${Number(part) + 1}行目` : part)
+      .join(' ')
+    if (prefix.length > 0) {
+      prefix += ': '
+    }
+    if (messageByField.error) {
+      unregisteredCache.error = [...(unregisteredCache.error ?? []), ...messageByField.error.map(msg => prefix + msg)]
+    }
+    if (messageByField.warn) {
+      unregisteredCache.warn = [...(unregisteredCache.warn ?? []), ...messageByField.warn.map(msg => prefix + msg)]
+    }
+    if (messageByField.info) {
+      unregisteredCache.info = [...(unregisteredCache.info ?? []), ...messageByField.info.map(msg => prefix + msg)]
+    }
+  }
+
+  return { messageCache, unregisteredCache }
+}
+
 /**
  * 詳細メッセージオブジェクトを平坦化する。例:
  *

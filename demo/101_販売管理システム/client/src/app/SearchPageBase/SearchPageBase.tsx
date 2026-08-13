@@ -5,7 +5,7 @@ import { Allotment, LayoutPriority } from "allotment"
 import { PageBase } from "../PageBase"
 import { PageTitle } from "../../ui/PageTitle"
 import { Button } from "../../ui/Button"
-import { DataTable, DataTableColumn } from "../../ui/DataTable"
+import * as Grid from "../../ui/grid"
 import * as DetailMessage from "../DetailMessageContext"
 import { NowLoading } from "../../ui/NowLoading"
 import { callComplexPostEndpointAsync } from "../../example/callComplexPostEndpointAsync"
@@ -34,7 +34,7 @@ export type SearchPageBaseProps<
   renderSearchCondition: (form: ReactHookForm.UseFormReturn<TCondition>) => React.ReactNode
   /** 検索結果エリアのグリッドの列定義 */
   defineSearchResultColumns: [
-    () => DataTableColumn<TItem>[],
+    () => Grid.EG2.EditableGrid2Column<TItem>[],
     deps: React.DependencyList
   ]
   /** 並び順コンボボックスの選択肢 */
@@ -182,11 +182,6 @@ export function SearchPageBase<
     // オブジェクトの参照変更ではなく「実際のURLの変化」をトリガーにするため
   }, [location.search, executeSearch, reset, initialCondition, searchParamsAsCondition])
 
-  // 検索結果の列定義
-  const columns: DataTableColumn<TItem>[] = React.useMemo(() => {
-    return props.defineSearchResultColumns[0]()
-  }, [...props.defineSearchResultColumns[1]])
-
   // ページャーの計算
   const totalPages = Math.ceil(totalCount / pageSize)
   const canPrev = pageIndex > 0
@@ -293,9 +288,12 @@ export function SearchPageBase<
                   />
                 </div>
 
-                <DataTable
-                  rows={items}
-                  columns={columns}
+                <Grid.EG2.EditableGrid2
+                  data={items}
+                  columns={props.defineSearchResultColumns}
+                  getRowId={(_, index) => index.toString()}
+                  striped
+                  clearSelectionOnBlur
                   className="flex-1 border border-gray-600"
                 />
               </div>

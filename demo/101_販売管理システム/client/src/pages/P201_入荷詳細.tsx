@@ -12,8 +12,7 @@ import { FormLabel } from "../ui/FormLabel"
 import { WordTextBox } from "../ui/WordTextBox"
 import { DateInput } from "../ui/DateInput"
 import { DescriptionTextArea } from "../ui/DescriptionTextArea"
-import { NumericTextBox } from "../ui/NumericTextBox"
-import { EnumSelection } from "../app/EnumSelection"
+import * as Grid from "../ui/grid"
 import { Button } from "../ui/Button"
 import { AsyncComboBox } from "../ui/AsyncComboBox"
 import { useLoginLogout } from "../app/useLoginLogout"
@@ -82,10 +81,34 @@ function P201_入荷詳細(props: {
   })
   const { register, control, getValues, setValue, reset } = formMethods
   const { isDirty } = formMethods.formState
-  const { fields, append, remove } = ReactHookForm.useFieldArray({
-    control,
-    name: "入荷商品一覧"
-  })
+
+  const maxLen商品コード = maxLengthOf("入荷詳細", "入荷商品一覧.0.商品.外部システム側ID")
+  const numProps数量 = numericPropsOf("入荷詳細", "入荷商品一覧.0.数量")
+  const numProps単価 = numericPropsOf("入荷詳細", "入荷商品一覧.0.仕入単価_税抜")
+
+  // 列定義（下の useFieldArrayForEditableGrid2 呼び出しの中）から remove を呼べるようにするための ref。
+  // 同一文の中で自分自身の戻り値（remove）を参照すると型推論が循環してしまうため、
+  // 呼び出しより前に宣言した ref 経由で間接的に参照する。
+  const removeRef = React.useRef<(index: number) => void>(() => { })
+
+  const {
+    fieldArrayReturn: { append, remove },
+    editableGrid2Props,
+  } = Grid.useFieldArrayForEditableGrid2(
+    { name: "入荷商品一覧", control, getValues, setValue },
+    helper => [
+      helper.text("商品コード", "商品.外部システム側ID", { defaultWidth: 140, maxLength: maxLen商品コード }),
+      helper.text("商品名", "商品.商品名", { defaultWidth: 256, isReadOnly: true }),
+      helper.numeric("数量", "数量", { defaultWidth: 110, ...numProps数量 }),
+      helper.numeric("仕入単価(税抜)", "仕入単価_税抜", { defaultWidth: 150, ...numProps単価 }),
+      helper.enumeration("消費税区分", "消費税区分", "消費税区分", { defaultWidth: 120 }),
+      helper.text("備考", "備考", { defaultWidth: 280, multiline: true }),
+      helper.button(() => "削除", (_row, rowIndex) => removeRef.current(rowIndex), { defaultWidth: 64, disableResizing: true }),
+      helper.detailMessage({ defaultWidth: 280 }),
+    ],
+    [maxLen商品コード, numProps数量, numProps単価],
+  )
+  removeRef.current = remove
 
   // 以下の理由から useEffect によるリセットを行っている。
   // - 保存後の画面再読み込み（useRevalidator）の際、
@@ -182,7 +205,7 @@ function P201_入荷詳細(props: {
       isDirty={isDirty}
       className="gap-2 px-8 py-2"
       contents={(
-        <div className="max-h-full max-w-5xl flex flex-col gap-y-2">
+        <div className="h-full max-w-5xl flex flex-col gap-y-2 overflow-hidden">
 
             {/* ヘッダ */}
             <div className="flex items-start gap-1">
@@ -222,95 +245,13 @@ function P201_入荷詳細(props: {
               </span>
             </div>
 
-            {/* 明細欄 */}
+            {/* 明細欄。行単位のメッセージはグリッドの各行のメッセージ列に表示されるが、
+                明細欄全体（配列自体）に対するメッセージはここに表示する。 */}
             <DetailMessage.Of name="入荷商品一覧" control={control} />
-            {fields.length === 0 && (
-              <div className="select-none text-gray-500 py-1">
-                明細がありません。
-              </div>
-            )}
-            <div className="overflow-x-auto">
-              <table className="min-w-max">
-                <tbody>
-                  {fields.map((field, index) => (
-                    <React.Fragment key={field.id}>
-                      <tr className="border-t border-gray-300 whitespace-nowrap">
-
-                        {/* 商品 */}
-                        <td className="p-1 align-middle font-bold">
-                          <WordTextBox
-                            {...register(`入荷商品一覧.${index}.商品.外部システム側ID`)}
-                            maxLength={maxLengthOf("入荷詳細", `入荷商品一覧.${index}.商品.外部システム側ID`)}
-                            className="w-32 shrink-0"
-                          />
-                        </td>
-                        <td className="p-1 align-middle font-bold max-w-[16rem]">
-                          <div
-                            title={field.商品.商品名}
-                            className="truncate"
-                          >
-                            {field.商品.商品名}
-                          </div>
-                        </td>
-
-                        {/* 数量・単価 */}
-                        <td className="p-1 align-middle">
-                          <NumericTextBox
-                            {...register(`入荷商品一覧.${index}.数量`)}
-                            {...numericPropsOf("入荷詳細", `入荷商品一覧.${index}.数量`)}
-                            className="w-24 text-right"
-                          />
-                        </td>
-                        <td className="p-1 align-middle text-center">
-                          <span className="mx-2">@</span>
-                        </td>
-                        <td className="p-1 align-middle">
-                          <NumericTextBox
-                            {...register(`入荷商品一覧.${index}.仕入単価_税抜`)}
-                            {...numericPropsOf("入荷詳細", `入荷商品一覧.${index}.仕入単価_税抜`)}
-                            className="w-32 text-right"
-                          />
-                        </td>
-                        <td className="p-1 align-middle">
-                          <ReactHookForm.Controller
-                            name={`入荷商品一覧.${index}.消費税区分`}
-                            control={control}
-                            render={({ field: { value, ...restField } }) => (
-                              <EnumSelection
-                                type="消費税区分"
-                                value={value}
-                                {...restField}
-                                className="w-32"
-                              />
-                            )}
-                          />
-                        </td>
-
-                        {/* 備考 */}
-                        <td className="p-1 align-middle">
-                          <DescriptionTextArea
-                            {...register(`入荷商品一覧.${index}.備考`)}
-                            placeholder="備考"
-                            className="w-64"
-                          />
-                        </td>
-
-                        <td className="p-1 align-middle w-16 text-center">
-                          <Button outline mini onClick={() => remove(index)}>
-                            削除
-                          </Button>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td colSpan={8} className="p-0 border-none">
-                          <DetailMessage.Of name={`入荷商品一覧.${index}`} includeDescendants control={control} />
-                        </td>
-                      </tr>
-                    </React.Fragment>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Grid.EG2.EditableGrid2
+              {...editableGrid2Props}
+              className="flex-1 min-h-32 border border-gray-300"
+            />
 
             {/* 新規明細行追加欄 */}
             <NewItemArea formMethods={formMethods} onCreate={handleCreateNewItem} />
