@@ -5,10 +5,8 @@ description: C# コードを新規作成・修正するときに従う設計規�
 
 # 設計規約（C#）
 
-[design-conventions](../design-conventions/SKILL.md) skill の言語非依存の原則を
 C# コードに適用する際の具体的な規約を定める。
-あちらの原則（最小差分主義の禁止、式次第、役割語モジュールの禁止、公開面の最小化）が前提であり、
-この skill 単独で読まないこと。
+[design-conventions](../design-conventions/SKILL.md) に言語非依存の規約があるので併せて参照すること。
 
 ---
 
