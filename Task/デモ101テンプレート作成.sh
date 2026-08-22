@@ -46,7 +46,15 @@ fi
 
 echo "解凍します: $WORK_DIR"
 mkdir -p "$WORK_DIR"
-unzip -q "$ARCHIVE_ZIP" -d "$WORK_DIR"
+# unzip (Info-ZIP) はファイル名をNFC(合成済み文字)のままファイル作成システムコールに渡すが、
+# macOSのファイルシステム(APFS/HFS+)はNFD(濁点などを分解した形式)を要求するため、
+# 日本語ファイル名（特に濁点・半濁点を含むもの）で "Illegal byte sequence" エラーになることがある。
+# ditto はこの正規化を自動的に行うため、macOSではunzipの代わりにdittoを使う。
+if command -v ditto > /dev/null 2>&1; then
+  ditto -x -k "$ARCHIVE_ZIP" "$WORK_DIR"
+else
+  unzip -q "$ARCHIVE_ZIP" -d "$WORK_DIR"
+fi
 
 echo "販売管理業務固有の部分を削除します。"
 dotnet run --project "$SCRIPT_DIR/Demo101TemplateBuilder/Demo101TemplateBuilder.csproj" -- "$WORK_DIR"
