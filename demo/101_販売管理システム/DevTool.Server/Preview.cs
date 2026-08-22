@@ -24,10 +24,10 @@ public class Preview : IDisposable {
     private readonly ConcurrentDictionary<string, RunningProcess> _processes = new();
 
     /// <summary>
-    /// Start / Stop は複数ステップの手続きであり、
+    /// Start / Stop / Restart は複数ステップの手続きであり、
     /// ConcurrentDictionary の個々の操作がアトミックでも手続き全体はアトミックにならない。
-    /// GUIの二重クリックや、手動停止と起動が同時に来ても
-    /// 二重起動・停止中の横入り起動が起きないよう、この2メソッド全体を排他する。
+    /// GUIの二重クリックや、個別プロセスの操作と全体操作が同時に来ても
+    /// 二重起動・停止中の横入り起動が起きないよう、この3メソッド全体を排他する。
     /// 内部処理はすべて同期処理（await を含まない）なので SemaphoreSlim ではなく lock で足りる。
     /// GetState / ReadLog はこのロックを取らない
     /// （ConcurrentDictionary自体が読み取りには安全であり、Stopの最大10秒のブロッキングに
@@ -35,30 +35,58 @@ public class Preview : IDisposable {
     /// </summary>
     private readonly Lock _gate = new();
 
-    /// <summary>すべてのプロセスを起動する。既に起動中のプロセスはスキップする。</summary>
-    public void Start(ILogger logger) {
+    /// <summary>
+    /// プロセスを起動する。既に起動中のプロセスはスキップする。
+    /// <paramref name="processName"/> を指定した場合はそのプロセスのみ、未指定なら全プロセスを対象とする。
+    /// </summary>
+    public void Start(ILogger logger, string? processName = null) {
         lock (_gate) {
-            foreach (var setting in _settings) {
+            foreach (var setting in TargetSettings(processName)) {
                 StartProcess(setting, logger);
             }
         }
     }
 
-    /// <summary>起動中の全プロセスをツリーごと停止する</summary>
-    public void Stop(ILogger logger) {
+    /// <summary>
+    /// 起動中のプロセスをツリーごと停止する。
+    /// <paramref name="processName"/> を指定した場合はそのプロセスのみ、未指定なら全プロセスを対象とする。
+    /// </summary>
+    public void Stop(ILogger logger, string? processName = null) {
         lock (_gate) {
-            foreach (var name in _processes.Keys.ToArray()) {
+            foreach (var name in TargetSettings(processName).Select(s => s.Name)) {
                 StopProcess(name, logger);
             }
         }
     }
 
     /// <summary>
-    /// IDisposableの実装。<see cref="Stop(ILogger)"/> がログ付きの本来の停止経路であり、
+    /// プロセスを停止してから起動しなおす。
+    /// <paramref name="processName"/> を指定した場合はそのプロセスのみ、未指定なら全プロセスを対象とする。
+    /// </summary>
+    public void Restart(ILogger logger, string? processName = null) {
+        lock (_gate) {
+            foreach (var setting in TargetSettings(processName)) {
+                StopProcess(setting.Name, logger);
+                StartProcess(setting, logger);
+            }
+        }
+    }
+
+    /// <summary>
+    /// IDisposableの実装。<see cref="Stop(ILogger, string?)"/> がログ付きの本来の停止経路であり、
     /// これは using 文や呼び出し漏れに対する最終防衛ラインとして、ログ出力なしで同じ停止処理を行う。
     /// </summary>
     public void Dispose() {
         Stop(Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance);
+    }
+
+    /// <summary>
+    /// <paramref name="processName"/> が指定されていればその1件、未指定なら全件の設定を返す。
+    /// </summary>
+    private IEnumerable<PreviewProcess> TargetSettings(string? processName) {
+        return processName == null
+            ? _settings
+            : _settings.Where(s => s.Name == processName);
     }
 
     /// <summary>起動中の各プロセスの稼働状態を返す</summary>

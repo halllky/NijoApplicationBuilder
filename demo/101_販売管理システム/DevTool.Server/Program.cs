@@ -60,18 +60,25 @@ app.UseCors(CORS_POLICY_NAME);
 var preview = app.Services.GetRequiredService<Preview>();
 var logger = app.Services.GetRequiredService<ILogger<Preview>>();
 
-// デバッグ実行のプロセス群の起動・停止
-app.MapPost("/api/preview/start", () => {
-    preview.Start(logger);
+// デバッグ実行のプロセス群の起動・停止・再起動。
+// process クエリパラメータを指定すればそのプロセスのみ、未指定なら全プロセスを対象とする。
+// このAPIは /devtool-api 配下に置く。/api 配下は iframe に埋め込む生成後アプリ自身が
+// 自身のバックエンド（WebApi）を呼ぶために使うため、衝突を避ける。
+app.MapPost("/devtool-api/preview/start", (string? process) => {
+    preview.Start(logger, process);
     return Results.Ok();
 });
-app.MapPost("/api/preview/stop", () => {
-    preview.Stop(logger);
+app.MapPost("/devtool-api/preview/stop", (string? process) => {
+    preview.Stop(logger, process);
+    return Results.Ok();
+});
+app.MapPost("/devtool-api/preview/restart", (string? process) => {
+    preview.Restart(logger, process);
     return Results.Ok();
 });
 
 // デバッグ実行のプロセス群の稼働状態と、リクエストで指定されたオフセット以降のログ増分
-app.MapPost("/api/preview/state", (PreviewStateRequest? request) => {
+app.MapPost("/devtool-api/preview/state", (PreviewStateRequest? request) => {
     var offsets = request?.Offsets ?? [];
     var processes = preview.GetState().Select(state => {
         var offset = offsets.GetValueOrDefault(state.Name) ?? new PreviewLogOffsets();
