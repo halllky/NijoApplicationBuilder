@@ -4,8 +4,8 @@ import { PreviewProcessState } from "./usePreviewState"
 import { useDevToolSettings } from "./useDevToolSettings"
 
 /**
- * デバッグ実行プロセス群の稼働状態・ログの表示と、エージェント関連の設定
- * （Anthropic APIキー、チャット・コーディング両エージェントのモデル）の編集を行うモーダル。
+ * 設定画面。
+ *
  * 閉じる操作（シェードクリック・閉じるボタン）は onClose を呼ぶだけで、
  * 実際に閉じるかどうかの判断はこのコンポーネントを呼ぶ側が行う。
  */
@@ -28,7 +28,7 @@ export const SettingsModal = ({ open, onClose, processes, logs }: {
 
         {/* ヘッダ */}
         <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200">
-          <h2 className="text-base font-bold">デバッグ実行プロセスの状態・設定</h2>
+          <h2 className="text-base font-bold">設定</h2>
           <button type="button" onClick={onClose} className="p-1 text-gray-500 hover:text-gray-800">
             <XMarkIcon className="w-5 h-5" />
           </button>

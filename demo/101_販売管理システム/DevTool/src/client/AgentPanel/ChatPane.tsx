@@ -21,6 +21,13 @@ export const ChatPane: React.FC<{ onApiKeyMissing: () => void }> = ({ onApiKeyMi
     setInput('')
   }
 
+  const formRef = React.useRef<HTMLFormElement>(null)
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      formRef.current?.requestSubmit()
+    }
+  }
+
   return (
     <div className="flex-1 flex flex-col min-w-0">
 
@@ -54,19 +61,28 @@ export const ChatPane: React.FC<{ onApiKeyMissing: () => void }> = ({ onApiKeyMi
       )}
 
       {/* 入力欄 */}
-      <form onSubmit={handleSubmit} className="flex gap-2 p-3 border-t border-gray-200">
-        <input
+      <form
+        ref={formRef}
+        onSubmit={handleSubmit}
+        className="flex gap-2 p-3 border-t border-gray-200 overflow-hidden"
+      >
+        <textarea
           value={input}
           onChange={e => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          spellCheck="false"
           placeholder="メッセージを入力"
-          className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm"
+          className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm max-h-96 resize-none field-sizing-content"
         />
         <button
           type="submit"
           disabled={isBusy || !input.trim()}
           className="px-3 py-1 text-sm bg-gray-800 text-white rounded disabled:opacity-50"
         >
-          送信
+          送信<br />
+          <span className="text-xs">
+            (Ctrl + Enter)
+          </span>
         </button>
       </form>
     </div>

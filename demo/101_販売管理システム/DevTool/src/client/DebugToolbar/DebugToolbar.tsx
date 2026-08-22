@@ -28,19 +28,19 @@ export function DebugToolbar() {
     <>
       <div
         ref={containerRef}
-        className="fixed z-40 flex items-center gap-1 bg-white/95 border border-gray-300 rounded shadow-lg px-1 py-1"
+        className="fixed z-40 flex items-center gap-1 bg-white border border-gray-300 rounded shadow-lg/40 px-1 py-1"
         style={{ left: position.x, top: position.y }}
       >
         {/* ドラッグハンドル */}
         <div
           onPointerDown={handlePointerDown}
-          className="px-1 cursor-move text-gray-400 select-none"
+          className="self-stretch flex items-center px-1 cursor-move text-gray-400 select-none"
           title="ドラッグして移動"
         >
           <Bars2Icon className="w-4 h-4" />
         </div>
 
-        {/* 開始・終了（全プロセス一括操作。ドロップダウンから個別にも操作できる） */}
+        {/* 開始・終了 */}
         <SplitButton
           icon={isAnyRunning ? StopIcon : PlayIcon}
           onClick={() => (isAnyRunning ? stop() : start())}
@@ -57,7 +57,7 @@ export function DebugToolbar() {
           {isAnyRunning ? '終了' : '開始'}
         </SplitButton>
 
-        {/* 再起動（全プロセス一括操作。ドロップダウンから個別にも操作できる） */}
+        {/* 再起動 */}
         <SplitButton
           icon={ArrowPathIcon}
           onClick={() => restart()}
@@ -72,23 +72,21 @@ export function DebugToolbar() {
         </SplitButton>
 
         {/* チャット（要件ヒアリング・変更計画一覧） */}
-        <button
-          type="button"
+        <SplitButton
+          icon={ChatBubbleLeftRightIcon}
           onClick={() => setOpenPanel('agent')}
-          className="p-1.5 text-gray-600 hover:bg-gray-100 rounded"
-          title="チャット・変更計画一覧"
         >
-          <ChatBubbleLeftRightIcon className="w-4 h-4" />
-        </button>
+          チャット・変更計画一覧
+        </SplitButton>
 
-        {/* 設定（プロセス状態・ログの表示、APIキー・モデル設定） */}
+        {/* 設定 */}
         <button
           type="button"
           onClick={() => setOpenPanel('settings')}
-          className="p-1.5 text-gray-600 hover:bg-gray-100 rounded"
-          title="デバッグ実行プロセスの状態・設定"
+          className="p-1 text-gray-600 hover:bg-gray-100 rounded cursor-pointer"
+          title="設定"
         >
-          <Cog6ToothIcon className="w-4 h-4" />
+          <Cog6ToothIcon className="w-5 h-5" />
         </button>
       </div>
 
