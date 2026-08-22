@@ -1,6 +1,6 @@
 import React from "react"
 import { useChat } from "@ai-sdk/react"
-import { DefaultChatTransport } from "ai"
+import { DefaultChatTransport, getToolName, isToolUIPart, type DynamicToolUIPart, type ToolUIPart, type UITools } from "ai"
 
 /**
  * 要件ヒアリングエージェントとのチャット画面。
@@ -42,9 +42,11 @@ export const ChatPane: React.FC<{ onApiKeyMissing: () => void }> = ({ onApiKeyMi
               className={`max-w-[80%] rounded px-3 py-2 text-sm whitespace-pre-wrap ${message.role === 'user' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-900'
                 }`}
             >
-              {message.parts
-                .filter(part => part.type === 'text')
-                .map((part, i) => <span key={i}>{part.text}</span>)}
+              {message.parts.map((part, i) => {
+                if (part.type === 'text') return <span key={i}>{part.text}</span>
+                if (isToolUIPart(part)) return <ToolCallBadge key={i} part={part} />
+                return null
+              })}
             </div>
           </div>
         ))}
@@ -85,6 +87,40 @@ export const ChatPane: React.FC<{ onApiKeyMissing: () => void }> = ({ onApiKeyMi
           </span>
         </button>
       </form>
+    </div>
+  )
+}
+
+/**
+ * ツール呼び出し1回分を表す小さなバッジ。
+ * 実行中／完了／失敗の状態に応じて見た目を変える。入力・出力の中身は details で折りたたむ。
+ */
+const ToolCallBadge: React.FC<{ part: ToolUIPart<UITools> | DynamicToolUIPart }> = ({ part }) => {
+  const name = getToolName(part)
+
+  if (part.state === 'output-error') {
+    return (
+      <div className="text-xs text-rose-600 border border-rose-200 rounded px-2 py-1 my-1 bg-rose-50">
+        {name} の実行に失敗しました: {part.errorText}
+      </div>
+    )
+  }
+
+  if (part.state === 'output-available') {
+    return (
+      <details className="text-xs border border-gray-200 rounded px-2 py-1 my-1 bg-white">
+        <summary className="cursor-pointer text-gray-600">{name} を実行しました</summary>
+        <pre className="mt-1 whitespace-pre-wrap break-words text-gray-700">
+          {JSON.stringify(part.output, null, 2)}
+        </pre>
+      </details>
+    )
+  }
+
+  // input-streaming / input-available / approval-* のいずれも「実行中」として一括りに表示する
+  return (
+    <div className="text-xs text-gray-500 border border-gray-200 rounded px-2 py-1 my-1 bg-white animate-pulse">
+      {name} を実行中…
     </div>
   )
 }

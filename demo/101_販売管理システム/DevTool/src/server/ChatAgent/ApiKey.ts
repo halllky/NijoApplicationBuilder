@@ -56,7 +56,11 @@ export class ApiKey {
     if (this.#keychainResolved) return this.#keychainCache
     this.#keychainResolved = true
     try {
-      this.#keychainCache = await import("@github/keytar")
+      // @github/keytar は CommonJS モジュールで、Node の ESM 相互運用層は
+      // named export の静的検出に失敗する（setPassword 等が抜け落ちる）ため、
+      // 常に module.exports 全体が入る default 側から取得する。
+      const mod = (await import("@github/keytar")) as unknown as { default: Keychain }
+      this.#keychainCache = mod.default
     } catch {
       this.#keychainCache = null
     }

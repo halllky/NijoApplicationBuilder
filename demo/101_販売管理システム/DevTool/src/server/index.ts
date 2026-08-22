@@ -8,7 +8,6 @@ import { ChangePlan } from "./ChangePlan.ts"
 import { ApiKey, ChatAgent } from "./ChatAgent"
 import { PREVIEW_TARGET_ORIGIN, type DevToolSettings, type PreviewStateRequest, type PreviewStateResponse } from "../shared/devtool-api.ts"
 import { DotEnv } from "./DotEnv.ts"
-import { CurrentState } from "./ChatAgent/CurrentState.ts"
 
 const PORT = 5184
 
@@ -25,7 +24,7 @@ const preview = new Preview(demo101Root, PREVIEW_PROCESS_DEFINITIONS, PREVIEW_TA
 const chatAgentApiKey = new ApiKey()
 const dotEnv = new DotEnv(devToolRoot)
 const changePlans = new ChangePlan(devToolRoot)
-const chatAgent = new ChatAgent()
+const chatAgent = new ChatAgent(demo101Root, devToolRoot)
 
 const app = new Hono()
 
@@ -78,7 +77,13 @@ app.put("/devtool-api/settings/models", async c => {
 })
 app.put("/devtool-api/settings/api-key", async c => {
   const body = await c.req.json<{ apiKey: string }>()
-  const saved = await chatAgentApiKey.write(body.apiKey)
+  const apiKey = body.apiKey.trim()
+  // 半角ASCII文字以外（誤って別の文字列を貼り付けた場合など）を弾く。
+  // ここで弾かないと、後段のAnthropic SDKがHTTPヘッダー生成時に投げる分かりにくいエラーで落ちる。
+  if (!/^[\x21-\x7e]+$/.test(apiKey)) {
+    return c.json({ error: "APIキーの形式が不正です。sk-ant- から始まる半角英数字の文字列を入力してください。" }, 400)
+  }
+  const saved = await chatAgentApiKey.write(apiKey)
   if (!saved) return c.json({ error: `この環境ではOSキーチェーンが使えません。環境変数 ${ApiKey.ENV_ANTHROPIC} を設定してください。` }, 501)
   return c.json(await readSettings())
 })
@@ -98,19 +103,15 @@ app.get("/devtool-api/plans/:id", async c => {
   return c.json(detail)
 })
 
-// 要件ヒアリングのチャット
+// 要件ヒアリングのチャット。
+// 会話履歴はサーバー側（.nijo/current-state.json）が正であり、クライアントからは最新のユーザー発言だけを受け取る。
 app.post("/devtool-api/chat", async c => {
   const apiKey = await chatAgentApiKey.read()
   if (!apiKey) return c.json({ error: "Anthropic APIキーが未設定です。設定画面から登録してください。" }, 400)
 
-  // TODO:
-  // ここクライアント側から送られてきた会話履歴をそのまま使っているが、「jsonから復元した履歴 + ユーザー入力」でよいのでは？
-  // あと CurrentState.save 呼んでない。AIに渡す履歴を構築するついでに保存までやるべきでは
-  const currentState = await CurrentState.load()
   const { messages } = await c.req.json<{ messages: UIMessage[] }>()
   const { chatModel } = await readSettings()
-  currentState.currentSession = messages
-  return await chatAgent.respond(currentState, { apiKey, model: chatModel })
+  return await chatAgent.respond(messages.at(-1), { apiKey, model: chatModel })
 })
 
 const server = serve({
