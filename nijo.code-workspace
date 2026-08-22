@@ -220,6 +220,18 @@
           "cwd": "${workspaceFolder:ワークスペース全体}"
         },
         "command": "npm run test:ci && dotnet test ${workspaceFolder:ワークスペース全体}/Nijo.IntegrationTest/Nijo.IntegrationTest.csproj"
+      },
+      {
+        "label": "Nijo > デモ101 Dev Tool",
+        "detail": "AIエージェントとNijoを併用した編集ツール",
+        "command": "npm run dev",
+        "type": "shell",
+        "problemMatcher": [
+          "$tsc-watch"
+        ],
+        "options": {
+          "cwd": "${workspaceFolder:ワークスペース全体}/demo/101_販売管理システム/DevTool"
+        }
       }
     ],
     "inputs": [
