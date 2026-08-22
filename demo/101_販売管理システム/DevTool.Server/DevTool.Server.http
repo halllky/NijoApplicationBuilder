@@ -1,0 +1,6 @@
+@DevTool.Server_HostAddress = http://localhost:5184
+
+GET {{DevTool.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
