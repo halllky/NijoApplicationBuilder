@@ -3,7 +3,7 @@ import { Bars2Icon, PlayIcon, StopIcon, ArrowPathIcon, Cog6ToothIcon, ChatBubble
 import { SplitButton } from "../SplitButton"
 import { useDraggablePosition } from "./useDraggablePosition"
 import type { usePreviewState } from "../Preview"
-import { SettingsModal } from "./SettingsModal"
+import { SettingsModal } from "../Settings"
 import { AgentPanel } from "../AgentPanel"
 import { PREVIEW_PROCESS_NAMES } from "../../shared/devtool-api"
 
