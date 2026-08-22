@@ -1,3 +1,6 @@
+# DevTool の一時的情報の格納先
+.nijo/
+
 # Logs
 logs
 *.log
@@ -11,9 +14,6 @@ node_modules
 dist
 dist-ssr
 *.local
-
-# 変更計画の保存先（開発者ローカルのスクラッチ。将来共有成果物にする場合は見直す）
-.nijo/
 
 # Editor directories and files
 .vscode/*

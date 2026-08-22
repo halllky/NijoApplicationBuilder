@@ -1,3 +1,7 @@
+import { UIMessage } from "ai"
+
+//#region プレビュー
+
 /**
  * src/client（ブラウザ）と src/server（Node）の双方から import される契約。
  * 型と純粋なリテラル定数のみを置く。node: の import・DOM 型・実行時の副作用は禁止。
@@ -45,6 +49,10 @@ export type PreviewStateResponse = {
   targetStatus: number | null
 }
 
+//#endregion プレビュー
+
+//#region 変更プラン
+
 /** 変更プランの一覧表示用の要約 */
 export type ChangePlanSummary = {
   id: string
@@ -58,6 +66,10 @@ export type ChangePlanDetail = ChangePlanSummary & {
   body: string
 }
 
+//#region 変更プラン
+
+//#region アプリ設定
+
 /** APIキーの保管先。OSキーチェーンが使えない環境では 'environmentVariable' か 'unavailable' になる。 */
 export type ApiKeyStorage = 'keychain' | 'environmentVariable' | 'unavailable'
 
@@ -68,3 +80,27 @@ export type DevToolSettings = {
   apiKeyStorage: ApiKeyStorage
   hasApiKey: boolean
 }
+
+//#endregion アプリ設定
+
+//#region エージェント
+
+/**
+ * エージェントの現在の状態。
+ * ブラウザリロードやサーバー再起動などをまたいで残したい永続化された情報。
+ */
+export type CurrentStateDto = {
+  /**
+   * いま行なっていた会話。
+   * ブラウザリロードで消えてしまわないようにするために保持されている。
+   * 会話の仕切り直しによって消える。
+   */
+  currentSession: UIMessage[]
+  /**
+   * 楽観排他制御用のバージョン。更新時刻UTC。
+   * 更新が競合するとAIの応答が壊れるので念のため
+   */
+  concurrencyVersion: string
+}
+
+//#endregion チャット

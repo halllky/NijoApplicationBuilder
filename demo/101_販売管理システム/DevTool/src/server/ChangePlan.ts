@@ -12,8 +12,8 @@ const PLAN_ID_PATTERN = /^[A-Za-z0-9_-]+$/
 export class ChangePlan {
   readonly #plansDir: string
 
-  constructor(plansDir: string) {
-    this.#plansDir = plansDir
+  constructor(devToolRoot: string) {
+    this.#plansDir = path.join(devToolRoot, ".nijo", "plans")
   }
 
   /** 変更計画の一覧を、作成日時の新しい順（無ければファイル名順）で返す */

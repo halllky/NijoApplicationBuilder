@@ -8,22 +8,23 @@ import { ChangePlan } from "./ChangePlan.ts"
 import { ApiKey, ChatAgent } from "./ChatAgent"
 import { PREVIEW_TARGET_ORIGIN, type DevToolSettings, type PreviewStateRequest, type PreviewStateResponse } from "../shared/devtool-api.ts"
 import { DotEnv } from "./DotEnv.ts"
+import { CurrentState } from "./ChatAgent/CurrentState.ts"
 
 const PORT = 5184
 
 // このファイルの位置から解決する（実行時のカレントディレクトリに依存させないため）
-const clientRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
-const projectRoot = path.dirname(clientRoot)
+const devToolRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
+const demo101Root = path.dirname(devToolRoot)
 
 const PREVIEW_PROCESS_DEFINITIONS: readonly PreviewProcessDefinition[] = [
   { name: "vite", cwd: "client", fileName: "npm", args: ["run", "dev"], appendStdout: false, appendStderr: true },
   { name: "dotnet", cwd: "WebApi", fileName: "dotnet", args: ["run", "--launch-profile", "http"], appendStdout: false, appendStderr: true },
 ]
 
-const preview = new Preview(projectRoot, PREVIEW_PROCESS_DEFINITIONS, PREVIEW_TARGET_ORIGIN)
+const preview = new Preview(demo101Root, PREVIEW_PROCESS_DEFINITIONS, PREVIEW_TARGET_ORIGIN)
 const chatAgentApiKey = new ApiKey()
-const dotEnv = new DotEnv(path.join(clientRoot, ".env.local"))
-const changePlans = new ChangePlan(path.join(clientRoot, ".nijo", "plans"))
+const dotEnv = new DotEnv(devToolRoot)
+const changePlans = new ChangePlan(devToolRoot)
 const chatAgent = new ChatAgent()
 
 const app = new Hono()
@@ -102,9 +103,14 @@ app.post("/devtool-api/chat", async c => {
   const apiKey = await chatAgentApiKey.read()
   if (!apiKey) return c.json({ error: "Anthropic APIキーが未設定です。設定画面から登録してください。" }, 400)
 
+  // TODO:
+  // ここクライアント側から送られてきた会話履歴をそのまま使っているが、「jsonから復元した履歴 + ユーザー入力」でよいのでは？
+  // あと CurrentState.save 呼んでない。AIに渡す履歴を構築するついでに保存までやるべきでは
+  const currentState = await CurrentState.load()
   const { messages } = await c.req.json<{ messages: UIMessage[] }>()
   const { chatModel } = await readSettings()
-  return await chatAgent.respond(messages, { apiKey, model: chatModel })
+  currentState.currentSession = messages
+  return await chatAgent.respond(currentState, { apiKey, model: chatModel })
 })
 
 const server = serve({
