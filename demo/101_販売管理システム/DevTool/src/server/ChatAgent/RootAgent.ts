@@ -20,6 +20,24 @@ const FINAL_STEP_NOTICE = `
 情報が不足していて確定的な回答ができない場合は、これまでに分かったことを伝え、調査続行するかを問うてください。
 `.trim()
 
+/**
+ * 回答の書き方。役割の指示（{@link buildSystemPrompt}）とは別の system メッセージとして最後に渡す。
+ * 利用者に見える画面（ChatPane）はマークダウンをレンダリングせず素のテキストとして表示するため、記号を書かせてはいけない。
+ * 禁止だけを書くと守られないので、代わりに何を書くかと良い例／悪い例まで具体的に示す。
+ * 最後の1文は、read_file や research_* が返すマークダウン混じりのテキストをモデルが手本として模倣してしまうのを打ち消すためのもの。
+ */
+const OUTPUT_STYLE = `
+# 回答の書き方
+回答は装飾を解釈しないプレーンテキストとして、そのまま利用者の画面に表示される。
+記号を書くと記号のまま見えてしまうため、次の記号は使わないこと。
+  # （見出し）、* や - （強調・箇条書き）、\` （コード）、| （表）、[]() （リンク）
+列挙したくなったら「1つめは〜。2つめは〜。」のように文の中で言い分けること。
+ファイル名や項目名はバッククォートや引用符で囲わず、そのまま文中に書くこと。
+悪い例: 「- **受注登録画面** の \`OrderId\` を確認しました」
+良い例: 「受注登録画面の OrderId という項目を確認しました。」
+調査ツールの回答や読んだファイルにマークダウンが含まれていても、それを真似せず上記の書き方で答えること。
+`.trim()
+
 /** {@link RootAgent} が使うシステムプロンプトを組み立てる。SessionContext の内容を背景情報として差し込む。 */
 function buildSystemPrompt(context: SessionContext): string {
   return `
@@ -40,7 +58,6 @@ function buildSystemPrompt(context: SessionContext): string {
 ${context.projectStructureOverview}
 
 # ルール
-- マークダウン記法を使わず自然な文章で回答すること。
 - ユーザーの意図が不明瞭な場合は積極的にユーザーに質問すること。
   このターンで回答を確定させることよりも明確なユーザーの意図に基づくことを優先する。
 - プロジェクトの中身に関する調査で広く探す必要がある場合は research_schema / research_code / research_screen に委譲すること。
@@ -91,7 +108,12 @@ export class RootAgent {
 
     const result = streamText({
       model: openrouter.chat(options.model),
-      system: buildSystemPrompt(sessionContext),
+      // 役割の指示と回答の書き方は別の system メッセージに分けて渡す。
+      // 書き方の指示を役割の指示の箇条書きに混ぜると埋もれて効かないため、独立したブロックとして最後に置く。
+      instructions: [
+        { role: "system", content: buildSystemPrompt(sessionContext) },
+        { role: "system", content: OUTPUT_STYLE },
+      ],
       messages: await convertToModelMessages(session.messages),
       tools: this.#tools(sessionContext, options),
       stopWhen: stepCountIs(MAX_STEPS),
@@ -99,9 +121,14 @@ export class RootAgent {
       // これが無いと、上限到達時にツール呼び出し直後で応答が打ち切られ、ユーザーには「何も返ってこない」ように見えてしまう。
       prepareStep: ({ stepNumber }) => {
         if (stepNumber !== MAX_STEPS - 1) return undefined
+        // instructions を上書きすると外側の指定は丸ごと差し替わるため、書き方の指示もここで渡し直す。
         return {
           toolChoice: "none",
-          instructions: `${buildSystemPrompt(sessionContext)}\n\n${FINAL_STEP_NOTICE}`,
+          instructions: [
+            { role: "system", content: buildSystemPrompt(sessionContext) },
+            { role: "system", content: FINAL_STEP_NOTICE },
+            { role: "system", content: OUTPUT_STYLE },
+          ],
         }
       },
     })
