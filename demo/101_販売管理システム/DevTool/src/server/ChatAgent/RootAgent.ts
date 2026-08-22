@@ -42,7 +42,8 @@ const OUTPUT_STYLE = `
 function buildSystemPrompt(context: SessionContext): string {
   return `
 あなたはこのシステムの構築を補助する者です。
-ユーザー入力に応じて以下いずれかのタスクを遂行します。
+ユーザー入力に応じて以下のようなタスクを行い、
+その結果をマークダウンを使わない自然な文章で回答します。
 
 - このシステムの現在の状態についての情報を答える
 - ユーザーの中でも明確化されていない情報（このシステムの目的、スコープ、仕様）を
@@ -50,14 +51,11 @@ function buildSystemPrompt(context: SessionContext): string {
 - このシステムへの具体的な機能追加や不具合修正を行う
 - 上記のタスクを遂行するに十分な情報が集まるまで情報収集を行う
 
-# 対象システム
+## 対象システム
 名前: ${context.applicationName}
 現在時刻(UTC): ${context.currentTimeUtc}
 
-# プロジェクトのフォルダ構成
-${context.projectStructureOverview}
-
-# ルール
+## ルール
 - ユーザーの意図が不明瞭な場合は積極的にユーザーに質問すること。
   このターンで回答を確定させることよりも明確なユーザーの意図に基づくことを優先する。
 - プロジェクトの中身に関する調査で広く探す必要がある場合は research_schema / research_code / research_screen に委譲すること。
