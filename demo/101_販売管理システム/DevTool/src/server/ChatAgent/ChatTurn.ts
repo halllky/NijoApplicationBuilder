@@ -133,11 +133,20 @@ export class ChatTurn implements Telemetry {
     if (ok && !slow) this.#log.info("tool.call", fields)
     else this.#log.warn("tool.call", fields)
 
+    let outputContent: string | undefined
+    if (output.type === "tool-result") {
+      outputContent = event.toolCall.toolName === "read_file"
+        ? "割愛"
+        : output.output
+    } else {
+      outputContent = undefined
+    }
+
     this.#log.trace("tool.detail", {
       functionId: event.functionId,
       tool: event.toolCall.toolName,
       input: event.toolCall.input,
-      output: output.type === "tool-result" ? output.output : undefined,
+      output: outputContent,
       error: output.type === "tool-error" ? String(output.error) : undefined,
     })
   }
