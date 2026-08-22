@@ -1,0 +1,65 @@
+import type { ApiKeyStorage } from "../../shared/devtool-api.ts"
+
+const KEYCHAIN_SERVICE_NAME = "nijo-devtool"
+const KEYCHAIN_ACCOUNT_NAME = "anthropic-api-key"
+
+type Keychain = typeof import("@github/keytar")
+
+/**
+ * Anthropic APIキーをOSキーチェーンに保管・取得する。
+ * キーチェーンが使えない環境では環境変数 ANTHROPIC_API_KEY にフォールバックする。
+ * キーはこのクラスの外（ブラウザ側）に一切渡さない。
+ */
+export class ApiKey {
+
+  static readonly ENV_ANTHROPIC = "ANTHROPIC_API_KEY"
+
+  #keychainResolved = false
+  #keychainCache: Keychain | null = null
+
+  async read(): Promise<string | null> {
+    const keychain = await this.#keychain()
+    if (keychain) {
+      const stored = await keychain.getPassword(KEYCHAIN_SERVICE_NAME, KEYCHAIN_ACCOUNT_NAME)
+      if (stored) return stored
+    }
+    return process.env[ApiKey.ENV_ANTHROPIC] ?? null
+  }
+
+  /** キーチェーンへ保存する。キーチェーンが使えない環境では失敗を示す false を返す。 */
+  async write(apiKey: string): Promise<boolean> {
+    const keychain = await this.#keychain()
+    if (!keychain) return false
+    await keychain.setPassword(KEYCHAIN_SERVICE_NAME, KEYCHAIN_ACCOUNT_NAME, apiKey)
+    return true
+  }
+
+  /** キーチェーンから削除する。キーチェーンが使えない環境では false を返す。 */
+  async delete(): Promise<boolean> {
+    const keychain = await this.#keychain()
+    if (!keychain) return false
+    return keychain.deletePassword(KEYCHAIN_SERVICE_NAME, KEYCHAIN_ACCOUNT_NAME)
+  }
+
+  async storage(): Promise<ApiKeyStorage> {
+    const keychain = await this.#keychain()
+    if (keychain) return "keychain"
+    return process.env[ApiKey.ENV_ANTHROPIC] ? "environmentVariable" : "unavailable"
+  }
+
+  /**
+   * OSのキーチェーンへのアクセス手段を返す。ネイティブモジュールであるため、
+   * 未インストールや読み込み失敗（ヘッドレス環境でOSのキーチェーン機構が無い等）がありうる。
+   * その場合は null を返し、呼び出し側は環境変数へフォールバックする。
+   */
+  async #keychain(): Promise<Keychain | null> {
+    if (this.#keychainResolved) return this.#keychainCache
+    this.#keychainResolved = true
+    try {
+      this.#keychainCache = await import("@github/keytar")
+    } catch {
+      this.#keychainCache = null
+    }
+    return this.#keychainCache
+  }
+}

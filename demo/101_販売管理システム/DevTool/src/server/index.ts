@@ -4,10 +4,10 @@ import { serve } from "@hono/node-server"
 import { Hono } from "hono"
 import type { UIMessage } from "ai"
 import { Preview, type PreviewProcessDefinition } from "./Preview.ts"
-import { DevToolSettings } from "./DevToolSettings.ts"
 import { ChangePlan } from "./ChangePlan.ts"
-import { ChatAgent } from "./ChatAgent.ts"
-import { PREVIEW_TARGET_ORIGIN, type PreviewStateRequest, type PreviewStateResponse } from "../shared/devtool-api.ts"
+import { ApiKey, ChatAgent } from "./ChatAgent"
+import { PREVIEW_TARGET_ORIGIN, type DevToolSettings, type PreviewStateRequest, type PreviewStateResponse } from "../shared/devtool-api.ts"
+import { DotEnv } from "./DotEnv.ts"
 
 const PORT = 5184
 
@@ -21,7 +21,8 @@ const PREVIEW_PROCESS_DEFINITIONS: readonly PreviewProcessDefinition[] = [
 ]
 
 const preview = new Preview(projectRoot, PREVIEW_PROCESS_DEFINITIONS, PREVIEW_TARGET_ORIGIN)
-const settings = new DevToolSettings(path.join(clientRoot, ".env.local"))
+const chatAgentApiKey = new ApiKey()
+const dotEnv = new DotEnv(path.join(clientRoot, ".env.local"))
 const changePlans = new ChangePlan(path.join(clientRoot, ".nijo", "plans"))
 const chatAgent = new ChatAgent()
 
@@ -56,25 +57,35 @@ app.post("/devtool-api/preview/state", async c => {
   return c.json(response)
 })
 
-// 設定の取得・保存
+//#region アプリケーション設定
+
+/** 各ストレージから設定を読み込んでまとめて返す */
+async function readSettings(): Promise<DevToolSettings> {
+  const models = await dotEnv.readModels()
+  const apiKeyStorage = await chatAgentApiKey.storage()
+  const hasApiKey = (await chatAgentApiKey.read()) !== null
+  return { ...models, apiKeyStorage, hasApiKey }
+}
+
 app.get("/devtool-api/settings", async c => {
-  return c.json(await settings.read())
+  return c.json(await readSettings())
 })
 app.put("/devtool-api/settings/models", async c => {
   const body = await c.req.json<{ chatModel: string, codingModel: string }>()
-  await settings.writeModels(body)
-  return c.json(await settings.read())
+  await dotEnv.writeModels(body)
+  return c.json(await readSettings())
 })
 app.put("/devtool-api/settings/api-key", async c => {
   const body = await c.req.json<{ apiKey: string }>()
-  const saved = await settings.writeApiKey(body.apiKey)
-  if (!saved) return c.json({ error: "この環境ではOSキーチェーンが使えません。環境変数 ANTHROPIC_API_KEY を設定してください。" }, 501)
-  return c.json(await settings.read())
+  const saved = await chatAgentApiKey.write(body.apiKey)
+  if (!saved) return c.json({ error: `この環境ではOSキーチェーンが使えません。環境変数 ${ApiKey.ENV_ANTHROPIC} を設定してください。` }, 501)
+  return c.json(await readSettings())
 })
 app.delete("/devtool-api/settings/api-key", async c => {
-  await settings.deleteApiKey()
-  return c.json(await settings.read())
+  await chatAgentApiKey.delete()
+  return c.json(await readSettings())
 })
+//#endregion アプリケーション設定
 
 // 変更計画の一覧・詳細取得（読み取り専用。登録処理は別スコープ）
 app.get("/devtool-api/plans", async c => {
@@ -88,11 +99,11 @@ app.get("/devtool-api/plans/:id", async c => {
 
 // 要件ヒアリングのチャット
 app.post("/devtool-api/chat", async c => {
-  const apiKey = await settings.readApiKey()
+  const apiKey = await chatAgentApiKey.read()
   if (!apiKey) return c.json({ error: "Anthropic APIキーが未設定です。設定画面から登録してください。" }, 400)
 
   const { messages } = await c.req.json<{ messages: UIMessage[] }>()
-  const { chatModel } = await settings.read()
+  const { chatModel } = await readSettings()
   return await chatAgent.respond(messages, { apiKey, model: chatModel })
 })
 
