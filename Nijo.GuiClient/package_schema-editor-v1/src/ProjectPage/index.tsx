@@ -204,7 +204,7 @@ export default function ProjectPage({ defaultValues, schemaRule }: {
                   )}
 
                   {displayTab === "project-settings" && (
-                    <ProjectSettings formMethods={formMethods} projectDir={projectDir} />
+                    <ProjectSettings formMethods={formMethods} />
                   )}
 
                 </main>

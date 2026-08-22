@@ -1,57 +1,45 @@
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.Json.Serialization;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-using Nijo.Util.DotnetEx;
 
-namespace Nijo.WebService.Previewing;
+namespace DevTool.Server;
 
 /// <summary>
-/// 生成後アプリを実際に起動して動かしている状態。
-/// <see cref="PreviewSetting"/>（nijo.preview.json の内容）に従ってプロセス群を起動・停止・再起動する。
-/// 1インスタンスが1プロジェクト分のプレビューに対応する。
+/// 開発中のアプリケーションを実際に起動して動かしている状態。
+/// コンストラクタで受け取ったプロセス群を起動・停止する。
 /// OSプロセスとログファイルハンドルを保持するため <see cref="IDisposable"/> を実装する。
 /// </summary>
 public class Preview : IDisposable {
 
-    public Preview(string projectRoot) {
+    public Preview(string projectRoot, IReadOnlyList<PreviewProcess> processes) {
         ProjectRoot = projectRoot;
+        _settings = processes;
     }
 
     /// <summary>このプレビューが対象とするプロジェクトのルートディレクトリの絶対パス</summary>
     public string ProjectRoot { get; }
 
+    private readonly IReadOnlyList<PreviewProcess> _settings;
     private readonly ConcurrentDictionary<string, RunningProcess> _processes = new();
 
     /// <summary>
-    /// Start / Stop / RestartAfterCodeGenerating は複数ステップの手続きであり、
+    /// Start / Stop は複数ステップの手続きであり、
     /// ConcurrentDictionary の個々の操作がアトミックでも手続き全体はアトミックにならない。
-    /// GUIの二重クリックや、手動停止とコード再生成トリガーの再起動が同時に来ても
-    /// 二重起動・停止中の横入り起動が起きないよう、この3メソッド全体を排他する。
+    /// GUIの二重クリックや、手動停止と起動が同時に来ても
+    /// 二重起動・停止中の横入り起動が起きないよう、この2メソッド全体を排他する。
     /// 内部処理はすべて同期処理（await を含まない）なので SemaphoreSlim ではなく lock で足りる。
     /// GetState / ReadLog はこのロックを取らない
     /// （ConcurrentDictionary自体が読み取りには安全であり、Stopの最大10秒のブロッキングに
     /// 状態表示・ログ表示のポーリングまで巻き込まないため）。
     /// </summary>
-    private readonly System.Threading.Lock _gate = new();
+    private readonly Lock _gate = new();
 
-    /// <summary>
-    /// 設定に含まれるすべてのプロセスを起動し、指定があればブラウザを開く。
-    /// 既に起動中のプロセスはスキップする。
-    /// </summary>
-    public void Start(PreviewSetting setting, ILogger logger) {
+    /// <summary>すべてのプロセスを起動する。既に起動中のプロセスはスキップする。</summary>
+    public void Start(ILogger logger) {
         lock (_gate) {
-            foreach (var processSetting in setting.Concurrently) {
-                StartProcess(processSetting, logger);
-            }
-            if (!string.IsNullOrWhiteSpace(setting.Browser)) {
-                ProcessExtension.OpenBrowser(setting.Browser);
+            foreach (var setting in _settings) {
+                StartProcess(setting, logger);
             }
         }
     }
@@ -70,21 +58,7 @@ public class Preview : IDisposable {
     /// これは using 文や呼び出し漏れに対する最終防衛ラインとして、ログ出力なしで同じ停止処理を行う。
     /// </summary>
     public void Dispose() {
-        Stop(NullLogger.Instance);
-    }
-
-    /// <summary>
-    /// コード再生成が成功した直後に呼ぶ。
-    /// <paramref name="setting"/> の <see cref="PreviewProcessSetting.RestartOnGenerateCode"/> が true のプロセスだけを、
-    /// ツリーごと停止してから起動しなおす。
-    /// </summary>
-    public void RestartAfterCodeGenerating(PreviewSetting setting, ILogger logger) {
-        lock (_gate) {
-            foreach (var processSetting in setting.Concurrently.Where(p => p.RestartOnGenerateCode)) {
-                StopProcess(processSetting.Name, logger);
-                StartProcess(processSetting, logger);
-            }
-        }
+        Stop(Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance);
     }
 
     /// <summary>起動中の各プロセスの稼働状態を返す</summary>
@@ -109,24 +83,24 @@ public class Preview : IDisposable {
         return ReadLogIncrement(path, fromOffset);
     }
 
-    private void StartProcess(PreviewProcessSetting processSetting, ILogger logger) {
+    private void StartProcess(PreviewProcess setting, ILogger logger) {
         // 既存エントリが「稼働中」でなければ（自発終了直後でExitedの後始末が済んでいない場合を含む）起動する。
         // ContainsKeyだけで判定すると、クラッシュ後に登録が残ったままの状態を「稼働中」と誤認し、
         // 再度Start()しても永久に何も起きなくなる。
-        if (_processes.TryGetValue(processSetting.Name, out var existing) && !existing.Process.HasExited) {
+        if (_processes.TryGetValue(setting.Name, out var existing) && !existing.Process.HasExited) {
             return;
         }
 
-        var stdoutLogPath = ResolveLogPath(processSetting.Log.Stdout);
-        var stderrLogPath = ResolveLogPath(processSetting.Log.Stderr);
-        var stdoutWriter = CreateLogWriter(stdoutLogPath, processSetting.Log.AppendStdout);
-        var stderrWriter = CreateLogWriter(stderrLogPath, processSetting.Log.AppendStderr);
+        var stdoutLogPath = ResolveLogPath(setting.StdoutLog);
+        var stderrLogPath = ResolveLogPath(setting.StderrLog);
+        var stdoutWriter = CreateLogWriter(stdoutLogPath, setting.AppendStdout);
+        var stderrWriter = CreateLogWriter(stderrLogPath, setting.AppendStderr);
 
         var process = new Process {
             StartInfo = new ProcessStartInfo {
-                FileName = ProcessExtension.ResolveExecutablePath(processSetting.Process.FileName),
-                Arguments = processSetting.Process.Args,
-                WorkingDirectory = Path.Combine(ProjectRoot, processSetting.Process.Cwd),
+                FileName = ResolveExecutablePath(setting.FileName),
+                Arguments = setting.Args,
+                WorkingDirectory = Path.Combine(ProjectRoot, setting.Cwd),
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
@@ -139,7 +113,7 @@ public class Preview : IDisposable {
         process.OutputDataReceived += (_, e) => { if (e.Data != null) stdoutWriter?.WriteLine(e.Data); };
         process.ErrorDataReceived += (_, e) => { if (e.Data != null) stderrWriter?.WriteLine(e.Data); };
         process.Exited += (_, _) => {
-            logger.LogInformation("プレビュープロセス '{name}' が終了しました (ExitCode={exitCode})", processSetting.Name, process.ExitCode);
+            logger.LogInformation("プレビュープロセス '{name}' が終了しました (ExitCode={exitCode})", setting.Name, process.ExitCode);
             stdoutWriter?.Dispose();
             stderrWriter?.Dispose();
         };
@@ -147,7 +121,7 @@ public class Preview : IDisposable {
         try {
             process.Start();
         } catch (Exception ex) {
-            logger.LogError(ex, "プレビュープロセス '{name}' の起動に失敗しました", processSetting.Name);
+            logger.LogError(ex, "プレビュープロセス '{name}' の起動に失敗しました", setting.Name);
             stdoutWriter?.Dispose();
             stderrWriter?.Dispose();
             return;
@@ -155,8 +129,8 @@ public class Preview : IDisposable {
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
-        _processes[processSetting.Name] = new RunningProcess(processSetting.Name, process, stdoutLogPath, stderrLogPath, stdoutWriter, stderrWriter);
-        logger.LogInformation("プレビュープロセス '{name}' を起動しました (PID={pid})", processSetting.Name, process.Id);
+        _processes[setting.Name] = new RunningProcess(setting.Name, process, stdoutLogPath, stderrLogPath, stdoutWriter, stderrWriter);
+        logger.LogInformation("プレビュープロセス '{name}' を起動しました (PID={pid})", setting.Name, process.Id);
     }
 
     private void StopProcess(string name, ILogger logger) {
@@ -183,7 +157,7 @@ public class Preview : IDisposable {
 
     /// <summary>
     /// ログファイル書き込み用のライターを作成する。
-    /// GUI側が起動中でも同時に読み取れるよう FileShare.ReadWrite で開く。
+    /// 書き込み中でも同時に読み取れるよう FileShare.ReadWrite で開く。
     /// </summary>
     private static StreamWriter? CreateLogWriter(string? path, bool append) {
         if (path == null) return null;
@@ -214,6 +188,38 @@ public class Preview : IDisposable {
         };
     }
 
+    /// <summary>
+    /// 実行ファイル名をOSの実行可能ファイル探索規則に従って解決する。
+    /// <see cref="ProcessStartInfo.UseShellExecute"/> = false のとき、
+    /// .NET は Windows の PATHEXT による拡張子解決を行わない
+    /// （"npm" を指定しても実体の "npm.cmd" を見つけられない）ため、これを補う。
+    /// Windows以外では入力をそのまま返す（シェルを介さずとも実行ファイルとして解決できるため）。
+    /// </summary>
+    private static string ResolveExecutablePath(string fileName) {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return fileName;
+        if (string.IsNullOrEmpty(fileName) || Path.IsPathRooted(fileName)) return fileName;
+
+        var pathExtensions = (Environment.GetEnvironmentVariable("PATHEXT") ?? ".COM;.EXE;.BAT;.CMD")
+            .Split(';', StringSplitOptions.RemoveEmptyEntries);
+        var searchDirectories = (Environment.GetEnvironmentVariable("PATH") ?? "")
+            .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries);
+
+        // 拡張子が既に指定されている場合はそのファイル名のみを探す。無指定ならPATHEXTの全候補を試す
+        var candidateNames = Path.HasExtension(fileName)
+            ? [fileName]
+            : pathExtensions.Select(ext => fileName + ext).ToArray();
+
+        foreach (var directory in searchDirectories) {
+            foreach (var candidateName in candidateNames) {
+                var candidatePath = Path.Combine(directory, candidateName);
+                if (File.Exists(candidatePath)) return candidatePath;
+            }
+        }
+
+        // 見つからなければ元の指定のまま返し、以降の解決は Process.Start に委ねる
+        return fileName;
+    }
+
     private class RunningProcess {
         public RunningProcess(string name, Process process, string? stdoutLogPath, string? stderrLogPath, StreamWriter? stdoutWriter, StreamWriter? stderrWriter) {
             Name = name;
@@ -232,6 +238,28 @@ public class Preview : IDisposable {
     }
 }
 
+/// <summary>
+/// 並列起動するプロセス1件の定義。
+/// パスはいずれも <see cref="Preview.ProjectRoot"/> からの相対パス。
+/// </summary>
+/// <param name="Name">プロセスの識別名。状態取得やログ取得のキーに使う</param>
+/// <param name="Cwd">作業ディレクトリ</param>
+/// <param name="FileName">実行ファイル名</param>
+/// <param name="Args">コマンドライン引数</param>
+/// <param name="StdoutLog">標準出力の書き出し先。空文字ならログファイルを作らない</param>
+/// <param name="StderrLog">標準エラー出力の書き出し先。空文字ならログファイルを作らない</param>
+/// <param name="AppendStdout">true=起動の度に追記 / false=起動の度にクリア</param>
+/// <param name="AppendStderr">true=起動の度に追記 / false=起動の度にクリア</param>
+public record PreviewProcess(
+    string Name,
+    string Cwd,
+    string FileName,
+    string Args,
+    string StdoutLog,
+    string StderrLog,
+    bool AppendStdout,
+    bool AppendStderr);
+
 /// <summary>標準出力か標準エラー出力かの別</summary>
 public enum E_STD {
     StdOut,
@@ -240,20 +268,14 @@ public enum E_STD {
 
 /// <summary>稼働中の1プロセスの状態</summary>
 public class PreviewProcessState {
-    [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
-    [JsonPropertyName("isRunning")]
     public bool IsRunning { get; set; }
-    [JsonPropertyName("processId")]
     public int? ProcessId { get; set; }
-    [JsonPropertyName("exitCode")]
     public int? ExitCode { get; set; }
 }
 
 /// <summary>ログファイルの指定オフセット以降の増分</summary>
 public class PreviewLogIncrement {
-    [JsonPropertyName("text")]
     public string Text { get; set; } = string.Empty;
-    [JsonPropertyName("offset")]
     public long Offset { get; set; }
 }

@@ -88,8 +88,7 @@ iframe 内のページが `/preview/` 配下で配信されていても、`fetch
 
 **1. を実施済み。** `Nijo/WebService/SchemaEditor/SchemaEditorEndpoints.cs` がスキーマ編集 API を
 `/nijo-api/load`, `/nijo-api/save`, `/nijo-api/validate`, `/nijo-api/generate`, `/nijo-api/types`,
-`/nijo-api/schema-rule` として、`PreviewEndpointHandlers` がプレビュープロセス管理 API を
-`/nijo-api/preview/start`, `/nijo-api/preview/stop`, `/nijo-api/preview/state` として提供しており、
+`/nijo-api/schema-rule` として提供しており、
 `NijoWebService` は `/api/*` を一切使用していない。ルート直下の `/api/*` は生成アプリ専用として完全に空いている。
 旧 `Nijo/WebService/SchemaEditor`（`/api/load` 等の実装）は削除済み。
 

@@ -10,7 +10,6 @@ using Microsoft.Extensions.Logging;
 using Nijo.CodeGenerating;
 using Nijo.SchemaParsing;
 using Nijo.WebService.Common;
-using Nijo.WebService.Previewing;
 
 namespace Nijo.WebService.SchemaEditor;
 
@@ -18,12 +17,6 @@ namespace Nijo.WebService.SchemaEditor;
 /// スキーマ編集関連のエンドポイントハンドラ（構造化されたデータ形式版）。
 /// </summary>
 internal class SchemaEditorEndpoints {
-
-    internal SchemaEditorEndpoints(NijoWebService webService) {
-        _webService = webService;
-    }
-
-    private readonly NijoWebService _webService;
 
     /// <summary>
     /// 画面初期表示時データ読み込み処理
@@ -40,7 +33,6 @@ internal class SchemaEditorEndpoints {
 
             var editingProject = EditingProject.FromXDocument(xDocument, rule);
             editingProject.GraphViewState = SchemaGraphViewState.Load(project);
-            editingProject.PreviewSetting = PreviewSetting.Load(project);
 
             context.Response.StatusCode = StatusCodes.Status200OK;
             await context.WriteJsonAsync(editingProject, cancellationToken: context.RequestAborted);
@@ -148,9 +140,6 @@ internal class SchemaEditorEndpoints {
                 await editingProject.GraphViewState.SaveAsync(project, context.RequestAborted);
             }
 
-            // nijo.preview.jsonの保存
-            await editingProject.PreviewSetting.SaveAsync(project, context.RequestAborted);
-
             context.Response.StatusCode = (int)HttpStatusCode.OK;
 
         } catch (Exception ex) {
@@ -189,12 +178,8 @@ internal class SchemaEditorEndpoints {
             var generationParseContext = new SchemaParseContext(xDocumentToSave, rule, GeneratedProjectOptions.Parse(xDocumentToSave, true));
             var renderingOptions = new CodeRenderingOptions { AllowNotImplemented = false };
 
-            var logger = context.RequestServices.GetRequiredService<ILogger<NijoWebService>>();
+            var logger = context.RequestServices.GetRequiredService<ILogger<SchemaEditorEndpoints>>();
             if (project.GenerateCode(generationParseContext, renderingOptions, logger)) {
-                // コード再生成が成功したので、restartOnGenerateCode が true のプレビュープロセスを再起動する
-                var previewSetting = PreviewSetting.Load(project);
-                _webService.GetPreview(project).RestartAfterCodeGenerating(previewSetting, logger);
-
                 context.Response.StatusCode = StatusCodes.Status200OK;
                 await context.WriteJsonAsync(
                     "Code generation successful.",

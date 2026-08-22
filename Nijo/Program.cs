@@ -13,7 +13,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Nijo.SchemaParsing;
 using System.Xml.Linq;
 using Nijo.CodeGenerating;
-using Nijo.WebService.Previewing;
 
 [assembly: InternalsVisibleTo("Nijo.IntegrationTest")]
 
@@ -271,43 +270,25 @@ namespace Nijo {
             var logger = ILoggerExtension.CreateConsoleLogger();
 
             // サービス内容定義
-            using var nijoWebService = new WebService.NijoWebService();
-            var app = nijoWebService.BuildWebApplication(logger);
+            var app = WebService.NijoWebService.BuildWebApplication(logger);
 
             // 起動
             var url = optUrl ?? $"http://localhost:5000";
             logger.LogInformation("GUI用のサービスを起動します: {url}", url);
 
-            // pathが指定されていればそのプロジェクトを開いておき、
-            // ブラウザURLの組み立てと nijo.preview.json の startOnNijoServe 判定に使う
+            // pathが指定されていれば、そのプロジェクトを開いた状態のURLでブラウザを立ち上げる
             string browserUrl = url;
-            GeneratedProject? project = null;
             if (!string.IsNullOrWhiteSpace(path)) {
-                var projectRoot = Path.Combine(Directory.GetCurrentDirectory(), path);
-                GeneratedProject.TryOpen(projectRoot, out project, out _);
-
                 var param = System.Web.HttpUtility.ParseQueryString(string.Empty);
                 param.Add(WebService.NijoWebService.PROJECT_DIR_PARAMETER, path);
                 browserUrl = $"{url}/?{param}";
             }
 
             app.Lifetime.ApplicationStarted.Register(() => {
-                // nijo.preview.json で自動起動が有効ならプレビューを開始する
-                if (project != null) {
-                    var previewSetting = PreviewSetting.Load(project);
-                    if (previewSetting.StartOnNijoServe) {
-                        nijoWebService.GetPreview(project).Start(previewSetting, logger);
-                    }
-                }
-
-                // ブラウザを立ち上げる
                 if (!noBrowser) {
                     ProcessExtension.OpenBrowser(browserUrl);
                 }
             });
-
-            // アプリケーション終了時（Ctrl+Cを含む）は稼働中のプレビュープロセスを確実に停止する
-            app.Lifetime.ApplicationStopping.Register(() => nijoWebService.StopAllPreviews(logger));
 
             using var registration = cancellationToken.Register(() => app.Lifetime.StopApplication());
             await app.RunAsync(url);

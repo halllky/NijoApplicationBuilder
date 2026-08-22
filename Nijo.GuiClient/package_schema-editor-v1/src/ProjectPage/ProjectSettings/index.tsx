@@ -6,15 +6,13 @@ import { ProjectOptionPropertyInfo, EditingProject } from "../../backend";
 import { usePersonalSettings } from "../../PersonalSettings";
 import { PersonalSettings } from "../../PersonalSettings/PersonalSettings";
 import { Allotment, LayoutPriority } from "allotment";
-import { PreviewSection } from "./PreviewSection";
 import { useSchemaEditorRule } from "../SchemaEditorRuleContext";
 
 /**
  * プロジェクト設定タブの内容
  */
-function ProjectSettings({ formMethods, projectDir }: {
+function ProjectSettings({ formMethods }: {
   formMethods: ReactHookForm.UseFormReturn<EditingProject>
-  projectDir: string | null
 }) {
 
   const { personalSettings, save } = usePersonalSettings()
@@ -26,9 +24,6 @@ function ProjectSettings({ formMethods, projectDir }: {
         <div className="h-full w-full overflow-y-auto bg-gray-50 p-2">
           <SideMenuLink hash="project-options">
             プロジェクト設定
-          </SideMenuLink>
-          <SideMenuLink hash="preview">
-            プレビュー
           </SideMenuLink>
           <SideMenuLink hash="personal-settings">
             個人用設定
@@ -45,13 +40,6 @@ function ProjectSettings({ formMethods, projectDir }: {
           >
             <ProjectOptionsSection
               formMethods={formMethods}
-            />
-
-            <FormLayout.Separator />
-
-            <PreviewSection
-              formMethods={formMethods}
-              projectDir={projectDir}
             />
 
             <FormLayout.Separator />

@@ -1,6 +1,20 @@
 @DevTool.Server_HostAddress = http://localhost:5184
 
-GET {{DevTool.Server_HostAddress}}/weatherforecast/
-Accept: application/json
+### デバッグ実行のプロセス群を起動する
+POST {{DevTool.Server_HostAddress}}/api/preview/start
+
+### デバッグ実行のプロセス群の稼働状態とログ増分を取得する
+POST {{DevTool.Server_HostAddress}}/api/preview/state
+Content-Type: application/json
+
+{
+  "offsets": {
+    "vite": { "stdout": 0, "stderr": 0 },
+    "dotnet": { "stdout": 0, "stderr": 0 }
+  }
+}
+
+### デバッグ実行のプロセス群を停止する
+POST {{DevTool.Server_HostAddress}}/api/preview/stop
 
 ###

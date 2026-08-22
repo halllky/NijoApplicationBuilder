@@ -8,13 +8,12 @@ using System.Text.Json.Serialization;
 using System.Xml.Linq;
 using Nijo.CodeGenerating;
 using Nijo.SchemaParsing;
-using Nijo.WebService.Previewing;
 
 namespace Nijo.WebService.SchemaEditor;
 
 /// <summary>
-/// スキーマ定義編集画面が扱う、nijo.xml とその同階層に置かれる固定名ファイル群
-/// （nijo.viewState.json, nijo.preview.json）の内容の組。
+/// スキーマ定義編集画面が扱う、nijo.xml とその同階層に置かれる固定名ファイル
+/// （nijo.viewState.json）の内容の組。
 ///
 /// 保存ファイルの粒度でもGUIの画面構造でもなく、
 /// Nijo の論理的概念モデルにあわせたデータ構造にすることで、
@@ -39,13 +38,10 @@ public class EditingProject {
     /// <summary>スキーマ定義グラフの見た目の状態（nijo.viewState.jsonの内容）。nullの場合は保存をスキップする。</summary>
     [JsonPropertyName("graphViewState")]
     public SchemaGraphViewState? GraphViewState { get; set; }
-    /// <summary>生成後アプリのデバッグ起動設定（nijo.preview.jsonの内容）</summary>
-    [JsonPropertyName("previewSetting")]
-    public PreviewSetting PreviewSetting { get; set; } = new();
 
     /// <summary>
     /// nijo.xml から <see cref="EditingProject"/> を作る。
-    /// nijo.viewState.json・nijo.preview.json の内容は含まない（呼び出し側が別途設定する）。
+    /// nijo.viewState.json の内容は含まない（呼び出し側が別途設定する）。
     /// </summary>
     internal static EditingProject FromXDocument(XDocument xDocument, SchemaParseRule rule) {
         var customAttributes = NijoXmlCustomAttribute.FromXDocument(xDocument).ToList();
