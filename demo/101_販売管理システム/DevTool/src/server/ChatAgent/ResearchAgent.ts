@@ -1,10 +1,9 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider"
 import { generateText, stepCountIs } from "ai"
 import type { ProjectFiles } from "../ProjectFiles.ts"
-import { grepFileTool, readOnlyFileTools } from "./ProjectFileTools.ts"
 import type { SessionContext } from "./SessionContext.ts"
 
-/** 1回の調査あたりツール呼び出しを重ねてよい最大ステップ数。主エージェントの MAX_STEPS（ChatAgent.ts）より小さくし、調査1件が長引きすぎないようにする。 */
+/** 1回の調査あたりツール呼び出しを重ねてよい最大ステップ数 */
 const MAX_RESEARCH_STEPS = 12
 
 /**
@@ -25,7 +24,7 @@ const RESEARCH_OUTPUT_FORMAT = `
  * サブクラスやモジュールを増やさずデータとして持つ。
  */
 export type ResearchDomain = {
-  /** ChatAgent がツールとして公開する際の名前（例: research_schema） */
+  /** エージェントがツールとして公開する際の名前（例: research_schema） */
   toolName: string
   /** 主エージェントがこのツールをいつ使うべきかの説明。ツール定義の description にそのまま使う。 */
   description: string
@@ -35,8 +34,8 @@ export type ResearchDomain = {
 
 /**
  * 特定の知識領域に絞って調査を行うエージェント。担当領域は {@link ResearchDomain} で切り替える。
- * 主エージェント（ChatAgent）とは別の会話・別のステップ予算で動き、要約テキスト1本だけを呼び出し元に返す。
- * 読んだファイル全文は ChatAgent の会話履歴（ひいては永続化される current-state.json）には残らない。
+ * 主エージェント（RootAgent）とは別の会話・別のステップ予算で動き、要約テキスト1本だけを呼び出し元に返す。
+ * 読んだファイル全文は親エージェントの会話履歴（ひいては永続化される current-state.json）には残らない。
  */
 export class ResearchAgent {
   readonly #projectFiles: ProjectFiles
@@ -62,10 +61,7 @@ export class ResearchAgent {
       model: openrouter.chat(options.model),
       system: `${this.#domain.buildSystemPrompt(context)}\n\n${RESEARCH_OUTPUT_FORMAT}`,
       prompt: question,
-      tools: {
-        ...readOnlyFileTools(this.#projectFiles),
-        ...grepFileTool(this.#projectFiles),
-      },
+      tools: this.#projectFiles.buildAiTools(),
       stopWhen: stepCountIs(MAX_RESEARCH_STEPS),
     })
     return result.text

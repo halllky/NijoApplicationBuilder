@@ -5,7 +5,7 @@ import { Hono } from "hono"
 import type { UIMessage } from "ai"
 import { Preview, type PreviewProcessDefinition } from "./Preview.ts"
 import { ChangePlan } from "./ChangePlan.ts"
-import { ApiKey, ChatAgent, CurrentState } from "./ChatAgent"
+import { ApiKey, RootAgent, CurrentState } from "./ChatAgent"
 import { PREVIEW_TARGET_ORIGIN, type DevToolSettings, type OpenRouterModelsResponse, type PreviewStateRequest, type PreviewStateResponse } from "../shared/devtool-api.ts"
 import { DotEnv } from "./DotEnv.ts"
 import { OpenRouterModels } from "./OpenRouterModels.ts"
@@ -27,7 +27,7 @@ const dotEnv = new DotEnv(devToolRoot)
 const openRouterModels = new OpenRouterModels()
 const changePlans = new ChangePlan(devToolRoot)
 const currentState = new CurrentState(devToolRoot)
-const chatAgent = new ChatAgent(demo101Root, currentState)
+const rootAgent = new RootAgent(demo101Root, currentState)
 
 const app = new Hono()
 
@@ -138,7 +138,7 @@ app.post("/devtool-api/chat", async c => {
 
   const { messages } = await c.req.json<{ messages: UIMessage[] }>()
   const { chatModel } = await readSettings()
-  return await chatAgent.respond(messages.at(-1), { apiKey, model: chatModel })
+  return await rootAgent.respond(messages.at(-1), { apiKey, model: chatModel })
 })
 
 // 新規セッション開始

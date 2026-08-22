@@ -3,13 +3,12 @@ import { convertToModelMessages, createUIMessageStreamResponse, stepCountIs, str
 import { z } from "zod"
 import { ProjectFiles } from "../ProjectFiles.ts"
 import { CurrentState } from "./CurrentState.ts"
-import { readOnlyFileTools } from "./ProjectFileTools.ts"
 import { CODE_RESEARCH_DOMAIN, ResearchAgent, SCHEMA_RESEARCH_DOMAIN, SCREEN_RESEARCH_DOMAIN } from "./ResearchAgent.ts"
 import { buildSessionContext, type SessionContext } from "./SessionContext.ts"
 
 /**
  * 1回のユーザー発言に対してツール呼び出しを重ねてよい最大ステップ数（無限ループの保険）。
- * 上限に達した最後のステップは #tools を使わせず必ず文章で回答させる（{@link ChatAgent.respond} の prepareStep 参照）ため、
+ * 上限に達した最後のステップは #tools を使わせず必ず文章で回答させる（{@link RootAgent.respond} の prepareStep 参照）ため、
  * 複数ファイルの横断調査のようなステップ数がかさむタスクでも、無回答のまま打ち切られることはない。
  */
 const MAX_STEPS = 24
@@ -21,7 +20,7 @@ const FINAL_STEP_NOTICE = `
 情報が不足していて確定的な回答ができない場合は、これまでに分かったことを伝え、調査続行するかを問うてください。
 `.trim()
 
-/** {@link ChatAgent} が使うシステムプロンプトを組み立てる。SessionContext の内容を背景情報として差し込む。 */
+/** {@link RootAgent} が使うシステムプロンプトを組み立てる。SessionContext の内容を背景情報として差し込む。 */
 function buildSystemPrompt(context: SessionContext): string {
   return `
 あなたはこのシステムの構築を補助する者です。
@@ -52,12 +51,12 @@ ${context.projectStructureOverview}
 `.trim()
 }
 
-/** 要件ヒアリングを行うチャットエージェント */
-export class ChatAgent {
+/** ユーザーと直に対話する主エージェント */
+export class RootAgent {
   readonly #demo101Root: string
   readonly #projectFiles: ProjectFiles
   readonly #currentState: CurrentState
-  /** 知識領域ごとの調査役。ChatAgent 自身は問いを投げるだけで、実際の探索はここに委ねる。 */
+  /** 知識領域ごとの調査役。主エージェント自身は問いを投げるだけで、実際の探索はここに委ねる。 */
   readonly #researchAgents: readonly ResearchAgent[]
 
   /**
@@ -118,26 +117,24 @@ export class ChatAgent {
   }
 
   /**
-   * このエージェントが使えるツール一覧。
-   * list_files / read_file は読むファイルが特定できている場合の直接アクセス用。
-   * 広く探す調査は research_schema / research_code / research_screen（各 {@link ResearchAgent}）に委譲する。
-   * 書き込みはこのエージェントの責務ではない。
+   * このエージェントが使えるツール一覧
    */
   #tools(sessionContext: SessionContext, options: { apiKey: string, model: string }) {
-    const researchTools = Object.fromEntries(this.#researchAgents.map(agent => [
-      agent.toolName,
-      tool({
-        description: agent.description,
-        inputSchema: z.object({
-          question: z.string().describe("調査してほしい内容。具体的な問いの形で渡すこと。"),
-        }),
-        execute: async ({ question }) => await agent.research(question, sessionContext, options),
-      }),
-    ]))
-
     return {
-      ...readOnlyFileTools(this.#projectFiles),
-      ...researchTools,
+      // ファイル読み書きツール
+      ...this.#projectFiles.buildAiTools(),
+
+      // サブエージェント
+      ...Object.fromEntries(this.#researchAgents.map(agent => [
+        agent.toolName,
+        tool({
+          description: agent.description,
+          inputSchema: z.object({
+            question: z.string().describe("調査してほしい内容。具体的な問いの形で渡すこと。"),
+          }),
+          execute: async ({ question }) => await agent.research(question, sessionContext, options),
+        }),
+      ])),
     }
   }
 }
