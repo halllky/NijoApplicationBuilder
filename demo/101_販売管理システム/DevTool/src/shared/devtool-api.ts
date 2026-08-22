@@ -51,23 +51,6 @@ export type PreviewStateResponse = {
 
 //#endregion プレビュー
 
-//#region 変更プラン
-
-/** 変更プランの一覧表示用の要約 */
-export type ChangePlanSummary = {
-  id: string
-  title: string
-  status: string
-  createdAt: string | null
-}
-
-/** 変更プランの詳細（本文込み） */
-export type ChangePlanDetail = ChangePlanSummary & {
-  body: string
-}
-
-//#region 変更プラン
-
 //#region アプリ設定
 
 /** APIキーの保管先。OSキーチェーンが使えない環境では 'environmentVariable' か 'unavailable' になる。 */
@@ -99,24 +82,45 @@ export type OpenRouterModelsResponse = {
 
 //#endregion アプリ設定
 
-//#region エージェント
+//#region チャットセッション
 
 /**
- * エージェントの現在の状態。
- * ブラウザリロードやサーバー再起動などをまたいで残したい永続化された情報。
+ * 変更計画。1つのセッションでの対話の成果物であり、1セッションにつき最大1つ。
+ * まだ立てられていない間は null になる。
  */
-export type CurrentStateDto = {
-  /**
-   * いま行なっていた会話。
-   * ブラウザリロードで消えてしまわないようにするために保持されている。
-   * 会話の仕切り直しによって消える。
-   */
-  currentSession: UIMessage[]
-  /**
-   * 直近数回の会話の内容。
-   * 古いものは会話仕切り直し時に削除される。
-   */
-  latestSessions?: UIMessage[][]
+export type ChangePlan = {
+  /** 変更計画の見出し。 */
+  title: string
+  /** 変更計画の状態。'draft' など。 */
+  status: string
+  /** 本文（Markdown）。 */
+  body: string
+}
+
+/**
+ * セッション一覧表示用の要約。会話の本文・変更計画の本文は含まない。
+ */
+export type ChatSessionSummary = {
+  /** yyyyMMddHHmmss_UUID 形式。 */
+  id: string
+  /** 一覧表示用の見出し。最初のユーザー発言から導出される。発言がまだ無い場合は既定の文言になる。 */
+  title: string
+  /** 作成日時（ISO8601）。 */
+  createdAt: string
+  /** 変更計画の見出しと状態。変更計画が未作成の場合は null。 */
+  changePlanSummary: Pick<ChangePlan, 'title' | 'status'> | null
+}
+
+/**
+ * セッション1件。会話の全メッセージと変更計画を含む。
+ * ブラウザリロードやサーバー再起動などをまたいで残したい永続化された情報。
+ * セッションは複数を並行して進行させることができる。
+ */
+export type ChatSessionDto = ChatSessionSummary & {
+  /** この会話でのやりとり全て。 */
+  messages: UIMessage[]
+  /** この会話の成果物である変更計画。未作成の場合は null。 */
+  changePlan: ChangePlan | null
   /**
    * 楽観排他制御用のバージョン。更新時刻UTC。
    * 更新が競合するとAIの応答が壊れるので念のため
@@ -124,4 +128,4 @@ export type CurrentStateDto = {
   concurrencyVersion: string
 }
 
-//#endregion チャット
+//#endregion チャットセッション

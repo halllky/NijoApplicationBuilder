@@ -1,29 +1,61 @@
 import React from "react"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport, getToolName, isToolUIPart, type DynamicToolUIPart, type ToolUIPart, type UITools } from "ai"
+import type { ChatSessionDto } from "../../shared/devtool-api"
 
 /**
- * 要件ヒアリングエージェントとのチャット画面。
- * 会話履歴はサーバー側（.nijo/current-state.json）が正であり、表示時にそこから読み込んで復元する。
- * 「新しいチャット」ボタンで現在の会話を締め、空の状態から話しかけ直せる。
+ * 1つのチャットセッションとのやりとりを表示する画面。
+ * 会話履歴はサーバー側が正であり、表示時にそこから読み込んで復元する。
+ * 高さ・幅は呼び出し側のレイアウトに従って伸縮する（自身では画面上の位置や大きさを決めない）。
  */
-export const ChatPane: React.FC<{ onApiKeyMissing: () => void }> = ({ onApiKeyMissing }) => {
-  const { messages, setMessages, sendMessage, status, error } = useChat({
-    transport: new DefaultChatTransport({ api: '/devtool-api/chat' }),
-  })
+export const ChatPane: React.FC<{
+  sessionId: string
+  /** 表示直後に自動で1回だけ送る発言。未指定の場合は何も送らず、ユーザーの入力を待つ。 */
+  initialMessage?: string
+  /** チャットがAPIキー未設定エラーを受け取ったときに、設定画面へ切り替えるために呼ぶ */
+  onApiKeyMissing: () => void
+}> = ({ sessionId, initialMessage, onApiKeyMissing }) => {
+
+  //#region 状態
+
+  // 送信先はセッションごとに異なるため、セッションが変わったときだけ transport を作り直す
+  const transport = React.useMemo(() => new DefaultChatTransport({
+    api: `/devtool-api/sessions/${encodeURIComponent(sessionId)}/chat`,
+  }), [sessionId])
+  const { messages, setMessages, sendMessage, status, error } = useChat({ id: sessionId, transport })
+
   const [input, setInput] = React.useState('')
   const [isLoadingHistory, setIsLoadingHistory] = React.useState(true)
   const isBusy = status === 'submitted' || status === 'streaming'
 
-  // 表示時（マウント時）にサーバー側に永続化された会話履歴と同期する
+  // 初回発言の送信に使う値。履歴同期エフェクトの再実行契機にはしたくないので ref で最新値を持つ
+  const initialSendRef = React.useRef({ initialMessage, sendMessage })
+  initialSendRef.current = { initialMessage, sendMessage }
+  // 送信済みかどうか。StrictMode によるエフェクトの二重実行で同じ発言が2回送られるのを防ぐ
+  const initialMessageSentRef = React.useRef(false)
+
+  // 表示時にサーバー側に永続化された会話と同期し、その直後に初回の発言を送る
   React.useEffect(() => {
     let canceled = false
-    fetch('/devtool-api/current-session')
-      .then(res => res.ok ? res.json() : null)
-      .then(history => { if (!canceled && history) setMessages(history) })
+    fetch(`/devtool-api/sessions/${encodeURIComponent(sessionId)}`)
+      .then(res => res.ok ? res.json() as Promise<ChatSessionDto> : null)
+      .then(session => {
+        if (canceled || !session) return
+        setMessages(session.messages)
+
+        const { initialMessage, sendMessage } = initialSendRef.current
+        if (initialMessage && !initialMessageSentRef.current) {
+          initialMessageSentRef.current = true
+          sendMessage({ text: initialMessage })
+        }
+      })
       .finally(() => { if (!canceled) setIsLoadingHistory(false) })
     return () => { canceled = true }
-  }, [setMessages])
+  }, [sessionId, setMessages])
+
+  //#endregion 状態
+
+  //#region イベント
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,27 +72,10 @@ export const ChatPane: React.FC<{ onApiKeyMissing: () => void }> = ({ onApiKeyMi
     }
   }
 
-  // 新しいチャット: 現在の会話をサーバー側で latestSessions に退避してから画面を空にする
-  const handleNewChat = async () => {
-    if (messages.length === 0 || isBusy) return
-    const res = await fetch('/devtool-api/new-chat', { method: 'POST' })
-    if (res.ok) setMessages([])
-  }
+  //#endregion イベント
 
   return (
-    <div className="flex-1 flex flex-col min-w-0">
-
-      {/* ヘッダ（新しいチャットボタン） */}
-      <div className="flex justify-end px-3 py-2 border-b border-gray-200">
-        <button
-          type="button"
-          onClick={handleNewChat}
-          disabled={messages.length === 0 || isBusy || isLoadingHistory}
-          className="px-2 py-1 text-xs border border-gray-300 rounded text-gray-700 disabled:opacity-50"
-        >
-          新しいチャット
-        </button>
-      </div>
+    <div className="flex-1 flex flex-col min-w-0 min-h-0">
 
       {/* 発言一覧 */}
       <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">

@@ -4,8 +4,7 @@ import { serve } from "@hono/node-server"
 import { Hono } from "hono"
 import type { UIMessage } from "ai"
 import { Preview, type PreviewProcessDefinition } from "./Preview.ts"
-import { ChangePlan } from "./ChangePlan.ts"
-import { ApiKey, RootAgent, CurrentState } from "./ChatAgent"
+import { ApiKey, RootAgent, ChatSession } from "./ChatAgent"
 import { PREVIEW_TARGET_ORIGIN, type DevToolSettings, type OpenRouterModelsResponse, type PreviewStateRequest, type PreviewStateResponse } from "../shared/devtool-api.ts"
 import { DotEnv } from "./DotEnv.ts"
 import { OpenRouterModels } from "./OpenRouterModels.ts"
@@ -25,9 +24,8 @@ const preview = new Preview(demo101Root, PREVIEW_PROCESS_DEFINITIONS, PREVIEW_TA
 const chatAgentApiKey = new ApiKey()
 const dotEnv = new DotEnv(devToolRoot)
 const openRouterModels = new OpenRouterModels()
-const changePlans = new ChangePlan(devToolRoot)
-const currentState = new CurrentState(devToolRoot)
-const rootAgent = new RootAgent(demo101Root, currentState)
+const chatSessions = new ChatSession(devToolRoot)
+const rootAgent = new RootAgent(demo101Root, chatSessions)
 
 const app = new Hono()
 
@@ -107,47 +105,42 @@ app.get("/devtool-api/openrouter/models", async c => {
 })
 //#endregion アプリケーション設定
 
-//#region 変更計画
+//#region チャットセッション
 
-// 変更計画の一覧
-app.get("/devtool-api/plans", async c => {
-  return c.json(await changePlans.list())
+// セッションの一覧（変更計画の本文・会話の本文は含まない要約）
+app.get("/devtool-api/sessions", async c => {
+  return c.json(await chatSessions.list())
 })
 
-// 変更計画1件の詳細
-app.get("/devtool-api/plans/:id", async c => {
-  const detail = await changePlans.read(c.req.param("id"))
-  if (!detail) return c.json({ error: "指定された変更計画が見つかりません。" }, 404)
-  return c.json(detail)
+// 新規セッションの作成。発言はまだ含まない空のセッションを返す
+app.post("/devtool-api/sessions", async c => {
+  return c.json(await chatSessions.create())
 })
 
-//#endregion 変更計画
+// セッション1件（会話の全メッセージと変更計画）
+app.get("/devtool-api/sessions/:id", async c => {
+  const session = await chatSessions.read(c.req.param("id"))
+  if (!session) return c.json({ error: "指定されたチャットセッションが見つかりません。" }, 404)
+  return c.json(session)
+})
 
-//#region AIチャット
-
-// チャット欄表示時の現在セッション状態同期
-app.get("/devtool-api/current-session", async c => {
-  const { currentSession } = await currentState.load()
-  return c.json(currentSession)
+// セッションの削除
+app.delete("/devtool-api/sessions/:id", async c => {
+  await chatSessions.delete(c.req.param("id"))
+  return c.body(null, 204)
 })
 
 // チャットメッセージ送信。 Vercel AI SDK の規約準拠のエンドポイント
-app.post("/devtool-api/chat", async c => {
+app.post("/devtool-api/sessions/:id/chat", async c => {
   const apiKey = await chatAgentApiKey.read()
   if (!apiKey) return c.json({ error: "OpenRouter APIキーが未設定です。設定画面から登録してください。" }, 400)
 
   const { messages } = await c.req.json<{ messages: UIMessage[] }>()
   const { chatModel } = await readSettings()
-  return await rootAgent.respond(messages.at(-1), { apiKey, model: chatModel })
+  return await rootAgent.respond(c.req.param("id"), messages.at(-1), { apiKey, model: chatModel })
 })
 
-// 新規セッション開始
-app.post("/devtool-api/new-chat", async c => {
-  await currentState.startNewSession()
-  return c.body(null, 204)
-})
-
-//#endregion AIチャット
+//#endregion チャットセッション
 
 const server = serve({
   fetch: app.fetch,

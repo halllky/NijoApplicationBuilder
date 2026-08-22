@@ -2,7 +2,7 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider"
 import { convertToModelMessages, createUIMessageStreamResponse, stepCountIs, streamText, tool, toUIMessageStream, type UIMessage } from "ai"
 import { z } from "zod"
 import { ProjectFiles } from "../ProjectFiles.ts"
-import { CurrentState } from "./CurrentState.ts"
+import { ChatSession } from "./ChatSession.ts"
 import { CODE_RESEARCH_DOMAIN, ResearchAgent, SCHEMA_RESEARCH_DOMAIN, SCREEN_RESEARCH_DOMAIN } from "./ResearchAgent.ts"
 import { buildSessionContext, type SessionContext } from "./SessionContext.ts"
 
@@ -55,18 +55,18 @@ ${context.projectStructureOverview}
 export class RootAgent {
   readonly #demo101Root: string
   readonly #projectFiles: ProjectFiles
-  readonly #currentState: CurrentState
+  readonly #chatSession: ChatSession
   /** 知識領域ごとの調査役。主エージェント自身は問いを投げるだけで、実際の探索はここに委ねる。 */
   readonly #researchAgents: readonly ResearchAgent[]
 
   /**
    * @param demo101Root 編集対象プロジェクト（デモ101アプリ）のルートディレクトリ。ツールが読めるファイルの範囲はここに限定される。
-   * @param currentState 会話履歴の永続化。読み込み・仕切り直しは呼び出し側（HTTPエンドポイント）が直接扱うため、ここでは保存のみに使う。
+   * @param chatSession 会話の永続化。応答対象のセッションの読み込みと保存に使う。
    */
-  constructor(demo101Root: string, currentState: CurrentState) {
+  constructor(demo101Root: string, chatSession: ChatSession) {
     this.#demo101Root = demo101Root
     this.#projectFiles = new ProjectFiles(demo101Root)
-    this.#currentState = currentState
+    this.#chatSession = chatSession
     this.#researchAgents = [
       new ResearchAgent(this.#projectFiles, SCHEMA_RESEARCH_DOMAIN),
       new ResearchAgent(this.#projectFiles, CODE_RESEARCH_DOMAIN),
@@ -75,13 +75,15 @@ export class RootAgent {
   }
 
   /**
-   * 新しいユーザー発言を会話に加えて応答をストリーミングで返す。
-   * 会話履歴の読み込み・保存はこのメソッドが担う（呼び出し側は最新のユーザー発言だけを渡せばよい）。
+   * 指定セッションに新しいユーザー発言を加えて応答をストリーミングで返す。
+   * 会話の読み込み・保存はこのメソッドが担う（呼び出し側は最新のユーザー発言だけを渡せばよい）。
+   * セッションが存在しない場合は 404 の Response を返す。
    * apiKey は呼び出しごとに渡された値でプロバイダーを生成する（環境変数は参照しない）。
    */
-  async respond(newUserMessage: UIMessage | undefined, options: { apiKey: string, model: string }): Promise<Response> {
-    const currentState = await this.#currentState.load()
-    if (newUserMessage) currentState.currentSession.push(newUserMessage)
+  async respond(sessionId: string, newUserMessage: UIMessage | undefined, options: { apiKey: string, model: string }): Promise<Response> {
+    const session = await this.#chatSession.read(sessionId)
+    if (!session) return Response.json({ error: "指定されたチャットセッションが見つかりません。" }, { status: 404 })
+    if (newUserMessage) session.messages.push(newUserMessage)
 
     const sessionContext = await buildSessionContext(this.#demo101Root)
     // OpenRouter API を直接叩くので strict モードを指定する（互換モードでは streamOptions 等が送られない）。
@@ -90,7 +92,7 @@ export class RootAgent {
     const result = streamText({
       model: openrouter.chat(options.model),
       system: buildSystemPrompt(sessionContext),
-      messages: await convertToModelMessages(currentState.currentSession),
+      messages: await convertToModelMessages(session.messages),
       tools: this.#tools(sessionContext, options),
       stopWhen: stepCountIs(MAX_STEPS),
       // ステップ上限に達する最後のステップではツールを使わせず、必ず文章で回答させる。
@@ -107,10 +109,11 @@ export class RootAgent {
     return createUIMessageStreamResponse({
       stream: toUIMessageStream({
         stream: result.stream,
-        originalMessages: currentState.currentSession,
+        originalMessages: session.messages,
         onFinish: async ({ messages }) => {
-          currentState.currentSession = messages
-          await this.#currentState.save(currentState)
+          // 変更計画を保持したままのセッションごと保存する
+          session.messages = messages
+          await this.#chatSession.save(session)
         },
       }),
     })
