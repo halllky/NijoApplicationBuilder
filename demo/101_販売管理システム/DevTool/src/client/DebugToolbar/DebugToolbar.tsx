@@ -1,7 +1,7 @@
 import React from "react"
-import { Bars2Icon, PlayIcon, StopIcon, ArrowPathIcon, Cog6ToothIcon, ChatBubbleLeftRightIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline"
+import { Bars2Icon, PlayIcon, StopIcon, ArrowPathIcon, Cog6ToothIcon, ChatBubbleLeftRightIcon, PaperAirplaneIcon, DocumentTextIcon } from "@heroicons/react/24/outline"
 import { SplitButton, useDraggablePosition } from "../ui"
-import type { usePreviewState } from "../Preview"
+import { ServerLogWindow, type useDevToolState } from "../Preview"
 import { SettingsModal } from "../Settings"
 import { AgentPanel, FloatingSession, useChatSessions } from "../Agent"
 import { PREVIEW_PROCESS_NAMES } from "../../shared/devtool-api"
@@ -16,7 +16,7 @@ const FLOATING_OFFSET = 32
  * デバッグ実行プロセスの状態はAppが保持し、propsとして受け取る。
  */
 export function DebugToolbar({ preview }: {
-  preview: ReturnType<typeof usePreviewState>
+  preview: ReturnType<typeof useDevToolState>
 }) {
 
   //#region 状態
@@ -28,6 +28,8 @@ export function DebugToolbar({ preview }: {
   // 開いているオーバーレイ（設定モーダル・エージェントパネル）。
   // 単一の状態で持つことで、2つのz-50モーダルが同時に開いて重なることを構造的に防ぐ。
   const [openPanel, setOpenPanel] = React.useState<'settings' | 'agent' | null>(null)
+  // サーバーログ窓の開閉。チャットのストリーミング中でも見られるよう、上記の openPanel（z-50モーダルの排他用）とは別に持つ。
+  const [showServerLog, setShowServerLog] = React.useState(false)
 
   // チャットセッションの一覧と増減
   const chatSessions = useChatSessions()
@@ -130,6 +132,16 @@ export function DebugToolbar({ preview }: {
             セッション一覧
           </SplitButton>
 
+          {/* DevToolサーバーのログ */}
+          <button
+            type="button"
+            onClick={() => setShowServerLog(current => !current)}
+            className={`p-1 rounded cursor-pointer ${showServerLog ? 'text-sky-700 bg-sky-50' : 'text-gray-600 hover:bg-gray-100'}`}
+            title="DevToolサーバーのログ"
+          >
+            <DocumentTextIcon className="w-5 h-5" />
+          </button>
+
           {/* 設定 */}
           <button
             type="button"
@@ -179,6 +191,11 @@ export function DebugToolbar({ preview }: {
         onOpenFloating={handleOpenFloating}
         onOpenSettings={() => setOpenPanel('settings')}
       />
+
+      {/* DevToolサーバーのログ。設定モーダルの中に置くとチャットのストリーミング中は見られなくなるため、独立したフローティング窓にする */}
+      {showServerLog && (
+        <ServerLogWindow serverLog={preview.serverLog} onClose={() => setShowServerLog(false)} />
+      )}
 
       {/* 進行中の会話。開いた順に表示位置をずらす（位置はマウント時にのみ効く） */}
       {floatings.map((floating, ix) => (

@@ -1,4 +1,5 @@
 import type { ApiKeyStorage } from "../../shared/devtool-api.ts"
+import { serverLog } from "../ServerLog.ts"
 
 const KEYCHAIN_SERVICE_NAME = "nijo-devtool"
 const KEYCHAIN_ACCOUNT_NAME = "openrouter-api-key"
@@ -61,8 +62,10 @@ export class ApiKey {
       // 常に module.exports 全体が入る default 側から取得する。
       const mod = (await import("@github/keytar")) as unknown as { default: Keychain }
       this.#keychainCache = mod.default
-    } catch {
+    } catch (error) {
       this.#keychainCache = null
+      // #keychainResolved により以降は再試行しない＝この警告も起動後1回だけ出る
+      serverLog.warn("apikey.keychain.unavailable", { error })
     }
     return this.#keychainCache
   }

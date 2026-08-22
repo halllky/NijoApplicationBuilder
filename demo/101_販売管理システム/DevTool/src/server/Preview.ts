@@ -2,7 +2,9 @@ import path from "node:path"
 import { setTimeout as delay } from "node:timers/promises"
 import treeKillCallback from "tree-kill"
 import { execa, type ResultPromise } from "execa"
-import type { PreviewLogIncrement, PreviewProcessName, PreviewProcessState } from "../shared/devtool-api.ts"
+import type { LogIncrement, PreviewProcessName, PreviewProcessState } from "../shared/devtool-api.ts"
+import { LogBuffer } from "./LogBuffer.ts"
+import { serverLog } from "./ServerLog.ts"
 
 /** tree-kill はコールバックAPIのみを提供するため、Promise化して使う */
 function killTree(pid: number, signal: string): Promise<void> {
@@ -24,14 +26,6 @@ const PROBE_TIMEOUT_MS = 1_000
 const MAX_BUFFER_LENGTH = 256 * 1024
 
 /**
- * ANSIエスケープシーケンス（色・カーソル移動等の制御文字）にマッチする正規表現。
- * CSI（ESC [ ... 終端文字）と OSC（ESC ] ... BEL または ESC \）の両方を対象とする。
- * チャンク単位で届く出力を都度この正規表現にかけるため、チャンクの境目でシーケンスが
- * 分断された場合は除去しきれないことがある（実害は数バイトの制御文字が残る程度）。
- */
-const ANSI_ESCAPE_PATTERN = /\x1B(?:\[[0-9;?]*[a-zA-Z]|\][^\x07\x1B]*(?:\x07|\x1B\\))/g
-
-/**
  * 並列起動するプロセス1件の定義。
  * cwd は Preview の projectRoot からの相対パス。
  */
@@ -45,51 +39,11 @@ export type PreviewProcessDefinition = {
   appendStderr: boolean
 }
 
-/**
- * 1プロセス・1ストリーム分の出力を保持する。ログはファイルに書かず、この中にのみ保持する。
- * 返す offset は「これまでに受け取った文字数の累計」であり、
- * バッファの先頭を捨てても増加し続ける（呼び出し側が持つ既読位置と整合させるため）。
- */
-class OutputBuffer {
-  #text = ""
-  #totalLength = 0
-  #droppedLength = 0
-
-  append(rawChunk: string): void {
-    // ツールが NO_COLOR を尊重せず色制御文字を出力してくる場合の保険として、蓄積前に取り除く
-    const chunk = rawChunk.replace(ANSI_ESCAPE_PATTERN, "")
-    this.#text += chunk
-    this.#totalLength += chunk.length
-    if (this.#text.length > MAX_BUFFER_LENGTH) {
-      const dropped = this.#text.length - MAX_BUFFER_LENGTH
-      this.#text = this.#text.slice(dropped)
-      this.#droppedLength += dropped
-    }
-  }
-
-  /** 起動しなおしでログをクリアする。以降 offset は 0 から数えなおす */
-  clear(): void {
-    this.#text = ""
-    this.#totalLength = 0
-    this.#droppedLength = 0
-  }
-
-  /**
-   * 指定オフセット以降の増分を返す。
-   * オフセットが累計より大きい場合（クリアされた場合）は先頭から読み直す。
-   */
-  read(fromOffset: number): PreviewLogIncrement {
-    const offset = fromOffset > this.#totalLength ? 0 : fromOffset
-    const start = Math.max(offset, this.#droppedLength) - this.#droppedLength
-    return { text: this.#text.slice(start), offset: this.#totalLength }
-  }
-}
-
 type RunningProcess = {
   name: string
   subprocess: ResultPromise
-  stdout: OutputBuffer
-  stderr: OutputBuffer
+  stdout: LogBuffer
+  stderr: LogBuffer
   hasExited: boolean
   exitCode: number | null
 }
@@ -167,7 +121,7 @@ export class Preview {
   }
 
   /** 指定プロセスの指定ストリームの、指定オフセット以降の増分を読む */
-  readLog(processName: string, stream: "stdout" | "stderr", fromOffset: number): PreviewLogIncrement {
+  readLog(processName: string, stream: "stdout" | "stderr", fromOffset: number): LogIncrement {
     const running = this.#running.get(processName)
     if (!running) return { text: "", offset: 0 }
     return running[stream].read(fromOffset)
@@ -210,10 +164,12 @@ export class Preview {
     const existing = this.#running.get(definition.name)
     if (existing && !existing.hasExited) return
 
-    const stdout = existing?.stdout ?? new OutputBuffer()
-    const stderr = existing?.stderr ?? new OutputBuffer()
+    const stdout = existing?.stdout ?? new LogBuffer(MAX_BUFFER_LENGTH)
+    const stderr = existing?.stderr ?? new LogBuffer(MAX_BUFFER_LENGTH)
     if (!definition.appendStdout) stdout.clear()
     if (!definition.appendStderr) stderr.clear()
+
+    serverLog.info("preview.start", { process: definition.name, cwd: definition.cwd, command: definition.fileName })
 
     const subprocess = execa(definition.fileName, definition.args, {
       cwd: path.join(this.#projectRoot, definition.cwd),
@@ -231,14 +187,16 @@ export class Preview {
     subprocess.stdout?.on("data", (chunk: string) => stdout.append(chunk))
     subprocess.stderr?.setEncoding("utf8")
     subprocess.stderr?.on("data", (chunk: string) => stderr.append(chunk))
-    subprocess
-      .then(result => {
-        running.hasExited = true
-        running.exitCode = result.exitCode ?? null
-      })
-      .catch(() => {
-        running.hasExited = true
-      })
+    // execa は reject: false を指定しているため、起動失敗（実行ファイルが無い等）を含めどんな終わり方でも
+    // このPromiseは常に resolve する（reject は起きない。catch は書いても呼ばれない）。
+    subprocess.then(result => {
+      running.hasExited = true
+      running.exitCode = result.exitCode ?? null
+      // シグナルによる終了は stop()/restart() 等の意図した停止。それ以外の failed（非0終了・起動失敗など）だけを異常として警告する。
+      if (result.failed && !result.signal) {
+        serverLog.warn("preview.exit", { process: definition.name, exitCode: result.exitCode ?? null })
+      }
+    })
 
     this.#running.set(definition.name, running)
   }

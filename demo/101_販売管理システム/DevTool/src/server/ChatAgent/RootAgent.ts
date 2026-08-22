@@ -2,9 +2,23 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider"
 import { convertToModelMessages, createUIMessageStreamResponse, stepCountIs, streamText, tool, toUIMessageStream, type UIMessage } from "ai"
 import { z } from "zod"
 import { ProjectFiles } from "../ProjectFiles.ts"
+import type { AgentCallOptions } from "./ChatTurn.ts"
 import { ChatSession } from "./ChatSession.ts"
 import { CODE_RESEARCH_DOMAIN, ResearchAgent, SCHEMA_RESEARCH_DOMAIN, SCREEN_RESEARCH_DOMAIN } from "./ResearchAgent.ts"
 import { buildSessionContext, type SessionContext } from "./SessionContext.ts"
+
+/**
+ * UIMessage からテキストパートだけを取り出して結合する（ツール呼び出し等の他パートは対象外）。
+ * 会話ログに全文を残す際、ユーザー発言（index.ts）・AIの最終回答（{@link RootAgent.respond}）の
+ * 両方から使う。
+ */
+export function extractMessageText(message: UIMessage | undefined): string {
+  if (!message) return ""
+  return message.parts
+    .filter((part): part is Extract<UIMessage["parts"][number], { type: "text" }> => part.type === "text")
+    .map(part => part.text)
+    .join("\n")
+}
 
 /**
  * 1回のユーザー発言に対してツール呼び出しを重ねてよい最大ステップ数（無限ループの保険）。
@@ -94,8 +108,10 @@ export class RootAgent {
    * 会話の読み込み・保存はこのメソッドが担う（呼び出し側は最新のユーザー発言だけを渡せばよい）。
    * セッションが存在しない場合は 404 の Response を返す。
    * apiKey は呼び出しごとに渡された値でプロバイダーを生成する（環境変数は参照しない）。
+   * options.turn は呼び出し元（index.ts）が生成し、このターン中に呼ぶサブエージェントにもそのまま渡される
+   * （主エージェント・サブエージェントのLLM呼び出し・ツール呼び出しを1つの計器にまとめるため）。
    */
-  async respond(sessionId: string, newUserMessage: UIMessage | undefined, options: { apiKey: string, model: string }): Promise<Response> {
+  async respond(sessionId: string, newUserMessage: UIMessage | undefined, options: AgentCallOptions): Promise<Response> {
     const session = await this.#chatSession.read(sessionId)
     if (!session) return Response.json({ error: "指定されたチャットセッションが見つかりません。" }, { status: 404 })
     if (newUserMessage) session.messages.push(newUserMessage)
@@ -129,16 +145,32 @@ export class RootAgent {
           ],
         }
       },
+      // 消えたブラウザタブのために残りのステップを焼き続けないよう、接続断でループを打ち切る。
+      abortSignal: options.abortSignal,
+      telemetry: { functionId: "chat.root", integrations: [options.turn] },
     })
 
     return createUIMessageStreamResponse({
       stream: toUIMessageStream({
         stream: result.stream,
         originalMessages: session.messages,
-        onFinish: async ({ messages }) => {
+        onEnd: async ({ messages, responseMessage, isAborted, finishReason }) => {
           // 変更計画を保持したままのセッションごと保存する
           session.messages = messages
-          await this.#chatSession.save(session)
+
+          const summary = options.turn.summary()
+          options.log.conversation("chat.assistant.message", { text: extractMessageText(responseMessage) })
+          options.log.info("chat.turn.finish", { ...summary, isAborted, finishReason, steppedToCap: summary.steps === MAX_STEPS })
+
+          try {
+            await this.#chatSession.save(session)
+          } catch (error) {
+            options.log.error("session.save.failed", { error })
+          }
+        },
+        onError: error => {
+          options.log.error("chat.turn.error", { error: error instanceof Error ? error : String(error) })
+          return "サーバー内部でエラーが発生しました。"
         },
       }),
     })
@@ -147,7 +179,7 @@ export class RootAgent {
   /**
    * このエージェントが使えるツール一覧
    */
-  #tools(sessionContext: SessionContext, options: { apiKey: string, model: string }) {
+  #tools(sessionContext: SessionContext, options: AgentCallOptions) {
     return {
       // ファイル読み書きツール
       ...this.#projectFiles.buildAiTools(),

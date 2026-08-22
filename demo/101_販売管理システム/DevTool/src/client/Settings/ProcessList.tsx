@@ -1,10 +1,11 @@
 import { ArrowTopRightOnSquareIcon, CheckCircleIcon, MinusCircleIcon, XCircleIcon } from "@heroicons/react/24/outline"
 import React from "react"
 import { PREVIEW_PROCESS_NAMES, PREVIEW_TARGET_ORIGIN } from "../../shared/devtool-api"
-import { usePreviewState } from "../Preview"
+import type { useDevToolState } from "../Preview"
+import { LogPane } from "../ui"
 
 /** デバッグ実行プロセス（vite・dotnet）の一覧。未起動のプロセスも行として表示し、開始できるようにする */
-export const ProcessList: React.FC<{ preview: ReturnType<typeof usePreviewState> }> = ({ preview }) => {
+export const ProcessList: React.FC<{ preview: ReturnType<typeof useDevToolState> }> = ({ preview }) => {
   const { processes, logs, start, stop, restart, isBusy } = preview
   const processByName = React.useMemo(() => new Map(processes.map(p => [p.name, p])), [processes])
 
@@ -81,25 +82,5 @@ const TargetStatusIndicator: React.FC<{ status: number | null }> = ({ status }) 
   )
   return (
     <MinusCircleIcon title={`ステータス ${status} が返っています`} className="h-4 w-4 text-amber-600" />
-  )
-}
-
-/** ログ1本分の表示欄。追記のたびに末尾へ自動スクロールする */
-const LogPane: React.FC<{ text: string, isError?: boolean }> = ({ text, isError }) => {
-  const ref = React.useRef<HTMLPreElement>(null)
-
-  // DOM要素の末尾へのスクロール位置は描画結果に依存するため、DOM操作としてeffectで行う
-  React.useEffect(() => {
-    const el = ref.current
-    if (el) el.scrollTop = el.scrollHeight
-  }, [text])
-
-  return (
-    <pre
-      ref={ref}
-      className={`h-[120px] overflow-auto bg-gray-900 text-xs p-2 whitespace-pre-wrap rounded ${isError ? 'text-rose-400' : 'text-gray-100'}`}
-    >
-      {text}
-    </pre>
   )
 }

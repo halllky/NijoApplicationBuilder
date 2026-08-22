@@ -1,4 +1,5 @@
 import type { OpenRouterModel } from "../shared/devtool-api.ts"
+import { serverLog } from "./ServerLog.ts"
 
 /** OpenRouterのモデル一覧取得1回あたりのタイムアウト */
 const FETCH_TIMEOUT_MS = 10_000
@@ -37,6 +38,7 @@ export class OpenRouterModels {
     } catch (e) {
       // 一覧はほぼ変動しないため、取得に失敗しても直近のキャッシュがあればそれを返す
       const message = e instanceof Error ? e.message : `不明なエラー(${e})`
+      serverLog.warn("models.fetch.failed", { error: e instanceof Error ? e : message, cached: this.#cache !== null })
       return { models: this.#cache ?? [], error: `モデル一覧の取得に失敗しました: ${message}` }
     }
   }

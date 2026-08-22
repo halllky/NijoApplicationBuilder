@@ -1,6 +1,7 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider"
 import { generateText, stepCountIs } from "ai"
 import type { ProjectFiles } from "../ProjectFiles.ts"
+import type { AgentCallOptions } from "./ChatTurn.ts"
 import type { SessionContext } from "./SessionContext.ts"
 
 /** 1回の調査あたりツール呼び出しを重ねてよい最大ステップ数 */
@@ -54,8 +55,13 @@ export class ResearchAgent {
     return this.#domain.description
   }
 
-  /** 1件の問いを調査し、要約テキストで結果を返す。 */
-  async research(question: string, context: SessionContext, options: { apiKey: string, model: string }): Promise<string> {
+  /**
+   * 1件の問いを調査し、要約テキストで結果を返す。
+   * RootAgent と違い最終ステップでツールを封じる prepareStep のガードが無いため、ステップ上限に達すると
+   * 空文字や調査途中の断片を返しうる。それを RootAgent が事実として受け取る事故を防げるよう、
+   * 上限到達・空回答は warn で必ず残す（{@link ResearchAgent.research} の呼び出し元からは result.text しか見えないため）。
+   */
+  async research(question: string, context: SessionContext, options: AgentCallOptions): Promise<string> {
     const openrouter = createOpenRouter({ apiKey: options.apiKey, compatibility: "strict" })
     const result = await generateText({
       model: openrouter.chat(options.model),
@@ -63,7 +69,15 @@ export class ResearchAgent {
       prompt: question,
       tools: this.#projectFiles.buildAiTools(),
       stopWhen: stepCountIs(MAX_RESEARCH_STEPS),
+      abortSignal: options.abortSignal,
+      telemetry: { functionId: `research.${this.#domain.toolName.replace(/^research_/, "")}`, integrations: [options.turn] },
     })
+
+    const steps = result.steps.length
+    if (steps >= MAX_RESEARCH_STEPS) options.log.warn("research.capped", { agent: this.#domain.toolName, steps })
+    if (result.text.trim() === "") options.log.warn("research.empty", { agent: this.#domain.toolName, steps })
+    options.log.trace("research.answer", { agent: this.#domain.toolName, question, answer: result.text, steps })
+
     return result.text
   }
 }

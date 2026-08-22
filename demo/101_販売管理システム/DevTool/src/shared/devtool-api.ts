@@ -23,13 +23,8 @@ export type PreviewLogOffsets = {
   stderr: number
 }
 
-/** デバッグ実行の状態取得のリクエストボディ */
-export type PreviewStateRequest = {
-  offsets: Record<string, PreviewLogOffsets>
-}
-
-/** ログの指定オフセット以降の増分 */
-export type PreviewLogIncrement = {
+/** ログの指定オフセット以降の増分。プレビュープロセスのログ・DevToolサーバー自身のログの両方で使う。 */
+export type LogIncrement = {
   text: string
   offset: number
 }
@@ -42,14 +37,30 @@ export type PreviewProcessState = {
   exitCode: number | null
 }
 
-/** /devtool-api/preview/state のレスポンス */
-export type PreviewStateResponse = {
-  processes: (PreviewProcessState & { stdout: PreviewLogIncrement, stderr: PreviewLogIncrement })[]
-  /** デバッグ対象アプリのオリジンへのHTTP応答ステータス。到達できない場合は null */
-  targetStatus: number | null
+//#endregion プレビュー
+
+//#region DevToolの稼働状態
+
+/**
+ * DevToolの稼働状態取得のリクエストボディ。
+ * プレビュープロセスのログとDevToolサーバー自身のログを、同じ1秒ポーリングでまとめて取得する。
+ */
+export type DevToolStateRequest = {
+  offsets: Record<string, PreviewLogOffsets>
+  /** DevToolサーバー自身のログの既読オフセット */
+  serverLogOffset: number
 }
 
-//#endregion プレビュー
+/** /devtool-api/state のレスポンス */
+export type DevToolStateResponse = {
+  processes: (PreviewProcessState & { stdout: LogIncrement, stderr: LogIncrement })[]
+  /** デバッグ対象アプリのオリジンへのHTTP応答ステータス。到達できない場合は null */
+  targetStatus: number | null
+  /** DevToolサーバー自身のログの増分 */
+  serverLog: LogIncrement
+}
+
+//#endregion DevToolの稼働状態
 
 //#region アプリ設定
 

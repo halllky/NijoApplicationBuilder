@@ -2,6 +2,7 @@ import { readFile, readdir, realpath, stat } from "node:fs/promises"
 import { tool } from "ai"
 import { z } from "zod"
 import path from "node:path"
+import { serverLog } from "./ServerLog.ts"
 
 /** 一覧・閲覧の対象から除外するエントリ名。ビルド成果物・依存パッケージなど、AIエージェントが読んでも意味がないもの。 */
 const IGNORED_ENTRY_NAMES = new Set([".git", ".nijo", "node_modules", "bin", "obj", "dist"])
@@ -123,17 +124,25 @@ export class ProjectFiles {
       }
     }
     await walk(absoluteDir)
+    if (truncated) serverLog.warn("files.grep.truncated", { query, path: relativeDir, hits: hits.length })
 
     return { hits, truncated }
   }
 
-  /** シンボリックリンク経由での親ディレクトリ脱出を防ぐため、解決後のパスがプロジェクトルート配下であることを確認する */
+  /**
+   * シンボリックリンク経由での親ディレクトリ脱出を防ぐため、解決後のパスがプロジェクトルート配下であることを確認する。
+   * 解決に失敗する（＝単に存在しないパス）ことはAIがファイル名を推測して外れる際に日常的に起きるため警告にしない。
+   * 実在するのにルート外を指している場合だけを脱出の兆候として warn する。
+   */
   async #isInsideRoot(absolutePath: string): Promise<boolean> {
     const resolvedRoot = await realpath(this.#root).catch(() => null)
     if (resolvedRoot === null) return false
     const resolvedPath = await realpath(absolutePath).catch(() => null)
     if (resolvedPath === null) return false
-    return resolvedPath === resolvedRoot || resolvedPath.startsWith(resolvedRoot + path.sep)
+
+    const inside = resolvedPath === resolvedRoot || resolvedPath.startsWith(resolvedRoot + path.sep)
+    if (!inside) serverLog.warn("files.escape", { path: absolutePath, resolved: resolvedPath })
+    return inside
   }
 
   /**

@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto"
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises"
 import path from "node:path"
 import type { ChatSessionDto, ChatSessionSummary } from "../../shared/devtool-api.ts"
+import { serverLog } from "../ServerLog.ts"
 
 /**
  * ファイル名として安全なセッションID。yyyyMMddHHmmss と8桁のランダムな16進数を "_" でつないだ形。
@@ -37,8 +38,12 @@ export class ChatSession {
     const fileNames = await readdir(this.#sessionsDir).catch(() => [])
     const ids = fileNames.filter(name => name.endsWith(".json")).map(name => name.slice(0, -5))
 
+    // ID形式に合わないファイルは read() を呼ばず（1件ごとに session.read.invalid が出るのを避け）、まとめて1行で報告する
+    const validIds = ids.filter(id => SESSION_ID_PATTERN.test(id))
+    if (validIds.length < ids.length) serverLog.warn("session.list.skipped", { n: ids.length - validIds.length })
+
     const summaries: ChatSessionSummary[] = []
-    for (const id of ids) {
+    for (const id of validIds) {
       const dto = await this.read(id)
       if (dto) summaries.push({ id: dto.id, title: dto.title, createdAt: dto.createdAt, changePlanSummary: dto.changePlanSummary })
     }
@@ -48,14 +53,19 @@ export class ChatSession {
 
   /** 指定IDのセッションを返す。IDが不正・ファイルが無い・壊れている場合は null（例外は投げない）。 */
   async read(id: string): Promise<ChatSessionDto | null> {
-    if (!SESSION_ID_PATTERN.test(id)) return null
+    if (!SESSION_ID_PATTERN.test(id)) {
+      serverLog.warn("session.read.invalid", { sessionId: id })
+      return null
+    }
 
     const raw = await readFile(this.#filePath(id), "utf8").catch(() => null)
+    // ファイルが無いのは新規作成直後・削除後の参照など通常の操作でも起きるため警告にしない
     if (raw === null) return null
 
     try {
       return ChatSession.#toDto(id, JSON.parse(raw) as StoredSession)
-    } catch {
+    } catch (error) {
+      serverLog.warn("session.read.broken", { sessionId: id, error })
       return null
     }
   }
@@ -68,7 +78,11 @@ export class ChatSession {
     return dto
   }
 
-  /** セッションを上書き保存する。concurrencyVersion は保存の都度このメソッドが採番する。 */
+  /**
+   * セッションを上書き保存する。concurrencyVersion は保存の都度このメソッドが採番する。
+   * 楽観排他は未実装（このバージョンは検査されない）ため、同一セッションへの並行保存は後勝ちで
+   * 黙って上書きされる。せめて何が起きたか追えるよう、保存の都度バージョンをトレースへ残す。
+   */
   async save(dto: ChatSessionDto): Promise<void> {
     // id・createdAt・title は読み出し時に導出される項目なのでファイルには書かない
     const toWrite: StoredSession = {
@@ -78,6 +92,7 @@ export class ChatSession {
     }
     await mkdir(this.#sessionsDir, { recursive: true })
     await writeFile(this.#filePath(dto.id), JSON.stringify(toWrite, null, 2), "utf8")
+    serverLog.trace("session.save", { sessionId: dto.id, concurrencyVersion: toWrite.concurrencyVersion, messageCount: dto.messages.length })
   }
 
   /** セッションを削除する。IDが不正・ファイルが無い場合は何もしない。 */

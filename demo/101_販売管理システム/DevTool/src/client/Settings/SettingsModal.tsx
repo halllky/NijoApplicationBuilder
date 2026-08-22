@@ -1,6 +1,6 @@
 import React from "react"
 import { Modal } from "../ui"
-import type { usePreviewState } from "../Preview"
+import type { useDevToolState } from "../Preview"
 import { ProcessList } from "./ProcessList"
 import { AgentSettings } from "./AgentSettings"
 
@@ -13,7 +13,7 @@ import { AgentSettings } from "./AgentSettings"
 export const SettingsModal = ({ open, onClose, preview }: {
   open: boolean
   onClose: () => void
-  preview: ReturnType<typeof usePreviewState>
+  preview: ReturnType<typeof useDevToolState>
 }) => {
   return (
     <Modal open={open} onClose={onClose} title="設定" panelClassName="w-[720px] max-w-[90vw] max-h-[85vh]">
