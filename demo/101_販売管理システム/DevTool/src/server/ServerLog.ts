@@ -181,27 +181,31 @@ export class ServerLog {
 
   /**
    * 利用者に見える発話（ユーザー入力・AIの最終回答）。
-   * レベル制御・切り詰めをせず常に全文を stdout へ。
+   * レベル制御・切り詰めをせず常に全文を stdout + jsonl へ。
    */
   conversation(event: string, fields: LogFields): void {
     const merged = prepareFields({ ...this.#fields, ...fields }, false)
     process.stdout.write(`${buildRecord("info", event, merged)}\n`)
+
+    if (!IS_FLY) {
+      const sessionId = typeof merged.sessionId === "string" ? merged.sessionId : "misc"
+      const line = buildTraceRecord(event, merged)
+      enqueueFileAppend(traceFilePath(sessionId), line)
+    }
   }
 
   /**
    * AIエージェント内部の全文（プロンプト・ツール引数・結果・サブエージェント問答）。
-   * stdout/stderr には出さず、ローカルでは .nijo/logs/<sessionId>.jsonl へ、
-   * fly.io では volume が無いため stdout へ出す。
+   * stdout/stderr には出さず、ローカルでは .nijo/logs/<sessionId>.jsonl へ出す。
+   * fly.io では出力しない。
    */
   trace(event: string, fields: LogFields): void {
+    if (IS_FLY) return;
+
     const merged = prepareFields({ ...this.#fields, ...fields }, false)
     const sessionId = typeof merged.sessionId === "string" ? merged.sessionId : "misc"
     const line = buildTraceRecord(event, merged)
-    if (IS_FLY) {
-      process.stdout.write(`${line}\n`)
-    } else {
-      enqueueFileAppend(traceFilePath(sessionId), line)
-    }
+    enqueueFileAppend(traceFilePath(sessionId), line)
   }
 
   /**
