@@ -223,7 +223,7 @@
       },
       {
         "label": "Nijo > デモ101 Dev Tool",
-        "detail": "AIエージェントとNijoを併用した編集ツール",
+        "detail": "AIエージェントとNijoを併用した編集ツールのデバッグ",
         "command": "npm run dev",
         "type": "shell",
         "problemMatcher": [

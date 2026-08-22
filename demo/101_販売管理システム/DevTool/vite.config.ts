@@ -12,7 +12,7 @@ export default defineConfig({
   // 接頭辞を広げるとそれらがブラウザバンドルに漏れる。
   envPrefix: 'VITE_',
   server: {
-    port: 5177,
+    port: 5176,
     strictPort: true,
     proxy: {
       // src/server（デバッグ実行プロセスの起動・停止・ログ取得、チャット、設定のAPI）
