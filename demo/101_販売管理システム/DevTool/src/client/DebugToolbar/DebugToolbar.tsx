@@ -1,6 +1,6 @@
 import React from "react"
 import { Bars2Icon, PlayIcon, StopIcon, ArrowPathIcon, Cog6ToothIcon, ChatBubbleLeftRightIcon } from "@heroicons/react/24/outline"
-import { SplitButton } from "../SplitButton"
+import { SplitButton } from "../ui"
 import { useDraggablePosition } from "./useDraggablePosition"
 import type { usePreviewState } from "../Preview"
 import { SettingsModal } from "../Settings"
