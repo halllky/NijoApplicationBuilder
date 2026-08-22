@@ -4,10 +4,10 @@ import path from "node:path"
 import type { ChatSessionDto, ChatSessionSummary } from "../../shared/devtool-api.ts"
 
 /**
- * ファイル名として安全なセッションID。yyyyMMddHHmmss と UUID を "_" でつないだ形。
+ * ファイル名として安全なセッションID。yyyyMMddHHmmss と8桁のランダムな16進数を "_" でつないだ形。
  * ドット・スラッシュを含み得ないため、この検査を通ったIDは親ディレクトリへ抜けられない。
  */
-const SESSION_ID_PATTERN = /^\d{14}_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+const SESSION_ID_PATTERN = /^\d{14}_[0-9a-f]{8}$/
 
 /** 発言がまだ無いセッションの見出し */
 const UNTITLED = "新しいチャット"
@@ -62,7 +62,7 @@ export class ChatSession {
 
   /** 空のセッションを採番して作成し、その内容を返す */
   async create(): Promise<ChatSessionDto> {
-    const id = `${ChatSession.#timestamp(new Date())}_${randomUUID()}`
+    const id = `${ChatSession.#timestamp(new Date())}_${randomUUID().slice(0, 8)}`
     const dto = ChatSession.#toDto(id, { messages: [], changePlan: null, concurrencyVersion: new Date(0).toISOString() })
     await this.save(dto)
     return dto
