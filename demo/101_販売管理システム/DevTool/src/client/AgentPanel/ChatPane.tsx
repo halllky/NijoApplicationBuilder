@@ -4,19 +4,31 @@ import { DefaultChatTransport, getToolName, isToolUIPart, type DynamicToolUIPart
 
 /**
  * 要件ヒアリングエージェントとのチャット画面。
- * 会話履歴はブラウザ内のReact stateのみで保持し、パネルを閉じる・再読み込みすると消える。
+ * 会話履歴はサーバー側（.nijo/current-state.json）が正であり、表示時にそこから読み込んで復元する。
+ * 「新しいチャット」ボタンで現在の会話を締め、空の状態から話しかけ直せる。
  */
 export const ChatPane: React.FC<{ onApiKeyMissing: () => void }> = ({ onApiKeyMissing }) => {
-  const { messages, sendMessage, status, error } = useChat({
+  const { messages, setMessages, sendMessage, status, error } = useChat({
     transport: new DefaultChatTransport({ api: '/devtool-api/chat' }),
   })
   const [input, setInput] = React.useState('')
+  const [isLoadingHistory, setIsLoadingHistory] = React.useState(true)
   const isBusy = status === 'submitted' || status === 'streaming'
+
+  // 表示時（マウント時）にサーバー側に永続化された会話履歴と同期する
+  React.useEffect(() => {
+    let canceled = false
+    fetch('/devtool-api/chat')
+      .then(res => res.ok ? res.json() : null)
+      .then(history => { if (!canceled && history) setMessages(history) })
+      .finally(() => { if (!canceled) setIsLoadingHistory(false) })
+    return () => { canceled = true }
+  }, [setMessages])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const text = input.trim()
-    if (!text || isBusy) return
+    if (!text || isBusy || isLoadingHistory) return
     sendMessage({ text })
     setInput('')
   }
@@ -28,12 +40,34 @@ export const ChatPane: React.FC<{ onApiKeyMissing: () => void }> = ({ onApiKeyMi
     }
   }
 
+  // 新しいチャット: 現在の会話をサーバー側で latestSessions に退避してから画面を空にする
+  const handleNewChat = async () => {
+    if (messages.length === 0 || isBusy) return
+    const res = await fetch('/devtool-api/new-chat', { method: 'POST' })
+    if (res.ok) setMessages([])
+  }
+
   return (
     <div className="flex-1 flex flex-col min-w-0">
 
+      {/* ヘッダ（新しいチャットボタン） */}
+      <div className="flex justify-end px-3 py-2 border-b border-gray-200">
+        <button
+          type="button"
+          onClick={handleNewChat}
+          disabled={messages.length === 0 || isBusy || isLoadingHistory}
+          className="px-2 py-1 text-xs border border-gray-300 rounded text-gray-700 disabled:opacity-50"
+        >
+          新しいチャット
+        </button>
+      </div>
+
       {/* 発言一覧 */}
       <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
-        {messages.length === 0 && (
+        {isLoadingHistory && (
+          <p className="text-sm text-gray-500">読み込み中…</p>
+        )}
+        {!isLoadingHistory && messages.length === 0 && (
           <p className="text-sm text-gray-500">要件を話しかけてください。</p>
         )}
         {messages.map(message => (
@@ -72,13 +106,14 @@ export const ChatPane: React.FC<{ onApiKeyMissing: () => void }> = ({ onApiKeyMi
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
+          disabled={isLoadingHistory}
           spellCheck="false"
           placeholder="メッセージを入力"
           className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm max-h-96 resize-none field-sizing-content"
         />
         <button
           type="submit"
-          disabled={isBusy || !input.trim()}
+          disabled={isBusy || isLoadingHistory || !input.trim()}
           className="px-3 py-1 text-sm bg-gray-800 text-white rounded disabled:opacity-50"
         >
           送信<br />

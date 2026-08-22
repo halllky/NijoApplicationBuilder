@@ -5,8 +5,19 @@ import { ProjectFiles } from "../ProjectFiles.ts"
 import { CurrentState } from "./CurrentState.ts"
 import { buildSessionContext, type SessionContext } from "./SessionContext.ts"
 
-/** 1回のユーザー発言に対してツール呼び出しを重ねてよい最大ステップ数（無限ループの保険） */
-const MAX_STEPS = 10
+/**
+ * 1回のユーザー発言に対してツール呼び出しを重ねてよい最大ステップ数（無限ループの保険）。
+ * 上限に達した最後のステップは #tools を使わせず必ず文章で回答させる（{@link ChatAgent.respond} の prepareStep 参照）ため、
+ * 複数ファイルの横断調査のようなステップ数がかさむタスクでも、無回答のまま打ち切られることはない。
+ */
+const MAX_STEPS = 24
+
+/** ステップ上限に達したときにシステムプロンプトへ追記し、ツールを使わずここまでの情報で回答させるための指示文。 */
+const FINAL_STEP_NOTICE = `
+このやり取りで使えるツール呼び出し回数の上限に達しました。
+これ以上ツールは呼び出せません。ここまでに調べた情報だけを踏まえて、ユーザーへの回答を必ず文章で返してください。
+情報が不足していて確定的な回答ができない場合は、これまでに分かったことを伝え、調査続行するかを問うてください。
+`.trim()
 
 /** {@link ChatAgent} が使うシステムプロンプトを組み立てる。SessionContext の内容を背景情報として差し込む。 */
 function buildSystemPrompt(context: SessionContext): string {
@@ -37,12 +48,12 @@ export class ChatAgent {
 
   /**
    * @param demo101Root 編集対象プロジェクト（デモ101アプリ）のルートディレクトリ。ツールが読めるファイルの範囲はここに限定される。
-   * @param devToolRoot DevTool 自身のルートディレクトリ。会話履歴の永続化先（.nijo/current-state.json）の起点。
+   * @param currentState 会話履歴の永続化。読み込み・仕切り直しは呼び出し側（HTTPエンドポイント）が直接扱うため、ここでは保存のみに使う。
    */
-  constructor(demo101Root: string, devToolRoot: string) {
+  constructor(demo101Root: string, currentState: CurrentState) {
     this.#demo101Root = demo101Root
     this.#projectFiles = new ProjectFiles(demo101Root)
-    this.#currentState = new CurrentState(devToolRoot)
+    this.#currentState = currentState
   }
 
   /**
@@ -63,6 +74,15 @@ export class ChatAgent {
       messages: await convertToModelMessages(currentState.currentSession),
       tools: this.#tools(),
       stopWhen: stepCountIs(MAX_STEPS),
+      // ステップ上限に達する最後のステップではツールを使わせず、必ず文章で回答させる。
+      // これが無いと、上限到達時にツール呼び出し直後で応答が打ち切られ、ユーザーには「何も返ってこない」ように見えてしまう。
+      prepareStep: ({ stepNumber }) => {
+        if (stepNumber !== MAX_STEPS - 1) return undefined
+        return {
+          toolChoice: "none",
+          instructions: `${buildSystemPrompt(sessionContext)}\n\n${FINAL_STEP_NOTICE}`,
+        }
+      },
     })
 
     return result.toUIMessageStreamResponse({

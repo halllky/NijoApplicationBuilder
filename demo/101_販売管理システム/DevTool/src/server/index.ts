@@ -5,7 +5,7 @@ import { Hono } from "hono"
 import type { UIMessage } from "ai"
 import { Preview, type PreviewProcessDefinition } from "./Preview.ts"
 import { ChangePlan } from "./ChangePlan.ts"
-import { ApiKey, ChatAgent } from "./ChatAgent"
+import { ApiKey, ChatAgent, CurrentState } from "./ChatAgent"
 import { PREVIEW_TARGET_ORIGIN, type DevToolSettings, type PreviewStateRequest, type PreviewStateResponse } from "../shared/devtool-api.ts"
 import { DotEnv } from "./DotEnv.ts"
 
@@ -24,7 +24,8 @@ const preview = new Preview(demo101Root, PREVIEW_PROCESS_DEFINITIONS, PREVIEW_TA
 const chatAgentApiKey = new ApiKey()
 const dotEnv = new DotEnv(devToolRoot)
 const changePlans = new ChangePlan(devToolRoot)
-const chatAgent = new ChatAgent(demo101Root, devToolRoot)
+const currentState = new CurrentState(devToolRoot)
+const chatAgent = new ChatAgent(demo101Root, currentState)
 
 const app = new Hono()
 
@@ -105,6 +106,10 @@ app.get("/devtool-api/plans/:id", async c => {
 
 // 要件ヒアリングのチャット。
 // 会話履歴はサーバー側（.nijo/current-state.json）が正であり、クライアントからは最新のユーザー発言だけを受け取る。
+app.get("/devtool-api/chat", async c => {
+  const { currentSession } = await currentState.load()
+  return c.json(currentSession)
+})
 app.post("/devtool-api/chat", async c => {
   const apiKey = await chatAgentApiKey.read()
   if (!apiKey) return c.json({ error: "Anthropic APIキーが未設定です。設定画面から登録してください。" }, 400)
@@ -112,6 +117,12 @@ app.post("/devtool-api/chat", async c => {
   const { messages } = await c.req.json<{ messages: UIMessage[] }>()
   const { chatModel } = await readSettings()
   return await chatAgent.respond(messages.at(-1), { apiKey, model: chatModel })
+})
+
+// 会話の仕切り直し。現在のセッションを latestSessions に退避し、currentSession を空にする。
+app.post("/devtool-api/new-chat", async c => {
+  await currentState.startNewSession()
+  return c.body(null, 204)
 })
 
 const server = serve({

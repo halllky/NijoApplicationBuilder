@@ -97,6 +97,11 @@ export type CurrentStateDto = {
    */
   currentSession: UIMessage[]
   /**
+   * 直近数回の会話の内容。
+   * 古いものは会話仕切り直し時に削除される。
+   */
+  latestSessions?: UIMessage[][]
+  /**
    * 楽観排他制御用のバージョン。更新時刻UTC。
    * 更新が競合するとAIの応答が壊れるので念のため
    */

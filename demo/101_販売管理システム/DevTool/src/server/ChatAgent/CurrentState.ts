@@ -13,6 +13,8 @@ import type { CurrentStateDto } from "../../shared/devtool-api.ts"
 export class CurrentState {
 
   static readonly #FILE_NAME = "current-state.json"
+  /** latestSessions に残しておく直近セッションの最大件数。これを超えた古いものから削除する。 */
+  static readonly #LATEST_SESSIONS_MAX = 5
 
   readonly #filePath: string
 
@@ -37,6 +39,19 @@ export class CurrentState {
     const toWrite: CurrentStateDto = { ...dto, concurrencyVersion: new Date().toISOString() }
     await mkdir(path.dirname(this.#filePath), { recursive: true })
     await writeFile(this.#filePath, JSON.stringify(toWrite, null, 2), "utf8")
+  }
+
+  /**
+   * 会話を仕切り直す。現在のセッションを latestSessions の末尾に積み、
+   * 直近 {@link CurrentState.#LATEST_SESSIONS_MAX} 件を超えた古いものから削除したうえで currentSession を空にする。
+   * 現在のセッションが空の場合は何もしない（空の会話を latestSessions に積まないため）。
+   */
+  async startNewSession(): Promise<void> {
+    const dto = await this.load()
+    if (dto.currentSession.length === 0) return
+
+    const latestSessions = [...(dto.latestSessions ?? []), dto.currentSession].slice(-CurrentState.#LATEST_SESSIONS_MAX)
+    await this.save({ ...dto, currentSession: [], latestSessions })
   }
 
   static #empty(): CurrentStateDto {
