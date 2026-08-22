@@ -5,7 +5,7 @@ import { serve } from "@hono/node-server"
 import { Hono } from "hono"
 import type { UIMessage, Warning } from "ai"
 import { Preview, type PreviewProcessDefinition } from "./Preview.ts"
-import { ApiKey, ChatTurnLogger, RootAgent, ChatSession, extractMessageText } from "./ChatAgent"
+import { ApiKey, ChatTurnLogger, RootAgent, ChatSession, extractMessageText, isRateLimitError, toUserFacingMessage } from "./ChatAgent"
 import { PREVIEW_TARGET_ORIGIN, type DevToolSettings, type DevToolStateRequest, type DevToolStateResponse, type OpenRouterModelsResponse } from "../shared/devtool-api.ts"
 import { DotEnv } from "./DotEnv.ts"
 import { OpenRouterModels } from "./OpenRouterModels.ts"
@@ -66,8 +66,9 @@ app.use("*", async (c, next) => {
 app.onError((error, c) => {
   // 直前のミドルウェアで必ず c.set("log", ...) 済みだが、そこに至る前の失敗に備えてフォールバックする
   const log = c.get("log") ?? serverLog
-  log.error("http.error", { error, method: c.req.method, path: c.req.path })
-  return c.json({ error: "サーバー内部でエラーが発生しました。" }, 500)
+  const rateLimited = isRateLimitError(error)
+  log.error("http.error", { error, method: c.req.method, path: c.req.path, isRateLimit: rateLimited })
+  return c.json({ error: toUserFacingMessage(error) }, rateLimited ? 429 : 500)
 })
 
 app.notFound(c => {

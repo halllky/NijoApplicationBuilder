@@ -4,6 +4,7 @@ import { z } from "zod"
 import { ProjectFiles } from "../ProjectFiles.ts"
 import type { AgentCallOptions } from "./ChatTurnLogger.ts"
 import { ChatSession } from "./ChatSession.ts"
+import { describeLlmError, isRateLimitError, toUserFacingMessage } from "./LlmError.ts"
 import { CODE_RESEARCH_DOMAIN, ResearchAgent, SCHEMA_RESEARCH_DOMAIN, SCREEN_RESEARCH_DOMAIN } from "./ResearchAgent.ts"
 import { buildSessionContext, type SessionContext } from "./SessionContext.ts"
 
@@ -73,7 +74,8 @@ function buildSystemPrompt(context: SessionContext): string {
 - ユーザーの意図が不明瞭な場合は積極的にユーザーに質問すること。
   このターンで回答を確定させることよりも明確なユーザーの意図に基づくことを優先する。
 - プロジェクトの中身に関する調査で広く探す必要がある場合は research_schema / research_code / research_screen に委譲すること。
-  読むべきファイルが既に特定できている場合のみ list_files / read_file を直接使ってよい。
+  読むべきファイルが既に特定できている場合のみ search_files / read_file を直接使ってよい。
+  調べたいファイル・検索したいことが複数ある場合は、ツール呼び出しを繰り返さず1回の呼び出しにまとめて渡すこと。
 - 利用者はプログラミングの素養がなく、画面を見ながら話しかけてくる。発話中の画面名・項目名・ボタン名の実装上の在り処が不明な場合は、
   まず research_screen で実装上の名前に翻訳してから他の調査に進むこと。
 - research_* の回答に含まれる「分からなかったこと」は、推測で埋めず、ユーザーへの問いかけに変換すること。
@@ -123,6 +125,10 @@ export class RootAgent {
     // OpenRouter API を直接叩くので strict モードを指定する（互換モードでは streamOptions 等が送られない）。
     const openrouter = createOpenRouter({ apiKey: options.apiKey, compatibility: "strict" })
 
+    // research_* サブエージェントの中でレートリミットを検知したら立てる。
+    // 続行してもモデルが再試行して残りステップと枠を無駄に消費するだけなので、このターンをそこで打ち切る。
+    let rateLimited = false
+
     const result = streamText({
       model: openrouter.chat(options.model),
       // 役割の指示と回答の書き方は別の system メッセージに分けて渡す。
@@ -132,8 +138,8 @@ export class RootAgent {
         { role: "system", content: OUTPUT_STYLE },
       ],
       messages: await convertToModelMessages(session.messages),
-      tools: this.#tools(sessionContext, options),
-      stopWhen: stepCountIs(MAX_STEPS),
+      tools: this.#tools(sessionContext, options, () => { rateLimited = true }),
+      stopWhen: [stepCountIs(MAX_STEPS), () => rateLimited],
       // ステップ上限に達する最後のステップではツールを使わせず、必ず文章で回答させる。
       // これが無いと、上限到達時にツール呼び出し直後で応答が打ち切られ、ユーザーには「何も返ってこない」ように見えてしまう。
       prepareStep: ({ stepNumber }) => {
@@ -172,8 +178,8 @@ export class RootAgent {
           }
         },
         onError: error => {
-          options.log.error("chat.turn.error", { error: error instanceof Error ? error : String(error) })
-          return "サーバー内部でエラーが発生しました。"
+          options.log.error("chat.turn.error", { error: error instanceof Error ? error : String(error), ...describeLlmError(error) })
+          return toUserFacingMessage(error)
         },
       }),
     })
@@ -181,8 +187,12 @@ export class RootAgent {
 
   /**
    * このエージェントが使えるツール一覧
+   *
+   * @param onRateLimit research_* サブエージェントの中でレートリミットを検知したときに呼ぶ。
+   *   検知後もエラーは rethrow するので、ツール呼び出し自体は失敗として通常どおり扱われる
+   *   （呼び出し元がこのターンを打ち切るかどうかの判断材料として使うだけ）。
    */
-  #tools(sessionContext: SessionContext, options: AgentCallOptions) {
+  #tools(sessionContext: SessionContext, options: AgentCallOptions, onRateLimit: () => void) {
     return {
       // ファイル読み書きツール
       ...this.#projectFiles.buildAiTools(),
@@ -195,7 +205,14 @@ export class RootAgent {
           inputSchema: z.object({
             question: z.string().describe("調査してほしい内容。具体的な問いの形で渡すこと。"),
           }),
-          execute: async ({ question }) => await agent.research(question, sessionContext, options),
+          execute: async ({ question }) => {
+            try {
+              return await agent.research(question, sessionContext, options)
+            } catch (error) {
+              if (isRateLimitError(error)) onRateLimit()
+              throw error
+            }
+          },
         }),
       ])),
     }

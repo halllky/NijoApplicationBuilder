@@ -4,22 +4,34 @@ import { z } from "zod"
 import path from "node:path"
 import { serverLog } from "./ServerLog.ts"
 
-/** 一覧・閲覧の対象から除外するエントリ名。ビルド成果物・依存パッケージなど、AIエージェントが読んでも意味がないもの。 */
+/** 一覧・検索の対象から除外するエントリ名。ビルド成果物・依存パッケージなど、AIエージェントが読んでも意味がないもの。 */
 const IGNORED_ENTRY_NAMES = new Set([".git", ".nijo", "node_modules", "bin", "obj", "dist"])
 
-/** grep の対象から除外する拡張子。テキストとして意味を持たないバイナリ形式。 */
+/** 内容検索の対象から除外する拡張子。テキストとして意味を持たないバイナリ形式。 */
 const BINARY_EXTENSIONS = new Set([
   ".sqlite3", ".db", ".png", ".jpg", ".jpeg", ".gif", ".ico", ".pdf", ".zip",
   ".dll", ".exe", ".woff", ".woff2", ".ttf", ".eot", ".binlog",
 ])
 
-/** grep 1件あたりの読み取り対象から外すファイルサイズの上限（バイト）。巨大ファイルの走査でエージェントが固まるのを防ぐ。 */
-const GREP_MAX_FILE_SIZE = 2 * 1024 * 1024
+/** 内容検索1件あたりの読み取り対象から外すファイルサイズの上限（バイト）。巨大ファイルの走査でエージェントが固まるのを防ぐ。 */
+const SEARCH_MAX_FILE_SIZE = 2 * 1024 * 1024
 
-/** grep が返すマッチ件数の上限。これを超えたら打ち切り、`truncated: true` を付けて返す。 */
-const GREP_MAX_HITS = 200
+/** search_files が1件の検索条件あたりに返すマッチファイル数の上限。これを超えたら打ち切り、`truncated: true` を付けて返す。 */
+const SEARCH_MAX_FILES = 100
 
-/** grep のマッチ1行分 */
+/** search_files が1件の検索条件あたりに返すマッチ行数の上限。 */
+const SEARCH_MAX_HITS = 200
+
+/** search_files が1回のツールコールで受け取れる検索条件の最大数。まとめて渡すほどステップ数を節約できる。 */
+export const SEARCH_MAX_COUNT = 10
+
+/** read_file が1回のツールコールで受け取れるファイルパスの最大数。 */
+export const READ_MAX_FILES = 10
+
+/** read_file が1ファイルあたりに返す文字数の上限。超過分は打ち切り、その旨を戻り値に含める。 */
+const READ_MAX_CHARS = 60_000
+
+/** 内容検索のマッチ1行分 */
 export type GrepHit = {
   /** プロジェクトルートからの相対パス */
   path: string
@@ -29,10 +41,30 @@ export type GrepHit = {
   text: string
 }
 
-/** grep の結果。上限に達して打ち切った場合は truncated が true になる。 */
-export type GrepResult = {
-  hits: GrepHit[]
+/** search_files 1件分の検索条件。いずれも省略可だが、最低1つは指定すること（さもないと単なる全件列挙になる）。 */
+export type FileSearchInput = {
+  /** 検索を開始するディレクトリのプロジェクトルートからの相対パス。省略時はプロジェクト全体。 */
+  path?: string
+  /** ファイルパス（プロジェクトルートからの相対パス）に対する部分一致条件。大文字小文字を区別しない。 */
+  namePattern?: string
+  /** ファイル内容に対する部分一致条件（正規表現ではない）。大文字小文字を区別しない。 */
+  query?: string
+  /** 拡張子で絞り込みたい場合に指定する（例: ['.cs', '.xml']）。 */
+  extensions?: string[]
+}
+
+/** search_files 1件分の検索結果。 */
+export type FileSearchResult = {
+  /** どの条件に対する結果かを対応づけられるよう、入力をそのまま返す */
+  search: FileSearchInput
+  /** namePattern・query・extensions のすべてに合致したファイルのパス一覧 */
+  files: string[]
+  /** query 指定時のみ。合致した行 */
+  hits?: GrepHit[]
+  /** files・hits のいずれかが上限に達して打ち切られた場合 true */
   truncated: boolean
+  /** 指定されたディレクトリが見つからない場合などに設定する */
+  error?: string
 }
 
 /**
@@ -47,20 +79,6 @@ export class ProjectFiles {
     this.#root = demo101Root
   }
 
-  /** 指定ディレクトリ直下のエントリ名一覧を返す。ディレクトリ名末尾には "/" を付ける。ルート外・存在しない場合は null。 */
-  async list(relativeDir: string): Promise<string[] | null> {
-    const absoluteDir = path.join(this.#root, relativeDir)
-    if (!(await this.#isInsideRoot(absoluteDir))) return null
-
-    const entries = await readdir(absoluteDir, { withFileTypes: true }).catch(() => null)
-    if (entries === null) return null
-
-    return entries
-      .filter(entry => !IGNORED_ENTRY_NAMES.has(entry.name))
-      .map(entry => entry.isDirectory() ? `${entry.name}/` : entry.name)
-      .sort()
-  }
-
   /** 指定ファイルの内容をUTF-8として返す。ルート外・存在しない・ディレクトリの場合は null。 */
   async read(relativePath: string): Promise<string | null> {
     const absolutePath = path.join(this.#root, relativePath)
@@ -73,27 +91,41 @@ export class ProjectFiles {
   }
 
   /**
-   * 指定ディレクトリ配下を再帰的に走査し、query を含む行を返す（大文字小文字を区別しない部分一致）。
-   * 識別子が日本語のプロジェクトのため、正規表現ではなく単純な部分一致にしている。
-   * ルート外・存在しないディレクトリの場合は null。
-   *
-   * @param relativeDir 検索を開始するディレクトリのプロジェクトルートからの相対パス。ルート全体を見る場合は '.' を指定する。
-   * @param extensions 指定時、このリストの拡張子（例: ['.cs', '.xml']）のファイルのみを対象にする。
+   * 指定ディレクトリ配下を再帰的に走査し、渡された条件すべてに合致するファイルを1回で探す。
+   * namePattern はファイルパス（相対パス全体）に対する部分一致、query はファイル内容に対する部分一致で、
+   * どちらも識別子が日本語のプロジェクトのため正規表現ではなく単純な部分一致にしている。
+   * query を指定した場合、ファイルは実際にマッチする行を含む場合のみ files に含まれる。
+   * ルート外・存在しないディレクトリの場合は error を設定して返す。
    */
-  async grep(query: string, relativeDir: string, extensions?: string[]): Promise<GrepResult | null> {
+  async search(input: FileSearchInput): Promise<FileSearchResult> {
+    const relativeDir = input.path ?? "."
     const absoluteDir = path.join(this.#root, relativeDir)
-    if (!(await this.#isInsideRoot(absoluteDir))) return null
-    if (!(await stat(absoluteDir).catch(() => null))?.isDirectory()) return null
+    const isValidDir = (await this.#isInsideRoot(absoluteDir))
+      && (await stat(absoluteDir).catch(() => null))?.isDirectory()
+    if (!isValidDir) {
+      return { search: input, files: [], truncated: false, error: `ディレクトリが見つかりません: ${relativeDir}` }
+    }
 
+    const namePattern = input.namePattern?.toLowerCase()
+    const queryNeedle = input.query?.toLowerCase()
+
+    const files: string[] = []
     const hits: GrepHit[] = []
-    const needle = query.toLowerCase()
-    let truncated = false
+    let filesTruncated = false
+    let hitsTruncated = false
+    const shouldStop = (): boolean => filesTruncated && (queryNeedle === undefined || hitsTruncated)
+
+    const addFile = (relativeEntryPath: string): void => {
+      if (filesTruncated) return
+      files.push(relativeEntryPath)
+      if (files.length >= SEARCH_MAX_FILES) filesTruncated = true
+    }
 
     const walk = async (absoluteCurrentDir: string): Promise<void> => {
-      if (truncated) return
+      if (shouldStop()) return
       const entries = await readdir(absoluteCurrentDir, { withFileTypes: true }).catch(() => [])
       for (const entry of entries) {
-        if (truncated) return
+        if (shouldStop()) return
         if (IGNORED_ENTRY_NAMES.has(entry.name)) continue
 
         const absoluteEntryPath = path.join(absoluteCurrentDir, entry.name)
@@ -102,31 +134,42 @@ export class ProjectFiles {
           continue
         }
         if (!entry.isFile()) continue
+        if (input.extensions && !input.extensions.includes(path.extname(entry.name).toLowerCase())) continue
+
+        const relativeEntryPath = path.relative(this.#root, absoluteEntryPath)
+        if (namePattern && !relativeEntryPath.toLowerCase().includes(namePattern)) continue
+
+        if (queryNeedle === undefined) {
+          addFile(relativeEntryPath)
+          continue
+        }
+
+        // 内容検索が必要な場合のみファイルを読む
         if (BINARY_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) continue
-        if (extensions && !extensions.includes(path.extname(entry.name).toLowerCase())) continue
-
         const stats = await stat(absoluteEntryPath).catch(() => null)
-        if (stats === null || stats.size > GREP_MAX_FILE_SIZE) continue
-
+        if (stats === null || stats.size > SEARCH_MAX_FILE_SIZE) continue
         const content = await readFile(absoluteEntryPath, "utf8").catch(() => null)
         if (content === null) continue
 
-        const relativeEntryPath = path.relative(this.#root, absoluteEntryPath)
+        let matchedInFile = false
         const lines = content.split("\n")
         for (let i = 0; i < lines.length; i++) {
-          if (!lines[i].toLowerCase().includes(needle)) continue
-          hits.push({ path: relativeEntryPath, line: i + 1, text: lines[i].trim() })
-          if (hits.length >= GREP_MAX_HITS) {
-            truncated = true
-            break
+          if (!lines[i].toLowerCase().includes(queryNeedle)) continue
+          matchedInFile = true
+          if (!hitsTruncated) {
+            hits.push({ path: relativeEntryPath, line: i + 1, text: lines[i].trim() })
+            if (hits.length >= SEARCH_MAX_HITS) hitsTruncated = true
           }
         }
+        if (matchedInFile) addFile(relativeEntryPath)
       }
     }
     await walk(absoluteDir)
-    if (truncated) serverLog.warn("files.grep.truncated", { query, path: relativeDir, hits: hits.length })
 
-    return { hits, truncated }
+    const truncated = filesTruncated || hitsTruncated
+    if (truncated) serverLog.warn("files.search.truncated", { search: input, files: files.length, hits: hits.length })
+
+    return { search: input, files, hits: queryNeedle === undefined ? undefined : hits, truncated }
   }
 
   /**
@@ -150,37 +193,36 @@ export class ProjectFiles {
    */
   buildAiTools(): { [toolName: string]: ReturnType<typeof tool<any, any, any>> } {
     return {
-      grep: tool({
-        description: "プロジェクト内を再帰的に検索し、指定した文字列を含む行の一覧を返す（大文字小文字を区別しない部分一致）。結果が多すぎる場合は打ち切られる（truncated）ため、必要なら path や extensions で絞り込むこと。",
+      search_files: tool({
+        description: "プロジェクト内を再帰的に検索する。path・namePattern・query・extensionsの組み合わせで、ファイルパスの部分一致検索とファイル内容の部分一致検索の両方（または片方）を1回で行える。"
+          + " query・namePatternはいずれも正規表現ではなく単純な部分一致（大文字小文字を区別しない）。"
+          + " 調べたいことが複数ある場合は、呼び出しを繰り返さず searches に複数条件をまとめて渡すこと。"
+          + " 結果が多すぎる場合は条件ごとに打ち切られる（truncated）ため、必要なら path・namePattern・extensions で絞り込むこと。",
         inputSchema: z.object({
-          query: z.string().describe("検索したい文字列。"),
-          path: z.string().describe("検索を開始するディレクトリのプロジェクトルートからの相対パス。プロジェクト全体を検索する場合は '.' を指定する。"),
-          extensions: z.array(z.string()).optional().describe("拡張子で絞り込みたい場合に指定する（例: ['.cs', '.xml']）。指定しない場合は全ファイルが対象。"),
+          searches: z.array(z.object({
+            path: z.string().optional().describe("検索を開始するディレクトリのプロジェクトルートからの相対パス。省略時はプロジェクト全体を対象にする。"),
+            namePattern: z.string().optional().describe("ファイルパスに対する部分一致条件。ファイル名の一部が分かっているときに使う。"),
+            query: z.string().optional().describe("ファイル内容に対する部分一致条件。正規表現は使えない。"),
+            extensions: z.array(z.string()).optional().describe("拡張子で絞り込みたい場合に指定する（例: ['.cs', '.xml']）。"),
+          })).min(1).max(SEARCH_MAX_COUNT).describe("検索条件の一覧。調べたいことが複数あるときは、1回の呼び出しにまとめて渡すこと。"),
         }),
-        execute: async ({ query, path, extensions }) => {
-          const result = await this.grep(query, path, extensions)
-          return result ?? { error: `ディレクトリが見つかりません: ${path}` }
-        },
-      }),
-      list_files: tool({
-        description: "プロジェクト内の指定ディレクトリ直下のファイル・サブディレクトリ一覧を返す。ディレクトリはサブディレクトリ末尾に '/' が付く。",
-        inputSchema: z.object({
-          path: z.string().describe("一覧したいディレクトリのプロジェクトルートからの相対パス。ルート自体を見る場合は '.' を指定する。"),
-        }),
-        execute: async ({ path }) => {
-          const entries = await this.list(path)
-          return entries ?? { error: `ディレクトリが見つかりません: ${path}` }
-        },
+        execute: async ({ searches }) => await Promise.all(searches.map(search => this.search(search))),
       }),
       read_file: tool({
-        description: "プロジェクト内の指定ファイルの内容をテキストとして返す。",
+        description: "プロジェクト内の指定ファイル（複数可）の内容をテキストとして返す。読みたいファイルが複数ある場合は、呼び出しを繰り返さず paths にまとめて渡すこと。",
         inputSchema: z.object({
-          path: z.string().describe("読みたいファイルのプロジェクトルートからの相対パス。"),
+          paths: z.array(z.string()).min(1).max(READ_MAX_FILES).describe("読みたいファイルのプロジェクトルートからの相対パスの一覧。"),
         }),
-        execute: async ({ path }) => {
-          const content = await this.read(path)
-          return content ?? { error: `ファイルが見つかりません: ${path}` }
-        },
+        execute: async ({ paths }) => await Promise.all(paths.map(async relativePath => {
+          const content = await this.read(relativePath)
+          if (content === null) return { path: relativePath, error: `ファイルが見つかりません: ${relativePath}` }
+          if (content.length <= READ_MAX_CHARS) return { path: relativePath, content }
+          return {
+            path: relativePath,
+            content: content.slice(0, READ_MAX_CHARS),
+            truncated: true,
+          }
+        })),
       }),
     }
   }

@@ -1,4 +1,5 @@
 import type { GenerateTextStartEvent, Telemetry } from "ai"
+import { describeLlmError } from "./LlmError.ts"
 import type { ServerLog } from "../ServerLog.ts"
 
 /**
@@ -161,7 +162,7 @@ export class ChatTurnLogger implements Telemetry {
 
   /** LLM呼び出し・ツール呼び出しのいずれかで回復不能なエラーが起きた。 */
   onError = (event: unknown): void => {
-    this.#log.error("chat.turn.error", { error: event instanceof Error ? event : String(event) })
+    this.#log.error("chat.turn.error", { error: event instanceof Error ? event : String(event), ...describeLlmError(event) })
   }
 
   /** ターン終了時に呼ぶ側（RootAgent）へ、このターン中に集計した値を渡す。 */
@@ -178,8 +179,13 @@ export class ChatTurnLogger implements Telemetry {
   }
 }
 
-/** ツールの戻り値が、成功の形をしているが実質は失敗（`{ error: "..." }`）かどうか */
+/**
+ * ツールの戻り値が、成功の形をしているが実質は失敗かどうか。
+ * search_files・read_file は複数件をまとめて返す配列のため、全要素が `{ error: "..." }` の場合のみ失敗とみなす
+ * （一部だけ見つからなかった場合は、他の要素から有用な結果を得られているため失敗として数えない）。
+ */
 function isPseudoFailure(output: unknown): boolean {
+  if (Array.isArray(output)) return output.length > 0 && output.every(isPseudoFailure)
   return typeof output === "object" && output !== null && "error" in output
 }
 
