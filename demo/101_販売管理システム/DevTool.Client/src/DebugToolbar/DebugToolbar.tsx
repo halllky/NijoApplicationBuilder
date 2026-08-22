@@ -12,13 +12,12 @@ import { SettingsModal } from "./SettingsModal"
  * デバッグ対象のプロセス名（vite, dotnet）は DevTool.Server 側の定義に合わせた固定値であり、
  * DevTool.Server が動的なプロセス構成を返すようになったら、そちらから取得する形に改める。
  */
-const PROCESS_NAMES = ['vite', 'dotnet'] as const
-
-export const DebugToolbar = () => {
+export function DebugToolbar() {
   // デバッグ実行プロセスの状態・ログ取得とその操作
   const { processes, logs, start, stop, restart, isBusy } = usePreviewState()
-  // ツールバー自体のドラッグ移動
-  const { position, handlePointerDown } = useDraggablePosition({ x: 16, y: 16 })
+  // ツールバー自体のドラッグ移動（画面内に収まるようクランプするため自身の要素を参照する）
+  const containerRef = React.useRef<HTMLDivElement>(null)
+  const { position, handlePointerDown } = useDraggablePosition({ x: 16, y: 16 }, containerRef)
   // 設定モーダル（プロセス状態・ログ表示）の開閉
   const [settingsOpen, setSettingsOpen] = React.useState(false)
 
@@ -28,6 +27,7 @@ export const DebugToolbar = () => {
   return (
     <>
       <div
+        ref={containerRef}
         className="fixed z-40 flex items-center gap-1 bg-white/95 border border-gray-300 rounded shadow-lg px-1 py-1"
         style={{ left: position.x, top: position.y }}
       >
@@ -91,3 +91,5 @@ export const DebugToolbar = () => {
     </>
   )
 }
+
+const PROCESS_NAMES = ['vite', 'dotnet'] as const
