@@ -1,15 +1,10 @@
 import React from "react"
+import type { PreviewProcessState, PreviewStateResponse } from "../../shared/devtool-api"
+
+export type { PreviewProcessState }
 
 /** ログ表示欄に保持する行数の上限。これを超えたら古い行から捨てる */
 const MAX_LOG_LINES = 2000
-
-/** 稼働中の1プロセスの状態（DevTool.Server の /devtool-api/preview/state のレスポンス要素） */
-export type PreviewProcessState = {
-  name: string
-  isRunning: boolean
-  processId: number | null
-  exitCode: number | null
-}
 
 /** プロセスごとの標準出力・標準エラー出力のログ本文 */
 type PreviewLogText = { stdout: string, stderr: string }
@@ -42,7 +37,7 @@ export function usePreviewState() {
         })
         if (!res.ok || cancelled) return
 
-        const data: { processes: (PreviewProcessState & { stdout: { text: string, offset: number }, stderr: { text: string, offset: number } })[] } = await res.json()
+        const data: PreviewStateResponse = await res.json()
         if (cancelled) return
 
         const nextOffsets: typeof offsetsRef.current = {}

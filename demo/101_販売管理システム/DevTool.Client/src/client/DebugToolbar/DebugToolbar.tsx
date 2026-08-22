@@ -1,16 +1,15 @@
 import React from "react"
-import { Bars2Icon, PlayIcon, StopIcon, ArrowPathIcon, Cog6ToothIcon } from "@heroicons/react/24/outline"
+import { Bars2Icon, PlayIcon, StopIcon, ArrowPathIcon, Cog6ToothIcon, ChatBubbleLeftRightIcon } from "@heroicons/react/24/outline"
 import { SplitButton } from "../SplitButton"
 import { useDraggablePosition } from "./useDraggablePosition"
 import { usePreviewState } from "./usePreviewState"
 import { SettingsModal } from "./SettingsModal"
+import { AgentPanel } from "../AgentPanel"
+import { PREVIEW_PROCESS_NAMES } from "../../shared/devtool-api"
 
 /**
  * デバッグ実行プロセス群を操作するための、ドラッグで移動できるフローティングツールバー。
  * VSCodeのデバッグツールバーに相当する。
- *
- * デバッグ対象のプロセス名（vite, dotnet）は DevTool.Server 側の定義に合わせた固定値であり、
- * DevTool.Server が動的なプロセス構成を返すようになったら、そちらから取得する形に改める。
  */
 export function DebugToolbar() {
   // デバッグ実行プロセスの状態・ログ取得とその操作
@@ -18,8 +17,9 @@ export function DebugToolbar() {
   // ツールバー自体のドラッグ移動（画面内に収まるようクランプするため自身の要素を参照する）
   const containerRef = React.useRef<HTMLDivElement>(null)
   const { position, handlePointerDown } = useDraggablePosition({ x: 16, y: 16 }, containerRef)
-  // 設定モーダル（プロセス状態・ログ表示）の開閉
-  const [settingsOpen, setSettingsOpen] = React.useState(false)
+  // 開いているオーバーレイ（設定モーダル・エージェントパネル）。
+  // 単一の状態で持つことで、2つのz-50モーダルが同時に開いて重なることを構造的に防ぐ。
+  const [openPanel, setOpenPanel] = React.useState<'settings' | 'agent' | null>(null)
 
   const processByName = React.useMemo(() => new Map(processes.map(p => [p.name, p])), [processes])
   const isAnyRunning = processes.some(p => p.isRunning)
@@ -45,7 +45,7 @@ export function DebugToolbar() {
           icon={isAnyRunning ? StopIcon : PlayIcon}
           onClick={() => (isAnyRunning ? stop() : start())}
           loading={isBusy}
-          options={PROCESS_NAMES.map(name => {
+          options={PREVIEW_PROCESS_NAMES.map(name => {
             const running = processByName.get(name)?.isRunning ?? false
             return {
               key: name,
@@ -62,7 +62,7 @@ export function DebugToolbar() {
           icon={ArrowPathIcon}
           onClick={() => restart()}
           loading={isBusy}
-          options={PROCESS_NAMES.map(name => ({
+          options={PREVIEW_PROCESS_NAMES.map(name => ({
             key: name,
             label: `${name} を再起動`,
             onClick: () => restart(name),
@@ -71,25 +71,39 @@ export function DebugToolbar() {
           再起動
         </SplitButton>
 
-        {/* 設定（プロセス状態・ログの表示） */}
+        {/* チャット（要件ヒアリング・変更計画一覧） */}
         <button
           type="button"
-          onClick={() => setSettingsOpen(true)}
+          onClick={() => setOpenPanel('agent')}
           className="p-1.5 text-gray-600 hover:bg-gray-100 rounded"
-          title="デバッグ実行プロセスの状態"
+          title="チャット・変更計画一覧"
+        >
+          <ChatBubbleLeftRightIcon className="w-4 h-4" />
+        </button>
+
+        {/* 設定（プロセス状態・ログの表示、APIキー・モデル設定） */}
+        <button
+          type="button"
+          onClick={() => setOpenPanel('settings')}
+          className="p-1.5 text-gray-600 hover:bg-gray-100 rounded"
+          title="デバッグ実行プロセスの状態・設定"
         >
           <Cog6ToothIcon className="w-4 h-4" />
         </button>
       </div>
 
       <SettingsModal
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
+        open={openPanel === 'settings'}
+        onClose={() => setOpenPanel(null)}
         processes={processes}
         logs={logs}
+      />
+
+      <AgentPanel
+        open={openPanel === 'agent'}
+        onClose={() => setOpenPanel(null)}
+        onOpenSettings={() => setOpenPanel('settings')}
       />
     </>
   )
 }
-
-const PROCESS_NAMES = ['vite', 'dotnet'] as const
