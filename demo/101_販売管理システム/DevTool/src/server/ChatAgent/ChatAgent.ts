@@ -1,5 +1,5 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider"
-import { convertToModelMessages, stepCountIs, streamText, tool, type UIMessage } from "ai"
+import { convertToModelMessages, createUIMessageStreamResponse, stepCountIs, streamText, tool, toUIMessageStream, type UIMessage } from "ai"
 import { z } from "zod"
 import { ProjectFiles } from "../ProjectFiles.ts"
 import { CurrentState } from "./CurrentState.ts"
@@ -29,14 +29,17 @@ function buildSystemPrompt(context: SessionContext): string {
 - ユーザーの中でも明確化されていない情報（このシステムの目的、スコープ、仕様）を
   明確化するための意思決定の補助をする
 - このシステムへの具体的な機能追加や不具合修正を行う
-- ユーザーの意図が上記いずれに該当するか明確でない場合に、明確化するための問いかけをする
+- 上記のタスクを遂行するに十分な情報が集まるまで情報収集を行う
 
 # 対象システム
 名前: ${context.applicationName}
 現在時刻(UTC): ${context.currentTimeUtc}
 
 # ルール
-- 応答に markdown は使えない。プレーンテキストで返すこと。
+- 応答はマークダウン記法を使わずにすること。
+- どこまでユーザーの意図を明確化しその意図に沿うかと、
+  どこから推測で進めるかのバランス自体をユーザーの意図に沿うようにすること。
+  このバランスが明確でない状況では結論を急がず、明確化するためのユーザーへの問いかけを積極的に行うこと。
 - プロジェクトの中身に関する質問には、憶測で答えず list_files / read_file ツールで実際のファイルを確認してから答えること。
 `.trim()
 }
@@ -87,12 +90,15 @@ export class ChatAgent {
       },
     })
 
-    return result.toUIMessageStreamResponse({
-      originalMessages: currentState.currentSession,
-      onFinish: async ({ messages }) => {
-        currentState.currentSession = messages
-        await this.#currentState.save(currentState)
-      },
+    return createUIMessageStreamResponse({
+      stream: toUIMessageStream({
+        stream: result.stream,
+        originalMessages: currentState.currentSession,
+        onFinish: async ({ messages }) => {
+          currentState.currentSession = messages
+          await this.#currentState.save(currentState)
+        },
+      }),
     })
   }
 

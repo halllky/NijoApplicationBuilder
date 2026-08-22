@@ -31,16 +31,19 @@ const chatAgent = new ChatAgent(demo101Root, currentState)
 
 const app = new Hono()
 
-// デバッグ実行プロセスの起動・停止・再起動。
-// process クエリパラメータを指定すればそのプロセスのみ、未指定なら全プロセスを対象とする。
+//#region デバッグ
+
+// デバッグ実行プロセスの起動
 app.post("/devtool-api/preview/start", async c => {
   await preview.start(c.req.query("process"))
   return c.body(null, 204)
 })
+// デバッグ実行プロセスの停止
 app.post("/devtool-api/preview/stop", async c => {
   await preview.stop(c.req.query("process"))
   return c.body(null, 204)
 })
+// デバッグ実行プロセスの再起動
 app.post("/devtool-api/preview/restart", async c => {
   await preview.restart(c.req.query("process"))
   return c.body(null, 204)
@@ -59,6 +62,8 @@ app.post("/devtool-api/preview/state", async c => {
   }
   return c.json(response)
 })
+
+//#endregion デバッグ
 
 //#region アプリケーション設定
 
@@ -102,22 +107,31 @@ app.get("/devtool-api/openrouter/models", async c => {
 })
 //#endregion アプリケーション設定
 
-// 変更計画の一覧・詳細取得（読み取り専用。登録処理は別スコープ）
+//#region 変更計画
+
+// 変更計画の一覧
 app.get("/devtool-api/plans", async c => {
   return c.json(await changePlans.list())
 })
+
+// 変更計画1件の詳細
 app.get("/devtool-api/plans/:id", async c => {
   const detail = await changePlans.read(c.req.param("id"))
   if (!detail) return c.json({ error: "指定された変更計画が見つかりません。" }, 404)
   return c.json(detail)
 })
 
-// 要件ヒアリングのチャット。
-// 会話履歴はサーバー側（.nijo/current-state.json）が正であり、クライアントからは最新のユーザー発言だけを受け取る。
-app.get("/devtool-api/chat", async c => {
+//#endregion 変更計画
+
+//#region AIチャット
+
+// チャット欄表示時の現在セッション状態同期
+app.get("/devtool-api/current-session", async c => {
   const { currentSession } = await currentState.load()
   return c.json(currentSession)
 })
+
+// チャットメッセージ送信。 Vercel AI SDK の規約準拠のエンドポイント
 app.post("/devtool-api/chat", async c => {
   const apiKey = await chatAgentApiKey.read()
   if (!apiKey) return c.json({ error: "OpenRouter APIキーが未設定です。設定画面から登録してください。" }, 400)
@@ -127,11 +141,13 @@ app.post("/devtool-api/chat", async c => {
   return await chatAgent.respond(messages.at(-1), { apiKey, model: chatModel })
 })
 
-// 会話の仕切り直し。現在のセッションを latestSessions に退避し、currentSession を空にする。
+// 新規セッション開始
 app.post("/devtool-api/new-chat", async c => {
   await currentState.startNewSession()
   return c.body(null, 204)
 })
+
+//#endregion AIチャット
 
 const server = serve({
   fetch: app.fetch,

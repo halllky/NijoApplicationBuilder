@@ -18,7 +18,7 @@ export const ChatPane: React.FC<{ onApiKeyMissing: () => void }> = ({ onApiKeyMi
   // 表示時（マウント時）にサーバー側に永続化された会話履歴と同期する
   React.useEffect(() => {
     let canceled = false
-    fetch('/devtool-api/chat')
+    fetch('/devtool-api/current-session')
       .then(res => res.ok ? res.json() : null)
       .then(history => { if (!canceled && history) setMessages(history) })
       .finally(() => { if (!canceled) setIsLoadingHistory(false) })
