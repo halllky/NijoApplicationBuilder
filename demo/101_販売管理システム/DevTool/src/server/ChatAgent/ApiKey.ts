@@ -1,18 +1,18 @@
 import type { ApiKeyStorage } from "../../shared/devtool-api.ts"
 
 const KEYCHAIN_SERVICE_NAME = "nijo-devtool"
-const KEYCHAIN_ACCOUNT_NAME = "anthropic-api-key"
+const KEYCHAIN_ACCOUNT_NAME = "openrouter-api-key"
 
 type Keychain = typeof import("@github/keytar")
 
 /**
- * Anthropic APIキーをOSキーチェーンに保管・取得する。
- * キーチェーンが使えない環境では環境変数 ANTHROPIC_API_KEY にフォールバックする。
+ * OpenRouter APIキーをOSキーチェーンに保管・取得する。
+ * キーチェーンが使えない環境では環境変数 OPENROUTER_API_KEY にフォールバックする。
  * キーはこのクラスの外（ブラウザ側）に一切渡さない。
  */
 export class ApiKey {
 
-  static readonly ENV_ANTHROPIC = "ANTHROPIC_API_KEY"
+  static readonly ENV_OPENROUTER = "OPENROUTER_API_KEY"
 
   #keychainResolved = false
   #keychainCache: Keychain | null = null
@@ -23,7 +23,7 @@ export class ApiKey {
       const stored = await keychain.getPassword(KEYCHAIN_SERVICE_NAME, KEYCHAIN_ACCOUNT_NAME)
       if (stored) return stored
     }
-    return process.env[ApiKey.ENV_ANTHROPIC] ?? null
+    return process.env[ApiKey.ENV_OPENROUTER] ?? null
   }
 
   /** キーチェーンへ保存する。キーチェーンが使えない環境では失敗を示す false を返す。 */
@@ -44,7 +44,7 @@ export class ApiKey {
   async storage(): Promise<ApiKeyStorage> {
     const keychain = await this.#keychain()
     if (keychain) return "keychain"
-    return process.env[ApiKey.ENV_ANTHROPIC] ? "environmentVariable" : "unavailable"
+    return process.env[ApiKey.ENV_OPENROUTER] ? "environmentVariable" : "unavailable"
   }
 
   /**

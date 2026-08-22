@@ -2,7 +2,7 @@ import React from "react"
 import type { DevToolSettings } from "../../shared/devtool-api"
 
 /**
- * DevTool の設定（チャット・コーディング両エージェントのモデル、Anthropic APIキーの登録状態）を
+ * DevTool の設定（チャット・コーディング両エージェントのモデル、OpenRouter APIキーの登録状態）を
  * 取得・更新する。APIキー本体はサーバーから返されず、登録済みかどうかのみを扱う。
  */
 export function useDevToolSettings() {

@@ -4,8 +4,8 @@ import path from "node:path"
 
 const ENV_KEY_CHAT_MODEL = "DEVTOOL_CHAT_MODEL"
 const ENV_KEY_CODING_MODEL = "DEVTOOL_CODING_MODEL"
-const DEFAULT_CHAT_MODEL = "claude-opus-5"
-const DEFAULT_CODING_MODEL = "claude-opus-5"
+const DEFAULT_CHAT_MODEL = "nvidia/nemotron-3-super-120b-a12b:free"
+const DEFAULT_CODING_MODEL = "nvidia/nemotron-3-super-120b-a12b:free"
 
 /** チャット・コーディング両エージェントのモデル設定を .env.local / .env に保管・取得する。 */
 export class DotEnv {

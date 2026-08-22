@@ -6,8 +6,9 @@ import type { UIMessage } from "ai"
 import { Preview, type PreviewProcessDefinition } from "./Preview.ts"
 import { ChangePlan } from "./ChangePlan.ts"
 import { ApiKey, ChatAgent, CurrentState } from "./ChatAgent"
-import { PREVIEW_TARGET_ORIGIN, type DevToolSettings, type PreviewStateRequest, type PreviewStateResponse } from "../shared/devtool-api.ts"
+import { PREVIEW_TARGET_ORIGIN, type DevToolSettings, type OpenRouterModelsResponse, type PreviewStateRequest, type PreviewStateResponse } from "../shared/devtool-api.ts"
 import { DotEnv } from "./DotEnv.ts"
+import { OpenRouterModels } from "./OpenRouterModels.ts"
 
 const PORT = 5184
 
@@ -23,6 +24,7 @@ const PREVIEW_PROCESS_DEFINITIONS: readonly PreviewProcessDefinition[] = [
 const preview = new Preview(demo101Root, PREVIEW_PROCESS_DEFINITIONS, PREVIEW_TARGET_ORIGIN)
 const chatAgentApiKey = new ApiKey()
 const dotEnv = new DotEnv(devToolRoot)
+const openRouterModels = new OpenRouterModels()
 const changePlans = new ChangePlan(devToolRoot)
 const currentState = new CurrentState(devToolRoot)
 const chatAgent = new ChatAgent(demo101Root, currentState)
@@ -80,17 +82,23 @@ app.put("/devtool-api/settings/api-key", async c => {
   const body = await c.req.json<{ apiKey: string }>()
   const apiKey = body.apiKey.trim()
   // 半角ASCII文字以外（誤って別の文字列を貼り付けた場合など）を弾く。
-  // ここで弾かないと、後段のAnthropic SDKがHTTPヘッダー生成時に投げる分かりにくいエラーで落ちる。
+  // ここで弾かないと、後段のAI SDKプロバイダーがHTTPヘッダー生成時に投げる分かりにくいエラーで落ちる。
   if (!/^[\x21-\x7e]+$/.test(apiKey)) {
-    return c.json({ error: "APIキーの形式が不正です。sk-ant- から始まる半角英数字の文字列を入力してください。" }, 400)
+    return c.json({ error: "APIキーの形式が不正です。sk-or-v1- から始まる半角英数字の文字列を入力してください。" }, 400)
   }
   const saved = await chatAgentApiKey.write(apiKey)
-  if (!saved) return c.json({ error: `この環境ではOSキーチェーンが使えません。環境変数 ${ApiKey.ENV_ANTHROPIC} を設定してください。` }, 501)
+  if (!saved) return c.json({ error: `この環境ではOSキーチェーンが使えません。環境変数 ${ApiKey.ENV_OPENROUTER} を設定してください。` }, 501)
   return c.json(await readSettings())
 })
 app.delete("/devtool-api/settings/api-key", async c => {
   await chatAgentApiKey.delete()
   return c.json(await readSettings())
+})
+
+// OpenRouterで選択可能なモデルの一覧（設定画面のドロップダウン用）
+app.get("/devtool-api/openrouter/models", async c => {
+  const response: OpenRouterModelsResponse = await openRouterModels.list()
+  return c.json(response)
 })
 //#endregion アプリケーション設定
 
@@ -112,7 +120,7 @@ app.get("/devtool-api/chat", async c => {
 })
 app.post("/devtool-api/chat", async c => {
   const apiKey = await chatAgentApiKey.read()
-  if (!apiKey) return c.json({ error: "Anthropic APIキーが未設定です。設定画面から登録してください。" }, 400)
+  if (!apiKey) return c.json({ error: "OpenRouter APIキーが未設定です。設定画面から登録してください。" }, 400)
 
   const { messages } = await c.req.json<{ messages: UIMessage[] }>()
   const { chatModel } = await readSettings()

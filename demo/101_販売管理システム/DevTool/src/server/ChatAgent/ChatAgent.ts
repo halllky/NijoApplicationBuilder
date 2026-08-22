@@ -1,4 +1,4 @@
-import { createAnthropic } from "@ai-sdk/anthropic"
+import { createOpenRouter } from "@openrouter/ai-sdk-provider"
 import { convertToModelMessages, stepCountIs, streamText, tool, type UIMessage } from "ai"
 import { z } from "zod"
 import { ProjectFiles } from "../ProjectFiles.ts"
@@ -67,10 +67,11 @@ export class ChatAgent {
     if (newUserMessage) currentState.currentSession.push(newUserMessage)
 
     const sessionContext = await buildSessionContext(this.#demo101Root)
-    const anthropic = createAnthropic({ apiKey: options.apiKey })
+    // OpenRouter API を直接叩くので strict モードを指定する（互換モードでは streamOptions 等が送られない）。
+    const openrouter = createOpenRouter({ apiKey: options.apiKey, compatibility: "strict" })
 
     const result = streamText({
-      model: anthropic(options.model),
+      model: openrouter.chat(options.model),
       system: buildSystemPrompt(sessionContext),
       messages: await convertToModelMessages(currentState.currentSession),
       tools: this.#tools(),

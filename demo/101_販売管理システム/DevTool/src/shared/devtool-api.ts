@@ -81,6 +81,22 @@ export type DevToolSettings = {
   hasApiKey: boolean
 }
 
+/** OpenRouter で選択可能なモデル。ツール呼び出し対応の無料モデルのみが対象。 */
+export type OpenRouterModel = {
+  /** モデルID。エージェント設定（chatModel / codingModel）に保存される値そのもの。 */
+  id: string
+  /** 画面表示用の名称。 */
+  name: string
+  /** コンテキストウィンドウのトークン数。 */
+  contextLength: number
+}
+
+/** /devtool-api/openrouter/models のレスポンス。取得に失敗した場合も200を返し、error にメッセージを載せる。 */
+export type OpenRouterModelsResponse = {
+  models: OpenRouterModel[]
+  error?: string
+}
+
 //#endregion アプリ設定
 
 //#region エージェント
