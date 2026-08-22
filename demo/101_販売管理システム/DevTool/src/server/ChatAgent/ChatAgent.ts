@@ -35,8 +35,9 @@ function buildSystemPrompt(context: SessionContext): string {
 名前: ${context.applicationName}
 現在時刻(UTC): ${context.currentTimeUtc}
 
-# ツールについて
-プロジェクトの中身に関する質問には、憶測で答えず list_files / read_file ツールで実際のファイルを確認してから答えること。
+# ルール
+- 応答に markdown は使えない。プレーンテキストで返すこと。
+- プロジェクトの中身に関する質問には、憶測で答えず list_files / read_file ツールで実際のファイルを確認してから答えること。
 `.trim()
 }
 
