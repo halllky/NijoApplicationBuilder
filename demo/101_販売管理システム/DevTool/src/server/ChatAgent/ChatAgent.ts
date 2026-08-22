@@ -3,6 +3,8 @@ import { convertToModelMessages, createUIMessageStreamResponse, stepCountIs, str
 import { z } from "zod"
 import { ProjectFiles } from "../ProjectFiles.ts"
 import { CurrentState } from "./CurrentState.ts"
+import { readOnlyFileTools } from "./ProjectFileTools.ts"
+import { CODE_RESEARCH_DOMAIN, ResearchAgent, SCHEMA_RESEARCH_DOMAIN, SCREEN_RESEARCH_DOMAIN } from "./ResearchAgent.ts"
 import { buildSessionContext, type SessionContext } from "./SessionContext.ts"
 
 /**
@@ -35,12 +37,18 @@ function buildSystemPrompt(context: SessionContext): string {
 名前: ${context.applicationName}
 現在時刻(UTC): ${context.currentTimeUtc}
 
+# プロジェクトのフォルダ構成
+${context.projectStructureOverview}
+
 # ルール
-- 応答はマークダウン記法を使わずにすること。
-- どこまでユーザーの意図を明確化しその意図に沿うかと、
-  どこから推測で進めるかのバランス自体をユーザーの意図に沿うようにすること。
-  このバランスが明確でない状況では結論を急がず、明確化するためのユーザーへの問いかけを積極的に行うこと。
-- プロジェクトの中身に関する質問には、憶測で答えず list_files / read_file ツールで実際のファイルを確認してから答えること。
+- マークダウン記法を使わず自然な文章で回答すること。
+- ユーザーの意図が不明瞭な場合は積極的にユーザーに質問すること。
+  このターンで回答を確定させることよりも明確なユーザーの意図に基づくことを優先する。
+- プロジェクトの中身に関する調査で広く探す必要がある場合は research_schema / research_code / research_screen に委譲すること。
+  読むべきファイルが既に特定できている場合のみ list_files / read_file を直接使ってよい。
+- 利用者はプログラミングの素養がなく、画面を見ながら話しかけてくる。発話中の画面名・項目名・ボタン名の実装上の在り処が不明な場合は、
+  まず research_screen で実装上の名前に翻訳してから他の調査に進むこと。
+- research_* の回答に含まれる「分からなかったこと」は、推測で埋めず、ユーザーへの問いかけに変換すること。
 `.trim()
 }
 
@@ -49,6 +57,8 @@ export class ChatAgent {
   readonly #demo101Root: string
   readonly #projectFiles: ProjectFiles
   readonly #currentState: CurrentState
+  /** 知識領域ごとの調査役。ChatAgent 自身は問いを投げるだけで、実際の探索はここに委ねる。 */
+  readonly #researchAgents: readonly ResearchAgent[]
 
   /**
    * @param demo101Root 編集対象プロジェクト（デモ101アプリ）のルートディレクトリ。ツールが読めるファイルの範囲はここに限定される。
@@ -58,6 +68,11 @@ export class ChatAgent {
     this.#demo101Root = demo101Root
     this.#projectFiles = new ProjectFiles(demo101Root)
     this.#currentState = currentState
+    this.#researchAgents = [
+      new ResearchAgent(this.#projectFiles, SCHEMA_RESEARCH_DOMAIN),
+      new ResearchAgent(this.#projectFiles, CODE_RESEARCH_DOMAIN),
+      new ResearchAgent(this.#projectFiles, SCREEN_RESEARCH_DOMAIN),
+    ]
   }
 
   /**
@@ -77,7 +92,7 @@ export class ChatAgent {
       model: openrouter.chat(options.model),
       system: buildSystemPrompt(sessionContext),
       messages: await convertToModelMessages(currentState.currentSession),
-      tools: this.#tools(),
+      tools: this.#tools(sessionContext, options),
       stopWhen: stepCountIs(MAX_STEPS),
       // ステップ上限に達する最後のステップではツールを使わせず、必ず文章で回答させる。
       // これが無いと、上限到達時にツール呼び出し直後で応答が打ち切られ、ユーザーには「何も返ってこない」ように見えてしまう。
@@ -102,29 +117,27 @@ export class ChatAgent {
     })
   }
 
-  /** このエージェントが使えるツール一覧。現時点ではプロジェクトファイルの読み取りのみ（書き込みは行わない）。 */
-  #tools() {
+  /**
+   * このエージェントが使えるツール一覧。
+   * list_files / read_file は読むファイルが特定できている場合の直接アクセス用。
+   * 広く探す調査は research_schema / research_code / research_screen（各 {@link ResearchAgent}）に委譲する。
+   * 書き込みはこのエージェントの責務ではない。
+   */
+  #tools(sessionContext: SessionContext, options: { apiKey: string, model: string }) {
+    const researchTools = Object.fromEntries(this.#researchAgents.map(agent => [
+      agent.toolName,
+      tool({
+        description: agent.description,
+        inputSchema: z.object({
+          question: z.string().describe("調査してほしい内容。具体的な問いの形で渡すこと。"),
+        }),
+        execute: async ({ question }) => await agent.research(question, sessionContext, options),
+      }),
+    ]))
+
     return {
-      list_files: tool({
-        description: "プロジェクト内の指定ディレクトリ直下のファイル・サブディレクトリ一覧を返す。ディレクトリはサブディレクトリ末尾に '/' が付く。",
-        inputSchema: z.object({
-          path: z.string().describe("一覧したいディレクトリのプロジェクトルートからの相対パス。ルート自体を見る場合は '.' を指定する。"),
-        }),
-        execute: async ({ path }) => {
-          const entries = await this.#projectFiles.list(path)
-          return entries ?? { error: `ディレクトリが見つかりません: ${path}` }
-        },
-      }),
-      read_file: tool({
-        description: "プロジェクト内の指定ファイルの内容をテキストとして返す。",
-        inputSchema: z.object({
-          path: z.string().describe("読みたいファイルのプロジェクトルートからの相対パス。"),
-        }),
-        execute: async ({ path }) => {
-          const content = await this.#projectFiles.read(path)
-          return content ?? { error: `ファイルが見つかりません: ${path}` }
-        },
-      }),
+      ...readOnlyFileTools(this.#projectFiles),
+      ...researchTools,
     }
   }
 }

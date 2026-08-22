@@ -152,10 +152,17 @@ const ToolCallBadge: React.FC<{ part: ToolUIPart<UITools> | DynamicToolUIPart }>
     )
   }
 
-  // input-streaming / input-available / approval-* のいずれも「実行中」として一括りに表示する
+  // input-streaming / input-available / approval-* のいずれも「実行中」として一括りに表示する。
+  // research_* は数十秒かかることがあるため、何を調べさせているか（input）が分かるようにしておく。
+  const input: unknown = part.input
+  const questionText = input && typeof input === 'object' && 'question' in input && typeof input.question === 'string'
+    ? input.question
+    : null
+
   return (
     <div className="text-xs text-gray-500 border border-gray-200 rounded px-2 py-1 my-1 bg-white animate-pulse">
       {name} を実行中…
+      {questionText && <div className="mt-1 text-gray-400 whitespace-pre-wrap">{questionText}</div>}
     </div>
   )
 }
