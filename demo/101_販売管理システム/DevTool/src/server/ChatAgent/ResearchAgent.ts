@@ -1,7 +1,7 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider"
 import { generateText, stepCountIs } from "ai"
 import type { ProjectFiles } from "../ProjectFiles.ts"
-import type { AgentCallOptions } from "./ChatTurn.ts"
+import type { AgentCallOptions } from "./ChatTurnLogger.ts"
 import type { SessionContext } from "./SessionContext.ts"
 
 /** 1回の調査あたりツール呼び出しを重ねてよい最大ステップ数 */
@@ -70,7 +70,7 @@ export class ResearchAgent {
       tools: this.#projectFiles.buildAiTools(),
       stopWhen: stepCountIs(MAX_RESEARCH_STEPS),
       abortSignal: options.abortSignal,
-      telemetry: { functionId: `research.${this.#domain.toolName.replace(/^research_/, "")}`, integrations: [options.turn] },
+      telemetry: { functionId: `research.${this.#domain.toolName.replace(/^research_/, "")}`, integrations: [options.turnLogger] },
     })
 
     const steps = result.steps.length

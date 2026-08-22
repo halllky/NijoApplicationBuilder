@@ -5,7 +5,7 @@ import { serve } from "@hono/node-server"
 import { Hono } from "hono"
 import type { UIMessage, Warning } from "ai"
 import { Preview, type PreviewProcessDefinition } from "./Preview.ts"
-import { ApiKey, ChatTurn, RootAgent, ChatSession, extractMessageText } from "./ChatAgent"
+import { ApiKey, ChatTurnLogger, RootAgent, ChatSession, extractMessageText } from "./ChatAgent"
 import { PREVIEW_TARGET_ORIGIN, type DevToolSettings, type DevToolStateRequest, type DevToolStateResponse, type OpenRouterModelsResponse } from "../shared/devtool-api.ts"
 import { DotEnv } from "./DotEnv.ts"
 import { OpenRouterModels } from "./OpenRouterModels.ts"
@@ -189,13 +189,16 @@ app.post("/devtool-api/sessions/:id/chat", async c => {
   const { chatModel } = await readSettings()
   const sessionId = c.req.param("id")
   const newUserMessage = messages.at(-1)
-
-  // 利用者に見える発話は全文を常にログへ残す（AI内部の入出力はトレースファイル側）
   const log = c.get("log").scoped({ sessionId })
-  log.conversation("chat.user.message", { text: extractMessageText(newUserMessage) })
+  const turnLogger = new ChatTurnLogger(log)
 
-  const turn = new ChatTurn(log)
-  return await rootAgent.respond(sessionId, newUserMessage, { apiKey, model: chatModel, turn, log, abortSignal: c.req.raw.signal })
+  return await rootAgent.respond(sessionId, newUserMessage, {
+    apiKey,
+    model: chatModel,
+    turnLogger,
+    log,
+    abortSignal: c.req.raw.signal,
+  })
 })
 
 //#endregion チャットセッション

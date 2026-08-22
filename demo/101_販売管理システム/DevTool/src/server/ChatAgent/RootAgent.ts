@@ -2,7 +2,7 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider"
 import { convertToModelMessages, createUIMessageStreamResponse, stepCountIs, streamText, tool, toUIMessageStream, type UIMessage } from "ai"
 import { z } from "zod"
 import { ProjectFiles } from "../ProjectFiles.ts"
-import type { AgentCallOptions } from "./ChatTurn.ts"
+import type { AgentCallOptions } from "./ChatTurnLogger.ts"
 import { ChatSession } from "./ChatSession.ts"
 import { CODE_RESEARCH_DOMAIN, ResearchAgent, SCHEMA_RESEARCH_DOMAIN, SCREEN_RESEARCH_DOMAIN } from "./ResearchAgent.ts"
 import { buildSessionContext, type SessionContext } from "./SessionContext.ts"
@@ -112,6 +112,9 @@ export class RootAgent {
    * （主エージェント・サブエージェントのLLM呼び出し・ツール呼び出しを1つの計器にまとめるため）。
    */
   async respond(sessionId: string, newUserMessage: UIMessage | undefined, options: AgentCallOptions): Promise<Response> {
+    // 利用者に見える発話は全文を常にログへ残す
+    options.log.conversation("chat.user.message", { text: extractMessageText(newUserMessage) })
+
     const session = await this.#chatSession.read(sessionId)
     if (!session) return Response.json({ error: "指定されたチャットセッションが見つかりません。" }, { status: 404 })
     if (newUserMessage) session.messages.push(newUserMessage)
@@ -147,7 +150,7 @@ export class RootAgent {
       },
       // 消えたブラウザタブのために残りのステップを焼き続けないよう、接続断でループを打ち切る。
       abortSignal: options.abortSignal,
-      telemetry: { functionId: "chat.root", integrations: [options.turn] },
+      telemetry: { functionId: "chat.root", integrations: [options.turnLogger] },
     })
 
     return createUIMessageStreamResponse({
@@ -158,7 +161,7 @@ export class RootAgent {
           // 変更計画を保持したままのセッションごと保存する
           session.messages = messages
 
-          const summary = options.turn.summary()
+          const summary = options.turnLogger.summary()
           options.log.conversation("chat.assistant.message", { text: extractMessageText(responseMessage) })
           options.log.info("chat.turn.finish", { ...summary, isAborted, finishReason, steppedToCap: summary.steps === MAX_STEPS })
 

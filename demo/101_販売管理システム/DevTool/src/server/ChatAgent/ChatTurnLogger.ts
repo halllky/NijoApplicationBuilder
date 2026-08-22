@@ -3,15 +3,14 @@ import type { ServerLog } from "../ServerLog.ts"
 
 /**
  * RootAgent.respond から ResearchAgent.research まで、LLM呼び出しの1回1回に共通して必要になる値。
- * turn は同じユーザーターンの中で作られた呼び出し（主エージェント・サブエージェントの双方）を
- * 1つの計器にまとめるために使う（{@link ChatTurn} 参照）。abortSignal はブラウザが接続を切った際に
- * 進行中のLLM呼び出し・ツール呼び出しを打ち切るために使う。
  */
 export type AgentCallOptions = {
   apiKey: string
   model: string
-  turn: ChatTurn
+  /** 同じユーザーターンの中で作られた呼び出しを1つの計器にまとめるために使う */
+  turnLogger: ChatTurnLogger
   log: ServerLog
+  /** ブラウザが接続を切った際に進行中のLLM呼び出し・ツール呼び出しを打ち切るために使う。 */
   abortSignal: AbortSignal
 }
 
@@ -33,10 +32,10 @@ type TelemetryEvent<Name extends keyof Telemetry> = Telemetry[Name] extends ((ev
  *
  * onEnd はあえて実装しない: streamText の telemetry.onEnd はストリームが最後まで読み切られたときしか
  * 発火せず、ブラウザがタブを閉じた場合には飛ばない。ターン終了の1行は
- * toUIMessageStream の onEnd（cancel でも発火する）側で {@link ChatTurn.summary} を読んで出す
+ * toUIMessageStream の onEnd（cancel でも発火する）側で {@link ChatTurnLogger.summary} を読んで出す
  * （RootAgent.ts 参照）。これによりターン終了ログが二重に出ることも構造的に無くなる。
  */
-export class ChatTurn implements Telemetry {
+export class ChatTurnLogger implements Telemetry {
   readonly #log: ServerLog
   #steps = 0
   #tokensIn = 0

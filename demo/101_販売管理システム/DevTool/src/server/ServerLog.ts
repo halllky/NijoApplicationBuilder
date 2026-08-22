@@ -156,14 +156,6 @@ function enqueueFileAppend(filePath: string, line: string): void {
 
 /**
  * ログ出力の窓口。DevToolサーバー内のあらゆる場所から `import { serverLog } from "./ServerLog.ts"` で使う。
- *
- * - info/warn/error: 境界・節目・劣化・失敗の1行ログ。stdout(info) / stderr(warn,error) へ。LOG_LEVEL で絞り込める。
- * - conversation: 利用者に見える発話（ユーザー入力・AIの最終回答）。レベル制御・切り詰めをせず常に全文を stdout へ。
- * - trace: AIエージェント内部の全文（プロンプト・ツール引数・結果・サブエージェント問答）。
- *   stdout/stderr には出さず、ローカルでは .nijo/logs/<sessionId>.jsonl へ、fly.io では volume が無いため stdout へ出す。
- * - scoped: requestId・sessionId 等の相関フィールドを固定した子ロガーを作る。呼び出し側が明示的に引き回す
- *   （コンストラクタ注入にしない理由は、warn を出したい箇所が複数クラスに散らばっており、
- *   全クラスのコンストラクタを汚すのに見合わないため。設計規約「ログの置き場所は一律に定めない」に従う）。
  */
 export class ServerLog {
   readonly #fields: LogFields
@@ -172,23 +164,35 @@ export class ServerLog {
     this.#fields = fields
   }
 
+  /** stdout に出す */
   info(event: string, fields?: LogFields): void {
     this.#emit("info", event, fields)
   }
 
+  /** stderr に出す */
   warn(event: string, fields?: LogFields): void {
     this.#emit("warn", event, fields)
   }
 
+  /** stderr に出す */
   error(event: string, fields?: LogFields): void {
     this.#emit("error", event, fields)
   }
 
+  /**
+   * 利用者に見える発話（ユーザー入力・AIの最終回答）。
+   * レベル制御・切り詰めをせず常に全文を stdout へ。
+   */
   conversation(event: string, fields: LogFields): void {
     const merged = prepareFields({ ...this.#fields, ...fields }, false)
     process.stdout.write(`${buildRecord("info", event, merged)}\n`)
   }
 
+  /**
+   * AIエージェント内部の全文（プロンプト・ツール引数・結果・サブエージェント問答）。
+   * stdout/stderr には出さず、ローカルでは .nijo/logs/<sessionId>.jsonl へ、
+   * fly.io では volume が無いため stdout へ出す。
+   */
   trace(event: string, fields: LogFields): void {
     const merged = prepareFields({ ...this.#fields, ...fields }, false)
     const sessionId = typeof merged.sessionId === "string" ? merged.sessionId : "misc"
@@ -200,6 +204,10 @@ export class ServerLog {
     }
   }
 
+  /**
+   * scoped: requestId・sessionId 等の相関フィールドを固定した子ロガーを作る。
+   * 呼び出し側が明示的に引き回す。
+   */
   scoped(fields: LogFields): ServerLog {
     return new ServerLog({ ...this.#fields, ...fields })
   }
