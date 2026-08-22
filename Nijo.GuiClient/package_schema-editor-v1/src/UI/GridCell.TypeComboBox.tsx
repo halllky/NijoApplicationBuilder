@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useLayoutEffect, useImperativeHandle } from "react"
 import { createPortal } from "react-dom"
 import * as ReactHookForm from "react-hook-form"
-import * as EG2 from "@nijo/ui-components/layout/EditableGrid2"
+import * as EG2 from "@halllky/react-editable-grid"
 import { useSchemaCandidates } from "../ProjectPage/SchemaCandidatesContext"
 import { ATTR_TYPE, EditingMember, EditingMemberType } from "../backend"
 import { useFieldValidationError } from "../ProjectPage/useValidation"

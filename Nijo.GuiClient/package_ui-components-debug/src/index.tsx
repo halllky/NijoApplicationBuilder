@@ -11,7 +11,6 @@ import _007_グリッド機能 from "@nijo/ui-components/layout/DynamicForm/__te
 import FormLayoutPatternsDebugging from "./FormLayoutPatternsDebugging"
 import EditableGridDebugging from "./EditableGridDebugging"
 import EditableGridHookTest from "./EditableGridHookTest"
-import EditableGrid2Debugging from "./EditableGrid2Debugging"
 import GraphView2Debugging from "./GraphView2Debugging"
 import ReactContextDebugging from "./ReactContextDebugging"
 
@@ -73,11 +72,6 @@ export const getDebuggingPages = (): { groupName: string, links: (ReactRouter.Ro
   {
     groupName: '刷新後',
     links: [
-      {
-        path: '/editable-grid-2/001',
-        label: 'EditableGrid 2',
-        element: <EditableGrid2Debugging />,
-      },
       {
         path: '/graph-view-2/001',
         label: 'GraphView2 基本機能',

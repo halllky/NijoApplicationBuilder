@@ -1,5 +1,5 @@
 import React from "react"
-import * as EG2 from "@nijo/ui-components/layout/EditableGrid2"
+import * as EG2 from "@halllky/react-editable-grid"
 import { formatNumber } from "./formatNumber"
 
 /**

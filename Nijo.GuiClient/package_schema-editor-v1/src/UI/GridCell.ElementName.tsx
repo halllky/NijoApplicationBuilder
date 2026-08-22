@@ -1,6 +1,6 @@
 import React from "react"
 import * as ReactHookForm from "react-hook-form"
-import * as EG2 from "@nijo/ui-components/layout/EditableGrid2"
+import * as EG2 from "@halllky/react-editable-grid"
 import { TextCellEditor } from "./GridCell.Text"
 import { EditingMember } from "../backend"
 import { useFieldValidationError } from "../ProjectPage/useValidation"

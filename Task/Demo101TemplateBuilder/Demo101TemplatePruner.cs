@@ -181,6 +181,7 @@ public static class Demo101TemplatePruner {
         EditClientRoutes(workDir);
         EditClientUiComponentCatalog(workDir);
         EditClientDebugMenu(workDir);
+        EditClientTailwindConfig(workDir);
         ReplaceClientPackageJson(workDir);
     }
 
@@ -626,6 +627,34 @@ public static class Demo101TemplatePruner {
     }
 
     /// <summary>
+    /// デモ101の client/tailwind.config.ts は、このモノレポ内での相対パスで依存先パッケージの
+    /// ファイルを監視対象に含めている。テンプレートとして単体で展開されると client/ 自体が
+    /// 独立した npm パッケージ（node_modules は client/ 直下）になるため、パスを合わせる。
+    /// また @nijo/ui-components への参照（ER図デバッグ画面用）はそのデバッグ画面自体が
+    /// テンプレートから削除されるため不要になる。
+    /// </summary>
+    private static void EditClientTailwindConfig(string workDir) {
+        var path = Path.Combine(workDir, "client/tailwind.config.ts");
+
+        ReplaceExactlyOnce(
+            path,
+            """
+                "./index.html",
+                "./src/**/*.{js,ts,jsx,tsx}",
+                // 依存先パッケージ（ui-components）のファイルも監視対象に含める
+                "../../../Nijo.GuiClient/package_ui-components/src/**/*.{js,ts,jsx,tsx}",
+                // 依存先パッケージ（react-editable-grid）のビルド済みファイルも監視対象に含める
+                "../../../node_modules/@halllky/react-editable-grid/dist/**/*.js",
+            """,
+            """
+                "./index.html",
+                "./src/**/*.{js,ts,jsx,tsx}",
+                // 依存先パッケージ（react-editable-grid）のビルド済みファイルも監視対象に含める
+                "./node_modules/@halllky/react-editable-grid/dist/**/*.js",
+            """);
+    }
+
+    /// <summary>
     /// デモ101の client/package.json は、このモノレポの npm workspaces の一員として
     /// ルートの node_modules に依存関係をホイスティングしているため依存関係の記載がない。
     /// テンプレートとして単体で展開されたときに動作するよう、実際に使用しているパッケージを明記する。
@@ -649,7 +678,10 @@ public static class Demo101TemplatePruner {
                 "test:run": "vitest run"
               },
               "dependencies": {
+                "@halllky/react-editable-grid": "git+ssh://git@github.com/halllky/react-editable-grid.git#v0.1.0",
                 "@heroicons/react": "^2.2.0",
+                "@tanstack/react-table": "^8.21.3",
+                "@tanstack/react-virtual": "^3.14.2",
                 "allotment": "^1.20.5",
                 "react": "^19.2.7",
                 "react-dom": "^19.2.7",

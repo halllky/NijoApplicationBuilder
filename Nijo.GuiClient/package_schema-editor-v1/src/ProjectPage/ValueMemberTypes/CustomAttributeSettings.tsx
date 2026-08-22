@@ -8,7 +8,7 @@ import { EditingProject, EditingCustomAttribute } from "../../backend"
 import { UUID } from "uuidjs"
 import FormLayout from "@nijo/ui-components/layout/FormLayout"
 import { useFieldValidationError, useValidationErrorMessages } from "../useValidation"
-import * as EG2 from "@nijo/ui-components/layout/EditableGrid2"
+import * as EG2 from "@halllky/react-editable-grid"
 import * as UI from "../../UI"
 import { useSchemaEditorRule } from "../SchemaEditorRuleContext"
 

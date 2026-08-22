@@ -1,6 +1,6 @@
 import React from "react"
 import * as ReactHookForm from "react-hook-form"
-import { EditableGrid2Column, EditableGrid2LeafColumn, EditableGrid2Props, EditableGrid2Ref, EditableGridCellEditor, EditableGridCellEditorProps, EditableGridCellEditorRef } from "@nijo/ui-components/layout/EditableGrid2"
+import { EditableGrid2Column, EditableGrid2LeafColumn, EditableGrid2Props, EditableGrid2Ref, EditableGridCellEditor, EditableGridCellEditorProps, EditableGridCellEditorRef } from "@halllky/react-editable-grid"
 import { createTextCellHelper } from "./GridCell.Text"
 import { createCheckBoxCellHelper } from "./GridCell.CheckBox"
 import { createButtonCellHelper } from "./GridCell.Button"

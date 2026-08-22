@@ -1,7 +1,7 @@
 import React from "react"
 import * as ReactHookForm from "react-hook-form"
 import { EditingProject, EditingMember, EditingUniqueConstraint } from "../../../backend"
-import * as EG2 from "@nijo/ui-components/layout/EditableGrid2"
+import * as EG2 from "@halllky/react-editable-grid"
 import { TextCellEditor } from "../../../UI"
 import { asTree, TreeHelper } from "../../../asTree"
 import { RootAggregateLocation } from "../../rootAggregateLocation"

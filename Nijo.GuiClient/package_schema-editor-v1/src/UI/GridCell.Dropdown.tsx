@@ -1,6 +1,6 @@
 import React from "react"
 import * as ReactHookForm from "react-hook-form"
-import * as EG2 from "@nijo/ui-components/layout/EditableGrid2"
+import * as EG2 from "@halllky/react-editable-grid"
 import { useFieldValidationError } from "../ProjectPage/useValidation"
 
 export type CreateDropdownCellFunction = <TRow>(

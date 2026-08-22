@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@docusaurus/core": "3.10.1",
+    "@halllky/react-editable-grid": "git+ssh://git@github.com/halllky/react-editable-grid.git#v0.1.0",
     "@docusaurus/faster": "^3.10.1",
     "@docusaurus/preset-classic": "3.10.1",
     "@heroicons/react": "^2.2.0",
