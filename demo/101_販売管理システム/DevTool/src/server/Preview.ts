@@ -2,7 +2,7 @@ import path from "node:path"
 import { setTimeout as delay } from "node:timers/promises"
 import treeKillCallback from "tree-kill"
 import { execa, type ResultPromise } from "execa"
-import type { PreviewLogIncrement, PreviewProcessState } from "../shared/devtool-api.ts"
+import type { PreviewLogIncrement, PreviewProcessName, PreviewProcessState } from "../shared/devtool-api.ts"
 
 /** tree-kill はコールバックAPIのみを提供するため、Promise化して使う */
 function killTree(pid: number, signal: string): Promise<void> {
@@ -17,15 +17,26 @@ function killTree(pid: number, signal: string): Promise<void> {
 /** 停止要求からプロセスツリーの終了を待つ上限時間。超えたら強制終了へ切り替える */
 const STOP_TIMEOUT_MS = 10_000
 
+/** デバッグ対象アプリへの到達確認1回あたりのタイムアウト */
+const PROBE_TIMEOUT_MS = 1_000
+
 /** 1ストリームあたり保持する最大文字数。超えたら古い方から捨てる */
 const MAX_BUFFER_LENGTH = 256 * 1024
+
+/**
+ * ANSIエスケープシーケンス（色・カーソル移動等の制御文字）にマッチする正規表現。
+ * CSI（ESC [ ... 終端文字）と OSC（ESC ] ... BEL または ESC \）の両方を対象とする。
+ * チャンク単位で届く出力を都度この正規表現にかけるため、チャンクの境目でシーケンスが
+ * 分断された場合は除去しきれないことがある（実害は数バイトの制御文字が残る程度）。
+ */
+const ANSI_ESCAPE_PATTERN = /\x1B(?:\[[0-9;?]*[a-zA-Z]|\][^\x07\x1B]*(?:\x07|\x1B\\))/g
 
 /**
  * 並列起動するプロセス1件の定義。
  * cwd は Preview の projectRoot からの相対パス。
  */
 export type PreviewProcessDefinition = {
-  name: string
+  name: PreviewProcessName
   cwd: string
   fileName: string
   args: string[]
@@ -44,7 +55,9 @@ class OutputBuffer {
   #totalLength = 0
   #droppedLength = 0
 
-  append(chunk: string): void {
+  append(rawChunk: string): void {
+    // ツールが NO_COLOR を尊重せず色制御文字を出力してくる場合の保険として、蓄積前に取り除く
+    const chunk = rawChunk.replace(ANSI_ESCAPE_PATTERN, "")
     this.#text += chunk
     this.#totalLength += chunk.length
     if (this.#text.length > MAX_BUFFER_LENGTH) {
@@ -88,6 +101,7 @@ type RunningProcess = {
 export class Preview {
   readonly #projectRoot: string
   readonly #definitions: readonly PreviewProcessDefinition[]
+  readonly #targetOrigin: string
   readonly #running = new Map<string, RunningProcess>()
 
   /**
@@ -99,9 +113,10 @@ export class Preview {
    */
   #gate: Promise<unknown> = Promise.resolve()
 
-  constructor(projectRoot: string, definitions: readonly PreviewProcessDefinition[]) {
+  constructor(projectRoot: string, definitions: readonly PreviewProcessDefinition[], targetOrigin: string) {
     this.#projectRoot = projectRoot
     this.#definitions = definitions
+    this.#targetOrigin = targetOrigin
   }
 
   /**
@@ -158,6 +173,21 @@ export class Preview {
     return running[stream].read(fromOffset)
   }
 
+  /**
+   * デバッグ対象アプリのオリジンにHTTPで到達できるかを調べ、応答ステータスを返す。
+   * 未起動やタイムアウトなど、到達できない場合は null を返す。
+   */
+  async probeTargetStatus(): Promise<number | null> {
+    try {
+      const res = await fetch(this.#targetOrigin, { signal: AbortSignal.timeout(PROBE_TIMEOUT_MS), redirect: "manual" })
+      // ボディを読まないまま放置するとコネクションが溜まり続けるため、明示的に破棄する
+      await res.body?.cancel()
+      return res.status
+    } catch {
+      return null
+    }
+  }
+
   /** アプリケーション終了時（Ctrl+Cを含む）に稼働中のプロセスを確実に停止する */
   async stopAll(): Promise<void> {
     await this.stop()
@@ -187,6 +217,8 @@ export class Preview {
 
     const subprocess = execa(definition.fileName, definition.args, {
       cwd: path.join(this.#projectRoot, definition.cwd),
+      // 色変更のエスケープシーケンスがログに混ざって読みづらくなるのを防ぐ
+      env: { NO_COLOR: "1", FORCE_COLOR: "0" },
       buffer: false,
       reject: false,
       cleanup: true,

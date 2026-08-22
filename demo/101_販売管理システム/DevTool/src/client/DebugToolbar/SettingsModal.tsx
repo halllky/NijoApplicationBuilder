@@ -1,6 +1,7 @@
 import React from "react"
-import { XMarkIcon } from "@heroicons/react/24/outline"
-import { PreviewProcessState } from "./usePreviewState"
+import { XMarkIcon, ArrowTopRightOnSquareIcon, CheckCircleIcon, XCircleIcon, MinusCircleIcon } from "@heroicons/react/24/outline"
+import type { usePreviewState } from "../Preview"
+import { PREVIEW_PROCESS_NAMES, PREVIEW_TARGET_ORIGIN } from "../../shared/devtool-api"
 import { useDevToolSettings } from "./useDevToolSettings"
 
 /**
@@ -9,11 +10,10 @@ import { useDevToolSettings } from "./useDevToolSettings"
  * 閉じる操作（シェードクリック・閉じるボタン）は onClose を呼ぶだけで、
  * 実際に閉じるかどうかの判断はこのコンポーネントを呼ぶ側が行う。
  */
-export const SettingsModal = ({ open, onClose, processes, logs }: {
+export const SettingsModal = ({ open, onClose, preview }: {
   open: boolean
   onClose: () => void
-  processes: PreviewProcessState[]
-  logs: Record<string, { stdout: string, stderr: string }>
+  preview: ReturnType<typeof usePreviewState>
 }) => {
   if (!open) return null
 
@@ -36,32 +36,95 @@ export const SettingsModal = ({ open, onClose, processes, logs }: {
 
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-6">
 
-          {/* プロセス一覧・ログ */}
-          <div className="flex flex-col gap-4">
-            {processes.length === 0 && (
-              <p className="text-sm text-gray-500">稼働中のプロセスはありません。</p>
-            )}
-            {processes.map(p => (
-              <div key={p.name} className="flex flex-col gap-1">
-                {/* プロセス名と稼働状態 */}
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="font-bold">{p.name}</span>
-                  <span className={p.isRunning ? 'text-emerald-600' : 'text-gray-500'}>
-                    {p.isRunning ? `稼働中 (PID=${p.processId})` : `停止 (ExitCode=${p.exitCode ?? '?'})`}
-                  </span>
-                </div>
-                {/* 標準出力・標準エラー出力 */}
-                <LogPane text={logs[p.name]?.stdout ?? ''} />
-                <LogPane text={logs[p.name]?.stderr ?? ''} isError />
-              </div>
-            ))}
-          </div>
+          {/* プロセス一覧・操作・ログ */}
+          <ProcessListSection preview={preview} />
 
           {/* エージェント設定（APIキー・モデル） */}
           <AgentSettingsSection />
         </div>
       </div>
     </div>
+  )
+}
+
+/** デバッグ実行プロセス（vite・dotnet）の一覧。未起動のプロセスも行として表示し、開始できるようにする */
+const ProcessListSection: React.FC<{ preview: ReturnType<typeof usePreviewState> }> = ({ preview }) => {
+  const { processes, logs, start, stop, restart, isBusy } = preview
+  const processByName = React.useMemo(() => new Map(processes.map(p => [p.name, p])), [processes])
+
+  return (
+    <div className="flex flex-col gap-4">
+      {PREVIEW_PROCESS_NAMES.map(name => {
+        const state = processByName.get(name)
+        const running = state?.isRunning ?? false
+        return (
+          <div key={name} className="flex flex-col gap-1">
+            <div className="flex items-center gap-2 text-sm">
+              {/* プロセス名 */}
+              <span className="font-bold">{name}</span>
+
+              {/* 稼働状態 */}
+              <span className={running ? 'text-emerald-600' : 'text-gray-500'}>
+                {!state ? '未起動' : running ? `稼働中 (PID=${state.processId})` : `停止 (ExitCode=${state.exitCode ?? '?'})`}
+              </span>
+
+              {/* viteへの別タブリンク */}
+              {name === "vite" && (
+                <div className="flex items-center gap-2">
+                  <a
+                    href={PREVIEW_TARGET_ORIGIN}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 p-1 text-sm text-sky-700 underline hover:bg-gray-100 rounded"
+                    title="別タブで開く"
+                  >
+                    {PREVIEW_TARGET_ORIGIN}
+                    <ArrowTopRightOnSquareIcon className="w-5 h-5" />
+                  </a>
+                  <TargetStatusIndicator status={preview.targetStatus} />
+                </div>
+              )}
+
+              {/* 操作ボタン */}
+              <div className="ml-auto flex gap-1">
+                <button
+                  type="button"
+                  onClick={() => (running ? stop(name) : start(name))}
+                  disabled={isBusy}
+                  className="px-2 py-0.5 text-xs bg-gray-800 text-white rounded disabled:opacity-50"
+                >
+                  {running ? '停止' : '開始'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => restart(name)}
+                  disabled={isBusy}
+                  className="px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-100 rounded disabled:opacity-50"
+                >
+                  再起動
+                </button>
+              </div>
+            </div>
+            {/* 標準出力・標準エラー出力 */}
+            <LogPane text={logs[name]?.stdout ?? ''} />
+            <LogPane text={logs[name]?.stderr ?? ''} isError />
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/** デバッグ対象アプリへの到達状況の表示 */
+const TargetStatusIndicator: React.FC<{ status: number | null }> = ({ status }) => {
+  if (status === 200) return (
+    <CheckCircleIcon title="応答あり" className="h-4 w-4 text-emerald-600" />
+  )
+  if (status === null) return (
+    <XCircleIcon title="応答なし（プロセスが起動していないか、まだ準備中です）" className="h-4 w-4 text-gray-600" />
+  )
+  return (
+    <MinusCircleIcon title={`ステータス ${status} が返っています`} className="h-4 w-4 text-amber-600" />
   )
 }
 

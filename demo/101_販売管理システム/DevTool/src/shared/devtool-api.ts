@@ -7,6 +7,12 @@
 export const PREVIEW_PROCESS_NAMES = ['vite', 'dotnet'] as const
 export type PreviewProcessName = typeof PREVIEW_PROCESS_NAMES[number]
 
+/**
+ * デバッグ対象アプリ（生成後アプリの client）の vite dev server のオリジン。
+ * iframe の src、及びサーバー側の到達確認の両方がこの値を参照する唯一の出所。
+ */
+export const PREVIEW_TARGET_ORIGIN = 'http://localhost:5173/'
+
 /** プロセスごとの標準出力・標準エラー出力それぞれの既読オフセット */
 export type PreviewLogOffsets = {
   stdout: number
@@ -35,6 +41,8 @@ export type PreviewProcessState = {
 /** /devtool-api/preview/state のレスポンス */
 export type PreviewStateResponse = {
   processes: (PreviewProcessState & { stdout: PreviewLogIncrement, stderr: PreviewLogIncrement })[]
+  /** デバッグ対象アプリのオリジンへのHTTP応答ステータス。到達できない場合は null */
+  targetStatus: number | null
 }
 
 /** 変更プランの一覧表示用の要約 */

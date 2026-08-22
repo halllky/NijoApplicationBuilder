@@ -2,7 +2,7 @@ import React from "react"
 import { Bars2Icon, PlayIcon, StopIcon, ArrowPathIcon, Cog6ToothIcon, ChatBubbleLeftRightIcon } from "@heroicons/react/24/outline"
 import { SplitButton } from "../SplitButton"
 import { useDraggablePosition } from "./useDraggablePosition"
-import { usePreviewState } from "./usePreviewState"
+import type { usePreviewState } from "../Preview"
 import { SettingsModal } from "./SettingsModal"
 import { AgentPanel } from "../AgentPanel"
 import { PREVIEW_PROCESS_NAMES } from "../../shared/devtool-api"
@@ -10,10 +10,12 @@ import { PREVIEW_PROCESS_NAMES } from "../../shared/devtool-api"
 /**
  * デバッグ実行プロセス群を操作するための、ドラッグで移動できるフローティングツールバー。
  * VSCodeのデバッグツールバーに相当する。
+ * デバッグ実行プロセスの状態はAppが保持し、propsとして受け取る。
  */
-export function DebugToolbar() {
-  // デバッグ実行プロセスの状態・ログ取得とその操作
-  const { processes, logs, start, stop, restart, isBusy } = usePreviewState()
+export function DebugToolbar({ preview }: {
+  preview: ReturnType<typeof usePreviewState>
+}) {
+  const { processes, logs, start, stop, restart, isBusy } = preview
   // ツールバー自体のドラッグ移動（画面内に収まるようクランプするため自身の要素を参照する）
   const containerRef = React.useRef<HTMLDivElement>(null)
   const { position, handlePointerDown } = useDraggablePosition({ x: 16, y: 16 }, containerRef)
@@ -93,8 +95,7 @@ export function DebugToolbar() {
       <SettingsModal
         open={openPanel === 'settings'}
         onClose={() => setOpenPanel(null)}
-        processes={processes}
-        logs={logs}
+        preview={preview}
       />
 
       <AgentPanel

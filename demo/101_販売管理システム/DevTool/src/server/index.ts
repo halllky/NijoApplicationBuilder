@@ -7,7 +7,7 @@ import { Preview, type PreviewProcessDefinition } from "./Preview.ts"
 import { DevToolSettings } from "./DevToolSettings.ts"
 import { ChangePlan } from "./ChangePlan.ts"
 import { ChatAgent } from "./ChatAgent.ts"
-import type { PreviewStateRequest, PreviewStateResponse } from "../shared/devtool-api.ts"
+import { PREVIEW_TARGET_ORIGIN, type PreviewStateRequest, type PreviewStateResponse } from "../shared/devtool-api.ts"
 
 const PORT = 5184
 
@@ -20,7 +20,7 @@ const PREVIEW_PROCESS_DEFINITIONS: readonly PreviewProcessDefinition[] = [
   { name: "dotnet", cwd: "WebApi", fileName: "dotnet", args: ["run", "--launch-profile", "http"], appendStdout: false, appendStderr: true },
 ]
 
-const preview = new Preview(projectRoot, PREVIEW_PROCESS_DEFINITIONS)
+const preview = new Preview(projectRoot, PREVIEW_PROCESS_DEFINITIONS, PREVIEW_TARGET_ORIGIN)
 const settings = new DevToolSettings(path.join(clientRoot, ".env.local"))
 const changePlans = new ChangePlan(path.join(clientRoot, ".nijo", "plans"))
 const chatAgent = new ChatAgent()
@@ -51,6 +51,7 @@ app.post("/devtool-api/preview/state", async c => {
       stdout: preview.readLog(state.name, "stdout", request.offsets[state.name]?.stdout ?? 0),
       stderr: preview.readLog(state.name, "stderr", request.offsets[state.name]?.stderr ?? 0),
     })),
+    targetStatus: await preview.probeTargetStatus(),
   }
   return c.json(response)
 })

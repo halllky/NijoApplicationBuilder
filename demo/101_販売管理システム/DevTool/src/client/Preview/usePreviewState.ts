@@ -11,20 +11,27 @@ type PreviewLogText = { stdout: string, stderr: string }
 
 /**
  * デバッグ実行プロセス群の起動・停止・再起動と、
- * 稼働状態・ログの1秒間隔ポーリングを行う。
+ * 稼働状態・ログ・デバッグ対象アプリへの到達状況の1秒間隔ポーリングを行う。
  * processName を省略すると全プロセスが対象になる。
+ * デバッグ対象アプリが未応答から応答可能（HTTP 200）に変わった瞬間に onTargetReachable を呼ぶ。
  */
-export function usePreviewState() {
+export function usePreviewState({ onTargetReachable }: { onTargetReachable: () => void }) {
   const [processes, setProcesses] = React.useState<PreviewProcessState[]>([])
   const [logs, setLogs] = React.useState<Record<string, PreviewLogText>>({})
+  const [targetStatus, setTargetStatus] = React.useState<number | null>(null)
   const [isBusy, setIsBusy] = React.useState(false)
   const [error, setError] = React.useState<string>()
 
   // 次回ポーリング時に送る「既読オフセット」。再レンダリングに影響しないためrefで保持する
   const offsetsRef = React.useRef<Record<string, { stdout: number, stderr: number }>>({})
   const logsRef = React.useRef<Record<string, PreviewLogText>>({})
+  // 直前のポーリングで観測した到達ステータス。200への変化を検知する比較にのみ使うためrefで保持する
+  const previousTargetStatusRef = React.useRef<number | null>(null)
+  // ポーリングのeffectを張り直さずに、常に最新のコールバックを呼べるようにする
+  const onTargetReachableRef = React.useRef(onTargetReachable)
+  onTargetReachableRef.current = onTargetReachable
 
-  // サーバー側で稼働しているプロセス群の状態・ログと1秒間隔で同期する
+  // サーバー側で稼働しているプロセス群の状態・ログ・到達状況と1秒間隔で同期する
   React.useEffect(() => {
     let cancelled = false
 
@@ -54,6 +61,13 @@ export function usePreviewState() {
         logsRef.current = nextLogs
         setProcesses(data.processes)
         setLogs(nextLogs)
+        setTargetStatus(data.targetStatus)
+
+        // 未到達（またはエラー応答）から200に変わった瞬間だけ、iframeの再読み込みを促す
+        if (data.targetStatus === 200 && previousTargetStatusRef.current !== 200) {
+          onTargetReachableRef.current()
+        }
+        previousTargetStatusRef.current = data.targetStatus
       } catch {
         // ポーリング1回分の失敗は無視し、次回のポーリングに委ねる
       }
@@ -87,7 +101,7 @@ export function usePreviewState() {
   const stop = React.useCallback((processName?: string) => callAction('stop', processName), [callAction])
   const restart = React.useCallback((processName?: string) => callAction('restart', processName), [callAction])
 
-  return { processes, logs, start, stop, restart, isBusy, error }
+  return { processes, logs, targetStatus, start, stop, restart, isBusy, error }
 }
 
 function trimLog(text: string): string {
