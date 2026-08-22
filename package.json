@@ -6,7 +6,7 @@
   "workspaces": [
     "demo/000_基本的なDataModelの例/client",
     "demo/101_販売管理システム/client",
-    "demo/101_販売管理システム/DevTool.Client",
+    "demo/101_販売管理システム/DevTool",
     "demo/200_複雑なパターン/client",
     "Document",
     "Nijo.NewProjectTemplate/client",

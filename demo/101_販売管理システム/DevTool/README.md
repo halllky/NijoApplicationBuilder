@@ -1,4 +1,4 @@
-# DevTool.Client デバッグ手順
+# DevTool デバッグ手順
 
 ## 起動
 

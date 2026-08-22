@@ -4,7 +4,7 @@ import { DebugToolbar } from "./DebugToolbar"
  * デバッグ対象アプリ（生成後アプリの client）の vite dev server の URL。
  * DevTool.Server 側の起動設定（Program.cs）と同じポートに合わせる必要がある。
  * vite の開発用モジュールグラフは常にサーバールート直下に解決されるため、
- * DevTool.Client と同一オリジンのサブパスとして埋め込むことはできない。
+ * DevTool と同一オリジンのサブパスとして埋め込むことはできない。
  */
 const DEBUG_TARGET_URL = "http://localhost:5173/"
 
